@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Finder — Column View</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Finder">
+  <meta name="theme-color" content="#c8c8c8">
+  <!-- manifest injected by main.js -->
+  <link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+
+<div id="finder">
+  <!-- Title Bar -->
+  <div id="titlebar">
+    <div id="traffic-lights">
+      <div class="tl tl-close"></div>
+      <div class="tl tl-min"></div>
+      <div class="tl tl-max"></div>
+    </div>
+    <span id="window-title">Finder Views Column Cover</span>
+  </div>
+
+  <!-- Toolbar -->
+  <div id="toolbar">
+    <!-- Back / Forward -->
+    <div id="nav-group">
+      <button class="nav-btn" id="btn-back" title="Back" disabled>&#8249;</button>
+      <button class="nav-btn" id="btn-fwd"  title="Forward" disabled>&#8250;</button>
+    </div>
+    <div class="tb-sep"></div>
+    <!-- View mode -->
+    <div id="view-group">
+      <button class="view-btn" data-view="icon"    title="Icon View">⊞</button>
+      <button class="view-btn" data-view="list"    title="List View">≡</button>
+      <button class="view-btn active" data-view="column" title="Column View">⫴</button>
+      <button class="view-btn" data-view="gallery" title="Gallery View">⊟</button>
+    </div>
+    <div class="tb-sep"></div>
+    <!-- Action buttons -->
+    <button class="tb-btn"><span class="tb-icon">⇅</span><span class="tb-label">Arrange</span></button>
+    <button class="tb-btn"><span class="tb-icon">↑</span><span class="tb-label">Share</span></button>
+    <button class="tb-btn"><span class="tb-icon">🏷</span><span class="tb-label">Add Tags</span></button>
+    <button class="tb-btn"><span class="tb-icon">⊙</span><span class="tb-label">Visibility</span></button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn"><span class="tb-icon">📚</span><span class="tb-label">Library</span></button>
+    <button class="tb-btn"><span class="tb-icon">⚙</span><span class="tb-label">Action</span></button>
+    <button class="tb-btn"><span class="tb-icon">⎘</span><span class="tb-label">Path</span></button>
+    <button class="tb-btn"><span class="tb-icon">⛓</span><span class="tb-label">Connect</span></button>
+    <button class="tb-btn"><span class="tb-icon">⏏</span><span class="tb-label">Eject</span></button>
+    <button class="tb-btn"><span class="tb-icon">ℹ</span><span class="tb-label">Get Info</span></button>
+    <button class="tb-btn"><span class="tb-icon">🗑</span><span class="tb-label">Delete</span></button>
+    <!-- Open Folder -->
+    <button class="tb-btn" id="btn-open-folder" title="Open a real folder from your disk">
+      <span class="tb-icon">📂</span><span class="tb-label">Open…</span>
+    </button>
+    <!-- Search -->
+    <div id="search-wrap">
+      <span id="search-icon">🔍</span>
+      <input id="search-input" type="search" placeholder="Search">
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div id="main">
+    <!-- Sidebar -->
+    <div id="sidebar"></div>
+
+    <!-- Column view -->
+    <div id="columns-container" tabindex="0">
+      <div id="columns-inner"></div>
+    </div>
+
+    <!-- Preview -->
+    <div id="preview">
+      <div id="preview-empty">Select a file to see a preview</div>
+    </div>
+  </div>
+
+  <!-- Path Bar -->
+  <div id="pathbar"></div>
+
+  <!-- Status Bar -->
+  <div id="statusbar">709.59 GB available</div>
+</div>
+
+<!-- Load order matters: each file depends on those above it -->
+<script src="src/icons.js"></script>
+<script src="src/mock-data.js"></script>
+<script src="src/navigation.js"></script>
+<script src="src/fsa.js"></script>
+<script src="src/render.js"></script>
+<script src="src/events.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>
