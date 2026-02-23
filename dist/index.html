@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Finder — Column View</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Finder">
+  <meta name="theme-color" content="#c8c8c8">
+  <!-- manifest injected by main.js -->
+  <style>
+/* ─── Reset ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100vh; overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px; color: #1d1d1f; background: #3a3a3c;
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; }
+svg { display: block; }
+
+/* ─── Window Shell ───────────────────────────────────── */
+#finder {
+  display: flex; flex-direction: column;
+  position: fixed; inset: 0;       /* guaranteed viewport fill */
+  background: #ececec;
+  overflow: hidden;
+}
+
+/* ─── Title Bar ──────────────────────────────────────── */
+#titlebar {
+  display: flex; align-items: center;
+  background: linear-gradient(to bottom, #d8d8d8 0%, #c8c8c8 100%);
+  height: 52px; flex-shrink: 0;
+  border-bottom: 1px solid #b0b0b0;
+  padding: 0 12px;
+  position: relative;
+  user-select: none;
+}
+#traffic-lights {
+  display: flex; align-items: center; gap: 8px;
+  z-index: 1;
+}
+.tl {
+  width: 12px; height: 12px; border-radius: 50%;
+  cursor: default; flex-shrink: 0;
+  border: 0.5px solid rgba(0,0,0,0.15);
+}
+.tl-close   { background: #ff5f57; }
+.tl-min     { background: #febc2e; }
+.tl-max     { background: #28c840; }
+.tl:hover { filter: brightness(0.9); }
+#window-title {
+  position: absolute; left: 0; right: 0;
+  text-align: center; font-size: 13px; font-weight: 600;
+  color: #3d3d3d; pointer-events: none;
+}
+
+/* ─── Toolbar ────────────────────────────────────────── */
+#toolbar {
+  display: flex; align-items: center; gap: 2px;
+  background: linear-gradient(to bottom, #d8d8d8 0%, #c8c8c8 100%);
+  height: 38px; flex-shrink: 0;
+  border-bottom: 1px solid #b0b0b0;
+  padding: 0 8px;
+  user-select: none;
+}
+.tb-sep { width: 1px; height: 22px; background: #b8b8b8; margin: 0 4px; flex-shrink: 0; }
+.tb-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1px; padding: 2px 5px; border-radius: 5px;
+  border: none; background: transparent; cursor: pointer;
+  color: #4a4a4a; min-width: 30px;
+}
+.tb-btn:hover { background: rgba(0,0,0,0.08); }
+.tb-btn .tb-icon { font-size: 16px; line-height: 1; }
+.tb-btn .tb-label { font-size: 10px; color: #5a5a5a; white-space: nowrap; line-height: 1; }
+/* Back/Forward group */
+#nav-group { display: flex; align-items: center; flex-shrink: 0; }
+.nav-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 24px; border: none; background: transparent;
+  cursor: pointer; color: #4a4a4a; border-radius: 4px; font-size: 15px;
+}
+.nav-btn:hover { background: rgba(0,0,0,0.08); }
+.nav-btn:disabled { color: #bbb; cursor: default; }
+.nav-btn:disabled:hover { background: transparent; }
+/* View group */
+#view-group {
+  display: flex; border: 1px solid #b5b5b5; border-radius: 5px;
+  overflow: hidden; flex-shrink: 0;
+}
+.view-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 24px; border: none; background: transparent;
+  cursor: pointer; color: #5a5a5a; border-right: 1px solid #b5b5b5;
+  font-size: 13px;
+}
+.view-btn:last-child { border-right: none; }
+.view-btn:hover { background: rgba(0,0,0,0.08); }
+.view-btn.active { background: rgba(0,0,0,0.15); color: #1d1d1f; }
+/* Search */
+#search-wrap { margin-left: auto; flex-shrink: 0; position: relative; }
+#search-input {
+  width: 150px; height: 22px; border-radius: 11px;
+  border: 1px solid #b5b5b5; background: rgba(255,255,255,0.7);
+  padding: 0 10px 0 26px; font-size: 12px; outline: none;
+  font-family: inherit; color: #1d1d1f;
+}
+#search-input:focus { background: white; border-color: #1070cf; box-shadow: 0 0 0 3px rgba(16,112,207,0.25); }
+#search-icon {
+  position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+  color: #999; font-size: 12px; pointer-events: none;
+}
+
+/* ─── Main Layout ────────────────────────────────────── */
+#main {
+  display: flex; flex: 1; min-height: 0; overflow: hidden;
+}
+
+/* ─── Sidebar ────────────────────────────────────────── */
+#sidebar {
+  width: 175px; min-width: 120px; max-width: 280px;
+  background: rgba(236,236,236,0.9);
+  border-right: 1px solid #c8c8c8;
+  overflow-y: auto; overflow-x: hidden;
+  flex-shrink: 0;
+  padding-bottom: 8px;
+  user-select: none;
+}
+#sidebar::-webkit-scrollbar { width: 6px; }
+#sidebar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+.sidebar-section-header {
+  font-size: 11px; font-weight: 600; color: #8a8a8a;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 10px 16px 2px;
+}
+.sidebar-item {
+  display: flex; align-items: center; height: 24px;
+  padding: 0 8px 0 12px; cursor: pointer; border-radius: 5px;
+  margin: 1px 4px; gap: 6px; color: #1d1d1f;
+}
+.sidebar-item:hover { background: rgba(0,0,0,0.06); }
+.sidebar-item.selected { background: rgba(9,103,210,0.14); color: #0f62d1; }
+.sidebar-item.kbd-focused { outline: 2px solid #1070cf; outline-offset: -2px; border-radius: 5px; }
+.sidebar-item .si-icon { width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.sidebar-item .si-label { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sidebar-tag-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* ─── Column View Container ──────────────────────────── */
+#columns-container {
+  flex: 1; display: flex; overflow-x: auto; overflow-y: hidden;
+  background: #ffffff; position: relative;
+}
+#columns-container::-webkit-scrollbar { height: 8px; }
+#columns-container::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 4px; }
+#columns-container::-webkit-scrollbar-track { background: #f0f0f0; }
+#columns-inner { display: flex; height: 100%; align-items: stretch; min-width: max-content; }
+
+/* ─── Single Column ──────────────────────────────────── */
+.col {
+  display: flex; flex-direction: column;
+  width: var(--col-width, 185px); min-width: 100px;
+  border-right: 1px solid #d0d0d0;
+  overflow: hidden; position: relative; flex-shrink: 0;
+}
+.col.focused { box-shadow: inset 0 0 0 2px rgba(16,112,207,0.35); }
+.col-scroll { overflow-y: auto; overflow-x: hidden; flex: 1; }
+.col-scroll::-webkit-scrollbar { width: 6px; }
+.col-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+.col-item {
+  display: flex; align-items: center; height: 22px;
+  padding: 0 24px 0 8px; cursor: default;
+  font-size: 13px; position: relative; gap: 5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  user-select: none;
+}
+.col-item:hover { background: rgba(0,0,0,0.04); }
+.col-item.selected-active {
+  background: #1070cf !important; color: #ffffff !important;
+}
+.col-item.selected-active .col-arrow { color: rgba(255,255,255,0.7) !important; }
+.col-item.selected-active .item-icon svg path, .col-item.selected-active .item-icon svg rect { fill: rgba(255,255,255,0.9); }
+.col-item.selected-inactive { background: #d4d4d4; color: #3d3d3d; }
+.col-arrow {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  font-size: 8px; color: #999; line-height: 1;
+}
+.item-icon { width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.item-label { overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+
+/* ─── Resize handle ──────────────────────────────────── */
+.col-resize {
+  position: absolute; right: -3px; top: 0; bottom: 0; width: 6px;
+  cursor: col-resize; z-index: 10;
+}
+
+/* ─── Preview Panel ──────────────────────────────────── */
+#preview {
+  width: 240px; min-width: 160px; max-width: 400px;
+  background: #f5f5f5; border-left: 1px solid #d0d0d0;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 20px 16px 16px; overflow-y: auto; flex-shrink: 0;
+}
+#preview::-webkit-scrollbar { width: 6px; }
+#preview::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+#preview-icon { width: 128px; height: 128px; margin-bottom: 12px; }
+#preview-icon svg { width: 128px; height: 128px; }
+#preview-name { font-size: 13px; font-weight: 600; text-align: center; word-break: break-word; margin-bottom: 4px; color: #1d1d1f; }
+#preview-kind { font-size: 12px; color: #666; text-align: center; margin-bottom: 16px; }
+#preview-sep { width: 100%; height: 1px; background: #d0d0d0; margin-bottom: 12px; }
+#preview-meta { width: 100%; }
+.meta-row { display: flex; gap: 6px; margin-bottom: 5px; align-items: flex-start; }
+.meta-key { font-size: 11px; color: #888; width: 80px; flex-shrink: 0; text-align: right; }
+.meta-val { font-size: 11px; color: #444; flex: 1; }
+#preview-tags { margin-top: 12px; width: 100%; text-align: center; }
+#preview-tags a { font-size: 11px; color: #1070cf; text-decoration: none; cursor: pointer; }
+#preview-tags a:hover { text-decoration: underline; }
+#preview-empty { color: #999; font-size: 12px; text-align: center; margin-top: 40px; }
+
+/* ─── Path Bar ───────────────────────────────────────── */
+#pathbar {
+  height: 24px; display: flex; align-items: center;
+  background: rgba(236,236,236,0.97);
+  border-top: 1px solid #d0d0d0;
+  padding: 0 8px; gap: 0; overflow: hidden;
+  flex-shrink: 0; user-select: none;
+}
+.path-item {
+  display: flex; align-items: center; gap: 2px;
+  font-size: 11px; color: #444; cursor: pointer; white-space: nowrap;
+  padding: 0 3px; border-radius: 3px;
+}
+.path-item:hover { background: rgba(0,0,0,0.07); }
+.path-item.active { color: #1070cf; }
+.path-item .path-icon { font-size: 11px; opacity: 0.6; }
+.path-sep { font-size: 11px; color: #888; padding: 0 2px; flex-shrink: 0; }
+
+/* ─── Status Bar ─────────────────────────────────────── */
+#statusbar {
+  height: 20px; display: flex; align-items: center; justify-content: center;
+  background: #ececec; border-top: 1px solid #d0d0d0;
+  font-size: 11px; color: #666; flex-shrink: 0;
+  user-select: none;
+}
+
+/* ─── Empty-state / builtin placeholder ─────────────── */
+.columns-empty-state {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #aaa; font-size: 13px; text-align: center; padding: 24px;
+  user-select: none; pointer-events: none;
+}
+
+/* ─── Loading row ───────────────────────────────────── */
+.col-loading {
+  padding: 8px 12px; font-size: 12px; color: #999;
+  display: flex; align-items: center; gap: 6px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  width: 12px; height: 12px; border: 2px solid #ccc;
+  border-top-color: #888; border-radius: 50%;
+  animation: spin 0.7s linear infinite; flex-shrink: 0;
+}
+
+/* ─── Drag-resize cursor ─────────────────────────────── */
+body.col-resizing { cursor: col-resize !important; }
+body.col-resizing * { pointer-events: none; }
+
+</style>
+</head>
+<body>
+
+<div id="finder">
+  <!-- Title Bar -->
+  <div id="titlebar">
+    <div id="traffic-lights">
+      <div class="tl tl-close"></div>
+      <div class="tl tl-min"></div>
+      <div class="tl tl-max"></div>
+    </div>
+    <span id="window-title">Finder Views Column Cover</span>
+  </div>
+
+  <!-- Toolbar -->
+  <div id="toolbar">
+    <!-- Back / Forward -->
+    <div id="nav-group">
+      <button class="nav-btn" id="btn-back" title="Back" disabled>&#8249;</button>
+      <button class="nav-btn" id="btn-fwd"  title="Forward" disabled>&#8250;</button>
+    </div>
+    <div class="tb-sep"></div>
+    <!-- View mode -->
+    <div id="view-group">
+      <button class="view-btn" data-view="icon"    title="Icon View">⊞</button>
+      <button class="view-btn" data-view="list"    title="List View">≡</button>
+      <button class="view-btn active" data-view="column" title="Column View">⫴</button>
+      <button class="view-btn" data-view="gallery" title="Gallery View">⊟</button>
+    </div>
+    <div class="tb-sep"></div>
+    <!-- Action buttons -->
+    <button class="tb-btn"><span class="tb-icon">⇅</span><span class="tb-label">Arrange</span></button>
+    <button class="tb-btn"><span class="tb-icon">↑</span><span class="tb-label">Share</span></button>
+    <button class="tb-btn"><span class="tb-icon">🏷</span><span class="tb-label">Add Tags</span></button>
+    <button class="tb-btn"><span class="tb-icon">⊙</span><span class="tb-label">Visibility</span></button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn"><span class="tb-icon">📚</span><span class="tb-label">Library</span></button>
+    <button class="tb-btn"><span class="tb-icon">⚙</span><span class="tb-label">Action</span></button>
+    <button class="tb-btn"><span class="tb-icon">⎘</span><span class="tb-label">Path</span></button>
+    <button class="tb-btn"><span class="tb-icon">⛓</span><span class="tb-label">Connect</span></button>
+    <button class="tb-btn"><span class="tb-icon">⏏</span><span class="tb-label">Eject</span></button>
+    <button class="tb-btn"><span class="tb-icon">ℹ</span><span class="tb-label">Get Info</span></button>
+    <button class="tb-btn"><span class="tb-icon">🗑</span><span class="tb-label">Delete</span></button>
+    <!-- Open Folder -->
+    <button class="tb-btn" id="btn-open-folder" title="Open a real folder from your disk">
+      <span class="tb-icon">📂</span><span class="tb-label">Open…</span>
+    </button>
+    <!-- Search -->
+    <div id="search-wrap">
+      <span id="search-icon">🔍</span>
+      <input id="search-input" type="search" placeholder="Search">
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div id="main">
+    <!-- Sidebar -->
+    <div id="sidebar"></div>
+
+    <!-- Column view -->
+    <div id="columns-container" tabindex="0">
+      <div id="columns-inner"></div>
+    </div>
+
+    <!-- Preview -->
+    <div id="preview">
+      <div id="preview-empty">Select a file to see a preview</div>
+    </div>
+  </div>
+
+  <!-- Path Bar -->
+  <div id="pathbar"></div>
+
+  <!-- Status Bar -->
+  <div id="statusbar">709.59 GB available</div>
+</div>
+
+<!-- Load order matters: each file depends on those above it -->
+<script>
+/* ════════════════════════════════════════════════════════════════
+   Icon SVGs — small (16px) and big (128px) and sidebar
+   ════════════════════════════════════════════════════════════════ */
+
+function mix(hex, f) {
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return '#' + [r,g,b].map(v => Math.round(v*f+255*(1-f)).toString(16).padStart(2,'0')).join('');
+}
+
+/* ── Small icons (16 px) ─────────────────────────────────────── */
+
+function folderSVG(color='#f5a623') {
+  return `<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="5.5" width="16" height="9.5" rx="1.5" fill="${color}"/>
+    <rect x="0" y="4"   width="6"  height="3"   rx="1"   fill="${mix(color,0.75)}"/>
+  </svg>`;
+}
+function imageSVG() {
+  return `<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="2" width="14" height="12" rx="1.5" fill="#4cd964"/>
+    <polygon points="1,11 5,7 8,10 11,7 15,11 15,14 1,14" fill="#2fa84f" opacity="0.7"/>
+    <circle cx="5" cy="5.5" r="1.5" fill="#fff" opacity="0.85"/>
+  </svg>`;
+}
+function videoSVG() {
+  return `<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="3" width="14" height="10" rx="1.5" fill="#5e5ce6"/>
+    <polygon points="6,5.5 11,8 6,10.5" fill="white"/>
+  </svg>`;
+}
+function audioSVG() {
+  return `<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="2" width="14" height="12" rx="1.5" fill="#ff9500"/>
+    <text x="8" y="11" font-size="8" text-anchor="middle" fill="white">♪</text>
+  </svg>`;
+}
+function docSVG() {
+  return `<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 1h7l3 3v11H3z" fill="white" stroke="#ccc" stroke-width="0.5"/>
+    <path d="M10 1v3h3" fill="none" stroke="#ccc" stroke-width="0.5"/>
+    <line x1="5" y1="6"  x2="11" y2="6"  stroke="#aaa" stroke-width="1"/>
+    <line x1="5" y1="8"  x2="11" y2="8"  stroke="#aaa" stroke-width="1"/>
+    <line x1="5" y1="10" x2="9"  y2="10" stroke="#aaa" stroke-width="1"/>
+  </svg>`;
+}
+function archiveSVG() {
+  return `<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 1h7l3 3v11H3z" fill="#e8e8e8" stroke="#ccc" stroke-width="0.5"/>
+    <path d="M10 1v3h3" fill="none" stroke="#ccc" stroke-width="0.5"/>
+    <line x1="7" y1="1" x2="7" y2="14" stroke="#bbb" stroke-width="2" stroke-dasharray="2,1"/>
+  </svg>`;
+}
+function codeSVG() {
+  return `<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 1h7l3 3v11H3z" fill="#fff" stroke="#ccc" stroke-width="0.5"/>
+    <path d="M10 1v3h3" fill="none" stroke="#ccc" stroke-width="0.5"/>
+    <text x="8" y="12" font-size="7" text-anchor="middle" fill="#1070cf" font-family="monospace">&lt;/&gt;</text>
+  </svg>`;
+}
+function appSVG() {
+  return `<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="14" height="14" rx="3" fill="#1070cf"/>
+    <circle cx="8" cy="8" r="3" fill="white" opacity="0.9"/>
+  </svg>`;
+}
+function fileSVG() {
+  return `<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 1h7l3 3v11H3z" fill="white" stroke="#ccc" stroke-width="0.5"/>
+    <path d="M10 1v3h3" fill="none" stroke="#ccc" stroke-width="0.5"/>
+  </svg>`;
+}
+
+function getIconSVG(node) {
+  if (node.type === 'folder')  return folderSVG();
+  if (node.type === 'image')   return imageSVG();
+  if (node.type === 'video')   return videoSVG();
+  if (node.type === 'audio')   return audioSVG();
+  if (node.type === 'doc')     return docSVG();
+  if (node.type === 'archive') return archiveSVG();
+  if (node.type === 'code')    return codeSVG();
+  if (node.type === 'app')     return appSVG();
+  return fileSVG();
+}
+
+/* ── Big preview icons (128 px) ──────────────────────────────── */
+
+function bigFolderSVG() {
+  return `<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="fg2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgba(255,255,255,0.3)"/>
+      <stop offset="1" stop-color="rgba(0,0,0,0.1)"/>
+    </linearGradient></defs>
+    <rect x="2"  y="26" width="124" height="92" rx="10" fill="#f5a623"/>
+    <rect x="2"  y="26" width="124" height="92" rx="10" fill="url(#fg2)"/>
+    <rect x="2"  y="18" width="46"  height="18" rx="7"  fill="#e59016"/>
+  </svg>`;
+}
+function bigImageSVG() {
+  return `<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+    <rect x="6"  y="10" width="116" height="108" rx="6" fill="#fff" stroke="#d0d0d0"/>
+    <polygon points="6,90 38,54 66,82 90,58 122,90 122,118 6,118" fill="#4cd964" opacity="0.55"/>
+    <circle cx="42" cy="38" r="14" fill="#f5a623" opacity="0.85"/>
+  </svg>`;
+}
+function bigDocSVG() {
+  return `<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 4h68l30 28v92H14z" fill="white" stroke="#ccc" stroke-width="1.5"/>
+    <path d="M82 4v28h30" fill="none" stroke="#ccc" stroke-width="1.5"/>
+    <line x1="28" y1="48" x2="100" y2="48" stroke="#1070cf" stroke-width="4" stroke-linecap="round"/>
+    <line x1="28" y1="62" x2="100" y2="62" stroke="#ddd" stroke-width="3" stroke-linecap="round"/>
+    <line x1="28" y1="76" x2="100" y2="76" stroke="#ddd" stroke-width="3" stroke-linecap="round"/>
+    <line x1="28" y1="90" x2="72"  y2="90" stroke="#ddd" stroke-width="3" stroke-linecap="round"/>
+  </svg>`;
+}
+function bigArchiveSVG() {
+  return `<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 4h68l30 28v92H14z" fill="#f0f0f0" stroke="#ccc" stroke-width="1.5"/>
+    <path d="M82 4v28h30" fill="none" stroke="#ccc" stroke-width="1.5"/>
+    <line x1="56" y1="4" x2="56" y2="124" stroke="#bbb" stroke-width="8" stroke-dasharray="10,6"/>
+  </svg>`;
+}
+function bigVideoSVG() {
+  return `<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+    <rect x="4" y="16" width="120" height="96" rx="8" fill="#5e5ce6"/>
+    <polygon points="46,38 90,64 46,90" fill="white"/>
+  </svg>`;
+}
+function bigFileSVG() {
+  return `<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 4h68l30 28v92H14z" fill="white" stroke="#ccc" stroke-width="1.5"/>
+    <path d="M82 4v28h30" fill="none" stroke="#ccc" stroke-width="1.5"/>
+  </svg>`;
+}
+
+function getBigIcon(node) {
+  if (!node) return '';
+  if (node.type === 'folder')  return bigFolderSVG();
+  if (node.type === 'image')   return bigImageSVG();
+  if (node.type === 'video')   return bigVideoSVG();
+  if (node.type === 'doc')     return bigDocSVG();
+  if (node.type === 'archive') return bigArchiveSVG();
+  return bigFileSVG();
+}
+
+/* ── Sidebar icons ───────────────────────────────────────────── */
+
+function sidebarIcon(color, symbol) {
+  return `<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="8" cy="8" r="7.5" fill="${color}"/>
+    <text x="8" y="12" font-size="9" text-anchor="middle" fill="white" font-family="system-ui">${symbol}</text>
+  </svg>`;
+}
+function sidebarFolderIcon(color) {
+  return `<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path d="M1 5.5A1.5 1.5 0 012.5 4h4l1 1.5H13.5A1.5 1.5 0 0115 7v5.5A1.5 1.5 0 0113.5 14h-11A1.5 1.5 0 011 12.5z" fill="${color}"/>
+    <path d="M1 5.5A1.5 1.5 0 012.5 4h3.5l1 1.5H2.5A1.5 1.5 0 001 7z" fill="${color}" opacity="0.6"/>
+  </svg>`;
+}
+
+</script>
+<script>
+/* ════════════════════════════════════════════════════════════════
+   Mock File System (shown before user picks a real folder)
+   ════════════════════════════════════════════════════════════════ */
+const MOCK_FS = {
+  name: '/', type: 'folder',
+  children: [
+    { name: 'Applications', type: 'folder', children: [
+      { name: 'Automator.app', type: 'app' }, { name: 'Calendar.app', type: 'app' },
+      { name: 'Finder.app', type: 'app' },    { name: 'Mail.app', type: 'app' },
+      { name: 'Safari.app', type: 'app' },    { name: 'System Preferences.app', type: 'app' },
+    ]},
+    { name: 'Users', type: 'folder', children: [
+      { name: 'casey', type: 'folder', children: [
+        { name: 'Desktop',   type: 'folder', children: [
+          { name: 'Screenshot 2024-03-01.png', type: 'image' },
+          { name: 'notes.txt', type: 'doc' },
+        ]},
+        { name: 'Documents', type: 'folder', children: [
+          { name: 'Budget 2024.numbers', type: 'doc' },
+          { name: 'Resume.pages', type: 'doc' },
+          { name: 'Tax Returns', type: 'folder', children: [] },
+        ]},
+        { name: 'Downloads', type: 'folder', children: [
+          { name: 'macOS Ventura.dmg', type: 'archive' },
+          { name: 'Zoom.pkg', type: 'archive' },
+        ]},
+        { name: 'Movies',    type: 'folder', children: [{ name: 'Vacation 2023.mov', type: 'video' }] },
+        { name: 'Music',     type: 'folder', children: [{ name: 'iTunes', type: 'folder', children: [] }] },
+        { name: 'Pictures',  type: 'folder', children: [
+          { name: 'Photo Library.photoslibrary', type: 'folder', children: [] },
+        ]},
+        { name: 'OWC', type: 'folder', children: [
+          { name: 'Shared Folder', type: 'folder', children: [
+            { name: 'High Sierra Slow',      type: 'doc' },
+            { name: 'High Sierra Slow.zip',  type: 'archive' },
+            { name: 'How to Automate Tasks', type: 'doc' },
+            { name: 'How to A…Tasks.zip',   type: 'archive' },
+            { name: 'Images',               type: 'folder', children: [] },
+            { name: 'Install macOS High Sierra', type: 'file' },
+            { name: 'Invoice',              type: 'folder', children: [] },
+            { name: 'Just one upgrade',     type: 'doc' },
+            { name: 'Just one…grade.zip',   type: 'archive' },
+            { name: 'Kernel Panic',         type: 'folder', children: [] },
+            { name: 'Kernel Panic.zip',     type: 'archive' },
+            { name: 'Mac OS Utilities',     type: 'folder', children: [] },
+            { name: 'Mac OS Utilities.zip', type: 'archive' },
+            { name: 'Mac Sleep Issues',     type: 'folder', children: [] },
+            { name: 'Mac Sleep…s 1.docx',  type: 'doc' },
+            { name: 'Mac Sleep Issues.zip', type: 'archive' },
+          ]},
+          { name: 'Images', type: 'folder', children: [
+            { name: 'DJI Drone Lab',             type: 'folder', children: [] },
+            { name: 'Download macOS',            type: 'file' },
+            { name: 'Earth Day Map',             type: 'folder', children: [] },
+            { name: 'External Enclosure Types',  type: 'folder', children: [] },
+            { name: 'FileVault',                 type: 'folder', children: [] },
+            { name: 'Finder Views Column Cover', type: 'folder', children: [
+              { name: 'ColumnView.tiff',        type: 'image',   size: '18.2 MB', dims: '3360 × 2176', created: 'Today, 11:16 AM', modified: 'Today, 11:16 AM', lastOpened: 'Today, 11:36 AM' },
+              { name: 'ColumnView640.jpg',      type: 'image',   size: '312 KB',  dims: '640 × 440' },
+              { name: 'ColumnView1280.jpg',     type: 'image',   size: '756 KB',  dims: '1280 × 880' },
+              { name: 'ColumnViewOptions.tiff', type: 'image',   size: '4.1 MB',  dims: '1600 × 1200' },
+              { name: 'ColumnViews440.jpg',     type: 'image',   size: '198 KB',  dims: '440 × 302' },
+              { name: 'ColumnViews880.jpg',     type: 'image',   size: '421 KB',  dims: '880 × 604' },
+              { name: 'CoverFlow.tiff',         type: 'image',   size: '16.8 MB', dims: '3360 × 2176' },
+              { name: 'CoverFlow640.jpg',       type: 'image',   size: '298 KB',  dims: '640 × 440' },
+              { name: 'CoverFlow1280.jpg',      type: 'image',   size: '712 KB',  dims: '1280 × 880' },
+              { name: 'CoverFlowOptions.tiff',  type: 'image',   size: '3.9 MB',  dims: '1600 × 1200' },
+              { name: 'CoverFlowNs440.jpg',     type: 'image',   size: '176 KB',  dims: '440 × 302' },
+              { name: 'CoverFlowNs880.jpg',     type: 'image',   size: '388 KB',  dims: '880 × 604' },
+              { name: 'CoverFlowTip.tiff',      type: 'image',   size: '2.2 MB',  dims: '1024 × 768' },
+              { name: 'CoverFlowip640.jpg',     type: 'image',   size: '145 KB',  dims: '640 × 480' },
+              { name: 'CoverFlowp1280.jpg',     type: 'image',   size: '390 KB',  dims: '1280 × 960' },
+            ]},
+            { name: 'Finder Views Icon List',  type: 'folder', children: [] },
+            { name: 'Five Mac Ties Images',    type: 'folder', children: [] },
+            { name: 'Forgotten ips Images',    type: 'folder', children: [] },
+            { name: 'Get Read…Ac OS Beta',     type: 'folder', children: [] },
+            { name: 'High Sierra Screenshots', type: 'folder', children: [] },
+            { name: 'High Sierra Slow',        type: 'doc' },
+            { name: 'How to Automate Tasks',   type: 'doc' },
+            { name: 'Kernel Panic Images',     type: 'folder', children: [] },
+            { name: 'Mac OS Utilities',        type: 'folder', children: [] },
+            { name: "Mac won't power up",      type: 'doc' },
+            { name: 'Mac Sleep Issues',        type: 'doc' },
+          ]},
+        ]},
+      ]},
+      { name: 'tnelson', type: 'folder', children: [
+        { name: 'Desktop',   type: 'folder', children: [] },
+        { name: 'Documents', type: 'folder', children: [] },
+        { name: 'Downloads', type: 'folder', children: [] },
+      ]},
+      { name: 'Shared', type: 'folder', children: [] },
+    ]},
+  ]
+};
+
+/* ════════════════════════════════════════════════════════════════
+   Sidebar Data
+   ════════════════════════════════════════════════════════════════ */
+// Extra FSA-picked roots are prepended at runtime
+const SIDEBAR_ITEMS = [
+  { label: 'iCloud Drive', path: ['iCloud Drive'], icon: sidebarIcon('#4a9eff','☁'),  type:'builtin' },
+  { label: 'Dropbox',      path: ['Dropbox'],      icon: sidebarIcon('#1070cf','⬡'),  type:'builtin' },
+  { label: 'AirDrop',      path: ['AirDrop'],
+    icon: `<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+      <defs><radialGradient id="airdrop2"><stop offset="0%" stop-color="#4af"/><stop offset="100%" stop-color="#07c"/></radialGradient></defs>
+      <circle cx="8" cy="8" r="7.5" fill="url(#airdrop2)"/>
+      <text x="8" y="12" font-size="9" text-anchor="middle" fill="white">⊕</text></svg>`,
+    type:'builtin' },
+  { label: 'Desktop',      path: ['Users','casey','Desktop'],   icon: sidebarIcon('#8b5cf6','🖥'), type:'mock' },
+  { label: 'OWC',          path: ['Users','casey','OWC'],       icon: sidebarIcon('#ff7f00','O'),  type:'mock', selected: true },
+  { label: 'tnelson',      path: ['Users','tnelson'],           icon: sidebarIcon('#5a5a5a','t'),  type:'mock' },
+  { label: 'Documents',    path: ['Users','casey','Documents'], icon: sidebarFolderIcon('#1070cf'), type:'mock' },
+  { label: 'Applications', path: ['Applications'],              icon: sidebarFolderIcon('#888'),    type:'mock' },
+  { label: 'Movies',       path: ['Users','casey','Movies'],    icon: sidebarFolderIcon('#5e5ce6'), type:'mock' },
+  { label: 'Pictures',     path: ['Users','casey','Pictures'],  icon: sidebarFolderIcon('#ff4d94'), type:'mock' },
+  { label: 'Music',        path: ['Users','casey','Music'],     icon: sidebarFolderIcon('#ff3b30'), type:'mock' },
+  { label: 'Downloads',    path: ['Users','casey','Downloads'], icon: sidebarFolderIcon('#4cd964'), type:'mock' },
+  { label: 'All My Files', path: ['All My Files'],              icon: sidebarIcon('#888','◫'),      type:'builtin' },
+];
+
+const SIDEBAR_TAGS = [
+  { label: 'Today',     color: '#ff3b30' },
+  { label: 'Yesterday', color: '#ff9500' },
+  { label: 'This Week', color: '#4cd964' },
+];
+
+</script>
+<script>
+/* ════════════════════════════════════════════════════════════════
+   Type detection & formatting helpers
+   ════════════════════════════════════════════════════════════════ */
+function getFileType(name) {
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  if (['jpg','jpeg','png','gif','tiff','tif','webp','heic','bmp','svg','raw'].includes(ext)) return 'image';
+  if (['mov','mp4','avi','mkv','m4v','wmv','mpg','mpeg'].includes(ext))                      return 'video';
+  if (['mp3','aac','m4a','flac','wav','ogg','opus'].includes(ext))                            return 'audio';
+  if (['pdf','doc','docx','txt','md','rtf','pages','numbers','key','xls','xlsx','ppt','pptx'].includes(ext)) return 'doc';
+  if (['zip','tar','gz','bz2','7z','rar','dmg','pkg','iso'].includes(ext))                   return 'archive';
+  if (['js','ts','html','css','py','rb','java','c','cpp','h','swift','kt','go','rs'].includes(ext)) return 'code';
+  if (name.endsWith('.app'))  return 'app';
+  return 'file';
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024)            return bytes + ' bytes';
+  if (bytes < 1024 * 1024)     return (bytes / 1024).toFixed(0) + ' KB';
+  if (bytes < 1024 ** 3)       return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+  return (bytes / 1024 ** 3).toFixed(2) + ' GB';
+}
+
+function formatDate(ms) {
+  const d   = new Date(ms);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dday  = new Date(d.getFullYear(),   d.getMonth(),  d.getDate());
+  const diff  = Math.round((today - dday) / 86400000);
+  const t = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (diff === 0) return `Today, ${t}`;
+  if (diff === 1) return `Yesterday, ${t}`;
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Navigation State
+   ════════════════════════════════════════════════════════════════ */
+let columns        = [];  // [{ node, selectedName }]
+let selectedFile   = null;
+let sidebarRootNode = null;
+let sidebarRootPath = [];
+let historyStack   = [];
+let historyIndex   = -1;
+let searchQuery    = '';
+// Derived at runtime in main.js once SIDEBAR_ITEMS is available
+let activeSidebarIdx = -1;
+
+// Keyboard focus state — shared between events.js and render.js
+let focusedColIdx  = -1;   // which column has keyboard focus (-1 = none)
+let sidebarFocused = false; // true while keyboard focus is in the sidebar
+let sidebarBuiltin = false; // true when a builtin sidebar item (AirDrop etc.) is selected
+
+// Type-ahead search state
+let colSearch      = '';   // current type-ahead query
+let colSearchTimer = null; // setTimeout handle for auto-clear
+
+// Dynamic column width: 0 = compute automatically; positive = user overrode with drag
+let globalColWidth = 0;
+
+/* ════════════════════════════════════════════════════════════════
+   Mock FS utilities
+   ════════════════════════════════════════════════════════════════ */
+function findMockNodeByPath(path) {
+  let node = MOCK_FS;
+  for (const seg of path) {
+    if (!node.children) return null;
+    node = node.children.find(c => c.name === seg);
+    if (!node) return null;
+  }
+  return node;
+}
+
+function getChildren(node) {
+  if (!node) return [];
+  if (node._loading) return null;   // signal: still loading
+  if (!node.children) return [];    // file or empty
+  return node.children;
+}
+
+function getChildrenFiltered(node) {
+  const ch = getChildren(node);
+  if (!ch) return null;             // loading
+  if (!searchQuery) return ch;
+  const q = searchQuery.toLowerCase();
+  return ch.filter(c => c.name.toLowerCase().includes(q));
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Column State — init from mock path
+   ════════════════════════════════════════════════════════════════ */
+function initToMockPath(sbPath, relPath = []) {
+  sidebarRootPath = sbPath;
+  sidebarRootNode = findMockNodeByPath(sbPath) || MOCK_FS;
+
+  columns      = [];
+  selectedFile = null;
+  let node     = sidebarRootNode;
+
+  for (const seg of relPath) {
+    const child = node.children?.find(c => c.name === seg);
+    if (!child) break;
+    columns.push({ node, selectedName: seg });
+    if (!child.children) { selectedFile = child; break; }
+    node = child;
+  }
+
+  if (columns.length === 0) columns.push({ node: sidebarRootNode, selectedName: null });
+
+  // If deepest selection is a folder, open it
+  const last = columns.at(-1);
+  if (last?.selectedName) {
+    const lastChild = last.node.children?.find(c => c.name === last.selectedName);
+    if (lastChild?.children) columns.push({ node: lastChild, selectedName: null });
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Core navigation — async to support FSA lazy loading
+   ════════════════════════════════════════════════════════════════ */
+let _navigating = false; // prevent re-entrant navigation
+
+async function navigateTo(colIdx, itemName, { skipHistory = false } = {}) {
+  if (_navigating) return;
+  _navigating = true;
+  try {
+    columns = columns.slice(0, colIdx + 1);
+    columns[colIdx].selectedName = itemName;
+    // Remember the last-selected child per folder for right-arrow restoration
+    columns[colIdx].node._lastSelected = itemName;
+    selectedFile = null;
+
+    const parentNode = columns[colIdx].node;
+    const child = parentNode.children?.find(c => c.name === itemName);
+
+    if (child?.type === 'folder') {
+      if (child.children === null) {
+        // Push loading column first so the spinner is visible during FSA fetch
+        columns.push({ node: child, selectedName: null });
+        await ensureLoaded(child);
+        // Remove the column again if the folder turned out to be empty
+        if ((child.children || []).length === 0) columns.pop();
+      } else if ((child.children || []).length > 0) {
+        columns.push({ node: child, selectedName: null });
+      }
+    } else if (child) {
+      selectedFile = child;
+      await loadFileMeta(child); // FSA: get file size/date
+    }
+
+    render();
+    scrollToActiveColumn();
+    if (!skipHistory) pushHistory();
+  } finally {
+    _navigating = false;
+  }
+}
+
+function getFullPath() {
+  return columns.filter(c => c.selectedName).map(c => c.selectedName);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   History — store direct node references (no serialisation needed)
+   ════════════════════════════════════════════════════════════════ */
+function pushHistory() {
+  const state = {
+    columns:        columns.map(c => ({ node: c.node, selectedName: c.selectedName })),
+    selectedFile,
+    sidebarRootNode,
+    sidebarRootPath: [...sidebarRootPath],
+    activeSidebarIdx,
+    sidebarBuiltin,
+  };
+  historyStack = historyStack.slice(0, historyIndex + 1);
+  historyStack.push(state);
+  // Cap at 100 entries to avoid unbounded growth
+  if (historyStack.length > 100) {
+    historyStack.shift();
+  } else {
+    historyIndex++;
+  }
+  updateNavButtons();
+}
+
+function restoreState(state) {
+  columns          = state.columns.map(c => ({ node: c.node, selectedName: c.selectedName }));
+  selectedFile     = state.selectedFile;
+  sidebarRootNode  = state.sidebarRootNode;
+  sidebarRootPath  = state.sidebarRootPath || [];
+  activeSidebarIdx = state.activeSidebarIdx;
+  sidebarBuiltin   = state.sidebarBuiltin ?? false;
+  render();
+  updateNavButtons();
+}
+
+function updateNavButtons() {
+  document.getElementById('btn-back').disabled = historyIndex <= 0;
+  document.getElementById('btn-fwd').disabled  = historyIndex >= historyStack.length - 1;
+}
+
+</script>
+<script>
+/* ════════════════════════════════════════════════════════════════
+   IndexedDB persistence for FSA handles
+   (handles are structured-cloneable; queryPermission needs no gesture)
+   ════════════════════════════════════════════════════════════════ */
+async function _fsaDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('fndr-fsa', 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore('handles', { keyPath: 'label' });
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+async function saveFSAHandlesToIDB() {
+  try {
+    const db    = await _fsaDB();
+    const tx    = db.transaction('handles', 'readwrite');
+    const store = tx.objectStore('handles');
+    store.clear();
+    for (const si of SIDEBAR_ITEMS) {
+      if (si.type === 'fsa' && si.node?.handle) {
+        store.put({ label: si.label, handle: si.node.handle });
+      }
+    }
+    await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
+  } catch (e) { console.warn('FSA IDB save failed:', e); }
+}
+
+async function restoreFSAHandlesFromIDB() {
+  try {
+    const db    = await _fsaDB();
+    const tx    = db.transaction('handles', 'readonly');
+    const items = await new Promise((res, rej) => {
+      const r = tx.objectStore('handles').getAll();
+      r.onsuccess = e => res(e.target.result);
+      r.onerror   = rej;
+    });
+    let added = 0;
+    for (const { label, handle } of items) {
+      // Only restore handles for which permission is already granted —
+      // requestPermission() needs a user gesture; queryPermission() does not.
+      const perm = await handle.queryPermission({ mode: 'read' });
+      if (perm !== 'granted') continue;
+      if (SIDEBAR_ITEMS.find(s => s.type === 'fsa' && s.label === label)) continue;
+      const rootNode = makeFSANode(handle.name, handle);
+      SIDEBAR_ITEMS.unshift({ label, icon: sidebarFolderIcon('#1070cf'), type: 'fsa', node: rootNode });
+      // Compensate: unshift shifts all indices up by 1
+      activeSidebarIdx++;
+      added++;
+    }
+    if (added > 0) { render(); console.log(`FSA: restored ${added} handle(s) from IDB`); }
+  } catch (e) { console.warn('FSA IDB restore failed:', e); }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   File System Access API — lazy loading
+   ════════════════════════════════════════════════════════════════ */
+
+function makeFSANode(name, handle) {
+  return {
+    name,
+    type: handle.kind === 'directory' ? 'folder' : getFileType(name),
+    handle,
+    // null = directory not yet loaded; undefined = not applicable (file)
+    children: handle.kind === 'directory' ? null : undefined,
+    _loading: false,
+    _metaLoaded: false,
+  };
+}
+
+async function ensureLoaded(node) {
+  // Only directories with unloaded children need loading
+  if (!node || node.children !== null || node.handle?.kind !== 'directory') return;
+  // Debounce concurrent calls
+  if (node._loading) {
+    while (node._loading) await new Promise(r => setTimeout(r, 30));
+    return;
+  }
+  node._loading = true;
+  render(); // show spinner immediately
+  try {
+    const children = [];
+    for await (const [name, handle] of node.handle.entries()) {
+      if (!name.startsWith('.')) children.push(makeFSANode(name, handle));
+    }
+    children.sort((a, b) => {
+      const af = a.type === 'folder', bf = b.type === 'folder';
+      if (af !== bf) return af ? -1 : 1;
+      return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+    });
+    node.children = children;
+  } catch (err) {
+    console.warn('Cannot read', node.name, err);
+    node.children = [];
+  }
+  node._loading = false;
+}
+
+async function loadFileMeta(node) {
+  if (!node.handle || node.handle.kind !== 'file' || node._metaLoaded) return;
+  try {
+    const file = await node.handle.getFile();
+    node.size     = formatFileSize(file.size);
+    node.modified = formatDate(file.lastModified);
+    node._metaLoaded = true;
+  } catch (e) { /* permission denied etc. */ }
+}
+
+async function openFolderPicker() {
+  if (!window.showDirectoryPicker) {
+    alert('File System Access API not supported.\nUse Chrome or Edge (desktop).');
+    return;
+  }
+  try {
+    const handle = await window.showDirectoryPicker({ mode: 'read' });
+    const rootNode = makeFSANode(handle.name, handle);
+
+    // Prepend to sidebar as an FSA entry (before ensureLoaded so sidebar shows immediately)
+    const existing = SIDEBAR_ITEMS.findIndex(s => s.type === 'fsa' && s.label === handle.name);
+    if (existing >= 0) SIDEBAR_ITEMS.splice(existing, 1);
+    SIDEBAR_ITEMS.unshift({
+      label: handle.name,
+      icon: sidebarFolderIcon('#1070cf'),
+      type: 'fsa',
+      node: rootNode,
+    });
+    activeSidebarIdx = 0; // select the new entry
+
+    // Wire up state BEFORE ensureLoaded so the spinner renders into the correct column
+    sidebarRootNode = rootNode;
+    sidebarRootPath = [handle.name];
+    columns         = [{ node: rootNode, selectedName: null }];
+    selectedFile    = null;
+
+    await ensureLoaded(rootNode); // render() inside now shows spinner in col 0
+    render();
+    pushHistory();
+    saveFSAHandlesToIDB();        // persist so it survives hot-reload / page refresh
+  } catch (err) {
+    if (err.name !== 'AbortError') console.error('FSA:', err);
+  }
+}
+
+</script>
+<script>
+/* ════════════════════════════════════════════════════════════════
+   HTML helpers
+   ════════════════════════════════════════════════════════════════ */
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
+ * Return an HTML string for `name` with the best match of `query`
+ * wrapped in <mark>. Priority: prefix → substring → fuzzy.
+ * Returns plain escaped name when query is empty or there is no match.
+ */
+function highlightLabel(name, query) {
+  if (!query) return escapeHtml(name);
+  const nameLower  = name.toLowerCase();
+  const q          = query.toLowerCase();
+
+  // 1. Prefix match
+  if (nameLower.startsWith(q)) {
+    return `<mark>${escapeHtml(name.slice(0, q.length))}</mark>${escapeHtml(name.slice(q.length))}`;
+  }
+  // 2. Substring match
+  const si = nameLower.indexOf(q);
+  if (si >= 0) {
+    return `${escapeHtml(name.slice(0, si))}<mark>${escapeHtml(name.slice(si, si + q.length))}</mark>${escapeHtml(name.slice(si + q.length))}`;
+  }
+  // 3. Fuzzy — highlight individual matched chars
+  let result = '', qi = 0;
+  for (let i = 0; i < name.length; i++) {
+    if (qi < q.length && name[i].toLowerCase() === q[qi]) {
+      result += `<mark>${escapeHtml(name[i])}</mark>`;
+      qi++;
+    } else {
+      result += escapeHtml(name[i]);
+    }
+  }
+  if (qi === q.length) return result;
+  return escapeHtml(name); // no match — plain text
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Render — Sidebar
+   ════════════════════════════════════════════════════════════════ */
+function renderSidebar() {
+  const sb = document.getElementById('sidebar');
+  let html = `<div class="sidebar-section-header">Favorites</div>`;
+  SIDEBAR_ITEMS.forEach((item, idx) => {
+    const isSel = idx === activeSidebarIdx;
+    const isKbd = isSel && sidebarFocused;
+    const cls   = 'sidebar-item' + (isSel ? ' selected' : '') + (isKbd ? ' kbd-focused' : '');
+    html += `<div class="${cls}" data-sb-idx="${idx}">
+      <span class="si-icon">${item.icon}</span>
+      <span class="si-label">${escapeHtml(item.label)}</span>
+    </div>`;
+  });
+  html += `<div class="sidebar-section-header">Tags</div>`;
+  SIDEBAR_TAGS.forEach(t => {
+    html += `<div class="sidebar-item" data-tag="${t.label}">
+      <span class="si-icon"><span class="sidebar-tag-dot" style="background:${t.color}"></span></span>
+      <span class="si-label">${t.label}</span>
+    </div>`;
+  });
+  sb.innerHTML = html;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Render — Columns
+   ════════════════════════════════════════════════════════════════ */
+function renderColumns() {
+  const inner     = document.getElementById('columns-inner');
+  const container = document.getElementById('columns-container');
+  inner.innerHTML = '';
+
+  // Remove any stale placeholder
+  container.querySelectorAll('.columns-empty-state').forEach(el => el.remove());
+
+  // Builtin sidebar items (AirDrop, iCloud Drive, All My Files) show a
+  // centred placeholder instead of file columns.
+  if (sidebarBuiltin) {
+    const label = SIDEBAR_ITEMS[activeSidebarIdx]?.label || 'This location';
+    const ph = document.createElement('div');
+    ph.className = 'columns-empty-state';
+    ph.textContent = `${label} is not available in this view.`;
+    container.appendChild(ph);
+    return;
+  }
+
+  columns.forEach((col, ci) => {
+    const colEl = document.createElement('div');
+    const isFocused = ci === focusedColIdx && !sidebarFocused;
+    colEl.className = 'col' + (isFocused ? ' focused' : '');
+    colEl.dataset.colidx = ci;
+
+    const scroll = document.createElement('div');
+    scroll.className = 'col-scroll';
+
+    if (col.node._loading) {
+      // Show spinner while FSA directory loads
+      const ld = document.createElement('div');
+      ld.className = 'col-loading';
+      ld.innerHTML = '<div class="spinner"></div> Loading…';
+      scroll.appendChild(ld);
+    } else {
+      const items = getChildrenFiltered(col.node) || [];
+      if (items.length === 0 && col.node.children !== null) {
+        const empty = document.createElement('div');
+        empty.className = 'col-loading';
+        empty.textContent = 'Empty';
+        scroll.appendChild(empty);
+      }
+      // Only apply type-ahead highlights to the focused column
+      const queryForHighlight = isFocused ? colSearch : '';
+      items.forEach(item => {
+        const isFolder   = item.type === 'folder';
+        const isSelected = item.name === col.selectedName;
+        const div = document.createElement('div');
+        div.className   = 'col-item' + (isSelected ? ' selected-active' : '');
+        div.dataset.colidx = ci;
+        div.dataset.name   = item.name;
+        div.innerHTML = `<span class="item-icon">${getIconSVG(item)}</span>` +
+                        `<span class="item-label">${highlightLabel(item.name, queryForHighlight)}</span>` +
+                        (isFolder && !(Array.isArray(item.children) && item.children.length === 0) ? '<span class="col-arrow">▶</span>' : '');
+        scroll.appendChild(div);
+      });
+    }
+
+    const rh = document.createElement('div');
+    rh.className = 'col-resize';
+    rh.dataset.colidx = ci;
+
+    colEl.appendChild(scroll);
+    colEl.appendChild(rh);
+    inner.appendChild(colEl);
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Render — Preview Panel
+   ════════════════════════════════════════════════════════════════ */
+function renderPreview() {
+  const pv = document.getElementById('preview');
+  const f  = selectedFile;
+
+  if (!f) {
+    // Show selected folder info if any
+    const lastSel = columns.findLast(c => c.selectedName);
+    const child   = lastSel?.node.children?.find(c => c.name === lastSel.selectedName);
+    if (child?.type === 'folder') {
+      const count = child.children === null ? '—' : child.children.length;
+      pv.innerHTML =
+        `<div style="margin-top:16px">${bigFolderSVG()}</div>
+         <div id="preview-name">${child.name}</div>
+         <div id="preview-kind">Folder</div>
+         <div id="preview-sep"></div>
+         <div id="preview-meta">
+           <div class="meta-row"><span class="meta-key">Items</span><span class="meta-val">${count}</span></div>
+         </div>
+         <div id="preview-tags"><a>Add Tags…</a></div>`;
+    } else {
+      pv.innerHTML = '<div id="preview-empty">Select a file<br>to see a preview</div>';
+    }
+    return;
+  }
+
+  const ext = f.name.split('.').pop().toLowerCase();
+  const kindMap = {
+    tiff:'TIFF image', tif:'TIFF image',
+    jpg:'JPEG image', jpeg:'JPEG image',
+    png:'PNG image', gif:'GIF image', webp:'WebP image', heic:'HEIC image',
+    mp4:'MPEG-4 movie', mov:'QuickTime movie',
+    mp3:'MP3 audio', aac:'AAC audio',
+    pdf:'PDF document', doc:'Word document', docx:'Word document',
+    txt:'Plain text', md:'Markdown text',
+    zip:'ZIP archive', dmg:'Disk Image', pkg:'Installer package',
+    pages:'Pages document', numbers:'Numbers spreadsheet', key:'Keynote presentation',
+  };
+  const kind = kindMap[ext] || (f.type === 'app' ? 'Application' : 'Document');
+
+  pv.innerHTML =
+    `<div id="preview-icon">${getBigIcon(f)}</div>
+     <div id="preview-name">${f.name}</div>
+     <div id="preview-kind">${kind}</div>
+     <div id="preview-sep"></div>
+     <div id="preview-meta">
+       ${f.size       ? `<div class="meta-row"><span class="meta-key">Size</span><span class="meta-val">${f.size}</span></div>` : ''}
+       ${f.created    ? `<div class="meta-row"><span class="meta-key">Created</span><span class="meta-val">${f.created}</span></div>` : ''}
+       ${f.modified   ? `<div class="meta-row"><span class="meta-key">Modified</span><span class="meta-val">${f.modified}</span></div>` : ''}
+       ${f.lastOpened ? `<div class="meta-row"><span class="meta-key">Last opened</span><span class="meta-val">${f.lastOpened}</span></div>` : ''}
+       ${f.dims       ? `<div class="meta-row"><span class="meta-key">Dimensions</span><span class="meta-val">${f.dims}</span></div>` : ''}
+     </div>
+     <div id="preview-tags"><a>Add Tags…</a></div>`;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Render — Path Bar & Status Bar
+   ════════════════════════════════════════════════════════════════ */
+function renderPathBar() {
+  const pb = document.getElementById('pathbar');
+  if (sidebarBuiltin) {
+    const si = SIDEBAR_ITEMS[activeSidebarIdx];
+    pb.innerHTML = si ? `<span class="path-item active">${si.label}</span>` : '';
+    return;
+  }
+  const allNames = [...sidebarRootPath, ...getFullPath()];
+  let html = '';
+  allNames.forEach((name, i) => {
+    const last = i === allNames.length - 1;
+    html += `<span class="path-item${last ? ' active' : ''}" data-pathidx="${i}">${name}</span>`;
+    if (!last) html += `<span class="path-sep">▸</span>`;
+  });
+  pb.innerHTML = html || '<span class="path-item">Finder</span>';
+}
+
+function renderStatusBar() {
+  const sb = document.getElementById('statusbar');
+  if (selectedFile) {
+    const parentCol = columns.findLast(c => c.selectedName &&
+      c.node.children?.find(ch => ch.name === c.selectedName && ch.type !== 'folder'));
+    const total = parentCol ? parentCol.node.children.length : 1;
+    sb.textContent = `1 of ${total} selected, 709.59 GB available`;
+  } else {
+    const lastSel = columns.findLast(c => c.selectedName);
+    const child   = lastSel?.node.children?.find(c => c.name === lastSel.selectedName);
+    if (child?.type === 'folder' && child.children !== null) {
+      sb.textContent = `${child.children.length} items, 709.59 GB available`;
+    } else {
+      sb.textContent = '709.59 GB available';
+    }
+  }
+}
+
+function render() {
+  renderSidebar();
+  renderColumns();
+  renderPreview();
+  renderPathBar();
+  renderStatusBar();
+  applyColumnWidths();
+  // Scroll after paint so the DOM is fully laid out
+  requestAnimationFrame(() => {
+    scrollSelectedIntoView();
+  });
+  // Window title = deepest open folder (last column's node), matching real Finder
+  // behaviour where the title shows the folder whose *contents* are displayed,
+  // not the name of the selected file within it.
+  const si = SIDEBAR_ITEMS[activeSidebarIdx];
+  const windowTitle = sidebarBuiltin
+    ? (si?.label || 'Finder')
+    : (columns.at(-1)?.node.name || si?.label || 'Finder');
+  document.title = windowTitle === 'Finder' ? 'Finder' : `${windowTitle} — Finder`;
+  const wt = document.getElementById('window-title');
+  if (wt) wt.textContent = windowTitle;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Scroll active item into view within its column
+   ════════════════════════════════════════════════════════════════ */
+function scrollSelectedIntoView() {
+  document.querySelectorAll('.col-item.selected-active').forEach(el => {
+    el.scrollIntoView({ block: 'nearest' });
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Dynamic column width — canvas.measureText()
+   ════════════════════════════════════════════════════════════════ */
+function applyColumnWidths() {
+  if (globalColWidth > 0) {
+    document.documentElement.style.setProperty('--col-width', globalColWidth + 'px');
+    return;
+  }
+
+  const container = document.getElementById('columns-container');
+  const available = container.offsetWidth;
+  const numCols   = columns.length;
+  if (numCols === 0 || sidebarBuiltin) return;
+
+  const canvas = document.createElement('canvas');
+  const ctx    = canvas.getContext('2d');
+  // Match the font used for column items
+  ctx.font = '13px -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif';
+
+  let maxTextWidth = 80;
+  columns.forEach(col => {
+    const items = getChildrenFiltered(col.node) || [];
+    items.forEach(item => {
+      const w = ctx.measureText(item.name).width;
+      if (w > maxTextWidth) maxTextWidth = w;
+    });
+  });
+
+  // icon (16) + gap (5) + text + right-pad (24 for arrow) + left-pad (8)
+  const padding   = 16 + 5 + 24 + 8 + 8;
+  const computed  = Math.min(maxTextWidth + padding, Math.floor(available / numCols));
+  const clamped   = Math.max(120, Math.min(600, computed));
+  document.documentElement.style.setProperty('--col-width', clamped + 'px');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Auto-scroll columns to keep selection visible
+   ════════════════════════════════════════════════════════════════ */
+function scrollToActiveColumn() {
+  const container = document.getElementById('columns-container');
+  const inner     = document.getElementById('columns-inner');
+  setTimeout(() => { container.scrollLeft = inner.scrollWidth; }, 0);
+}
+
+</script>
+<script>
+/* ════════════════════════════════════════════════════════════════
+   Type-ahead helpers
+   ════════════════════════════════════════════════════════════════ */
+function clearColSearch(doRender = true) {
+  clearTimeout(colSearchTimer);
+  colSearchTimer = null;
+  if (!colSearch) return;
+  colSearch = '';
+  // Commit the type-ahead landing position to history now that the
+  // search is done, then re-render without highlights.
+  pushHistory();
+  if (doRender) render();
+}
+
+function findColSearchMatch(items, query) {
+  const q = query.toLowerCase();
+  // 1. Exact prefix
+  let m = items.find(i => i.name.toLowerCase().startsWith(q));
+  if (m) return m;
+  // 2. Substring
+  m = items.find(i => i.name.toLowerCase().includes(q));
+  if (m) return m;
+  // 3. Fuzzy — all query chars appear in order
+  return items.find(i => {
+    let qi = 0;
+    for (const c of i.name.toLowerCase()) {
+      if (c === q[qi]) { qi++; if (qi === q.length) return true; }
+    }
+    return false;
+  }) || null;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Keyboard Navigation
+   ════════════════════════════════════════════════════════════════ */
+document.getElementById('columns-container').addEventListener('keydown', async e => {
+  const isPrintable = e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey;
+  const isBackspace = e.key === 'Backspace';
+  const isEscape    = e.key === 'Escape';
+  const isArrow     = e.key.startsWith('Arrow');
+  const isEnter     = e.key === 'Enter';
+  const isHome      = e.key === 'Home';
+  const isEnd       = e.key === 'End';
+
+  if (!isPrintable && !isBackspace && !isEscape && !isArrow && !isEnter && !isHome && !isEnd) return;
+  if (isArrow || isEnter || isHome || isEnd) e.preventDefault();
+
+  /* ── Sidebar focus mode ─────────────────────────────────────── */
+  if (sidebarFocused) {
+    if (isArrow || isEnter) {
+      e.preventDefault();
+      if (e.key === 'ArrowUp') {
+        const newIdx = Math.max(0, activeSidebarIdx - 1);
+        if (newIdx !== activeSidebarIdx) {
+          activeSidebarIdx = newIdx;
+          const si = SIDEBAR_ITEMS[activeSidebarIdx];
+          if (si?.type === 'mock') { sidebarBuiltin = false; initToMockPath(si.path, []); }
+          else if (si?.type === 'fsa') {
+            sidebarBuiltin  = false;
+            sidebarRootNode = si.node;
+            sidebarRootPath = [si.node.name];
+            columns         = [{ node: si.node, selectedName: null }];
+            selectedFile    = null;
+          } else { sidebarBuiltin = true; columns = []; selectedFile = null; }
+          render();
+          scrollToActiveColumn();
+          pushHistory();
+        }
+      } else if (e.key === 'ArrowDown') {
+        const newIdx = Math.min(SIDEBAR_ITEMS.length - 1, activeSidebarIdx + 1);
+        if (newIdx !== activeSidebarIdx) {
+          activeSidebarIdx = newIdx;
+          const si = SIDEBAR_ITEMS[activeSidebarIdx];
+          if (si?.type === 'mock') { sidebarBuiltin = false; initToMockPath(si.path, []); }
+          else if (si?.type === 'fsa') {
+            sidebarBuiltin  = false;
+            sidebarRootNode = si.node;
+            sidebarRootPath = [si.node.name];
+            columns         = [{ node: si.node, selectedName: null }];
+            selectedFile    = null;
+          } else { sidebarBuiltin = true; columns = []; selectedFile = null; }
+          render();
+          scrollToActiveColumn();
+          pushHistory();
+        }
+      } else if (e.key === 'ArrowRight' || isEnter) {
+        // Move keyboard focus into column 0, restoring the last highlighted item
+        if (columns.length > 0) {
+          sidebarFocused = false;
+          focusedColIdx = 0;
+          const col0  = columns[0];
+          const items = getChildrenFiltered(col0.node) || [];
+          const saved = col0.node._lastSelected
+            ? items.find(i => i.name === col0.node._lastSelected)?.name
+            : null;
+          if (saved) {
+            await navigateTo(0, saved);
+          } else {
+            render();
+          }
+        }
+      }
+      // ArrowLeft in sidebar → do nothing (already at leftmost)
+    }
+    return; // swallow all other keys while sidebar is focused
+  }
+
+  /* ── Type-ahead search ──────────────────────────────────────── */
+  if (isPrintable || isBackspace || isEscape) {
+    if (isEscape) { clearColSearch(); return; }
+    if (isBackspace) {
+      if (colSearch.length > 0) colSearch = colSearch.slice(0, -1);
+      else return;
+    } else {
+      colSearch += e.key;
+    }
+
+    if (colSearch) {
+      clearTimeout(colSearchTimer);
+      colSearchTimer = setTimeout(clearColSearch, 1500);
+
+      if (focusedColIdx < 0 || focusedColIdx >= columns.length)
+        focusedColIdx = columns.length - 1;
+
+      const col   = columns[focusedColIdx];
+      const items = getChildrenFiltered(col.node) || [];
+      const match = findColSearchMatch(items, colSearch);
+      if (match) {
+        // Navigate without pushing history — clearColSearch will commit it
+        await navigateTo(focusedColIdx, match.name, { skipHistory: true });
+      } else {
+        render(); // still re-render to show updated highlights
+      }
+    } else {
+      // colSearch became empty via backspace — just re-render, don't commit
+      clearTimeout(colSearchTimer);
+      colSearchTimer = null;
+      render();
+    }
+    return;
+  }
+
+  /* ── Arrow / Enter navigation ───────────────────────────────── */
+  // Any arrow key clears type-ahead (without a history commit — we're
+  // about to navigate somewhere new, which will push its own entry).
+  if (colSearch) {
+    clearTimeout(colSearchTimer);
+    colSearchTimer = null;
+    colSearch = '';
+    // No render here — navigation below will render
+  }
+
+  if (focusedColIdx < 0 || focusedColIdx >= columns.length)
+    focusedColIdx = columns.length - 1;
+
+  const col   = columns[focusedColIdx];
+  if (!col && e.key !== 'ArrowLeft') return;
+
+  // col may be undefined when columns=[] (builtin empty-state) and key=ArrowLeft
+  const items  = col ? (getChildrenFiltered(col.node) || []) : [];
+  const curIdx = col?.selectedName ? items.findIndex(i => i.name === col.selectedName) : -1;
+
+  if (e.key === 'ArrowDown') {
+    const next = curIdx < 0 ? 0 : Math.min(curIdx + 1, items.length - 1);
+    if (items[next]) await navigateTo(focusedColIdx, items[next].name);
+
+  } else if (e.key === 'ArrowUp') {
+    const prev = curIdx < 0 ? 0 : Math.max(curIdx - 1, 0);
+    if (items[prev]) await navigateTo(focusedColIdx, items[prev].name);
+
+  } else if (isHome) {
+    if (items[0]) await navigateTo(focusedColIdx, items[0].name);
+
+  } else if (isEnd) {
+    const last = items[items.length - 1];
+    if (last) await navigateTo(focusedColIdx, last.name);
+
+  } else if (e.key === 'ArrowRight') {
+    const nextIdx = focusedColIdx + 1;
+    if (nextIdx < columns.length) {
+      // Column already exists — move into it
+      const nextCol = columns[nextIdx];
+      if (nextCol.selectedName) {
+        focusedColIdx = nextIdx;
+        render();
+      } else {
+        const nextItems = getChildrenFiltered(nextCol.node) || [];
+        if (nextItems.length > 0) {
+          focusedColIdx = nextIdx;
+          // Restore last-selected item, fall back to topmost
+          const itemName = nextCol.node._lastSelected
+            ? nextItems.find(i => i.name === nextCol.node._lastSelected)?.name
+            : null;
+          await navigateTo(nextIdx, itemName || nextItems[0].name);
+        }
+        // else: empty column — do nothing (no-op)
+      }
+    } else {
+      // No next column yet — try to open the selected folder
+      if (col.selectedName) {
+        const child = col.node.children?.find(c => c.name === col.selectedName);
+        if (child?.type === 'folder') {
+          const lenBefore = columns.length;
+          await navigateTo(focusedColIdx, col.selectedName);
+          if (columns.length > lenBefore) focusedColIdx = columns.length - 1;
+        }
+      }
+    }
+
+  } else if (e.key === 'ArrowLeft') {
+    // Find the rightmost column that has a selection
+    let rightmost = -1;
+    for (let i = columns.length - 1; i >= 0; i--) {
+      if (columns[i].selectedName) { rightmost = i; break; }
+    }
+    if (rightmost >= 0) {
+      columns[rightmost].selectedName = null;
+      columns = columns.slice(0, rightmost + 1);
+      selectedFile = null;
+      if (rightmost === 0) {
+        // Leftmost column had the only selection — retreat to sidebar
+        sidebarFocused = true;
+        focusedColIdx  = -1;
+      } else {
+        focusedColIdx = rightmost - 1;
+      }
+      render();
+      pushHistory();
+    } else if (focusedColIdx > 0) {
+      focusedColIdx--;
+      render();
+    } else {
+      // Already at leftmost column with no selection — go to sidebar
+      sidebarFocused = true;
+      focusedColIdx  = -1;
+      render();
+    }
+
+  } else if (e.key === 'Enter') {
+    if (col.selectedName) await navigateTo(focusedColIdx, col.selectedName);
+  }
+});
+
+/* ════════════════════════════════════════════════════════════════
+   Column item clicks
+   ════════════════════════════════════════════════════════════════ */
+document.getElementById('columns-inner').addEventListener('click', async e => {
+  const item = e.target.closest('.col-item');
+  if (!item) return;
+  // Clicking a column always cancels type-ahead and sidebar focus
+  clearColSearch(false);
+  sidebarFocused = false;
+  focusedColIdx = parseInt(item.dataset.colidx);
+  await navigateTo(focusedColIdx, item.dataset.name);
+  document.getElementById('columns-container').focus();
+});
+
+/* ════════════════════════════════════════════════════════════════
+   Sidebar clicks
+   ════════════════════════════════════════════════════════════════ */
+document.getElementById('sidebar').addEventListener('click', async e => {
+  const item = e.target.closest('.sidebar-item');
+  if (!item) return;
+  const idx = parseInt(item.dataset.sbIdx);
+  if (isNaN(idx)) return;
+  const si = SIDEBAR_ITEMS[idx];
+  if (!si) return;
+
+  activeSidebarIdx = idx;
+  clearColSearch(false);
+  sidebarFocused = false;
+  focusedColIdx  = 0;
+  globalColWidth = 0; // reset drag-override on sidebar change
+
+  if (si.type === 'fsa') {
+    sidebarBuiltin  = false;
+    sidebarRootNode = si.node;
+    sidebarRootPath = [si.node.name];
+    columns         = [{ node: si.node, selectedName: null }];
+    selectedFile    = null;
+  } else if (si.type === 'mock') {
+    sidebarBuiltin = false;
+    initToMockPath(si.path, []);
+  } else {
+    // builtin (AirDrop, iCloud Drive, All My Files, …) — show placeholder
+    sidebarBuiltin  = true;
+    sidebarRootNode = MOCK_FS;
+    sidebarRootPath = [];
+    columns         = [];
+    selectedFile    = null;
+  }
+  render();
+  scrollToActiveColumn();
+  pushHistory();
+  // Return keyboard focus to the columns area after sidebar click
+  document.getElementById('columns-container').focus();
+});
+
+/* ════════════════════════════════════════════════════════════════
+   Open Folder button (FSA)
+   ════════════════════════════════════════════════════════════════ */
+document.getElementById('btn-open-folder').addEventListener('click', openFolderPicker);
+
+/* ════════════════════════════════════════════════════════════════
+   Column resize (drag) — adjusts globalColWidth so all columns
+   resize together (matches real macOS Finder column-view behaviour)
+   ════════════════════════════════════════════════════════════════ */
+let resizing = null;
+document.getElementById('columns-inner').addEventListener('mousedown', e => {
+  const rh = e.target.closest('.col-resize');
+  if (!rh) return;
+  e.preventDefault();
+  const colEl = rh.parentElement;
+  resizing = { startX: e.clientX, startW: colEl.offsetWidth };
+  document.body.classList.add('col-resizing');
+});
+document.addEventListener('mousemove', e => {
+  if (!resizing) return;
+  const w = Math.max(120, Math.min(600, resizing.startW + e.clientX - resizing.startX));
+  globalColWidth = w;
+  document.documentElement.style.setProperty('--col-width', w + 'px');
+});
+document.addEventListener('mouseup', () => {
+  resizing = null;
+  document.body.classList.remove('col-resizing');
+});
+
+/* ════════════════════════════════════════════════════════════════
+   View mode toggle
+   ════════════════════════════════════════════════════════════════ */
+document.querySelectorAll('.view-btn').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}));
+
+/* ════════════════════════════════════════════════════════════════
+   Back / Forward
+   ════════════════════════════════════════════════════════════════ */
+document.getElementById('btn-back').addEventListener('click', () => {
+  if (historyIndex > 0) { historyIndex--; restoreState(historyStack[historyIndex]); }
+});
+document.getElementById('btn-fwd').addEventListener('click', () => {
+  if (historyIndex < historyStack.length - 1) { historyIndex++; restoreState(historyStack[historyIndex]); }
+});
+
+/* ════════════════════════════════════════════════════════════════
+   Search
+   ════════════════════════════════════════════════════════════════ */
+document.getElementById('search-input').addEventListener('input', e => {
+  clearColSearch(false);
+  sidebarFocused = false;
+  searchQuery = e.target.value.trim();
+  render();
+});
+
+/* ════════════════════════════════════════════════════════════════
+   Path bar clicks
+   ════════════════════════════════════════════════════════════════ */
+document.getElementById('pathbar').addEventListener('click', async e => {
+  const item = e.target.closest('.path-item');
+  if (!item) return;
+  const idx   = parseInt(item.dataset.pathidx);
+  const sbLen = sidebarRootPath.length;
+
+  if (idx < sbLen - 1) {
+    // Clicked an ancestor above the sidebar root — navigate in mock FS
+    const newSbPath = sidebarRootPath.slice(0, idx + 1);
+    initToMockPath(newSbPath, []);
+    const str = newSbPath.join('/');
+    const mi  = SIDEBAR_ITEMS.findIndex(s => s.path?.join('/') === str);
+    if (mi >= 0) activeSidebarIdx = mi;
+  } else {
+    // Within column-relative path
+    const colRelIdx = idx - sbLen;
+    if (colRelIdx >= 0 && colRelIdx < columns.length && columns[colRelIdx].selectedName) {
+      await navigateTo(colRelIdx, columns[colRelIdx].selectedName);
+    }
+  }
+  render();
+  pushHistory();
+});
+
+</script>
+<script>
+/* ════════════════════════════════════════════════════════════════
+   PWA Setup
+   ════════════════════════════════════════════════════════════════ */
+(function setupPWA() {
+  const manifest = {
+    name: 'Finder — Column View', short_name: 'Finder',
+    start_url: '.', display: 'standalone',
+    background_color: '#ececec', theme_color: '#c8c8c8',
+    icons: [{ src: 'data:image/svg+xml,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">' +
+      '<rect width="192" height="192" rx="40" fill="#1070cf"/>' +
+      '<text x="96" y="130" font-size="110" text-anchor="middle" fill="white">⌘</text></svg>'
+    ), sizes: '192x192', type: 'image/svg+xml' }]
+  };
+  const mlink = document.createElement('link');
+  mlink.rel = 'manifest';
+  mlink.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' }));
+  document.head.appendChild(mlink);
+
+  if ('serviceWorker' in navigator) {
+    const sw = `const C='finder-v1';
+self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.add('/')));self.skipWaiting();});
+self.addEventListener('activate',e=>{self.clients.claim();});
+self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;
+    navigator.serviceWorker.register(
+      URL.createObjectURL(new Blob([sw], { type: 'application/javascript' }))
+    ).catch(() => {});
+  }
+})();
+
+/* ════════════════════════════════════════════════════════════════
+   Init — start with mock data (OWC → Images → Finder Views Column Cover → ColumnView.tiff)
+   ════════════════════════════════════════════════════════════════ */
+// Derive activeSidebarIdx from the label so it's resilient to list reordering
+activeSidebarIdx = SIDEBAR_ITEMS.findIndex(s => s.label === 'OWC');
+
+initToMockPath(
+  ['Users', 'casey', 'OWC'],
+  ['Images', 'Finder Views Column Cover', 'ColumnView.tiff']
+);
+render();
+scrollToActiveColumn();
+pushHistory();
+
+setTimeout(() => {
+  document.getElementById('columns-container').focus();
+  focusedColIdx = Math.max(0, columns.length - 2);
+}, 50);
+
+// Restore previously-authorised FSA handles from IndexedDB (no user gesture needed
+// for queryPermission — only 'granted' ones are restored silently).
+restoreFSAHandlesFromIDB();
+
+</script>
+</body>
+</html>
