@@ -1,5 +1,7 @@
 # pykofinder Tasks
 
+Bugs and feature requests are tracked in [ISSUES.md](ISSUES.md).
+
 ## Done
 
 - [x] `pyproject.toml` – project metadata, deps, entry point
@@ -17,7 +19,10 @@
 - [ ] Selected state styling – clicking a `<li>` should add `selected` class to it and remove from siblings (requires a small JS snippet in the column or HTMX `hx-on::after-request` to toggle the class)
 - [ ] Pagination for large directories (> 500 entries)
 - [ ] Search/filter within a column
-- [ ] Image preview (`.png`, `.jpg`, `.gif`, `.svg` → `<img>` tag)
+- [ ] Image preview – PNG, JPEG, GIF, WebP, SVG → `<img>` tag ([#1](ISSUES.md#1--add-png-and-jpeg-preview))
+- [ ] Tooltip for truncated filenames ([#2](ISSUES.md#2--show-full-filename-in-tooltip-when-truncated))
+- [ ] Auto-adjust column width to fit longest visible filename ([#3](ISSUES.md#3--auto-adjust-column-width-to-fit-longest-filename))
+- [ ] Zoom button to expand preview to full page width ([#4](ISSUES.md#4--zoom-button-expand-preview-to-full-page-width))
 - [ ] Code file preview (plain text with syntax highlighting)
 - [ ] PPTX slide image rendering via LibreOffice (better fidelity than text extraction)
 - [ ] Breadcrumb / path display above the columns
