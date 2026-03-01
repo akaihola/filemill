@@ -28,12 +28,17 @@ and a subtle checkerboard background for transparency.
 ## #2 – Show full filename in tooltip when truncated
 
 **Type:** UX / bug
-**Status:** open
+**Status:** closed
+**Closed:** 2026-03-01
 
 Column entries are fixed-width and long filenames are clipped with CSS `text-overflow:
 ellipsis`. When a filename is clipped the user has no way to read it. Add a `title`
 attribute to every `<li>` (or its inner `<span>`) containing the full filename so the
 browser shows a native tooltip on hover.
+
+**Implemented:** `columns.py` – added `title=p.name` to both `A(...)` calls in
+`list_column()` (directory branch and file branch).
+**Prune after:** 2026-05-30
 
 ---
 
