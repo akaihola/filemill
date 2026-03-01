@@ -76,6 +76,7 @@ body {
 
 .preview-md {
     max-width: 800px;
+    margin: 0 auto;
     line-height: 1.6;
 }
 
