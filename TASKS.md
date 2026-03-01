@@ -24,7 +24,8 @@ after:** YYYY-MM-DD` (closed date + 90 days) in ISSUES.md, then move the entry h
 
 ## In progress
 
-_(nothing currently in progress)_
+- [~] Zoom button to expand preview to full page width ([#4](ISSUES.md#4--zoom-button-expand-preview-to-full-page-width)) –
+  CSS + JS implemented in `styles.py`; awaiting manual browser test
 
 ---
 
@@ -37,7 +38,6 @@ _Items without an issue number are not yet tracked in ISSUES.md._
       toggle the class)
 - [ ] Pagination for large directories (> 500 entries)
 - [ ] Search/filter within a column
-- [ ] Zoom button to expand preview to full page width ([#4](ISSUES.md#4--zoom-button-expand-preview-to-full-page-width))
 - [ ] URL sync and deep-link navigation ([#5](ISSUES.md#5--url-reflects-current-path-deep-link-navigation))
 - [ ] Auto-reload on code change – `--live` flag / service unit update ([#6](ISSUES.md#6--auto-reload-on-code-change))
 - [ ] Preview unrecognised text files raw – UTF-8 fallback to `<pre>` block ([#7](ISSUES.md#7--preview-unrecognised-text-files-raw))
