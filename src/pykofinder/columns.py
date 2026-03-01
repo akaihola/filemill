@@ -17,6 +17,8 @@ def entry_icon(p: Path) -> str:
         return "📄"
     elif ext == ".pptx":
         return "🎞"
+    elif ext in (".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"):
+        return "🖼"
     elif ext in (".xlsx", ".xls", ".csv"):
         return "📊"
     else:
