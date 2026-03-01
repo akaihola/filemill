@@ -32,9 +32,7 @@ _(nothing currently in progress)_
 
 _Items without an issue number are not yet tracked in ISSUES.md._
 
-- [ ] Selected state styling – clicking a `<li>` should add `selected` class to it and
-      remove from siblings (requires a small JS snippet or `hx-on::after-request` to
-      toggle the class)
+- [ ] Selected state – active directory/file entries must stay highlighted; directory whose contents are shown in the next column, and file whose preview is showing, both need a persistent `selected` background ([#10](ISSUES.md#10--selectedDirectoriesfiles-must-stay-highlighted))
 - [ ] Pagination for large directories (> 500 entries)
 - [ ] Search/filter within a column
 - [ ] URL sync and deep-link navigation ([#5](ISSUES.md#5--url-reflects-current-path-deep-link-navigation))
