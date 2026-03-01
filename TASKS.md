@@ -23,6 +23,7 @@ Bugs and feature requests are tracked in [ISSUES.md](ISSUES.md).
 - [ ] Tooltip for truncated filenames ([#2](ISSUES.md#2--show-full-filename-in-tooltip-when-truncated))
 - [ ] Auto-adjust column width to fit longest visible filename ([#3](ISSUES.md#3--auto-adjust-column-width-to-fit-longest-filename))
 - [ ] Zoom button to expand preview to full page width ([#4](ISSUES.md#4--zoom-button-expand-preview-to-full-page-width))
+- [ ] URL sync and deep-link navigation ([#5](ISSUES.md#5--url-reflects-current-path-deep-link-navigation))
 - [ ] Code file preview (plain text with syntax highlighting)
 - [ ] PPTX slide image rendering via LibreOffice (better fidelity than text extraction)
 - [ ] Breadcrumb / path display above the columns

@@ -57,6 +57,49 @@ keeps the pane zoomed).
 
 ---
 
+### #5 – URL reflects current path; deep-link navigation
+
+**Type:** feature
+
+The browser URL should stay in sync with the currently selected file or directory as the
+user navigates the column view, and pasting or opening a URL should restore the exact same
+view.
+
+**URL scheme** – encode the selected path as a URL-encoded subpath after the origin, e.g.:
+
+```
+https://gogo.crane-boa.ts.net:8445/browse/paivi/documents/reports/2025/budget.pdf
+```
+
+or as a query parameter if a subpath conflicts with existing routes:
+
+```
+https://gogo.crane-boa.ts.net:8445/?path=reports/2025/budget.pdf
+```
+
+**Sync while navigating** – after every successful `/click` response, call
+`history.pushState()` (or `replaceState` for intermediate directory columns) to update the
+browser URL without a full page reload. No server round-trip needed for the URL update
+itself.
+
+**Deep-link on load** – when the page is loaded with a non-root path, the server (or
+client-side JS on `DOMContentLoaded`) should:
+
+1. Split the path into its components (e.g. `reports`, `2025`, `budget.pdf`).
+2. Sequentially open one column per component, exactly as if the user had clicked each
+   entry.
+3. Scroll the column strip to show the rightmost column and, if the final component is a
+   file, render its preview.
+
+**Edge cases to handle:**
+
+- Path no longer exists → show an error column or fall back to root.
+- Path escapes the configured root → reject (same `_resolve_safe` logic).
+- Browser back/forward buttons → listen to `popstate` and re-render columns to match the
+  URL that was popped.
+
+---
+
 ## Closed
 
 _(none yet)_
