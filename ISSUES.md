@@ -1,21 +1,34 @@
 # Issues
 
-## Open
+Each issue has an explicit **Status** field: `open`, `in-progress`, or `closed`.
 
-### #1 – Add PNG and JPEG preview
+When closing an issue, set `**Status:** closed` and add a `**Closed:** YYYY-MM-DD` date.
+**Closed issues are pruned from this file 90 days after their closed date.** Remove both
+the issue block here and the corresponding `[x]` line in TASKS.md at that point.
+
+---
+
+## #1 – Add PNG and JPEG preview
 
 **Type:** feature
+**Status:** closed
+**Closed:** 2026-03-01
 
 Show inline image preview for `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, and `.svg` files
 when clicked in the column view. Render as a plain `<img>` tag (served via the existing
 `/raw` endpoint) with `max-width: 100%` and `max-height: 100%` inside the preview pane,
 and a subtle checkerboard background for transparency.
 
+**Implemented:** `preview.py` (`IMAGE_EXTS` constant + `_preview_image()`), `styles.py`
+(`.preview-image` CSS), `columns.py` (`🖼` icon for image extensions).
+**Prune after:** 2026-05-30
+
 ---
 
-### #2 – Show full filename in tooltip when truncated
+## #2 – Show full filename in tooltip when truncated
 
 **Type:** UX / bug
+**Status:** open
 
 Column entries are fixed-width and long filenames are clipped with CSS `text-overflow:
 ellipsis`. When a filename is clipped the user has no way to read it. Add a `title`
@@ -24,9 +37,10 @@ browser shows a native tooltip on hover.
 
 ---
 
-### #3 – Auto-adjust column width to fit longest filename
+## #3 – Auto-adjust column width to fit longest filename
 
 **Type:** UX / feature
+**Status:** open
 
 Column width is currently hard-coded to 220 px. Instead, compute the width from the
 longest filename in the currently-visible columns (all columns share the same width),
@@ -40,9 +54,10 @@ The width should be recalculated whenever a new column is opened or closed.
 
 ---
 
-### #4 – Zoom button: expand preview to full page width
+## #4 – Zoom button: expand preview to full page width
 
 **Type:** feature
+**Status:** open
 
 Add a small toggle button (e.g. ⛶ / ✕ or a magnifier icon) in the top-right corner of
 the preview pane. When activated:
@@ -57,9 +72,10 @@ keeps the pane zoomed).
 
 ---
 
-### #5 – URL reflects current path; deep-link navigation
+## #5 – URL reflects current path; deep-link navigation
 
 **Type:** feature
+**Status:** open
 
 The browser URL should stay in sync with the currently selected file or directory as the
 user navigates the column view, and pasting or opening a URL should restore the exact same
@@ -100,9 +116,10 @@ client-side JS on `DOMContentLoaded`) should:
 
 ---
 
-### #6 – Auto-reload on code change
+## #6 – Auto-reload on code change
 
 **Type:** developer experience
+**Status:** open
 
 When running in development, the server should automatically restart whenever a source
 file under `src/pykofinder/` is modified, so the developer never has to manually restart
@@ -115,9 +132,10 @@ any `.py` change.
 
 ---
 
-### #7 – Preview unrecognised text files raw
+## #7 – Preview unrecognised text files raw
 
 **Type:** feature
+**Status:** open
 
 Files whose extension is not explicitly handled (no Markdown renderer, no Office
 converter, no PDF viewer, no image tag) but which are valid UTF-8 text should still be
@@ -134,19 +152,3 @@ Implementation sketch:
    "No preview available" message.
 4. Add a `.preview-raw` CSS rule (monospace font, wrapping, subtle background) to
    `styles.py`.
-
----
-
-## Closed
-
-### #1 – Add PNG and JPEG preview ✓
-
-**Type:** feature
-
-Show inline image preview for `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, and `.svg` files
-when clicked in the column view. Render as a plain `<img>` tag (served via the existing
-`/raw` endpoint) with `max-width: 100%` and `max-height: 100%` inside the preview pane,
-and a subtle checkerboard background for transparency.
-
-**Implemented:** `preview.py` (`IMAGE_EXTS` constant + `_preview_image()`), `styles.py`
-(`.preview-image` CSS), `columns.py` (`🖼` icon for image extensions).
