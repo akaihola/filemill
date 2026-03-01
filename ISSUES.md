@@ -157,3 +157,22 @@ Implementation sketch:
    "No preview available" message.
 4. Add a `.preview-raw` CSS rule (monospace font, wrapping, subtle background) to
    `styles.py`.
+
+---
+
+## #8 – Move project context to AGENTS.md for pi auto-loading
+
+**Type:** chore / developer experience
+**Status:** closed
+**Closed:** 2026-03-01
+
+Pi Coding Agent auto-loads `AGENTS.md` (walking up from cwd), but does **not** auto-load
+`.claude/CLAUDE.md` (a Claude Code convention). The deployment and project context that
+lived in `.claude/CLAUDE.md` was therefore invisible to pi at session start.
+
+**Fix:** moved content to `./AGENTS.md` (gitignored via `.gitignore`); `.claude/CLAUDE.md`
+now contains only `@../AGENTS.md` so Claude Code still picks it up via its reference
+syntax.
+
+**Files changed:** `AGENTS.md` (new, gitignored), `.claude/CLAUDE.md`, `.gitignore`.
+**Prune after:** 2026-05-30
