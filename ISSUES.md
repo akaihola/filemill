@@ -61,6 +61,24 @@ The width should be recalculated whenever a new column is opened or closed.
 
 ---
 
+## #9 – Preview pane always at least 1/3 viewport width
+
+**Type:** UX / layout
+**Status:** closed
+**Closed:** 2026-03-01
+**Prune after:** 2026-05-30
+
+The preview pane had a fixed `min-width: 320px` regardless of viewport size. On wide
+screens this let the file-column strip crowd out the preview. The preview should always
+occupy at least one-third of the viewport, and the column-width budget should shrink
+accordingly.
+
+**Implemented:** `styles.py` – `#preview min-width` changed from `320px` to `33.333vw`;
+`COLUMN_JS` `PREVIEW_MIN` constant changed from `320` to
+`Math.round(window.innerWidth / 3)`.
+
+---
+
 ## #4 – Zoom button: expand preview to full page width
 
 **Type:** feature
