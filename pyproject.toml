@@ -1,0 +1,21 @@
+[project]
+name = "pykofinder"
+version = "0.1.0"
+description = "macOS Finder column-view file manager and previewer"
+requires-python = ">=3.12"
+dependencies = [
+    "python-fasthtml>=0.12",
+    "markdown-it-py",
+    "mdit-py-plugins",
+    "pygments",
+    "mammoth",
+    "python-pptx",
+    "typer",
+]
+
+[project.scripts]
+pykofinder = "pykofinder.cli:entry_point"
+
+[build-system]
+requires = ["uv_build>=0.6.6,<0.7"]
+build-backend = "uv_build"
