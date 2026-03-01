@@ -200,6 +200,25 @@ body {
     padding: 1rem;
 }
 
+.preview-image {
+    background-color: #fff;
+    background-image:
+        linear-gradient(45deg, #ccc 25%, transparent 25%),
+        linear-gradient(-45deg, #ccc 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #ccc 75%),
+        linear-gradient(-45deg, transparent 75%, #ccc 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    display: inline-block;
+    max-width: 100%;
+}
+
+.preview-image img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+}
+
 """
     + f"""
 /* Pygments syntax highlighting */

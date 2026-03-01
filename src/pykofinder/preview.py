@@ -3,6 +3,9 @@ from pathlib import Path
 from urllib.parse import quote as urlquote
 
 
+IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
+
+
 def render_preview(path: Path) -> str:
     """Return an HTML string (inner body fragment) for the given file path."""
     ext = path.suffix.lower()
@@ -15,6 +18,8 @@ def render_preview(path: Path) -> str:
         return _preview_pptx(path)
     elif ext == ".pdf":
         return _preview_pdf(path)
+    elif ext in IMAGE_EXTS:
+        return _preview_image(path)
     else:
         safe_ext = html_lib.escape(ext or "(no extension)")
         return f'<div class="preview-unsupported"><em>No preview available for {safe_ext} files.</em></div>'
@@ -80,6 +85,17 @@ def _preview_pdf(path: Path) -> str:
     try:
         src = f"/raw?path={urlquote(str(path))}"
         return f'<div class="preview-pdf"><iframe src="{src}"></iframe></div>'
+    except Exception as e:
+        return (
+            f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'
+        )
+
+
+def _preview_image(path: Path) -> str:
+    try:
+        src = f"/raw?path={urlquote(str(path))}"
+        safe_name = html_lib.escape(path.name)
+        return f'<div class="preview-image"><img src="{src}" alt="{safe_name}"></div>'
     except Exception as e:
         return (
             f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'
