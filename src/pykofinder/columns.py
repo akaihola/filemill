@@ -50,6 +50,7 @@ def list_column(path: Path, root: Path, col_index: int) -> object:
                     hx_get=f"/click?path={encoded_path}&col={next_col}",
                     hx_target=f"#col-{next_col}",
                     hx_swap="outerHTML",
+                    title=p.name,
                 ),
             )
         else:
@@ -62,6 +63,7 @@ def list_column(path: Path, root: Path, col_index: int) -> object:
                     hx_get=f"/click?path={encoded_path}&col={next_col}",
                     hx_target="#preview",
                     hx_swap="innerHTML",
+                    title=p.name,
                 ),
             )
         items.append(li)
