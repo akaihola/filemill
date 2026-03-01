@@ -82,7 +82,8 @@ accordingly.
 ## #4 – Zoom button: expand preview to full page width
 
 **Type:** feature
-**Status:** in-progress
+**Status:** closed
+**Closed:** 2026-03-01
 
 Add a small toggle button (e.g. ⛶ / ✕ or a magnifier icon) in the top-right corner of
 the preview pane. When activated:
@@ -96,9 +97,11 @@ The zoom state should survive HTMX partial swaps (i.e. re-opening a file while z
 keeps the pane zoomed).
 
 **Implemented:** `styles.py` – `#zoom-btn` CSS (fixed-position button), `body.zoomed`
-CSS rules (hides `.column`, expands `#preview` to `100vw`), `initZoomButton()` JS
-function (injects button into `document.body` outside `#preview` so HTMX swaps can't
-remove it), called from `DOMContentLoaded` listener.
+CSS rules (hides `.column`, expands `#preview` to `100vw` with `box-sizing: border-box`),
+`initZoomButton()` JS function (injects button into `document.body` outside `#preview`
+so HTMX swaps can't remove it), called from `DOMContentLoaded` listener. `.preview-md`
+gets `margin: 0 auto` so it centres within the full-width pane.
+**Prune after:** 2026-05-30
 
 ---
 

@@ -24,8 +24,7 @@ after:** YYYY-MM-DD` (closed date + 90 days) in ISSUES.md, then move the entry h
 
 ## In progress
 
-- [~] Zoom button to expand preview to full page width ([#4](ISSUES.md#4--zoom-button-expand-preview-to-full-page-width)) –
-  CSS + JS implemented in `styles.py`; awaiting manual browser test
+_(nothing currently in progress)_
 
 ---
 
@@ -64,3 +63,4 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 - [x] Auto-adjust column width to fit longest visible filename ([#3](ISSUES.md#3--auto-adjust-column-width-to-fit-longest-filename)) <!-- prune after 2026-05-30 -->
 - [x] Move project context from `.claude/CLAUDE.md` to `AGENTS.md` (gitignored) so pi auto-loads it; `.claude/CLAUDE.md` now references `@../AGENTS.md` ([#8](ISSUES.md#8--move-project-context-to-agentsmd-for-pi-auto-loading)) <!-- prune after 2026-05-30 -->
 - [x] Preview pane always at least 1/3 viewport width ([#9](ISSUES.md#9--preview-pane-always-at-least-13-viewport-width)) <!-- prune after 2026-05-30 -->
+- [x] Zoom button to expand preview to full viewport width ([#4](ISSUES.md#4--zoom-button-expand-preview-to-full-page-width)) <!-- prune after 2026-05-30 -->
