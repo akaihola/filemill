@@ -21,8 +21,7 @@ body {
 }
 
 .column {
-    min-width: 220px;
-    max-width: 220px;
+    width: var(--col-width, 220px);
     height: 100%;
     overflow-y: auto;
     border-right: 1px solid #c7c7c7;
@@ -228,8 +227,57 @@ body {
 )
 
 COLUMN_JS = """
+function recalcColumnWidth() {
+    var columns = document.querySelectorAll('.column');
+    if (!columns.length) return;
+
+    // --- measure longest anchor text ---
+    // Use a hidden canvas for pixel-accurate text measurement with the
+    // same font as the column anchors (13px system-ui, matching body).
+    var canvas = recalcColumnWidth._canvas ||
+                 (recalcColumnWidth._canvas = document.createElement('canvas'));
+    var ctx = canvas.getContext('2d');
+    ctx.font = '13px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif';
+
+    var maxTextPx = 0;
+    columns.forEach(function(col) {
+        col.querySelectorAll('li a').forEach(function(a) {
+            // Clone the text content without the icon span
+            var text = '';
+            a.childNodes.forEach(function(node) {
+                if (node.nodeType === Node.TEXT_NODE) text += node.textContent;
+            });
+            var w = ctx.measureText(text.trim()).width;
+            if (w > maxTextPx) maxTextPx = w;
+        });
+    });
+
+    // padding: 4px top/bottom, 8px right, 24px left (icon gutter) → 32px horizontal padding
+    var PADDING = 32;
+    var ICON_WIDTH = 20;   // space already included in the 24px left-padding
+    var MIN_WIDTH = 160;
+    var PREVIEW_MIN = 320; // matches #preview min-width in CSS
+    var colCount = columns.length;
+
+    var available = window.innerWidth - PREVIEW_MIN;
+    var maxWidth = colCount > 0 ? Math.floor(available / colCount) : available;
+    maxWidth = Math.max(maxWidth, MIN_WIDTH); // never go below minimum even if crowded
+
+    var computed = Math.min(
+        Math.max(Math.ceil(maxTextPx) + PADDING + ICON_WIDTH, MIN_WIDTH),
+        maxWidth
+    );
+
+    document.documentElement.style.setProperty('--col-width', computed + 'px');
+}
+
 document.addEventListener('htmx:afterSettle', function(e) {
+    recalcColumnWidth();
     var finder = document.getElementById('finder');
     if (finder) finder.scrollLeft = finder.scrollWidth;
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    recalcColumnWidth();
 });
 """
