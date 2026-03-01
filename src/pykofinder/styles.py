@@ -218,6 +218,33 @@ body {
     max-height: 100%;
 }
 
+#zoom-btn {
+    position: fixed;
+    top: 0.5rem;
+    right: 0.75rem;
+    z-index: 100;
+    background: rgba(255,255,255,0.85);
+    border: 1px solid #c7c7c7;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 14px;
+    cursor: pointer;
+    line-height: 1.4;
+    user-select: none;
+}
+#zoom-btn:hover {
+    background: #e8e8e8;
+}
+
+body.zoomed .column {
+    display: none;
+}
+body.zoomed #preview {
+    width: 100vw;
+    min-width: unset;
+    box-sizing: border-box;
+}
+
 """
     + f"""
 /* Pygments syntax highlighting */
@@ -227,6 +254,21 @@ body {
 )
 
 COLUMN_JS = """
+function initZoomButton() {
+    if (document.getElementById('zoom-btn')) return; // idempotent
+    var btn = document.createElement('button');
+    btn.id = 'zoom-btn';
+    btn.title = 'Expand preview';
+    btn.textContent = '⛶';
+    btn.addEventListener('click', function() {
+        var zoomed = document.body.classList.toggle('zoomed');
+        btn.textContent = zoomed ? '✕' : '⛶';
+        btn.title = zoomed ? 'Restore columns' : 'Expand preview';
+        recalcColumnWidth();
+    });
+    document.body.appendChild(btn);
+}
+
 function recalcColumnWidth() {
     var columns = document.querySelectorAll('.column');
     if (!columns.length) return;
@@ -279,5 +321,6 @@ document.addEventListener('htmx:afterSettle', function(e) {
 
 document.addEventListener('DOMContentLoaded', function() {
     recalcColumnWidth();
+    initZoomButton();
 });
 """
