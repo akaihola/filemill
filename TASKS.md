@@ -19,11 +19,13 @@ Bugs and feature requests are tracked in [ISSUES.md](ISSUES.md).
 - [ ] Selected state styling – clicking a `<li>` should add `selected` class to it and remove from siblings (requires a small JS snippet in the column or HTMX `hx-on::after-request` to toggle the class)
 - [ ] Pagination for large directories (> 500 entries)
 - [ ] Search/filter within a column
-- [ ] Image preview – PNG, JPEG, GIF, WebP, SVG → `<img>` tag ([#1](ISSUES.md#1--add-png-and-jpeg-preview))
+- [x] Image preview – PNG, JPEG, GIF, WebP, SVG → `<img>` tag ([#1](ISSUES.md#1--add-png-and-jpeg-preview))
 - [ ] Tooltip for truncated filenames ([#2](ISSUES.md#2--show-full-filename-in-tooltip-when-truncated))
 - [ ] Auto-adjust column width to fit longest visible filename ([#3](ISSUES.md#3--auto-adjust-column-width-to-fit-longest-filename))
 - [ ] Zoom button to expand preview to full page width ([#4](ISSUES.md#4--zoom-button-expand-preview-to-full-page-width))
 - [ ] URL sync and deep-link navigation ([#5](ISSUES.md#5--url-reflects-current-path-deep-link-navigation))
+- [ ] Auto-reload on code change – `--live` flag / service unit update ([#6](ISSUES.md#6--auto-reload-on-code-change))
+- [ ] Preview unrecognised text files raw – UTF-8 fallback to `<pre>` block ([#7](ISSUES.md#7--preview-unrecognised-text-files-raw))
 - [ ] Code file preview (plain text with syntax highlighting)
 - [ ] PPTX slide image rendering via LibreOffice (better fidelity than text extraction)
 - [ ] Breadcrumb / path display above the columns

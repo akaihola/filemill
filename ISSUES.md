@@ -100,6 +100,53 @@ client-side JS on `DOMContentLoaded`) should:
 
 ---
 
+### #6 – Auto-reload on code change
+
+**Type:** developer experience
+
+When running in development, the server should automatically restart whenever a source
+file under `src/pykofinder/` is modified, so the developer never has to manually restart
+the process to see changes.
+
+The existing CLI already has a `--live` flag that passes `reload=True` to uvicorn. The
+service unit should be updated (or a separate dev-launch script/`Makefile` target added)
+to start the server with `--live` so that uvicorn watches the source tree and reloads on
+any `.py` change.
+
+---
+
+### #7 – Preview unrecognised text files raw
+
+**Type:** feature
+
+Files whose extension is not explicitly handled (no Markdown renderer, no Office
+converter, no PDF viewer, no image tag) but which are valid UTF-8 text should still be
+shown in the preview pane as plain text – wrapped in a `<pre>` block – rather than
+displaying "No preview available."
+
+Implementation sketch:
+
+1. After all existing extension checks in `render_preview()`, add a final fallback that
+   attempts to read the file as UTF-8 (up to a reasonable cap, e.g. 256 KB).
+2. If decoding succeeds, return the content inside a `<pre class="preview-raw">` element
+   (HTML-escaped).
+3. If decoding raises `UnicodeDecodeError` (binary file), fall through to the existing
+   "No preview available" message.
+4. Add a `.preview-raw` CSS rule (monospace font, wrapping, subtle background) to
+   `styles.py`.
+
+---
+
 ## Closed
 
-_(none yet)_
+### #1 – Add PNG and JPEG preview ✓
+
+**Type:** feature
+
+Show inline image preview for `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, and `.svg` files
+when clicked in the column view. Render as a plain `<img>` tag (served via the existing
+`/raw` endpoint) with `max-width: 100%` and `max-height: 100%` inside the preview pane,
+and a subtle checkerboard background for transparency.
+
+**Implemented:** `preview.py` (`IMAGE_EXTS` constant + `_preview_image()`), `styles.py`
+(`.preview-image` CSS), `columns.py` (`🖼` icon for image extensions).
