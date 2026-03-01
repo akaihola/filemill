@@ -67,7 +67,7 @@ body {
 
 #preview {
     flex: 1;
-    min-width: 320px;
+    min-width: 33.333vw;
     overflow-y: auto;
     padding: 1rem 1.5rem;
     background: #fff;
@@ -256,7 +256,7 @@ function recalcColumnWidth() {
     var PADDING = 32;
     var ICON_WIDTH = 20;   // space already included in the 24px left-padding
     var MIN_WIDTH = 160;
-    var PREVIEW_MIN = 320; // matches #preview min-width in CSS
+    var PREVIEW_MIN = Math.round(window.innerWidth / 3); // always ≥ 1/3 viewport
     var colCount = columns.length;
 
     var available = window.innerWidth - PREVIEW_MIN;
