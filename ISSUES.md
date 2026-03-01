@@ -188,6 +188,39 @@ Implementation sketch:
 
 ---
 
+## #10 – Selected directories/files must stay highlighted
+
+**Type:** UX / bug
+**Status:** open
+
+When navigating the column view, the selected item in each column does not retain a
+highlighted background after the HTMX partial-swap completes. Two distinct cases must
+both be handled:
+
+1. **Directory column entry** – a directory whose contents are currently displayed in the
+   next column to the right must have a highlighted (selected) background colour,
+   matching the macOS Finder column-view behaviour.
+2. **File column entry** – the file whose content is currently shown in the preview pane
+   must have a highlighted background colour.
+
+The highlight must persist across subsequent clicks (opening deeper sub-directories or
+switching the preview to a different file) and must not be lost by HTMX swaps.
+
+**Implementation sketch:**
+
+- Add a CSS rule for a `selected` class (or `aria-selected="true"` attribute) on `<li>`
+  elements that gives them a distinct background (e.g. the accent blue used in Finder).
+- After each `/click` response, the server should mark the clicked item as selected in
+  the returned HTML _and_ strip the `selected` state from any sibling items in the same
+  column (or the client JS should do so via an `hx-on::after-request` handler that walks
+  up to the parent `<ul>` and clears siblings before adding the class to the target).
+- Because multiple columns can be open simultaneously (one directory per column), the
+  highlight must apply independently per column – the selected item in column N is the
+  one that opened column N+1, and the selected file in the rightmost column is the one
+  whose preview is showing.
+
+---
+
 ## #8 – Move project context to AGENTS.md for pi auto-loading
 
 **Type:** chore / developer experience
