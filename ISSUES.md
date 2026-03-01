@@ -45,7 +45,9 @@ browser shows a native tooltip on hover.
 ## #3 – Auto-adjust column width to fit longest filename
 
 **Type:** UX / feature
-**Status:** open
+**Status:** closed
+**Closed:** 2026-03-01
+**Prune after:** 2026-05-30
 
 Column width is currently hard-coded to 220 px. Instead, compute the width from the
 longest filename in the currently-visible columns (all columns share the same width),
