@@ -28,17 +28,6 @@ _(nothing currently in progress)_
 
 ---
 
-## Recently completed (not yet in ISSUES.md)
-
-- [x] File preview in column N closes column N+1 and beyond – inject pruning `<script>` in the file-click response that walks from `col-{col}` rightward, removing each sibling until reaching `#preview`
-
-- [x] `~/menu/` – symlinks to the 5 Pykoclaw workspaces (my-knowledge, paivi, testi, pipsa, coleaders) plus `.desktop` hyperlink files for all tailscale-exposed and localhost services
-- [x] `.desktop` link file support – `🔗` icon in column view, opens URL directly in new tab via `/open-link` redirect route; preview shows name, icon, URL, and "Open →" button
-- [x] Service root changed from `~/paivi/documents` → `~/menu/` via drop-in `pykofinder.service.d/root.conf`; nixos-config updated for persistence
-- [x] Symlink "Access denied." bug – zone-based `_resolve_safe`, pytest dev dep, 16 unit tests ([#11](ISSUES.md#11--symlinks-in-root-denied-with-access-denied))
-
----
-
 ## Open
 
 _Items without an issue number are not yet tracked in ISSUES.md._
@@ -73,3 +62,6 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 - [x] Move project context from `.claude/CLAUDE.md` to `AGENTS.md` (gitignored) so pi auto-loads it; `.claude/CLAUDE.md` now references `@../AGENTS.md` ([#8](ISSUES.md#8--move-project-context-to-agentsmd-for-pi-auto-loading)) <!-- prune after 2026-05-30 -->
 - [x] Preview pane always at least 1/3 viewport width ([#9](ISSUES.md#9--preview-pane-always-at-least-13-viewport-width)) <!-- prune after 2026-05-30 -->
 - [x] Zoom button to expand preview to full viewport width ([#4](ISSUES.md#4--zoom-button-expand-preview-to-full-page-width)) <!-- prune after 2026-05-30 -->
+- [x] Symlink "Access denied." bug – zone-based `_resolve_safe`, pytest dev dep, 16 unit tests ([#11](ISSUES.md#11--symlinks-in-root-denied-with-access-denied)) <!-- prune after 2026-06-03 -->
+- [x] `.desktop` link file support – `🔗` icon, `/open-link` redirect, preview card ([#12](ISSUES.md#12--desktop-link-file-support)) <!-- prune after 2026-06-03 -->
+- [x] `~/menu/` root – workspace symlinks + `.desktop` hyperlinks; service root changed via drop-in `root.conf`; nixos-config updated <!-- prune after 2026-06-03 -->
