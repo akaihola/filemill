@@ -53,3 +53,36 @@ def test_main_default_root_uses_cwd(tmp_path, monkeypatch):
     result = runner.invoke(cli, [])
     assert result.exit_code == 0
     assert app_module.ROOT == tmp_path
+
+
+# ── #16 bind address option ───────────────────────────────────────────────────
+
+
+def test_serve_has_bind_option():
+    from typer.testing import CliRunner
+    from pykofinder.cli import cli
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--help"])
+    assert "--bind" in result.output or "-b" in result.output
+
+
+def test_bind_option_passed_to_uvicorn_normal(tmp_path, monkeypatch):
+    """--bind value is forwarded as host= in the non-live branch."""
+    mock_run = MagicMock()
+    monkeypatch.setattr(uvicorn, "run", mock_run)
+    result = runner.invoke(cli, [str(tmp_path), "--bind", "127.0.0.1"])
+    assert result.exit_code == 0
+    _, kwargs = mock_run.call_args
+    assert kwargs.get("host") == "127.0.0.1"
+
+
+def test_bind_option_passed_to_uvicorn_live(tmp_path, monkeypatch):
+    """--bind value is forwarded as host= in the live/reload branch."""
+    mock_run = MagicMock()
+    monkeypatch.setattr(uvicorn, "run", mock_run)
+    result = runner.invoke(cli, [str(tmp_path), "--live", "--bind", "127.0.0.1"])
+    assert result.exit_code == 0
+    _, kwargs = mock_run.call_args
+    assert kwargs.get("host") == "127.0.0.1"
+    assert kwargs.get("reload") is True
