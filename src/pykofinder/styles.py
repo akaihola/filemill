@@ -189,6 +189,19 @@ body {
     padding-bottom: 0.3em;
 }
 
+.preview-raw {
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 0.85em;
+    background: #f8f8f8;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    padding: 1rem;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin: 0;
+}
+
 .preview-error {
     color: #c00;
     font-style: italic;

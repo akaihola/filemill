@@ -37,11 +37,11 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 - [ ] Search/filter within a column
 - [ ] URL sync and deep-link navigation ([#5](ISSUES.md#5--url-reflects-current-path-deep-link-navigation))
 - [ ] Auto-reload: server restart on code change + browser refresh on content change ([#6](ISSUES.md#6--auto-reload-code-changes-restart-server-content-changes-refresh-browser))
-- [ ] Preview unrecognised text files raw – UTF-8 fallback to `<pre>` block ([#7](ISSUES.md#7--preview-unrecognised-text-files-raw))
+
 - [ ] Source code file syntax highlighting with Pygments "friendly" theme ([#14](ISSUES.md#14--source-code-file-syntax-highlighting))
 - [ ] Breadcrumb / path display above the columns ([#13](ISSUES.md#13--breadcrumb-navigation))
 - [ ] Keyboard navigation (arrow keys to move between columns) ([#15](ISSUES.md#15--keyboard-navigation))
-- [ ] Bind address CLI option (`--bind` / `SERVE_BIND` env var) ([#16](ISSUES.md#16--bind-address-cli-option---bind--serve_bind-env-var))
+
 - [ ] PPTX slide image rendering via LibreOffice (better fidelity than text extraction)
 
 ---
@@ -66,3 +66,5 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 - [x] Symlink "Access denied." bug – zone-based `_resolve_safe`, pytest dev dep, 16 unit tests ([#11](ISSUES.md#11--symlinks-in-root-denied-with-access-denied)) <!-- prune after 2026-06-03 -->
 - [x] `.desktop` link file support – `🔗` icon, `/open-link` redirect, preview card ([#12](ISSUES.md#12--desktop-link-file-support)) <!-- prune after 2026-06-03 -->
 - [x] `~/menu/` root – workspace symlinks + `.desktop` hyperlinks; service root changed via drop-in `root.conf`; nixos-config updated <!-- prune after 2026-06-03 -->
+- [x] Raw UTF-8 text fallback preview – `<pre class="preview-raw">` for unrecognised extensions (≤256 KB) ([#7](ISSUES.md#7--preview-unrecognised-text-files-raw)) <!-- prune after 2026-06-03 -->
+- [x] Bind address CLI option `--bind` / `-b` with `PYKOFINDER_BIND` env var ([#16](ISSUES.md#16--bind-address-cli-option---bind--serve_bind-env-var)) <!-- prune after 2026-06-03 -->

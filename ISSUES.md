@@ -201,7 +201,9 @@ independent of code changes – it aids content editing workflows.
 ## #7 – Preview unrecognised text files raw
 
 **Type:** feature
-**Status:** open
+**Status:** closed
+**Closed:** 2026-03-05
+**Prune after:** 2026-06-03
 
 Files whose extension is not explicitly handled (no Markdown renderer, no Office
 converter, no PDF viewer, no image tag) but which are valid UTF-8 text should still be
@@ -225,6 +227,9 @@ falls back to reading the raw bytes and returning them as `Content-Type: text/pl
 charset=utf-8` for the browser to display. This is simpler than a styled `<pre>` but
 ensures the content is never silently swallowed. For pykofinder the styled `<pre>` inside
 the preview pane is the right target since it keeps the two-panel layout intact.
+
+**Implemented:** `preview.py` – UTF-8 fallback in `render_preview()` else-branch (≤256 KB
+size cap, `UnicodeDecodeError` falls through); `styles.py` – `.preview-raw` CSS rule.
 
 ---
 
@@ -410,6 +415,7 @@ return None  # falls back to raw bytes
 ```
 
 Key details:
+
 - Extension lookup (`get_lexer_by_name`) is tried first; `guess_lexer` is the fallback.
 - `HtmlFormatter(style="friendly", nowrap=False)` wraps output in
   `<div class="highlight"><pre>` giving a visually distinct code block.
@@ -444,13 +450,13 @@ the mouse – essential for power users and accessibility.
 
 **Target behaviour (macOS Finder column-view model):**
 
-| Key | Action |
-|-----|--------|
-| `↑` / `↓` | Move selection up/down within the focused column |
-| `→` | Open selected directory (add next column) or preview selected file |
-| `←` | Move focus back to the parent column and close child columns to the right |
-| `Enter` | Same as `→` |
-| `Escape` | Clear selection / collapse to root |
+| Key       | Action                                                                    |
+| --------- | ------------------------------------------------------------------------- |
+| `↑` / `↓` | Move selection up/down within the focused column                          |
+| `→`       | Open selected directory (add next column) or preview selected file        |
+| `←`       | Move focus back to the parent column and close child columns to the right |
+| `Enter`   | Same as `→`                                                               |
+| `Escape`  | Clear selection / collapse to root                                        |
 
 **foam-web approach:** foam-web gets keyboard navigation for free because it uses
 full-page navigation – standard browser Tab/Enter/Back-Forward all work without any
@@ -475,7 +481,9 @@ custom JS. For pykofinder's SPA column view, custom `keydown` handlers are neede
 ## #16 – Bind address CLI option (`--bind` / `SERVE_BIND` env var)
 
 **Type:** feature / developer experience
-**Status:** open
+**Status:** closed
+**Closed:** 2026-03-05
+**Prune after:** 2026-06-03
 
 The server is currently hard-coded to bind on `0.0.0.0` (all interfaces). Operators
 should be able to bind to a specific network interface – e.g. `127.0.0.1` for
@@ -503,3 +511,7 @@ directives).
   `Environment=PYKOFINDER_BIND=0.0.0.0` line so the binding is explicit and easy to
   change without editing the unit file.
 - Document in `README.md` and `CONTRIBUTING.md`.
+
+**Implemented:** `cli.py` – `--bind` / `-b` option with `PYKOFINDER_BIND` env var
+fallback; `host=bind` passed to both `uvicorn.run()` call sites; `PYKOFINDER_BIND` set
+in env before the reload branch.

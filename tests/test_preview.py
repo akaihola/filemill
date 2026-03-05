@@ -87,17 +87,18 @@ def test_dispatch_image(tmp_path, ext):
 
 
 def test_dispatch_unknown_ext(tmp_path):
+    """Binary file with unknown extension → preview-unsupported with extension name."""
     f = tmp_path / "data.xyz"
-    f.write_text("data")
+    f.write_bytes(b"\x00\x01\x02\xff\xfe")  # binary; UTF-8 decode fails
     result = render_preview(f)
     assert "preview-unsupported" in result
     assert ".xyz" in result
 
 
 def test_dispatch_no_ext(tmp_path):
-    """File with no extension → '(no extension)' in message."""
+    """Binary file with no extension → '(no extension)' in unsupported message."""
     f = tmp_path / "noext"
-    f.write_text("data")
+    f.write_bytes(b"\x00\x01\x02\xff\xfe")  # binary; UTF-8 decode fails
     result = render_preview(f)
     assert "preview-unsupported" in result
     assert "(no extension)" in result
@@ -325,3 +326,36 @@ def test_preview_desktop_exception(tmp_path, monkeypatch):
 
     monkeypatch.setattr(cp_mod.ConfigParser, "read", boom)
     assert "preview-error" in _preview_desktop(f)
+
+
+# ── #7 raw UTF-8 text fallback ────────────────────────────────────────────────
+
+
+def test_raw_utf8_text_file_shows_preview_raw(tmp_path):
+    f = tmp_path / "notes.txt"
+    f.write_text("hello world\nline 2\n")
+    result = render_preview(f)
+    assert "preview-raw" in result
+    assert "hello world" in result
+
+
+def test_binary_file_shows_unsupported(tmp_path):
+    f = tmp_path / "data.bin"
+    f.write_bytes(b"\x00\x01\x02\xff\xfe")
+    result = render_preview(f)
+    assert "No preview available" in result
+
+
+def test_large_text_file_shows_unsupported(tmp_path):
+    f = tmp_path / "big.log"
+    f.write_bytes(b"x" * (256 * 1024 + 1))
+    result = render_preview(f)
+    assert "No preview available" in result
+
+
+def test_raw_text_html_escaped(tmp_path):
+    f = tmp_path / "code.txt"
+    f.write_text("<script>alert('xss')</script>\n")
+    result = render_preview(f)
+    assert "<script>" not in result
+    assert "&lt;script&gt;" in result

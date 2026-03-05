@@ -24,6 +24,13 @@ def render_preview(path: Path) -> str:
     elif ext in IMAGE_EXTS:
         return _preview_image(path)
     else:
+        # UTF-8 fallback: show any small-enough text file as raw <pre>
+        if path.stat().st_size <= 256 * 1024:
+            try:
+                content = path.read_text(encoding="utf-8")
+                return f'<pre class="preview-raw">{html_lib.escape(content)}</pre>'
+            except UnicodeDecodeError:
+                pass
         safe_ext = html_lib.escape(ext or "(no extension)")
         return f'<div class="preview-unsupported"><em>No preview available for {safe_ext} files.</em></div>'
 
