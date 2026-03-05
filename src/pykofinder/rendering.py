@@ -22,47 +22,47 @@ try:
     from mdit_py_plugins.front_matter import front_matter_plugin
 
     front_matter_plugin(md)
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 
 try:
     from mdit_py_plugins.footnote import footnote_plugin
 
     footnote_plugin(md)
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 
 try:
     from mdit_py_plugins.tasklists import tasklists_plugin
 
     tasklists_plugin(md)
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 
 try:
     from mdit_py_plugins.anchors import anchors_plugin
 
     anchors_plugin(md)
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 
 try:
     from mdit_py_plugins.deflist import deflist_plugin
 
     deflist_plugin(md)
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 
 try:
     from mdit_py_plugins.dollarmath import dollarmath_plugin
 
     dollarmath_plugin(md)
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 
 try:
     from mdit_py_plugins.admon import admon_plugin
 
     admon_plugin(md)
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
