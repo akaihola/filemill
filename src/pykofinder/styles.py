@@ -369,15 +369,70 @@ function recalcColumnWidth() {
     document.documentElement.style.setProperty('--col-width', computed + 'px');
 }
 
+// Track the path param from the most recent click for URL sync
+var _pendingPath = null;
+
+// Capture path from hx-get attribute before HTMX fires
+document.addEventListener('click', function(e) {
+    var a = e.target.closest('.column li a[hx-get], .column li a[data-hx-get]');
+    if (!a) return;
+    var hxGet = a.getAttribute('hx-get') || a.getAttribute('data-hx-get');
+    if (!hxGet) return;
+    try {
+        var url = new URL(hxGet, window.location.href);
+        _pendingPath = url.searchParams.get('path');
+    } catch(err) {}
+});
+
+// After HTMX settles, push/replace the URL
 document.addEventListener('htmx:afterSettle', function(e) {
     recalcColumnWidth();
     var finder = document.getElementById('finder');
     if (finder) finder.scrollLeft = finder.scrollWidth;
+    if (_pendingPath) {
+        var newUrl = '/?path=' + encodeURIComponent(_pendingPath);
+        history.pushState({path: _pendingPath}, '', newUrl);
+        _pendingPath = null;
+    }
 });
+
+// Handle browser back/forward
+window.addEventListener('popstate', function(e) {
+    var path = e.state && e.state.path;
+    if (path) {
+        _deepNavigate(path);
+    } else {
+        // Back to root – reload to reset state
+        window.location.href = '/';
+    }
+});
+
+function _deepNavigate(fullPath) {
+    // Navigate to fullPath via the /restore endpoint which returns a ready-made column set.
+    fetch('/restore?path=' + encodeURIComponent(fullPath))
+        .then(function(r) { return r.text(); })
+        .then(function(html) {
+            var shell = document.getElementById('app-shell');
+            if (shell) {
+                shell.outerHTML = html;
+                recalcColumnWidth();
+                initZoomButton();
+                var finder = document.getElementById('finder');
+                if (finder) finder.scrollLeft = finder.scrollWidth;
+            }
+        })
+        .catch(function() {});
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     recalcColumnWidth();
     initZoomButton();
+    // Deep-link: restore state from URL
+    var params = new URLSearchParams(window.location.search);
+    var deepPath = params.get('path');
+    if (deepPath) {
+        _deepNavigate(deepPath);
+    }
 });
 
 // Selection highlighting – mark the clicked <li> as selected within its column
