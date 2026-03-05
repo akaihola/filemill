@@ -221,6 +221,32 @@ switching the preview to a different file) and must not be lost by HTMX swaps.
 
 ---
 
+## #12 – .desktop link file support
+
+**Type:** feature
+**Status:** closed
+**Closed:** 2026-03-05
+
+Column view displays a `🔗` icon for `.desktop` files. Clicking a `.desktop` entry
+opens its destination URL directly in a new browser tab via a `/open-link` redirect
+route – never via HTMX (no `#preview` update). The preview pane shows a card with the
+entry name, an optional remote icon (`http://` / `https://` only), a comment line, the
+raw URL as a link, and an "Open →" button that also uses `/open-link`.
+
+A `~/menu/` root directory of workspace symlinks and `.desktop` hyperlinks was created
+and set as the service root via a systemd drop-in (`pykofinder.service.d/root.conf`).
+The NixOS config was updated for persistence.
+
+**Implemented:**
+
+- `app.py`: `_parse_desktop_url()`, `GET /open-link`
+- `columns.py`: `🔗` icon, `.desktop`-specific `<a target="_blank">` branch (no HTMX)
+- `preview.py`: `_preview_desktop()`, `.desktop` dispatch added to `render_preview()`
+
+**Prune after:** 2026-06-03
+
+---
+
 ## #11 – Symlinks in ROOT denied with "Access denied."
 
 **Type:** bug
