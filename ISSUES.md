@@ -147,21 +147,54 @@ client-side JS on `DOMContentLoaded`) should:
 - Browser back/forward buttons → listen to `popstate` and re-render columns to match the
   URL that was popped.
 
+**foam-web approach:** foam-web achieves this naturally via multi-page WSGI routing –
+every file and directory has its own stable URL (`/<dir>/` and `/<dir>/<file>`). There
+is no `pushState()` needed because the browser handles full page loads. For pykofinder's
+SPA model, calling `history.pushState({}, "", newUrl)` inside the HTMX `htmx:afterSwap`
+event handler after every `/click` response is the direct equivalent.
+
 ---
 
-## #6 – Auto-reload on code change
+## #6 – Auto-reload: code changes restart server; content changes refresh browser
 
 **Type:** developer experience
 **Status:** open
 
-When running in development, the server should automatically restart whenever a source
-file under `src/pykofinder/` is modified, so the developer never has to manually restart
-the process to see changes.
+Two related but distinct reload mechanisms are both missing:
 
-The existing CLI already has a `--live` flag that passes `reload=True` to uvicorn. The
-service unit should be updated (or a separate dev-launch script/`Makefile` target added)
-to start the server with `--live` so that uvicorn watches the source tree and reloads on
-any `.py` change.
+**Part A – Server restart on code change (partially addressed by `--live`)**
+
+When running in development, the server should automatically restart whenever a source
+file under `src/pykofinder/` is modified. The existing CLI already has a `--live` flag
+that passes `reload=True` to uvicorn. The service unit should be updated (or a separate
+dev-launch script/`Makefile` target added) to start with `--live`.
+
+**Part B – Browser refresh on content change (not yet addressed)**
+
+When any document under the served root is saved (`.md`, `.txt`, images, etc.), the
+browser tab should automatically refresh without requiring a manual `F5`. This is
+independent of code changes – it aids content editing workflows.
+
+**foam-web implementation of Part B** (`src/foam_web/serve.py` + `src/foam_web/styles.py`):
+
+- `livereload.Server` wraps the WSGI app; `server.watch(str(root / "**/*.md"))` is called
+  to register a glob watcher.
+- Every rendered HTML page has `<script src="/livereload.js?port={port}&mindelay=10"></script>`
+  injected (the `livereload` library serves this script automatically).
+- On file save, the livereload WebSocket pushes a reload event to the browser tab.
+- After a server restart (via `hupper`), a background thread (`_delayed_reload`) waits
+  1 second then appends a fake change to `server.watcher._changes` to trigger a
+  browser refresh after the new process is ready.
+
+**pykofinder sketch for Part B:**
+
+- Add [`watchfiles`](https://pypi.org/project/watchfiles/) (async, no extra process) or
+  use uvicorn's built-in file-change signal.
+- Serve a small SSE endpoint (e.g. `GET /sse/reload`) that streams an event whenever the
+  root directory tree changes.
+- Inject `<script>` into the base page that connects to the SSE endpoint and calls
+  `location.reload()` on receipt.
+- Gate the watcher behind `--live` so production deployments are unaffected.
 
 ---
 
@@ -185,6 +218,13 @@ Implementation sketch:
    "No preview available" message.
 4. Add a `.preview-raw` CSS rule (monospace font, wrapping, subtle background) to
    `styles.py`.
+
+**foam-web approach** (`src/foam_web/app.py` + `src/foam_web/views.py`): foam-web's
+`serve_raw()` returns `None` for files with no recognised lexer; the WSGI handler then
+falls back to reading the raw bytes and returning them as `Content-Type: text/plain;
+charset=utf-8` for the browser to display. This is simpler than a styled `<pre>` but
+ensures the content is never silently swallowed. For pykofinder the styled `<pre>` inside
+the preview pane is the right target since it keeps the two-panel layout intact.
 
 ---
 
