@@ -116,7 +116,18 @@ def click(path: str, col: int):
             preview_html = render_preview(p)
         except Exception as e:
             preview_html = f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'
-        return NotStr(preview_html)
+        # Prune columns col-{col} and beyond (left over from prior directory navigation)
+        prune_js = f"""<script>
+(function(){{
+    var el = document.getElementById('col-{col}');
+    while (el && el.id !== 'preview') {{
+        var next = el.nextElementSibling;
+        el.remove();
+        el = next;
+    }}
+}})();
+</script>"""
+        return NotStr(preview_html + prune_js)
 
 
 @rt("/raw")
