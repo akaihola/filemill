@@ -9,7 +9,9 @@ def entry_icon(p: Path) -> str:
     if p.is_dir():
         return "📁"
     ext = p.suffix.lower()
-    if ext == ".md":
+    if ext == ".desktop":
+        return "🔗"
+    elif ext == ".md":
         return "📝"
     elif ext == ".pdf":
         return "📑"
@@ -50,6 +52,18 @@ def list_column(path: Path, root: Path, col_index: int) -> object:
                     hx_get=f"/click?path={encoded_path}&col={next_col}",
                     hx_target=f"#col-{next_col}",
                     hx_swap="outerHTML",
+                    title=p.name,
+                ),
+            )
+        elif p.suffix.lower() == ".desktop":
+            # .desktop link file: open the destination URL directly in a new tab
+            li = Li(
+                A(
+                    NotStr(f'<span class="icon">{icon}</span>'),
+                    p.name,
+                    href=f"/open-link?path={encoded_path}",
+                    target="_blank",
+                    rel="noopener noreferrer",
                     title=p.name,
                 ),
             )
