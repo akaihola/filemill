@@ -30,6 +30,8 @@ _(nothing currently in progress)_
 
 ## Recently completed (not yet in ISSUES.md)
 
+- [x] File preview in column N closes column N+1 and beyond – inject pruning `<script>` in the file-click response that walks from `col-{col}` rightward, removing each sibling until reaching `#preview`
+
 - [x] `~/menu/` – symlinks to the 5 Pykoclaw workspaces (my-knowledge, paivi, testi, pipsa, coleaders) plus `.desktop` hyperlink files for all tailscale-exposed and localhost services
 - [x] `.desktop` link file support – `🔗` icon in column view, opens URL directly in new tab via `/open-link` redirect route; preview shows name, icon, URL, and "Open →" button
 - [x] Service root changed from `~/paivi/documents` → `~/menu/` via drop-in `pykofinder.service.d/root.conf`; nixos-config updated for persistence
