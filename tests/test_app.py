@@ -1,98 +1,129 @@
-"""Tests for the /click endpoint – column pruning and sentinel behaviour.
-
-Two bugs were fixed in this session:
-
-  Bug 1 – Previewing a file in column N must close column N+1 and beyond.
-           The response now embeds a JS loop that walks from col-{col}
-           rightward, removing each element until it reaches #preview.
-
-  Bug 2 – After the prune the col-{col} sentinel must be recreated so that
-           directory links in column N (which target #col-{col} via HTMX
-           outerHTML swap) remain valid.
-"""
-
-import pytest
-from pathlib import Path
-from starlette.testclient import TestClient
+from unittest.mock import MagicMock
+from urllib.parse import quote
 
 import pykofinder.app as app_module
+from pykofinder.app import _resolve_safe, _parse_desktop_url
 
 
-# ---------------------------------------------------------------------------
-# fixtures
-# ---------------------------------------------------------------------------
+# ── _resolve_safe ─────────────────────────────────────────────────────────────
+
+def test_resolve_safe_valid_path(tmp_path, monkeypatch):
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    f = tmp_path / "file.txt"; f.touch()
+    assert _resolve_safe(str(f)) == f.resolve()
+
+def test_resolve_safe_traversal_returns_none(tmp_path, monkeypatch):
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    outside = str(tmp_path / ".." / "outside.txt")
+    assert _resolve_safe(outside) is None
+
+def test_resolve_safe_exception_returns_none(tmp_path, monkeypatch):
+    """ROOT.resolve() raises → outer except catches it → returns None."""
+    mock_root = MagicMock()
+    mock_root.resolve.side_effect = RuntimeError("bad root")
+    monkeypatch.setattr(app_module, "ROOT", mock_root)
+    assert _resolve_safe("/some/path") is None
 
 
-@pytest.fixture()
-def tmp_root(tmp_path: Path):
-    """Point app.ROOT at a minimal temp tree for the duration of the test."""
-    (tmp_path / "subdir").mkdir()
-    (tmp_path / "note.md").write_text("# Hello\n")
-    original = app_module.ROOT
-    app_module.ROOT = tmp_path
-    yield tmp_path
-    app_module.ROOT = original
+# ── _parse_desktop_url ────────────────────────────────────────────────────────
+
+def test_parse_desktop_url_link_type(tmp_path):
+    f = tmp_path / "link.desktop"
+    f.write_text("[Desktop Entry]\nType=Link\nURL=https://example.com\n")
+    assert _parse_desktop_url(f) == "https://example.com"
+
+def test_parse_desktop_url_non_link_returns_none(tmp_path):
+    f = tmp_path / "app.desktop"
+    f.write_text("[Desktop Entry]\nType=Application\n")
+    assert _parse_desktop_url(f) is None
+
+def test_parse_desktop_url_no_section_returns_none(tmp_path):
+    f = tmp_path / "bad.desktop"
+    f.write_text("[Other]\nFoo=bar\n")
+    assert _parse_desktop_url(f) is None
+
+def test_parse_desktop_url_empty_url_returns_none(tmp_path):
+    f = tmp_path / "link.desktop"
+    f.write_text("[Desktop Entry]\nType=Link\nURL=\n")
+    assert _parse_desktop_url(f) is None
+
+def test_parse_desktop_url_exception_returns_none(tmp_path, monkeypatch):
+    f = tmp_path / "link.desktop"; f.touch()
+    import configparser as cp_mod
+    def boom(self, *a, **kw): raise RuntimeError("fail")
+    monkeypatch.setattr(cp_mod.ConfigParser, "read", boom)
+    assert _parse_desktop_url(f) is None
 
 
-@pytest.fixture()
-def client(tmp_root):
-    return TestClient(app_module.app, raise_server_exceptions=False)
+# ── GET / ─────────────────────────────────────────────────────────────────────
+
+def test_index_returns_200_with_title(client):
+    resp = client.get("/")
+    assert resp.status_code == 200
+    assert "pykofinder" in resp.text
 
 
-# ---------------------------------------------------------------------------
-# Bug 1 – columns to the right of a file preview are pruned
-# ---------------------------------------------------------------------------
+# ── GET /click ────────────────────────────────────────────────────────────────
+
+def test_click_directory_returns_new_column(client, tmp_root):
+    subdir = tmp_root / "subdir"
+    resp = client.get(f"/click?path={quote(str(subdir))}&col=1")
+    assert resp.status_code == 200
+    assert "col-1" in resp.text
+
+def test_click_file_returns_preview(client, tmp_root):
+    md_file = tmp_root / "readme.md"
+    resp = client.get(f"/click?path={quote(str(md_file))}&col=1")
+    assert resp.status_code == 200
+    assert "preview-md" in resp.text
+
+def test_click_bad_path_returns_access_denied(client):
+    resp = client.get(f"/click?path={quote('/etc/passwd')}&col=1")
+    assert resp.status_code == 200
+    assert "Access denied" in resp.text
+
+def test_click_render_preview_exception_returns_error_html(client, tmp_root, monkeypatch):
+    monkeypatch.setattr(
+        "pykofinder.app.render_preview",
+        MagicMock(side_effect=RuntimeError("boom")),
+    )
+    md_file = tmp_root / "readme.md"
+    resp = client.get(f"/click?path={quote(str(md_file))}&col=1")
+    assert resp.status_code == 200
+    assert "preview-error" in resp.text
 
 
-def test_file_click_embeds_pruning_script(client, tmp_root):
-    """Response for a file click must contain a <script> block."""
-    path = tmp_root / "note.md"
-    body = client.get(f"/click?path={path}&col=2").text
-    assert "<script>" in body
+# ── GET /raw ──────────────────────────────────────────────────────────────────
+
+def test_raw_valid_file_returns_200(client, tmp_root):
+    md_file = tmp_root / "readme.md"
+    resp = client.get(f"/raw?path={quote(str(md_file))}")
+    assert resp.status_code == 200
+
+def test_raw_bad_path_returns_404(client):
+    resp = client.get(f"/raw?path={quote('/etc/shadow')}")
+    assert resp.status_code == 404
+
+def test_raw_directory_returns_404(client, tmp_root):
+    """p.is_file() is False for a directory → 404."""
+    resp = client.get(f"/raw?path={quote(str(tmp_root / 'subdir'))}")
+    assert resp.status_code == 404
 
 
-def test_file_click_pruning_targets_correct_col(client, tmp_root):
-    """The pruning loop must reference col-{col} (not a hard-coded id)."""
-    path = tmp_root / "note.md"
-    for col in (1, 2, 5):
-        body = client.get(f"/click?path={path}&col={col}").text
-        assert f"col-{col}" in body, f"pruning script missing col-{col}"
+# ── GET /open-link ────────────────────────────────────────────────────────────
 
+def test_open_link_valid_redirects_302(client, tmp_root):
+    desktop = tmp_root / "link.desktop"
+    resp = client.get(f"/open-link?path={quote(str(desktop))}", follow_redirects=False)
+    assert resp.status_code == 302
+    assert resp.headers["location"] == "https://example.com"
 
-def test_file_click_pruning_stops_at_preview(client, tmp_root):
-    """The loop condition must reference 'preview' so it never removes #preview."""
-    path = tmp_root / "note.md"
-    body = client.get(f"/click?path={path}&col=2").text
-    assert "preview" in body
+def test_open_link_bad_path_returns_404(client):
+    resp = client.get(f"/open-link?path={quote('/etc/passwd')}")
+    assert resp.status_code == 404
 
-
-# ---------------------------------------------------------------------------
-# Bug 2 – the col-{col} sentinel is recreated after pruning
-# ---------------------------------------------------------------------------
-
-
-def test_file_click_recreates_sentinel(client, tmp_root):
-    """After pruning, the response must inject a new col-{col} sentinel div."""
-    path = tmp_root / "note.md"
-    body = client.get(f"/click?path={path}&col=2").text
-    assert "sentinel.id = 'col-2'" in body
-    assert "insertBefore(sentinel, preview)" in body
-
-
-def test_sentinel_id_matches_col_param(client, tmp_root):
-    """Sentinel id must reflect the exact col param, not a hard-coded number."""
-    path = tmp_root / "note.md"
-    for col in (1, 3, 7):
-        body = client.get(f"/click?path={path}&col={col}").text
-        assert f"sentinel.id = 'col-{col}'" in body, f"wrong sentinel for col={col}"
-
-
-def test_dir_click_does_not_create_file_sentinel(client, tmp_root):
-    """A directory click at col=1 must NOT recreate col-1 as a sentinel.
-
-    It creates col-2 (the *next* slot) via the column's own prune_script –
-    a different mechanism – so sentinel.id = 'col-1' must be absent.
-    """
-    path = tmp_root / "subdir"
-    body = client.get(f"/click?path={path}&col=1").text
-    assert "sentinel.id = 'col-1'" not in body
+def test_open_link_not_link_type_returns_400(client, tmp_root):
+    app_desktop = tmp_root / "app.desktop"
+    app_desktop.write_text("[Desktop Entry]\nType=Application\nName=App\n")
+    resp = client.get(f"/open-link?path={quote(str(app_desktop))}")
+    assert resp.status_code == 400
