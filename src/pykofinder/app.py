@@ -116,7 +116,9 @@ def click(path: str, col: int):
             preview_html = render_preview(p)
         except Exception as e:
             preview_html = f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'
-        # Prune columns col-{col} and beyond (left over from prior directory navigation)
+        # Prune columns col-{col} and beyond (left over from prior directory navigation),
+        # then recreate the col-{col} sentinel so directory links in col-{col-1} still
+        # have a valid hx_target when the user later clicks a directory instead of a file.
         prune_js = f"""<script>
 (function(){{
     var el = document.getElementById('col-{col}');
@@ -125,6 +127,10 @@ def click(path: str, col: int):
         el.remove();
         el = next;
     }}
+    var sentinel = document.createElement('div');
+    sentinel.id = 'col-{col}';
+    var preview = document.getElementById('preview');
+    if (preview) preview.parentNode.insertBefore(sentinel, preview);
 }})();
 </script>"""
         return NotStr(preview_html + prune_js)
