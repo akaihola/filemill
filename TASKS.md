@@ -32,13 +32,10 @@ _(nothing currently in progress)_
 
 _Items without an issue number are not yet tracked in ISSUES.md._
 
-- [ ] Selected state – active directory/file entries must stay highlighted; directory whose contents are shown in the next column, and file whose preview is showing, both need a persistent `selected` background ([#10](ISSUES.md#10--selectedDirectoriesfiles-must-stay-highlighted))
 - [ ] Pagination for large directories (> 500 entries)
 - [ ] Search/filter within a column
 - [ ] URL sync and deep-link navigation ([#5](ISSUES.md#5--url-reflects-current-path-deep-link-navigation))
 - [ ] Auto-reload: server restart on code change + browser refresh on content change ([#6](ISSUES.md#6--auto-reload-code-changes-restart-server-content-changes-refresh-browser))
-
-- [ ] Source code file syntax highlighting with Pygments "friendly" theme ([#14](ISSUES.md#14--source-code-file-syntax-highlighting))
 - [ ] Breadcrumb / path display above the columns ([#13](ISSUES.md#13--breadcrumb-navigation))
 - [ ] Keyboard navigation (arrow keys to move between columns) ([#15](ISSUES.md#15--keyboard-navigation))
 
@@ -58,6 +55,8 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 - [x] `src/pykofinder/cli.py` – Typer CLI with `--port`, `--live`, ROOT env-var for reload mode
 - [x] `uv sync` – all 43 packages installed, smoke test passed
 - [x] Image preview – PNG, JPEG, GIF, WebP, SVG → `<img>` tag ([#1](ISSUES.md#1--add-png-and-jpeg-preview)) <!-- prune after 2026-05-30 -->
+- [x] Selected state – `<li>.selected` CSS + click-delegation JS ([#10](ISSUES.md#10--selected-directoriesfiles-must-stay-highlighted)) <!-- prune after 2026-06-03 -->
+- [x] Source code syntax highlighting with Pygments "friendly" theme ([#14](ISSUES.md#14--source-code-file-syntax-highlighting)) <!-- prune after 2026-06-03 -->
 - [x] Tooltip for truncated filenames ([#2](ISSUES.md#2--show-full-filename-in-tooltip-when-truncated)) <!-- prune after 2026-05-30 -->
 - [x] Auto-adjust column width to fit longest visible filename ([#3](ISSUES.md#3--auto-adjust-column-width-to-fit-longest-filename)) <!-- prune after 2026-05-30 -->
 - [x] Move project context from `.claude/CLAUDE.md` to `AGENTS.md` (gitignored) so pi auto-loads it; `.claude/CLAUDE.md` now references `@../AGENTS.md` ([#8](ISSUES.md#8--move-project-context-to-agentsmd-for-pi-auto-loading)) <!-- prune after 2026-05-30 -->

@@ -24,6 +24,39 @@ def render_preview(path: Path) -> str:
     elif ext in IMAGE_EXTS:
         return _preview_image(path)
     else:
+        # Try Pygments syntax highlighting (before raw text fallback)
+        SYNTAX_SIZE_LIMIT = 512 * 1024  # 512 KB
+        try:
+            from pygments import highlight as pyg_highlight
+            from pygments.formatters import HtmlFormatter as PygHtmlFormatter
+            from pygments.lexers import (
+                ClassNotFound,
+                TextLexer,
+                get_lexer_by_name,
+                guess_lexer,
+            )
+
+            if path.stat().st_size <= SYNTAX_SIZE_LIMIT:
+                try:
+                    content = path.read_text(encoding="utf-8")
+                except UnicodeDecodeError:
+                    content = None
+                if content is not None:
+                    lexer = None
+                    try:
+                        lexer = get_lexer_by_name(ext.lstrip("."))
+                    except ClassNotFound:
+                        try:
+                            lexer = guess_lexer(content)
+                        except Exception:
+                            pass
+                    # Skip TextLexer – unrecognised plain text falls through to <pre>
+                    if lexer is not None and not isinstance(lexer, TextLexer):
+                        formatter = PygHtmlFormatter(style="friendly", nowrap=False)
+                        highlighted = pyg_highlight(content, lexer, formatter)
+                        return f'<div class="preview-code">{highlighted}</div>'
+        except Exception:
+            pass
         # UTF-8 fallback: show any small-enough text file as raw <pre>
         if path.stat().st_size <= 256 * 1024:
             try:

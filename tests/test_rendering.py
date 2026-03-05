@@ -34,3 +34,18 @@ def test_md_renders_table():
 def test_md_renders_strikethrough():
     html = md.render("~~deleted~~")
     assert "<del>deleted</del>" in html or "<s>" in html
+
+
+# ── #10 selected state ────────────────────────────────────────────────────────
+
+
+def test_selected_css_present_in_app_css():
+    from pykofinder.styles import APP_CSS
+
+    assert "li.selected" in APP_CSS or ".selected" in APP_CSS
+
+
+def test_selection_js_present_in_column_js():
+    from pykofinder.styles import COLUMN_JS
+
+    assert "classList.add('selected')" in COLUMN_JS or "selected" in COLUMN_JS
