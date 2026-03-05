@@ -359,3 +359,38 @@ def test_raw_text_html_escaped(tmp_path):
     result = render_preview(f)
     assert "<script>" not in result
     assert "&lt;script&gt;" in result
+
+
+# ── #14 syntax highlighting ───────────────────────────────────────────────────
+
+
+def test_python_file_is_syntax_highlighted(tmp_path):
+    f = tmp_path / "hello.py"
+    f.write_text("def hello():\n    return 'world'\n")
+    result = render_preview(f)
+    assert "preview-code" in result
+    assert "highlight" in result  # Pygments wraps in div.highlight
+
+
+def test_js_file_is_syntax_highlighted(tmp_path):
+    f = tmp_path / "app.js"
+    f.write_text("function hello() { return 'world'; }\n")
+    result = render_preview(f)
+    assert "preview-code" in result
+
+
+def test_large_code_file_falls_through(tmp_path):
+    """Files over 512 KB must not be syntax-highlighted (fallback to raw or unsupported)."""
+    f = tmp_path / "big.py"
+    f.write_bytes(b"# comment\n" * 52429)  # >512 KB
+    result = render_preview(f)
+    # Must NOT have preview-code (too large for highlighting)
+    assert "preview-code" not in result
+
+
+def test_binary_py_file_falls_through(tmp_path):
+    """A .py file with non-UTF8 bytes must not crash – fall through to next handler."""
+    f = tmp_path / "bytes.py"
+    f.write_bytes(b"\xff\xfe invalid utf-8")
+    result = render_preview(f)  # must not raise
+    assert "preview-code" not in result

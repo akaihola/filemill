@@ -236,7 +236,9 @@ size cap, `UnicodeDecodeError` falls through); `styles.py` – `.preview-raw` CS
 ## #10 – Selected directories/files must stay highlighted
 
 **Type:** UX / bug
-**Status:** open
+**Status:** closed
+**Closed:** 2026-03-05
+**Prune after:** 2026-06-03
 
 When navigating the column view, the selected item in each column does not retain a
 highlighted background after the HTMX partial-swap completes. Two distinct cases must
@@ -386,7 +388,9 @@ result is injected into a `<nav>` element rendered at the top of every page.
 ## #14 – Source code file syntax highlighting
 
 **Type:** feature
-**Status:** open
+**Status:** closed
+**Closed:** 2026-03-05
+**Prune after:** 2026-06-03
 
 Files with code extensions (`.py`, `.js`, `.ts`, `.sh`, `.yaml`, `.toml`, `.rs`, `.go`,
 `.c`, `.cpp`, `.json`, `.html`, `.css`, etc.) should render with Pygments syntax

@@ -1,7 +1,8 @@
 from pygments.formatters import HtmlFormatter
 
 PYGMENTS_FORMATTER = HtmlFormatter(nowrap=True)
-HIGHLIGHT_CSS = HtmlFormatter().get_style_defs(".highlight")
+HIGHLIGHT_CSS = HtmlFormatter(style="friendly").get_style_defs(".highlight")
+FRIENDLY_CSS = HtmlFormatter(style="friendly").get_style_defs(".highlight")
 
 APP_CSS = (
     """
@@ -56,7 +57,7 @@ body {
     color: #fff;
 }
 
-.column li a:hover:not(.selected a) {
+.column li:not(.selected) a:hover {
     background: #e8e8e8;
 }
 
@@ -264,6 +265,17 @@ body.zoomed #preview {
 /* Pygments syntax highlighting */
 .highlight {{ background: #f3f3f3; }}
 {HIGHLIGHT_CSS}
+
+/* Source code preview block */
+.preview-code {{
+    padding: 0.5rem;
+}}
+.preview-code .highlight {{
+    border-radius: 5px;
+    overflow-x: auto;
+}}
+
+{FRIENDLY_CSS}
 """
 )
 
@@ -336,5 +348,20 @@ document.addEventListener('htmx:afterSettle', function(e) {
 document.addEventListener('DOMContentLoaded', function() {
     recalcColumnWidth();
     initZoomButton();
+});
+
+// Selection highlighting – mark the clicked <li> as selected within its column
+document.addEventListener('click', function(e) {
+    var a = e.target.closest('.column li a');
+    if (!a) return;
+    // Only handle HTMX-driven links (not .desktop target=_blank links)
+    if (!a.hasAttribute('hx-get') && !a.hasAttribute('data-hx-get')) return;
+    var li = a.closest('li');
+    var ul = a.closest('ul');
+    if (!li || !ul) return;
+    ul.querySelectorAll('li').forEach(function(sibling) {
+        sibling.classList.remove('selected');
+    });
+    li.classList.add('selected');
 });
 """
