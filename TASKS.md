@@ -36,12 +36,13 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 - [ ] Pagination for large directories (> 500 entries)
 - [ ] Search/filter within a column
 - [ ] URL sync and deep-link navigation ([#5](ISSUES.md#5--url-reflects-current-path-deep-link-navigation))
-- [ ] Auto-reload on code change – `--live` flag / service unit update ([#6](ISSUES.md#6--auto-reload-on-code-change))
+- [ ] Auto-reload: server restart on code change + browser refresh on content change ([#6](ISSUES.md#6--auto-reload-code-changes-restart-server-content-changes-refresh-browser))
 - [ ] Preview unrecognised text files raw – UTF-8 fallback to `<pre>` block ([#7](ISSUES.md#7--preview-unrecognised-text-files-raw))
-- [ ] Code file preview (plain text with syntax highlighting)
+- [ ] Source code file syntax highlighting with Pygments "friendly" theme ([#14](ISSUES.md#14--source-code-file-syntax-highlighting))
+- [ ] Breadcrumb / path display above the columns ([#13](ISSUES.md#13--breadcrumb-navigation))
+- [ ] Keyboard navigation (arrow keys to move between columns) ([#15](ISSUES.md#15--keyboard-navigation))
+- [ ] Bind address CLI option (`--bind` / `SERVE_BIND` env var) ([#16](ISSUES.md#16--bind-address-cli-option---bind--serve_bind-env-var))
 - [ ] PPTX slide image rendering via LibreOffice (better fidelity than text extraction)
-- [ ] Breadcrumb / path display above the columns
-- [ ] Keyboard navigation (arrow keys to move between columns)
 
 ---
 

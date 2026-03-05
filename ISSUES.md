@@ -337,3 +337,169 @@ syntax.
 
 **Files changed:** `AGENTS.md` (new, gitignored), `.claude/CLAUDE.md`, `.gitignore`.
 **Prune after:** 2026-05-30
+
+---
+
+## #13 – Breadcrumb navigation
+
+**Type:** UX / feature
+**Status:** open
+
+Render a `~ / dir / subdir / file` breadcrumb trail above the column strip so the user
+can see their current location and jump to any ancestor directory with a single click.
+
+**foam-web implementation** (`src/foam_web/views.py` lines 37–43):
+
+```python
+def breadcrumbs(rel: Path) -> str:
+    parts = ['<a href="/">~</a>']
+    accum = Path()
+    for p in rel.parts:
+        accum = accum / p
+        parts.append(f'<a href="{quote(f"/{accum}/")}">{html.escape(p)}</a>')
+    return " / ".join(parts)
+```
+
+`breadcrumbs(rel)` is called from `serve_dir`, `serve_md`, and `serve_raw` and the
+result is injected into a `<nav>` element rendered at the top of every page.
+
+**pykofinder sketch:**
+
+- Track the selected path as state in the HTMX app (already available as the `path`
+  query param on every `/click` request).
+- Render `<nav id="breadcrumb">` above `#columns` in the root page template
+  (`app.py` / `columns.py`).
+- On each `/click` response, return an `hx-swap-oob` fragment that updates `#breadcrumb`
+  with the new trail; each segment is an anchor that re-issues a `/click` for that path.
+- Style: `~` as root anchor → `/ seg1 / seg2 / filename`; use a soft muted colour for
+  separators and full contrast for segment text.
+- Once issue #5 (URL sync) is resolved the breadcrumb can also be derived client-side
+  from the URL, removing the need for OOB updates.
+
+---
+
+## #14 – Source code file syntax highlighting
+
+**Type:** feature
+**Status:** open
+
+Files with code extensions (`.py`, `.js`, `.ts`, `.sh`, `.yaml`, `.toml`, `.rs`, `.go`,
+`.c`, `.cpp`, `.json`, `.html`, `.css`, etc.) should render with Pygments syntax
+highlighting in the preview pane rather than displaying "No preview available."
+The Pygments `"friendly"` style should be used for visual consistency with foam-web.
+
+**foam-web implementation** (`src/foam_web/views.py` lines 64–81 `serve_raw()`,
+`src/foam_web/styles.py` line 8):
+
+```python
+# styles.py
+FORMATTER = HtmlFormatter(style="friendly", nowrap=False)
+
+# views.py – serve_raw()
+try:
+    lexer = get_lexer_by_name(full.suffix.lstrip("."))
+except Exception:
+    try:
+        lexer = guess_lexer(full.read_text(encoding="utf-8"))
+    except Exception:
+        lexer = None
+if lexer:
+    body = highlight(full.read_text(encoding="utf-8"), lexer, FORMATTER)
+    return render_page(title=full.name, nav=..., body=body)
+return None  # falls back to raw bytes
+```
+
+Key details:
+- Extension lookup (`get_lexer_by_name`) is tried first; `guess_lexer` is the fallback.
+- `HtmlFormatter(style="friendly", nowrap=False)` wraps output in
+  `<div class="highlight"><pre>` giving a visually distinct code block.
+- The `"friendly"` Pygments theme is a warm light palette (soft greens/blues).
+- Pygments' CSS for the chosen style should be injected once into the page via
+  `HtmlFormatter(style="friendly").get_style_defs(".highlight")`.
+
+**pykofinder sketch:**
+
+- In `render_preview()` (`preview.py`), after all existing extension checks and before
+  the final "No preview available" fallback, add a Pygments branch:
+  1. Try `get_lexer_by_name(ext.lstrip("."))`.
+  2. On failure, try `guess_lexer(content)`.
+  3. On success, call `highlight(content, lexer, HtmlFormatter(style="friendly", nowrap=False))`.
+  4. Wrap in `<div class="preview-code">` with padding.
+  5. Gate on a file-size cap (~512 KB) to avoid memory issues with large generated files.
+- In `styles.py`, add `HtmlFormatter(style="friendly").get_style_defs(".highlight")` to
+  the page `<style>` block (Pygments is already a transitive dep; add it explicitly to
+  `pyproject.toml` if needed).
+- This branch should run **before** the raw-text fallback (#7) so code files get colours;
+  unrecognised UTF-8 files fall through to plain `<pre>`.
+
+---
+
+## #15 – Keyboard navigation
+
+**Type:** UX / accessibility
+**Status:** open
+
+Users should be able to navigate the column view using the keyboard without reaching for
+the mouse – essential for power users and accessibility.
+
+**Target behaviour (macOS Finder column-view model):**
+
+| Key | Action |
+|-----|--------|
+| `↑` / `↓` | Move selection up/down within the focused column |
+| `→` | Open selected directory (add next column) or preview selected file |
+| `←` | Move focus back to the parent column and close child columns to the right |
+| `Enter` | Same as `→` |
+| `Escape` | Clear selection / collapse to root |
+
+**foam-web approach:** foam-web gets keyboard navigation for free because it uses
+full-page navigation – standard browser Tab/Enter/Back-Forward all work without any
+custom JS. For pykofinder's SPA column view, custom `keydown` handlers are needed.
+
+**pykofinder sketch:**
+
+- Add a `keydown` listener on `document` in the column JS block (`styles.py`
+  `COLUMN_JS`).
+- Track the "focused column index" and "selected item within that column" in JS state.
+- `↑`/`↓`: move selection within the current column's `<ul>` and trigger an HTMX
+  request (or simulate a click) on the new `<li>`.
+- `→`/`Enter`: fire the HTMX request for the currently selected `<li>` (identical to a
+  mouse click).
+- `←`: remove the rightmost column(s) until focus is at the previous column; restore the
+  previously selected item there.
+- Sync keyboard focus with the selected-item highlight from issue #10.
+- Ensure `aria-selected` attributes are updated for screen-reader compatibility.
+
+---
+
+## #16 – Bind address CLI option (`--bind` / `SERVE_BIND` env var)
+
+**Type:** feature / developer experience
+**Status:** open
+
+The server is currently hard-coded to bind on `0.0.0.0` (all interfaces). Operators
+should be able to bind to a specific network interface – e.g. `127.0.0.1` for
+localhost-only development or a specific IP for a multi-homed host.
+
+**foam-web implementation** (`src/foam_web/cli.py` lines 20–26):
+
+```python
+bind: Annotated[str, typer.Option("-b", "--bind", help="Address to bind to")] = \
+    os.environ.get("SERVE_BIND", "0.0.0.0"),
+```
+
+`bind` is then passed as `host=bind` to `run_server()` → `Server.serve()`. Both the
+short form (`-b`) and long form (`--bind`) are accepted, and the environment variable
+`SERVE_BIND` allows configuration without CLI flags (useful for systemd `Environment=`
+directives).
+
+**pykofinder sketch:**
+
+- In `cli.py`, add a `--bind` / `-b` option to the `serve()` command, defaulting to
+  `os.environ.get("PYKOFINDER_BIND", "0.0.0.0")`.
+- Pass it through to both `uvicorn.run()` call sites (the `reload=True` branch and the
+  normal branch) as the `host=` argument.
+- Update `~/.config/systemd/user/pykofinder.service` (or its drop-in) with an
+  `Environment=PYKOFINDER_BIND=0.0.0.0` line so the binding is explicit and easy to
+  change without editing the unit file.
+- Document in `README.md` and `CONTRIBUTING.md`.
