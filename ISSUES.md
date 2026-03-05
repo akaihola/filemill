@@ -108,7 +108,9 @@ gets `margin: 0 auto` so it centres within the full-width pane.
 ## #5 – URL reflects current path; deep-link navigation
 
 **Type:** feature
-**Status:** open
+**Status:** closed
+**Closed:** 2026-03-05
+**Prune after:** 2026-06-03
 
 The browser URL should stay in sync with the currently selected file or directory as the
 user navigates the column view, and pasting or opening a URL should restore the exact same

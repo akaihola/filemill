@@ -166,6 +166,58 @@ def _parse_desktop_url(path: Path) -> str | None:
     return None
 
 
+@rt("/restore")
+def restore(path: str):
+    """Return a full app-shell HTML for the given path (deep-link restoration)."""
+    p = _resolve_safe(path)
+    if p is None:
+        # Fall back to root view
+        shell = initial_columns(ROOT)
+        return HTMLResponse(repr(shell))
+
+    # Build ancestor chain: ROOT plus each directory step down to p
+    try:
+        rel = p.relative_to(ROOT)
+        parts = list(rel.parts)
+    except ValueError:
+        # Zone-2 symlink: treat as one level below ROOT
+        parts = [p.name]
+
+    dirs: list[Path] = []
+    cur = ROOT
+    for part in parts:
+        dirs.append(cur)
+        cur = cur / part
+    if cur.is_dir():
+        dirs.append(cur)
+
+    cols_html = ""
+    for i, d in enumerate(dirs):
+        if d.is_dir():
+            col_obj = list_column(d, ROOT, col_index=i)
+            cols_html += repr(col_obj)
+
+    sentinel_idx = len([d for d in dirs if d.is_dir()])
+    sentinel_html = f'<div id="col-{sentinel_idx}"></div>'
+
+    preview_html = ""
+    if p.is_file():
+        try:
+            preview_html = render_preview(p)
+        except Exception as e:
+            preview_html = f'<div class="preview-error">{html_lib.escape(str(e))}</div>'
+
+    preview_cls = "" if preview_html else "preview-empty"
+    preview_div = f'<div id="preview" class="{preview_cls}">{preview_html}</div>'
+    bc_html = render_breadcrumb(p, ROOT)
+
+    full = (
+        f'<div id="app-shell">{bc_html}'
+        f'<div id="finder">{cols_html}{sentinel_html}{preview_div}</div></div>'
+    )
+    return HTMLResponse(full)
+
+
 @rt("/open-link")
 def open_link(path: str):
     """Redirect the browser to the URL stored in a .desktop link file."""

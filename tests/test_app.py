@@ -175,3 +175,40 @@ def test_click_file_includes_breadcrumb_oob(client, tmp_root):
     resp = client.get(f"/click?path={quote(str(md_file))}&col=1")
     assert resp.status_code == 200
     assert "breadcrumb" in resp.text
+
+
+# ── GET /restore ──────────────────────────────────────────────────────────────
+
+
+def test_restore_valid_directory_returns_200(client, tmp_root):
+    from urllib.parse import quote
+
+    subdir = tmp_root / "subdir"
+    resp = client.get(f"/restore?path={quote(str(subdir))}")
+    assert resp.status_code == 200
+    assert 'id="finder"' in resp.text
+    assert "col-0" in resp.text
+
+
+def test_restore_valid_file_includes_preview(client, tmp_root):
+    from urllib.parse import quote
+
+    md = tmp_root / "readme.md"
+    resp = client.get(f"/restore?path={quote(str(md))}")
+    assert resp.status_code == 200
+    assert "preview-md" in resp.text
+
+
+def test_restore_bad_path_returns_root_view(client, tmp_root):
+    from urllib.parse import quote
+
+    resp = client.get(f"/restore?path={quote('/etc/passwd')}")
+    assert resp.status_code == 200
+    assert "finder" in resp.text
+
+
+def test_url_sync_js_in_column_js():
+    from pykofinder.styles import COLUMN_JS
+
+    assert "pushState" in COLUMN_JS
+    assert "_pendingPath" in COLUMN_JS or "pendingPath" in COLUMN_JS.lower()
