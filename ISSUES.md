@@ -221,6 +221,40 @@ switching the preview to a different file) and must not be lost by HTMX swaps.
 
 ---
 
+## #11 – Symlinks in ROOT denied with "Access denied."
+
+**Type:** bug
+**Status:** closed
+**Closed:** 2026-03-05
+
+`_resolve_safe` called `Path.resolve()` (which follows symlinks) _before_ the
+containment check, so a symlink entry such as `~/menu/paivi → /home/agent/paivi`
+resolved to `/home/agent/paivi` and then failed the `relative_to(ROOT)` guard.
+Additionally, once a symlink _was_ followed (e.g. the user clicked into it), every
+subsequent path inside that subtree (e.g. `/home/agent/paivi/documents`) also failed
+because it was not lexically under ROOT.
+
+**Fix:** zone-based containment check operating on the _fully resolved_ path:
+
+- **Zone 1** – resolved path is within ROOT (all real files/dirs).
+- **Zone 2** – resolved path is within the resolved target of any _direct_ symlink
+  child of ROOT. This lets directory symlinks placed in ROOT act as bookmarks whose
+  subtrees are fully browsable.
+
+Symlinks _within_ a bookmark subtree whose target escapes all allowed zones are
+still denied, as are classic `..`-traversal attacks (defeated by `resolve()`).
+
+`_resolve_safe` gained an optional `root` parameter so tests can inject a
+temporary tree without touching the module-level `ROOT` global.
+
+**Files changed:** `src/pykofinder/app.py`, `pyproject.toml` (added `pytest` dev
+dep + `[tool.pytest.ini_options]`), `tests/__init__.py`, `tests/test_resolve_safe.py`
+(16 cases: zone-1 access, zone-2 bookmark access, safe nested symlinks, escaped
+nested symlinks, traversal attacks, URL-encoding, startswith prefix-collision).
+**Prune after:** 2026-06-03
+
+---
+
 ## #8 – Move project context to AGENTS.md for pi auto-loading
 
 **Type:** chore / developer experience

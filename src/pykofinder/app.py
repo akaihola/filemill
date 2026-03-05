@@ -1,3 +1,4 @@
+import configparser
 import html as html_lib
 import os
 from pathlib import Path
@@ -14,7 +15,7 @@ from fasthtml.common import (
     Title,
     fast_app,
 )
-from starlette.responses import FileResponse, HTMLResponse
+from starlette.responses import FileResponse, HTMLResponse, RedirectResponse
 
 from pykofinder.columns import initial_columns, list_column
 from pykofinder.preview import render_preview
@@ -33,14 +34,46 @@ app, rt = fast_app(
 )
 
 
-def _resolve_safe(path_str: str) -> Path | None:
-    """Resolve a user-supplied path and verify it stays within ROOT."""
+def _resolve_safe(path_str: str, root: Path | None = None) -> Path | None:
+    """Resolve a user-supplied path and verify it falls within an allowed zone.
+
+    Allowed zones
+    -------------
+    1. ROOT itself – any real file or directory that lives under ROOT.
+    2. The resolved target of any *direct* symlink child of ROOT – lets
+       directory symlinks placed in ROOT act as bookmarks whose subtrees are
+       fully browsable.
+
+    Symlinks *within* a bookmark subtree are only allowed when their resolved
+    target falls inside zone 1 or the same zone-2 directory (or another
+    bookmark target).  Symlinks that escape all allowed zones are denied.
+
+    Path-traversal via ``..`` is defeated because the containment check
+    operates on the fully-resolved path, not the raw string.
+    """
+    effective_root = root if root is not None else ROOT
     try:
-        resolved_root = ROOT.resolve()
-        p = Path(urlunquote(path_str)).resolve()
-        if not str(p).startswith(str(resolved_root)):
-            return None
-        return p
+        resolved_root = effective_root.resolve()
+        resolved = Path(os.path.normpath(urlunquote(path_str))).resolve()
+
+        # Zone 1: within ROOT
+        try:
+            resolved.relative_to(resolved_root)
+            return resolved
+        except ValueError:
+            pass
+
+        # Zone 2: within the resolved target of a direct symlink child of ROOT
+        for child in effective_root.iterdir():
+            if child.is_symlink():
+                target = child.resolve()
+                try:
+                    resolved.relative_to(target)
+                    return resolved
+                except ValueError:
+                    continue
+
+        return None
     except Exception:
         return None
 
@@ -93,3 +126,30 @@ def raw(path: str):
     if p is None or not p.is_file():
         return HTMLResponse("Not found", status_code=404)
     return FileResponse(str(p))
+
+
+def _parse_desktop_url(path: Path) -> str | None:
+    """Parse a .desktop file and return URL if Type=Link, else None."""
+    try:
+        cp = configparser.ConfigParser(interpolation=None)
+        cp.read(str(path), encoding="utf-8")
+        if "Desktop Entry" in cp:
+            entry = cp["Desktop Entry"]
+            if entry.get("Type", "").strip() == "Link":
+                url = entry.get("URL", "").strip()
+                return url or None
+    except Exception:
+        pass
+    return None
+
+
+@rt("/open-link")
+def open_link(path: str):
+    """Redirect the browser to the URL stored in a .desktop link file."""
+    p = _resolve_safe(path)
+    if p is None or not p.is_file():
+        return HTMLResponse("Not found", status_code=404)
+    url = _parse_desktop_url(p)
+    if not url:
+        return HTMLResponse("Not a .desktop link file", status_code=400)
+    return RedirectResponse(url, status_code=302)
