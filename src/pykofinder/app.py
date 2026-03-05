@@ -17,7 +17,7 @@ from fasthtml.common import (
 )
 from starlette.responses import FileResponse, HTMLResponse, RedirectResponse
 
-from pykofinder.columns import initial_columns, list_column
+from pykofinder.columns import initial_columns, list_column, render_breadcrumb
 from pykofinder.preview import render_preview
 from pykofinder.styles import APP_CSS, COLUMN_JS
 
@@ -106,10 +106,13 @@ def click(path: str, col: int):
         return error_div
 
     if p.is_dir():
-        # Return new column as main swap target; preview cleared via OOB
+        # Return new column as main swap target; preview and breadcrumb cleared via OOB
+        bc_oob = render_breadcrumb(p, ROOT).replace(
+            '<nav id="breadcrumb">', '<nav id="breadcrumb" hx-swap-oob="true">'
+        )
         new_col = list_column(p, ROOT, col_index=col)
         preview_clear = Div(id="preview", hx_swap_oob="true")
-        return new_col, preview_clear
+        return new_col, preview_clear, NotStr(bc_oob)
     else:
         # File: return rendered preview as main swap (target="#preview")
         try:
@@ -133,7 +136,10 @@ def click(path: str, col: int):
     if (preview) preview.parentNode.insertBefore(sentinel, preview);
 }})();
 </script>"""
-        return NotStr(preview_html + prune_js)
+        bc_oob = render_breadcrumb(p, ROOT).replace(
+            '<nav id="breadcrumb">', '<nav id="breadcrumb" hx-swap-oob="true">'
+        )
+        return NotStr(preview_html + prune_js + bc_oob)
 
 
 @rt("/raw")

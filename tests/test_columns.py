@@ -141,3 +141,47 @@ def test_initial_columns_structure(tmp_path):
     assert 'id="col-0"' in html
     assert 'id="col-1"' in html
     assert 'id="preview"' in html
+
+
+# ── render_breadcrumb ─────────────────────────────────────────────────────────
+
+
+def test_render_breadcrumb_root_shows_tilde(tmp_path):
+    from pykofinder.columns import render_breadcrumb
+
+    html = render_breadcrumb(tmp_path, tmp_path)
+    assert 'id="breadcrumb"' in html
+    assert "~" in html
+
+
+def test_render_breadcrumb_one_level(tmp_path):
+    from pykofinder.columns import render_breadcrumb
+
+    sub = tmp_path / "documents"
+    html = render_breadcrumb(sub, tmp_path)
+    assert "documents" in html
+
+
+def test_render_breadcrumb_nested(tmp_path):
+    from pykofinder.columns import render_breadcrumb
+
+    deep = tmp_path / "a" / "b" / "c.md"
+    html = render_breadcrumb(deep, tmp_path)
+    assert "a" in html
+    assert "b" in html
+    assert "c.md" in html
+
+
+def test_render_breadcrumb_escapes_html(tmp_path):
+    from pykofinder.columns import render_breadcrumb
+
+    sub = tmp_path / "<evil>"
+    html = render_breadcrumb(sub, tmp_path)
+    assert "<evil>" not in html
+    assert "&lt;evil&gt;" in html
+
+
+def test_initial_columns_has_breadcrumb(tmp_path):
+    html = initial_columns(tmp_path).__html__()
+    assert 'id="breadcrumb"' in html
+    assert 'id="app-shell"' in html

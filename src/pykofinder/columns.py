@@ -1,7 +1,27 @@
+import html as html_lib
 from pathlib import Path
 from urllib.parse import quote as urlquote
 
 from fasthtml.common import A, Div, Li, NotStr, Script, Ul
+
+
+def render_breadcrumb(path: Path, root: Path) -> str:
+    """Return a <nav id="breadcrumb"> HTML string for the given path under root."""
+    parts: list[str] = []
+    parts.append('<span class="bc-root">~</span>')
+
+    try:
+        rel = path.relative_to(root)
+        segments = list(rel.parts)
+    except ValueError:
+        segments = []
+
+    for seg in segments:
+        parts.append('<span class="bc-sep">/</span>')
+        parts.append(f'<span class="bc-seg">{html_lib.escape(seg)}</span>')
+
+    inner = " ".join(parts)
+    return f'<nav id="breadcrumb">{inner}</nav>'
 
 
 def entry_icon(p: Path) -> str:
@@ -114,10 +134,14 @@ def list_column(path: Path, root: Path, col_index: int) -> object:
 
 
 def initial_columns(root: Path) -> object:
-    """Return the initial #finder shell with first column, sentinel, and preview pane."""
+    """Return the initial #app-shell with breadcrumb + #finder shell."""
     return Div(
-        list_column(root, root, col_index=0),
-        Div(id="col-1"),
-        Div(id="preview", cls="preview-empty"),
-        id="finder",
+        NotStr(render_breadcrumb(root, root)),
+        Div(
+            list_column(root, root, col_index=0),
+            Div(id="col-1"),
+            Div(id="preview", cls="preview-empty"),
+            id="finder",
+        ),
+        id="app-shell",
     )

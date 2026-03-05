@@ -12,11 +12,41 @@ body {
     background: #f0f0f0;
     margin: 0;
     overflow: hidden;
+    height: 100vh;
+}
+
+#app-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#breadcrumb {
+    padding: 4px 12px;
+    font-size: 12px;
+    background: #ebebeb;
+    border-bottom: 1px solid #c7c7c7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+    color: #333;
+}
+
+.bc-root, .bc-seg {
+    font-weight: 500;
+}
+
+.bc-sep {
+    color: #999;
+    margin: 0 4px;
 }
 
 #finder {
     display: flex;
-    height: 100vh;
+    flex: 1;
+    min-height: 0;
     overflow-x: auto;
     overflow-y: hidden;
 }

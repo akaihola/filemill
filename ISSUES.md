@@ -350,38 +350,24 @@ syntax.
 ## #13 – Breadcrumb navigation
 
 **Type:** UX / feature
-**Status:** open
+**Status:** closed
+**Closed:** 2026-03-05
+**Prune after:** 2026-06-03
 
 Render a `~ / dir / subdir / file` breadcrumb trail above the column strip so the user
-can see their current location and jump to any ancestor directory with a single click.
+can see their current location.
 
-**foam-web implementation** (`src/foam_web/views.py` lines 37–43):
+**Implemented:**
 
-```python
-def breadcrumbs(rel: Path) -> str:
-    parts = ['<a href="/">~</a>']
-    accum = Path()
-    for p in rel.parts:
-        accum = accum / p
-        parts.append(f'<a href="{quote(f"/{accum}/")}">{html.escape(p)}</a>')
-    return " / ".join(parts)
-```
-
-`breadcrumbs(rel)` is called from `serve_dir`, `serve_md`, and `serve_raw` and the
-result is injected into a `<nav>` element rendered at the top of every page.
-
-**pykofinder sketch:**
-
-- Track the selected path as state in the HTMX app (already available as the `path`
-  query param on every `/click` request).
-- Render `<nav id="breadcrumb">` above `#columns` in the root page template
-  (`app.py` / `columns.py`).
-- On each `/click` response, return an `hx-swap-oob` fragment that updates `#breadcrumb`
-  with the new trail; each segment is an anchor that re-issues a `/click` for that path.
-- Style: `~` as root anchor → `/ seg1 / seg2 / filename`; use a soft muted colour for
-  separators and full contrast for segment text.
-- Once issue #5 (URL sync) is resolved the breadcrumb can also be derived client-side
-  from the URL, removing the need for OOB updates.
+- `columns.py`: `render_breadcrumb(path, root) -> str` – returns `<nav id="breadcrumb">`
+  HTML with `~` root, `/`-separated segments (HTML-escaped via `html.escape()`);
+  `initial_columns()` now returns `#app-shell` wrapper div containing the breadcrumb nav
+  above the `#finder` div.
+- `app.py`: `click` handler returns OOB `<nav id="breadcrumb" hx-swap-oob="true">` in
+  both the directory case (tuple return) and the file case (appended to `NotStr`).
+- `styles.py`: `#app-shell` flex column container, `#breadcrumb` strip styles,
+  `.bc-root`/`.bc-seg`/`.bc-sep` classes; `#finder` changed from `height: 100vh` to
+  `flex: 1; min-height: 0`; `body` gained `height: 100vh`.
 
 ---
 

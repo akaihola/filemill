@@ -36,7 +36,7 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 - [ ] Search/filter within a column
 - [ ] URL sync and deep-link navigation ([#5](ISSUES.md#5--url-reflects-current-path-deep-link-navigation))
 - [ ] Auto-reload: server restart on code change + browser refresh on content change ([#6](ISSUES.md#6--auto-reload-code-changes-restart-server-content-changes-refresh-browser))
-- [ ] Breadcrumb / path display above the columns ([#13](ISSUES.md#13--breadcrumb-navigation))
+
 - [ ] Keyboard navigation (arrow keys to move between columns) ([#15](ISSUES.md#15--keyboard-navigation))
 
 - [ ] PPTX slide image rendering via LibreOffice (better fidelity than text extraction)
@@ -66,4 +66,5 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 - [x] `.desktop` link file support – `🔗` icon, `/open-link` redirect, preview card ([#12](ISSUES.md#12--desktop-link-file-support)) <!-- prune after 2026-06-03 -->
 - [x] `~/menu/` root – workspace symlinks + `.desktop` hyperlinks; service root changed via drop-in `root.conf`; nixos-config updated <!-- prune after 2026-06-03 -->
 - [x] Raw UTF-8 text fallback preview – `<pre class="preview-raw">` for unrecognised extensions (≤256 KB) ([#7](ISSUES.md#7--preview-unrecognised-text-files-raw)) <!-- prune after 2026-06-03 -->
+- [x] Breadcrumb navigation – `~ / dir / subdir / file` trail above column strip with OOB swap ([#13](ISSUES.md#13--breadcrumb-navigation)) <!-- prune after 2026-06-03 -->
 - [x] Bind address CLI option `--bind` / `-b` with `PYKOFINDER_BIND` env var ([#16](ISSUES.md#16--bind-address-cli-option---bind--serve_bind-env-var)) <!-- prune after 2026-06-03 -->
