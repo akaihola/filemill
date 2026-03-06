@@ -62,7 +62,7 @@ def test_selection_js_present_in_column_js():
 
 
 def test_linkify_plain_https_url():
-    """A bare HTTPS URL in markdown text becomes a clickable <a>."""
+    """A bare HTTPS URL in markdown text becomes a clickable anchor."""
     rendered = md.render("Visit https://example.com today")
     assert '<a href="https://example.com">' in rendered
 
@@ -72,8 +72,8 @@ def test_linkify_plain_http_url():
     assert '<a href="http://foo.bar/path">' in rendered
 
 
-def test_linkify_markdown_link_unchanged():
-    """Explicit [text](url) Markdown links are not double-processed."""
+def test_linkify_markdown_link_not_double_processed():
+    """Explicit [text](url) links are not processed twice."""
     rendered = md.render("[click](https://example.com)")
     assert rendered.count("<a ") == 1
     assert 'href="https://example.com"' in rendered
@@ -83,7 +83,7 @@ def test_linkify_markdown_link_unchanged():
 
 
 def test_mermaid_fence_produces_div():
-    """A ```mermaid fence block becomes <div class="mermaid">."""
+    """A ```mermaid fence becomes <div class="mermaid">."""
     src = "```mermaid\ngraph TD\n  A-->B\n```"
     rendered = md.render(src)
     assert '<div class="mermaid">' in rendered
@@ -91,7 +91,7 @@ def test_mermaid_fence_produces_div():
 
 
 def test_mermaid_content_html_escaped():
-    """Mermaid content with < > & is HTML-escaped inside the div."""
+    """Mermaid content with special chars is HTML-escaped inside the div."""
     src = "```mermaid\ngraph TD\n  A-->B & C<D>\n```"
     rendered = md.render(src)
     assert "&amp;" in rendered or "&lt;" in rendered
@@ -105,10 +105,9 @@ def test_mermaid_div_contains_diagram_source():
 
 
 def test_non_mermaid_fence_still_highlighted():
-    """Non-mermaid code fences still get Pygments highlighting."""
+    """Non-mermaid fences still get Pygments highlighting, not a mermaid div."""
     src = "```python\nprint('hi')\n```"
     rendered = md.render(src)
-    # Pygments wraps in <span> or similar; should NOT be a plain mermaid div
     assert '<div class="mermaid">' not in rendered
     assert "print" in rendered
 
@@ -117,12 +116,9 @@ def test_non_mermaid_fence_still_highlighted():
 
 
 def test_find_git_root_finds_ancestor(tmp_path):
-    git_dir = tmp_path / ".git"
-    git_dir.mkdir()
+    (tmp_path / ".git").mkdir()
     sub = tmp_path / "sub" / "deep"
     sub.mkdir(parents=True)
-    f = sub / "note.md"
-    f.touch()
     assert _find_git_root(sub) == tmp_path
 
 
@@ -147,8 +143,7 @@ def test_find_file_for_href_relative_sibling(tmp_path):
     src.touch()
     target = tmp_path / "docs" / "other.md"
     target.touch()
-    found = _find_file_for_href("other.md", src)
-    assert found == target.resolve()
+    assert _find_file_for_href("other.md", src) == target.resolve()
 
 
 def test_find_file_for_href_relative_subdir(tmp_path):
@@ -158,8 +153,7 @@ def test_find_file_for_href_relative_subdir(tmp_path):
     sub = tmp_path / "images" / "photo.png"
     sub.parent.mkdir()
     sub.touch()
-    found = _find_file_for_href("images/photo.png", src)
-    assert found == sub.resolve()
+    assert _find_file_for_href("images/photo.png", src) == sub.resolve()
 
 
 def test_find_file_for_href_absolute_url_skipped(tmp_path):
@@ -195,24 +189,21 @@ def test_find_file_for_href_walks_up_to_git_root(tmp_path):
     src_dir.mkdir()
     src = src_dir / "note.md"
     src.touch()
-    # target is at git root level (not relative to src's dir)
     target = tmp_path / "assets" / "image.png"
     target.parent.mkdir()
     target.touch()
-    found = _find_file_for_href("assets/image.png", src)
-    assert found == target.resolve()
+    assert _find_file_for_href("assets/image.png", src) == target.resolve()
 
 
 def test_find_file_for_href_recursive_search(tmp_path):
-    """Finds file anywhere under git root by basename when direct paths fail."""
+    """Finds a file by basename rglob when direct relative lookup fails."""
     (tmp_path / ".git").mkdir()
     src = tmp_path / "note.md"
     src.touch()
     target = tmp_path / "deep" / "nested" / "diagram.png"
     target.parent.mkdir(parents=True)
     target.touch()
-    found = _find_file_for_href("diagram.png", src)
-    assert found == target.resolve()
+    assert _find_file_for_href("diagram.png", src) == target.resolve()
 
 
 def test_find_file_for_href_strips_fragment(tmp_path):
@@ -221,36 +212,33 @@ def test_find_file_for_href_strips_fragment(tmp_path):
     src.touch()
     target = tmp_path / "other.md"
     target.touch()
-    found = _find_file_for_href("other.md#heading-1", src)
-    assert found == target.resolve()
+    assert _find_file_for_href("other.md#heading-1", src) == target.resolve()
 
 
-def test_find_file_for_href_no_git_root_still_finds_relative(tmp_path):
-    """With no .git root, still finds files relative to source dir."""
+def test_find_file_for_href_no_git_still_finds_relative(tmp_path):
+    """With no .git root, still finds files relative to source dir (step 1)."""
     src = tmp_path / "note.md"
     src.touch()
     target = tmp_path / "sibling.md"
     target.touch()
-    # No .git dir → _find_git_root returns None, but step 1 still works
-    found = _find_file_for_href("sibling.md", src)
-    assert found == target.resolve()
+    assert _find_file_for_href("sibling.md", src) == target.resolve()
 
 
 # ── #19 href URL generation ───────────────────────────────────────────────────
 
 
 def test_href_for_md_file_uses_deep_link(tmp_path):
-    """.md files get /?path=... so _deepNavigate opens them in the finder."""
+    """.md files get /?path=... so _deepNavigate opens them in the column view."""
     f = tmp_path / "page.md"
-    assert _href_for_file(f).startswith("/?path=")
-    assert "page.md" in _href_for_file(f)
+    href = _href_for_file(f)
+    assert href.startswith("/?path=")
+    assert "page.md" in href
 
 
 def test_href_for_other_file_uses_raw(tmp_path):
-    """Non-.md files get /raw?path=... for direct serving."""
+    """Non-.md files get /raw?path=... for direct byte serving."""
     f = tmp_path / "photo.png"
-    href = _href_for_file(f)
-    assert href.startswith("/raw?path=")
+    assert _href_for_file(f).startswith("/raw?path=")
 
 
 # ── #19 link normalization in rendered markdown ───────────────────────────────
@@ -301,12 +289,9 @@ def test_wikilink_basic_renders_anchor():
 
 
 def test_wikilink_with_display_text():
-    """[[Target|Display]] uses the display text, not the target."""
-    rendered = md.render("See [[OtherPage|click here]] for info")
+    """[[Target|Display]] uses the display text for the link label."""
+    rendered = md.render("See [[OtherPage|click here]]")
     assert ">click here</a>" in rendered
-    assert "OtherPage" not in rendered.replace("OtherPage", "")  # target not in text
-    # The display text should appear in the link
-    assert ">click here<" in rendered
 
 
 def test_wikilink_unresolved_gets_hash_href():
@@ -336,5 +321,4 @@ def test_wikilink_does_not_break_normal_links():
 def test_wikilink_empty_brackets_not_matched():
     """[[]] (empty) is not treated as a wikilink."""
     rendered = md.render("This is [[]] empty")
-    # Should not produce a wikilink anchor
     assert 'class="wikilink"' not in rendered
