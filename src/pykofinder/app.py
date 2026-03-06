@@ -359,8 +359,21 @@ def restore(path: str):
         rel = p.relative_to(ROOT)
         parts = list(rel.parts)
     except ValueError:
-        # Zone-2 symlink: treat as one level below ROOT
-        parts = [p.name]
+        # Zone-2 path: p lives inside the resolved target of a direct symlink
+        # child of ROOT.  Build parts as [symlink_name, *sub_path_parts] so
+        # that all intermediate columns (ROOT → bookmark → … → p) are rendered.
+        parts = None
+        for child in ROOT.iterdir():
+            if child.is_symlink():
+                target = child.resolve()
+                try:
+                    rel_in_target = p.relative_to(target)
+                    parts = [child.name] + list(rel_in_target.parts)
+                    break
+                except ValueError:
+                    continue
+        if parts is None:
+            parts = [p.name]  # fallback: p is exactly the symlink target
 
     dirs: list[Path] = []
     cur = ROOT
