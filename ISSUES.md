@@ -1009,3 +1009,38 @@ range(len(vpath_parts) + 1)` loop: at each depth, renders a VFS column
    - New `selected_vpath: str | None = None` parameter; when
      `entry.vpath == selected_vpath` the corresponding `<li>` receives
      `class="selected"`.
+
+---
+
+## #31 – Enhanced keyboard navigation: Home/End/PgUp/PgDn + Left/Right focus model
+
+**Type:** feature
+**Status:** closed
+**Closed:** 2026-03-06
+**Prune after:** 2026-06-04
+
+Improve the column-view keyboard navigation:
+
+- **Up/Down**: move the highlight within the currently focused column;
+  when nothing is selected, Down picks the first item and Up picks the last.
+- **Right**: if a column already exists to the right, move focus there
+  (to the previously highlighted item, or the first item); if at the
+  rightmost column, trigger navigation into the selected item (like Enter).
+- **Left**: shift focus one column left **without pruning/removing any columns**.
+- **Enter**: trigger navigation (unchanged).
+- **Home / End**: jump to first / last visible item in the focused column.
+- **PageUp / PageDown**: jump up / down by a page (column height ÷ item height).
+- **Escape**: clear all selections (unchanged).
+
+**Implementation** (`src/pykofinder/styles.py`):
+
+Replace the keyboard navigation IIFE with a rewritten version that:
+
+1. Maintains a `_focusedColIndex` module-level variable (within the IIFE).
+2. Adds `visibleItems(col)` helper to filter out hidden dotfile `<li>`s.
+3. Adds `pageSize(col, items)` helper for PgUp/PgDn calculation.
+4. Adds `triggerNav(sel)` helper (extracted from old ArrowRight/Enter block).
+5. Adds a second `htmx:afterSettle` listener inside the IIFE that resets
+   `_focusedColIndex = cols.length - 1` after each navigation.
+6. `ArrowLeft` only adjusts `_focusedColIndex` (no `.remove()` calls).
+7. Handles `Home`, `End`, `PageUp`, `PageDown` cases in the `switch`.

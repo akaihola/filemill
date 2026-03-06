@@ -13,3 +13,6 @@ AGENTS.md
 .coverage
 .pytest_cache/
 htmlcov/
+
+# dora code context index
+.dora/

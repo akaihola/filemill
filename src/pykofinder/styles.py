@@ -679,8 +679,19 @@ document.addEventListener('click', function(e) {
 
 // ── Keyboard navigation ──────────────────────────────────────────────────────
 (function() {
+    // -1 = auto (resolves to rightmost column at runtime)
+    var _focusedColIndex = -1;
+
     function getColumns() {
         return Array.from(document.querySelectorAll('#finder .column'));
+    }
+
+    // Return visible <li> elements, skipping hidden dotfiles.
+    function visibleItems(col) {
+        var showDots = document.body.classList.contains('show-dotfiles');
+        return Array.from(col.querySelectorAll('li')).filter(function(li) {
+            return showDots || !li.classList.contains('dotfile');
+        });
     }
 
     function getSelectedLi(col) {
@@ -695,15 +706,38 @@ document.addEventListener('click', function(e) {
         li.scrollIntoView({ block: 'nearest' });
     }
 
-    function focusedColIndex() {
+    function focusIndex() {
         var cols = getColumns();
-        // Focused column = rightmost column that has a selected item,
-        // or the rightmost column overall.
-        for (var i = cols.length - 1; i >= 0; i--) {
-            if (getSelectedLi(cols[i])) return i;
-        }
+        if (!cols.length) return -1;
+        if (_focusedColIndex >= 0 && _focusedColIndex < cols.length) return _focusedColIndex;
         return cols.length - 1;
     }
+
+    // Items per page for PgUp/PgDn, based on rendered item height.
+    function pageSize(col, items) {
+        if (!items.length || !col.clientHeight) return 10;
+        var h = items[0].offsetHeight;
+        return h ? Math.max(1, Math.floor(col.clientHeight / h) - 1) : 10;
+    }
+
+    // Trigger HTMX navigation or a plain click on the selected item's anchor.
+    function triggerNav(sel) {
+        if (!sel) return;
+        var a = sel.querySelector('a');
+        if (!a) return;
+        if (a.getAttribute('hx-get') || a.getAttribute('data-hx-get')) {
+            htmx.trigger(a, 'click');
+        } else {
+            a.click();
+        }
+    }
+
+    // After each HTMX settle (new column added / navigation), reset focus to
+    // the new rightmost column.
+    document.addEventListener('htmx:afterSettle', function() {
+        var cols = getColumns();
+        _focusedColIndex = cols.length - 1;
+    });
 
     document.addEventListener('keydown', function(e) {
         // Don't hijack input fields
@@ -712,74 +746,94 @@ document.addEventListener('click', function(e) {
         var cols = getColumns();
         if (!cols.length) return;
 
-        var ci = focusedColIndex();
+        var ci = focusIndex();
         var col = cols[ci];
+        var items = col ? visibleItems(col) : [];
         var sel = getSelectedLi(col);
-        var items = col ? Array.from(col.querySelectorAll('li')) : [];
+        var selIdx = sel ? items.indexOf(sel) : -1;
 
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault();
-                if (!sel && items.length) {
-                    selectLi(items[0]);
-                } else if (sel) {
-                    var idx = items.indexOf(sel);
-                    if (idx < items.length - 1) selectLi(items[idx + 1]);
+                if (items.length) {
+                    if (selIdx < 0) { selectLi(items[0]); }
+                    else if (selIdx < items.length - 1) { selectLi(items[selIdx + 1]); }
                 }
                 break;
 
             case 'ArrowUp':
                 e.preventDefault();
-                if (sel) {
-                    var idx = items.indexOf(sel);
-                    if (idx > 0) selectLi(items[idx - 1]);
+                if (items.length) {
+                    if (selIdx < 0) { selectLi(items[items.length - 1]); }
+                    else if (selIdx > 0) { selectLi(items[selIdx - 1]); }
                 }
                 break;
 
             case 'ArrowRight':
+                e.preventDefault();
+                if (ci < cols.length - 1) {
+                    // Move focus to the existing column to the right.
+                    _focusedColIndex = ci + 1;
+                    var rc = cols[_focusedColIndex];
+                    var rsel = getSelectedLi(rc);
+                    if (rsel) {
+                        rsel.scrollIntoView({ block: 'nearest' });
+                    } else {
+                        var ri = visibleItems(rc);
+                        if (ri.length) selectLi(ri[0]);
+                    }
+                    rc.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+                } else {
+                    // At rightmost column – navigate into the selected item.
+                    triggerNav(sel);
+                }
+                break;
+
             case 'Enter':
                 e.preventDefault();
-                if (sel) {
-                    var a = sel.querySelector('a');
-                    if (a) {
-                        if (a.getAttribute('hx-get') || a.getAttribute('data-hx-get')) {
-                            htmx.trigger(a, 'click');
-                        } else {
-                            a.click();
-                        }
-                    }
-                }
+                triggerNav(sel);
                 break;
 
             case 'ArrowLeft':
                 e.preventDefault();
                 if (ci > 0) {
-                    // Move focus to parent column – its selected item is already marked.
-                    // If no selected item in parent col, select the first item.
-                    var parentCol = cols[ci - 1];
-                    var parentSel = getSelectedLi(parentCol);
-                    if (!parentSel) {
-                        var parentItems = parentCol.querySelectorAll('li');
-                        if (parentItems.length) selectLi(parentItems[0]);
-                    }
-                    // Remove selection from current column
-                    items.forEach(function(li) { li.classList.remove('selected'); });
-                    // Prune columns to the right of parent
-                    // (this mimics clicking the parent – but we don't want to re-fetch)
-                    // Just collapse: remove all columns to right of ci-1
-                    for (var j = cols.length - 1; j > ci - 1; j--) {
-                        if (cols[j]) cols[j].remove();
-                    }
-                    // Also clear preview
-                    var preview = document.getElementById('preview');
-                    if (preview) { preview.innerHTML = ''; preview.className = 'preview-empty'; }
-                    recalcColumnWidth();
+                    // Shift focus one column left; leave all columns intact.
+                    _focusedColIndex = ci - 1;
+                    var lc = cols[_focusedColIndex];
+                    var lsel = getSelectedLi(lc);
+                    if (lsel) lsel.scrollIntoView({ block: 'nearest' });
+                    lc.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+                }
+                break;
+
+            case 'Home':
+                e.preventDefault();
+                if (items.length) selectLi(items[0]);
+                break;
+
+            case 'End':
+                e.preventDefault();
+                if (items.length) selectLi(items[items.length - 1]);
+                break;
+
+            case 'PageUp':
+                e.preventDefault();
+                if (items.length) {
+                    if (selIdx < 0) { selectLi(items[0]); }
+                    else { selectLi(items[Math.max(0, selIdx - pageSize(col, items))]); }
+                }
+                break;
+
+            case 'PageDown':
+                e.preventDefault();
+                if (items.length) {
+                    if (selIdx < 0) { selectLi(items[items.length - 1]); }
+                    else { selectLi(items[Math.min(items.length - 1, selIdx + pageSize(col, items))]); }
                 }
                 break;
 
             case 'Escape':
                 e.preventDefault();
-                // Clear all selections
                 document.querySelectorAll('#finder li.selected').forEach(function(li) {
                     li.classList.remove('selected');
                 });
