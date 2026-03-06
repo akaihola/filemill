@@ -26,12 +26,6 @@ after:** YYYY-MM-DD` (closed date + 90 days) in ISSUES.md, then move the entry h
 
 _(nothing currently in progress)_
 
-- [~] [#19](ISSUES.md#19--markdown-relative-link-normalization) Markdown relative link normalization
-- [~] [#20](ISSUES.md#20--wikilink-rendering-pagename) Wikilink rendering `[[PageName]]`
-- [~] [#21](ISSUES.md#21--mermaid-diagram-rendering) Mermaid diagram rendering
-- [~] [#22](ISSUES.md#22--plain-url-linkification) Plain URL linkification
-- [~] [#23](ISSUES.md#23--static-webserver-mode-w-and-finder-mode-f) Static webserver `/w/` + finder `/f/` routes
-
 ---
 
 ## Open
@@ -47,6 +41,11 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 
 ## Done
 
+- [x] [#19](ISSUES.md#19--markdown-relative-link-normalization) Markdown relative link normalization <!-- prune after 2026-06-04 -->
+- [x] [#20](ISSUES.md#20--wikilink-rendering-pagename) Wikilink rendering `[[PageName]]` <!-- prune after 2026-06-04 -->
+- [x] [#21](ISSUES.md#21--mermaid-diagram-rendering) Mermaid diagram rendering <!-- prune after 2026-06-04 -->
+- [x] [#22](ISSUES.md#22--plain-url-linkification) Plain URL linkification (`linkify-it-py`) <!-- prune after 2026-06-04 -->
+- [x] [#23](ISSUES.md#23--static-webserver-mode-w-and-finder-mode-f) Static webserver `/w/` + finder `/f/` routes <!-- prune after 2026-06-04 -->
 - [x] [#18](ISSUES.md#18--virtual-fs-navigation-and-view-format-switching-sqlite--extensible-registry) Virtual-FS navigation + view-format switching (SQLite + registry) <!-- prune after 2026-06-03 -->
 - [x] `pyproject.toml` – project metadata, deps, entry point
 - [x] `src/pykofinder/__init__.py` – package marker
