@@ -185,3 +185,16 @@ def test_initial_columns_has_breadcrumb(tmp_path):
     html = initial_columns(tmp_path).__html__()
     assert 'id="breadcrumb"' in html
     assert 'id="app-shell"' in html
+
+
+def test_render_breadcrumb_path_outside_root(tmp_path):
+    """When path is not under root, relative_to raises ValueError; segments must be empty."""
+    import tempfile
+    from pykofinder.columns import render_breadcrumb
+
+    with tempfile.TemporaryDirectory() as other_root:
+        html = render_breadcrumb(Path(other_root), tmp_path)
+        assert 'id="breadcrumb"' in html
+        assert "~" in html
+        # No segment spans – the path is outside root
+        assert "bc-seg" not in html
