@@ -47,18 +47,39 @@ def test_web_static_traversal_denied(tmp_path, monkeypatch):
 # ── #23 GET /f/ – finder deep-link ────────────────────────────────────────────
 
 
-def test_finder_view_redirects_to_deep_link(tmp_path, monkeypatch):
-    """/f/{path} redirects to /?path=ABSOLUTE."""
+def test_finder_view_serves_shell_with_deep_link_script(tmp_path, monkeypatch):
+    """/f/{path} returns the full app shell with an inline _deepNavigate call."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     (tmp_path / "readme.md").touch()
+    resp = _client(tmp_path).get("/f/readme.md")
+    assert resp.status_code == 200
+    body = resp.text
+    assert "pykofinder" in body
+    assert "_deepNavigate" in body
+    assert "readme.md" in body
+
+
+def test_finder_view_root_serves_shell(tmp_path, monkeypatch):
+    """/f/ (no path) returns the full app shell without an inline deep-link call."""
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    resp = _client(tmp_path).get("/f/")
+    assert resp.status_code == 200
+    body = resp.text
+    assert "pykofinder" in body
+    # The inline nav script uses no-space 'DOMContentLoaded',function() pattern.
+    # COLUMN_JS uses 'DOMContentLoaded', function() with a space – different.
+    assert "'DOMContentLoaded',function()" not in body
+
+
+def test_root_redirects_to_finder(tmp_path, monkeypatch):
+    """GET / redirects to /f/."""
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
     c = TestClient(
         app_module.app, raise_server_exceptions=False, follow_redirects=False
     )
-    resp = c.get("/f/readme.md")
+    resp = c.get("/")
     assert resp.status_code == 302
-    location = resp.headers.get("location", "")
-    assert "/?path=" in location
-    assert "readme.md" in location
+    assert resp.headers.get("location", "").startswith("/f/")
 
 
 def test_finder_view_404_for_missing(tmp_path, monkeypatch):
