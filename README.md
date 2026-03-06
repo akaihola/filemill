@@ -9,7 +9,7 @@ inline for Markdown, DOCX, PPTX, PDF, images, plain text, and source code.
 - **Column view** – multi-pane navigation à la macOS Finder
 - **Rich previews** – Markdown (with plugins), DOCX, PPTX, PDF, images, plain text
 - **Syntax highlighting** – source code files via Pygments "friendly" theme
-- **Breadcrumb trail** – `~ / dir / subdir / file` navigation bar above the columns
+- **Breadcrumb trail** – `~ / dir / subdir / file` navigation bar above the columns; includes a `.*` dotfile toggle that persists across sessions
 - **URL sync** – browser URL stays in sync with the selected path; deep-link any location
 - **Keyboard navigation** – `↑↓` move within a column; `→`/`Enter` open; `←` go back; `Esc` clear
 - **Live reload** – `--live` flag restarts the server on code changes and refreshes the browser on content changes via SSE

@@ -23,15 +23,53 @@ body {
 }
 
 #breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     padding: 4px 12px;
     font-size: 12px;
     background: #ebebeb;
     border-bottom: 1px solid #c7c7c7;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     flex-shrink: 0;
     color: #333;
+    overflow: hidden;
+}
+
+.bc-toggle {
+    margin-left: auto;
+    flex-shrink: 0;
+    padding: 1px 6px;
+    border: 1px solid #bbb;
+    border-radius: 3px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: "SF Mono", "Fira Code", monospace;
+    color: #999;
+    line-height: 1.4;
+    user-select: none;
+}
+.bc-toggle:hover {
+    background: #e8e8e8;
+}
+.bc-toggle.active {
+    background: #0070c9;
+    color: #fff;
+    border-color: #0070c9;
+}
+.bc-toggle.active:hover {
+    background: #005da6;
+}
+
+/* Dotfiles: hidden by default, visible when body carries .show-dotfiles */
+.column li.dotfile {
+    display: none;
+}
+body.show-dotfiles .column li.dotfile {
+    display: list-item;
+}
+body.show-dotfiles .column li.dotfile > a {
+    opacity: 0.65;
 }
 
 .bc-root, .bc-seg {
@@ -444,9 +482,14 @@ function recalcColumnWidth() {
     var ctx = canvas.getContext('2d');
     ctx.font = '13px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif';
 
+    var showDots = document.body.classList.contains('show-dotfiles');
     var maxTextPx = 0;
     columns.forEach(function(col) {
-        col.querySelectorAll('li a').forEach(function(a) {
+        col.querySelectorAll('li').forEach(function(li) {
+            // Skip hidden dotfile entries so they don't inflate column width
+            if (li.classList.contains('dotfile') && !showDots) return;
+            var a = li.querySelector('a');
+            if (!a) return;
             // Clone the text content without the icon span
             var text = '';
             a.childNodes.forEach(function(node) {
@@ -492,8 +535,34 @@ document.addEventListener('click', function(e) {
 });
 
 // After HTMX settles, push/replace the URL
+// ── Dotfiles visibility toggle ──────────────────────────────────────────────
+var _DOT_KEY = 'pykofinder_show_dotfiles';
+
+function _syncDotBtn() {
+    var btn = document.getElementById('dotfiles-btn');
+    if (!btn) return;
+    var show = document.body.classList.contains('show-dotfiles');
+    btn.classList.toggle('active', show);
+    btn.title = show ? 'Hide dotfiles' : 'Show dotfiles';
+}
+
+function toggleDotfiles() {
+    var show = document.body.classList.toggle('show-dotfiles');
+    localStorage.setItem(_DOT_KEY, show ? '1' : '0');
+    _syncDotBtn();
+    recalcColumnWidth();
+}
+
+function initDotfilesToggle() {
+    if (localStorage.getItem(_DOT_KEY) === '1') {
+        document.body.classList.add('show-dotfiles');
+    }
+    _syncDotBtn();
+}
+
 document.addEventListener('htmx:afterSettle', function(e) {
     recalcColumnWidth();
+    _syncDotBtn();
     var finder = document.getElementById('finder');
     if (finder) finder.scrollLeft = finder.scrollWidth;
     if (_pendingPath) {
@@ -534,6 +603,7 @@ function _deepNavigate(fullPath) {
 document.addEventListener('DOMContentLoaded', function() {
     recalcColumnWidth();
     initZoomButton();
+    initDotfilesToggle();
     // Deep-link: restore state from URL
     var params = new URLSearchParams(window.location.search);
     var deepPath = params.get('path');
