@@ -322,3 +322,55 @@ def test_wikilink_empty_brackets_not_matched():
     """[[]] (empty) is not treated as a wikilink."""
     rendered = md.render("This is [[]] empty")
     assert 'class="wikilink"' not in rendered
+
+
+def test_find_file_for_href_empty_string(tmp_path):
+    """An empty href returns None immediately."""
+    src = tmp_path / "note.md"
+    src.touch()
+    assert _find_file_for_href("", src) is None
+
+
+def test_find_file_for_href_query_only(tmp_path):
+    """An href that is only a query string (e.g. '?q=1') returns None."""
+    src = tmp_path / "note.md"
+    src.touch()
+    assert _find_file_for_href("?q=1", src) is None
+
+
+def test_find_file_for_href_ftp_skipped(tmp_path):
+    """ftp:// URLs are not resolved."""
+    src = tmp_path / "note.md"
+    src.touch()
+    assert _find_file_for_href("ftp://example.com/file.txt", src) is None
+
+
+def test_find_file_for_href_skips_hidden_dir_in_rglob(tmp_path):
+    """Files inside hidden directories are skipped in the recursive search."""
+    (tmp_path / ".git").mkdir()
+    src = tmp_path / "note.md"
+    src.touch()
+    # Place target inside a hidden directory — should be skipped
+    hidden = tmp_path / ".hidden_dir" / "secret.md"
+    hidden.parent.mkdir()
+    hidden.touch()
+    # The file should NOT be found because it's inside a hidden directory
+    assert _find_file_for_href("secret.md", src) is None
+
+
+def test_find_file_for_href_step2_fails_step3_succeeds(tmp_path):
+    """Step 2 walks up to git_root without finding file; step 3 finds it by rglob."""
+    (tmp_path / ".git").mkdir()
+    src_dir = tmp_path / "docs"
+    src_dir.mkdir()
+    src = src_dir / "note.md"
+    src.touch()
+    # File is NOT findable by href "x/target.md" from any ancestor of docs
+    # (there's no docs/x/target.md, nor tmp_path/x/target.md)
+    # but rglob from git_root finds it
+    target = tmp_path / "data" / "archive" / "target.md"
+    target.parent.mkdir(parents=True)
+    target.touch()
+    found = _find_file_for_href("x/target.md", src)
+    # rglob by basename "target.md" finds it
+    assert found == target.resolve()

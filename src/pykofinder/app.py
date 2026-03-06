@@ -423,6 +423,22 @@ def web_static(path: str):
 def finder_view(path: str):
     """Redirect to the finder column-view for a ROOT-relative *path*."""
     p = _resolve_safe(str(ROOT / path.lstrip("/")))
-    if p is None:
+    if p is None or not p.exists():
         return HTMLResponse("Not found", status_code=404)
     return RedirectResponse(f"/?path={urlquote(str(p))}", status_code=302)
+
+
+# ── Route priority fix ────────────────────────────────────────────────────────
+# FastHTML registers a catch-all /{fname:path}.{ext:static} at index 0 that
+# intercepts any path with a known static extension (including .html, .txt, …).
+# Move /w/ and /f/ in front of it so they are matched first.
+def _reorder_routes() -> None:
+    routes = app.router.routes
+    _prefixes = {"/w/{path:path}", "/f/{path:path}"}
+    priority, rest = [], []
+    for r in routes:
+        (priority if getattr(r, "path", "") in _prefixes else rest).append(r)
+    routes[:] = priority + rest
+
+
+_reorder_routes()
