@@ -408,14 +408,14 @@ def restore(path: str, vpath: str = ""):
                 )
                 entries = provider.list_entries(p, current_vpath)
                 if not entries:
-                    # Leaf or empty folder: render preview for current_vpath.
-                    if current_vpath:
-                        try:
-                            preview_html = provider.render_preview(
-                                p, current_vpath, "folders", 1, 1000, col=sentinel_idx
-                            )
-                        except Exception as exc:
-                            preview_html = f'<div class="preview-error">{html_lib.escape(str(exc))}</div>'
+                    # Leaf or empty node: render preview regardless of vpath depth
+                    # (e.g. JSON files have no navigable children even at root vpath).
+                    try:
+                        preview_html = provider.render_preview(
+                            p, current_vpath, "folders", 1, 1000, col=sentinel_idx
+                        )
+                    except Exception as exc:
+                        preview_html = f'<div class="preview-error">{html_lib.escape(str(exc))}</div>'
                     break
                 show_fmt_bar = any(e.icon == "📋" for e in entries)
                 vfs_col = list_vfs_column(

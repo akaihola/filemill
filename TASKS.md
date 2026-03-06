@@ -41,6 +41,8 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 
 ## Done
 
+- [x] [#30](ISSUES.md#30--json-vfs-preview-shows-not-yet-implemented-stub) JSON VFS preview – implement `render_preview` + fix `restore()` guard <!-- prune after 2026-06-04 -->
+
 - [x] [#29](ISSUES.md#29--sqlite-tablerow-navigation-not-reflected-in-url) SQLite table/row navigation not reflected in URL <!-- prune after 2026-09-04 -->
 - [x] [#28](ISSUES.md#28--direct-url-to-vfs-file-shows-no-preview-available-instead-of-table-list) Direct URL to VFS file shows "No preview available" instead of table list <!-- prune after 2026-06-04 -->
 - [x] [#27](ISSUES.md#27--deep-link-restore-does-not-highlight-selected-entries) Deep-link restore missing `selected` highlight on entries <!-- prune after 2026-06-04 -->

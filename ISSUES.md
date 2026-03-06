@@ -8,6 +8,43 @@ the issue block here and the corresponding `[x]` line in TASKS.md at that point.
 
 ---
 
+## #30 – JSON VFS preview shows "not yet implemented" stub
+
+**Type:** bug
+**Status:** closed
+**Closed:** 2026-03-06
+
+`.json` files are registered as VFS provider entries but both `render_preview` and the
+`restore()` guard prevent any real content from appearing:
+
+1. `json_provider.py` `render_preview` returns a literal stub string
+   `"JSON VFS not yet implemented."` instead of rendering the file content.
+2. `app.py` `restore()` has an `if current_vpath:` guard around the
+   `render_preview` call in the "no children" branch. For a JSON file at
+   root vpath (`""`) this guard evaluates to `False`, so the preview is
+   silently skipped and the pane remains blank.
+
+**Fix:**
+
+- Implement `render_preview` in `json_provider.py` to read the file, pretty-print
+  valid JSON, and render it with Pygments syntax highlighting (same `"friendly"`
+  style used everywhere else). Fall back to raw `<pre>` if Pygments is unavailable;
+  show malformed JSON as raw text.
+- Remove the `if current_vpath:` guard in `restore()` so that VFS providers with
+  no navigable children (like the JSON provider) still get their preview rendered
+  even at root vpath.
+
+**Tests added:**
+
+- `test_click_json_file_renders_json_not_stub` – clicking a `.json` file returns
+  formatted JSON content, not the stub message.
+- `test_restore_json_file_shows_json_preview` – `/restore` for a `.json` file
+  includes JSON content in the preview pane.
+
+**Prune after:** 2026-06-04
+
+---
+
 ## #26 – Deep-link broken for zone-2 sub-paths; HTMX not re-initialised after restore
 
 **Type:** bug
@@ -914,7 +951,7 @@ should be pre-selected; `/restore` in `app.py` builds each column via
 
 When navigating to a VFS-backed file (e.g. a SQLite `.db`) by pasting its URL
 directly into the browser (e.g. `/f/?path=/path/to/file.db`), the preview pane
-showed *"No preview available for .db files."* instead of the table-list column
+showed _"No preview available for .db files."_ instead of the table-list column
 that appears when clicking through the columns.
 
 **Root cause:** The `/restore` endpoint renders a preview for any file it
@@ -964,7 +1001,7 @@ VFS position (table name / row key). `/restore` likewise accepted only `path`.
 2. `app.py` – `/restore` endpoint:
    - Accepts optional `vpath: str = ""`.
    - For VFS files, iterates through vpath segments with a `for i in
-     range(len(vpath_parts) + 1)` loop: at each depth, renders a VFS column
+range(len(vpath_parts) + 1)` loop: at each depth, renders a VFS column
      with `selected_vpath` highlighting; when `list_entries` returns an empty
      list (leaf or empty table), renders the preview instead and breaks.
 
