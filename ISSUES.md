@@ -541,7 +541,7 @@ custom JS. For pykofinder's SPA column view, custom `keydown` handlers are neede
 ## #18 – Virtual-FS navigation and view-format switching (SQLite + extensible registry)
 
 **Type:** feature
-**Status:** open
+**Status:** in-progress
 
 ### Summary
 
