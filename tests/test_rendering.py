@@ -433,3 +433,21 @@ def test_zoom_btn_not_fixed_position():
 
     # Find the #zoom-btn rule block and confirm 'fixed' is absent from it
     assert "#zoom-btn" not in APP_CSS or "position: fixed" not in APP_CSS
+
+
+def test_preview_spreadsheet_has_no_padding_rule():
+    """#preview must have zero padding when it contains a spreadsheet preview.
+
+    The fmt-bar in Spreadsheet view lives inside #preview, while in Rows view
+    it lives inside the column panel (no padding). Without this rule the toggle
+    buttons jump by 16px vertically / 24px horizontally on every switch.
+    """
+    from pykofinder.styles import APP_CSS
+
+    assert "#preview:has(.preview-db-spreadsheet)" in APP_CSS
+    # Locate the block and verify padding:0 is part of it
+    start = APP_CSS.index("#preview:has(.preview-db-spreadsheet)")
+    block_end = APP_CSS.index("}", start)
+    rule_block = APP_CSS[start:block_end]
+    assert "padding" in rule_block
+    assert "0" in rule_block

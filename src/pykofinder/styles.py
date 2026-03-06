@@ -141,7 +141,10 @@ body.show-dotfiles .column li.dotfile > a {
     padding: 1rem 1.5rem;
     background: #fff;
     border-left: 1px solid #c7c7c7;
-}
+}}
+#preview:has(.preview-db-spreadsheet) {{
+    padding: 0;
+}}
 
 .preview-md {
     max-width: 800px;
