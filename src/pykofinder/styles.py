@@ -125,6 +125,23 @@ body.show-dotfiles .column li.dotfile > a {
     color: #fff;
 }
 
+/* ── Column focus-state highlights (keyboard navigation) ─────────────────── */
+/* Ancestor columns (left of focus): muted steel-blue – shows the path taken  */
+.col-ancestor li.selected > a {
+    background: #6fa3be;
+    color: #fff;
+}
+
+/* Descendant columns (right of focus): very light – "remembered, waiting"    */
+.col-descendant li.selected > a {
+    background: #dceef7;
+    color: #6090a8;
+}
+
+.col-descendant li.selected > a .icon {
+    color: #6090a8;
+}
+
 .column li:not(.selected) a:hover {
     background: #e8e8e8;
 }
@@ -596,6 +613,7 @@ function _deepNavigate(fullPath, vpath) {
                 if (newShell) htmx.process(newShell);
                 recalcColumnWidth();
                 initZoomButton();
+                _kbApplyFocus();
                 var finder = document.getElementById('finder');
                 if (finder) finder.scrollLeft = finder.scrollWidth;
             }
@@ -677,6 +695,10 @@ document.addEventListener('click', function(e) {
   });
 })();
 
+// Placeholder; the keyboard IIFE below replaces this with applyFocusClasses()
+// so that _deepNavigate (defined above) can call it after replacing the shell.
+var _kbApplyFocus = function() {};
+
 // ── Keyboard navigation ──────────────────────────────────────────────────────
 (function() {
     // -1 = auto (resolves to rightmost column at runtime)
@@ -720,6 +742,21 @@ document.addEventListener('click', function(e) {
         return h ? Math.max(1, Math.floor(col.clientHeight / h) - 1) : 10;
     }
 
+    // Stamp col-ancestor / col-focused / col-descendant on every column div
+    // so CSS can render the three distinct focus-state highlights.
+    function applyFocusClasses() {
+        var cols = getColumns();
+        var fi = focusIndex();
+        cols.forEach(function(col, i) {
+            col.classList.remove('col-focused', 'col-ancestor', 'col-descendant');
+            if (i < fi) col.classList.add('col-ancestor');
+            else if (i === fi) col.classList.add('col-focused');
+            else col.classList.add('col-descendant');
+        });
+    }
+    // Expose for _deepNavigate (defined above, before the IIFE).
+    _kbApplyFocus = applyFocusClasses;
+
     // Trigger HTMX navigation or a plain click on the selected item's anchor.
     function triggerNav(sel) {
         if (!sel) return;
@@ -733,10 +770,16 @@ document.addEventListener('click', function(e) {
     }
 
     // After each HTMX settle (new column added / navigation), reset focus to
-    // the new rightmost column.
+    // the new rightmost column and refresh the focus-state CSS classes.
     document.addEventListener('htmx:afterSettle', function() {
         var cols = getColumns();
         _focusedColIndex = cols.length - 1;
+        applyFocusClasses();
+    });
+
+    // Apply initial focus classes once the DOM is ready.
+    document.addEventListener('DOMContentLoaded', function() {
+        applyFocusClasses();
     });
 
     document.addEventListener('keydown', function(e) {
@@ -783,6 +826,7 @@ document.addEventListener('click', function(e) {
                         if (ri.length) selectLi(ri[0]);
                     }
                     rc.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+                    applyFocusClasses();
                 } else {
                     // At rightmost column – navigate into the selected item.
                     triggerNav(sel);
@@ -803,6 +847,7 @@ document.addEventListener('click', function(e) {
                     var lsel = getSelectedLi(lc);
                     if (lsel) lsel.scrollIntoView({ block: 'nearest' });
                     lc.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+                    applyFocusClasses();
                 }
                 break;
 

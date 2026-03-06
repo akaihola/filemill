@@ -41,6 +41,7 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 
 ## Done
 
+- [x] [#32](ISSUES.md#32--column-focus-state-visual-indicators-keyboard-navigation) Column focus-state visual indicators – col-focused / col-ancestor / col-descendant <!-- prune after 2026-06-05 -->
 - [x] [#31](ISSUES.md#31--enhanced-keyboard-navigation-homeendpguppgdn--leftright-focus-model) Enhanced keyboard navigation – Home/End/PgUp/PgDn + Left/Right focus model <!-- prune after 2026-06-04 -->
 - [x] [#30](ISSUES.md#30--json-vfs-preview-shows-not-yet-implemented-stub) JSON VFS preview – implement `render_preview` + fix `restore()` guard <!-- prune after 2026-06-04 -->
 
