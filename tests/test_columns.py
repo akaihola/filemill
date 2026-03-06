@@ -382,3 +382,22 @@ def test_render_breadcrumb_toggle_inside_nav(tmp_path):
     nav_start = html.index('<nav id="breadcrumb"')
     btn_pos = html.index("dotfiles-btn")
     assert btn_pos > nav_start  # button is inside the nav
+
+
+def test_render_breadcrumb_has_zoom_btn(tmp_path):
+    """Breadcrumb must contain the zoom toggle button (moved out of fixed overlay)."""
+    from pykofinder.columns import render_breadcrumb
+
+    html = render_breadcrumb(tmp_path, tmp_path)
+    assert "zoom-btn" in html
+    assert "toggleZoom" in html
+
+
+def test_render_breadcrumb_zoom_btn_inside_nav(tmp_path):
+    """Zoom button must be inside <nav id='breadcrumb'>, not injected by JS."""
+    from pykofinder.columns import render_breadcrumb
+
+    html = render_breadcrumb(tmp_path, tmp_path)
+    nav_start = html.index('<nav id="breadcrumb"')
+    zoom_pos = html.index("zoom-btn")
+    assert zoom_pos > nav_start

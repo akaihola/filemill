@@ -301,24 +301,6 @@ body.show-dotfiles .column li.dotfile > a {
     max-height: 100%;
 }
 
-#zoom-btn {
-    position: fixed;
-    top: 0.5rem;
-    right: 0.75rem;
-    z-index: 100;
-    background: rgba(255,255,255,0.85);
-    border: 1px solid #c7c7c7;
-    border-radius: 4px;
-    padding: 2px 6px;
-    font-size: 14px;
-    cursor: pointer;
-    line-height: 1.4;
-    user-select: none;
-}
-#zoom-btn:hover {
-    background: #e8e8e8;
-}
-
 body.zoomed .column {
     display: none;
 }
@@ -455,19 +437,23 @@ body.zoomed #preview {
 )
 
 COLUMN_JS = """
+function _syncZoomBtn() {
+    var btn = document.getElementById('zoom-btn');
+    if (!btn) return;
+    var zoomed = document.body.classList.contains('zoomed');
+    btn.textContent = zoomed ? '✕' : '⛶';
+    btn.title = zoomed ? 'Restore columns' : 'Expand preview';
+    btn.classList.toggle('active', zoomed);
+}
+
+function toggleZoom() {
+    document.body.classList.toggle('zoomed');
+    _syncZoomBtn();
+    recalcColumnWidth();
+}
+
 function initZoomButton() {
-    if (document.getElementById('zoom-btn')) return; // idempotent
-    var btn = document.createElement('button');
-    btn.id = 'zoom-btn';
-    btn.title = 'Expand preview';
-    btn.textContent = '⛶';
-    btn.addEventListener('click', function() {
-        var zoomed = document.body.classList.toggle('zoomed');
-        btn.textContent = zoomed ? '✕' : '⛶';
-        btn.title = zoomed ? 'Restore columns' : 'Expand preview';
-        recalcColumnWidth();
-    });
-    document.body.appendChild(btn);
+    _syncZoomBtn(); // button is server-rendered in breadcrumb; just sync state
 }
 
 function recalcColumnWidth() {
@@ -563,6 +549,7 @@ function initDotfilesToggle() {
 document.addEventListener('htmx:afterSettle', function(e) {
     recalcColumnWidth();
     _syncDotBtn();
+    _syncZoomBtn();
     var finder = document.getElementById('finder');
     if (finder) finder.scrollLeft = finder.scrollWidth;
     if (_pendingPath) {

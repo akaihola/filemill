@@ -418,3 +418,18 @@ def test_dotfiles_sync_btn_called_on_after_settle():
     settle_pos = COLUMN_JS.index("afterSettle")
     call_pos = COLUMN_JS.index("_syncDotBtn()", settle_pos)
     assert call_pos > settle_pos
+
+
+def test_zoom_toggle_js_exists():
+    """COLUMN_JS must expose toggleZoom() for the server-rendered zoom button."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "toggleZoom" in COLUMN_JS
+
+
+def test_zoom_btn_not_fixed_position():
+    """#zoom-btn must no longer use position:fixed (lives in breadcrumb flex row)."""
+    from pykofinder.styles import APP_CSS
+
+    # Find the #zoom-btn rule block and confirm 'fixed' is absent from it
+    assert "#zoom-btn" not in APP_CSS or "position: fixed" not in APP_CSS

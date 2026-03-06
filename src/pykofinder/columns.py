@@ -33,12 +33,17 @@ def render_breadcrumb(path: Path, root: Path, vpath: str = "") -> str:
                 )
 
     inner = " ".join(parts)
-    toggle_btn = (
+    dotfiles_btn = (
         '<button id="dotfiles-btn" class="bc-toggle"'
         ' title="Show dotfiles"'
         ' onclick="toggleDotfiles()">.*</button>'
     )
-    return f'<nav id="breadcrumb">{inner}{toggle_btn}</nav>'
+    zoom_btn = (
+        '<button id="zoom-btn" class="bc-toggle"'
+        ' title="Expand preview"'
+        ' onclick="toggleZoom()">⛶</button>'
+    )
+    return f'<nav id="breadcrumb">{inner}{dotfiles_btn}{zoom_btn}</nav>'
 
 
 def entry_icon(p: Path) -> str:
