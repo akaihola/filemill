@@ -395,10 +395,33 @@ def restore(path: str):
 
     preview_html = ""
     if p.is_file():
-        try:
-            preview_html = render_preview(p)
-        except Exception as e:
-            preview_html = f'<div class="preview-error">{html_lib.escape(str(e))}</div>'
+        provider = REGISTRY.get(p)
+        if provider is not None:
+            # VFS-backed file (e.g. SQLite .db): render initial entry list as a column.
+            entries = provider.list_entries(p, "")
+            if entries:
+                show_fmt_bar = any(e.icon == "📋" for e in entries)
+                encoded_path = urlquote(str(p))
+                vfs_col = list_vfs_column(
+                    entries=entries,
+                    fs_path_encoded=encoded_path,
+                    fs_path_raw=str(p),
+                    vpath="",
+                    col_index=sentinel_idx,
+                    show_fmt_bar=show_fmt_bar,
+                    active_fmt=provider.default_fmt(""),
+                    ext=p.suffix.lower(),
+                )
+                cols_html += repr(vfs_col)
+                sentinel_idx += 1
+                sentinel_html = f'<div id="col-{sentinel_idx}"></div>'
+        else:
+            try:
+                preview_html = render_preview(p)
+            except Exception as e:
+                preview_html = (
+                    f'<div class="preview-error">{html_lib.escape(str(e))}</div>'
+                )
 
     preview_cls = "" if preview_html else "preview-empty"
     preview_div = f'<div id="preview" class="{preview_cls}">{preview_html}</div>'

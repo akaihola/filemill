@@ -536,3 +536,31 @@ def test_restore_file_highlights_selected_entries_including_file(tmp_path, monke
     assert "selected" not in _li_tag(html, "other.txt"), (
         "'other.txt' must not be selected"
     )
+
+
+# ── #28 – /restore must render VFS column for VFS-backed files ────────────────
+
+
+def test_restore_vfs_file_renders_table_column_not_unsupported(tmp_path, monkeypatch):
+    """/restore for a .db file must render the VFS table-list column,
+    not fall through to render_preview() which returns 'No preview available'.
+    """
+    import sqlite3
+    from urllib.parse import quote
+    from starlette.testclient import TestClient
+
+    db = tmp_path / "test.db"
+    con = sqlite3.connect(str(db))
+    con.execute("CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT)")
+    con.execute("INSERT INTO items VALUES (1, 'alpha')")
+    con.commit()
+    con.close()
+
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    c = TestClient(app_module.app, raise_server_exceptions=False)
+    resp = c.get(f"/restore?path={quote(str(db))}")
+
+    assert resp.status_code == 200
+    assert "preview-unsupported" not in resp.text
+    # The VFS column must list the table name
+    assert "items" in resp.text
