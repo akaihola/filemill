@@ -386,7 +386,8 @@ def restore(path: str):
     cols_html = ""
     for i, d in enumerate(dirs):
         if d.is_dir():  # pragma: no branch – dirs only ever contains directories
-            col_obj = list_column(d, ROOT, col_index=i)
+            sel = parts[i] if i < len(parts) else None
+            col_obj = list_column(d, ROOT, col_index=i, selected_name=sel)
             cols_html += repr(col_obj)
 
     sentinel_idx = len([d for d in dirs if d.is_dir()])
