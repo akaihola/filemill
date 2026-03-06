@@ -536,6 +536,109 @@ custom JS. For pykofinder's SPA column view, custom `keydown` handlers are neede
 **Closed:** 2026-03-05
 **Prune after:** 2026-06-03
 
+---
+
+## #18 – Virtual-FS navigation and view-format switching (SQLite + extensible registry)
+
+**Type:** feature
+**Status:** open
+
+### Summary
+
+Two interlocking features:
+
+1. **Virtual filesystem (VFS) navigation** – certain file types (starting with SQLite
+   `.db`) behave like navigable directories: their internal structure (schemas, tables,
+   rows) is exposed as additional Finder columns rather than a static preview.
+2. **View-format switching** – a general mechanism for toggling between alternate
+   renderings of an item (e.g. spreadsheet vs row-folders for a DB table, spreadsheet
+   vs raw for CSV, formatted vs raw for JSON). The toggle button lives in the
+   currently-active view container (column header when in folder/column mode; preview
+   header when in preview mode).
+
+### New modules
+
+| Module                                      | Responsibility                                                                                 |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `src/pykofinder/vfs.py`                     | `VFSEntry` dataclass; `VFSProvider` protocol; `VFSRegistry` singleton; format-default registry |
+| `src/pykofinder/providers/__init__.py`      | Package marker                                                                                 |
+| `src/pykofinder/providers/sqlite.py`        | Concrete `VFSProvider` for `.db`                                                               |
+| `src/pykofinder/providers/csv_provider.py`  | Stub (spreadsheet vs raw)                                                                      |
+| `src/pykofinder/providers/json_provider.py` | Stub (formatted vs raw)                                                                        |
+
+### URL / routing changes
+
+**`/click` extended params** (backward-compatible):
+
+| Param   | Meaning                                                                              |
+| ------- | ------------------------------------------------------------------------------------ |
+| `vpath` | Virtual path within the file at `path`, slash-separated (e.g. `users` or `users/42`) |
+| `fmt`   | Explicit view-format override; if absent, resolved from localStorage via JS          |
+
+**New endpoint `/vpage`** – paginated table rows:
+`GET /vpage?path=/abs/foo.db&vpath=users&page=1&limit=1000`
+Returns an HTMX fragment: `<table>` + pagination controls swapped into `#preview`.
+
+### SQLite VFS – three navigation levels
+
+- **Level 0** (clicking `.db` file): tables column (skip schema level when only `main`;
+  show schema folders if multiple schemas exist)
+- **Level 1** (clicking a table), two formats:
+  - `folders` (default): new column listing rows as folder items; toggle `[📋 Rows | 📊 Spreadsheet]` in column header
+  - `spreadsheet`: paginated `<table>` in preview pane; toggle `[📋 Rows | 📊 Spreadsheet]` in preview header
+- **Level 2** (clicking a row): key-value `<table>` in preview; no format toggle
+
+### Row-key derivation (priority order)
+
+1. Single-column primary key → its value
+2. Multi-column primary key → `col1=val1, col2=val2`
+3. No PK, first column is unique → first column value
+4. Otherwise → `row_N` (1-indexed)
+
+Always truncate display label to 60 chars + `…`.
+
+### BLOB / large-string handling
+
+- **BLOBs**: `⟨binary data, N bytes⟩`
+- **Strings > 200 chars**: truncated in labels/spreadsheet; full value shown in KV detail
+
+### Format persistence – localStorage (client-side)
+
+Two-tier lookup injected as `&fmt=…` into HTMX requests via `htmx:configRequest`:
+
+```
+vfmt_file_{abs_path}::{vpath}   →  per-file + vpath (most specific)
+vfmt_type_{.ext}                →  type-level fallback
+built-in default                →  .db → folders; .csv → spreadsheet; .json → formatted
+```
+
+Written to localStorage when user clicks a format toggle button.
+
+### Icons
+
+| Context       | Icon |
+| ------------- | ---- |
+| `.db` file    | 🗄️   |
+| Schema folder | 📁   |
+| Table folder  | 🗃️   |
+| Row folder    | 📋   |
+
+### Pagination
+
+- Default page size: 1 000 rows
+- Controls: `← Prev  Page N of M  Next →` as HTMX links at bottom of `<table>`, target `#preview`
+
+### Test plan
+
+- `tests/test_vfs.py` – registry lookup, format-default resolution
+- `tests/test_providers_sqlite.py` – schema/table/row enumeration, PK fallbacks, BLOB display, pagination
+- `tests/test_app.py` additions – `/click` with `vpath`, `/vpage` pagination, format toggle responses
+- `tests/test_columns.py` additions – column with `fmt-bar` header
+
+---
+
+## #16 – Bind address CLI option / `SERVE_BIND` env var
+
 The server is currently hard-coded to bind on `0.0.0.0` (all interfaces). Operators
 should be able to bind to a specific network interface – e.g. `127.0.0.1` for
 localhost-only development or a specific IP for a multi-homed host.
