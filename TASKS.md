@@ -41,6 +41,7 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 
 ## Done
 
+- [x] [#31](ISSUES.md#31--enhanced-keyboard-navigation-homeendpguppgdn--leftright-focus-model) Enhanced keyboard navigation – Home/End/PgUp/PgDn + Left/Right focus model <!-- prune after 2026-06-04 -->
 - [x] [#30](ISSUES.md#30--json-vfs-preview-shows-not-yet-implemented-stub) JSON VFS preview – implement `render_preview` + fix `restore()` guard <!-- prune after 2026-06-04 -->
 
 - [x] [#29](ISSUES.md#29--sqlite-tablerow-navigation-not-reflected-in-url) SQLite table/row navigation not reflected in URL <!-- prune after 2026-09-04 -->

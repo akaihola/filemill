@@ -451,3 +451,111 @@ def test_preview_spreadsheet_has_no_padding_rule():
     rule_block = APP_CSS[start:block_end]
     assert "padding" in rule_block
     assert "0" in rule_block
+
+
+# ── #31 enhanced keyboard navigation ──────────────────────────────────────────
+
+
+def test_keyboard_home_key_present():
+    """COLUMN_JS must handle the 'Home' key (jump to first item)."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "'Home'" in COLUMN_JS
+
+
+def test_keyboard_end_key_present():
+    """COLUMN_JS must handle the 'End' key (jump to last item)."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "'End'" in COLUMN_JS
+
+
+def test_keyboard_pageup_key_present():
+    """COLUMN_JS must handle 'PageUp' (scroll up one page)."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "'PageUp'" in COLUMN_JS
+
+
+def test_keyboard_pagedown_key_present():
+    """COLUMN_JS must handle 'PageDown' (scroll down one page)."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "'PageDown'" in COLUMN_JS
+
+
+def test_keyboard_focused_col_index_state():
+    """COLUMN_JS maintains _focusedColIndex to track the active column."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "_focusedColIndex" in COLUMN_JS
+
+
+def test_keyboard_visible_items_filters_dotfiles():
+    """COLUMN_JS uses a visibleItems helper that skips hidden dotfile entries."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "visibleItems" in COLUMN_JS
+
+
+def test_keyboard_left_no_longer_prunes_columns():
+    """ArrowLeft must shift focus only – it must NOT call .remove() on columns."""
+    from pykofinder.styles import COLUMN_JS
+
+    left_pos = COLUMN_JS.index("'ArrowLeft'")
+    break_pos = COLUMN_JS.index("break;", left_pos)
+    left_block = COLUMN_JS[left_pos:break_pos]
+    assert ".remove()" not in left_block
+
+
+def test_keyboard_right_checks_column_to_the_right():
+    """ArrowRight must first check whether a column to the right exists before navigating."""
+    from pykofinder.styles import COLUMN_JS
+
+    right_pos = COLUMN_JS.index("'ArrowRight'")
+    break_pos = COLUMN_JS.index("break;", right_pos)
+    right_block = COLUMN_JS[right_pos:break_pos]
+    assert "cols.length" in right_block
+
+
+def test_keyboard_arrow_up_selects_last_when_no_selection():
+    """ArrowUp with nothing selected must select the last visible item."""
+    from pykofinder.styles import COLUMN_JS
+
+    up_pos = COLUMN_JS.index("'ArrowUp'")
+    break_pos = COLUMN_JS.index("break;", up_pos)
+    up_block = COLUMN_JS[up_pos:break_pos]
+    assert "selIdx < 0" in up_block
+    assert "items.length - 1" in up_block
+
+
+def test_keyboard_arrow_down_selects_first_when_no_selection():
+    """ArrowDown with nothing selected must select the first visible item."""
+    from pykofinder.styles import COLUMN_JS
+
+    down_pos = COLUMN_JS.index("'ArrowDown'")
+    break_pos = COLUMN_JS.index("break;", down_pos)
+    down_block = COLUMN_JS[down_pos:break_pos]
+    assert "selIdx < 0" in down_block
+    assert "items[0]" in down_block
+
+
+def test_keyboard_after_settle_updates_focused_col_index():
+    """The keyboard IIFE's afterSettle handler must assign _focusedColIndex."""
+    from pykofinder.styles import COLUMN_JS
+
+    # Use the last afterSettle occurrence (the one inside the keyboard IIFE)
+    settle_pos = COLUMN_JS.rindex("htmx:afterSettle")
+    assign_pos = COLUMN_JS.index("_focusedColIndex =", settle_pos)
+    assert assign_pos > settle_pos
+
+
+def test_keyboard_enter_triggers_navigation():
+    """Enter key must trigger navigation (triggerNav or htmx.trigger)."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "'Enter'" in COLUMN_JS
+    enter_pos = COLUMN_JS.index("'Enter'")
+    break_pos = COLUMN_JS.index("break;", enter_pos)
+    enter_block = COLUMN_JS[enter_pos:break_pos]
+    assert "triggerNav" in enter_block or "htmx.trigger" in enter_block
