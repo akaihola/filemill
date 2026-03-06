@@ -695,7 +695,9 @@ in env before the reload branch.
 ## #19 – Markdown relative link normalization
 
 **Type:** feature
-**Status:** in-progress
+**Status:** closed
+**Closed:** 2026-03-06
+**Prune after:** 2026-06-04
 
 When rendering a `.md` file, relative links (e.g. `[text](notes/other.md)`) are
 resolved to an absolute pykofinder URL using a three-step search:
@@ -712,7 +714,9 @@ other files → `/raw?path=ABSOLUTE_PATH`. If not found: href left unchanged.
 ## #20 – Wikilink rendering (`[[PageName]]`)
 
 **Type:** feature
-**Status:** in-progress
+**Status:** closed
+**Closed:** 2026-03-06
+**Prune after:** 2026-06-04
 
 `[[PageName]]` and `[[PageName|display text]]` in `.md` files are rendered as
 `<a class="wikilink" href="...">` elements. The target file is resolved with the
@@ -723,7 +727,9 @@ same three-step algorithm as #19. Unresolved wikilinks get `href="#wikilink-{nam
 ## #21 – Mermaid diagram rendering
 
 **Type:** feature
-**Status:** in-progress
+**Status:** closed
+**Closed:** 2026-03-06
+**Prune after:** 2026-06-04
 
 Code fences tagged ` ```mermaid ` produce `<div class="mermaid">…</div>` instead of a
 `<pre>` block. The mermaid.js CDN script is loaded in the page `<head>` and re-invoked
@@ -734,7 +740,9 @@ Code fences tagged ` ```mermaid ` produce `<div class="mermaid">…</div>` inste
 ## #22 – Plain URL linkification
 
 **Type:** feature
-**Status:** in-progress
+**Status:** closed
+**Closed:** 2026-03-06
+**Prune after:** 2026-06-04
 
 Plain URLs in `.md` files (e.g. `https://example.com`) that are not already wrapped in
 `[…](…)` Markdown link syntax are automatically turned into clickable `<a>` elements,
@@ -745,7 +753,9 @@ using `linkify-it-py` + `markdown-it-py`'s built-in linkify support.
 ## #23 – Static webserver mode `/w/` and finder mode `/f/`
 
 **Type:** feature
-**Status:** in-progress
+**Status:** closed
+**Closed:** 2026-03-06
+**Prune after:** 2026-06-04
 
 Two new URL namespaces:
 
