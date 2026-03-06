@@ -497,7 +497,7 @@ document.addEventListener('htmx:afterSettle', function(e) {
     var finder = document.getElementById('finder');
     if (finder) finder.scrollLeft = finder.scrollWidth;
     if (_pendingPath) {
-        var newUrl = '/?path=' + encodeURIComponent(_pendingPath);
+        var newUrl = '/f/?path=' + encodeURIComponent(_pendingPath);
         history.pushState({path: _pendingPath}, '', newUrl);
         _pendingPath = null;
     }
@@ -510,7 +510,7 @@ window.addEventListener('popstate', function(e) {
         _deepNavigate(path);
     } else {
         // Back to root – reload to reset state
-        window.location.href = '/';
+        window.location.href = '/f/';
     }
 });
 

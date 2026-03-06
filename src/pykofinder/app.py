@@ -1,5 +1,6 @@
 import configparser
 import html as html_lib
+import json
 import os
 from pathlib import Path
 from textwrap import dedent
@@ -94,9 +95,8 @@ def _resolve_safe(path_str: str, root: Path | None = None) -> Path | None:
         return None
 
 
-@rt("/")
-def index():
-    """Serve the full shell page."""
+def _shell_html(*extra_head_scripts):
+    """Return the full app-shell HTML page."""
     extra_scripts = [Script(LIVE_RELOAD_JS)] if LIVE_MODE else []
     return Html(
         Head(
@@ -106,9 +106,16 @@ def index():
             Script(src=_MERMAID_CDN),
             Script(COLUMN_JS),
             *extra_scripts,
+            *extra_head_scripts,
         ),
         Body(initial_columns(ROOT)),
     )
+
+
+@rt("/")
+def index():
+    """Redirect root to the finder namespace."""
+    return RedirectResponse("/f/", status_code=302)
 
 
 @rt("/sse/reload")
@@ -440,11 +447,26 @@ def web_static(path: str):
 
 @rt("/f/{path:path}")
 def finder_view(path: str):
-    """Redirect to the finder column-view for a ROOT-relative *path*."""
+    """Serve the finder shell at an optional ROOT-relative path.
+
+    ``/f/`` renders the root view.
+    ``/f/some/file.md`` renders the shell and deep-links to that file.
+    """
+    if not path:
+        return _shell_html()
+
     p = _resolve_safe(str(ROOT / path.lstrip("/")))
     if p is None or not p.exists():
         return HTMLResponse("Not found", status_code=404)
-    return RedirectResponse(f"/?path={urlquote(str(p))}", status_code=302)
+
+    # Inject an inline script that navigates to the resolved path once the
+    # page has loaded.  _deepNavigate is defined in COLUMN_JS (already in
+    # <head>), so it will be available by the time DOMContentLoaded fires.
+    nav_js = (
+        f"document.addEventListener('DOMContentLoaded',"
+        f"function(){{_deepNavigate({json.dumps(str(p))})}});"
+    )
+    return _shell_html(Script(nav_js))
 
 
 # ── Route priority fix ────────────────────────────────────────────────────────
