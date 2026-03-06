@@ -56,7 +56,7 @@ tests/
 ## Running tests
 
 ```bash
-uv sync --group test
+uv sync
 uv run pytest                  # unit + integration (with coverage)
 ```
 

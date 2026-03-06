@@ -43,7 +43,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full development workflow and rul
 Quick start:
 
 ```bash
-uv sync --group test
+uv sync
 uv run pytest          # unit + integration tests with coverage
 ```
 

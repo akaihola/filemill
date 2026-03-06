@@ -595,9 +595,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "pytest" },
-]
-test = [
     { name = "httpx" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -616,8 +613,7 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=8" }]
-test = [
+dev = [
     { name = "httpx", specifier = ">=0.27" },
     { name = "pytest", specifier = ">=8" },
     { name = "pytest-cov", specifier = ">=5" },
