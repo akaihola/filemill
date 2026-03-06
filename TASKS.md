@@ -24,7 +24,8 @@ after:** YYYY-MM-DD` (closed date + 90 days) in ISSUES.md, then move the entry h
 
 ## In progress
 
-- [~] [#18](ISSUES.md#18--virtual-fs-navigation-and-view-format-switching-sqlite--extensible-registry) Virtual-FS navigation + view-format switching (SQLite + registry)
+_(nothing currently in progress)_
+
 - [~] [#19](ISSUES.md#19--markdown-relative-link-normalization) Markdown relative link normalization
 - [~] [#20](ISSUES.md#20--wikilink-rendering-pagename) Wikilink rendering `[[PageName]]`
 - [~] [#21](ISSUES.md#21--mermaid-diagram-rendering) Mermaid diagram rendering
@@ -46,6 +47,7 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 
 ## Done
 
+- [x] [#18](ISSUES.md#18--virtual-fs-navigation-and-view-format-switching-sqlite--extensible-registry) Virtual-FS navigation + view-format switching (SQLite + registry) <!-- prune after 2026-06-03 -->
 - [x] `pyproject.toml` – project metadata, deps, entry point
 - [x] `src/pykofinder/__init__.py` – package marker
 - [x] `src/pykofinder/styles.py` – CSS (Finder column view) + Pygments + HTMX scroll JS
