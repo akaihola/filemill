@@ -669,3 +669,71 @@ directives).
 **Implemented:** `cli.py` – `--bind` / `-b` option with `PYKOFINDER_BIND` env var
 fallback; `host=bind` passed to both `uvicorn.run()` call sites; `PYKOFINDER_BIND` set
 in env before the reload branch.
+
+---
+
+## #19 – Markdown relative link normalization
+
+**Type:** feature
+**Status:** in-progress
+
+When rendering a `.md` file, relative links (e.g. `[text](notes/other.md)`) are
+resolved to an absolute pykofinder URL using a three-step search:
+
+1. Relative to the source file's directory.
+2. Each ancestor directory up to and including the nearest `.git/`-containing ancestor.
+3. Recursive `rglob` by basename inside that git-root ancestor.
+
+If found: `.md` targets → `/?path=ABSOLUTE_PATH` (triggers `_deepNavigate`);
+other files → `/raw?path=ABSOLUTE_PATH`. If not found: href left unchanged.
+
+---
+
+## #20 – Wikilink rendering (`[[PageName]]`)
+
+**Type:** feature
+**Status:** in-progress
+
+`[[PageName]]` and `[[PageName|display text]]` in `.md` files are rendered as
+`<a class="wikilink" href="...">` elements. The target file is resolved with the
+same three-step algorithm as #19. Unresolved wikilinks get `href="#wikilink-{name}"`.
+
+---
+
+## #21 – Mermaid diagram rendering
+
+**Type:** feature
+**Status:** in-progress
+
+Code fences tagged `` ```mermaid `` produce `<div class="mermaid">…</div>` instead of a
+`<pre>` block. The mermaid.js CDN script is loaded in the page `<head>` and re-invoked
+(`mermaid.run()`) after each HTMX swap and after each `_deepNavigate` call.
+
+---
+
+## #22 – Plain URL linkification
+
+**Type:** feature
+**Status:** in-progress
+
+Plain URLs in `.md` files (e.g. `https://example.com`) that are not already wrapped in
+`[…](…)` Markdown link syntax are automatically turned into clickable `<a>` elements,
+using `linkify-it-py` + `markdown-it-py`'s built-in linkify support.
+
+---
+
+## #23 – Static webserver mode `/w/` and finder mode `/f/`
+
+**Type:** feature
+**Status:** in-progress
+
+Two new URL namespaces:
+
+- `GET /w/{relative_path}` – serves the file at `ROOT/relative_path` with the correct
+  HTTP `Content-Type` (Starlette `FileResponse`). Symlinks inside ROOT are followed via
+  the existing `_resolve_safe` zone logic.
+- `GET /f/{relative_path}` – redirects to `/?path=ABSOLUTE_PATH` so the column finder
+  opens at that file via `_deepNavigate`.
+
+For `.html` / `.htm` files shown in the preview pane a **"🌐 View as web page"** button
+is prepended, linking to the corresponding `/w/` URL (opens in a new tab).

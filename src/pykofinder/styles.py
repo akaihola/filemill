@@ -306,6 +306,113 @@ body.zoomed #preview {
 }}
 
 {FRIENDLY_CSS}
+
+/* ── VFS / format toggle ──────────────────────────────────────────────── */
+.fmt-bar {{
+    display: flex;
+    gap: 4px;
+    padding: 4px 8px;
+    background: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+    flex-shrink: 0;
+}}
+.fmt-btn {{
+    padding: 2px 8px;
+    border: 1px solid #bbb;
+    border-radius: 3px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 12px;
+}}
+.fmt-btn.active {{
+    background: #0070c9;
+    color: #fff;
+    border-color: #0070c9;
+    cursor: default;
+}}
+
+/* DB spreadsheet preview */
+.preview-db-spreadsheet {{
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}}
+.db-table-wrap {{
+    flex: 1;
+    overflow: auto;
+    min-height: 0;
+}}
+.db-table {{
+    border-collapse: collapse;
+    font-size: 12px;
+    width: 100%;
+}}
+.db-table th {{
+    background: #f0f0f0;
+    border: 1px solid #ddd;
+    padding: 4px 8px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    white-space: nowrap;
+}}
+.db-table td {{
+    border: 1px solid #eee;
+    padding: 4px 8px;
+    white-space: nowrap;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}}
+
+/* DB KV row detail */
+.preview-db-row {{
+    padding: 1rem;
+    overflow: auto;
+    height: 100%;
+    box-sizing: border-box;
+}}
+.db-kv-table {{
+    border-collapse: collapse;
+    width: 100%;
+}}
+.db-kv-table th {{
+    text-align: left;
+    padding: 4px 12px 4px 0;
+    color: #666;
+    font-weight: 600;
+    white-space: nowrap;
+    vertical-align: top;
+    min-width: 120px;
+}}
+.db-kv-table td {{
+    padding: 4px 0;
+    word-break: break-word;
+}}
+
+/* DB pagination bar */
+.db-pagination {{
+    padding: 6px 8px;
+    border-top: 1px solid #ddd;
+    font-size: 12px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+    color: #555;
+}}
+.db-pagination a {{
+    color: #0070c9;
+    text-decoration: none;
+    cursor: pointer;
+}}
+
+/* Virtual breadcrumb segments */
+.bc-virtual {{
+    font-style: italic;
+    color: #555;
+}}
 """
 )
 
@@ -449,6 +556,52 @@ document.addEventListener('click', function(e) {
     });
     li.classList.add('selected');
 });
+
+// ── VFS format persistence ──────────────────────────────────────────────────
+(function () {
+  var FMTKEY_TYPE = function (ext) {
+    return "vfmt_type_" + ext;
+  };
+  var FMTKEY_FILE = function (fpath, vpath) {
+    return "vfmt_file_" + fpath + "::" + vpath;
+  };
+
+  // Inject stored fmt into every HTMX request that carries data-fpath
+  document.body.addEventListener("htmx:configRequest", function (evt) {
+    var elt = evt.detail.elt;
+    var fpath = elt.dataset.fpath;
+    var vpath = elt.dataset.vpath;
+    var ext = elt.dataset.ext;
+    // Only intercept VFS navigation links (those with data-fpath)
+    if (fpath === undefined) return;
+    // Don't override an explicit fmt already in the request params
+    if (evt.detail.parameters && evt.detail.parameters.fmt) return;
+    var stored =
+      localStorage.getItem(
+        FMTKEY_FILE(fpath, vpath !== undefined ? vpath : ""),
+      ) || (ext ? localStorage.getItem(FMTKEY_TYPE(ext)) : null);
+    if (stored) {
+      evt.detail.parameters = evt.detail.parameters || {};
+      evt.detail.parameters.fmt = stored;
+    }
+  });
+
+  // Toggle buttons write to localStorage when clicked (before HTMX fires)
+  document.body.addEventListener("click", function (evt) {
+    var btn = evt.target.closest(".fmt-btn[data-fmt]");
+    if (!btn || btn.classList.contains("active")) return;
+    var fpath = btn.dataset.fpath;
+    var vpath = btn.dataset.vpath;
+    var ext = btn.dataset.ext;
+    var fmt = btn.dataset.fmt;
+    if (fpath !== undefined && vpath !== undefined) {
+      localStorage.setItem(FMTKEY_FILE(fpath, vpath), fmt);
+    }
+    if (ext) {
+      localStorage.setItem(FMTKEY_TYPE(ext), fmt);
+    }
+  });
+})();
 
 // ── Keyboard navigation ──────────────────────────────────────────────────────
 (function() {

@@ -25,6 +25,11 @@ after:** YYYY-MM-DD` (closed date + 90 days) in ISSUES.md, then move the entry h
 ## In progress
 
 - [~] [#18](ISSUES.md#18--virtual-fs-navigation-and-view-format-switching-sqlite--extensible-registry) Virtual-FS navigation + view-format switching (SQLite + registry)
+- [~] [#19](ISSUES.md#19--markdown-relative-link-normalization) Markdown relative link normalization
+- [~] [#20](ISSUES.md#20--wikilink-rendering-pagename) Wikilink rendering `[[PageName]]`
+- [~] [#21](ISSUES.md#21--mermaid-diagram-rendering) Mermaid diagram rendering
+- [~] [#22](ISSUES.md#22--plain-url-linkification) Plain URL linkification
+- [~] [#23](ISSUES.md#23--static-webserver-mode-w-and-finder-mode-f) Static webserver `/w/` + finder `/f/` routes
 
 ---
 
