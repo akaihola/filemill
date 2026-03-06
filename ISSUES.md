@@ -541,7 +541,27 @@ custom JS. For pykofinder's SPA column view, custom `keydown` handlers are neede
 ## #18 – Virtual-FS navigation and view-format switching (SQLite + extensible registry)
 
 **Type:** feature
-**Status:** in-progress
+**Status:** closed
+**Closed:** 2026-03-05
+**Prune after:** 2026-06-03
+
+**Implemented:**
+
+- `src/pykofinder/vfs.py` – `VFSEntry`, `VFSProvider` (Protocol), `VFSRegistry`,
+  `REGISTRY` singleton, `is_vfs_file()`, `_truncate()`
+- `src/pykofinder/providers/__init__.py` – package marker
+- `src/pykofinder/providers/sqlite.py` – `SQLiteProvider` with schema/table/row
+  enumeration, row-key derivation (PK → unique col → rowid), spreadsheet preview
+  (paginated), KV row-detail preview, BLOB handling
+- `src/pykofinder/providers/csv_provider.py` – stub (`default_fmt="spreadsheet"`)
+- `src/pykofinder/providers/json_provider.py` – stub (`default_fmt="formatted"`)
+- `src/pykofinder/columns.py` – `list_vfs_column()`, `🗄️` icon for `.db`,
+  VFS-file routing in `list_column()`, `vpath` param in `render_breadcrumb()`
+- `src/pykofinder/app.py` – `/click` VFS dispatch (`vpath`, `fmt` params),
+  `_make_bc_oob()`, `_build_prune_js()` helpers, `/vpage` endpoint
+- `src/pykofinder/styles.py` – VFS/DB CSS, format-persistence JS (localStorage)
+- `tests/test_vfs.py`, `tests/test_providers_sqlite.py`,
+  `tests/test_integration_vfs.py` – new test files
 
 ### Summary
 
@@ -705,7 +725,7 @@ same three-step algorithm as #19. Unresolved wikilinks get `href="#wikilink-{nam
 **Type:** feature
 **Status:** in-progress
 
-Code fences tagged `` ```mermaid `` produce `<div class="mermaid">…</div>` instead of a
+Code fences tagged ` ```mermaid ` produce `<div class="mermaid">…</div>` instead of a
 `<pre>` block. The mermaid.js CDN script is loaded in the page `<head>` and re-invoked
 (`mermaid.run()`) after each HTMX swap and after each `_deepNavigate` call.
 
