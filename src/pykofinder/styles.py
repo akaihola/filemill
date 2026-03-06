@@ -578,6 +578,12 @@ function _deepNavigate(fullPath) {
             var shell = document.getElementById('app-shell');
             if (shell) {
                 shell.outerHTML = html;
+                // HTMX 1.9.x has no MutationObserver – programmatic outerHTML
+                // replacement is invisible to it.  Re-initialise explicitly so
+                // that hx-get / hx-target / hx-swap attributes on the freshly-
+                // injected columns are active and clicks are intercepted.
+                var newShell = document.getElementById('app-shell');
+                if (newShell) htmx.process(newShell);
                 recalcColumnWidth();
                 initZoomButton();
                 var finder = document.getElementById('finder');

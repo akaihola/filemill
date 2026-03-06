@@ -208,6 +208,36 @@ def test_restore_bad_path_returns_root_view(client, tmp_root):
     assert "finder" in resp.text
 
 
+def test_restore_zone2_deep_path_shows_all_columns(tmp_path, monkeypatch):
+    """restore() for a zone-2 *sub*directory must generate all intermediate columns.
+
+    ROOT has a symlink bookmark → outside_dir.  Requesting restore for
+    outside_dir/subdir must produce col-0 (ROOT), col-1 (bookmark), and
+    col-2 (subdir).  The previous code used ``parts = [p.name]`` which only
+    produced the ROOT column when p is a sub-path of the bookmark target.
+    """
+    import tempfile
+    from pathlib import Path
+    from urllib.parse import quote
+
+    with tempfile.TemporaryDirectory() as outside:
+        outside_path = Path(outside)
+        subdir = outside_path / "subdir"
+        subdir.mkdir()
+        (subdir / "file.txt").write_text("hello")
+        # zone-2 bookmark: ROOT/bookmark → outside_path
+        bookmark = tmp_path / "bookmark"
+        bookmark.symlink_to(outside_path)
+        monkeypatch.setattr(app_module, "ROOT", tmp_path)
+        c = TestClient(app_module.app, raise_server_exceptions=False)
+        # Requesting the subdir two levels deep into the zone-2 target
+        resp = c.get(f"/restore?path={quote(str(subdir))}")
+        assert resp.status_code == 200
+        assert "col-0" in resp.text  # ROOT column
+        assert "col-1" in resp.text  # bookmark column
+        assert "col-2" in resp.text  # subdir column
+
+
 def test_restore_zone2_symlink_path(tmp_path, monkeypatch):
     """restore() must not crash when _resolve_safe returns a zone-2 path
     that raises ValueError on p.relative_to(ROOT)."""
@@ -251,6 +281,29 @@ def test_url_sync_js_in_column_js():
 
     assert "pushState" in COLUMN_JS
     assert "_pendingPath" in COLUMN_JS or "pendingPath" in COLUMN_JS.lower()
+
+
+def test_deep_navigate_calls_htmx_process():
+    """_deepNavigate must call htmx.process() on the new shell after outerHTML swap.
+
+    HTMX 1.9.x has no MutationObserver – programmatic outerHTML replacement is
+    invisible to HTMX.  Without an explicit htmx.process() call the freshly-
+    injected column links are never initialised and clicks do nothing.
+    """
+    import re
+    from pykofinder.styles import COLUMN_JS
+
+    # Find the _deepNavigate function body
+    match = re.search(
+        r"function _deepNavigate\b.*?^\}",
+        COLUMN_JS,
+        re.DOTALL | re.MULTILINE,
+    )
+    assert match is not None, "_deepNavigate not found in COLUMN_JS"
+    func_body = match.group(0)
+    assert "htmx.process" in func_body, (
+        "_deepNavigate must call htmx.process() after outerHTML replacement"
+    )
 
 
 # ── #6 SSE live-reload ────────────────────────────────────────────────────────

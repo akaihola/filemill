@@ -8,6 +8,46 @@ the issue block here and the corresponding `[x]` line in TASKS.md at that point.
 
 ---
 
+## #26 – Deep-link broken for zone-2 sub-paths; HTMX not re-initialised after restore
+
+**Type:** bug
+**Status:** closed
+**Closed:** 2026-03-06
+
+Two related deep-link bugs triggered when navigating to a URL whose `?path=`
+parameter points into a zone-2 symlink tree (a directory symlinked into ROOT):
+
+1. **Missing intermediate columns** – `restore()` used `parts = [p.name]` for
+   any zone-2 path, losing all path components above the leaf name. For example
+   `/home/agent/my-knowledge/docs` produced `parts = ["docs"]`, so only the ROOT
+   column was generated instead of ROOT → bookmark → docs.
+
+2. **Clicks in restored columns do nothing** – HTMX 1.9.x has no
+   `MutationObserver`. When `_deepNavigate` replaced `#app-shell` via
+   `outerHTML`, HTMX never saw the new elements; `hx-get` attributes were dead.
+   Clicking any item in a restored column silently failed.
+
+**Fix:**
+
+- `app.py` `restore()`: on `ValueError` (zone-2 path), iterate ROOT's direct
+  symlink children and find the one whose resolved target is an ancestor of `p`.
+  Reconstruct `parts` as `[symlink_name, *relative_parts]` so every intermediate
+  directory column is rendered.
+- `styles.py` `COLUMN_JS` `_deepNavigate`: after `shell.outerHTML = html`,
+  query the new `#app-shell` and call `htmx.process(newShell)` to initialise all
+  HTMX attributes in the freshly-injected HTML.
+
+**Tests added:**
+
+- `test_restore_zone2_deep_path_shows_all_columns` – verifies col-0, col-1, col-2
+  are all present in the restore response for a zone-2 sub-directory.
+- `test_deep_navigate_calls_htmx_process` – verifies `htmx.process` appears
+  inside `_deepNavigate` in `COLUMN_JS`.
+
+**Prune after:** 2026-06-04
+
+---
+
 ## #25 – Dotfile visibility toggle in `<nav>`
 
 **Type:** feature / UX
