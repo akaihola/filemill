@@ -641,7 +641,7 @@ document.addEventListener('click', function(e) {
   };
 
   // Inject stored fmt into every HTMX request that carries data-fpath
-  document.body.addEventListener("htmx:configRequest", function (evt) {
+  document.addEventListener("htmx:configRequest", function (evt) {
     var elt = evt.detail.elt;
     var fpath = elt.dataset.fpath;
     var vpath = elt.dataset.vpath;
@@ -661,7 +661,7 @@ document.addEventListener('click', function(e) {
   });
 
   // Toggle buttons write to localStorage when clicked (before HTMX fires)
-  document.body.addEventListener("click", function (evt) {
+  document.addEventListener("click", function (evt) {
     var btn = evt.target.closest(".fmt-btn[data-fmt]");
     if (!btn || btn.classList.contains("active")) return;
     var fpath = btn.dataset.fpath;

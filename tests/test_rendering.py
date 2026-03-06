@@ -559,3 +559,16 @@ def test_keyboard_enter_triggers_navigation():
     break_pos = COLUMN_JS.index("break;", enter_pos)
     enter_block = COLUMN_JS[enter_pos:break_pos]
     assert "triggerNav" in enter_block or "htmx.trigger" in enter_block
+
+
+def test_no_document_body_addeventlistener_at_toplevel():
+    """COLUMN_JS must never call document.body.addEventListener at IIFE top-level.
+
+    Scripts run in <head> before <body> exists; any immediate
+    document.body.addEventListener call throws TypeError and halts the
+    entire script block (killing keyboard nav and other features).
+    Use document.addEventListener instead – HTMX/click events bubble up.
+    """
+    from pykofinder.styles import COLUMN_JS
+
+    assert "document.body.addEventListener" not in COLUMN_JS
