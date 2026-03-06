@@ -398,3 +398,35 @@ def test_binary_py_file_falls_through(tmp_path):
     f.write_bytes(b"\xff\xfe invalid utf-8")
     result = render_preview(f)  # must not raise
     assert "preview-code" not in result
+
+
+def test_preview_guess_lexer_exception_falls_through(tmp_path, monkeypatch):
+    """guess_lexer() raising must be caught; file must fall through to raw-text preview."""
+    import pygments.lexers
+
+    def _raise(*_a, **_kw):
+        raise RuntimeError("lexer detection broken")
+
+    monkeypatch.setattr(pygments.lexers, "guess_lexer", _raise)
+    # Use an extension unknown to Pygments so get_lexer_by_name raises ClassNotFound
+    # and guess_lexer is attempted (and patched to raise).
+    f = tmp_path / "weirdfile.xyzzy1234"
+    f.write_text("some content\n")
+    result = render_preview(f)
+    assert "preview-raw" in result
+
+
+def test_preview_pygments_outer_exception_falls_through(tmp_path, monkeypatch):
+    """An exception from pyg_highlight() must be caught; file falls through to raw-text."""
+    import pygments
+
+    def _raise(*_a, **_kw):
+        raise RuntimeError("highlight broken")
+
+    monkeypatch.setattr(pygments, "highlight", _raise)
+    f = tmp_path / "script.py"
+    f.write_text("x = 1\n")
+    result = render_preview(f)
+    # highlight raised → fell through to raw-text preview
+    assert "preview-code" not in result
+    assert "preview-raw" in result

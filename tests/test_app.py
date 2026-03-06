@@ -207,6 +207,44 @@ def test_restore_bad_path_returns_root_view(client, tmp_root):
     assert "finder" in resp.text
 
 
+def test_restore_zone2_symlink_path(tmp_path, monkeypatch):
+    """restore() must not crash when _resolve_safe returns a zone-2 path
+    that raises ValueError on p.relative_to(ROOT)."""
+    import tempfile
+    from pathlib import Path
+    from urllib.parse import quote
+    from starlette.testclient import TestClient
+
+    # Outer dir simulates a target outside ROOT
+    with tempfile.TemporaryDirectory() as outside:
+        outside_path = Path(outside)
+        (outside_path / "zone2.txt").write_text("zone2 content\n")
+        # Symlink inside ROOT → outside dir (zone-2 bookmark)
+        bookmark = tmp_path / "bookmark"
+        bookmark.symlink_to(outside_path)
+        monkeypatch.setattr(app_module, "ROOT", tmp_path)
+        c = TestClient(app_module.app, raise_server_exceptions=False)
+        # Request the file inside the zone-2 target
+        resp = c.get(f"/restore?path={quote(str(outside_path / 'zone2.txt'))}")
+        assert resp.status_code == 200
+        assert "finder" in resp.text
+
+
+def test_restore_render_preview_exception_handled(client, tmp_root, monkeypatch):
+    """render_preview() raising inside restore() must produce a preview-error div."""
+    from urllib.parse import quote
+
+    monkeypatch.setattr(
+        app_module,
+        "render_preview",
+        lambda _p: (_ for _ in ()).throw(RuntimeError("boom")),
+    )
+    md = tmp_root / "readme.md"
+    resp = client.get(f"/restore?path={quote(str(md))}")
+    assert resp.status_code == 200
+    assert "preview-error" in resp.text
+
+
 def test_url_sync_js_in_column_js():
     from pykofinder.styles import COLUMN_JS
 
@@ -220,6 +258,71 @@ def test_url_sync_js_in_column_js():
 def test_sse_reload_returns_404_without_live_mode(client):
     resp = client.get("/sse/reload")
     assert resp.status_code == 404
+
+
+def test_sse_generator_emits_reload_on_change(monkeypatch, tmp_path):
+    """event_generator must yield 'data: reload\\n\\n' when watchfiles reports a change."""
+    import asyncio
+
+    monkeypatch.setattr(app_module, "LIVE_MODE", True)
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+
+    async def one_shot_watch(*_a, **_kw):
+        yield {("modified", str(tmp_path / "file.txt"))}
+
+    import watchfiles
+
+    monkeypatch.setattr(watchfiles, "awatch", one_shot_watch)
+
+    async def run():
+        from starlette.responses import StreamingResponse
+
+        resp = await app_module.sse_reload()
+        assert isinstance(resp, StreamingResponse)
+        first = await resp.body_iterator.__anext__()
+        # Exhaust the generator so the loop-exit branch is covered.
+        try:
+            await resp.body_iterator.__anext__()
+        except StopAsyncIteration:
+            pass
+        return first
+
+    assert asyncio.run(run()) == "data: reload\n\n"
+
+
+def test_sse_generator_keepalive_on_watchfiles_error(monkeypatch, tmp_path):
+    """When watchfiles raises, event_generator must fall back to keepalive pings."""
+    import asyncio
+
+    monkeypatch.setattr(app_module, "LIVE_MODE", True)
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+
+    async def broken_watch(*_a, **_kw):
+        raise RuntimeError("watchfiles unavailable")
+        yield  # pragma: no cover – makes it an async generator
+
+    import watchfiles
+
+    monkeypatch.setattr(watchfiles, "awatch", broken_watch)
+
+    sleep_durations: list[float] = []
+
+    async def fast_sleep(n: float) -> None:
+        sleep_durations.append(n)
+
+    monkeypatch.setattr(asyncio, "sleep", fast_sleep)
+
+    async def run():
+        from starlette.responses import StreamingResponse
+
+        resp = await app_module.sse_reload()
+        assert isinstance(resp, StreamingResponse)
+        first = await resp.body_iterator.__anext__()
+        return first
+
+    result = asyncio.run(run())
+    assert result == ": keepalive\n\n"
+    assert sleep_durations == [30]
 
 
 def test_sse_reload_exists_with_live_mode(monkeypatch):

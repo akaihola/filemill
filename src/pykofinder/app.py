@@ -230,7 +230,7 @@ def restore(path: str):
 
     cols_html = ""
     for i, d in enumerate(dirs):
-        if d.is_dir():
+        if d.is_dir():  # pragma: no branch – dirs only ever contains directories
             col_obj = list_column(d, ROOT, col_index=i)
             cols_html += repr(col_obj)
 

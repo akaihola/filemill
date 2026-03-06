@@ -13,19 +13,19 @@ plain text, code with syntax highlighting).
 src/pykofinder/
 ├── app.py          # FastHTML app, routes, _resolve_safe()
 ├── cli.py          # Typer CLI entry point
-├── columns.py      # Column HTML generation + pruning JS
-├── preview.py      # Preview dispatcher (md / docx / pptx / pdf / img)
+├── columns.py      # Column HTML generation + breadcrumb + pruning JS
+├── preview.py      # Preview dispatcher (md / docx / pptx / pdf / img / code / raw)
 ├── rendering.py    # markdown-it-py instance with plugins
-└── styles.py       # CSS + Pygments theme + HTMX scroll JS
+└── styles.py       # CSS + Pygments theme + HTMX + keyboard + live-reload JS
 
 tests/
-├── conftest.py     # Shared fixtures (tmp dirs, test client)
-├── test_app.py     # Route-level integration tests
-├── test_columns.py # Column HTML generation
-├── test_preview.py # Preview rendering
-├── test_rendering.py  # Markdown pipeline
-├── test_resolve_safe.py  # Path-safety logic
-└── test_cli.py     # CLI smoke tests
+├── conftest.py          # Shared fixtures (tmp dirs, test client)
+├── test_app.py          # Route-level integration tests
+├── test_columns.py      # Column HTML generation + breadcrumb
+├── test_preview.py      # Preview rendering (all file types)
+├── test_rendering.py    # Markdown pipeline + selected-state CSS/JS
+├── test_resolve_safe.py # Path-safety logic (_resolve_safe)
+└── test_cli.py          # CLI smoke tests
 ```
 
 ### Key invariants
@@ -43,9 +43,8 @@ tests/
 - **TDD (red-green)** – write a failing test first, then make it pass; never
   write production code without a failing test driving it.
 - **Full test coverage** – every new or changed behaviour must be covered by
-  tests. Unit/integration tests use pytest; UI tests use the `playwright`
-  Python package pinned to the version in `$UV_CONSTRAINT`
-  (currently `playwright==1.57.0`).
+  tests; the suite runs at 100% branch coverage. Unit/integration tests use
+  pytest.
 - **Documentation stays current** – update `README.md`, `ISSUES.md`, and
   `TASKS.md` as part of every change, not as an afterthought.
 - **Simplify aggressively** – look for opportunities to simplify and gain
@@ -57,14 +56,19 @@ tests/
 ## Running tests
 
 ```bash
-uv sync
+uv sync --group test
 uv run pytest                  # unit + integration (with coverage)
-uv run pytest tests/ui/        # Playwright UI tests
 ```
+
+> **Important:** always wrap `uv run pytest` in a shell-level timeout (e.g.
+> `timeout 120 uv run pytest`) when calling it from a script or agent tool.
+> SSE streaming tests that misbehave can otherwise block indefinitely (see
+> [issue #17](ISSUES.md#17--fix-hanging-sse-test-test_sse_reload_exists_with_live_mode)).
 
 ## Submitting changes
 
 1. Open an issue in `ISSUES.md` and set its status to `in-progress`.
 2. Add a matching `[~]` entry in `TASKS.md`.
-3. Work in a feature branch; follow the TDD cycle above.
-4. Update docs and mark the issue closed before merging.
+3. Follow the TDD cycle above.
+4. Update `README.md`, `CONTRIBUTING.md`, `ISSUES.md`, and `TASKS.md`.
+5. Mark the issue closed before committing.
