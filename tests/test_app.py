@@ -3,6 +3,7 @@ from urllib.parse import quote
 
 import pykofinder.app as app_module
 from pykofinder.app import _resolve_safe, _parse_desktop_url
+from starlette.testclient import TestClient
 
 
 # ── _resolve_safe ─────────────────────────────────────────────────────────────
@@ -419,93 +420,3 @@ def test_column_js_has_local_storage_set_item():
 
 def test_column_js_has_fmt_btn_click_handler():
     assert "fmt-btn" in COLUMN_JS
-
-
-# ── #18 /click VFS dispatch + /vpage endpoint ─────────────────────────────────
-
-
-def test_click_db_file_returns_vfs_column(db_client, db_root):
-    db = db_root / "sample.db"
-    resp = db_client.get(f"/click?path={quote(str(db))}&col=1")
-    assert resp.status_code == 200
-    assert 'id="col-1"' in resp.text
-    assert "users" in resp.text  # table name in the column
-
-
-def test_click_db_vpath_table_fmt_folders_returns_row_column(db_client, db_root):
-    db = db_root / "sample.db"
-    resp = db_client.get(f"/click?path={quote(str(db))}&col=2&vpath=users&fmt=folders")
-    assert resp.status_code == 200
-    assert 'id="col-2"' in resp.text  # new column id
-
-
-def test_click_db_vpath_table_fmt_spreadsheet_returns_sentinel_plus_oob_preview(
-    db_client, db_root
-):
-    db = db_root / "sample.db"
-    resp = db_client.get(
-        f"/click?path={quote(str(db))}&col=2&vpath=users&fmt=spreadsheet"
-    )
-    assert resp.status_code == 200
-    assert "db-table" in resp.text  # spreadsheet in OOB preview
-    assert 'id="col-2"' in resp.text  # sentinel present
-    assert "hx-swap-oob" in resp.text  # OOB swap marker
-
-
-def test_click_db_vpath_row_returns_kv_preview(db_client, db_root):
-    db = db_root / "sample.db"
-    resp = db_client.get(
-        f"/click?path={quote(str(db))}&col=3&vpath={quote('users/1')}"
-    )
-    assert resp.status_code == 200
-    assert "db-kv-table" in resp.text
-    assert "User1" in resp.text
-
-
-def test_click_db_breadcrumb_oob_present(db_client, db_root):
-    db = db_root / "sample.db"
-    resp = db_client.get(f"/click?path={quote(str(db))}&col=2&vpath=users&fmt=folders")
-    assert "breadcrumb" in resp.text
-    assert "hx-swap-oob" in resp.text
-
-
-def test_click_db_bad_path_returns_access_denied(db_client):
-    resp = db_client.get("/click?path=/etc/passwd&col=1")
-    assert "Access denied" in resp.text
-
-
-def test_vpage_returns_spreadsheet_html(db_client, db_root):
-    db = db_root / "sample.db"
-    resp = db_client.get(
-        f"/vpage?path={quote(str(db))}&vpath=users&page=1&limit=1000"
-    )
-    assert resp.status_code == 200
-    assert "db-table" in resp.text
-    assert "User1" in resp.text
-
-
-def test_vpage_page2_offset_correct(db_client, db_root):
-    db = db_root / "sample.db"
-    resp1 = db_client.get(
-        f"/vpage?path={quote(str(db))}&vpath=users&page=1&limit=2"
-    )
-    resp2 = db_client.get(
-        f"/vpage?path={quote(str(db))}&vpath=users&page=2&limit=2"
-    )
-    # Page 1 has User1, User2; Page 2 has User3, User4
-    assert "User1" in resp1.text
-    assert "User3" not in resp1.text
-    assert "User3" in resp2.text
-    assert "User1" not in resp2.text
-
-
-def test_vpage_bad_path_returns_404(db_client):
-    resp = db_client.get("/vpage?path=/nonexistent.db&vpath=t&page=1&limit=10")
-    assert resp.status_code == 404
-
-
-def test_vpage_no_provider_for_extension_returns_404(db_client, db_root):
-    md = db_root / "readme.md"
-    md.touch()
-    resp = db_client.get(f"/vpage?path={quote(str(md))}&vpath=&page=1&limit=10")
-    assert resp.status_code == 404

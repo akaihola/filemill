@@ -2,6 +2,8 @@ import configparser
 import html as html_lib
 import os
 from pathlib import Path
+from textwrap import dedent
+from urllib.parse import quote as urlquote
 from urllib.parse import unquote as urlunquote
 
 from fasthtml.common import (
@@ -17,9 +19,21 @@ from fasthtml.common import (
 )
 from starlette.responses import FileResponse, HTMLResponse, RedirectResponse
 
-from pykofinder.columns import initial_columns, list_column, render_breadcrumb
+from pykofinder.columns import (
+    initial_columns,
+    list_column,
+    list_vfs_column,
+    render_breadcrumb,
+)
 from pykofinder.preview import render_preview
 from pykofinder.styles import APP_CSS, COLUMN_JS, LIVE_RELOAD_JS
+from pykofinder.vfs import REGISTRY
+
+# CDN URL for mermaid.js (UMD build – sets window.mermaid on load)
+_MERMAID_CDN = "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"
+
+# HTML file extensions that get a "View as web page" button in the preview
+_HTML_EXTS = {".html", ".htm"}
 
 # Overridden by cli.py before serve() is called; also supports env var for reload mode
 ROOT: Path = Path(os.environ.get("PYKOFINDER_ROOT", str(Path.home())))
@@ -89,6 +103,7 @@ def index():
             Title("pykofinder"),
             Style(APP_CSS),
             Script(src="https://unpkg.com/htmx.org@1.9.12"),
+            Script(src=_MERMAID_CDN),
             Script(COLUMN_JS),
             *extra_scripts,
         ),
@@ -129,19 +144,102 @@ async def sse_reload():
     )
 
 
+def _make_bc_oob(path: Path, vpath: str = "") -> str:
+    """Return breadcrumb HTML string with hx-swap-oob="true" set."""
+    return render_breadcrumb(path, ROOT, vpath).replace(
+        '<nav id="breadcrumb">', '<nav id="breadcrumb" hx-swap-oob="true">'
+    )
+
+
+def _build_prune_js(col: int) -> str:
+    """Return a <script> that prunes sibling columns ≥ col and restores sentinel."""
+    return dedent(f"""\
+        <script>
+        (function(){{
+            var el = document.getElementById('col-{col}');
+            while (el && el.id !== 'preview') {{
+                var next = el.nextElementSibling;
+                el.remove();
+                el = next;
+            }}
+            var sentinel = document.createElement('div');
+            sentinel.id = 'col-{col}';
+            var preview = document.getElementById('preview');
+            if (preview) preview.parentNode.insertBefore(sentinel, preview);
+        }})();
+        </script>""")
+
+
 @rt("/click")
-def click(path: str, col: int):
-    """Handle click on a directory or file entry."""
+def click(path: str, col: int, vpath: str = "", fmt: str = ""):
+    """Handle click on a directory, file, or VFS entry."""
     p = _resolve_safe(path)
     if p is None:
-        error_div = Div(
+        return Div(
             "Access denied.",
             id=f"col-{col}",
             cls="column",
             style="color:#c00; padding:1rem;",
         )
-        return error_div
 
+    # ── VFS dispatch ──────────────────────────────────────────────────────────
+    provider = REGISTRY.get(p)
+    if provider is not None:
+        resolved_fmt = fmt or provider.default_fmt(vpath)
+        entries = provider.list_entries(p, vpath)
+
+        if resolved_fmt == "spreadsheet":
+            # Spreadsheet mode: collapse column to sentinel, OOB-update preview
+            try:
+                preview_html = provider.render_preview(
+                    p, vpath, "spreadsheet", page=1, limit=1000, col=col
+                )
+            except Exception as exc:
+                preview_html = (
+                    f'<div class="preview-error">'
+                    f"Preview error: {html_lib.escape(str(exc))}</div>"
+                )
+            sentinel = Div(id=f"col-{col}")
+            preview_oob = NotStr(
+                f'<div id="preview" hx-swap-oob="true">{preview_html}</div>'
+            )
+            bc_oob = NotStr(_make_bc_oob(p, vpath))
+            return sentinel, preview_oob, bc_oob
+
+        elif not entries:
+            # True leaf (no children at this vpath): show preview (KV row detail, etc.)
+            try:
+                preview_html = provider.render_preview(
+                    p, vpath, resolved_fmt, page=1, limit=1000, col=col
+                )
+            except Exception as exc:
+                preview_html = (
+                    f'<div class="preview-error">'
+                    f"Preview error: {html_lib.escape(str(exc))}</div>"
+                )
+            prune_js = _build_prune_js(col)
+            bc_oob = _make_bc_oob(p, vpath)
+            return NotStr(preview_html + prune_js + bc_oob)
+
+        else:
+            # Column mode: show entries as a column (tables or row listing)
+            show_fmt_bar = any(e.icon == "📋" for e in entries)
+            encoded_path = urlquote(str(p))
+            new_col = list_vfs_column(
+                entries=entries,
+                fs_path_encoded=encoded_path,
+                fs_path_raw=str(p),
+                vpath=vpath,
+                col_index=col,
+                show_fmt_bar=show_fmt_bar,
+                active_fmt=resolved_fmt,
+                ext=p.suffix.lower(),
+            )
+            preview_clear = Div(id="preview", hx_swap_oob="true")
+            bc_oob = NotStr(_make_bc_oob(p, vpath))
+            return new_col, preview_clear, bc_oob
+
+    # ── Real directory ────────────────────────────────────────────────────────
     if p.is_dir():
         # Return new column as main swap target; preview and breadcrumb cleared via OOB
         bc_oob = render_breadcrumb(p, ROOT).replace(
@@ -150,33 +248,51 @@ def click(path: str, col: int):
         new_col = list_column(p, ROOT, col_index=col)
         preview_clear = Div(id="preview", hx_swap_oob="true")
         return new_col, preview_clear, NotStr(bc_oob)
-    else:
-        # File: return rendered preview as main swap (target="#preview")
-        try:
-            preview_html = render_preview(p)
-        except Exception as e:
-            preview_html = f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'
-        # Prune columns col-{col} and beyond (left over from prior directory navigation),
-        # then recreate the col-{col} sentinel so directory links in col-{col-1} still
-        # have a valid hx_target when the user later clicks a directory instead of a file.
-        prune_js = f"""<script>
-(function(){{
-    var el = document.getElementById('col-{col}');
-    while (el && el.id !== 'preview') {{
-        var next = el.nextElementSibling;
-        el.remove();
-        el = next;
-    }}
-    var sentinel = document.createElement('div');
-    sentinel.id = 'col-{col}';
-    var preview = document.getElementById('preview');
-    if (preview) preview.parentNode.insertBefore(sentinel, preview);
-}})();
-</script>"""
-        bc_oob = render_breadcrumb(p, ROOT).replace(
-            '<nav id="breadcrumb">', '<nav id="breadcrumb" hx-swap-oob="true">'
+
+    # ── Regular file preview ──────────────────────────────────────────────────
+    try:
+        preview_html = render_preview(p)
+    except Exception as e:
+        preview_html = (
+            f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'
         )
-        return NotStr(preview_html + prune_js + bc_oob)
+    # For HTML files prepend a "View as web page" button
+    if p.suffix.lower() in _HTML_EXTS:
+        web_url = _web_url(p)
+        if web_url:
+            preview_html = (
+                f'<div class="preview-webmode-bar">'
+                f'<a href="{html_lib.escape(web_url)}" target="_blank"'
+                f' rel="noopener noreferrer">🌐 View as web page</a></div>'
+            ) + preview_html
+    # Prune columns col-{col} and beyond (left over from prior directory navigation),
+    # then recreate the col-{col} sentinel.
+    prune_js = _build_prune_js(col)
+    bc_oob = render_breadcrumb(p, ROOT).replace(
+        '<nav id="breadcrumb">', '<nav id="breadcrumb" hx-swap-oob="true">'
+    )
+    return NotStr(preview_html + prune_js + bc_oob)
+
+
+@rt("/vpage")
+def vpage(path: str, vpath: str, page: int = 1, limit: int = 1000):
+    """Return a paginated spreadsheet fragment for the given VFS table (target: #preview)."""
+    p = _resolve_safe(path)
+    if p is None or not p.is_file():
+        return HTMLResponse("Not found", status_code=404)
+    provider = REGISTRY.get(p)
+    if provider is None:
+        return HTMLResponse("Not found", status_code=404)
+    try:
+        html = provider.render_preview(
+            p, vpath, fmt="spreadsheet", page=page, limit=limit, col=0
+        )
+    except Exception as exc:
+        html = (
+            f'<div class="preview-error">'
+            f"Preview error: {html_lib.escape(str(exc))}</div>"
+        )
+    return NotStr(html)
 
 
 @rt("/raw")
@@ -265,3 +381,48 @@ def open_link(path: str):
     if not url:
         return HTMLResponse("Not a .desktop link file", status_code=400)
     return RedirectResponse(url, status_code=302)
+
+
+# ── #23 helpers + routes ──────────────────────────────────────────────────────
+
+
+def _web_url(p: Path) -> str | None:
+    """Return a ``/w/`` URL for *p*, or ``None`` if it is not reachable via ROOT.
+
+    Handles both zone-1 paths (directly under ROOT) and zone-2 paths (under a
+    direct symlink child of ROOT).
+    """
+    resolved_root = ROOT.resolve()
+    # Zone 1: directly under ROOT
+    try:
+        rel = p.relative_to(resolved_root)
+        return f"/w/{rel}"
+    except ValueError:
+        pass
+    # Zone 2: under a symlink child of ROOT
+    for child in ROOT.iterdir():
+        if child.is_symlink():
+            try:
+                rel_in_target = p.relative_to(child.resolve())
+                return f"/w/{child.name}/{rel_in_target}"
+            except ValueError:
+                continue
+    return None
+
+
+@rt("/w/{path:path}")
+def web_static(path: str):
+    """Serve ROOT-relative *path* as a static file with the correct Content-Type."""
+    p = _resolve_safe(str(ROOT / path.lstrip("/")))
+    if p is None or not p.is_file():
+        return HTMLResponse("Not found", status_code=404)
+    return FileResponse(str(p))
+
+
+@rt("/f/{path:path}")
+def finder_view(path: str):
+    """Redirect to the finder column-view for a ROOT-relative *path*."""
+    p = _resolve_safe(str(ROOT / path.lstrip("/")))
+    if p is None:
+        return HTMLResponse("Not found", status_code=404)
+    return RedirectResponse(f"/?path={urlquote(str(p))}", status_code=302)
