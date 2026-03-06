@@ -35,10 +35,6 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 - [ ] Pagination for large directories (> 500 entries)
 - [ ] Search/filter within a column
 
-- [ ] Auto-reload: server restart on code change + browser refresh on content change ([#6](ISSUES.md#6--auto-reload-code-changes-restart-server-content-changes-refresh-browser))
-
-- [ ] Keyboard navigation (arrow keys to move between columns) ([#15](ISSUES.md#15--keyboard-navigation))
-
 - [ ] PPTX slide image rendering via LibreOffice (better fidelity than text extraction)
 
 ---
@@ -69,3 +65,6 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 - [x] Breadcrumb navigation – `~ / dir / subdir / file` trail above column strip with OOB swap ([#13](ISSUES.md#13--breadcrumb-navigation)) <!-- prune after 2026-06-03 -->
 - [x] Bind address CLI option `--bind` / `-b` with `PYKOFINDER_BIND` env var ([#16](ISSUES.md#16--bind-address-cli-option---bind--serve_bind-env-var)) <!-- prune after 2026-06-03 -->
 - [x] URL sync and deep-link navigation – `pushState` on click, `/restore` endpoint, `_deepNavigate()` JS ([#5](ISSUES.md#5--url-reflects-current-path-deep-link-navigation)) <!-- prune after 2026-06-03 -->
+- [x] Auto-reload – SSE `/sse/reload` endpoint + `LIVE_RELOAD_JS` injected when `--live`; `watchfiles` dep; `PYKOFINDER_LIVE` env var ([#6](ISSUES.md#6--auto-reload-code-changes-restart-server-content-changes-refresh-browser)) <!-- prune after 2026-06-03 -->
+- [x] Keyboard navigation – `keydown` IIFE in COLUMN_JS for ↑↓→←/Enter/Escape ([#15](ISSUES.md#15--keyboard-navigation)) <!-- prune after 2026-06-03 -->
+- [x] Fix hanging SSE test – replace `c.stream()` approach with `asyncio.run(sse_reload())` unit call ([#17](ISSUES.md#17--fix-hanging-sse-test-test_sse_reload_exists_with_live_mode)) <!-- prune after 2026-06-03 -->

@@ -212,3 +212,46 @@ def test_url_sync_js_in_column_js():
 
     assert "pushState" in COLUMN_JS
     assert "_pendingPath" in COLUMN_JS or "pendingPath" in COLUMN_JS.lower()
+
+
+# ── #6 SSE live-reload ────────────────────────────────────────────────────────
+
+
+def test_sse_reload_returns_404_without_live_mode(client):
+    resp = client.get("/sse/reload")
+    assert resp.status_code == 404
+
+
+def test_sse_reload_exists_with_live_mode(monkeypatch):
+    """sse_reload() must return a StreamingResponse (not a 404 Response) in live mode.
+
+    Calling the async handler directly via asyncio.run() avoids making any real
+    HTTP request against the infinite SSE stream, which would hang the test suite
+    regardless of the timeout strategy used (see issue #17).
+    """
+    import asyncio
+    import pykofinder.app as app_module
+    from starlette.responses import StreamingResponse
+
+    monkeypatch.setattr(app_module, "LIVE_MODE", True)
+    result = asyncio.run(app_module.sse_reload())
+    assert isinstance(result, StreamingResponse)
+
+
+def test_live_reload_js_in_styles():
+    from pykofinder.styles import LIVE_RELOAD_JS
+
+    assert "EventSource" in LIVE_RELOAD_JS
+    assert "/sse/reload" in LIVE_RELOAD_JS
+
+
+# ── #15 Keyboard navigation ───────────────────────────────────────────────────
+
+
+def test_keyboard_nav_js_in_column_js():
+    from pykofinder.styles import COLUMN_JS
+
+    assert "ArrowDown" in COLUMN_JS
+    assert "ArrowUp" in COLUMN_JS
+    assert "ArrowRight" in COLUMN_JS
+    assert "ArrowLeft" in COLUMN_JS

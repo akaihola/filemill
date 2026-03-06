@@ -449,4 +449,128 @@ document.addEventListener('click', function(e) {
     });
     li.classList.add('selected');
 });
+
+// ── Keyboard navigation ──────────────────────────────────────────────────────
+(function() {
+    function getColumns() {
+        return Array.from(document.querySelectorAll('#finder .column'));
+    }
+
+    function getSelectedLi(col) {
+        return col ? col.querySelector('li.selected') : null;
+    }
+
+    function selectLi(li) {
+        if (!li) return;
+        var ul = li.closest('ul');
+        if (ul) ul.querySelectorAll('li').forEach(function(s) { s.classList.remove('selected'); });
+        li.classList.add('selected');
+        li.scrollIntoView({ block: 'nearest' });
+    }
+
+    function focusedColIndex() {
+        var cols = getColumns();
+        // Focused column = rightmost column that has a selected item,
+        // or the rightmost column overall.
+        for (var i = cols.length - 1; i >= 0; i--) {
+            if (getSelectedLi(cols[i])) return i;
+        }
+        return cols.length - 1;
+    }
+
+    document.addEventListener('keydown', function(e) {
+        // Don't hijack input fields
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        var cols = getColumns();
+        if (!cols.length) return;
+
+        var ci = focusedColIndex();
+        var col = cols[ci];
+        var sel = getSelectedLi(col);
+        var items = col ? Array.from(col.querySelectorAll('li')) : [];
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                if (!sel && items.length) {
+                    selectLi(items[0]);
+                } else if (sel) {
+                    var idx = items.indexOf(sel);
+                    if (idx < items.length - 1) selectLi(items[idx + 1]);
+                }
+                break;
+
+            case 'ArrowUp':
+                e.preventDefault();
+                if (sel) {
+                    var idx = items.indexOf(sel);
+                    if (idx > 0) selectLi(items[idx - 1]);
+                }
+                break;
+
+            case 'ArrowRight':
+            case 'Enter':
+                e.preventDefault();
+                if (sel) {
+                    var a = sel.querySelector('a');
+                    if (a) {
+                        if (a.getAttribute('hx-get') || a.getAttribute('data-hx-get')) {
+                            htmx.trigger(a, 'click');
+                        } else {
+                            a.click();
+                        }
+                    }
+                }
+                break;
+
+            case 'ArrowLeft':
+                e.preventDefault();
+                if (ci > 0) {
+                    // Move focus to parent column – its selected item is already marked.
+                    // If no selected item in parent col, select the first item.
+                    var parentCol = cols[ci - 1];
+                    var parentSel = getSelectedLi(parentCol);
+                    if (!parentSel) {
+                        var parentItems = parentCol.querySelectorAll('li');
+                        if (parentItems.length) selectLi(parentItems[0]);
+                    }
+                    // Remove selection from current column
+                    items.forEach(function(li) { li.classList.remove('selected'); });
+                    // Prune columns to the right of parent
+                    // (this mimics clicking the parent – but we don't want to re-fetch)
+                    // Just collapse: remove all columns to right of ci-1
+                    for (var j = cols.length - 1; j > ci - 1; j--) {
+                        if (cols[j]) cols[j].remove();
+                    }
+                    // Also clear preview
+                    var preview = document.getElementById('preview');
+                    if (preview) { preview.innerHTML = ''; preview.className = 'preview-empty'; }
+                    recalcColumnWidth();
+                }
+                break;
+
+            case 'Escape':
+                e.preventDefault();
+                // Clear all selections
+                document.querySelectorAll('#finder li.selected').forEach(function(li) {
+                    li.classList.remove('selected');
+                });
+                break;
+        }
+    });
+})();
+"""
+
+
+LIVE_RELOAD_JS = """
+(function() {
+    var evtSource = new EventSource('/sse/reload');
+    evtSource.onmessage = function(e) {
+        if (e.data === 'reload') window.location.reload();
+    };
+    evtSource.onerror = function() {
+        // Connection lost – retry is automatic for EventSource
+    };
+})();
 """
