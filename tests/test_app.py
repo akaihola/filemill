@@ -564,3 +564,103 @@ def test_restore_vfs_file_renders_table_column_not_unsupported(tmp_path, monkeyp
     assert "preview-unsupported" not in resp.text
     # The VFS column must list the table name
     assert "items" in resp.text
+
+
+# ── #29 VFS URL sync – /restore with vpath ────────────────────────────────
+
+def test_restore_vfs_with_table_vpath_renders_row_column(tmp_path, monkeypatch):
+    """/restore?path=file.db&vpath=tablename must render both the table-list column
+    (with the table highlighted) and the row-list column for that table.
+    """
+    import sqlite3
+    from urllib.parse import quote
+    from starlette.testclient import TestClient
+
+    db = tmp_path / "data.db"
+    con = sqlite3.connect(str(db))
+    con.execute("CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT)")
+    con.execute("INSERT INTO items VALUES (1, 'alpha')")
+    con.execute("INSERT INTO items VALUES (2, 'beta')")
+    con.commit()
+    con.close()
+
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    c = TestClient(app_module.app, raise_server_exceptions=False)
+    resp = c.get(f"/restore?path={quote(str(db))}&vpath=items")
+
+    assert resp.status_code == 200
+    html = resp.text
+    # Table-list column must show "items" as selected
+    assert "selected" in html
+    # Row-list column must show row entries (row IDs 1 and 2)
+    assert "alpha" in html or "1" in html
+
+
+def test_restore_vfs_with_row_vpath_renders_preview(tmp_path, monkeypatch):
+    """/restore?path=file.db&vpath=tablename/rowkey must render the row KV preview."""
+    import sqlite3
+    from urllib.parse import quote
+    from starlette.testclient import TestClient
+
+    db = tmp_path / "data.db"
+    con = sqlite3.connect(str(db))
+    con.execute("CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT)")
+    con.execute("INSERT INTO items VALUES (1, 'alpha')")
+    con.commit()
+    con.close()
+
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    c = TestClient(app_module.app, raise_server_exceptions=False)
+    resp = c.get(f"/restore?path={quote(str(db))}&vpath=items/1")
+
+    assert resp.status_code == 200
+    html = resp.text
+    # Must contain the KV preview content (the row's column values)
+    assert "preview-db-row" in html or "alpha" in html
+
+
+def test_restore_vfs_vpath_table_has_selected_on_table_entry(tmp_path, monkeypatch):
+    """/restore with vpath=tablename must mark the table entry as selected in the column."""
+    import sqlite3
+    from urllib.parse import quote
+    from starlette.testclient import TestClient
+
+    db = tmp_path / "data.db"
+    con = sqlite3.connect(str(db))
+    con.execute("CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT)")
+    con.execute("CREATE TABLE orders (id INTEGER PRIMARY KEY)")
+    con.execute("INSERT INTO items VALUES (1, 'alpha')")
+    con.commit()
+    con.close()
+
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    c = TestClient(app_module.app, raise_server_exceptions=False)
+    resp = c.get(f"/restore?path={quote(str(db))}&vpath=items")
+
+    assert resp.status_code == 200
+    html = resp.text
+    # "items" entry must be in a selected <li>
+    idx = html.index("items")
+    li_start = html.rfind("<li", 0, idx)
+    li_end = html.find(">", li_start)
+    li_tag = html[li_start : li_end + 1]
+    assert "selected" in li_tag
+
+
+def test_url_sync_js_tracks_vpath():
+    """COLUMN_JS must capture vpath from HTMX links and include it in pushState URL."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "_pendingVpath" in COLUMN_JS
+    assert "vpath" in COLUMN_JS
+    # pushState must encode vpath into the URL
+    assert "encodeURIComponent(_pendingVpath)" in COLUMN_JS or "&vpath=" in COLUMN_JS
+
+
+def test_deep_navigate_js_passes_vpath_to_restore():
+    """_deepNavigate must forward vpath to the /restore endpoint."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "_deepNavigate" in COLUMN_JS
+    # The function must accept a vpath argument and append it to the URL
+    assert "vpath" in COLUMN_JS

@@ -205,6 +205,7 @@ def list_vfs_column(
     show_fmt_bar: bool = False,
     active_fmt: str = "folders",
     ext: str = "",  # file extension e.g. ".db" (for data-ext + localStorage)
+    selected_vpath: str | None = None,  # full vpath of the selected entry
 ) -> object:
     """Return a FastHTML Div for a VFS column panel.
 
@@ -265,7 +266,8 @@ def list_vfs_column(
                 title=entry.name,
                 **common_data,
             )
-        items.append(Li(a))
+        li_cls = "selected" if selected_vpath and entry.vpath == selected_vpath else ""
+        items.append(Li(a, cls=li_cls) if li_cls else Li(a))
 
     # Fmt-bar (shown only at the row-listing level when folders mode is active)
     fmt_bar_html = ""

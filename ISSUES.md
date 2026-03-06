@@ -929,3 +929,46 @@ is found, call `provider.list_entries(p, "")` and render the result using
 `list_vfs_column()` as an extra column (mirroring what `/click` does), then
 leave the preview area empty. Only fall through to `render_preview()` when no
 provider is registered for the file.
+
+---
+
+## #29 – SQLite table/row navigation not reflected in URL
+
+**Type:** bug
+**Status:** closed
+**Closed:** 2026-03-06
+**Prune after:** 2026-06-04
+
+Navigating into a SQLite `.db` file via the VFS (clicking a table, then a row)
+updated the column view but left the URL unchanged at
+`/f/?path=/path/to/file.db`. Refreshing or sharing the URL lost the position
+within the database.
+
+**Root cause:** The URL-sync JS captured only the real filesystem `path` from
+HTMX link clicks, ignoring the `vpath` query parameter that encodes the current
+VFS position (table name / row key). `/restore` likewise accepted only `path`.
+
+**Fix** (three files):
+
+1. `styles.py` – JS:
+   - `_pendingVpath` variable captures `vpath` alongside `_pendingPath` on each
+     click.
+   - `pushState` includes `&vpath=…` in the URL and stores `vpath` in the
+     history state object.
+   - `popstate` reads `vpath` from state and passes it to `_deepNavigate`.
+   - `_deepNavigate(fullPath, vpath)` appends `&vpath=…` to the `/restore`
+     request when `vpath` is non-empty.
+   - `DOMContentLoaded` reads `vpath` from the URL and passes it to
+     `_deepNavigate`.
+
+2. `app.py` – `/restore` endpoint:
+   - Accepts optional `vpath: str = ""`.
+   - For VFS files, iterates through vpath segments with a `for i in
+     range(len(vpath_parts) + 1)` loop: at each depth, renders a VFS column
+     with `selected_vpath` highlighting; when `list_entries` returns an empty
+     list (leaf or empty table), renders the preview instead and breaks.
+
+3. `columns.py` – `list_vfs_column`:
+   - New `selected_vpath: str | None = None` parameter; when
+     `entry.vpath == selected_vpath` the corresponding `<li>` receives
+     `class="selected"`.

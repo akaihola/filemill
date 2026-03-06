@@ -440,3 +440,73 @@ def test_list_column_dotfile_and_selected_has_both_classes(tmp_path):
     li_tag = html[li_start : li_tag_end + 1]
     assert "dotfile" in li_tag
     assert "selected" in li_tag
+
+
+# ── #29 VFS URL sync – selected_vpath in list_vfs_column ──────────────────
+
+def test_list_vfs_column_selected_vpath_adds_selected_class():
+    """Entry whose vpath matches selected_vpath must have class 'selected' on its <li>."""
+    from pykofinder.columns import list_vfs_column
+    from pykofinder.vfs import VFSEntry
+
+    entries = [
+        VFSEntry(name="items", vpath="items", is_folder=True, icon="🗃️"),
+        VFSEntry(name="users", vpath="users", is_folder=True, icon="🗃️"),
+    ]
+    html = list_vfs_column(
+        entries, "foo.db", "/abs/foo.db", "", col_index=0, selected_vpath="items"
+    ).__html__()
+
+    # The <li> for "items" must carry class="selected"
+    idx_items = html.index("items")
+    li_start = html.rfind("<li", 0, idx_items)
+    li_end = html.find(">", li_start)
+    li_tag = html[li_start : li_end + 1]
+    assert "selected" in li_tag
+
+    # The <li> for "users" must NOT carry class="selected"
+    idx_users = html.index("users")
+    li_start_u = html.rfind("<li", 0, idx_users)
+    li_end_u = html.find(">", li_start_u)
+    li_tag_u = html[li_start_u : li_end_u + 1]
+    assert "selected" not in li_tag_u
+
+
+def test_list_vfs_column_no_selected_vpath_no_selected_class():
+    """Default call (no selected_vpath) must not produce 'selected' on any <li>."""
+    from pykofinder.columns import list_vfs_column
+    from pykofinder.vfs import VFSEntry
+
+    entries = [
+        VFSEntry(name="items", vpath="items", is_folder=True, icon="🗃️"),
+    ]
+    html = list_vfs_column(
+        entries, "foo.db", "/abs/foo.db", "", col_index=0
+    ).__html__()
+    # No <li> should carry the selected class
+    assert 'class="selected"' not in html
+
+
+def test_list_vfs_column_row_level_selected_vpath():
+    """selected_vpath with composite vpath (tablename/rowkey) selects the right row."""
+    from pykofinder.columns import list_vfs_column
+    from pykofinder.vfs import VFSEntry
+
+    entries = [
+        VFSEntry(name="1", vpath="items/1", is_folder=False, icon="📋"),
+        VFSEntry(name="2", vpath="items/2", is_folder=False, icon="📋"),
+    ]
+    html = list_vfs_column(
+        entries,
+        "foo.db",
+        "/abs/foo.db",
+        "items",
+        col_index=1,
+        selected_vpath="items/1",
+    ).__html__()
+
+    idx_1 = html.index(">1<")
+    li_start = html.rfind("<li", 0, idx_1)
+    li_end = html.find(">", li_start)
+    li_tag = html[li_start : li_end + 1]
+    assert "selected" in li_tag
