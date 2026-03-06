@@ -374,3 +374,47 @@ def test_find_file_for_href_step2_fails_step3_succeeds(tmp_path):
     found = _find_file_for_href("x/target.md", src)
     # rglob by basename "target.md" finds it
     assert found == target.resolve()
+
+
+# ── #25 dotfile visibility toggle ─────────────────────────────────────────────
+
+
+def test_dotfile_css_hidden_by_default():
+    """li.dotfile entries must be hidden by default in APP_CSS."""
+    from pykofinder.styles import APP_CSS
+
+    assert "li.dotfile" in APP_CSS
+    assert "display: none" in APP_CSS or "display:none" in APP_CSS
+
+
+def test_dotfile_css_visible_with_body_class():
+    """show-dotfiles body class must reveal dotfile entries."""
+    from pykofinder.styles import APP_CSS
+
+    assert "show-dotfiles" in APP_CSS
+
+
+def test_dotfiles_toggle_js_in_column_js():
+    """COLUMN_JS must contain toggleDotfiles and _syncDotBtn functions."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "toggleDotfiles" in COLUMN_JS
+    assert "_syncDotBtn" in COLUMN_JS
+
+
+def test_dotfiles_toggle_js_persists_to_localstorage():
+    """COLUMN_JS must write to localStorage for persistence."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "pykofinder_show_dotfiles" in COLUMN_JS
+
+
+def test_dotfiles_sync_btn_called_on_after_settle():
+    """_syncDotBtn() call must appear inside the htmx:afterSettle handler."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "afterSettle" in COLUMN_JS
+    # Search for the _syncDotBtn() *call* (with parens) starting from afterSettle
+    settle_pos = COLUMN_JS.index("afterSettle")
+    call_pos = COLUMN_JS.index("_syncDotBtn()", settle_pos)
+    assert call_pos > settle_pos

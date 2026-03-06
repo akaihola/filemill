@@ -72,12 +72,14 @@ def test_list_column_dirs_sorted_before_files(tmp_path):
     assert html.index("a_subdir") < html.index("z_file.txt")
 
 
-def test_list_column_skips_dotfiles(tmp_path):
+def test_list_column_dotfiles_have_dotfile_class(tmp_path):
+    """Dotfiles are rendered but carry class='dotfile' for CSS toggling."""
     (tmp_path / ".hidden").touch()
     (tmp_path / "visible.txt").touch()
     html = list_column(tmp_path, tmp_path, 0).__html__()
-    assert ".hidden" not in html
-    assert "visible.txt" in html
+    assert ".hidden" in html  # dotfile IS rendered now
+    assert "dotfile" in html  # … but marked with CSS class
+    assert "visible.txt" in html  # normal entry still present
 
 
 def test_list_column_desktop_has_open_link_href(tmp_path):
@@ -202,6 +204,7 @@ def test_render_breadcrumb_path_outside_root(tmp_path):
 
 # ── #18 VFS: entry_icon, list_column VFS routing, list_vfs_column, breadcrumb vpath ──
 
+
 def test_entry_icon_db(tmp_path):
     f = tmp_path / "data.db"
     f.touch()
@@ -248,7 +251,9 @@ def test_list_vfs_column_leaf_targets_preview(tmp_path):
     from pykofinder.columns import list_vfs_column
 
     entries = [VFSEntry(name="row_1", vpath="users/1", is_folder=False, icon="📋")]
-    html = list_vfs_column(entries, "foo.db", "/abs/foo.db", "users", col_index=2).__html__()
+    html = list_vfs_column(
+        entries, "foo.db", "/abs/foo.db", "users", col_index=2
+    ).__html__()
     assert "preview" in html
 
 
@@ -257,7 +262,9 @@ def test_list_vfs_column_fmt_bar_absent_when_not_requested(tmp_path):
     from pykofinder.columns import list_vfs_column
 
     entries = [VFSEntry(name="users", vpath="users", is_folder=True, icon="🗃️")]
-    html = list_vfs_column(entries, "foo.db", "/abs/foo.db", "", col_index=1, show_fmt_bar=False).__html__()
+    html = list_vfs_column(
+        entries, "foo.db", "/abs/foo.db", "", col_index=1, show_fmt_bar=False
+    ).__html__()
     assert "fmt-bar" not in html
 
 
@@ -266,7 +273,9 @@ def test_list_vfs_column_fmt_bar_present_when_requested(tmp_path):
     from pykofinder.columns import list_vfs_column
 
     entries = [VFSEntry(name="r1", vpath="users/1", is_folder=False, icon="📋")]
-    html = list_vfs_column(entries, "foo.db", "/abs/foo.db", "users", col_index=2, show_fmt_bar=True).__html__()
+    html = list_vfs_column(
+        entries, "foo.db", "/abs/foo.db", "users", col_index=2, show_fmt_bar=True
+    ).__html__()
     assert "fmt-bar" in html
 
 
@@ -275,8 +284,15 @@ def test_list_vfs_column_fmt_bar_active_is_rows(tmp_path):
     from pykofinder.columns import list_vfs_column
 
     entries = [VFSEntry(name="r1", vpath="users/1", is_folder=False, icon="📋")]
-    html = list_vfs_column(entries, "foo.db", "/abs/foo.db", "users", col_index=2,
-                            show_fmt_bar=True, active_fmt="folders").__html__()
+    html = list_vfs_column(
+        entries,
+        "foo.db",
+        "/abs/foo.db",
+        "users",
+        col_index=2,
+        show_fmt_bar=True,
+        active_fmt="folders",
+    ).__html__()
     assert "📋 Rows" in html
     assert "📊 Spreadsheet" in html
 
@@ -327,3 +343,42 @@ def test_render_breadcrumb_with_nested_vpath(tmp_path):
     html = render_breadcrumb(tmp_path / "foo.db", tmp_path, vpath="users/42")
     assert "users" in html
     assert "42" in html
+
+
+# ── #25 dotfile visibility toggle ─────────────────────────────────────────────
+
+
+def test_list_column_dotfile_dir_has_dotfile_class(tmp_path):
+    """Dotfile directories are rendered with class='dotfile'."""
+    (tmp_path / ".hidden_dir").mkdir()
+    html = list_column(tmp_path, tmp_path, 0).__html__()
+    assert ".hidden_dir" in html
+    assert "dotfile" in html
+
+
+def test_list_column_non_dotfile_has_no_dotfile_class(tmp_path):
+    """Regular entries must NOT carry class='dotfile'."""
+    (tmp_path / "regular.txt").touch()
+    html = list_column(tmp_path, tmp_path, 0).__html__()
+    assert "regular.txt" in html
+    # No dotfile class attribute when only regular entries are present
+    assert 'class="dotfile"' not in html
+
+
+def test_render_breadcrumb_has_dotfiles_toggle(tmp_path):
+    """Breadcrumb must contain the dotfiles toggle button."""
+    from pykofinder.columns import render_breadcrumb
+
+    html = render_breadcrumb(tmp_path, tmp_path)
+    assert "dotfiles-btn" in html
+    assert "toggleDotfiles" in html
+
+
+def test_render_breadcrumb_toggle_inside_nav(tmp_path):
+    """The dotfiles button must be contained inside <nav id='breadcrumb'>."""
+    from pykofinder.columns import render_breadcrumb
+
+    html = render_breadcrumb(tmp_path, tmp_path)
+    nav_start = html.index('<nav id="breadcrumb"')
+    btn_pos = html.index("dotfiles-btn")
+    assert btn_pos > nav_start  # button is inside the nav

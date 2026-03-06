@@ -8,6 +8,41 @@ the issue block here and the corresponding `[x]` line in TASKS.md at that point.
 
 ---
 
+## #25 – Dotfile visibility toggle in `<nav>`
+
+**Type:** feature / UX
+**Status:** closed
+**Closed:** 2026-03-06
+
+Add a hidden-dotfile visibility toggle button (`.*`) to the `<nav id="breadcrumb">`
+bar. By default, entries whose names begin with `.` are excluded from column views.
+The toggle reveals them (with a slight opacity to visually distinguish them from
+regular entries) and persists the preference in `localStorage`.
+
+**Implementation sketch:**
+
+- `columns.py`: remove the `p.name.startswith(".")` skip in `list_column()`; add
+  `cls="dotfile"` to the `Li` for such entries instead. Add a `<button id="dotfiles-btn"
+class="bc-toggle">.*</button>` at the end of every `render_breadcrumb()` return value.
+- `styles.py`: update `#breadcrumb` to `display: flex` so the button floats right.
+  Add `.column li.dotfile { display: none }` + `body.show-dotfiles .column li.dotfile
+{ display: list-item; opacity: 0.65 }`. Add `.bc-toggle` button CSS. Add JS:
+  `initDotfilesToggle()`, `_syncDotBtn()`, `toggleDotfiles()`. Wire `_syncDotBtn()`
+  into `htmx:afterSettle` and `initDotfilesToggle()` into `DOMContentLoaded`.
+
+**Implemented:** `columns.py` – `render_breadcrumb()` appends
+`<button id="dotfiles-btn" class="bc-toggle" onclick="toggleDotfiles()">.*</button>`;
+`list_column()` adds `cls="dotfile"` to dotfile `Li`s instead of skipping them.
+`styles.py` – `#breadcrumb` changed to `display: flex`; `.bc-toggle` button CSS;
+`.column li.dotfile { display: none }` + `body.show-dotfiles .column li.dotfile
+{ display: list-item; opacity: 0.65 }`; JS: `_syncDotBtn()`, `toggleDotfiles()`,
+`initDotfilesToggle()` (reads/writes `localStorage` key `pykofinder_show_dotfiles`);
+`recalcColumnWidth()` skips hidden dotfile entries; `_syncDotBtn()` wired into
+`htmx:afterSettle`; `initDotfilesToggle()` wired into `DOMContentLoaded`.
+**Prune after:** 2026-06-04
+
+---
+
 ## #1 – Add PNG and JPEG preview
 
 **Type:** feature
@@ -795,5 +830,5 @@ duplicate columns and put content in wrong places.
    - `leaf=True` (true leaf / row detail) → old inline behaviour.
    - `leaf=False` (empty folder, e.g. empty table) → returns a `#col-{col}` sentinel as
      the main swap target plus an OOB `#preview` update, exactly like the spreadsheet
-     branch.  A `_build_prune_js(col + 1)` call is inlined in the sentinel to clean up
+     branch. A `_build_prune_js(col + 1)` call is inlined in the sentinel to clean up
      any stale right-hand columns.

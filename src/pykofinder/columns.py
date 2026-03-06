@@ -33,7 +33,12 @@ def render_breadcrumb(path: Path, root: Path, vpath: str = "") -> str:
                 )
 
     inner = " ".join(parts)
-    return f'<nav id="breadcrumb">{inner}</nav>'
+    toggle_btn = (
+        '<button id="dotfiles-btn" class="bc-toggle"'
+        ' title="Show dotfiles"'
+        ' onclick="toggleDotfiles()">.*</button>'
+    )
+    return f'<nav id="breadcrumb">{inner}{toggle_btn}</nav>'
 
 
 def entry_icon(p: Path) -> str:
@@ -76,8 +81,8 @@ def list_column(path: Path, root: Path, col_index: int) -> object:
 
     items = []
     for p in entries:
-        if p.name.startswith("."):
-            continue
+        is_dot = p.name.startswith(".")
+        li_cls = "dotfile" if is_dot else None
         icon = entry_icon(p)
         encoded_path = urlquote(str(p))
         if p.is_dir():
@@ -92,6 +97,7 @@ def list_column(path: Path, root: Path, col_index: int) -> object:
                     hx_swap="outerHTML",
                     title=p.name,
                 ),
+                cls=li_cls,
             )
         elif p.suffix.lower() == ".desktop":
             # .desktop link file: open the destination URL directly in a new tab
@@ -104,6 +110,7 @@ def list_column(path: Path, root: Path, col_index: int) -> object:
                     rel="noopener noreferrer",
                     title=p.name,
                 ),
+                cls=li_cls,
             )
         elif is_vfs_file(p):
             # VFS navigable file (e.g. .db): opens a column, not a preview
@@ -117,6 +124,7 @@ def list_column(path: Path, root: Path, col_index: int) -> object:
                     hx_swap="outerHTML",
                     title=p.name,
                 ),
+                cls=li_cls,
             )
         else:
             # File: update preview only
@@ -130,6 +138,7 @@ def list_column(path: Path, root: Path, col_index: int) -> object:
                     hx_swap="innerHTML",
                     title=p.name,
                 ),
+                cls=li_cls,
             )
         items.append(li)
 
