@@ -30,6 +30,8 @@ _(nothing currently in progress)_
 
 ## Open
 
+- [ ] [#18](ISSUES.md#18--virtual-fs-navigation-and-view-format-switching-sqlite--extensible-registry) Virtual-FS navigation + view-format switching (SQLite + registry)
+
 _Items without an issue number are not yet tracked in ISSUES.md._
 
 - [ ] Pagination for large directories (> 500 entries)
