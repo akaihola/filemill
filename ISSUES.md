@@ -1044,3 +1044,38 @@ Replace the keyboard navigation IIFE with a rewritten version that:
    `_focusedColIndex = cols.length - 1` after each navigation.
 6. `ArrowLeft` only adjusts `_focusedColIndex` (no `.remove()` calls).
 7. Handles `Home`, `End`, `PageUp`, `PageDown` cases in the `switch`.
+
+---
+
+## #32 – Column focus-state visual indicators (keyboard navigation)
+
+**Type:** feature
+**Status:** closed
+**Closed:** 2026-03-07
+**Prune after:** 2026-06-05
+
+When using keyboard navigation, it's impossible to tell which column is
+currently focused. Three distinct visual states are needed:
+
+- **Focused column**: current bright-blue selection (most prominent).
+- **Ancestor columns** (to the left): muted/dimmed highlight – shows the
+  navigation path taken, clearly less prominent than the focused column.
+- **Descendant columns** (to the right): very subtle "remembered" highlight –
+  signals the item is queued/waiting to regain focus, but is clearly inactive.
+
+**Implementation** (`src/pykofinder/styles.py`):
+
+1. **CSS** – add `.col-ancestor li.selected > a` (muted steel-blue) and
+   `.col-descendant li.selected > a` (very light blue-grey + matching icon
+   colour) rules after the base `.column li.selected > a` rule.
+
+2. **JS** – inside the keyboard IIFE:
+   - Add `applyFocusClasses()` that stamps `.col-ancestor`, `.col-focused`,
+     or `.col-descendant` on each `.column` div based on its index vs
+     `focusIndex()`.
+   - Expose it via a module-level `var _kbApplyFocus` placeholder so
+     `_deepNavigate` can call it after replacing the app-shell.
+   - Call `applyFocusClasses()` in the keyboard IIFE's `htmx:afterSettle`
+     handler, in `ArrowLeft`, in `ArrowRight` (focus-move branch), and in a
+     new `DOMContentLoaded` listener inside the IIFE.
+   - Call `_kbApplyFocus()` in `_deepNavigate` after `recalcColumnWidth()`.

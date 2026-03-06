@@ -572,3 +572,98 @@ def test_no_document_body_addeventlistener_at_toplevel():
     from pykofinder.styles import COLUMN_JS
 
     assert "document.body.addEventListener" not in COLUMN_JS
+
+
+# ── #32 column focus-state visual indicators ──────────────────────────────────
+
+
+def test_col_ancestor_css_present():
+    """APP_CSS must style .col-ancestor li.selected > a (muted highlight)."""
+    from pykofinder.styles import APP_CSS
+
+    assert "col-ancestor" in APP_CSS
+    assert "col-ancestor li.selected" in APP_CSS
+
+
+def test_col_descendant_css_present():
+    """APP_CSS must style .col-descendant li.selected > a (subtle/remembered)."""
+    from pykofinder.styles import APP_CSS
+
+    assert "col-descendant" in APP_CSS
+    assert "col-descendant li.selected" in APP_CSS
+
+
+def test_col_descendant_icon_colour_overridden():
+    """APP_CSS must override the icon colour inside descendant selected items."""
+    from pykofinder.styles import APP_CSS
+
+    assert "col-descendant li.selected > a .icon" in APP_CSS
+
+
+def test_apply_focus_classes_function_exists():
+    """COLUMN_JS must define an applyFocusClasses function."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "applyFocusClasses" in COLUMN_JS
+
+
+def test_col_focused_class_stamped_in_js():
+    """applyFocusClasses must stamp the col-focused class."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "col-focused" in COLUMN_JS
+
+
+def test_col_ancestor_class_stamped_in_js():
+    """applyFocusClasses must stamp the col-ancestor class."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "col-ancestor" in COLUMN_JS
+
+
+def test_col_descendant_class_stamped_in_js():
+    """applyFocusClasses must stamp the col-descendant class."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "col-descendant" in COLUMN_JS
+
+
+def test_apply_focus_classes_called_on_arrow_left():
+    """ArrowLeft handler must call applyFocusClasses() after shifting focus."""
+    from pykofinder.styles import COLUMN_JS
+
+    left_pos = COLUMN_JS.index("'ArrowLeft'")
+    break_pos = COLUMN_JS.index("break;", left_pos)
+    left_block = COLUMN_JS[left_pos:break_pos]
+    assert "applyFocusClasses" in left_block
+
+
+def test_apply_focus_classes_called_on_arrow_right():
+    """ArrowRight handler must call applyFocusClasses() after shifting focus."""
+    from pykofinder.styles import COLUMN_JS
+
+    right_pos = COLUMN_JS.index("'ArrowRight'")
+    break_pos = COLUMN_JS.index("break;", right_pos)
+    right_block = COLUMN_JS[right_pos:break_pos]
+    assert "applyFocusClasses" in right_block
+
+
+def test_apply_focus_classes_called_after_htmx_settle():
+    """The keyboard IIFE's afterSettle handler must call applyFocusClasses()."""
+    from pykofinder.styles import COLUMN_JS
+
+    settle_pos = COLUMN_JS.rindex("htmx:afterSettle")
+    block_end = COLUMN_JS.index("});", settle_pos)
+    settle_block = COLUMN_JS[settle_pos:block_end]
+    assert "applyFocusClasses" in settle_block
+
+
+def test_kb_apply_focus_exposed_for_deep_navigate():
+    """_kbApplyFocus must be declared at module level and called in _deepNavigate."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "_kbApplyFocus" in COLUMN_JS
+    deep_pos = COLUMN_JS.index("function _deepNavigate")
+    deep_end = COLUMN_JS.index("\n}", deep_pos)
+    deep_block = COLUMN_JS[deep_pos:deep_end]
+    assert "_kbApplyFocus" in deep_block
