@@ -358,3 +358,64 @@ def test_keyboard_nav_js_in_column_js():
     assert "ArrowUp" in COLUMN_JS
     assert "ArrowRight" in COLUMN_JS
     assert "ArrowLeft" in COLUMN_JS
+
+
+# ── #18 CSS + JS presence ─────────────────────────────────────────────────────
+
+from pykofinder.styles import APP_CSS, COLUMN_JS
+
+
+def test_app_css_has_fmt_bar():
+    assert ".fmt-bar" in APP_CSS
+
+
+def test_app_css_has_fmt_btn():
+    assert ".fmt-btn" in APP_CSS
+
+
+def test_app_css_has_fmt_btn_active():
+    assert ".fmt-btn.active" in APP_CSS
+
+
+def test_app_css_has_preview_db_spreadsheet():
+    assert "preview-db-spreadsheet" in APP_CSS
+
+
+def test_app_css_has_db_table():
+    assert "db-table" in APP_CSS
+
+
+def test_app_css_has_db_table_wrap():
+    assert "db-table-wrap" in APP_CSS
+
+
+def test_app_css_has_db_kv_table():
+    assert "db-kv-table" in APP_CSS
+
+
+def test_app_css_has_db_pagination():
+    assert "db-pagination" in APP_CSS
+
+
+def test_app_css_has_bc_virtual():
+    assert "bc-virtual" in APP_CSS
+
+
+def test_column_js_has_htmx_config_request_listener():
+    assert "htmx:configRequest" in COLUMN_JS
+
+
+def test_column_js_has_vfmt_file_key():
+    assert "vfmt_file_" in COLUMN_JS
+
+
+def test_column_js_has_vfmt_type_key():
+    assert "vfmt_type_" in COLUMN_JS
+
+
+def test_column_js_has_local_storage_set_item():
+    assert "localStorage.setItem" in COLUMN_JS
+
+
+def test_column_js_has_fmt_btn_click_handler():
+    assert "fmt-btn" in COLUMN_JS
