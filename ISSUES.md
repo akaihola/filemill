@@ -902,3 +902,30 @@ should be pre-selected; `/restore` in `app.py` builds each column via
    at index `i` is the child to select in column `i`. Pass
    `selected_name=parts[i] if i < len(parts) else None` to each `list_column`
    call.
+
+---
+
+## #28 – Direct URL to VFS file shows "No preview available" instead of table list
+
+**Type:** bug
+**Status:** closed
+**Closed:** 2026-03-06
+**Prune after:** 2026-06-04
+
+When navigating to a VFS-backed file (e.g. a SQLite `.db`) by pasting its URL
+directly into the browser (e.g. `/f/?path=/path/to/file.db`), the preview pane
+showed *"No preview available for .db files."* instead of the table-list column
+that appears when clicking through the columns.
+
+**Root cause:** The `/restore` endpoint renders a preview for any file it
+encounters by calling `render_preview(p)` directly, without first consulting
+`REGISTRY.get(p)`. Column-click navigation goes through the `/click` handler,
+which correctly checks the VFS registry and dispatches to the SQLite provider.
+
+**Fix** (`app.py` – `restore()`):
+
+Before calling `render_preview(p)`, check `REGISTRY.get(p)`. When a provider
+is found, call `provider.list_entries(p, "")` and render the result using
+`list_vfs_column()` as an extra column (mirroring what `/click` does), then
+leave the preview area empty. Only fall through to `render_preview()` when no
+provider is registered for the file.
