@@ -24,13 +24,11 @@ after:** YYYY-MM-DD` (closed date + 90 days) in ISSUES.md, then move the entry h
 
 ## In progress
 
-_(nothing currently in progress)_
+- [~] [#18](ISSUES.md#18--virtual-fs-navigation-and-view-format-switching-sqlite--extensible-registry) Virtual-FS navigation + view-format switching (SQLite + registry)
 
 ---
 
 ## Open
-
-- [ ] [#18](ISSUES.md#18--virtual-fs-navigation-and-view-format-switching-sqlite--extensible-registry) Virtual-FS navigation + view-format switching (SQLite + registry)
 
 _Items without an issue number are not yet tracked in ISSUES.md._
 
