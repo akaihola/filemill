@@ -12,6 +12,7 @@ dependencies = [
     "python-pptx",
     "typer",
     "watchfiles>=0.21",
+    "linkify-it-py>=2.1.0",
 ]
 
 [project.scripts]
