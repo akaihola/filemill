@@ -664,3 +664,47 @@ def test_deep_navigate_js_passes_vpath_to_restore():
     assert "_deepNavigate" in COLUMN_JS
     # The function must accept a vpath argument and append it to the URL
     assert "vpath" in COLUMN_JS
+
+
+# ── #30 – JSON VFS preview ─────────────────────────────────────────────────────
+
+
+def test_click_json_file_renders_json_not_stub(tmp_path, monkeypatch):
+    """Clicking a .json file must show formatted JSON content, not the stub message."""
+    import json
+    from urllib.parse import quote
+    from starlette.testclient import TestClient
+
+    data = {"key": "value", "count": 42}
+    jf = tmp_path / "data.json"
+    jf.write_text(json.dumps(data))
+
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    c = TestClient(app_module.app, raise_server_exceptions=False)
+    resp = c.get(f"/click?path={quote(str(jf))}&col=1")
+
+    assert resp.status_code == 200
+    assert "not yet implemented" not in resp.text
+    # Must contain the JSON content
+    assert "value" in resp.text or "preview-code" in resp.text
+
+
+def test_restore_json_file_shows_json_preview(tmp_path, monkeypatch):
+    """/restore for a .json file must render JSON content in the preview pane."""
+    import json
+    from urllib.parse import quote
+    from starlette.testclient import TestClient
+
+    data = {"heartbeat": True, "status": "ok"}
+    jf = tmp_path / "state.json"
+    jf.write_text(json.dumps(data))
+
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    c = TestClient(app_module.app, raise_server_exceptions=False)
+    resp = c.get(f"/restore?path={quote(str(jf))}")
+
+    assert resp.status_code == 200
+    assert "not yet implemented" not in resp.text
+    assert "preview-unsupported" not in resp.text
+    # JSON content must appear in the preview
+    assert "heartbeat" in resp.text or "preview-code" in resp.text
