@@ -160,7 +160,9 @@ event handler after every `/click` response is the direct equivalent.
 ## #6 – Auto-reload: code changes restart server; content changes refresh browser
 
 **Type:** developer experience
-**Status:** open
+**Status:** closed
+**Closed:** 2026-03-05
+**Prune after:** 2026-06-03
 
 Two related but distinct reload mechanisms are both missing:
 
@@ -432,10 +434,67 @@ Key details:
 
 ---
 
+## #17 – Fix hanging SSE test (`test_sse_reload_exists_with_live_mode`)
+
+**Type:** bug / testing
+**Status:** closed
+**Closed:** 2026-03-05
+**Prune after:** 2026-06-03
+
+`tests/test_app.py::test_sse_reload_exists_with_live_mode` hangs indefinitely
+because it calls `TestClient.get("/sse/reload", timeout=0.5)` against an infinite
+SSE streaming endpoint.
+
+**Why the timeout doesn't help:**
+`starlette.testclient.TestClient` runs the ASGI app in a background thread and
+uses `requests` as its HTTP transport. The `timeout=0.5` on `.get()` is a _read_
+timeout that resets each time a chunk arrives. The `/sse/reload` endpoint emits
+`": keepalive\n\n"` pings continuously, so the read-timeout window keeps refreshing
+and the call never returns.
+
+**Fix:**
+Replace the live-HTTP approach with one that doesn't block on the stream:
+
+Option A (preferred) – assert the _route is registered_ rather than making a
+request, then check the response status in a separate focused test that streams
+only the first line:
+
+```python
+def test_sse_reload_exists_with_live_mode(tmp_root, monkeypatch):
+    import pykofinder.app as app_module
+    monkeypatch.setattr(app_module, "LIVE_MODE", True)
+    from starlette.testclient import TestClient
+    c = TestClient(app_module.app, raise_server_exceptions=False)
+    with c.stream("GET", "/sse/reload") as resp:
+        assert resp.status_code != 404
+        # Read only the first chunk then bail out
+        next(resp.iter_lines())
+```
+
+Option B – check that the route exists on `app.routes` without making any HTTP
+request at all, and rely on a separate integration test that patches the watchfiles
+generator to yield one event then stop.
+
+A second hanging test was also found in `tests/test_preview.py`:
+`test_large_text_file_shows_unsupported` created a 256 KB file (within Pygments'
+512 KB syntax-highlight limit) with a `.log` extension. `get_lexer_by_name("log")`
+raised `ClassNotFound`, so `guess_lexer()` was called on 256 KB of repeated `'x'`
+bytes — Pygments heuristics on uniform binary-ish data hang indefinitely. Fix: size
+the test file to 512 KB + 1 so it exceeds both the Pygments limit and the raw-text
+limit. **Fixed** 2026-03-06 (`f.write_bytes(b"x" * (512 * 1024 + 1))`).
+
+**Discovered:** 2026-03-06 – these tests caused the Pi "Pykofinder hackathon" session
+to stall for ~3.5 hours when `uv run pytest` was run as a bash tool call with no
+shell-level timeout.
+
+---
+
 ## #15 – Keyboard navigation
 
 **Type:** UX / accessibility
-**Status:** open
+**Status:** closed
+**Closed:** 2026-03-05
+**Prune after:** 2026-06-03
 
 Users should be able to navigate the column view using the keyboard without reaching for
 the mouse – essential for power users and accessibility.

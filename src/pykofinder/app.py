@@ -19,10 +19,12 @@ from starlette.responses import FileResponse, HTMLResponse, RedirectResponse
 
 from pykofinder.columns import initial_columns, list_column, render_breadcrumb
 from pykofinder.preview import render_preview
-from pykofinder.styles import APP_CSS, COLUMN_JS
+from pykofinder.styles import APP_CSS, COLUMN_JS, LIVE_RELOAD_JS
 
 # Overridden by cli.py before serve() is called; also supports env var for reload mode
 ROOT: Path = Path(os.environ.get("PYKOFINDER_ROOT", str(Path.home())))
+
+LIVE_MODE: bool = os.environ.get("PYKOFINDER_LIVE", "").lower() in ("1", "true", "yes")
 
 app, rt = fast_app(
     hdrs=(
@@ -81,14 +83,49 @@ def _resolve_safe(path_str: str, root: Path | None = None) -> Path | None:
 @rt("/")
 def index():
     """Serve the full shell page."""
+    extra_scripts = [Script(LIVE_RELOAD_JS)] if LIVE_MODE else []
     return Html(
         Head(
             Title("pykofinder"),
             Style(APP_CSS),
             Script(src="https://unpkg.com/htmx.org@1.9.12"),
             Script(COLUMN_JS),
+            *extra_scripts,
         ),
         Body(initial_columns(ROOT)),
+    )
+
+
+@rt("/sse/reload")
+async def sse_reload():
+    """Server-Sent Events stream; emits a reload event when files under ROOT change."""
+    if not LIVE_MODE:
+        from starlette.responses import Response
+
+        return Response(status_code=404)
+
+    from starlette.responses import StreamingResponse
+    import asyncio
+
+    async def event_generator():
+        try:
+            from watchfiles import awatch
+
+            async for _changes in awatch(str(ROOT)):
+                yield "data: reload\n\n"
+        except Exception:
+            # If watchfiles not available or error, just keep stream open
+            while True:
+                await asyncio.sleep(30)
+                yield ": keepalive\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 

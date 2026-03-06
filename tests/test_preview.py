@@ -347,8 +347,12 @@ def test_binary_file_shows_unsupported(tmp_path):
 
 
 def test_large_text_file_shows_unsupported(tmp_path):
+    # File must exceed BOTH the Pygments limit (512 KB) AND the raw-text limit
+    # (256 KB) so that render_preview() falls all the way through to "No
+    # preview available" without calling guess_lexer() on a huge blob of
+    # repeated bytes (which hangs indefinitely – see issue #17).
     f = tmp_path / "big.log"
-    f.write_bytes(b"x" * (256 * 1024 + 1))
+    f.write_bytes(b"x" * (512 * 1024 + 1))
     result = render_preview(f)
     assert "No preview available" in result
 

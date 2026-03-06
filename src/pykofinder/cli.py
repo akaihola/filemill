@@ -31,6 +31,7 @@ def main(
         # uvicorn reload mode requires a string import path, so pass ROOT via env var
         os.environ["PYKOFINDER_ROOT"] = str(resolved)
         os.environ["PYKOFINDER_BIND"] = bind
+        os.environ["PYKOFINDER_LIVE"] = "1"
         uvicorn.run(
             "pykofinder.app:app",
             host=bind,
