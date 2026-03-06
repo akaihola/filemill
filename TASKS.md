@@ -28,6 +28,8 @@ after:** YYYY-MM-DD` (closed date + 90 days) in ISSUES.md, then move the entry h
 
 ## Open
 
+## Open
+
 _Items without an issue number are not yet tracked in ISSUES.md._
 
 - [ ] Pagination for large directories (> 500 entries)
@@ -39,6 +41,7 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 
 ## Done
 
+- [x] [#29](ISSUES.md#29--sqlite-tablerow-navigation-not-reflected-in-url) SQLite table/row navigation not reflected in URL <!-- prune after 2026-09-04 -->
 - [x] [#28](ISSUES.md#28--direct-url-to-vfs-file-shows-no-preview-available-instead-of-table-list) Direct URL to VFS file shows "No preview available" instead of table list <!-- prune after 2026-06-04 -->
 - [x] [#27](ISSUES.md#27--deep-link-restore-does-not-highlight-selected-entries) Deep-link restore missing `selected` highlight on entries <!-- prune after 2026-06-04 -->
 - [x] [#26](ISSUES.md#26--deep-link-broken-for-zone-2-sub-paths-htmx-not-re-initialised-after-restore) Deep-link zone-2 sub-path missing columns + HTMX re-init after restore <!-- prune after 2026-06-04 -->

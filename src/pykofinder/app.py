@@ -346,7 +346,7 @@ def _parse_desktop_url(path: Path) -> str | None:
 
 
 @rt("/restore")
-def restore(path: str):
+def restore(path: str, vpath: str = ""):
     """Return a full app-shell HTML for the given path (deep-link restoration)."""
     p = _resolve_safe(path)
     if p is None:
@@ -397,24 +397,41 @@ def restore(path: str):
     if p.is_file():
         provider = REGISTRY.get(p)
         if provider is not None:
-            # VFS-backed file (e.g. SQLite .db): render initial entry list as a column.
-            entries = provider.list_entries(p, "")
-            if entries:
+            # VFS-backed file (e.g. SQLite .db): walk vpath segments, rendering
+            # one column per level, then show a preview at the leaf.
+            encoded_path = urlquote(str(p))
+            vpath_parts = [seg for seg in vpath.split("/") if seg]
+            for i in range(len(vpath_parts) + 1):
+                current_vpath = "/".join(vpath_parts[:i])
+                selected_vpath = (
+                    "/".join(vpath_parts[: i + 1]) if i < len(vpath_parts) else None
+                )
+                entries = provider.list_entries(p, current_vpath)
+                if not entries:
+                    # Leaf or empty folder: render preview for current_vpath.
+                    if current_vpath:
+                        try:
+                            preview_html = provider.render_preview(
+                                p, current_vpath, "folders", 1, 1000, col=sentinel_idx
+                            )
+                        except Exception as exc:
+                            preview_html = f'<div class="preview-error">{html_lib.escape(str(exc))}</div>'
+                    break
                 show_fmt_bar = any(e.icon == "📋" for e in entries)
-                encoded_path = urlquote(str(p))
                 vfs_col = list_vfs_column(
                     entries=entries,
                     fs_path_encoded=encoded_path,
                     fs_path_raw=str(p),
-                    vpath="",
+                    vpath=current_vpath,
                     col_index=sentinel_idx,
                     show_fmt_bar=show_fmt_bar,
-                    active_fmt=provider.default_fmt(""),
+                    active_fmt=provider.default_fmt(current_vpath),
                     ext=p.suffix.lower(),
+                    selected_vpath=selected_vpath,
                 )
                 cols_html += repr(vfs_col)
                 sentinel_idx += 1
-                sentinel_html = f'<div id="col-{sentinel_idx}"></div>'
+            sentinel_html = f'<div id="col-{sentinel_idx}"></div>'
         else:
             try:
                 preview_html = render_preview(p)

@@ -508,10 +508,11 @@ function recalcColumnWidth() {
     document.documentElement.style.setProperty('--col-width', computed + 'px');
 }
 
-// Track the path param from the most recent click for URL sync
+// Track path + vpath from the most recent click for URL sync
 var _pendingPath = null;
+var _pendingVpath = null;
 
-// Capture path from hx-get attribute before HTMX fires
+// Capture path and vpath from hx-get attribute before HTMX fires
 document.addEventListener('click', function(e) {
     var a = e.target.closest('.column li a[hx-get], .column li a[data-hx-get]');
     if (!a) return;
@@ -520,6 +521,7 @@ document.addEventListener('click', function(e) {
     try {
         var url = new URL(hxGet, window.location.href);
         _pendingPath = url.searchParams.get('path');
+        _pendingVpath = url.searchParams.get('vpath') || null;
     } catch(err) {}
 });
 
@@ -557,25 +559,30 @@ document.addEventListener('htmx:afterSettle', function(e) {
     if (finder) finder.scrollLeft = finder.scrollWidth;
     if (_pendingPath) {
         var newUrl = '/f/?path=' + encodeURIComponent(_pendingPath);
-        history.pushState({path: _pendingPath}, '', newUrl);
+        if (_pendingVpath) newUrl += '&vpath=' + encodeURIComponent(_pendingVpath);
+        history.pushState({path: _pendingPath, vpath: _pendingVpath}, '', newUrl);
         _pendingPath = null;
+        _pendingVpath = null;
     }
 });
 
 // Handle browser back/forward
 window.addEventListener('popstate', function(e) {
     var path = e.state && e.state.path;
+    var vpath = (e.state && e.state.vpath) || null;
     if (path) {
-        _deepNavigate(path);
+        _deepNavigate(path, vpath);
     } else {
         // Back to root – reload to reset state
         window.location.href = '/f/';
     }
 });
 
-function _deepNavigate(fullPath) {
+function _deepNavigate(fullPath, vpath) {
     // Navigate to fullPath via the /restore endpoint which returns a ready-made column set.
-    fetch('/restore?path=' + encodeURIComponent(fullPath))
+    var restoreUrl = '/restore?path=' + encodeURIComponent(fullPath);
+    if (vpath) restoreUrl += '&vpath=' + encodeURIComponent(vpath);
+    fetch(restoreUrl)
         .then(function(r) { return r.text(); })
         .then(function(html) {
             var shell = document.getElementById('app-shell');
@@ -603,8 +610,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Deep-link: restore state from URL
     var params = new URLSearchParams(window.location.search);
     var deepPath = params.get('path');
+    var deepVpath = params.get('vpath') || null;
     if (deepPath) {
-        _deepNavigate(deepPath);
+        _deepNavigate(deepPath, deepVpath);
     }
 });
 
