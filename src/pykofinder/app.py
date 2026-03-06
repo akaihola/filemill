@@ -171,7 +171,7 @@ def _build_prune_js(col: int) -> str:
 
 
 @rt("/click")
-def click(path: str, col: int, vpath: str = "", fmt: str = ""):
+def click(path: str, col: int, vpath: str = "", fmt: str = "", leaf: bool = False):
     """Handle click on a directory, file, or VFS entry."""
     p = _resolve_safe(path)
     if p is None:
@@ -207,7 +207,12 @@ def click(path: str, col: int, vpath: str = "", fmt: str = ""):
             return sentinel, preview_oob, bc_oob
 
         elif not entries:
-            # True leaf (no children at this vpath): show preview (KV row detail, etc.)
+            # No children at this vpath – either a true leaf (row detail) or an empty
+            # folder (e.g. an empty table).  The two cases differ in the HTMX target:
+            #   leaf=True  → request targets #preview with innerHTML
+            #   leaf=False → request targets #col-{col} with outerHTML
+            # leaf=1 is added to the hx-get URL of non-folder VFS entries in
+            # list_vfs_column so the server can tell them apart.
             try:
                 preview_html = provider.render_preview(
                     p, vpath, resolved_fmt, page=1, limit=1000, col=col
@@ -217,9 +222,23 @@ def click(path: str, col: int, vpath: str = "", fmt: str = ""):
                     f'<div class="preview-error">'
                     f"Preview error: {html_lib.escape(str(exc))}</div>"
                 )
-            prune_js = _build_prune_js(col)
-            bc_oob = _make_bc_oob(p, vpath)
-            return NotStr(preview_html + prune_js + bc_oob)
+            bc_oob = NotStr(_make_bc_oob(p, vpath))
+            if leaf:
+                # True leaf: the response goes directly into #preview via innerHTML.
+                # Include prune_js to clean up any stale right-hand columns.
+                prune_js = _build_prune_js(col)
+                return NotStr(preview_html + prune_js + _make_bc_oob(p, vpath))
+            else:
+                # Empty folder (e.g. empty table): request targeted #col-{col} via
+                # outerHTML.  Return a sentinel for that slot and push the preview
+                # content out-of-band into #preview.
+                sentinel = NotStr(
+                    f'<div id="col-{col}"></div>' + _build_prune_js(col + 1)
+                )
+                preview_oob = NotStr(
+                    f'<div id="preview" hx-swap-oob="true">{preview_html}</div>'
+                )
+                return sentinel, preview_oob, bc_oob
 
         else:
             # Column mode: show entries as a column (tables or row listing)

@@ -212,9 +212,14 @@ def list_vfs_column(
                 **common_data,
             )
         else:
-            # Leaf node (row entry or info sentinel): updates preview
+            # Leaf node (row entry or info sentinel): updates preview.
+            # leaf=1 signals to the server that this request targets #preview
+            # so it can respond with inline content rather than sentinel+OOB.
             hx_get_val = (
-                (f"/click?path={fs_path_encoded}&col={next_col}&vpath={encoded_vpath}")
+                (
+                    f"/click?path={fs_path_encoded}"
+                    f"&col={next_col}&vpath={encoded_vpath}&leaf=1"
+                )
                 if entry.vpath
                 else "#"
             )

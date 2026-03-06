@@ -767,3 +767,33 @@ Two new URL namespaces:
 
 For `.html` / `.htm` files shown in the preview pane a **"🌐 View as web page"** button
 is prepended, linking to the corresponding `/w/` URL (opens in a new tab).
+
+---
+
+## #24 – Empty SQLite table corrupts column layout
+
+**Type:** bug
+**Status:** closed
+**Closed:** 2026-03-06
+**Prune after:** 2026-06-04
+
+Clicking an empty SQLite table caused the preview HTML to be injected into the column
+slot instead of `#preview`, because the `/click` handler's `elif not entries:` branch
+treated empty tables the same as true leaf nodes (row detail entries).
+
+**Root cause**: table entries are rendered in `list_vfs_column` with `is_folder=True`,
+so their HTMX links target `#col-{next_col}` with `outerHTML`. But the `elif not
+entries:` branch returned raw preview HTML designed for `#preview` with `innerHTML`.
+After HTMX placed the preview HTML into the column slot, subsequent navigation created
+duplicate columns and put content in wrong places.
+
+**Fix** (two-part):
+
+1. `columns.py` – leaf (non-folder) VFS entries now carry `&leaf=1` in their `hx-get`
+   URL, so the server knows the request targets `#preview` via `innerHTML`.
+2. `app.py` – the `elif not entries:` branch now checks the `leaf` flag:
+   - `leaf=True` (true leaf / row detail) → old inline behaviour.
+   - `leaf=False` (empty folder, e.g. empty table) → returns a `#col-{col}` sentinel as
+     the main swap target plus an OOB `#preview` update, exactly like the spreadsheet
+     branch.  A `_build_prune_js(col + 1)` call is inlined in the sentinel to clean up
+     any stale right-hand columns.

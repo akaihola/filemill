@@ -41,6 +41,7 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 
 ## Done
 
+- [x] [#24](ISSUES.md#24--empty-sqlite-table-corrupts-column-layout) Empty SQLite table corrupts column layout <!-- prune after 2026-06-04 -->
 - [x] [#19](ISSUES.md#19--markdown-relative-link-normalization) Markdown relative link normalization <!-- prune after 2026-06-04 -->
 - [x] [#20](ISSUES.md#20--wikilink-rendering-pagename) Wikilink rendering `[[PageName]]` <!-- prune after 2026-06-04 -->
 - [x] [#21](ISSUES.md#21--mermaid-diagram-rendering) Mermaid diagram rendering <!-- prune after 2026-06-04 -->
