@@ -872,3 +872,33 @@ duplicate columns and put content in wrong places.
      the main swap target plus an OOB `#preview` update, exactly like the spreadsheet
      branch. A `_build_prune_js(col + 1)` call is inlined in the sentinel to clean up
      any stale right-hand columns.
+
+---
+
+## #27 – Deep-link restore does not highlight selected entries
+
+**Type:** bug
+**Status:** closed
+**Closed:** 2026-03-06
+**Prune after:** 2026-06-04
+
+When navigating to a deep-link URL such as `/f/?path=/some/dir/subdir`, the
+`/restore` endpoint renders all ancestor columns but never marks any entry as
+`selected`. The `selected` CSS class is normally applied only by the
+click-event handler in `COLUMN_JS` — so a freshly restored view always shows
+columns with no item highlighted, making it impossible to see where you are.
+
+**Root cause**: `list_column` in `columns.py` has no way to receive which entry
+should be pre-selected; `/restore` in `app.py` builds each column via
+`list_column(d, ROOT, col_index=i)` with no selection hint.
+
+**Fix** (two files):
+
+1. `columns.py` – add `selected_name: str | None = None` to `list_column`.
+   When an entry's name matches `selected_name`, its `<li>` gets the
+   `selected` class (combined with `dotfile` if applicable).
+
+2. `app.py` – the `/restore` handler already has a `parts` list whose entry
+   at index `i` is the child to select in column `i`. Pass
+   `selected_name=parts[i] if i < len(parts) else None` to each `list_column`
+   call.

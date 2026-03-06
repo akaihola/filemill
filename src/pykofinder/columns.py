@@ -71,8 +71,18 @@ def entry_icon(p: Path) -> str:
         return "📄"
 
 
-def list_column(path: Path, root: Path, col_index: int) -> object:
-    """Return a FastHTML Div component representing one column panel."""
+def list_column(
+    path: Path,
+    root: Path,
+    col_index: int,
+    selected_name: str | None = None,
+) -> object:
+    """Return a FastHTML Div component representing one column panel.
+
+    *selected_name* – when provided, the ``<li>`` whose entry name matches
+    this value is rendered with the ``selected`` CSS class, enabling
+    deep-link restoration to pre-highlight the active path.
+    """
     from pykofinder.vfs import (
         is_vfs_file,
     )  # lazy to avoid circular import at module level
@@ -87,7 +97,15 @@ def list_column(path: Path, root: Path, col_index: int) -> object:
     items = []
     for p in entries:
         is_dot = p.name.startswith(".")
-        li_cls = "dotfile" if is_dot else None
+        is_selected = selected_name is not None and p.name == selected_name
+        if is_dot and is_selected:
+            li_cls = "dotfile selected"
+        elif is_selected:
+            li_cls = "selected"
+        elif is_dot:
+            li_cls = "dotfile"
+        else:
+            li_cls = None
         icon = entry_icon(p)
         encoded_path = urlquote(str(p))
         if p.is_dir():

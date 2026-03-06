@@ -473,3 +473,66 @@ def test_column_js_has_local_storage_set_item():
 
 def test_column_js_has_fmt_btn_click_handler():
     assert "fmt-btn" in COLUMN_JS
+
+
+# ── #27 – /restore must pre-select entries in each column ─────────────────────
+
+
+def _li_tag(html: str, entry_name: str) -> str:
+    """Return the opening <li ...> tag for the first entry whose display text
+    contains *entry_name*.  Searches for the entry name, finds the enclosing
+    <li, then extracts just the opening tag (up to the first ``>``)."""
+    idx = html.index(f'title="{entry_name}"')
+    li_start = html.rfind("<li", 0, idx)
+    li_tag_end = html.find(">", li_start)
+    return html[li_start : li_tag_end + 1]
+
+
+def test_restore_directory_highlights_selected_entries(tmp_path, monkeypatch):
+    """restore() for a nested directory must mark the path component in each
+    column with class='selected'."""
+    from urllib.parse import quote
+    from starlette.testclient import TestClient
+
+    # Build tmp_path/alpha/beta/gamma
+    (tmp_path / "alpha").mkdir()
+    (tmp_path / "alpha" / "beta").mkdir()
+    (tmp_path / "alpha" / "beta" / "gamma").mkdir()
+    (tmp_path / "other").mkdir()  # sibling – must NOT be selected
+
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    c = TestClient(app_module.app, raise_server_exceptions=False)
+    target = tmp_path / "alpha" / "beta" / "gamma"
+    resp = c.get(f"/restore?path={quote(str(target))}")
+    assert resp.status_code == 200
+    html = resp.text
+
+    # All three intermediate entries must be selected
+    for name in ("alpha", "beta", "gamma"):
+        assert "selected" in _li_tag(html, name), f"{name!r} entry must be selected"
+
+    # Sibling 'other' must NOT be selected
+    assert "selected" not in _li_tag(html, "other"), "'other' must not be selected"
+
+
+def test_restore_file_highlights_selected_entries_including_file(tmp_path, monkeypatch):
+    """restore() for a file path must select the file entry in the final column."""
+    from urllib.parse import quote
+    from starlette.testclient import TestClient
+
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "readme.md").write_text("# hello")
+    (tmp_path / "docs" / "other.txt").write_text("other")
+
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    c = TestClient(app_module.app, raise_server_exceptions=False)
+    target = tmp_path / "docs" / "readme.md"
+    resp = c.get(f"/restore?path={quote(str(target))}")
+    assert resp.status_code == 200
+    html = resp.text
+
+    assert "selected" in _li_tag(html, "docs"), "'docs' must be selected"
+    assert "selected" in _li_tag(html, "readme.md"), "'readme.md' must be selected"
+    assert "selected" not in _li_tag(html, "other.txt"), (
+        "'other.txt' must not be selected"
+    )

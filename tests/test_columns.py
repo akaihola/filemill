@@ -401,3 +401,42 @@ def test_render_breadcrumb_zoom_btn_inside_nav(tmp_path):
     nav_start = html.index('<nav id="breadcrumb"')
     zoom_pos = html.index("zoom-btn")
     assert zoom_pos > nav_start
+
+
+# ── #27 list_column selected_name ─────────────────────────────────────────────
+
+
+def test_list_column_selected_name_adds_selected_class(tmp_path):
+    """Entry whose name matches selected_name must have class 'selected'."""
+    (tmp_path / "target.md").write_text("hi")
+    (tmp_path / "other.txt").write_text("ho")
+    html = list_column(tmp_path, tmp_path, 0, selected_name="target.md").__html__()
+    # target.md li should carry class="selected"
+    assert 'class="selected"' in html
+    # other.txt li must NOT have class="selected" on its <li>
+    idx_other = html.index("other.txt")
+    li_before = html.rfind("<li", 0, idx_other)
+    # Grab only the opening <li ...> tag (up to the first >)
+    li_tag_end = html.find(">", li_before)
+    li_tag = html[li_before : li_tag_end + 1]
+    assert 'class="selected"' not in li_tag
+
+
+def test_list_column_selected_name_none_no_selected_class(tmp_path):
+    """Default call (no selected_name) must not produce any selected class on <li>."""
+    (tmp_path / "file.txt").write_text("x")
+    html = list_column(tmp_path, tmp_path, 0).__html__()
+    assert 'class="selected"' not in html
+
+
+def test_list_column_dotfile_and_selected_has_both_classes(tmp_path):
+    """A dotfile entry that is also selected must carry both 'dotfile' and 'selected'."""
+    (tmp_path / ".secret").write_text("shhh")
+    html = list_column(tmp_path, tmp_path, 0, selected_name=".secret").__html__()
+    # The <li> opening tag must contain both classes
+    idx_secret = html.index(".secret")
+    li_start = html.rfind("<li", 0, idx_secret)
+    li_tag_end = html.find(">", li_start)
+    li_tag = html[li_start : li_tag_end + 1]
+    assert "dotfile" in li_tag
+    assert "selected" in li_tag
