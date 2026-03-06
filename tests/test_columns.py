@@ -198,3 +198,132 @@ def test_render_breadcrumb_path_outside_root(tmp_path):
         assert "~" in html
         # No segment spans – the path is outside root
         assert "bc-seg" not in html
+
+
+# ── #18 VFS: entry_icon, list_column VFS routing, list_vfs_column, breadcrumb vpath ──
+
+def test_entry_icon_db(tmp_path):
+    f = tmp_path / "data.db"
+    f.touch()
+    assert entry_icon(f) == "🗄️"
+
+
+def test_list_column_db_file_targets_next_col(tmp_path):
+    db = tmp_path / "data.db"
+    db.touch()
+    html = list_column(tmp_path, tmp_path, col_index=1).__html__()
+    assert "col-2" in html  # hx-target for the db file link
+
+
+def test_list_column_db_file_does_not_target_preview(tmp_path):
+    db = tmp_path / "data.db"
+    db.touch()
+    md = tmp_path / "note.md"
+    md.write_text("# hello")
+    html = list_column(tmp_path, tmp_path, col_index=1).__html__()
+    # md still targets preview (regression check)
+    assert "#preview" in html
+
+
+def test_list_vfs_column_renders_folder_entries(tmp_path):
+    from pykofinder.vfs import VFSEntry
+    from pykofinder.columns import list_vfs_column
+
+    entries = [VFSEntry(name="users", vpath="users", is_folder=True, icon="🗃️")]
+    html = list_vfs_column(entries, "foo.db", "/abs/foo.db", "", 1).__html__()
+    assert "users" in html
+
+
+def test_list_vfs_column_folder_targets_next_col(tmp_path):
+    from pykofinder.vfs import VFSEntry
+    from pykofinder.columns import list_vfs_column
+
+    entries = [VFSEntry(name="users", vpath="users", is_folder=True, icon="🗃️")]
+    html = list_vfs_column(entries, "foo.db", "/abs/foo.db", "", col_index=2).__html__()
+    assert "col-3" in html
+
+
+def test_list_vfs_column_leaf_targets_preview(tmp_path):
+    from pykofinder.vfs import VFSEntry
+    from pykofinder.columns import list_vfs_column
+
+    entries = [VFSEntry(name="row_1", vpath="users/1", is_folder=False, icon="📋")]
+    html = list_vfs_column(entries, "foo.db", "/abs/foo.db", "users", col_index=2).__html__()
+    assert "preview" in html
+
+
+def test_list_vfs_column_fmt_bar_absent_when_not_requested(tmp_path):
+    from pykofinder.vfs import VFSEntry
+    from pykofinder.columns import list_vfs_column
+
+    entries = [VFSEntry(name="users", vpath="users", is_folder=True, icon="🗃️")]
+    html = list_vfs_column(entries, "foo.db", "/abs/foo.db", "", col_index=1, show_fmt_bar=False).__html__()
+    assert "fmt-bar" not in html
+
+
+def test_list_vfs_column_fmt_bar_present_when_requested(tmp_path):
+    from pykofinder.vfs import VFSEntry
+    from pykofinder.columns import list_vfs_column
+
+    entries = [VFSEntry(name="r1", vpath="users/1", is_folder=False, icon="📋")]
+    html = list_vfs_column(entries, "foo.db", "/abs/foo.db", "users", col_index=2, show_fmt_bar=True).__html__()
+    assert "fmt-bar" in html
+
+
+def test_list_vfs_column_fmt_bar_active_is_rows(tmp_path):
+    from pykofinder.vfs import VFSEntry
+    from pykofinder.columns import list_vfs_column
+
+    entries = [VFSEntry(name="r1", vpath="users/1", is_folder=False, icon="📋")]
+    html = list_vfs_column(entries, "foo.db", "/abs/foo.db", "users", col_index=2,
+                            show_fmt_bar=True, active_fmt="folders").__html__()
+    assert "📋 Rows" in html
+    assert "📊 Spreadsheet" in html
+
+
+def test_list_vfs_column_url_has_vpath(tmp_path):
+    from pykofinder.vfs import VFSEntry
+    from pykofinder.columns import list_vfs_column
+
+    entries = [VFSEntry(name="users", vpath="users", is_folder=True, icon="🗃️")]
+    html = list_vfs_column(entries, "foo.db", "/abs/foo.db", "", col_index=1).__html__()
+    assert "vpath=users" in html
+
+
+def test_list_vfs_column_col_id(tmp_path):
+    from pykofinder.columns import list_vfs_column
+
+    html = list_vfs_column([], "f.db", "/f.db", "", col_index=5).__html__()
+    assert 'id="col-5"' in html
+
+
+def test_list_vfs_column_prune_script_present(tmp_path):
+    from pykofinder.columns import list_vfs_column
+
+    html = list_vfs_column([], "f.db", "/f.db", "", col_index=3).__html__()
+    assert "<script>" in html
+
+
+def test_list_vfs_column_data_fpath_on_entries(tmp_path):
+    from pykofinder.vfs import VFSEntry
+    from pykofinder.columns import list_vfs_column
+
+    entries = [VFSEntry(name="users", vpath="users", is_folder=True, icon="🗃️")]
+    html = list_vfs_column(entries, "f.db", "/abs/f.db", "", col_index=1).__html__()
+    assert "data-fpath" in html
+
+
+def test_render_breadcrumb_with_vpath(tmp_path):
+    from pykofinder.columns import render_breadcrumb
+
+    html = render_breadcrumb(tmp_path / "foo.db", tmp_path, vpath="users")
+    assert "users" in html
+    assert "bc-virtual" in html
+
+
+def test_render_breadcrumb_with_nested_vpath(tmp_path):
+    from pykofinder.columns import render_breadcrumb
+
+    html = render_breadcrumb(tmp_path / "foo.db", tmp_path, vpath="users/42")
+    assert "users" in html
+    assert "42" in html
