@@ -97,6 +97,17 @@ def live_server(browser_root: Path):
             proc.wait(timeout=5)
 
 
+def _click_item(page, col_id: str, text: str) -> None:
+    page.evaluate(
+        f"""() => {{
+            const col = document.getElementById({col_id!r});
+            const link = col && Array.from(col.querySelectorAll('li a'))
+                .find(a => a.textContent.includes({text!r}));
+            if (link) link.click();
+        }}"""
+    )
+
+
 @pytest.mark.integration
 def test_arrow_left_keeps_browser_url_in_sync(live_server: str):
     with sync_playwright() as p:
@@ -105,27 +116,13 @@ def test_arrow_left_keeps_browser_url_in_sync(live_server: str):
         page.goto(live_server, wait_until="networkidle")
         page.wait_for_timeout(800)
 
-        page.evaluate(
-            """() => {
-                const col = document.getElementById('col-0');
-                const link = Array.from(col.querySelectorAll('li a'))
-                    .find(a => a.textContent.includes('my-knowledge'));
-                if (link) link.click();
-            }"""
-        )
+        _click_item(page, "col-0", "my-knowledge")
         page.wait_for_timeout(700)
         folder_url = page.url
         assert "path=" in folder_url
         assert "my-knowledge" in folder_url
 
-        page.evaluate(
-            """() => {
-                const col = document.getElementById('col-1');
-                const link = Array.from(col.querySelectorAll('li a'))
-                    .find(a => a.textContent.includes('AGENTS.md'));
-                if (link) link.click();
-            }"""
-        )
+        _click_item(page, "col-1", "AGENTS.md")
         page.wait_for_timeout(700)
         file_url = page.url
         assert "path=" in file_url
@@ -138,5 +135,43 @@ def test_arrow_left_keeps_browser_url_in_sync(live_server: str):
         page.keyboard.press("ArrowLeft")
         page.wait_for_timeout(300)
         assert page.url.rstrip("/") == live_server.rstrip("/") + "/f"
+
+        browser.close()
+
+
+@pytest.mark.integration
+def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
+    live_server: str,
+):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1400, "height": 900})
+        page.goto(live_server, wait_until="networkidle")
+        page.wait_for_timeout(800)
+
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(700)
+        assert page.locator("#col-1.column").count() == 1
+
+        _click_item(page, "col-1", "AGENTS.md")
+        page.wait_for_timeout(700)
+        assert page.locator("#col-1.column").count() == 1
+        assert page.locator("#preview").inner_text().strip()
+
+        page.keyboard.press("ArrowLeft")
+        page.wait_for_timeout(400)
+        assert page.locator("#col-1.column").count() == 0
+
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(700)
+        assert page.locator("#col-1.column").count() == 1
+
+        _click_item(page, "col-1", "AGENTS.md")
+        page.wait_for_timeout(700)
+        assert page.locator("#col-1.column").count() == 1
+        assert page.locator("#preview").inner_text().strip()
+
+        col1_class = page.locator("#col-1").get_attribute("class") or ""
+        assert "column" in col1_class
 
         browser.close()
