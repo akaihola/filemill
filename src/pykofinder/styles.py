@@ -862,17 +862,27 @@ var _kbApplyFocus = function() {};
             case 'ArrowLeft':
                 e.preventDefault();
                 if (ci > 0) {
-                    // Close columns at ci and to the right; shift focus to ci-1
-                    var colsToRemove = cols.slice(ci);
-                    colsToRemove.forEach(function(c) { c.remove(); });
-                    // Recreate sentinel for ci (the column we just removed)
-                    var sentinel = document.createElement('div');
-                    sentinel.id = 'col-' + ci;
+                    // Walk the DOM forward from the focused column element and remove
+                    // every node (columns AND orphaned sentinel divs) up to but not
+                    // including #preview.  Using only cols.slice(ci).remove() would
+                    // skip stale non-`.column` sentinels, leaving them in the wrong
+                    // DOM order and causing _build_prune_js to delete sibling columns.
                     var finder = document.getElementById('finder');
                     var preview = document.getElementById('preview');
+                    var el = cols[ci]; // start at the focused column element
+                    while (el && el !== preview) {
+                        var nextEl = el.nextElementSibling;
+                        el.remove();
+                        el = nextEl;
+                    }
+                    // Recreate exactly one clean sentinel at position ci
+                    var sentinel = document.createElement('div');
+                    sentinel.id = 'col-' + ci;
                     if (finder && preview) finder.insertBefore(sentinel, preview);
                     // Clear preview (we've exited a folder)
-                    if (preview) preview.innerHTML = '<div class="preview-empty"></div>';
+                    if (preview) preview.innerHTML = '';
+                    // Sync _lastColCount: ci real columns remain (col-0..col-{ci-1})
+                    _lastColCount = ci;
                     // Move focus to the left column
                     _focusedColIndex = ci - 1;
                     var lc = cols[_focusedColIndex];
@@ -883,10 +893,9 @@ var _kbApplyFocus = function() {};
                     }
                     applyFocusClasses();
                 } else if (ci === 0) {
-                    // At the root column – clear the preview (no columns to close)
+                    // At the root column – clear the preview only
                     var preview = document.getElementById('preview');
-                    if (preview) preview.innerHTML = '<div class="preview-empty"></div>';
-                    // Also remove any "selected" highlight in this column
+                    if (preview) preview.innerHTML = '';
                     document.querySelectorAll('#finder li.selected').forEach(function(li) {
                         li.classList.remove('selected');
                     });
