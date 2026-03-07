@@ -8,6 +8,34 @@ the issue block here and the corresponding `[x]` line in TASKS.md at that point.
 
 ---
 
+## #35 – Add browser regression test for ArrowLeft URL sync
+
+**Type:** test
+**Status:** closed
+**Closed:** 2026-03-07
+**Prune after:** 2026-06-05
+
+The `ArrowLeft` URL-sync bug was fixed with string-level regression tests and an
+ad-hoc Playwright script, but the repository still lacks a browser-level test that
+proves the real address bar changes correctly during keyboard navigation.
+
+**Goal:**
+
+- Add a pytest browser test that opens a real pykofinder page, navigates into a
+  folder and file, presses `ArrowLeft`, and asserts that `page.url` moves back to
+  the parent item and then to `/f/` at root.
+- Skip automatically when Playwright or `PLAYWRIGHT_BROWSERS_PATH` is unavailable.
+
+**Planned implementation:**
+
+- Add `tests/test_browser_keyboard.py` using `playwright.sync_api`.
+- Start a temporary uvicorn server in a background process against a temp ROOT.
+- Use pytest skip guards so the main suite stays reliable on environments without
+  Playwright.
+- Document how to run the browser test with the pinned Playwright version.
+
+---
+
 ## #34 – ArrowLeft must update the browser URL
 
 **Type:** bug

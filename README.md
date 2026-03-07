@@ -47,7 +47,11 @@ Quick start:
 
 ```bash
 uv sync
-uv run pytest          # unit + integration tests with coverage
+timeout 120 uv run pytest          # unit + integration tests with coverage
+
+# Real-browser regression tests (requires PLAYWRIGHT_BROWSERS_PATH)
+timeout 120 PLAYWRIGHT_BROWSERS_PATH="$PLAYWRIGHT_BROWSERS_PATH" \
+  uv run --with "playwright==1.57.0" pytest tests/test_browser_keyboard.py
 ```
 
 ## Architecture
