@@ -32,3 +32,6 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--cov=src/pykofinder --cov-branch --cov-report=term-missing"
+markers = [
+    "integration: tests that launch a real browser or server process",
+]
