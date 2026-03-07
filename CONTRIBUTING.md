@@ -70,6 +70,10 @@ tests/
 ```bash
 uv sync
 uv run pytest                  # unit + integration (with coverage)
+
+# Real-browser regression tests (optional; requires PLAYWRIGHT_BROWSERS_PATH)
+PLAYWRIGHT_BROWSERS_PATH="$PLAYWRIGHT_BROWSERS_PATH" \
+  uv run --with "playwright==1.57.0" pytest tests/test_browser_keyboard.py
 ```
 
 > **Important:** always wrap `uv run pytest` in a shell-level timeout (e.g.
