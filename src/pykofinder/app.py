@@ -12,13 +12,15 @@ from fasthtml.common import (
     Div,
     Head,
     Html,
+    Link,
+    Meta,
     NotStr,
     Script,
     Style,
     Title,
     fast_app,
 )
-from starlette.responses import FileResponse, HTMLResponse, RedirectResponse
+from starlette.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 
 from pykofinder.columns import (
     initial_columns,
@@ -32,6 +34,16 @@ from pykofinder.vfs import REGISTRY
 
 # CDN URL for mermaid.js (UMD build – sets window.mermaid on load)
 _MERMAID_CDN = "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"
+
+# Static files bundled with the package (PWA manifest, service worker, icons)
+_STATIC_DIR: Path = Path(__file__).parent / "static"
+
+# Inline JS injected into every page to register the service worker
+_SW_REGISTER_JS: str = dedent("""\
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js', {scope: '/'});
+    }
+""")
 
 # HTML file extensions that get a "View as web page" button in the preview
 _HTML_EXTS = {".html", ".htm"}
@@ -101,10 +113,22 @@ def _shell_html(*extra_head_scripts):
     return Html(
         Head(
             Title("pykofinder"),
+            Meta(name="viewport", content="width=device-width, initial-scale=1"),
+            Meta(name="theme-color", content="#0770C9"),
+            Meta(name="mobile-web-app-capable", content="yes"),
+            Meta(name="apple-mobile-web-app-capable", content="yes"),
+            Meta(
+                name="apple-mobile-web-app-status-bar-style",
+                content="black-translucent",
+            ),
+            Meta(name="apple-mobile-web-app-title", content="pykofinder"),
+            Link(rel="manifest", href="/manifest.json"),
+            Link(rel="apple-touch-icon", href="/icons/icon-192.png"),
             Style(APP_CSS),
             Script(src="https://unpkg.com/htmx.org@1.9.12"),
             Script(src=_MERMAID_CDN),
             Script(COLUMN_JS),
+            Script(_SW_REGISTER_JS),
             *extra_scripts,
             *extra_head_scripts,
         ),
@@ -523,13 +547,51 @@ def finder_view(path: str):
     return _shell_html(Script(nav_js))
 
 
+# ── PWA static files ─────────────────────────────────────────────────────────
+
+
+@rt("/manifest.json")
+def manifest():
+    """Serve the Web App Manifest."""
+    return FileResponse(
+        str(_STATIC_DIR / "manifest.json"), media_type="application/manifest+json"
+    )
+
+
+@rt("/sw.js")
+def service_worker():
+    """Serve the service worker with the required Service-Worker-Allowed header."""
+    data = (_STATIC_DIR / "sw.js").read_bytes()
+    return Response(
+        content=data,
+        media_type="application/javascript",
+        headers={"Service-Worker-Allowed": "/"},
+    )
+
+
+@rt("/icons/{name}")
+def icon(name: str):
+    """Serve a named icon from the bundled static/icons/ directory."""
+    safe_name = Path(name).name  # strip any directory traversal
+    icon_path = _STATIC_DIR / "icons" / safe_name
+    if not icon_path.exists() or not icon_path.is_file():
+        return HTMLResponse("Not found", status_code=404)
+    return FileResponse(str(icon_path))
+
+
 # ── Route priority fix ────────────────────────────────────────────────────────
 # FastHTML registers a catch-all /{fname:path}.{ext:static} at index 0 that
 # intercepts any path with a known static extension (including .html, .txt, …).
 # Move /w/ and /f/ in front of it so they are matched first.
 def _reorder_routes() -> None:
     routes = app.router.routes
-    _prefixes = {"/w/{path:path}", "/f/{path:path}"}
+    _prefixes = {
+        "/w/{path:path}",
+        "/f/{path:path}",
+        "/manifest.json",
+        "/sw.js",
+        "/icons/{name}",
+    }
     priority, rest = [], []
     for r in routes:
         (priority if getattr(r, "path", "") in _prefixes else rest).append(r)

@@ -8,6 +8,36 @@ the issue block here and the corresponding `[x]` line in TASKS.md at that point.
 
 ---
 
+## #33 – PWA: make pykofinder installable as a Progressive Web App
+
+**Type:** feature
+**Status:** closed
+**Closed:** 2026-03-07
+**Prune after:** 2026-06-05
+
+Add the three ingredients that browsers require for an "Add to Home Screen" / install
+prompt:
+
+1. **Web App Manifest** (`/manifest.json`) – name, start URL (`/f/`), standalone display
+   mode, theme colour, and icon entries (192 × 192 PNG, 512 × 512 PNG, SVG).
+2. **Service worker** (`/sw.js`) – stale-while-revalidate for the app shell and static
+   assets; network-only for dynamic HTMX partials (`/click`, `/restore`, `/raw`, `/vpage`,
+   `/sse/*`).
+3. **Head tags in every shell page** – `<link rel="manifest">`, `<meta name="theme-color">`,
+   viewport meta, Apple-touch-icon link, and an inline SW registration snippet.
+
+**Implementation** (`src/pykofinder/`):
+
+1. `static/manifest.json` – manifest document.
+2. `static/sw.js` – service worker.
+3. `static/icons/icon.svg`, `icon-192.png`, `icon-512.png` – bundled icons (PNGs
+   generated programmatically via Python `struct` + `zlib`; no new runtime deps).
+4. `app.py` – three new routes (`/manifest.json`, `/sw.js`, `/icons/{name}`); `_shell_html()`
+   gains seven new head elements; `_reorder_routes()` now also prioritises the new routes.
+5. `tests/test_pwa.py` – 20 tests covering all routes and head-tag requirements.
+
+---
+
 ## #30 – JSON VFS preview shows "not yet implemented" stub
 
 **Type:** bug
