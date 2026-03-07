@@ -43,6 +43,7 @@ tests/
 - Column pruning is done client-side via a small `<script>` injected into each
   click response – no server round-trip needed.
 - HTMX drives all dynamic updates; there is no JavaScript build step.
+- Client-side keyboard navigation must keep the browser URL in sync with the visible Finder state; if a key handler changes columns/preview without an HTMX request, it must update history explicitly.
 - PWA static assets (`/manifest.json`, `/sw.js`, `/icons/*`) are served from
   `src/pykofinder/static/` and are bundled with the package; they are
   prioritised above FastHTML's static catch-all route in `_reorder_routes()`.
