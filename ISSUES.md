@@ -8,6 +8,24 @@ the issue block here and the corresponding `[x]` line in TASKS.md at that point.
 
 ---
 
+## #37 – Browser column-survival regression must use the real keyboard flow
+
+**Type:** test
+**Status:** closed
+**Closed:** 2026-03-07
+**Prune after:** 2026-06-05
+
+The first browser regression for the folder-column survival bug still used mouse
+clicks for opening the folder and file. That misses the actual keyboard-only flow
+that previously broke: `ArrowDown` → `ArrowRight` into folder → `ArrowDown` to
+file → `ArrowRight` to preview → `ArrowLeft` back out → `ArrowRight` back in →
+`ArrowDown`/`ArrowRight` to preview again.
+
+The repo test should exercise that exact sequence so it fails if keyboard focus,
+selection restoration, or sentinel cleanup regresses again.
+
+---
+
 ## #36 – Add browser regression test for column survival after ArrowLeft/ArrowRight
 
 **Type:** test
