@@ -16,16 +16,24 @@ src/pykofinder/
 ├── columns.py      # Column HTML generation + breadcrumb + pruning JS
 ├── preview.py      # Preview dispatcher (md / docx / pptx / pdf / img / code / raw)
 ├── rendering.py    # markdown-it-py instance with plugins
-└── styles.py       # CSS + Pygments theme + HTMX + keyboard + live-reload JS
+├── styles.py       # CSS + Pygments theme + HTMX + keyboard + live-reload JS
+├── vfs.py          # Virtual-filesystem registry + provider protocol
+├── providers/      # VFS backends (SQLite, JSON, CSV)
+└── static/         # Bundled PWA assets (manifest.json, sw.js, icons/)
 
 tests/
-├── conftest.py          # Shared fixtures (tmp dirs, test client)
-├── test_app.py          # Route-level integration tests
-├── test_columns.py      # Column HTML generation + breadcrumb
-├── test_preview.py      # Preview rendering (all file types)
-├── test_rendering.py    # Markdown pipeline + selected-state CSS/JS
-├── test_resolve_safe.py # Path-safety logic (_resolve_safe)
-└── test_cli.py          # CLI smoke tests
+├── conftest.py               # Shared fixtures (tmp dirs, test client)
+├── test_app.py               # Route-level integration tests
+├── test_cli.py               # CLI smoke tests
+├── test_columns.py           # Column HTML generation + breadcrumb
+├── test_integration_vfs.py   # End-to-end VFS navigation tests
+├── test_preview.py           # Preview rendering (all file types)
+├── test_providers_sqlite.py  # SQLite VFS provider unit tests
+├── test_pwa.py               # PWA assets (manifest, SW, icons, head tags)
+├── test_rendering.py         # Markdown pipeline + selected-state CSS/JS
+├── test_resolve_safe.py      # Path-safety logic (_resolve_safe)
+├── test_routes_new.py        # Additional route coverage
+└── test_vfs.py               # VFS registry and provider protocol
 ```
 
 ### Key invariants
@@ -35,6 +43,9 @@ tests/
 - Column pruning is done client-side via a small `<script>` injected into each
   click response – no server round-trip needed.
 - HTMX drives all dynamic updates; there is no JavaScript build step.
+- PWA static assets (`/manifest.json`, `/sw.js`, `/icons/*`) are served from
+  `src/pykofinder/static/` and are bundled with the package; they are
+  prioritised above FastHTML's static catch-all route in `_reorder_routes()`.
 
 ---
 

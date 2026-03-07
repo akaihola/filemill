@@ -7,15 +7,18 @@ inline for Markdown, DOCX, PPTX, PDF, images, plain text, and source code.
 ## Features
 
 - **Column view** – multi-pane navigation à la macOS Finder
-- **Rich previews** – Markdown (with plugins), DOCX, PPTX, PDF, images, plain text
-- **Syntax highlighting** – source code files via Pygments "friendly" theme
-- **Breadcrumb trail** – `~ / dir / subdir / file` navigation bar above the columns; includes a `.*` dotfile toggle that persists across sessions
-- **URL sync** – browser URL stays in sync with the selected path; deep-link any location
-- **Keyboard navigation** – `↑↓` move within a column; `→`/`Enter` open; `←` go back; `Esc` clear
+- **Rich previews** – Markdown (with plugins), DOCX, PPTX, PDF, images, plain text, source code with syntax highlighting (Pygments "friendly" theme)
+- **Markdown extras** – wikilinks (`[[PageName]]`), Mermaid diagrams, plain-URL linkification, relative-link normalisation
+- **Virtual filesystem** – SQLite databases are browsable as navigable table → row columns; additional VFS providers for JSON and CSV files
+- **Static web server** – `/w/<path>` serves any file under ROOT with the correct Content-Type (useful for HTML files)
+- **Breadcrumb trail** – `~ / dir / subdir / file` navigation bar; includes a `.*` dotfile toggle that persists across sessions
+- **URL sync** – browser URL stays in sync with the selected path; deep-link any location directly
+- **Keyboard navigation** – `↑↓` move within a column; `→`/`Enter` open; `←` go back; `Home`/`End`/`PgUp`/`PgDn` scroll; column focus states visually indicated
 - **Live reload** – `--live` flag restarts the server on code changes and refreshes the browser on content changes via SSE
 - **Zoom** – expand preview pane to full viewport width
 - **`.desktop` hyperlinks** – open service URLs directly from the browser
 - **Symlink support** – safely follows symlink bookmarks in the configured root
+- **PWA** – installable as a Progressive Web App; includes a Web App Manifest, service worker (stale-while-revalidate for the app shell, network-only for dynamic partials), and full icon set
 
 ## Installation
 
@@ -56,7 +59,10 @@ src/pykofinder/
 ├── columns.py      # Column HTML generation + breadcrumb + pruning JS
 ├── preview.py      # Preview dispatcher (md / docx / pptx / pdf / img / code / raw)
 ├── rendering.py    # markdown-it-py instance with plugins
-└── styles.py       # CSS + Pygments theme + HTMX + keyboard + live-reload JS
+├── styles.py       # CSS + Pygments theme + HTMX + keyboard + live-reload JS
+├── vfs.py          # Virtual-filesystem registry + provider protocol
+├── providers/      # VFS backends: SQLite, JSON, CSV
+└── static/         # Bundled PWA assets: manifest.json, sw.js, icons/
 ```
 
 ## License
