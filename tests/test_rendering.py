@@ -498,14 +498,17 @@ def test_keyboard_visible_items_filters_dotfiles():
     assert "visibleItems" in COLUMN_JS
 
 
-def test_keyboard_left_no_longer_prunes_columns():
-    """ArrowLeft must shift focus only – it must NOT call .remove() on columns."""
+def test_keyboard_left_closes_columns_beyond_the_exited():
+    """ArrowLeft must close columns beyond the exited column and clear the preview."""
     from pykofinder.styles import COLUMN_JS
 
     left_pos = COLUMN_JS.index("'ArrowLeft'")
     break_pos = COLUMN_JS.index("break;", left_pos)
     left_block = COLUMN_JS[left_pos:break_pos]
-    assert ".remove()" not in left_block
+    # ArrowLeft should now remove columns (the new required behavior)
+    assert ".remove()" in left_block
+    # ArrowLeft should also clear the preview
+    assert "preview" in left_block and "innerHTML" in left_block
 
 
 def test_keyboard_right_checks_column_to_the_right():
@@ -639,13 +642,40 @@ def test_apply_focus_classes_called_on_arrow_left():
 
 
 def test_apply_focus_classes_called_on_arrow_right():
-    """ArrowRight handler must call applyFocusClasses() after shifting focus."""
+    """ArrowRight triggers navigation; htmx:afterSettle handles focus update."""
     from pykofinder.styles import COLUMN_JS
 
     right_pos = COLUMN_JS.index("'ArrowRight'")
     break_pos = COLUMN_JS.index("break;", right_pos)
     right_block = COLUMN_JS[right_pos:break_pos]
-    assert "applyFocusClasses" in right_block
+    # ArrowRight now triggers HTMX navigation instead of directly managing focus
+    # The afterSettle handler will update focus after the HTMX swap completes
+    assert "triggerNav" in right_block
+
+
+def test_arrow_right_opens_highlighted_item_in_next_column():
+    """ArrowRight must navigate into the selected item (folder opens next column, file previews)."""
+    from pykofinder.styles import COLUMN_JS
+
+    right_pos = COLUMN_JS.index("'ArrowRight'")
+    break_pos = COLUMN_JS.index("break;", right_pos)
+    right_block = COLUMN_JS[right_pos:break_pos]
+    # ArrowRight should trigger navigation when there's a selection
+    assert "triggerNav" in right_block
+
+
+def test_htmx_after_settle_auto_highlights_new_column():
+    """When entering a previously unvisited folder, afterSettle must auto-highlight topmost item."""
+    from pykofinder.styles import COLUMN_JS
+
+    # Find the afterSettle handler in the keyboard IIFE
+    settle_pos = COLUMN_JS.rindex("htmx:afterSettle")
+    block_end = COLUMN_JS.index("});", settle_pos)
+    settle_block = COLUMN_JS[settle_pos:block_end]
+    # Should track column count to detect new columns
+    assert "_lastColCount" in settle_block
+    # Should auto-highlight first item in new column
+    assert "selectLi" in settle_block and "items[0]" in settle_block
 
 
 def test_apply_focus_classes_called_after_htmx_settle():
