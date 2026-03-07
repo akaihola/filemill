@@ -511,6 +511,40 @@ def test_keyboard_left_closes_columns_beyond_the_exited():
     assert "preview" in left_block and "innerHTML" in left_block
 
 
+def test_keyboard_left_updates_last_col_count():
+    """ArrowLeft must sync _lastColCount so the next ArrowRight detects the new column.
+
+    Regression test for bug: ArrowLeft removed .column elements but did not update
+    _lastColCount. The next htmx:afterSettle saw cols.length == _lastColCount and
+    skipped auto-highlight, leaving the newly opened column with no selection.
+    """
+    from pykofinder.styles import COLUMN_JS
+
+    left_pos = COLUMN_JS.index("'ArrowLeft'")
+    break_pos = COLUMN_JS.index("break;", left_pos)
+    left_block = COLUMN_JS[left_pos:break_pos]
+    # Must assign _lastColCount inside the ArrowLeft handler
+    assert "_lastColCount" in left_block
+
+
+def test_keyboard_left_walks_dom_to_remove_sentinels():
+    """ArrowLeft must walk the DOM to remove stale sentinel divs, not just .column elements.
+
+    Regression test for bug: only removing .column nodes left orphaned sentinel divs
+    (e.g. col-2) in the DOM before the re-inserted sentinel col-1. When a file was
+    later opened, _build_prune_js(2) started at the stale col-2 sentinel, walked
+    forward, and hit col-1 next – deleting it.
+    """
+    from pykofinder.styles import COLUMN_JS
+
+    left_pos = COLUMN_JS.index("'ArrowLeft'")
+    break_pos = COLUMN_JS.index("break;", left_pos)
+    left_block = COLUMN_JS[left_pos:break_pos]
+    # Must walk with nextElementSibling from the column element up to #preview
+    assert "nextElementSibling" in left_block
+    assert "preview" in left_block
+
+
 def test_keyboard_right_checks_column_to_the_right():
     """ArrowRight must first check whether a column to the right exists before navigating."""
     from pykofinder.styles import COLUMN_JS
