@@ -529,17 +529,38 @@ function recalcColumnWidth() {
 var _pendingPath = null;
 var _pendingVpath = null;
 
+function _syncUrl(path, vpath) {
+    if (path) {
+        var newUrl = '/f/?path=' + encodeURIComponent(path);
+        if (vpath) newUrl += '&vpath=' + encodeURIComponent(vpath);
+        history.pushState({path: path, vpath: vpath || null}, '', newUrl);
+    } else {
+        history.pushState({}, '', '/f/');
+    }
+}
+
+function _capturePathStateFromLink(a) {
+    if (!a) return {path: null, vpath: null};
+    var hxGet = a.getAttribute('hx-get') || a.getAttribute('data-hx-get');
+    if (!hxGet) return {path: null, vpath: null};
+    try {
+        var url = new URL(hxGet, window.location.href);
+        return {
+            path: url.searchParams.get('path'),
+            vpath: url.searchParams.get('vpath') || null
+        };
+    } catch(err) {
+        return {path: null, vpath: null};
+    }
+}
+
 // Capture path and vpath from hx-get attribute before HTMX fires
 document.addEventListener('click', function(e) {
     var a = e.target.closest('.column li a[hx-get], .column li a[data-hx-get]');
     if (!a) return;
-    var hxGet = a.getAttribute('hx-get') || a.getAttribute('data-hx-get');
-    if (!hxGet) return;
-    try {
-        var url = new URL(hxGet, window.location.href);
-        _pendingPath = url.searchParams.get('path');
-        _pendingVpath = url.searchParams.get('vpath') || null;
-    } catch(err) {}
+    var state = _capturePathStateFromLink(a);
+    _pendingPath = state.path;
+    _pendingVpath = state.vpath;
 });
 
 // After HTMX settles, push/replace the URL
@@ -575,9 +596,7 @@ document.addEventListener('htmx:afterSettle', function(e) {
     var finder = document.getElementById('finder');
     if (finder) finder.scrollLeft = finder.scrollWidth;
     if (_pendingPath) {
-        var newUrl = '/f/?path=' + encodeURIComponent(_pendingPath);
-        if (_pendingVpath) newUrl += '&vpath=' + encodeURIComponent(_pendingVpath);
-        history.pushState({path: _pendingPath, vpath: _pendingVpath}, '', newUrl);
+        _syncUrl(_pendingPath, _pendingVpath);
         _pendingPath = null;
         _pendingVpath = null;
     }
@@ -888,7 +907,12 @@ var _kbApplyFocus = function() {};
                     var lc = cols[_focusedColIndex];
                     if (lc) {
                         var lsel = getSelectedLi(lc);
-                        if (lsel) lsel.scrollIntoView({ block: 'nearest' });
+                        if (lsel) {
+                            lsel.scrollIntoView({ block: 'nearest' });
+                            var la = lsel.querySelector('a');
+                            var leftState = _capturePathStateFromLink(la);
+                            _syncUrl(leftState.path, leftState.vpath);
+                        }
                         lc.scrollIntoView({ inline: 'nearest', block: 'nearest' });
                     }
                     applyFocusClasses();
@@ -899,6 +923,7 @@ var _kbApplyFocus = function() {};
                     document.querySelectorAll('#finder li.selected').forEach(function(li) {
                         li.classList.remove('selected');
                     });
+                    _syncUrl(null, null);
                 }
                 break;
 

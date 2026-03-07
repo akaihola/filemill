@@ -8,6 +8,40 @@ the issue block here and the corresponding `[x]` line in TASKS.md at that point.
 
 ---
 
+## #34 – ArrowLeft must update the browser URL
+
+**Type:** bug
+**Status:** closed
+**Closed:** 2026-03-07
+**Prune after:** 2026-06-05
+
+After navigating into a folder or file with the keyboard, pressing `ArrowLeft`
+closes columns and/or clears the preview, but the browser URL stays at the
+previous deeper path. Refreshing after `ArrowLeft` restores the wrong location,
+and the address bar no longer matches the visible Finder state.
+
+**Expected behaviour:**
+
+- If `ArrowLeft` exits a child column, the URL should move back to the selected
+  item in the parent column.
+- If `ArrowLeft` is pressed in the root column, the URL should reset to `/f/`.
+
+**Planned fix:**
+
+- Add a small URL-sync helper in `styles.py` `COLUMN_JS` that can derive
+  `path`/`vpath` from a selected entry's `hx-get` URL and call
+  `history.pushState()`.
+- Call that helper from the `ArrowLeft` handler after focus/selection has moved
+  left.
+- Reset the URL to `/f/` when `ArrowLeft` clears the root-column selection.
+
+**Tests to add:**
+
+- `test_arrow_left_updates_url_from_parent_selection`
+- `test_arrow_left_at_root_resets_url`
+
+---
+
 ## #33 – PWA: make pykofinder installable as a Progressive Web App
 
 **Type:** feature

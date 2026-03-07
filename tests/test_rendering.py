@@ -545,6 +545,31 @@ def test_keyboard_left_walks_dom_to_remove_sentinels():
     assert "preview" in left_block
 
 
+def test_arrow_left_updates_url_from_parent_selection():
+    """ArrowLeft must sync the URL from the selected entry in the parent column.
+
+    Regression test for bug: ArrowLeft closed columns client-side but never updated
+    the address bar, leaving the URL pointing at the deeper path that was just exited.
+    """
+    from pykofinder.styles import COLUMN_JS
+
+    left_pos = COLUMN_JS.index("'ArrowLeft'")
+    break_pos = COLUMN_JS.index("break;", left_pos)
+    left_block = COLUMN_JS[left_pos:break_pos]
+    assert "_capturePathStateFromLink" in left_block
+    assert "_syncUrl(leftState.path, leftState.vpath)" in left_block
+
+
+def test_arrow_left_at_root_resets_url():
+    """ArrowLeft in the root column must reset the browser URL via the shared helper."""
+    from pykofinder.styles import COLUMN_JS
+
+    left_pos = COLUMN_JS.index("'ArrowLeft'")
+    break_pos = COLUMN_JS.index("break;", left_pos)
+    left_block = COLUMN_JS[left_pos:break_pos]
+    assert "_syncUrl(null, null)" in left_block
+
+
 def test_keyboard_right_checks_column_to_the_right():
     """ArrowRight must first check whether a column to the right exists before navigating."""
     from pykofinder.styles import COLUMN_JS

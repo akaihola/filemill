@@ -13,7 +13,7 @@ inline for Markdown, DOCX, PPTX, PDF, images, plain text, and source code.
 - **Static web server** – `/w/<path>` serves any file under ROOT with the correct Content-Type (useful for HTML files)
 - **Breadcrumb trail** – `~ / dir / subdir / file` navigation bar; includes a `.*` dotfile toggle that persists across sessions
 - **URL sync** – browser URL stays in sync with the selected path; deep-link any location directly
-- **Keyboard navigation** – `↑↓` move within a column; `→`/`Enter` open; `←` go back; `Home`/`End`/`PgUp`/`PgDn` scroll; column focus states visually indicated
+- **Keyboard navigation** – `↑↓` move within a column; `→`/`Enter` open; `←` go back while keeping the URL in sync with the visible parent/root state; `Home`/`End`/`PgUp`/`PgDn` scroll; column focus states visually indicated
 - **Live reload** – `--live` flag restarts the server on code changes and refreshes the browser on content changes via SSE
 - **Zoom** – expand preview pane to full viewport width
 - **`.desktop` hyperlinks** – open service URLs directly from the browser
