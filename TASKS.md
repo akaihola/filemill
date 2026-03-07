@@ -41,6 +41,7 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 
 ## Done
 
+- [x] [#37](ISSUES.md#37--browser-column-survival-regression-must-use-the-real-keyboard-flow) Browser regression now uses the real keyboard-only survival flow <!-- prune after 2026-06-05 -->
 - [x] [#36](ISSUES.md#36--add-browser-regression-test-for-column-survival-after-arrowleftarrowright) Browser regression test covers folder-column survival after ArrowLeft/ArrowRight <!-- prune after 2026-06-05 -->
 - [x] [#35](ISSUES.md#35--add-browser-regression-test-for-arrowleft-url-sync) Browser regression test covers ArrowLeft URL sync in a real page <!-- prune after 2026-06-05 -->
 - [x] [#34](ISSUES.md#34--arrowleft-must-update-the-browser-url) ArrowLeft updates the URL back to the selected parent item/root <!-- prune after 2026-06-05 -->
