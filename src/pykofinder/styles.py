@@ -769,16 +769,35 @@ var _kbApplyFocus = function() {};
         }
     }
 
+    // Track column count to detect when a new column is added
+    var _lastColCount = 0;
+
     // After each HTMX settle (new column added / navigation), reset focus to
-    // the new rightmost column and refresh the focus-state CSS classes.
+    // the new rightmost column, auto-highlight the first item if this is a new
+    // column, and refresh the focus-state CSS classes.
     document.addEventListener('htmx:afterSettle', function() {
         var cols = getColumns();
+        var isNewCol = cols.length > _lastColCount && _lastColCount > 0;
+        _lastColCount = cols.length;
         _focusedColIndex = cols.length - 1;
+        // If entering a previously unvisited folder, highlight but don't preview the topmost item
+        if (isNewCol) {
+            var newCol = cols[cols.length - 1];
+            if (newCol) {
+                var items = visibleItems(newCol);
+                if (items.length && !getSelectedLi(newCol)) {
+                    selectLi(items[0]);
+                }
+            }
+        }
         applyFocusClasses();
     });
 
     // Apply initial focus classes once the DOM is ready.
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize _lastColCount to current column count so subsequent navigations
+        // correctly detect when a new column is added
+        _lastColCount = getColumns().length;
         applyFocusClasses();
     });
 
@@ -814,22 +833,24 @@ var _kbApplyFocus = function() {};
 
             case 'ArrowRight':
                 e.preventDefault();
-                if (ci < cols.length - 1) {
-                    // Move focus to the existing column to the right.
-                    _focusedColIndex = ci + 1;
-                    var rc = cols[_focusedColIndex];
-                    var rsel = getSelectedLi(rc);
-                    if (rsel) {
-                        rsel.scrollIntoView({ block: 'nearest' });
-                    } else {
-                        var ri = visibleItems(rc);
-                        if (ri.length) selectLi(ri[0]);
+                // Always navigate into the selected item if it's a folder.
+                // The /click handler will open the folder in a new column (or reuse existing).
+                if (sel) {
+                    var a = sel.querySelector('a');
+                    if (a && (a.getAttribute('hx-get') || a.getAttribute('data-hx-get'))) {
+                        // Check if selected item references a folder (has hx-target for column)
+                        var hxGet = a.getAttribute('hx-get') || a.getAttribute('data-hx-get');
+                        if (hxGet && hxGet.indexOf('col=') !== -1) {
+                            // This item opens a column – trigger navigation
+                            triggerNav(sel);
+                        } else if (ci >= cols.length - 1) {
+                            // No column to the right and this is a file – trigger preview
+                            triggerNav(sel);
+                        }
+                        // If there's already a column to the right AND this is a folder,
+                        // triggerNav will cause HTMX to replace that column, giving the
+                        // expected "opens the highlighted item in the next column" behavior.
                     }
-                    rc.scrollIntoView({ inline: 'nearest', block: 'nearest' });
-                    applyFocusClasses();
-                } else {
-                    // At rightmost column – navigate into the selected item.
-                    triggerNav(sel);
                 }
                 break;
 
@@ -841,13 +862,34 @@ var _kbApplyFocus = function() {};
             case 'ArrowLeft':
                 e.preventDefault();
                 if (ci > 0) {
-                    // Shift focus one column left; leave all columns intact.
+                    // Close columns at ci and to the right; shift focus to ci-1
+                    var colsToRemove = cols.slice(ci);
+                    colsToRemove.forEach(function(c) { c.remove(); });
+                    // Recreate sentinel for ci (the column we just removed)
+                    var sentinel = document.createElement('div');
+                    sentinel.id = 'col-' + ci;
+                    var finder = document.getElementById('finder');
+                    var preview = document.getElementById('preview');
+                    if (finder && preview) finder.insertBefore(sentinel, preview);
+                    // Clear preview (we've exited a folder)
+                    if (preview) preview.innerHTML = '<div class="preview-empty"></div>';
+                    // Move focus to the left column
                     _focusedColIndex = ci - 1;
                     var lc = cols[_focusedColIndex];
-                    var lsel = getSelectedLi(lc);
-                    if (lsel) lsel.scrollIntoView({ block: 'nearest' });
-                    lc.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+                    if (lc) {
+                        var lsel = getSelectedLi(lc);
+                        if (lsel) lsel.scrollIntoView({ block: 'nearest' });
+                        lc.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+                    }
                     applyFocusClasses();
+                } else if (ci === 0) {
+                    // At the root column – clear the preview (no columns to close)
+                    var preview = document.getElementById('preview');
+                    if (preview) preview.innerHTML = '<div class="preview-empty"></div>';
+                    // Also remove any "selected" highlight in this column
+                    document.querySelectorAll('#finder li.selected').forEach(function(li) {
+                        li.classList.remove('selected');
+                    });
                 }
                 break;
 
