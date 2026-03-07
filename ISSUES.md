@@ -8,6 +8,28 @@ the issue block here and the corresponding `[x]` line in TASKS.md at that point.
 
 ---
 
+## #36 – Add browser regression test for column survival after ArrowLeft/ArrowRight
+
+**Type:** test
+**Status:** closed
+**Closed:** 2026-03-07
+**Prune after:** 2026-06-05
+
+The keyboard-navigation regressions fixed in `styles.py` included a DOM-order bug
+where stale sentinel nodes caused a parent folder column to disappear after this flow:
+open folder → open file preview → `ArrowLeft` → re-enter folder → open file preview.
+
+The repository should keep a browser-level regression test for that exact scenario,
+not just string-based assertions on `COLUMN_JS`.
+
+**Goal:**
+
+- Add a real browser test that reproduces the above sequence and asserts the
+  folder column remains present while the preview updates.
+- Keep it in the same optional Playwright test module as the ArrowLeft URL test.
+
+---
+
 ## #35 – Add browser regression test for ArrowLeft URL sync
 
 **Type:** test
