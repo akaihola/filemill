@@ -50,6 +50,7 @@ uv sync
 timeout 120 uv run pytest          # unit + integration tests with coverage
 
 # Real-browser regression tests (requires PLAYWRIGHT_BROWSERS_PATH)
+# Covers ArrowLeft URL sync and the parent-column survival regression.
 timeout 120 PLAYWRIGHT_BROWSERS_PATH="$PLAYWRIGHT_BROWSERS_PATH" \
   uv run --with "playwright==1.57.0" pytest tests/test_browser_keyboard.py
 ```
