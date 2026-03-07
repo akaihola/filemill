@@ -41,6 +41,7 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 
 ## Done
 
+- [x] [#34](ISSUES.md#34--arrowleft-must-update-the-browser-url) ArrowLeft updates the URL back to the selected parent item/root <!-- prune after 2026-06-05 -->
 - [x] [#33](ISSUES.md#33--pwa-make-pykofinder-installable-as-a-progressive-web-app) PWA – manifest, service worker, icons, head tags, 20 tests <!-- prune after 2026-06-05 -->
 - [x] [#32](ISSUES.md#32--column-focus-state-visual-indicators-keyboard-navigation) Column focus-state visual indicators – col-focused / col-ancestor / col-descendant <!-- prune after 2026-06-05 -->
 - [x] [#31](ISSUES.md#31--enhanced-keyboard-navigation-homeendpguppgdn--leftright-focus-model) Enhanced keyboard navigation – Home/End/PgUp/PgDn + Left/Right focus model <!-- prune after 2026-06-04 -->
