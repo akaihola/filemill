@@ -1026,9 +1026,10 @@ using `linkify-it-py` + `markdown-it-py`'s built-in linkify support.
 
 Two new URL namespaces:
 
-- `GET /w/{relative_path}` – serves the file at `ROOT/relative_path` with the correct
-  HTTP `Content-Type` (Starlette `FileResponse`). Symlinks inside ROOT are followed via
-  the existing `_resolve_safe` zone logic.
+- `GET /w/{mount}/{relative_path}` – serves the file at the named mount with the correct
+  HTTP `Content-Type` (Starlette `FileResponse`). The root directory itself is exposed
+  under `ROOT.name`; direct symlink children of ROOT are exposed under the symlink name.
+  Symlinks inside those mounts are followed via the existing `_resolve_safe` zone logic.
 - `GET /f/{relative_path}` – redirects to `/?path=ABSOLUTE_PATH` so the column finder
   opens at that file via `_deepNavigate`.
 

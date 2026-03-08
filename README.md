@@ -10,7 +10,7 @@ inline for Markdown, DOCX, PPTX, PDF, images, plain text, and source code.
 - **Rich previews** – Markdown (with plugins), DOCX, PPTX, PDF, images, plain text, source code with syntax highlighting (Pygments "friendly" theme)
 - **Markdown extras** – wikilinks (`[[PageName]]`), Mermaid diagrams, plain-URL linkification, relative-link normalisation
 - **Virtual filesystem** – SQLite databases are browsable as navigable table → row columns; additional VFS providers for JSON and CSV files
-- **Static web server** – `/w/<path>` serves any file under ROOT with the correct Content-Type (useful for HTML files)
+- **Static web server** – `/w/<mount>/<path>` serves any file under a named mount with the correct Content-Type (useful for HTML files); the root directory itself is mounted as `/w/<ROOT.name>/...`, and each direct symlink child of ROOT is mounted under its own name
 - **Breadcrumb trail** – `~ / dir / subdir / file` navigation bar; includes a `.*` dotfile toggle that persists across sessions
 - **URL sync** – browser URL stays in sync with the selected path; deep-link any location directly
 - **Keyboard navigation** – `↑↓` move within a column; `→`/`Enter` open; `←` go back while keeping the URL in sync with the visible parent/root state; `Home`/`End`/`PgUp`/`PgDn` scroll; column focus states visually indicated
