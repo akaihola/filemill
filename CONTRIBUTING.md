@@ -40,6 +40,9 @@ tests/
 
 - All routes are under a configurable `ROOT` directory; `_resolve_safe()` in
   `app.py` enforces that no path escapes that root (symlinks included).
+- Static `/w/` URLs use named mounts: the root directory is exposed as
+  `/w/<ROOT.name>/...`, and each direct symlink child of ROOT is exposed as
+  `/w/<symlink-name>/...`.
 - Column pruning is done client-side via a small `<script>` injected into each
   click response – no server round-trip needed.
 - HTMX drives all dynamic updates; there is no JavaScript build step.
