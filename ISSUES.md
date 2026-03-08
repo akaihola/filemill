@@ -8,6 +8,29 @@ the issue block here and the corresponding `[x]` line in TASKS.md at that point.
 
 ---
 
+## #38 – CORS headers on `/w/` routes for cross-origin image embedding
+
+**Type:** feature
+**Status:** closed
+**Closed:** 2026-03-08
+**Prune after:** 2026-06-06
+
+Other sites need to embed images (and other static assets) served by pykofinder
+via `/w/` URLs inside `<img>` tags or `fetch()` calls. Without CORS headers the
+browser blocks these cross-origin requests.
+
+**Scope:** `/w/{path:path}` only – all other routes are unaffected.
+
+**Implementation:**
+
+- `web_static()` – add `Access-Control-Allow-Origin: *`,
+  `Access-Control-Allow-Methods: GET, OPTIONS`, and
+  `Access-Control-Allow-Headers: *` to the `FileResponse`.
+- Add an `OPTIONS /w/{path:path}` route so browsers can complete preflight
+  checks (needed for `fetch()` requests and `<img crossorigin>`).
+
+---
+
 ## #37 – Browser column-survival regression must use the real keyboard flow
 
 **Type:** test
