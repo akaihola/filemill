@@ -579,20 +579,10 @@ def web_static(path: str):
     return FileResponse(str(p))
 
 
-@rt("/f/{path:path}")
-def finder_view(path: str = "", vpath: str = "", legacy_path: str = ""):
-    """Serve the finder shell at an optional canonical mount-relative path.
-
-    ``/f/`` renders the root view.
-    ``/f/<mount>/<relative>`` renders the shell and deep-links to that file.
-    Legacy ``/f/?path=<absolute>`` is accepted as a compatibility input and
-    redirects to the canonical path form whenever possible.
-    """
-    path = legacy_path or path
-    if not path:
-        return _shell_html()
-
-    if path.startswith("/"):
+@rt("/f/")
+def finder_root(path: str = "", vpath: str = ""):
+    """Serve the finder root or redirect legacy ``/f/?path=...`` deep-links."""
+    if path:
         p = _resolve_safe(path)
         if p is None or not p.exists():
             return HTMLResponse("Not found", status_code=404)
@@ -604,6 +594,18 @@ def finder_view(path: str = "", vpath: str = "", legacy_path: str = ""):
             f"function(){{_deepNavigate({json.dumps(str(p))}, {json.dumps(vpath or None)})}});"
         )
         return _shell_html(Script(nav_js))
+    return _shell_html()
+
+
+@rt("/f/{path:path}")
+def finder_view(path: str = "", vpath: str = ""):
+    """Serve the finder shell at an optional canonical mount-relative path.
+
+    ``/f/`` renders the root view.
+    ``/f/<mount>/<relative>`` renders the shell and deep-links to that file.
+    """
+    if not path:
+        return _shell_html()
 
     mount_name, _, remainder = path.lstrip("/").partition("/")
     target_root = _mount_targets().get(mount_name)
@@ -687,6 +689,7 @@ def _reorder_routes() -> None:
     routes = app.router.routes
     _prefixes = {
         "/w/{path:path}",
+        "/f/",
         "/f/{path:path}",
         "/manifest.json",
         "/sw.js",
