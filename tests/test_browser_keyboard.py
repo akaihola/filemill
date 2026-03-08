@@ -154,6 +154,31 @@ def test_arrow_left_keeps_browser_url_in_sync(live_server: str, browser_root: Pa
 
 
 @pytest.mark.integration
+def test_nested_column_navigation_keeps_root_mount_in_url(
+    live_server: str, browser_root: Path
+):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1400, "height": 900})
+        page.goto(live_server, wait_until="networkidle")
+        page.wait_for_timeout(800)
+
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(700)
+        assert page.url.endswith(f"/f/{browser_root.name}/my-knowledge")
+
+        _click_item(page, "col-1", "docs")
+        page.wait_for_timeout(700)
+        assert page.url.endswith(f"/f/{browser_root.name}/my-knowledge/docs")
+
+        _click_item(page, "col-2", "topic.md")
+        page.wait_for_timeout(700)
+        assert page.url.endswith(f"/f/{browser_root.name}/my-knowledge/docs/topic.md")
+
+        browser.close()
+
+
+@pytest.mark.integration
 def test_rendered_relative_markdown_link_uses_canonical_url(
     live_server: str, browser_root: Path
 ):

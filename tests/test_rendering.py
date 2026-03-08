@@ -233,6 +233,7 @@ def test_href_for_md_file_uses_canonical_finder_path(tmp_path, monkeypatch):
 
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     f = tmp_path / "page.md"
+    f.touch()
     href = _href_for_file(f)
     assert href == f"/f/{tmp_path.name}/page.md"
 

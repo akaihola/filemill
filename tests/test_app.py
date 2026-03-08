@@ -655,8 +655,66 @@ def test_url_sync_js_tracks_vpath():
 
     assert "_pendingVpath" in COLUMN_JS
     assert "vpath" in COLUMN_JS
-    # pushState must encode vpath into the URL
-    assert "encodeURIComponent(_pendingVpath)" in COLUMN_JS or "&vpath=" in COLUMN_JS
+    assert "_pendingFinderUrl" in COLUMN_JS
+
+
+def test_url_sync_js_reads_finder_url_from_clicked_link():
+    """History sync must read the canonical URL from data-finder-url on the clicked link."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "data-finder-url" in COLUMN_JS
+    assert "finderUrl: a.getAttribute('data-finder-url') || null" in COLUMN_JS
+
+
+def test_url_sync_js_pushes_pending_finder_url_without_reconstructing_path():
+    """History sync must push the server-provided finder URL verbatim."""
+    from pykofinder.styles import COLUMN_JS
+
+    assert "_syncUrl(_pendingPath, _pendingVpath, _pendingFinderUrl)" in COLUMN_JS
+    assert (
+        "history.pushState({path: path, vpath: vpath || null}, '', finderUrl)"
+        in COLUMN_JS
+    )
+
+
+def test_click_nested_directory_emits_root_mount_finder_url(tmp_path, monkeypatch):
+    """Second-column entries under ROOT must keep the ROOT mount in data-finder-url."""
+    from urllib.parse import quote
+    from starlette.testclient import TestClient
+
+    workspace = tmp_path / "my-knowledge"
+    docs = workspace / "docs"
+    docs.mkdir(parents=True)
+    (docs / "topic.md").write_text("# topic")
+
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    c = TestClient(app_module.app, raise_server_exceptions=False)
+    resp = c.get(f"/click?path={quote(str(workspace))}&col=1")
+
+    assert resp.status_code == 200
+    assert f'data-finder-url="/f/{tmp_path.name}/my-knowledge/docs"' in resp.text
+
+
+def test_click_nested_directory_preserves_root_mount_for_bookmark_targets(
+    tmp_path, monkeypatch
+):
+    """Nested entries reached through ROOT must keep the ROOT mount, not collapse to the child name."""
+    from urllib.parse import quote
+    from starlette.testclient import TestClient
+
+    menu = tmp_path / "menu"
+    workspace = menu / "my-knowledge"
+    docs = workspace / "docs"
+    docs.mkdir(parents=True)
+    (docs / "topic.md").write_text("# topic")
+
+    monkeypatch.setattr(app_module, "ROOT", menu)
+    c = TestClient(app_module.app, raise_server_exceptions=False)
+    resp = c.get(f"/click?path={quote(str(workspace))}&col=1")
+
+    assert resp.status_code == 200
+    assert 'data-finder-url="/f/menu/my-knowledge/docs"' in resp.text
+    assert 'data-finder-url="/f/my-knowledge/docs"' not in resp.text
 
 
 def test_deep_navigate_js_passes_vpath_to_restore():
