@@ -180,8 +180,10 @@ def test_finder_view_serves_shell_with_canonical_symlink_mount_path(
     assert "guide.md" in body
 
 
-def test_finder_view_query_path_legacy_fallback_serves_shell(tmp_path, monkeypatch):
-    """Legacy /f/?path=... still serves the shell for compatible absolute deep links."""
+def test_finder_view_query_path_redirects_to_canonical_mount_path(
+    tmp_path, monkeypatch
+):
+    """Legacy /f/?path=... redirects to /f/{mount}/{relative} for workspace-local files."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     note = tmp_path / "docs" / "guide.md"
     note.parent.mkdir()
@@ -190,12 +192,12 @@ def test_finder_view_query_path_legacy_fallback_serves_shell(tmp_path, monkeypat
     resp = TestClient(
         app_module.app, raise_server_exceptions=False, follow_redirects=False
     ).get(f"/f/?path={quote(str(note))}")
-    assert resp.status_code == 200
-    assert "_deepNavigate" in resp.text
+    assert resp.status_code in (301, 302, 307, 308)
+    assert resp.headers.get("location") == f"/f/{tmp_path.name}/docs/guide.md"
 
 
-def test_finder_view_query_path_legacy_fallback_preserves_vpath(tmp_path, monkeypatch):
-    """Legacy /f/?path=... keeps vpath in the bootstrap deep-link call."""
+def test_finder_view_query_path_redirect_preserves_vpath(tmp_path, monkeypatch):
+    """Legacy /f/?path=... keeps vpath when redirecting to the canonical URL."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     db = tmp_path / "data.db"
     db.write_text("")
@@ -203,8 +205,8 @@ def test_finder_view_query_path_legacy_fallback_preserves_vpath(tmp_path, monkey
     resp = TestClient(
         app_module.app, raise_server_exceptions=False, follow_redirects=False
     ).get(f"/f/?path={quote(str(db))}&vpath=items/1")
-    assert resp.status_code == 200
-    assert "_deepNavigate" in resp.text
+    assert resp.status_code in (301, 302, 307, 308)
+    assert resp.headers.get("location") == f"/f/{tmp_path.name}/data.db?vpath=items/1"
 
 
 def test_finder_view_404_for_unknown_mount(tmp_path, monkeypatch):

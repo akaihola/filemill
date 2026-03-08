@@ -22,9 +22,15 @@ def _free_port() -> int:
 
 @pytest.fixture()
 def browser_root(tmp_path: Path) -> Path:
-    (tmp_path / "my-knowledge").mkdir()
-    (tmp_path / "my-knowledge" / "AGENTS.md").write_text("# Agent notes\n")
-    (tmp_path / "my-knowledge" / "docs").mkdir()
+    kb = tmp_path / "my-knowledge"
+    kb.mkdir()
+    (kb / "AGENTS.md").write_text("# Agent notes\n")
+    docs = kb / "docs"
+    docs.mkdir()
+    (docs / "topic.md").write_text("# Topic\n\n[Next](subdir/next.md)\n")
+    subdir = docs / "subdir"
+    subdir.mkdir()
+    (subdir / "next.md").write_text("# Next\n")
     (tmp_path / "root-note.md").write_text("# Root\n")
     return tmp_path
 
@@ -119,7 +125,7 @@ def _selected_text(page, col_id: str) -> str:
 
 
 @pytest.mark.integration
-def test_arrow_left_keeps_browser_url_in_sync(live_server: str):
+def test_arrow_left_keeps_browser_url_in_sync(live_server: str, browser_root: Path):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 1400, "height": 900})
@@ -129,14 +135,12 @@ def test_arrow_left_keeps_browser_url_in_sync(live_server: str):
         _click_item(page, "col-0", "my-knowledge")
         page.wait_for_timeout(700)
         folder_url = page.url
-        assert "path=" in folder_url
-        assert "my-knowledge" in folder_url
+        assert folder_url.endswith("/f/" + browser_root.name + "/my-knowledge")
 
         _click_item(page, "col-1", "AGENTS.md")
         page.wait_for_timeout(700)
         file_url = page.url
-        assert "path=" in file_url
-        assert "AGENTS.md" in file_url
+        assert file_url.endswith("/f/" + browser_root.name + "/my-knowledge/AGENTS.md")
 
         page.keyboard.press("ArrowLeft")
         page.wait_for_timeout(400)
@@ -145,6 +149,36 @@ def test_arrow_left_keeps_browser_url_in_sync(live_server: str):
         page.keyboard.press("ArrowLeft")
         page.wait_for_timeout(300)
         assert page.url.rstrip("/") == live_server.rstrip("/") + "/f"
+
+        browser.close()
+
+
+@pytest.mark.integration
+def test_rendered_relative_markdown_link_uses_canonical_url(
+    live_server: str, browser_root: Path
+):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1400, "height": 900})
+        page.goto(
+            f"{live_server}/f/{browser_root.name}/my-knowledge/docs/topic.md",
+            wait_until="networkidle",
+        )
+        page.wait_for_timeout(900)
+
+        preview_link = page.locator(
+            '#preview a[href$="/f/'
+            + browser_root.name
+            + '/my-knowledge/docs/subdir/next.md"]'
+        ).first
+        assert preview_link.count() == 1
+        preview_link.click()
+        page.wait_for_timeout(900)
+
+        assert page.url.endswith(
+            f"/f/{browser_root.name}/my-knowledge/docs/subdir/next.md"
+        )
+        assert "Next" in page.locator("#preview").inner_text()
 
         browser.close()
 
