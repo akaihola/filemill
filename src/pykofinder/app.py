@@ -491,34 +491,71 @@ def open_link(path: str):
 # ── #23 helpers + routes ──────────────────────────────────────────────────────
 
 
-def _web_url(p: Path) -> str | None:
-    """Return a ``/w/`` URL for *p*, or ``None`` if it is not reachable via ROOT.
+def _mount_targets() -> dict[str, Path]:
+    """Return named mounts exposed under ``/w/<mount>/...``.
 
-    Handles both zone-1 paths (directly under ROOT) and zone-2 paths (under a
-    direct symlink child of ROOT).
+    The root directory itself is always mounted under ``ROOT.name``. Each direct
+    symlink child of ``ROOT`` is also mounted under the symlink name.
     """
-    resolved_root = ROOT.resolve()
-    # Zone 1: directly under ROOT
-    try:
-        rel = p.relative_to(resolved_root)
-        return f"/w/{rel}"
-    except ValueError:
-        pass
-    # Zone 2: under a symlink child of ROOT
+    mounts = {ROOT.name: ROOT.resolve()}
     for child in ROOT.iterdir():
         if child.is_symlink():
-            try:
-                rel_in_target = p.relative_to(child.resolve())
-                return f"/w/{child.name}/{rel_in_target}"
-            except ValueError:
-                continue
+            mounts[child.name] = child.resolve()
+    return mounts
+
+
+def _resolve_web_mount(path: str) -> Path | None:
+    """Resolve a ``/w/`` path using named mounts.
+
+    The first path segment names either the root mount (``ROOT.name``) or one of
+    ROOT's direct symlink children. The remainder is resolved relative to that
+    mount target and still validated through ``_resolve_safe()``.
+    """
+    stripped = path.lstrip("/")
+    if not stripped:
+        return None
+
+    mount_name, _, remainder = stripped.partition("/")
+    target_root = _mount_targets().get(mount_name)
+    if target_root is None:
+        return None
+
+    candidate = target_root / remainder if remainder else target_root
+    return _resolve_safe(str(candidate))
+
+
+def _web_url(p: Path) -> str | None:
+    """Return a canonical ``/w/`` URL for *p*, or ``None`` if it is unreachable.
+
+    Zone-1 files under ``ROOT`` are exposed under the root mount name
+    ``/w/{ROOT.name}/...``. Zone-2 files under a direct symlink child are exposed
+    under ``/w/{symlink_name}/...``.
+    """
+    mounts = _mount_targets()
+    root_mount = ROOT.name
+    resolved_root = mounts[root_mount]
+
+    try:
+        rel = p.relative_to(resolved_root)
+        return f"/w/{root_mount}/{rel}"
+    except ValueError:
+        pass
+
+    for mount_name, target in mounts.items():
+        if mount_name == root_mount:
+            continue
+        try:
+            rel_in_target = p.relative_to(target)
+            return f"/w/{mount_name}/{rel_in_target}"
+        except ValueError:
+            continue
     return None
 
 
 @rt("/w/{path:path}")
 def web_static(path: str):
-    """Serve ROOT-relative *path* as a static file with the correct Content-Type."""
-    p = _resolve_safe(str(ROOT / path.lstrip("/")))
+    """Serve a named-mount ``/w/<mount>/...`` file with the correct Content-Type."""
+    p = _resolve_web_mount(path)
     if p is None or not p.is_file():
         return HTMLResponse("Not found", status_code=404)
     return FileResponse(str(p))
