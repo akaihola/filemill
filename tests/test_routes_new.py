@@ -44,6 +44,52 @@ def test_web_static_traversal_denied(tmp_path, monkeypatch):
     assert _client(tmp_path).get("/w/../etc/passwd").status_code == 404
 
 
+# ── #38 CORS on /w/ ──────────────────────────────────────────────────────────
+
+
+def test_web_static_cors_header_present(tmp_path, monkeypatch):
+    """/w/{path} GET response carries Access-Control-Allow-Origin: *."""
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    (tmp_path / "photo.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+    resp = _client(tmp_path).get("/w/photo.png")
+    assert resp.status_code == 200
+    assert resp.headers.get("access-control-allow-origin") == "*"
+
+
+def test_web_static_cors_methods_header(tmp_path, monkeypatch):
+    """/w/ GET response advertises GET and OPTIONS in Access-Control-Allow-Methods."""
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    (tmp_path / "doc.txt").write_text("hi")
+    resp = _client(tmp_path).get("/w/doc.txt")
+    methods = resp.headers.get("access-control-allow-methods", "")
+    assert "GET" in methods
+    assert "OPTIONS" in methods
+
+
+def test_web_static_options_preflight_200(tmp_path, monkeypatch):
+    """/w/ OPTIONS preflight returns 200 with CORS headers."""
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    (tmp_path / "photo.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+    resp = _client(tmp_path).options("/w/photo.png")
+    assert resp.status_code == 200
+    assert resp.headers.get("access-control-allow-origin") == "*"
+
+
+def test_web_static_options_allow_headers(tmp_path, monkeypatch):
+    """/w/ OPTIONS preflight echoes Access-Control-Allow-Headers: *."""
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    (tmp_path / "photo.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+    resp = _client(tmp_path).options("/w/photo.png")
+    assert resp.headers.get("access-control-allow-headers") == "*"
+
+
+def test_web_static_cors_not_on_other_routes(tmp_path, monkeypatch):
+    """/f/ and other routes do NOT carry Access-Control-Allow-Origin."""
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    resp = _client(tmp_path).get("/f/")
+    assert resp.headers.get("access-control-allow-origin") is None
+
+
 # ── #23 GET /f/ – finder deep-link ────────────────────────────────────────────
 
 
