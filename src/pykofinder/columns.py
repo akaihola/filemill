@@ -83,6 +83,7 @@ def list_column(
     this value is rendered with the ``selected`` CSS class, enabling
     deep-link restoration to pre-highlight the active path.
     """
+    from pykofinder.app import _finder_url
     from pykofinder.vfs import (
         is_vfs_file,
     )  # lazy to avoid circular import at module level
@@ -108,6 +109,7 @@ def list_column(
             li_cls = None
         icon = entry_icon(p)
         encoded_path = urlquote(str(p))
+        finder_url = _finder_url(p)
         if p.is_dir():
             # Directory: load next column + clear preview via /click
             li = Li(
@@ -119,6 +121,7 @@ def list_column(
                     hx_target=f"#col-{next_col}",
                     hx_swap="outerHTML",
                     title=p.name,
+                    data_finder_url=finder_url or "",
                 ),
                 cls=li_cls,
             )
@@ -146,6 +149,7 @@ def list_column(
                     hx_target=f"#col-{next_col}",
                     hx_swap="outerHTML",
                     title=p.name,
+                    data_finder_url=finder_url or "",
                 ),
                 cls=li_cls,
             )
@@ -160,6 +164,7 @@ def list_column(
                     hx_target="#preview",
                     hx_swap="innerHTML",
                     title=p.name,
+                    data_finder_url=finder_url or "",
                 ),
                 cls=li_cls,
             )

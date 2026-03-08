@@ -227,12 +227,14 @@ def test_find_file_for_href_no_git_still_finds_relative(tmp_path):
 # ── #19 href URL generation ───────────────────────────────────────────────────
 
 
-def test_href_for_md_file_uses_deep_link(tmp_path):
-    """.md files get /?path=... so _deepNavigate opens them in the column view."""
+def test_href_for_md_file_uses_canonical_finder_path(tmp_path, monkeypatch):
+    """.md files get a canonical /f/{mount}/{relative} URL when ROOT matches the workspace."""
+    import pykofinder.app as app_module
+
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
     f = tmp_path / "page.md"
     href = _href_for_file(f)
-    assert href.startswith("/?path=")
-    assert "page.md" in href
+    assert href == f"/f/{tmp_path.name}/page.md"
 
 
 def test_href_for_other_file_uses_raw(tmp_path):
@@ -244,15 +246,18 @@ def test_href_for_other_file_uses_raw(tmp_path):
 # ── #19 link normalization in rendered markdown ───────────────────────────────
 
 
-def test_md_link_relative_normalized(tmp_path):
-    """A relative [text](file.md) link is rewritten to /?path=... when file exists."""
+def test_md_link_relative_normalized(tmp_path, monkeypatch):
+    """A relative [text](file.md) link is rewritten to a canonical /f/{mount}/{relative} URL."""
+    import pykofinder.app as app_module
+
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
     src = tmp_path / "note.md"
     src.write_text("[link](other.md)")
     target = tmp_path / "other.md"
     target.touch()
     rendered = md.render(src.read_text(), env={"source_path": src})
-    assert "/?path=" in rendered
-    assert str(target.resolve()) in rendered
+    assert f"/f/{tmp_path.name}/other.md" in rendered
+    assert "/?path=" not in rendered
 
 
 def test_md_link_absolute_url_unchanged(tmp_path):
@@ -300,15 +305,18 @@ def test_wikilink_unresolved_gets_hash_href():
     assert "#wikilink-" in rendered
 
 
-def test_wikilink_resolved_gets_proper_href(tmp_path):
-    """A [[WikiLink]] that resolves to a .md file gets /?path=... href."""
+def test_wikilink_resolved_gets_proper_href(tmp_path, monkeypatch):
+    """A [[WikiLink]] that resolves to a .md file gets a canonical /f/{mount}/{relative} href."""
+    import pykofinder.app as app_module
+
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
     src = tmp_path / "note.md"
     src.write_text("See [[Target]]")
     target = tmp_path / "Target.md"
     target.touch()
     rendered = md.render(src.read_text(), env={"source_path": src})
-    assert "/?path=" in rendered
-    assert str(target.resolve()) in rendered
+    assert f"/f/{tmp_path.name}/Target.md" in rendered
+    assert "/?path=" not in rendered
 
 
 def test_wikilink_does_not_break_normal_links():
