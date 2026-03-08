@@ -24,6 +24,8 @@ after:** YYYY-MM-DD` (closed date + 90 days) in ISSUES.md, then move the entry h
 
 ## In progress
 
+- [~] [#39](ISSUES.md#39--canonical-finder-urls-fmountrelative--relative-link-semantics) Canonical `/f/<mount>/<relative>` URLs + legacy `/f/?path=` fallback; align markdown links, browser history sync, VFS URLs, and `pykoclaw-pykofinder`
+
 ---
 
 ## Open

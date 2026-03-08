@@ -281,6 +281,7 @@ def test_url_sync_js_in_column_js():
 
     assert "pushState" in COLUMN_JS
     assert "_pendingPath" in COLUMN_JS or "pendingPath" in COLUMN_JS.lower()
+    assert "'/f/?path='" not in COLUMN_JS
 
 
 def test_deep_navigate_calls_htmx_process():
@@ -567,6 +568,7 @@ def test_restore_vfs_file_renders_table_column_not_unsupported(tmp_path, monkeyp
 
 
 # ── #29 VFS URL sync – /restore with vpath ────────────────────────────────
+
 
 def test_restore_vfs_with_table_vpath_renders_row_column(tmp_path, monkeypatch):
     """/restore?path=file.db&vpath=tablename must render both the table-list column

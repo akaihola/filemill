@@ -528,29 +528,29 @@ function recalcColumnWidth() {
 // Track path + vpath from the most recent click for URL sync
 var _pendingPath = null;
 var _pendingVpath = null;
+var _pendingFinderUrl = null;
 
-function _syncUrl(path, vpath) {
-    if (path) {
-        var newUrl = '/f/?path=' + encodeURIComponent(path);
-        if (vpath) newUrl += '&vpath=' + encodeURIComponent(vpath);
-        history.pushState({path: path, vpath: vpath || null}, '', newUrl);
-    } else {
-        history.pushState({}, '', '/f/');
+function _syncUrl(path, vpath, finderUrl) {
+    if (finderUrl) {
+        history.pushState({path: path, vpath: vpath || null}, '', finderUrl);
+        return;
     }
+    history.pushState({}, '', '/f/');
 }
 
 function _capturePathStateFromLink(a) {
-    if (!a) return {path: null, vpath: null};
+    if (!a) return {path: null, vpath: null, finderUrl: null};
     var hxGet = a.getAttribute('hx-get') || a.getAttribute('data-hx-get');
-    if (!hxGet) return {path: null, vpath: null};
+    if (!hxGet) return {path: null, vpath: null, finderUrl: null};
     try {
         var url = new URL(hxGet, window.location.href);
         return {
             path: url.searchParams.get('path'),
-            vpath: url.searchParams.get('vpath') || null
+            vpath: url.searchParams.get('vpath') || null,
+            finderUrl: a.getAttribute('data-finder-url') || null
         };
     } catch(err) {
-        return {path: null, vpath: null};
+        return {path: null, vpath: null, finderUrl: null};
     }
 }
 
@@ -561,6 +561,7 @@ document.addEventListener('click', function(e) {
     var state = _capturePathStateFromLink(a);
     _pendingPath = state.path;
     _pendingVpath = state.vpath;
+    _pendingFinderUrl = state.finderUrl;
 });
 
 // After HTMX settles, push/replace the URL
@@ -595,10 +596,11 @@ document.addEventListener('htmx:afterSettle', function(e) {
     _syncZoomBtn();
     var finder = document.getElementById('finder');
     if (finder) finder.scrollLeft = finder.scrollWidth;
-    if (_pendingPath) {
-        _syncUrl(_pendingPath, _pendingVpath);
+    if (_pendingPath || _pendingFinderUrl) {
+        _syncUrl(_pendingPath, _pendingVpath, _pendingFinderUrl);
         _pendingPath = null;
         _pendingVpath = null;
+        _pendingFinderUrl = null;
     }
 });
 

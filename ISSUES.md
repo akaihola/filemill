@@ -8,6 +8,35 @@ the issue block here and the corresponding `[x]` line in TASKS.md at that point.
 
 ---
 
+## #39 – Canonical finder URLs (`/f/<mount>/<relative>`) + relative-link semantics
+
+**Type:** feature
+**Status:** in-progress
+
+Workspace-local finder URLs should stop exposing absolute paths via `/f/?path=...` and
+instead use canonical hierarchical paths that mirror `/w/`:
+
+- `/f/` – finder root
+- `/f/<mount>/<relative/path>` – canonical filesystem location
+- `/f/<mount>/<relative/file>?vpath=...` – canonical VFS location
+
+The legacy `/f/?path=<absolute>` form remains as a compatibility fallback and should
+redirect to the canonical path form whenever the target is representable under a known
+mount. `/w/` stays path-based only – no `?path=` public form.
+
+**Why:** relative markdown links like `[link](subdir/other-file.md)` are currently broken
+because the browser URL is query-state rather than a hierarchical path. Canonical `/f/`
+URLs fix that, align the public URL model with `/w/`, and produce cleaner shareable links.
+
+**Scope:**
+
+- `src/pykofinder/app.py` – canonical `/f/` route handling + legacy redirect/fallback
+- `src/pykofinder/styles.py` – browser history sync and popstate on canonical URLs
+- `src/pykofinder/rendering.py` – markdown href generation for docs/assets
+- VFS URL sync preserved via canonical filesystem path + `vpath`
+- `/home/agent/pykoclaw/pykoclaw-pykofinder` updated to emit canonical workspace-local
+  `/f/` and `/w/` URLs, with legacy `/f/?path=` fallback only for non-workspace viewer links
+
 ## #38 – CORS headers on `/w/` routes for cross-origin image embedding
 
 **Type:** feature

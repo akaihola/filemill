@@ -117,11 +117,11 @@ def test_web_static_cors_not_on_other_routes(tmp_path, monkeypatch):
 # ── #23 GET /f/ – finder deep-link ────────────────────────────────────────────
 
 
-def test_finder_view_serves_shell_with_deep_link_script(tmp_path, monkeypatch):
-    """/f/{path} returns the full app shell with an inline _deepNavigate call."""
+def test_finder_view_serves_shell_with_canonical_root_mount_path(tmp_path, monkeypatch):
+    """/f/{ROOT.name}/{path} returns the full app shell with an inline _deepNavigate call."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     (tmp_path / "readme.md").touch()
-    resp = _client(tmp_path).get("/f/readme.md")
+    resp = _client(tmp_path).get(f"/f/{tmp_path.name}/readme.md")
     assert resp.status_code == 200
     body = resp.text
     assert "pykofinder" in body
@@ -153,9 +153,65 @@ def test_root_redirects_to_finder(tmp_path, monkeypatch):
 
 
 def test_finder_view_404_for_missing(tmp_path, monkeypatch):
-    """/f/{path} returns 404 when the path is outside ROOT."""
+    """/f/{mount}/{path} returns 404 when the file does not exist."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
-    assert _client(tmp_path).get("/f/no_such_thing.md").status_code == 404
+    assert (
+        _client(tmp_path).get(f"/f/{tmp_path.name}/no_such_thing.md").status_code == 404
+    )
+
+
+def test_finder_view_serves_shell_with_canonical_symlink_mount_path(
+    tmp_path, monkeypatch
+):
+    """/f/{symlink-name}/{path} resolves through a direct symlink child mount."""
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / "guide.md").write_text("# Guide")
+    root = tmp_path / "menu"
+    root.mkdir()
+    (root / "coleaders").symlink_to(workspace, target_is_directory=True)
+    monkeypatch.setattr(app_module, "ROOT", root)
+
+    resp = _client(root).get("/f/coleaders/guide.md")
+    assert resp.status_code == 200
+    body = resp.text
+    assert "pykofinder" in body
+    assert "_deepNavigate" in body
+    assert "guide.md" in body
+
+
+def test_finder_view_query_path_legacy_fallback_serves_shell(tmp_path, monkeypatch):
+    """Legacy /f/?path=... still serves the shell for compatible absolute deep links."""
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    note = tmp_path / "docs" / "guide.md"
+    note.parent.mkdir()
+    note.write_text("# Guide")
+
+    resp = TestClient(
+        app_module.app, raise_server_exceptions=False, follow_redirects=False
+    ).get(f"/f/?path={quote(str(note))}")
+    assert resp.status_code == 200
+    assert "_deepNavigate" in resp.text
+
+
+def test_finder_view_query_path_legacy_fallback_preserves_vpath(tmp_path, monkeypatch):
+    """Legacy /f/?path=... keeps vpath in the bootstrap deep-link call."""
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    db = tmp_path / "data.db"
+    db.write_text("")
+
+    resp = TestClient(
+        app_module.app, raise_server_exceptions=False, follow_redirects=False
+    ).get(f"/f/?path={quote(str(db))}&vpath=items/1")
+    assert resp.status_code == 200
+    assert "_deepNavigate" in resp.text
+
+
+def test_finder_view_404_for_unknown_mount(tmp_path, monkeypatch):
+    """Unknown mount names under /f/ are rejected."""
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    (tmp_path / "readme.md").write_text("# hello")
+    assert _client(tmp_path).get("/f/unknown/readme.md").status_code == 404
 
 
 # ── #23 HTML preview – "View as web page" button ─────────────────────────────

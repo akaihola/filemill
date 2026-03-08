@@ -89,9 +89,21 @@ def _find_file_for_href(href: str, source_path: Path) -> Path | None:
 
 
 def _href_for_file(abs_path: Path) -> str:
-    """.md files use ``/?path=…`` (triggers ``_deepNavigate``); others ``/raw?path=…``."""
+    """Return a public pykofinder URL for a resolved file path.
+
+    Markdown documents open through the finder UI (`/f/<mount>/<relative>`), while
+    static assets use the raw named-mount path (`/w/<mount>/<relative>`) when the
+    file is reachable from a known mount.
+    """
+    from pykofinder.app import _finder_url, _web_url
+
     if abs_path.suffix.lower() == ".md":
-        return f"/?path={urlquote(str(abs_path))}"
+        finder_url = _finder_url(abs_path)
+        if finder_url is not None:
+            return finder_url
+    web_url = _web_url(abs_path)
+    if web_url is not None:
+        return web_url
     return f"/raw?path={urlquote(str(abs_path))}"
 
 

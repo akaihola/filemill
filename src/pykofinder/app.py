@@ -524,20 +524,18 @@ def _resolve_web_mount(path: str) -> Path | None:
     return _resolve_safe(str(candidate))
 
 
-def _web_url(p: Path) -> str | None:
-    """Return a canonical ``/w/`` URL for *p*, or ``None`` if it is unreachable.
+def _mounted_path_parts(p: Path) -> tuple[str, Path] | None:
+    """Return ``(mount_name, relative_path)`` for a resolved path, or ``None``.
 
-    Zone-1 files under ``ROOT`` are exposed under the root mount name
-    ``/w/{ROOT.name}/...``. Zone-2 files under a direct symlink child are exposed
-    under ``/w/{symlink_name}/...``.
+    Canonical URL generation for both ``/w/`` and ``/f/`` shares the same named-mount
+    mapping: the root mount first, then direct symlink child mounts.
     """
     mounts = _mount_targets()
     root_mount = ROOT.name
     resolved_root = mounts[root_mount]
 
     try:
-        rel = p.relative_to(resolved_root)
-        return f"/w/{root_mount}/{rel}"
+        return root_mount, p.relative_to(resolved_root)
     except ValueError:
         pass
 
@@ -545,11 +543,31 @@ def _web_url(p: Path) -> str | None:
         if mount_name == root_mount:
             continue
         try:
-            rel_in_target = p.relative_to(target)
-            return f"/w/{mount_name}/{rel_in_target}"
+            return mount_name, p.relative_to(target)
         except ValueError:
             continue
     return None
+
+
+def _finder_url(p: Path, vpath: str = "") -> str | None:
+    """Return a canonical ``/f/`` URL for *p*, optionally preserving *vpath*."""
+    mounted = _mounted_path_parts(p)
+    if mounted is None:
+        return None
+    mount_name, rel = mounted
+    url = f"/f/{mount_name}/{rel}"
+    if vpath:
+        url += f"?vpath={urlquote(vpath)}"
+    return url
+
+
+def _web_url(p: Path) -> str | None:
+    """Return a canonical ``/w/`` URL for *p*, or ``None`` if it is unreachable."""
+    mounted = _mounted_path_parts(p)
+    if mounted is None:
+        return None
+    mount_name, rel = mounted
+    return f"/w/{mount_name}/{rel}"
 
 
 @rt("/w/{path:path}")
@@ -562,25 +580,44 @@ def web_static(path: str):
 
 
 @rt("/f/{path:path}")
-def finder_view(path: str):
-    """Serve the finder shell at an optional ROOT-relative path.
+def finder_view(path: str = "", vpath: str = "", legacy_path: str = ""):
+    """Serve the finder shell at an optional canonical mount-relative path.
 
     ``/f/`` renders the root view.
-    ``/f/some/file.md`` renders the shell and deep-links to that file.
+    ``/f/<mount>/<relative>`` renders the shell and deep-links to that file.
+    Legacy ``/f/?path=<absolute>`` is accepted as a compatibility input and
+    redirects to the canonical path form whenever possible.
     """
+    path = legacy_path or path
     if not path:
         return _shell_html()
 
-    p = _resolve_safe(str(ROOT / path.lstrip("/")))
+    if path.startswith("/"):
+        p = _resolve_safe(path)
+        if p is None or not p.exists():
+            return HTMLResponse("Not found", status_code=404)
+        canonical = _finder_url(p, vpath)
+        if canonical is not None:
+            return RedirectResponse(canonical, status_code=302)
+        nav_js = (
+            f"document.addEventListener('DOMContentLoaded',"
+            f"function(){{_deepNavigate({json.dumps(str(p))}, {json.dumps(vpath or None)})}});"
+        )
+        return _shell_html(Script(nav_js))
+
+    mount_name, _, remainder = path.lstrip("/").partition("/")
+    target_root = _mount_targets().get(mount_name)
+    if target_root is None:
+        return HTMLResponse("Not found", status_code=404)
+
+    candidate = target_root / remainder if remainder else target_root
+    p = _resolve_safe(str(candidate))
     if p is None or not p.exists():
         return HTMLResponse("Not found", status_code=404)
 
-    # Inject an inline script that navigates to the resolved path once the
-    # page has loaded.  _deepNavigate is defined in COLUMN_JS (already in
-    # <head>), so it will be available by the time DOMContentLoaded fires.
     nav_js = (
         f"document.addEventListener('DOMContentLoaded',"
-        f"function(){{_deepNavigate({json.dumps(str(p))})}});"
+        f"function(){{_deepNavigate({json.dumps(str(p))}, {json.dumps(vpath or None)})}});"
     )
     return _shell_html(Script(nav_js))
 
