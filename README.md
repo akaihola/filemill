@@ -11,8 +11,9 @@ inline for Markdown, DOCX, PPTX, PDF, images, plain text, and source code.
 - **Markdown extras** – wikilinks (`[[PageName]]`), Mermaid diagrams, plain-URL linkification, relative-link normalisation
 - **Virtual filesystem** – SQLite databases are browsable as navigable table → row columns; additional VFS providers for JSON and CSV files
 - **Static web server** – `/w/<mount>/<path>` serves any file under a named mount with the correct Content-Type (useful for HTML files); the root directory itself is mounted as `/w/<ROOT.name>/...`, and each direct symlink child of ROOT is mounted under its own name
+- **Canonical finder URLs** – workspace-local navigation uses `/f/<mount>/<path>` in the address bar; legacy `/f/?path=<absolute>` remains accepted for compatibility fallbacks
 - **Breadcrumb trail** – `~ / dir / subdir / file` navigation bar; includes a `.*` dotfile toggle that persists across sessions
-- **URL sync** – browser URL stays in sync with the selected path; deep-link any location directly
+- **URL sync** – browser URL stays in sync with the selected path using canonical `/f/<mount>/<path>` URLs for workspace-local files; deep-link any location directly
 - **Keyboard navigation** – `↑↓` move within a column; `→`/`Enter` open; `←` go back while keeping the URL in sync with the visible parent/root state; `Home`/`End`/`PgUp`/`PgDn` scroll; column focus states visually indicated
 - **Live reload** – `--live` flag restarts the server on code changes and refreshes the browser on content changes via SSE
 - **Zoom** – expand preview pane to full viewport width
