@@ -11,7 +11,9 @@ the issue block here and the corresponding `[x]` line in TASKS.md at that point.
 ## #39 – Canonical finder URLs (`/f/<mount>/<relative>`) + relative-link semantics
 
 **Type:** feature
-**Status:** in-progress
+**Status:** closed
+**Closed:** 2026-03-08
+**Prune after:** 2026-06-06
 
 Workspace-local finder URLs should stop exposing absolute paths via `/f/?path=...` and
 instead use canonical hierarchical paths that mirror `/w/`:
