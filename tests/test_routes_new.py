@@ -14,44 +14,68 @@ def _client(root):
 # ── #23 GET /w/ – static webserver ───────────────────────────────────────────
 
 
-def test_web_static_serves_file(tmp_path, monkeypatch):
-    """/w/{path} returns 200 and the file content."""
+def test_web_static_serves_file_via_root_mount(tmp_path, monkeypatch):
+    """/w/{ROOT.name}/{path} returns 200 and the file content."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     (tmp_path / "hello.txt").write_text("hello world")
-    resp = _client(tmp_path).get("/w/hello.txt")
+    resp = _client(tmp_path).get(f"/w/{tmp_path.name}/hello.txt")
     assert resp.status_code == 200
     assert resp.text == "hello world"
 
 
+def test_web_static_serves_file_via_symlink_mount(tmp_path, monkeypatch):
+    """/w/{symlink-name}/{path} resolves through a direct symlink child of ROOT."""
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    (workspace / "guide.txt").write_text("symlink mount")
+    root = tmp_path / "menu"
+    root.mkdir()
+    (root / "coleaders").symlink_to(workspace, target_is_directory=True)
+    monkeypatch.setattr(app_module, "ROOT", root)
+
+    resp = _client(root).get("/w/coleaders/guide.txt")
+    assert resp.status_code == 200
+    assert resp.text == "symlink mount"
+
+
 def test_web_static_404_for_missing_file(tmp_path, monkeypatch):
-    """/w/{path} returns 404 when the file does not exist."""
+    """/w/{mount}/{path} returns 404 when the file does not exist."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
-    assert _client(tmp_path).get("/w/no_such_file.txt").status_code == 404
+    assert (
+        _client(tmp_path).get(f"/w/{tmp_path.name}/no_such_file.txt").status_code == 404
+    )
+
+
+def test_web_static_404_for_unknown_mount(tmp_path, monkeypatch):
+    """Unknown mount names under /w/ are rejected."""
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    (tmp_path / "hello.txt").write_text("hello world")
+    assert _client(tmp_path).get("/w/unknown/hello.txt").status_code == 404
 
 
 def test_web_static_correct_content_type_html(tmp_path, monkeypatch):
-    """/w/file.html serves with Content-Type: text/html."""
+    """/w/{mount}/file.html serves with Content-Type: text/html."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     (tmp_path / "page.html").write_text("<h1>Hi</h1>")
-    resp = _client(tmp_path).get("/w/page.html")
+    resp = _client(tmp_path).get(f"/w/{tmp_path.name}/page.html")
     assert resp.status_code == 200
     assert "text/html" in resp.headers.get("content-type", "")
 
 
 def test_web_static_traversal_denied(tmp_path, monkeypatch):
-    """/w/../etc/passwd is blocked (path escapes ROOT)."""
+    """/w/{mount}/../etc/passwd is blocked (path escapes ROOT)."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
-    assert _client(tmp_path).get("/w/../etc/passwd").status_code == 404
+    assert _client(tmp_path).get(f"/w/{tmp_path.name}/../etc/passwd").status_code == 404
 
 
 # ── #38 CORS on /w/ ──────────────────────────────────────────────────────────
 
 
 def test_web_static_cors_header_present(tmp_path, monkeypatch):
-    """/w/{path} GET response carries Access-Control-Allow-Origin: *."""
+    """/w/{mount}/{path} GET response carries Access-Control-Allow-Origin: *."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     (tmp_path / "photo.png").write_bytes(b"\x89PNG\r\n\x1a\n")
-    resp = _client(tmp_path).get("/w/photo.png")
+    resp = _client(tmp_path).get(f"/w/{tmp_path.name}/photo.png")
     assert resp.status_code == 200
     assert resp.headers.get("access-control-allow-origin") == "*"
 
@@ -60,7 +84,7 @@ def test_web_static_cors_methods_header(tmp_path, monkeypatch):
     """/w/ GET response advertises GET and OPTIONS in Access-Control-Allow-Methods."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     (tmp_path / "doc.txt").write_text("hi")
-    resp = _client(tmp_path).get("/w/doc.txt")
+    resp = _client(tmp_path).get(f"/w/{tmp_path.name}/doc.txt")
     methods = resp.headers.get("access-control-allow-methods", "")
     assert "GET" in methods
     assert "OPTIONS" in methods
@@ -70,7 +94,7 @@ def test_web_static_options_preflight_200(tmp_path, monkeypatch):
     """/w/ OPTIONS preflight returns 200 with CORS headers."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     (tmp_path / "photo.png").write_bytes(b"\x89PNG\r\n\x1a\n")
-    resp = _client(tmp_path).options("/w/photo.png")
+    resp = _client(tmp_path).options(f"/w/{tmp_path.name}/photo.png")
     assert resp.status_code == 200
     assert resp.headers.get("access-control-allow-origin") == "*"
 
@@ -79,7 +103,7 @@ def test_web_static_options_allow_headers(tmp_path, monkeypatch):
     """/w/ OPTIONS preflight echoes Access-Control-Allow-Headers: *."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     (tmp_path / "photo.png").write_bytes(b"\x89PNG\r\n\x1a\n")
-    resp = _client(tmp_path).options("/w/photo.png")
+    resp = _client(tmp_path).options(f"/w/{tmp_path.name}/photo.png")
     assert resp.headers.get("access-control-allow-headers") == "*"
 
 
