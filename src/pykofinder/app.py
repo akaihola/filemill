@@ -528,14 +528,24 @@ def _mounted_path_parts(p: Path) -> tuple[str, Path] | None:
     """Return ``(mount_name, relative_path)`` for a resolved path, or ``None``.
 
     Canonical URL generation for both ``/w/`` and ``/f/`` shares the same named-mount
-    mapping: the root mount first, then direct symlink child mounts.
+    mapping: prefer the visible ROOT tree first, then fall back to direct symlink child
+    mounts when the resolved target is only reachable through a bookmark.
     """
+    effective_root = ROOT
     mounts = _mount_targets()
     root_mount = ROOT.name
     resolved_root = mounts[root_mount]
 
     try:
-        return root_mount, p.relative_to(resolved_root)
+        # Prefer the visible ROOT tree when the path is reachable without collapsing
+        # to a child directory name. This preserves URLs like /f/menu/my-knowledge/docs
+        # instead of /f/my-knowledge/docs.
+        rel_from_root = p.relative_to(resolved_root)
+        visible_candidate = effective_root / rel_from_root
+        if (
+            visible_candidate.exists() and visible_candidate.resolve() == p
+        ) or not rel_from_root.parts:
+            return root_mount, rel_from_root
     except ValueError:
         pass
 
