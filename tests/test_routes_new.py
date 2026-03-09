@@ -195,6 +195,26 @@ def test_finder_url_prefers_root_mount_for_symlink_child_descendants(
     assert app_module._finder_url(docs.resolve()) == "/f/menu/my-knowledge/docs"
 
 
+def test_finder_url_for_unresolved_symlink_child_in_root(tmp_path, monkeypatch):
+    """col-0 entries are unresolved symlink paths; _finder_url must canonicalize them.
+
+    Regression: _mounted_path_parts received /menu/my-knowledge (symlink, unresolved)
+    but compared visible_candidate.resolve() == p, yielding
+    /real/path == /menu/my-knowledge → False, so _finder_url returned None and
+    the browser URL dropped back to /f/ on every col-0 click.
+    """
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    root = tmp_path / "menu"
+    root.mkdir()
+    symlink = root / "my-knowledge"
+    symlink.symlink_to(workspace, target_is_directory=True)
+    monkeypatch.setattr(app_module, "ROOT", root)
+
+    # Unresolved symlink path – exactly what path.iterdir() yields in columns.py
+    assert app_module._finder_url(symlink) == "/f/menu/my-knowledge"
+
+
 def test_finder_view_query_path_redirects_to_canonical_mount_path(
     tmp_path, monkeypatch
 ):

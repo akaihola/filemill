@@ -540,7 +540,8 @@ def _mounted_path_parts(p: Path) -> tuple[str, Path] | None:
         rel_from_root = p.relative_to(resolved_root)
         visible_candidate = effective_root / rel_from_root
         if (
-            visible_candidate.exists() and visible_candidate.resolve() == p
+            visible_candidate.exists()
+            and (visible_candidate == p or visible_candidate.resolve() == p)
         ) or not rel_from_root.parts:
             return root_mount, rel_from_root
     except ValueError:
