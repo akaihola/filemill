@@ -27,6 +27,7 @@
 
 _Items without an issue number are not yet tracked in ISSUES.md._
 
+- [ ] #41 Dotfile column appears empty when a hidden path segment is active in deep-link restore
 - [ ] #40 Web-mode bar missing when opening an HTML file via direct `/f/` URL
 - [ ] Pagination for large directories (> 500 entries)
 - [ ] Search/filter within a column

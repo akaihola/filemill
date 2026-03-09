@@ -36,6 +36,22 @@ git log -p -- ISSUES.md | grep -B 5 "^-## #34"
 
 ---
 
+## #41 – Dotfile column appears empty when a hidden path segment is active in deep-link restore
+
+**Type:** UX
+**Status:** open
+
+When a direct `/f/` URL contains a hidden path segment (e.g. `.config/`) and the "Hide dotfiles" toggle is active, the column for that segment renders empty – the selected dotfile directory is filtered out, so nothing is highlighted and the user sees a blank column. The most user-friendly fix is to auto-show the selected item in its column even when it is a dotfile, rather than silently hiding it (toggling the global filter off on restore risks surprising the user on subsequent navigation).
+
+**Planned fix / implementation sketch:**
+
+- In `columns.py` (column rendering), when building a column that contains the currently-selected path segment, always include that entry regardless of the dotfile filter, and mark it `selected`.
+- Alternatively, detect during deep-link restore (`/restore` route in `app.py`) whether any segment of the restored path is a dotfile and, if so, temporarily suppress the filter for that column only.
+- Prefer the per-column "always show the active item" approach – it is surgical and does not change global UI state.
+- Add tests in `tests/test_columns.py` asserting that a dotfile entry that is the selected segment appears in the column HTML even when `show_hidden=False`.
+
+---
+
 ## #40 – Web-mode bar missing when opening an HTML file via direct `/f/` URL
 
 **Type:** bug
