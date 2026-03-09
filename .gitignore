@@ -9,6 +9,9 @@ dist/
 build/
 .env
 .claude/
+!.claude/
+.claude/*
+!.claude/commands/
 AGENTS.md
 .coverage
 .pytest_cache/
