@@ -72,7 +72,9 @@ def _preview_md(path: Path) -> str:
     try:
         from pykofinder.rendering import md as md_renderer
 
-        html_body = md_renderer.render(path.read_text(encoding="utf-8"))
+        html_body = md_renderer.render(
+            path.read_text(encoding="utf-8"), {"source_path": path}
+        )
         return f'<div class="preview-md">{html_body}</div>'
     except Exception as e:
         return (

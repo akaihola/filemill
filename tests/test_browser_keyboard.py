@@ -114,6 +114,16 @@ def _click_item(page, col_id: str, text: str) -> None:
     )
 
 
+def _first_entry_text(page, col_id: str) -> str:
+    return page.evaluate(
+        f"""() => {{
+            const col = document.getElementById({col_id!r});
+            const first = col && col.querySelector('li a');
+            return first ? first.textContent.trim() : '';
+        }}"""
+    )
+
+
 def _selected_text(page, col_id: str) -> str:
     return page.evaluate(
         f"""() => {{
@@ -165,6 +175,36 @@ def test_nested_column_navigation_keeps_root_mount_in_url(
 
         _click_item(page, "col-0", "my-knowledge")
         page.wait_for_timeout(700)
+        assert page.url.endswith(f"/f/{browser_root.name}/my-knowledge")
+
+        _click_item(page, "col-1", "docs")
+        page.wait_for_timeout(700)
+        assert page.url.endswith(f"/f/{browser_root.name}/my-knowledge/docs")
+
+        file_name = _first_entry_text(page, "col-2")
+        assert file_name == "📁subdir"
+        _click_item(page, "col-2", "topic.md")
+        page.wait_for_timeout(700)
+        assert page.url.endswith(f"/f/{browser_root.name}/my-knowledge/docs/topic.md")
+
+        browser.close()
+
+
+@pytest.mark.integration
+def test_legacy_query_url_canonicalizes_after_nested_navigation(
+    live_server: str, browser_root: Path
+):
+    legacy_path = browser_root / "my-knowledge"
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1400, "height": 900})
+        page.goto(
+            f"{live_server}/f/?path={legacy_path}",
+            wait_until="networkidle",
+        )
+        page.wait_for_timeout(800)
+
         assert page.url.endswith(f"/f/{browser_root.name}/my-knowledge")
 
         _click_item(page, "col-1", "docs")
