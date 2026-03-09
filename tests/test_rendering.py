@@ -238,6 +238,26 @@ def test_href_for_md_file_uses_canonical_finder_path(tmp_path, monkeypatch):
     assert href == f"/f/{tmp_path.name}/page.md"
 
 
+def test_href_for_md_file_uses_canonical_finder_path_for_symlink_child(
+    tmp_path, monkeypatch
+):
+    """Markdown under a direct symlink child keeps the ROOT mount in finder URLs."""
+    import pykofinder.app as app_module
+
+    workspace = tmp_path / "workspace"
+    docs = workspace / "docs"
+    docs.mkdir(parents=True)
+    root = tmp_path / "menu"
+    root.mkdir()
+    (root / "my-knowledge").symlink_to(workspace, target_is_directory=True)
+    monkeypatch.setattr(app_module, "ROOT", root)
+
+    f = docs / "topic.md"
+    f.touch()
+    href = _href_for_file(f.resolve())
+    assert href == "/f/menu/my-knowledge/docs/topic.md"
+
+
 def test_href_for_other_file_uses_raw(tmp_path):
     """Non-.md files get /raw?path=... for direct byte serving."""
     f = tmp_path / "photo.png"
@@ -566,7 +586,9 @@ def test_arrow_left_updates_url_from_parent_selection():
     break_pos = COLUMN_JS.index("break;", left_pos)
     left_block = COLUMN_JS[left_pos:break_pos]
     assert "_capturePathStateFromLink" in left_block
-    assert "_syncUrl(leftState.path, leftState.vpath)" in left_block
+    assert (
+        "_syncUrl(leftState.path, leftState.vpath, leftState.finderUrl)" in left_block
+    )
 
 
 def test_arrow_left_at_root_resets_url():

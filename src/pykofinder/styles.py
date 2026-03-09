@@ -913,7 +913,7 @@ var _kbApplyFocus = function() {};
                             lsel.scrollIntoView({ block: 'nearest' });
                             var la = lsel.querySelector('a');
                             var leftState = _capturePathStateFromLink(la);
-                            _syncUrl(leftState.path, leftState.vpath);
+                            _syncUrl(leftState.path, leftState.vpath, leftState.finderUrl);
                         }
                         lc.scrollIntoView({ inline: 'nearest', block: 'nearest' });
                     }
