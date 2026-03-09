@@ -180,6 +180,21 @@ def test_finder_view_serves_shell_with_canonical_symlink_mount_path(
     assert "guide.md" in body
 
 
+def test_finder_url_prefers_root_mount_for_symlink_child_descendants(
+    tmp_path, monkeypatch
+):
+    """Paths reached through the visible ROOT tree keep the ROOT mount in canonical URLs."""
+    workspace = tmp_path / "workspace"
+    docs = workspace / "docs"
+    docs.mkdir(parents=True)
+    root = tmp_path / "menu"
+    root.mkdir()
+    (root / "my-knowledge").symlink_to(workspace, target_is_directory=True)
+    monkeypatch.setattr(app_module, "ROOT", root)
+
+    assert app_module._finder_url(docs.resolve()) == "/f/menu/my-knowledge/docs"
+
+
 def test_finder_view_query_path_redirects_to_canonical_mount_path(
     tmp_path, monkeypatch
 ):
