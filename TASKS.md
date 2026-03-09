@@ -27,6 +27,7 @@
 
 _Items without an issue number are not yet tracked in ISSUES.md._
 
+- [ ] #40 Web-mode bar missing when opening an HTML file via direct `/f/` URL
 - [ ] Pagination for large directories (> 500 entries)
 - [ ] Search/filter within a column
 - [ ] PPTX slide image rendering via LibreOffice (better fidelity than text extraction)
