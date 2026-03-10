@@ -52,21 +52,6 @@ When a direct `/f/` URL contains a hidden path segment (e.g. `.config/`) and the
 
 ---
 
-## #40 – Web-mode bar missing when opening an HTML file via direct `/f/` URL
-
-**Type:** bug
-**Status:** open
-
-When an HTML file is opened via a direct `/f/` URL (e.g. `http://gogo:8334/f/menu/paivi/mdtest.html`), the preview renders the source correctly but the `<div class=preview-webmode-bar>` "🌐 View as web page" link is absent. The bar appears correctly when the same file is reached by clicking through the column UI, indicating the preview route handles the two entry-points differently.
-
-**Planned fix / implementation sketch:**
-
-- Trace `preview.py` – find where `preview-webmode-bar` is injected and identify the condition that suppresses it on the direct-URL code path.
-- Ensure the web-mode bar is always emitted for `.html` files regardless of how the preview is invoked (direct `/f/` URL or column click).
-- Add a test in `tests/test_preview.py` that asserts the bar is present in the rendered output for an HTML file preview.
-
----
-
 ## #42 – Mobile preview pane too narrow; should fill >90 % of viewport with a column peek
 
 **Type:** UX
