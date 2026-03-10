@@ -27,8 +27,6 @@
 
 _Items without an issue number are not yet tracked in ISSUES.md._
 
-- [ ] #42 Mobile preview pane too narrow; should fill >90 % of viewport with a column peek
-- [ ] #41 Dotfile column appears empty when a hidden path segment is active in deep-link restore
 - [ ] Pagination for large directories (> 500 entries)
 - [ ] Search/filter within a column
 - [ ] PPTX slide image rendering via LibreOffice (better fidelity than text extraction)
@@ -37,6 +35,8 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 
 ## Done
 
+- [x] #42 Mobile preview pane fills 90 vw with `scroll-snap` column peek on narrow viewports
+- [x] #41 Dotfile column always shows selected entry – CSS override for `li.dotfile.selected`
 - [x] #40 Web-mode bar now emitted in `/restore` for `.html`/`.htm` files (was missing on direct `/f/` URL)
 - [x] #39 Canonical `/f/<mount>/<relative>` URLs + legacy `/f/?path=` fallback; align markdown links, browser history sync, VFS URLs, and `pykoclaw-pykofinder`
 - [x] #38 CORS on `/w/` – `Access-Control-Allow-Origin: *` + OPTIONS preflight
