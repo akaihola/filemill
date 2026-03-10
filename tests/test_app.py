@@ -621,6 +621,46 @@ def test_restore_vfs_with_row_vpath_renders_preview(tmp_path, monkeypatch):
     assert "preview-db-row" in html or "alpha" in html
 
 
+# ── #40 – webmode bar on direct /f/ URL ─────────────────────────────────────
+
+
+def test_restore_html_file_includes_webmode_bar(tmp_path, monkeypatch):
+    """Issue #40: /restore for an HTML file must include preview-webmode-bar.
+
+    Direct /f/ URL navigation triggers _deepNavigate → /restore to render the
+    preview pane.  The "🌐 View as web page" bar must appear there just as it
+    does when clicking through the column UI (the /click route).
+    """
+    from urllib.parse import quote
+    from starlette.testclient import TestClient
+
+    html_file = tmp_path / "page.html"
+    html_file.write_text("<html><body><h1>Hello</h1></body></html>")
+
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    c = TestClient(app_module.app, raise_server_exceptions=False)
+    resp = c.get(f"/restore?path={quote(str(html_file))}")
+
+    assert resp.status_code == 200
+    assert "preview-webmode-bar" in resp.text
+
+
+def test_restore_htm_file_includes_webmode_bar(tmp_path, monkeypatch):
+    """Issue #40: .htm extension must also get the webmode bar via /restore."""
+    from urllib.parse import quote
+    from starlette.testclient import TestClient
+
+    htm_file = tmp_path / "page.htm"
+    htm_file.write_text("<html><body>Hi</body></html>")
+
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    c = TestClient(app_module.app, raise_server_exceptions=False)
+    resp = c.get(f"/restore?path={quote(str(htm_file))}")
+
+    assert resp.status_code == 200
+    assert "preview-webmode-bar" in resp.text
+
+
 def test_restore_vfs_vpath_table_has_selected_on_table_entry(tmp_path, monkeypatch):
     """/restore with vpath=tablename must mark the table entry as selected in the column."""
     import sqlite3
