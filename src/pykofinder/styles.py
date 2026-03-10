@@ -330,6 +330,21 @@ body.zoomed #preview {
     box-sizing: border-box;
 }
 
+/* ── Mobile: preview dominates, columns peek from the right ─────────────── */
+@media (max-width: 700px) {
+    #finder {
+        scroll-snap-type: x mandatory;
+    }
+    .column {
+        scroll-snap-align: start;
+    }
+    #preview {
+        min-width: 90vw;
+        scroll-snap-align: end;
+        flex-shrink: 0;
+    }
+}
+
 """
     + f"""
 /* Pygments syntax highlighting */

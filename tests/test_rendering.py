@@ -787,3 +787,79 @@ def test_kb_apply_focus_exposed_for_deep_navigate():
     deep_end = COLUMN_JS.index("\n}", deep_pos)
     deep_block = COLUMN_JS[deep_pos:deep_end]
     assert "_kbApplyFocus" in deep_block
+
+
+# ── #42 Mobile preview – responsive CSS ───────────────────────────────────────
+
+
+def test_mobile_media_query_present():
+    """APP_CSS must contain a @media (max-width: 700px) rule for narrow viewports."""
+    from pykofinder.styles import APP_CSS
+
+    assert "@media (max-width: 700px)" in APP_CSS
+
+
+def test_mobile_preview_min_width_90vw():
+    """Inside the mobile media query, #preview must get min-width of at least 90vw."""
+    from pykofinder.styles import APP_CSS
+
+    mq_start = APP_CSS.index("@media (max-width: 700px)")
+    # Find the closing brace of the media query block (the outer one)
+    depth = 0
+    i = mq_start
+    while i < len(APP_CSS):
+        if APP_CSS[i] == "{":
+            depth += 1
+        elif APP_CSS[i] == "}":
+            depth -= 1
+            if depth == 0:
+                break
+        i += 1
+    mq_block = APP_CSS[mq_start : i + 1]
+    assert "#preview" in mq_block, "#preview rule missing from mobile media query"
+    assert "90vw" in mq_block, "90vw not found in mobile media query"
+    assert "min-width" in mq_block or "width" in mq_block, (
+        "Neither min-width nor width found for #preview in mobile media query"
+    )
+
+
+def test_mobile_scroll_snap_on_finder():
+    """Inside the mobile media query, #finder should have scroll-snap-type."""
+    from pykofinder.styles import APP_CSS
+
+    mq_start = APP_CSS.index("@media (max-width: 700px)")
+    depth = 0
+    i = mq_start
+    while i < len(APP_CSS):
+        if APP_CSS[i] == "{":
+            depth += 1
+        elif APP_CSS[i] == "}":
+            depth -= 1
+            if depth == 0:
+                break
+        i += 1
+    mq_block = APP_CSS[mq_start : i + 1]
+    assert "scroll-snap-type" in mq_block, (
+        "scroll-snap-type not found in mobile media query"
+    )
+
+
+def test_mobile_scroll_snap_align_on_column():
+    """Inside the mobile media query, .column should have scroll-snap-align: start."""
+    from pykofinder.styles import APP_CSS
+
+    mq_start = APP_CSS.index("@media (max-width: 700px)")
+    depth = 0
+    i = mq_start
+    while i < len(APP_CSS):
+        if APP_CSS[i] == "{":
+            depth += 1
+        elif APP_CSS[i] == "}":
+            depth -= 1
+            if depth == 0:
+                break
+        i += 1
+    mq_block = APP_CSS[mq_start : i + 1]
+    assert "scroll-snap-align" in mq_block, (
+        "scroll-snap-align not found in mobile media query"
+    )

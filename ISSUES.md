@@ -67,21 +67,6 @@ When an HTML file is opened via a direct `/f/` URL (e.g. `http://gogo:8334/f/men
 
 ---
 
-## #42 – Mobile preview pane too narrow; should fill >90 % of viewport with a column peek
-
-**Type:** UX
-**Status:** open
-
-On narrow mobile viewports, `#preview` receives only a fraction of the screen width (observed at less than 50 %) because the fixed-width directory columns (default 220 px each) consume most of the horizontal space before `flex: 1` stretches the preview into whatever remains. The desired behaviour is that whenever a preview is active on a narrow screen, the preview pane takes ≥ 90 % of viewport width with the rightmost directory column peeking in on the right, both when a document is reached by clicking through the column UI and when navigating directly to a `/f/` URL.
-
-**Planned fix / implementation sketch:**
-
-- Add a `@media (max-width: 700px)` (or similar breakpoint) block in `styles.py` (`CSS` constant) that overrides `#preview` with `min-width: 90vw` (or `width: 90vw; flex-shrink: 0`) so the pane dominates the horizontal scroll area.
-- Ensure `#finder` keeps `overflow-x: auto` (already set) so the user can still scroll left to reach the directory columns.
-- Consider adding `scroll-snap-type: x mandatory` on `#finder` with `scroll-snap-align: start` on `.column` and `scroll-snap-align: end` on `#preview` for a native swipe feel.
-- Verify the fix covers both entry points: interactive click (`/click` HTMX route) and deep-link restore (`/restore` + direct `/f/` URL).
-- Add tests in `tests/test_rendering.py` or `tests/test_app.py` asserting the mobile-override CSS rule is present in the rendered page.
-
 ## Open issues
 
 _No open issues at this time._
