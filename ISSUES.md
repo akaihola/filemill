@@ -36,6 +36,21 @@ git log -p -- ISSUES.md | grep -B 5 "^-## #34"
 
 ---
 
+## #43 – Mobile preview fills 100 % width; rightmost column peek needed as scroll hint
+
+**Type:** UX
+**Status:** open
+
+After #42, `#preview` is given `min-width: 90vw` on narrow viewports, but in practice it expands to fill the full available width, leaving no visible edge of the directory column to signal that the user can scroll left. The peek – a few pixels of the rightmost column visible on the right – is the essential affordance that makes the swipe gesture discoverable.
+
+**Planned fix / implementation sketch:**
+
+- Change the mobile media-query rule in `styles.py` from `min-width: 90vw` to a fixed `width: 90vw` (with `flex-shrink: 0` and `max-width: 90vw`) so the preview cannot grow past 90 % of the viewport regardless of content width.
+- Ensure `#finder` retains `overflow-x: auto` so the remaining 10 % column peek is reachable by scrolling.
+- Update the corresponding tests in `tests/test_rendering.py` that assert the mobile CSS values.
+
+---
+
 ## Open issues
 
 _No open issues at this time._
