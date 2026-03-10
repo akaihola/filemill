@@ -6,7 +6,14 @@ Add a new issue to this pykofinder project for: $ARGUMENTS
 
 Steps:
 
-1. Read `ISSUES.md` to find the current highest issue number and determine the next one.
+1. Determine the next issue number by taking the maximum of:
+   - The highest `## #N` number visible in the current `ISSUES.md`, and
+   - The highest number ever used in the full Git history of `ISSUES.md`:
+     ```bash
+     git log -p -- ISSUES.md | grep -oE '^\+## #[0-9]+' | grep -oE '[0-9]+' | sort -n | tail -1
+     ```
+     Add 1 to whichever is larger. This prevents reusing a number that was
+     assigned to a closed (and therefore pruned) issue.
 2. Read `TASKS.md` to understand the open backlog.
 3. Write a concise issue block and insert it into `ISSUES.md` just before the `## Open issues` heading, using this exact format:
 
