@@ -27,7 +27,6 @@
 
 _Items without an issue number are not yet tracked in ISSUES.md._
 
-- [ ] #42 Mobile preview pane too narrow; should fill >90 % of viewport with a column peek
 - [ ] #41 Dotfile column appears empty when a hidden path segment is active in deep-link restore
 - [ ] #40 Web-mode bar missing when opening an HTML file via direct `/f/` URL
 - [ ] Pagination for large directories (> 500 entries)
@@ -38,6 +37,7 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 
 ## Done
 
+- [x] #42 Mobile preview fills 90 vw with scroll-snap column peek; `@media (max-width: 700px)` in `styles.py`
 - [x] #39 Canonical `/f/<mount>/<relative>` URLs + legacy `/f/?path=` fallback; align markdown links, browser history sync, VFS URLs, and `pykoclaw-pykofinder`
 - [x] #38 CORS on `/w/` – `Access-Control-Allow-Origin: *` + OPTIONS preflight
 - [x] #37 Browser regression now uses the real keyboard-only survival flow
