@@ -27,6 +27,7 @@
 
 _Items without an issue number are not yet tracked in ISSUES.md._
 
+- [ ] #42 Mobile preview pane too narrow; should fill >90 % of viewport with a column peek
 - [ ] #41 Dotfile column appears empty when a hidden path segment is active in deep-link restore
 - [ ] #40 Web-mode bar missing when opening an HTML file via direct `/f/` URL
 - [ ] Pagination for large directories (> 500 entries)
