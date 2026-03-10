@@ -464,6 +464,15 @@ def restore(path: str, vpath: str = ""):
                 preview_html = (
                     f'<div class="preview-error">{html_lib.escape(str(e))}</div>'
                 )
+            # For HTML files prepend a "View as web page" button (mirrors /click)
+            if p.suffix.lower() in _HTML_EXTS:
+                web_url = _web_url(p)
+                if web_url:
+                    preview_html = (
+                        f'<div class="preview-webmode-bar">'
+                        f'<a href="{html_lib.escape(web_url)}" target="_blank"'
+                        f' rel="noopener noreferrer">🌐 View as web page</a></div>'
+                    ) + preview_html
 
     preview_cls = "" if preview_html else "preview-empty"
     preview_div = f'<div id="preview" class="{preview_cls}">{preview_html}</div>'
