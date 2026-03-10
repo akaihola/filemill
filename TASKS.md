@@ -29,7 +29,7 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 
 - [ ] #43 Mobile preview fills 100 % width; rightmost column peek needed as scroll hint
 - [ ] Pagination for large directories (> 500 entries)
-- [ ] Search/filter within a column
+- [ ] #44 ripgrep-based full-text search bar in `<nav>`
 - [ ] PPTX slide image rendering via LibreOffice (better fidelity than text extraction)
 
 ---
