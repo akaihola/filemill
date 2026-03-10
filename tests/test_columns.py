@@ -444,6 +444,7 @@ def test_list_column_dotfile_and_selected_has_both_classes(tmp_path):
 
 # ── #29 VFS URL sync – selected_vpath in list_vfs_column ──────────────────
 
+
 def test_list_vfs_column_selected_vpath_adds_selected_class():
     """Entry whose vpath matches selected_vpath must have class 'selected' on its <li>."""
     from pykofinder.columns import list_vfs_column
@@ -480,11 +481,35 @@ def test_list_vfs_column_no_selected_vpath_no_selected_class():
     entries = [
         VFSEntry(name="items", vpath="items", is_folder=True, icon="🗃️"),
     ]
-    html = list_vfs_column(
-        entries, "foo.db", "/abs/foo.db", "", col_index=0
-    ).__html__()
+    html = list_vfs_column(entries, "foo.db", "/abs/foo.db", "", col_index=0).__html__()
     # No <li> should carry the selected class
     assert 'class="selected"' not in html
+
+
+# ── #41 selected dotfile always visible (CSS override) ────────────────────────
+
+
+def test_selected_dotfile_dir_carries_both_classes(tmp_path):
+    """A dotfile *directory* that is the selected item must carry both 'dotfile'
+    and 'selected' CSS classes on its <li> even when dotfiles are normally hidden."""
+    dot_dir = tmp_path / ".config"
+    dot_dir.mkdir()
+    (tmp_path / "visible.txt").touch()
+    html = list_column(tmp_path, tmp_path, 0, selected_name=".config").__html__()
+    idx = html.index(".config")
+    li_start = html.rfind("<li", 0, idx)
+    li_end = html.find(">", li_start)
+    li_tag = html[li_start : li_end + 1]
+    assert "dotfile" in li_tag
+    assert "selected" in li_tag
+
+
+def test_app_css_shows_selected_dotfile_when_dotfiles_hidden():
+    """APP_CSS must override li.dotfile visibility for selected items so that a
+    selected dotfile entry is always visible even without the 'show-dotfiles' body class."""
+    from pykofinder.styles import APP_CSS
+
+    assert "li.dotfile.selected" in APP_CSS
 
 
 def test_list_vfs_column_row_level_selected_vpath():
