@@ -71,6 +71,11 @@ body.show-dotfiles .column li.dotfile {
 body.show-dotfiles .column li.dotfile > a {
     opacity: 0.65;
 }
+/* Always show the selected dotfile entry even when dotfiles are hidden
+   (e.g. deep-link restore to a hidden path segment). */
+body:not(.show-dotfiles) .column li.dotfile.selected {
+    display: list-item;
+}
 
 .bc-root, .bc-seg {
     font-weight: 500;
