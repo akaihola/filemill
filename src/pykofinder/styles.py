@@ -457,6 +457,15 @@ body.zoomed #preview {
 )
 
 COLUMN_JS = """
+// Workaround for Firefox Android not applying CSS on first direct load of a
+// /f/ URL: force a fresh page load with ?_=1, then clean the param from the
+// address bar on the reloaded page.  (#43)
+if (location.pathname.startsWith('/f/') && !location.search) {
+    location.replace(location.href + '?_=1');
+} else if (location.search === '?_=1') {
+    history.replaceState(null, '', location.pathname);
+}
+
 function _syncZoomBtn() {
     var btn = document.getElementById('zoom-btn');
     if (!btn) return;
