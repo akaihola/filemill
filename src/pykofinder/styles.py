@@ -13,12 +13,14 @@ body {
     margin: 0;
     overflow: hidden;
     height: 100vh;
+    height: 100dvh;
 }
 
 #app-shell {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
 }
 
@@ -624,7 +626,9 @@ document.addEventListener('htmx:afterSettle', function(e) {
     _syncDotBtn();
     _syncZoomBtn();
     var finder = document.getElementById('finder');
-    if (finder) finder.scrollLeft = finder.scrollWidth;
+    if (finder && e.detail.target && e.detail.target.id === 'preview') {
+        finder.scrollLeft = finder.scrollWidth;
+    }
     if (_pendingPath || _pendingFinderUrl) {
         _syncUrl(_pendingPath, _pendingVpath, _pendingFinderUrl);
         _pendingPath = null;
@@ -665,7 +669,10 @@ function _deepNavigate(fullPath, vpath) {
                 initZoomButton();
                 _kbApplyFocus();
                 var finder = document.getElementById('finder');
-                if (finder) finder.scrollLeft = finder.scrollWidth;
+                var previewEl = document.getElementById('preview');
+                if (finder && previewEl && previewEl.children.length > 0) {
+                    finder.scrollLeft = finder.scrollWidth;
+                }
             }
         })
         .catch(function() {});

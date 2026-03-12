@@ -21,6 +21,8 @@
 
 ## In progress
 
+- [x] #45 Mobile: column bottom clipped + directory nav scrolls to preview
+
 ---
 
 ## Open
