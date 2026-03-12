@@ -70,6 +70,37 @@ There is no way to search file contents from the UI; users must know where a fil
 
 ---
 
+## #45 – Mobile: column bottom clipped + directory nav scrolls to preview
+
+**Type:** bug
+**Status:** closed
+**Closed:** 2026-03-12
+
+Two related mobile UX regressions on narrow viewports:
+
+1. **Column bottom clipped** – `body` and `#app-shell` use `height: 100vh`. Mobile
+   browsers calculate `100vh` against the _large_ viewport (address bar hidden), so
+   when the address bar is visible the bottom of each column is hidden behind it and
+   cannot be scrolled to. Fix: add `height: 100dvh` (dynamic viewport height) after
+   the `100vh` fallback in both rules.
+
+2. **Directory nav scrolls to preview** – `htmx:afterSettle` unconditionally executes
+   `finder.scrollLeft = finder.scrollWidth`, which on mobile snaps the scroll-snap
+   container to the `#preview` pane after every HTMX settle – including after entering
+   a directory. Only opening a _file_ should scroll the view right to show the
+   preview; navigating into a _directory_ should keep the new directory column in view.
+   Same bug exists in `_deepNavigate`.
+
+**Planned fix:**
+
+- Add `height: 100dvh` to `body` and `#app-shell` CSS rules (after the `100vh` fallback).
+- Guard the `finder.scrollLeft = finder.scrollWidth` line in `htmx:afterSettle` with
+  `e.detail.target && e.detail.target.id === 'preview'`.
+- Guard the same line in `_deepNavigate` by checking that the preview element has child
+  nodes before scrolling.
+
+---
+
 ## Open issues
 
 _No open issues at this time._

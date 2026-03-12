@@ -863,3 +863,87 @@ def test_mobile_scroll_snap_align_on_column():
     assert "scroll-snap-align" in mq_block, (
         "scroll-snap-align not found in mobile media query"
     )
+
+
+# ── #45 Mobile: column bottom clipped + directory nav scrolls to preview ─────
+
+
+def test_mobile_viewport_uses_dvh():
+    """APP_CSS must use 100dvh for height so mobile address-bar does not clip columns.
+
+    On mobile browsers, 100vh is the 'large viewport' height (address bar hidden).
+    When the address bar is visible the bottom of each column is cut off and
+    unreachable.  100dvh (dynamic viewport height) adjusts in real time.
+    """
+    from pykofinder.styles import APP_CSS
+
+    assert "100dvh" in APP_CSS
+
+
+def test_body_dvh_follows_100vh_fallback():
+    """body rule must declare 100vh first, then 100dvh for progressive enhancement."""
+    from pykofinder.styles import APP_CSS
+
+    body_pos = APP_CSS.index("body {")
+    body_end = APP_CSS.index("}", body_pos)
+    body_block = APP_CSS[body_pos:body_end]
+    vh_pos = body_block.index("100vh")
+    dvh_pos = body_block.index("100dvh")
+    assert dvh_pos > vh_pos, "100dvh must appear after the 100vh fallback in body block"
+
+
+def test_app_shell_dvh_follows_100vh_fallback():
+    """#app-shell rule must declare 100vh first, then 100dvh."""
+    from pykofinder.styles import APP_CSS
+
+    shell_pos = APP_CSS.index("#app-shell {")
+    shell_end = APP_CSS.index("}", shell_pos)
+    shell_block = APP_CSS[shell_pos:shell_end]
+    vh_pos = shell_block.index("100vh")
+    dvh_pos = shell_block.index("100dvh")
+    assert dvh_pos > vh_pos, (
+        "100dvh must appear after the 100vh fallback in #app-shell block"
+    )
+
+
+def test_directory_nav_does_not_unconditionally_scroll_to_preview():
+    """afterSettle must only scroll to the preview when HTMX updated #preview.
+
+    On mobile with scroll-snap, unconditionally doing finder.scrollLeft =
+    finder.scrollWidth after every settle snaps the view to the preview pane
+    even when navigating to a directory.  Only file previews should scroll right.
+    """
+    from pykofinder.styles import COLUMN_JS
+
+    settle_pos = COLUMN_JS.index("htmx:afterSettle")
+    block_end = COLUMN_JS.index("});", settle_pos)
+    settle_block = COLUMN_JS[settle_pos:block_end]
+
+    # The scroll assignment must still exist …
+    assert "scrollLeft" in settle_block
+    assert "scrollWidth" in settle_block
+    # … but guarded by a check on e.detail.target being 'preview'
+    assert "detail.target" in settle_block
+    assert "'preview'" in settle_block or '"preview"' in settle_block
+
+
+def test_deep_navigate_scroll_conditional_on_preview_content():
+    """_deepNavigate must only scroll to preview if the restored page has file content.
+
+    After a deep-link restore for a *directory* path the preview pane is empty;
+    scrolling to scrollWidth would snap the view away from the directory columns.
+    """
+    from pykofinder.styles import COLUMN_JS
+
+    deep_pos = COLUMN_JS.index("function _deepNavigate")
+    deep_end = COLUMN_JS.index("\n}", deep_pos)
+    deep_block = COLUMN_JS[deep_pos:deep_end]
+
+    if "scrollLeft" in deep_block:
+        # Must be conditional on the preview having child nodes / content
+        assert (
+            "children" in deep_block
+            or "innerHTML" in deep_block
+            or "childNodes" in deep_block
+            or "firstChild" in deep_block
+        )
