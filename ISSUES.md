@@ -101,6 +101,190 @@ Two related mobile UX regressions on narrow viewports:
 
 ---
 
-## Open issues
+## #46 – Automatic dark mode following OS colour-scheme preference
 
-_No open issues at this time._
+**Type:** feature
+**Status:** open
+
+The UI is hardcoded to a light theme (`background: #f0f0f0`, white columns, dark text).
+Users whose OS is set to dark mode see a jarring white page.  Pykofinder should
+automatically switch to a dark palette when the browser reports
+`prefers-color-scheme: dark`.
+
+**Planned fix / implementation sketch:**
+
+- Define a dark colour palette as CSS custom properties on `:root` and override them
+  inside `@media (prefers-color-scheme: dark)` in `styles.py`.  Key surfaces to
+  retheme: `body` background, `#breadcrumb`, `.column` background/border,
+  `#preview` background, `.column li a` text/hover/selected colours, `.preview-md`
+  code/blockquote/table backgrounds, Pygments theme (switch to a dark-friendly
+  style such as `monokai` or `github-dark`).
+- Update `manifest.json` to set `"background_color"` and `"theme_color"` for
+  the dark variant (or use `"theme_color"` that works for both).
+- Add tests asserting that the `@media (prefers-color-scheme: dark)` block is
+  present in the emitted CSS and that it overrides the key custom properties.
+
+---
+
+## #47 – Column width & scrolling UX: jumps, long-name stretch, no left-scroll
+
+**Type:** bug / UX
+**Status:** open
+
+Three related column-width / scrolling problems on desktop:
+
+1. **Width jumps** – `recalcColumnWidth()` recalculates `--col-width` after every
+   HTMX settle, measuring the longest anchor across *all* columns.  When a new
+   column with a longer (or shorter) name appears, every column resizes at once,
+   causing a jarring "jump".
+
+2. **Single long filename stretches column** – a single entry with a very long name
+   (e.g. a 120-character filename) inflates the computed width for every column,
+   wasting horizontal space even though only one entry is that wide.
+
+3. **All columns stay visible** – `#finder` is `overflow-x: auto` but
+   `recalcColumnWidth` constrains each column so that all columns + preview fit in
+   the viewport.  The macOS Finder lets old columns scroll off the left edge of the
+   window; pykofinder should do the same.
+
+**Planned fix / implementation sketch:**
+
+- **Per-column width** – measure each column independently and set an inline
+  `style="width: Xpx"` (or a scoped CSS variable) instead of a single global
+  `--col-width`.  This confines a long filename's width impact to its own column.
+- **Max column width cap** – clamp each column to e.g. `min(measuredWidth, 360px)`
+  so one long name never makes a column absurdly wide.  Filenames beyond the cap
+  are truncated with `text-overflow: ellipsis` (already applied in CSS).
+- **Allow columns to scroll off-screen** – remove the
+  `available = window.innerWidth - PREVIEW_MIN` / `maxWidth = available / colCount`
+  logic that tries to fit everything on screen.  Let columns keep their natural
+  (capped) width and rely on `#finder { overflow-x: auto }` to scroll.  Auto-scroll
+  the newest column into view after each navigation (`scrollIntoView({ inline: 'end' })`).
+- **Smooth transitions (optional)** – add `transition: width 0.15s ease` on
+  `.column` to soften any remaining width changes.
+- Update `recalcColumnWidth` tests if any exist; add new tests asserting per-column
+  sizing and the max-width cap.
+
+---
+
+## #48 – Truncate filenames preserving the file extension
+
+**Type:** UX
+**Status:** open
+
+Long filenames are currently truncated with a plain CSS `text-overflow: ellipsis`,
+producing e.g. `very long filena...`.  The file extension – often the most important
+clue about a file's type – is hidden.  Filenames should be truncated as
+`very long fi...pdf` (or `very long fi….pdf`), keeping the last few characters
+(typically the dot + extension) always visible.
+
+**Planned fix / implementation sketch:**
+
+- In `columns.py`, split each filename into a stem and a suffix
+  (`Path.stem` / `Path.suffix`).  Emit the anchor content as two inline elements:
+  `<span class="fn-stem">{stem}</span><span class="fn-ext">{suffix}</span>`.
+- CSS: `.fn-stem` gets `overflow: hidden; text-overflow: ellipsis; min-width: 0;
+  flex-shrink: 1`.  `.fn-ext` gets `flex-shrink: 0; white-space: nowrap`.
+  Wrap both in a flex container (`display: inline-flex; max-width: 100%`) inside the
+  existing `<a>`.
+- Files with no extension (or names like `.gitignore`) render as a single span
+  with the current ellipsis behaviour.
+- Update `test_columns.py` to assert the two-span structure and that the extension
+  span is present for representative filenames.
+
+---
+
+## #49 – CSV preview shows "not yet implemented" stub
+
+**Type:** bug
+**Status:** open
+
+`csv_provider.py` returns a static `<em>CSV VFS not yet implemented.</em>` message
+for every `.csv` file.  Users see this instead of the file's actual content.
+
+**Planned fix / implementation sketch:**
+
+- In `CSVProvider.render_preview`, read the CSV with `csv.reader` (or
+  `csv.DictReader` for header detection).
+- For `fmt="spreadsheet"` (default), render an HTML `<table>` with the same
+  `.db-table` / `.preview-db-spreadsheet` CSS already used by the SQLite provider,
+  including sticky headers and pagination (`page` / `limit` params).
+- For `fmt="raw"`, fall back to the existing plain-text preview path (read file
+  bytes, render as `<pre class="preview-raw">`).
+- Implement `list_entries` to return one `VFSEntry` per row (like SQLite rows)
+  for the column-navigation mode.
+- Add tests in a new `tests/test_providers_csv.py`: round-trip a small CSV through
+  `render_preview` and assert table headers, row count, pagination, and the raw
+  fallback.
+
+---
+
+## #50 – ArrowRight after ArrowLeft loses previously focused item
+
+**Type:** bug
+**Status:** open
+
+Steps to reproduce:
+
+1. Navigate into a directory with the keyboard (ArrowRight).
+2. In the child column, move to an item other than the first (ArrowDown a few times).
+3. Press ArrowLeft to go back to the parent column.
+4. Press ArrowRight to re-enter the same directory.
+
+**Expected:** the previously highlighted item in the child column is re-selected.
+**Actual:** the first item in the column is selected.
+
+**Root cause:** the ArrowLeft handler in `COLUMN_JS` removes the focused column and
+all columns to its right from the DOM (`el.remove()`).  When ArrowRight triggers
+`triggerNav` → HTMX fetch → `htmx:afterSettle`, the column is rebuilt from scratch
+with no memory of the prior selection.  The `afterSettle` handler then runs
+`selectLi(items[0])` because `getSelectedLi(newCol)` is null.
+
+**Planned fix / implementation sketch:**
+
+- Maintain a `Map<colIndex, vpathOrName>` (or a plain object keyed by the parent
+  path) that records which entry was last selected in each column.
+- On every `selectLi` call (or in the click handler), write the selected entry's
+  identifier into this map.
+- When `htmx:afterSettle` detects a new column (`isNewCol`), look up the map for
+  that column's parent path.  If a match is found, highlight that item instead of
+  `items[0]`.
+- Clear map entries for columns that are pruned (ArrowLeft / prune script).
+  Only clear entries for columns *deeper* than the one being returned to, so the
+  immediate child's memory is preserved.
+
+---
+
+## #51 – PWA: start the Pykofinder HTTP service alongside the installed app
+
+**Type:** feature / research
+**Status:** open
+
+When pykofinder is installed as a PWA (Add to Home Screen), opening it navigates to
+`http://localhost:8334/f/` – but nothing ensures the server is actually running.
+If the user hasn't manually started `pykofinder` in a terminal, the PWA shows a
+connection-refused error.
+
+This is a fundamental limitation: a PWA is a browser sandbox and cannot spawn local
+processes.  Possible approaches (each with trade-offs):
+
+1. **System service (systemd / launchd)** – ship a `pykofinder.service` unit (Linux)
+   or a `launchd` plist (macOS) that auto-starts the server on login.  The PWA then
+   always finds a running server.  Downside: requires a one-time install step outside
+   the browser (`systemctl --user enable pykofinder`).
+
+2. **Desktop `.desktop` / `.app` launcher** – provide a launcher that starts the
+   server *and* opens the browser/PWA.  On Linux this is a `.desktop` file with
+   `Exec=pykofinder --open`; on macOS an Automator app or shell wrapper.  Not a
+   true "PWA starts the server" solution, but gives a single-click experience.
+
+3. **Electron / Tauri wrapper** – bundle the Python server inside a desktop app
+   shell that manages the process lifecycle.  Full native experience but a much
+   heavier packaging story.
+
+4. **Offline-capable service worker** – enhance `sw.js` to cache the UI shell and
+   show a friendly "server not running – start it with `pykofinder`" message instead
+   of a raw browser error.  Doesn't solve the problem but improves the failure mode.
+
+**Next step:** decide which approach (or combination) to pursue; file a follow-up
+issue for the chosen implementation.
