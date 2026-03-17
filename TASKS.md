@@ -39,6 +39,8 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 - [ ] #51 PWA: start the Pykofinder HTTP service alongside the installed app
 - [ ] Pagination for large directories (> 500 entries)
 - [ ] PPTX slide image rendering via LibreOffice (better fidelity than text extraction)
+- [ ] #46 Markdown raw source view toggle (Rendered / Raw button bar, `MarkdownProvider`)
+- [ ] #47 VTT subtitle file preview (Transcript / Raw toggle, `VTTProvider`)
 
 ---
 
