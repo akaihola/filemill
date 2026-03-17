@@ -33,6 +33,8 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 - [ ] Pagination for large directories (> 500 entries)
 - [ ] #44 ripgrep-based full-text search bar in `<nav>`
 - [ ] PPTX slide image rendering via LibreOffice (better fidelity than text extraction)
+- [ ] #46 Markdown raw source view toggle (Rendered / Raw button bar, `MarkdownProvider`)
+- [ ] #47 VTT subtitle file preview (Transcript / Raw toggle, `VTTProvider`)
 
 ---
 
