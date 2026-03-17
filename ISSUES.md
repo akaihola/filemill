@@ -288,3 +288,68 @@ processes.  Possible approaches (each with trade-offs):
 
 **Next step:** decide which approach (or combination) to pursue; file a follow-up
 issue for the chosen implementation.
+
+---
+
+## #52 – Markdown raw source view toggle
+
+**Type:** feature
+**Status:** open
+
+Markdown files are always shown rendered. Add a **Rendered / Raw** toggle button bar —
+analogous to the JSON formatted/raw toggle — so the user can inspect the raw `.md` source
+without leaving pykofinder.
+
+**Planned fix / implementation sketch:**
+
+- Add `providers/markdown_provider.py` with a `MarkdownProvider` class implementing the
+  `VFSProvider` protocol. `default_fmt` returns `"rendered"`. `list_entries` returns `[]`
+  (markdown is a leaf node). `render_preview(fmt="raw")` returns
+  `<pre class="preview-raw">` with HTML-escaped source; `fmt="rendered"` delegates to the
+  existing `render_markdown()` pipeline in `rendering.py`.
+- Register `MarkdownProvider` in the VFS `REGISTRY` in `vfs.py` (alongside `JSONProvider`
+  and `CSVProvider`).
+- The format-toggle bar (`show_fmt_bar=True` in `list_vfs_column()`) and localStorage
+  persistence (`vfmt_type_.md`) are handled automatically by existing machinery in
+  `columns.py` and `styles.py` — no new JS or CSS needed.
+- Button labels: `📄 Rendered` (`data-fmt="rendered"`) and `📝 Raw` (`data-fmt="raw"`).
+- Tests: `tests/test_providers.py` — assert rendered output contains `<p>` tags, assert
+  raw output is a `<pre>` containing the literal source text.
+
+**Tracked in pykoclaw backlog:** `pykofinder-markdown-raw-toggle`
+
+---
+
+## #53 – VTT subtitle file preview (Transcript / Raw toggle)
+
+**Type:** feature
+**Status:** open
+
+`.vtt` (WebVTT) subtitle files fall through to the plain `<pre>` text fallback. Add a
+`VTTProvider` with a clean **Transcript** view (timestamps stripped, cues joined into
+readable paragraphs) as the default, and a **Raw** toggle for the source — same pattern
+as #52 (Markdown) and the JSON formatted/raw toggle.
+
+**Planned fix / implementation sketch:**
+
+- Add `providers/vtt_provider.py` with `VTTProvider`. `default_fmt` returns `"transcript"`.
+  `list_entries` returns `[]` (leaf node). `render_preview(fmt="transcript")` parses cue
+  blocks via regex (split on blank lines, skip `WEBVTT`/`NOTE`/`STYLE` headers and
+  timestamp lines, strip inline `<c>` / `<00:…>` tags), emits `<div class="preview-transcript">`
+  with `<p>` per cue (or per merged short-cue group). If `<v Speaker>` voice spans are
+  detected, emit `<strong>Speaker:</strong>` labels. `render_preview(fmt="raw")` returns
+  `<pre class="preview-raw">` with HTML-escaped source.
+- Register `VTTProvider` in the VFS `REGISTRY` in `vfs.py`.
+- Add `.preview-transcript` CSS rule to `styles.py` (padding, line-height, `overflow-y: auto`).
+- Format-toggle bar: `📜 Transcript` / `📝 Raw` — existing `.fmt-bar` machinery and
+  `vfmt_type_.vtt` localStorage key handle persistence automatically.
+- Tests in `tests/test_providers.py`: transcript strips timestamps and inline tags, raw
+  passthrough, speaker label extraction, empty-cue and malformed-header edge cases.
+
+**Tracked in pykoclaw backlog:** `pykofinder-vtt-preview`
+
+---
+
+## Open issues
+
+_Items above are all currently open._
