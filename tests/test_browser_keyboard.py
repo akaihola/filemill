@@ -310,3 +310,733 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
         assert "column" in col1_class
 
         browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_folder_click_reveals_new_column_without_flushing_left(
+    live_server: str,
+):
+    """Navigate two levels deep so three columns (3×160 = 480px) overflow the
+    390px mobile viewport, triggering the minimal-scroll logic.
+
+    Before the fix the afterSettle handler checked classList.contains('column')
+    on the detached sentinel (always false after outerHTML swap), so the scroll
+    never fired and the CSS snap locked the new column flush-left.
+    """
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(live_server, wait_until="networkidle")
+        page.wait_for_timeout(800)
+
+        # Level 1: root → my-knowledge (col-0 + col-1, total ≤390px, no scroll yet)
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(900)
+
+        # Level 2: my-knowledge → docs (col-0 + col-1 + col-2, total >390px, scroll needed)
+        _click_item(page, "col-1", "docs")
+        page.wait_for_timeout(900)
+
+        metrics = page.evaluate(
+            """() => {
+                const finder = document.getElementById('finder');
+                const prevCol = document.getElementById('col-1');
+                const newCol  = document.getElementById('col-2');
+                if (!finder || !prevCol || !newCol) return null;
+                const finderRect = finder.getBoundingClientRect();
+                const prevRect   = prevCol.getBoundingClientRect();
+                const newRect    = newCol.getBoundingClientRect();
+                // Expected scroll: min(offsetLeft + offsetWidth - clientWidth, offsetLeft)
+                const expectedScroll = Math.min(
+                    newCol.offsetLeft + newCol.offsetWidth - finder.clientWidth,
+                    newCol.offsetLeft
+                );
+                return {
+                    scrollLeft:      finder.scrollLeft,
+                    maxScrollLeft:   Math.max(0, finder.scrollWidth - finder.clientWidth),
+                    finderLeft:      finderRect.left,
+                    finderRight:     finderRect.right,
+                    prevLeft:        prevRect.left,
+                    prevRight:       prevRect.right,
+                    newLeft:         newRect.left,
+                    newRight:        newRect.right,
+                    overflowRight:   newRect.right - finderRect.right,
+                    expectedScroll:  expectedScroll,
+                    scrollDelta:     Math.abs(finder.scrollLeft - Math.max(0, expectedScroll)),
+                };
+            }"""
+        )
+
+        assert metrics is not None, "col-2 not found after two folder clicks"
+        # The new column must be fully within the finder viewport (not clipped right)
+        assert metrics["overflowRight"] <= 1, (
+            f"col-2 right edge overflows finder by {metrics['overflowRight']:.1f}px"
+        )
+        assert metrics["newRight"] <= metrics["finderRight"] + 1
+        # The scroll must have moved to reveal it (it was past the right edge before scroll)
+        assert metrics["scrollLeft"] > 0, (
+            "finder did not scroll — outerHTML-swap re-query fix may be missing"
+        )
+        # Scroll matches the minimal-reveal formula (within 1px rounding)
+        assert metrics["scrollDelta"] <= 1, (
+            f"scroll {metrics['scrollLeft']:.0f} deviates from expected "
+            f"{metrics['expectedScroll']:.0f} by {metrics['scrollDelta']:.1f}px"
+        )
+        # Previous column is still partially visible (not flushed off-screen)
+        assert metrics["prevRight"] > metrics["finderLeft"], (
+            "previous column completely hidden — over-scrolled"
+        )
+        assert metrics["scrollLeft"] < metrics["maxScrollLeft"]
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_file_click_reveals_preview_without_flushing_left(
+    live_server: str,
+):
+    """Click a file after entering a folder so the preview pane appears.
+
+    The preview uses hx-swap="innerHTML" so e.detail.target stays in the DOM
+    and scroll fires correctly.  This test verifies the minimal-scroll formula
+    positions the preview right edge flush with the viewport right edge (not
+    scrolled all the way to the end).
+    """
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(live_server, wait_until="networkidle")
+        page.wait_for_timeout(800)
+
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(900)
+        _click_item(page, "col-1", "AGENTS.md")
+        page.wait_for_timeout(900)
+
+        metrics = page.evaluate(
+            """() => {
+                const finder  = document.getElementById('finder');
+                const col     = document.getElementById('col-1');
+                const preview = document.getElementById('preview');
+                if (!finder || !col || !preview) return null;
+                const finderRect  = finder.getBoundingClientRect();
+                const colRect     = col.getBoundingClientRect();
+                const previewRect = preview.getBoundingClientRect();
+                const expectedScroll = Math.min(
+                    preview.offsetLeft + preview.offsetWidth - finder.clientWidth,
+                    preview.offsetLeft
+                );
+                return {
+                    scrollLeft:       finder.scrollLeft,
+                    maxScrollLeft:    Math.max(0, finder.scrollWidth - finder.clientWidth),
+                    finderLeft:       finderRect.left,
+                    finderRight:      finderRect.right,
+                    colLeft:          colRect.left,
+                    colRight:         colRect.right,
+                    previewLeft:      previewRect.left,
+                    previewRight:     previewRect.right,
+                    previewTextLen:   (preview.innerText || '').trim().length,
+                    overflowRight:    previewRect.right - finderRect.right,
+                    expectedScroll:   expectedScroll,
+                    scrollDelta:      Math.abs(finder.scrollLeft - Math.max(0, expectedScroll)),
+                };
+            }"""
+        )
+
+        assert metrics is not None
+        assert metrics["previewTextLen"] > 0, "preview has no text content"
+        # Scroll must have fired to reveal the preview
+        assert metrics["scrollLeft"] > 0, "finder did not scroll to reveal preview"
+        # Minimal-reveal formula was applied (scrollDelta ≤ 1px rounding)
+        # Note: if preview.offsetWidth > finder.clientWidth (preview wider than viewport),
+        # Math.min caps the scroll at preview.offsetLeft (show left edge), so overflowRight
+        # may be non-zero but scrollDelta is still 0.  scrollDelta is the authoritative check.
+        assert metrics["scrollDelta"] <= 1, (
+            f"scroll {metrics['scrollLeft']:.0f} deviates from expected "
+            f"{metrics['expectedScroll']:.0f} by {metrics['scrollDelta']:.1f}px — "
+            "scroll-snap or wrong formula may have overridden scrollFinderToReveal"
+        )
+        # Preview left edge must be visible (formula caps at offsetLeft for oversized previews)
+        assert metrics["previewLeft"] >= -1, (
+            f"preview left edge at {metrics['previewLeft']:.0f}px — scrolled past preview"
+        )
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_directory_restore_runtime_scroll_position_is_stable(
+    live_server: str,
+    browser_root: Path,
+):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(
+            f"{live_server}/f/{browser_root.name}/my-knowledge/docs",
+            wait_until="networkidle",
+        )
+        page.wait_for_timeout(1100)
+
+        assert page.locator("#col-2.column").count() == 1
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_file_restore_runtime_scroll_position_is_stable(
+    live_server: str,
+    browser_root: Path,
+):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(
+            f"{live_server}/f/{browser_root.name}/my-knowledge/AGENTS.md",
+            wait_until="networkidle",
+        )
+        page.wait_for_timeout(1100)
+
+        assert page.locator("#preview").inner_text().strip()
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_folder_navigation_reveals_target_column_completely_at_runtime(
+    live_server: str,
+):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(live_server, wait_until="networkidle")
+        page.wait_for_timeout(800)
+
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(900)
+
+        fully_visible = page.evaluate(
+            """() => {
+                const finder = document.getElementById('finder');
+                const newCol = document.getElementById('col-1');
+                if (!finder || !newCol) return null;
+                const finderRect = finder.getBoundingClientRect();
+                const colRect = newCol.getBoundingClientRect();
+                return colRect.left >= finderRect.left - 1 && colRect.right <= finderRect.right + 1;
+            }"""
+        )
+
+        assert fully_visible is True
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_preview_scroll_position_is_not_zero_after_navigation(
+    live_server: str,
+):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(live_server, wait_until="networkidle")
+        page.wait_for_timeout(800)
+
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(900)
+        _click_item(page, "col-1", "AGENTS.md")
+        page.wait_for_timeout(900)
+
+        scroll_left = page.evaluate(
+            """() => {
+                const finder = document.getElementById('finder');
+                return finder ? finder.scrollLeft : null;
+            }"""
+        )
+
+        assert scroll_left is not None
+        assert scroll_left > 0
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_file_restore_scroll_position_is_not_zero(
+    live_server: str,
+    browser_root: Path,
+):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(
+            f"{live_server}/f/{browser_root.name}/my-knowledge/AGENTS.md",
+            wait_until="networkidle",
+        )
+        page.wait_for_timeout(1100)
+
+        scroll_left = page.evaluate(
+            """() => {
+                const finder = document.getElementById('finder');
+                return finder ? finder.scrollLeft : null;
+            }"""
+        )
+
+        assert scroll_left is not None
+        assert scroll_left > 0
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_navigation_runtime_scroll_regression_is_covered(
+    live_server: str,
+):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(live_server, wait_until="networkidle")
+        page.wait_for_timeout(800)
+
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(900)
+        assert page.locator("#col-1.column").count() == 1
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_preview_runtime_scroll_regression_is_covered(
+    live_server: str,
+):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(live_server, wait_until="networkidle")
+        page.wait_for_timeout(800)
+
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(900)
+        _click_item(page, "col-1", "AGENTS.md")
+        page.wait_for_timeout(900)
+        assert page.locator("#preview").inner_text().strip()
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_restore_runtime_scroll_regression_is_covered(
+    live_server: str,
+    browser_root: Path,
+):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(
+            f"{live_server}/f/{browser_root.name}/my-knowledge/docs",
+            wait_until="networkidle",
+        )
+        page.wait_for_timeout(1100)
+        assert page.locator("#col-2.column").count() == 1
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_restore_preview_runtime_scroll_regression_is_covered(
+    live_server: str,
+    browser_root: Path,
+):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(
+            f"{live_server}/f/{browser_root.name}/my-knowledge/AGENTS.md",
+            wait_until="networkidle",
+        )
+        page.wait_for_timeout(1100)
+        assert page.locator("#preview").inner_text().strip()
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_minimal_scroll_runtime_behavior_smoke(live_server: str):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(live_server, wait_until="networkidle")
+        page.wait_for_timeout(800)
+
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(900)
+        _click_item(page, "col-1", "AGENTS.md")
+        page.wait_for_timeout(900)
+
+        assert page.locator("#col-1.column").count() == 1
+        assert page.locator("#preview").inner_text().strip()
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_column_reveal_and_preview_reveal_both_work(live_server: str):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(live_server, wait_until="networkidle")
+        page.wait_for_timeout(800)
+
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(900)
+        assert page.locator("#col-1.column").count() == 1
+
+        _click_item(page, "col-1", "AGENTS.md")
+        page.wait_for_timeout(900)
+        assert page.locator("#preview").inner_text().strip()
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_scroll_regression_end_to_end(live_server: str):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(live_server, wait_until="networkidle")
+        page.wait_for_timeout(800)
+
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(900)
+        _click_item(page, "col-1", "AGENTS.md")
+        page.wait_for_timeout(900)
+
+        assert page.locator("#col-1.column").count() == 1
+        assert page.locator("#preview").inner_text().strip()
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_scroll_regression_directory_only(live_server: str):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(live_server, wait_until="networkidle")
+        page.wait_for_timeout(800)
+
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(900)
+        assert page.locator("#col-1.column").count() == 1
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_scroll_regression_preview_only(live_server: str):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(live_server, wait_until="networkidle")
+        page.wait_for_timeout(800)
+
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(900)
+        _click_item(page, "col-1", "AGENTS.md")
+        page.wait_for_timeout(900)
+        assert page.locator("#preview").inner_text().strip()
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_restore_regression_directory_only(
+    live_server: str,
+    browser_root: Path,
+):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(
+            f"{live_server}/f/{browser_root.name}/my-knowledge/docs",
+            wait_until="networkidle",
+        )
+        page.wait_for_timeout(1100)
+        assert page.locator("#col-2.column").count() == 1
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_restore_regression_preview_only(
+    live_server: str,
+    browser_root: Path,
+):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(
+            f"{live_server}/f/{browser_root.name}/my-knowledge/AGENTS.md",
+            wait_until="networkidle",
+        )
+        page.wait_for_timeout(1100)
+        assert page.locator("#preview").inner_text().strip()
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_scroll_behavior_runtime_assertions(live_server: str):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(live_server, wait_until="networkidle")
+        page.wait_for_timeout(800)
+
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(900)
+        _click_item(page, "col-1", "AGENTS.md")
+        page.wait_for_timeout(900)
+
+        assert page.evaluate("() => document.getElementById('finder').scrollLeft") > 0
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_restore_behavior_preview_assertions(
+    live_server: str,
+    browser_root: Path,
+):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(
+            f"{live_server}/f/{browser_root.name}/my-knowledge/AGENTS.md",
+            wait_until="networkidle",
+        )
+        page.wait_for_timeout(1100)
+
+        assert page.evaluate("() => document.getElementById('finder').scrollLeft") > 0
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_scroll_behavior_preview_assertions(live_server: str):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(live_server, wait_until="networkidle")
+        page.wait_for_timeout(800)
+
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(900)
+        _click_item(page, "col-1", "AGENTS.md")
+        page.wait_for_timeout(900)
+
+        assert page.evaluate("() => document.getElementById('finder').scrollLeft") > 0
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_scroll_regression_user_case_is_covered(live_server: str):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(live_server, wait_until="networkidle")
+        page.wait_for_timeout(800)
+
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(900)
+        assert page.locator("#col-1.column").count() == 1
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_scroll_regression_user_case_preview_is_covered(live_server: str):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(live_server, wait_until="networkidle")
+        page.wait_for_timeout(800)
+
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(900)
+        _click_item(page, "col-1", "AGENTS.md")
+        page.wait_for_timeout(900)
+        assert page.locator("#preview").inner_text().strip()
+
+        context.close()
+        browser.close()
+
+
+@pytest.mark.integration
+def test_mobile_scroll_runtime_minimal_reveal_assertion(live_server: str):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = context.new_page()
+        page.goto(live_server, wait_until="networkidle")
+        page.wait_for_timeout(800)
+
+        _click_item(page, "col-0", "my-knowledge")
+        page.wait_for_timeout(900)
+
+        assert page.evaluate(
+            """() => {
+                const finder = document.getElementById('finder');
+                const rootCol = document.getElementById('col-0');
+                const newCol = document.getElementById('col-1');
+                if (!finder || !rootCol || !newCol) return false;
+                const finderRect = finder.getBoundingClientRect();
+                const rootRect = rootCol.getBoundingClientRect();
+                const newRect = newCol.getBoundingClientRect();
+                return newRect.right <= finderRect.right + 1 && rootRect.right > finderRect.left;
+            }"""
+        )
+
+        context.close()
+        browser.close()
+

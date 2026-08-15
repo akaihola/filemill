@@ -823,8 +823,15 @@ def test_mobile_preview_min_width_90vw():
     )
 
 
-def test_mobile_scroll_snap_on_finder():
-    """Inside the mobile media query, #finder should have scroll-snap-type."""
+def test_mobile_no_scroll_snap_on_finder():
+    """Inside the mobile media query, #finder must NOT have scroll-snap-type.
+
+    scroll-snap-type: x mandatory causes the browser to override our JS
+    scrollTo() call and snap to the nearest column left edge, producing
+    the exact flush-left behaviour we are trying to fix.  The scroll-snap
+    declarations have been intentionally removed so that scrollFinderToReveal
+    can position the viewport with minimal-reveal precision.
+    """
     from pykofinder.styles import APP_CSS
 
     mq_start = APP_CSS.index("@media (max-width: 700px)")
@@ -839,13 +846,17 @@ def test_mobile_scroll_snap_on_finder():
                 break
         i += 1
     mq_block = APP_CSS[mq_start : i + 1]
-    assert "scroll-snap-type" in mq_block, (
-        "scroll-snap-type not found in mobile media query"
+    assert "scroll-snap-type" not in mq_block, (
+        "scroll-snap-type found in mobile media query — it overrides JS minimal-reveal scroll"
     )
 
 
-def test_mobile_scroll_snap_align_on_column():
-    """Inside the mobile media query, .column should have scroll-snap-align: start."""
+def test_mobile_no_scroll_snap_align_on_column():
+    """Inside the mobile media query, .column must NOT have scroll-snap-align.
+
+    scroll-snap-align: start snaps programmatic scrollTo() calls to column
+    left edges, producing the flush-left over-scroll bug.  Intentionally removed.
+    """
     from pykofinder.styles import APP_CSS
 
     mq_start = APP_CSS.index("@media (max-width: 700px)")
@@ -860,8 +871,8 @@ def test_mobile_scroll_snap_align_on_column():
                 break
         i += 1
     mq_block = APP_CSS[mq_start : i + 1]
-    assert "scroll-snap-align" in mq_block, (
-        "scroll-snap-align not found in mobile media query"
+    assert "scroll-snap-align" not in mq_block, (
+        "scroll-snap-align found in mobile media query — it overrides JS minimal-reveal scroll"
     )
 
 
@@ -919,12 +930,13 @@ def test_directory_nav_does_not_unconditionally_scroll_to_preview():
     block_end = COLUMN_JS.index("});", settle_pos)
     settle_block = COLUMN_JS[settle_pos:block_end]
 
-    # The scroll assignment must still exist …
-    assert "scrollLeft" in settle_block
-    assert "scrollWidth" in settle_block
+    # The settle handler must still perform horizontal scrolling …
+    assert "scrollFinderToReveal" in settle_block
     # … but guarded by a check on e.detail.target being 'preview'
     assert "detail.target" in settle_block
     assert "'preview'" in settle_block or '"preview"' in settle_block
+    assert "classList.contains('column')" in settle_block
+    assert "finder.scrollLeft = finder.scrollWidth" not in settle_block
 
 
 def test_deep_navigate_scroll_conditional_on_preview_content():
@@ -939,11 +951,145 @@ def test_deep_navigate_scroll_conditional_on_preview_content():
     deep_end = COLUMN_JS.index("\n}", deep_pos)
     deep_block = COLUMN_JS[deep_pos:deep_end]
 
-    if "scrollLeft" in deep_block:
-        # Must be conditional on the preview having child nodes / content
-        assert (
-            "children" in deep_block
-            or "innerHTML" in deep_block
-            or "childNodes" in deep_block
-            or "firstChild" in deep_block
-        )
+    assert "previewEl.children.length > 0" in deep_block
+    assert "scrollFinderToReveal(previewEl, 'auto')" in deep_block
+
+
+
+# ── Mobile scroll helper – focused regression suite ──────────────────────────
+# These tests guard the two bugs fixed in the mobile scroll helper:
+#   Bug 1: afterSettle used classList.contains('column') on the detached
+#           sentinel after outerHTML swap → scroll never fired for folder clicks.
+#   Bug 2: Math.max(nextLeft, minLeft) caused flush-left over-scroll instead of
+#           the correct Math.min(rightEdgeFit, leftEdgeCap) minimal-reveal.
+
+
+def _helper_block():
+    from pykofinder.styles import COLUMN_JS
+    pos = COLUMN_JS.index("function scrollFinderToReveal")
+    end = COLUMN_JS.index("\n}\n\ndocument.addEventListener('htmx:afterSettle'", pos)
+    return COLUMN_JS[pos:end]
+
+
+def _settle_block():
+    from pykofinder.styles import COLUMN_JS
+    pos = COLUMN_JS.index("document.addEventListener('htmx:afterSettle'")
+    end = COLUMN_JS.index("});", pos)
+    return COLUMN_JS[pos:end]
+
+
+def _deep_block():
+    from pykofinder.styles import COLUMN_JS
+    pos = COLUMN_JS.index("function _deepNavigate")
+    end = COLUMN_JS.index("\n}", pos)
+    return COLUMN_JS[pos:end]
+
+
+# --- Formula correctness -------------------------------------------------------
+
+def test_scroll_helper_uses_min_formula_for_right_edge_reveal():
+    """Minimal scroll: right-edge-fit capped by left-edge-cap via Math.min."""
+    h = _helper_block()
+    assert "Math.min(" in h
+    assert "el.offsetLeft + el.offsetWidth - finder.clientWidth" in h
+    assert "el.offsetLeft" in h
+
+
+def test_scroll_helper_no_max_flush_left_formula():
+    """Math.max(nextLeft, minLeft) caused flush-left — must not be present."""
+    h = _helper_block()
+    assert "Math.max(nextLeft, minLeft)" not in h
+    assert "Math.max(nextLeft, leftCap)" not in h
+
+
+def test_scroll_helper_uses_offset_geometry_not_rects():
+    """Uses offsetLeft/offsetWidth (scroll-container coords) not getBoundingClientRect."""
+    h = _helper_block()
+    assert "offsetLeft" in h
+    assert "offsetWidth" in h
+    assert "getBoundingClientRect" not in h
+
+
+def test_scroll_helper_clamps_to_scroll_bounds():
+    """Clamps the computed target to the valid [0, maxScrollLeft] range."""
+    h = _helper_block()
+    assert "finder.scrollWidth - finder.clientWidth" in h
+    assert "Math.max(0, Math.min(nextLeft, maxLeft))" in h
+
+
+def test_scroll_helper_noop_guard_present():
+    """Skips scrollTo when the target is already correct (< 1px delta)."""
+    h = _helper_block()
+    assert "Math.abs(nextLeft - finder.scrollLeft) < 1" in h
+
+
+def test_scroll_helper_calls_scrollto_once():
+    """Exactly one scrollTo call per invocation."""
+    h = _helper_block()
+    assert h.count("scrollTo(") == 1
+
+
+def test_scroll_helper_behavior_parameter_defaults_to_smooth():
+    h = _helper_block()
+    assert "behavior || 'smooth'" in h
+
+
+def test_scroll_helper_no_scrollwidth_jump():
+    """The old 'finder.scrollLeft = finder.scrollWidth' must never appear."""
+    from pykofinder.styles import COLUMN_JS
+    assert "finder.scrollLeft = finder.scrollWidth" not in COLUMN_JS
+
+
+# --- afterSettle routing -------------------------------------------------------
+
+def test_aftersettle_re_queries_column_by_id_after_outerhtml_swap():
+    """Bug fix: outerHTML swap detaches the sentinel; must re-query by ID."""
+    s = _settle_block()
+    assert "/^col-\\d+$/.test(e.detail.target.id)" in s
+    assert "document.getElementById(e.detail.target.id)" in s
+    assert "newCol.classList.contains('column')" in s
+
+
+def test_aftersettle_preview_branch_uses_target_directly():
+    """innerHTML swap keeps #preview in DOM so e.detail.target is valid."""
+    s = _settle_block()
+    assert "e.detail.target.id === 'preview'" in s
+    assert "scrollFinderToReveal(e.detail.target, 'smooth')" in s
+
+
+def test_aftersettle_no_classlist_contains_column_on_target():
+    """Old check (on detached sentinel) must be gone."""
+    s = _settle_block()
+    assert "e.detail.target.classList" not in s
+
+
+def test_aftersettle_no_scrollwidth_jump():
+    s = _settle_block()
+    assert "finder.scrollLeft = finder.scrollWidth" not in s
+
+
+# --- deep-link restore ---------------------------------------------------------
+
+def test_deep_navigate_reveals_preview_when_content_present():
+    d = _deep_block()
+    assert "previewEl.children.length > 0" in d
+    assert "scrollFinderToReveal(previewEl, 'auto')" in d
+
+
+def test_deep_navigate_reveals_last_column_for_directory_restore():
+    d = _deep_block()
+    assert "scrollFinderToReveal(cols[cols.length - 1], 'auto')" in d
+
+
+def test_deep_navigate_no_scrollwidth_jump():
+    d = _deep_block()
+    assert "finder.scrollLeft = finder.scrollWidth" not in d
+
+
+# --- callsite census -----------------------------------------------------------
+
+def test_scroll_helper_callsite_count():
+    """One definition, five call sites (2 afterSettle + preview/col restore)."""
+    from pykofinder.styles import COLUMN_JS
+    assert COLUMN_JS.count("function scrollFinderToReveal") == 1
+    assert COLUMN_JS.count("scrollFinderToReveal(") == 5
