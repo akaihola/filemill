@@ -339,15 +339,8 @@ body.zoomed #preview {
 
 /* ── Mobile: preview dominates, columns peek from the right ─────────────── */
 @media (max-width: 700px) {
-    #finder {
-        scroll-snap-type: x mandatory;
-    }
-    .column {
-        scroll-snap-align: start;
-    }
     #preview {
         min-width: 90vw;
-        scroll-snap-align: end;
         flex-shrink: 0;
     }
 }
@@ -621,13 +614,37 @@ function initDotfilesToggle() {
     _syncDotBtn();
 }
 
+function scrollFinderToReveal(el, behavior) {
+    var finder = document.getElementById('finder');
+    if (!finder || !el) return;
+    // Scroll the minimum amount so el's right edge is visible, while never
+    // scrolling past el's left edge (for elements wider than the viewport
+    // we prefer showing the left edge).
+    var nextLeft = Math.min(
+        el.offsetLeft + el.offsetWidth - finder.clientWidth,
+        el.offsetLeft
+    );
+    var maxLeft = Math.max(0, finder.scrollWidth - finder.clientWidth);
+    nextLeft = Math.max(0, Math.min(nextLeft, maxLeft));
+    if (Math.abs(nextLeft - finder.scrollLeft) < 1) return;
+    finder.scrollTo({ left: nextLeft, behavior: behavior || 'smooth' });
+}
+
 document.addEventListener('htmx:afterSettle', function(e) {
     recalcColumnWidth();
     _syncDotBtn();
     _syncZoomBtn();
-    var finder = document.getElementById('finder');
-    if (finder && e.detail.target && e.detail.target.id === 'preview') {
-        finder.scrollLeft = finder.scrollWidth;
+    if (e.detail.target) {
+        if (e.detail.target.id === 'preview') {
+            scrollFinderToReveal(e.detail.target, 'smooth');
+        } else if (/^col-\\d+$/.test(e.detail.target.id)) {
+            // hx-swap="outerHTML" replaces the sentinel so e.detail.target is
+            // detached; re-query the live element by the same ID.
+            var newCol = document.getElementById(e.detail.target.id);
+            if (newCol && newCol.classList.contains('column')) {
+                scrollFinderToReveal(newCol, 'smooth');
+            }
+        }
     }
     if (_pendingPath || _pendingFinderUrl) {
         _syncUrl(_pendingPath, _pendingVpath, _pendingFinderUrl);
@@ -668,10 +685,12 @@ function _deepNavigate(fullPath, vpath) {
                 recalcColumnWidth();
                 initZoomButton();
                 _kbApplyFocus();
-                var finder = document.getElementById('finder');
                 var previewEl = document.getElementById('preview');
-                if (finder && previewEl && previewEl.children.length > 0) {
-                    finder.scrollLeft = finder.scrollWidth;
+                if (previewEl && previewEl.children.length > 0) {
+                    scrollFinderToReveal(previewEl, 'auto');
+                } else {
+                    var cols = getColumns();
+                    if (cols.length) scrollFinderToReveal(cols[cols.length - 1], 'auto');
                 }
             }
         })
