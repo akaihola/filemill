@@ -44,8 +44,19 @@ window.__mk = (nbig) => {
     DENIED('locked'),
     SLOW('slow', [F('one.txt','1'), F('two.txt','2')]),
     D('big', big),
+    D('wide', [F('a-quite-long-file-name-1.txt'), F('a-quite-long-file-name-2.txt')]),
     F('README.md','# hi\n'),
   ]);
+};
+/* every width a column is ever painted at, to catch one that opens narrow and
+   then jumps once its names arrive */
+window.__watchWidths = () => {
+  window.__w = [];
+  new MutationObserver(ms => { for (const m of ms) { const el = m.target;
+    if (el.classList && el.classList.contains('col'))
+      window.__w.push(el.querySelector('.col-head .name span').textContent + ':' + el.style.width);
+  }}).observe(document.getElementById('finder'),
+              {subtree: true, attributes: true, attributeFilter: ['style']});
 };
 window.__keybench = (n) => {
   const t0 = performance.now();
@@ -117,6 +128,15 @@ async def main():
         await pg.wait_for_timeout(700)
         check("Entries appear when the read finishes",
               await pg.eval_on_selector_all('.col[data-i="1"] .row', "e=>e.length") == 2)
+
+        print("\n── Column width ─────────────────────────────────────────────")
+        await mount(pg)
+        await pg.evaluate("__watchWidths()")
+        await pg.click('.col[data-i="0"] .row:has-text("wide")')
+        await pg.wait_for_timeout(400)
+        widths = [w.split(":")[1] for w in await pg.evaluate("__w") if w.startswith("wide:")]
+        check("A column opens at its content width, without a narrow first frame",
+              len(set(widths)) == 1 and widths[0] != "148px", ", ".join(widths) or "never sized")
 
         print("\n── Keyboard: ↑/↓ stay in the column ─────────────────────────")
         # sorted order is folders first, alphabetically:
