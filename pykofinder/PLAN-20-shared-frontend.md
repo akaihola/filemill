@@ -1,9 +1,10 @@
 # PLAN-20 — One frontend for Pykofinder and Filemill
 
-Status: **steps 2–6 and 9 implemented**; see the sequence in §7 for what is
-done and what is left. Publishing (§7 note) is done too: `build-index.py --check`
-plus a Pages workflow in filemill. The analysis below is unchanged from the
-proposal.
+Status: **implemented, except the cutover (step 7) and mobile.** See §7 for the
+per-step state. Two decisions went against this document and are marked there:
+the repo merge does not delete the vendoring script (§7.1), and rich rendering
+is CDN-loaded rather than a second build profile (§7.8, overriding §4b). The
+analysis below is otherwise unchanged from the proposal.
 
 Scope: how to share as much code as possible between `filemill` (static
 single-HTML, File System Access API) and `pykofinder` (FastHTML server) as
@@ -277,10 +278,11 @@ neither project's history needs to be discarded.
 
 Each step leaves both apps working.
 
-1. ⬜ **Merge the repos**, no code changes. Not done — they are still two
-   repositories, so `src/pykofinder/ui/` is a vendored copy kept in step by
-   `tools/sync-ui.py` (`--check` fails a stale one). The merge deletes that
-   script and nothing else.
+1. ✅ **Merge the repos** — subtree merge preserving both histories, then
+   `ui/` + `filemill/` + `pykofinder/`. `tools/sync-ui.py` survives but changes
+   meaning: it is no longer holding two repositories in step, it is copying
+   `../ui/` into the package so a wheel is self-contained. That was the one
+   thing §6 got wrong — a merge does not remove the copy, only the drift.
 2. ✅ **Extract the seam in filemill** — `core/ports.js` declares `FS`,
    `PREVIEW` and `ROUTER`; `core/` no longer names a data source.
    `test-ui.py` stayed at 31/31 throughout.
@@ -296,10 +298,12 @@ Each step leaves both apps working.
    place. `/n/sample.db/users/1` deep-links to a row.
 7. ⬜ **Cut over** — point `UI_BASE` at `/`, delete `columns.py` and the JS/CSS
    blob in `styles.py`, keep the PWA manifest and service worker.
-8. ⬜ **`filemill --profile full`** — JS renderers. `preview-local.js` gained
-   PDF and `.desktop` at zero bundle cost; Markdown/highlighting/docx need
-   vendored libraries and belong in a second build profile. The seam
-   (`usePreview`) is in place, so this is vendoring, not design.
+8. ✅ **Rich renderers in filemill** — done as **CDN lazy-loading**, not the
+   two build profiles §4b recommended. markdown-it (+ footnote, deflist,
+   task-lists, anchor), highlight.js and mammoth are imported on first use, so
+   the bundle stays one portable file. Behind a remembered switch, since it is
+   the only thing there that touches the network, and every failure falls back
+   to the raw source. `pykofinder` does not load it — Python renders better.
 9. ✅ **"Open local folder…" in Pykofinder** — `app-http.js` re-points the ports
    at `FSA` + `PreviewUpload` at runtime, so the served page browses a granted
    folder with the Python renderers still doing the previews.

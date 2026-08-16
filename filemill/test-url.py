@@ -17,8 +17,10 @@ from pathlib import Path
 
 from playwright.async_api import async_playwright
 
-ROOT = Path(__file__).parent
-TARGET = "src/index.html" if "--dev" in sys.argv else "index.html"
+# Serve the repository, not filemill/: the dev entry point references ../ui/,
+# which is the whole point of the shared directory.
+ROOT = Path(__file__).parent.parent
+TARGET = "filemill/" + ("index-dev.html" if "--dev" in sys.argv else "index.html")
 
 FAKE = r"""
 window.__mk = () => {

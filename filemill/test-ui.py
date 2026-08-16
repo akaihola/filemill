@@ -20,7 +20,7 @@ from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright.async_api import async_playwright
 
 ROOT = Path(__file__).parent
-TARGET = ROOT / ("src/index.html" if "--dev" in sys.argv else "index.html")
+TARGET = ROOT / ("index-dev.html" if "--dev" in sys.argv else "index.html")
 
 # A fake FileSystemDirectoryHandle tree: async-iterable entries(), getFile().
 FAKE = r"""

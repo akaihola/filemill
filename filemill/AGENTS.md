@@ -8,7 +8,7 @@ content: the app opens on a folder picker and everything it shows comes from the
 directory the user grants, read through the File System Access API.
 
 The UI comes from the "Trail" Miller-columns design study
-(`~/.kandev/tasks/let-s-explore-nicer_5oguwwan/pykofinder/design/miller-columns.html`):
+(originally a pykofinder design study):
 column headers with counts, three distinct selection states, a drawn trail
 between selected rows, and horizontal scroll as a 0–100 % *condensing dial* that
 folds columns into spines from the left.
@@ -27,20 +27,11 @@ the user makes to your behaviour — capture it here so it survives a context re
 ## File layout
 
 ```
-filemill/
-├── AGENTS.md               ← this file
-├── TASKS.md                ← open task list
-├── FSA-TEST-CHECKLIST.md   ← what the automated tests cannot check
-├── index.html              ← GENERATED bundle (do not hand-edit)
-├── build-index.py          ← src/index.html + assets → index.html
-├── hotreload.py            ← optional CDP live-patcher for dev mode
-├── test-ui.py              ← headless suite, fake handle (31 checks)
-├── test-url.py             ← deep-link suite over localhost (12 checks)
-├── test-rich.py            ← CDN renderers: offline, switch, loaded (14 checks)
-├── test-e2e.py             ← headed suite, real folder + real picker
-├── src/                    ← THE SOURCE
-│   ├── index.html          ← dev entry point: <link>/<script src> references
-│   ├── core/               ← the shared UI — knows nothing about its source
+<repo>/
+├── README.md               ← what the two projects are, and why one repo
+├── .github/workflows/      ← test both, publish filemill to Pages
+├── ui/                     ← THE SHARED FRONTEND — see ui/adapters/README.md
+│   ├── core/               ← source-agnostic: columns, keyboard, preview, links
 │   │   ├── styles.css      ← every design token + rule
 │   │   ├── shell.js        ← the chrome, so both builds emit the same DOM
 │   │   ├── ports.js        ← the FS / PREVIEW / ROUTER seams
@@ -52,32 +43,43 @@ filemill/
 │   │   ├── nav.js          ← choose(), crumbs, all keyboard handling
 │   │   ├── deeplink.js     ← path ⇄ column chain; push-vs-replace policy
 │   │   └── settings.js     ← ⚙ popover toggles
-│   └── adapters/           ← everything source-specific  (see its README)
-│       ├── README.md       ← the port contracts, and why both apps share core/
-│       ├── fsa.js          ← FS: File System Access API      (filemill)
-│       ├── http.js         ← FS: GET /api/dir                (pykofinder)
-│       ├── preview-local.js  ← PREVIEW: text, image, PDF, .desktop
-│       ├── preview-rich.js   ← PREVIEW: markdown-it/highlight.js/mammoth from a CDN
-│       ├── preview-http.js   ← PREVIEW: GET /api/preview — the Python renderers
-│       ├── preview-upload.js ← PREVIEW: local bytes → POST /api/render
-│       ├── router-hash.js  ← ROUTER: #r=root&p=a/b.md        (filemill)
-│       ├── router-path.js  ← ROUTER: /a/b.md                 (pykofinder)
-│       ├── storage.js      ← IndexedDB: remembered folders
-│       ├── app-fsa.js      ← boot: picker, welcome screen    (filemill)
-│       └── app-http.js     ← boot: server root + Open local folder…
-└── vendor/
-    ├── seti-map.js         ← extension → [codepoint, colour] (MIT)
-    ├── seti.woff           ← Seti UI icon font (MIT)
-    └── SETI-LICENSE.md
+│   ├── adapters/           ← everything source-specific
+│   │   ├── fsa.js          ← FS: File System Access API      (filemill)
+│   │   ├── http.js         ← FS: GET /api/dir                (pykofinder)
+│   │   ├── preview-local.js  ← PREVIEW: text, image, PDF, .desktop
+│   │   ├── preview-rich.js   ← PREVIEW: markdown-it/highlight.js/mammoth, on demand
+│   │   ├── preview-http.js   ← PREVIEW: GET /api/preview — the Python renderers
+│   │   ├── preview-upload.js ← PREVIEW: local bytes → POST /api/render
+│   │   ├── router-hash.js  ← ROUTER: #r=root&p=a/b.md        (filemill)
+│   │   ├── router-path.js  ← ROUTER: /a/b.md                 (pykofinder)
+│   │   ├── storage.js      ← IndexedDB: remembered folders
+│   │   ├── app-fsa.js      ← boot: picker, welcome screen    (filemill)
+│   │   └── app-http.js     ← boot: server root + Open local folder…
+│   └── vendor/             ← Seti icon map + WOFF font (MIT)
+├── pykofinder/             ← the Python server; see its CONTRIBUTING.md
+└── filemill/               ← THIS PROJECT
+    ├── AGENTS.md               ← this file
+    ├── TASKS.md                ← open task list
+    ├── FSA-TEST-CHECKLIST.md   ← what the automated tests cannot check
+    ├── index.html              ← GENERATED bundle (do not hand-edit)
+    ├── index-dev.html          ← dev entry point: <script src="../ui/…">
+    ├── build-index.py          ← index-dev.html + ../ui → index.html
+    ├── hotreload.py            ← optional CDP live-patcher for dev mode
+    ├── test-ui.py              ← headless suite, fake handle (31 checks)
+    ├── test-url.py             ← deep-link suite over localhost (12 checks)
+    ├── test-rich.py            ← CDN renderers: offline/switch/loaded (14)
+    └── test-e2e.py             ← headed suite, real folder + real picker
 ```
 
-**Edit `src/`, never `index.html`.** Two ways to run what you edited:
+**Edit `../ui/`, never `index.html`.** The UI is shared with `pykofinder/` in
+the same repository — a change here is a change there, which is the entire
+reason the two live together. Two ways to run what you edited:
 
 ```bash
-python3 -m http.server 8000 -d .     # then …
-#   http://localhost:8000/src/index.html    ← dev, no build step, real files
-./build-index.py                     #   → index.html (~119 KB, self-contained)
-#   http://localhost:8000/index.html        ← the bundle
+python3 -m http.server 8000 -d ..    # serve the repo root, not filemill/
+#   http://localhost:8000/filemill/index-dev.html  ← dev, no build step
+./build-index.py                     #   → index.html (~149 KB, self-contained)
+#   http://localhost:8000/filemill/index.html      ← the bundle
 ```
 
 `build-index.py` inlines each `<link rel=stylesheet>` and `<script src>` the

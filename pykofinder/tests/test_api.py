@@ -164,8 +164,8 @@ def test_render_without_a_file_is_400(client, tmp_root: Path):
 
 def test_ui_root_serves_the_shell(client, tmp_root: Path):
     html = client.get("/n/").text
-    assert "/ui/src/core/shell.js" in html
-    assert "/ui/src/adapters/app-http.js" in html
+    assert "/ui/core/shell.js" in html
+    assert "/ui/adapters/app-http.js" in html
 
 
 def test_shell_carries_no_chrome_markup(client, tmp_root: Path):
@@ -200,9 +200,9 @@ def test_ui_path_cannot_escape_root(client, tmp_root: Path):
 
 def test_ui_assets_are_served(client, tmp_root: Path):
     for asset, kind in (
-        ("/ui/src/core/ports.js", "javascript"),
-        ("/ui/src/core/styles.css", "text/css"),
-        ("/ui/src/adapters/http.js", "javascript"),
+        ("/ui/core/ports.js", "javascript"),
+        ("/ui/core/styles.css", "text/css"),
+        ("/ui/adapters/http.js", "javascript"),
         ("/ui/vendor/seti-map.js", "javascript"),
         # styles.css reaches the font as ../../vendor/seti.woff, which only
         # resolves because the copy keeps filemill's directory shape.
@@ -214,7 +214,7 @@ def test_ui_assets_are_served(client, tmp_root: Path):
 
 
 def test_ui_assets_cannot_escape_the_ui_directory(client, tmp_root: Path):
-    for bad in ("/ui/../app.py", "/ui/src/core/../../app.py", "/ui/app.py"):
+    for bad in ("/ui/../app.py", "/ui/core/../../app.py", "/ui/app.py"):
         assert client.get(bad).status_code == 404, bad
 
 
@@ -222,9 +222,9 @@ def test_the_vendored_ui_is_whole(client, tmp_root: Path):
     """Every script the shell references must actually be there — a missing one
     is a blank page, and nothing else in the suite would notice."""
     for name in app_module._UI_CORE:
-        assert client.get(f"/ui/src/core/{name}").status_code == 200, name
+        assert client.get(f"/ui/core/{name}").status_code == 200, name
     for name in app_module._UI_ADAPTERS:
-        assert client.get(f"/ui/src/adapters/{name}").status_code == 200, name
+        assert client.get(f"/ui/adapters/{name}").status_code == 200, name
 
 
 # ── the old UI is untouched ──────────────────────────────────────────────────

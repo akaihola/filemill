@@ -1,25 +1,18 @@
 #!/usr/bin/env python3
-"""Copy the shared Miller-columns UI from a filemill checkout into the package.
+"""Copy the repository's shared UI into the Python package.
 
-`src/pykofinder/ui/` is a *vendored copy*, not a fork: it is overwritten
-wholesale by this script and must never be hand-edited. The upstream is
-filemill's `src/`, whose `core/` is source-agnostic and whose `adapters/` carry
-both the File System Access API and the HTTP flavours — see
-`src/adapters/README.md` there.
+The source of truth is `../ui/` at the repository root: the same directory
+filemill builds its single-file bundle from, and the reason the two frontends
+cannot drift — one repository, one commit, both projects.
 
-The copy keeps filemill's directory shape — `ui/src/{core,adapters}` beside
-`ui/vendor` — so that relative references inside the files resolve unchanged.
-`styles.css` reaches the icon font as `../../vendor/seti.woff`, and flattening
-one level out of the tree is enough to 404 it. Byte-identical copies are also
-what makes `--check` a meaningful test.
+`src/pykofinder/ui/` is a copy of it and must never be hand-edited. The copy is
+about packaging, not drift: a wheel cannot reach outside its own package
+directory, so what `pip install pykofinder` needs at runtime has to live inside
+it. Keeping the copy mechanical and byte-identical is what makes `--check` a
+real test rather than a ritual.
 
-    tools/sync-ui.py [path/to/filemill]        # defaults to ../filemill
-    tools/sync-ui.py --check                   # exit 1 if the copy is stale
-
-The copy exists because the two projects are separate repositories today. Once
-they share one, this whole script is replaced by the two of them pointing at the
-same directory — which is the point of keeping the copy mechanical and the diff
-empty.
+    tools/sync-ui.py [path/to/ui]      # defaults to ../ui
+    tools/sync-ui.py --check           # exit 1 if the copy is stale
 """
 
 from __future__ import annotations
@@ -63,28 +56,27 @@ WANTED = {
 }
 
 
-def sources(src_root: Path) -> list[tuple[Path, Path]]:
+def sources(ui_root: Path) -> list[tuple[Path, Path]]:
     """Return (source, destination) pairs, erroring on anything missing."""
     pairs = []
     for sub, names in WANTED.items():
-        rel = "vendor" if sub == "vendor" else f"src/{sub}"
         for name in names:
-            f = src_root / rel / name
+            f = ui_root / sub / name
             if not f.is_file():
                 raise SystemExit(f"missing upstream file: {f}")
-            pairs.append((f, DEST / rel / name))
+            pairs.append((f, DEST / sub / name))
     return pairs
 
 
 def main() -> int:
     args = [a for a in sys.argv[1:] if a != "--check"]
     check = "--check" in sys.argv
-    src_root = Path(args[0]) if args else PKG.parent.parent.parent / "filemill"
-    src_root = src_root.resolve()
-    if not (src_root / "src" / "core" / "ports.js").is_file():
-        raise SystemExit(f"not a filemill checkout: {src_root}")
+    ui_root = Path(args[0]) if args else PKG.parent.parent.parent / "ui"
+    ui_root = ui_root.resolve()
+    if not (ui_root / "core" / "ports.js").is_file():
+        raise SystemExit(f"not a shared-UI directory: {ui_root}")
 
-    pairs = sources(src_root)
+    pairs = sources(ui_root)
 
     if check:
         stale = [
@@ -96,10 +88,10 @@ def main() -> int:
             print(f"stale: {d.relative_to(PKG)}")
         if stale:
             print(
-                f"\n{len(stale)} file(s) differ from {src_root} — run tools/sync-ui.py"
+                f"\n{len(stale)} file(s) differ from {ui_root} — run tools/sync-ui.py"
             )
             return 1
-        print(f"ui/ is in sync with {src_root}")
+        print(f"ui/ is in sync with {ui_root}")
         return 0
 
     if DEST.exists():
@@ -108,7 +100,7 @@ def main() -> int:
         d.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(s, d)
     print(
-        f"Synced {len(pairs)} files from {src_root} → {DEST.relative_to(PKG.parent.parent)}"
+        f"Synced {len(pairs)} files from {ui_root} → {DEST.relative_to(PKG.parent.parent)}"
     )
     return 0
 
