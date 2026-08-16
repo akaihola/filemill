@@ -48,6 +48,9 @@ async def open_at(pg, base, frag=""):
     """
     await pg.goto("about:blank")
     await pg.goto(base + frag)
+    # Rich previews reach for a CDN and log two console errors when it is not
+    # reachable; both sides of that are test-rich.py's job, not this suite's.
+    await pg.evaluate("localStorage.setItem('filemill.rich','off')")
     await pg.evaluate(FAKE)
     await pg.evaluate("mount(__mk())")
     await pg.wait_for_timeout(250)

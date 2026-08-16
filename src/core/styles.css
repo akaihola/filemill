@@ -144,6 +144,8 @@ body {
 #settings button .tick { width: 13px; color: var(--accent); opacity: 0; }
 #settings button[aria-checked="true"] .tick { opacity: 1; }
 #settings hr { border: 0; border-top: 1px solid var(--hairline); margin: 5px 4px; }
+#settings hr[hidden], #settings button[hidden] { display: none; }
+#settings .hint { margin-left: auto; padding-left: 12px; color: var(--ink-3); font-size: 10px; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Horizontal scroll = condensing control.
@@ -394,6 +396,12 @@ body {
 .pv-link .sub { color: var(--ink-3); font-size: var(--fs-meta); margin: 0 0 10px; }
 .pv-link a { color: var(--accent); overflow-wrap: anywhere; }
 .pv-err { color: var(--danger, #c0392b); }
+.pv-note {
+  margin: 0 0 10px; padding: 6px 10px; border-radius: 6px;
+  font-size: var(--fs-meta); color: var(--ink-3); background: var(--hover);
+}
+.pv-rich .wikilink { color: var(--accent); cursor: pointer; }
+.pv-rich .hljs { background: var(--hover) !important; }
 
 /* Server-rendered preview bodies (pykofinder): markdown, Pygments, docx, pptx.
    The provider supplies the markup; these are the containers it lands in. */

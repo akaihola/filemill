@@ -1,0 +1,185 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Preview provider — rich rendering, fetched on demand.
+
+   Markdown, syntax highlighting and .docx, to match what pykofinder's Python
+   renderers produce. The libraries are an order of magnitude larger than this
+   app, so they are not in the bundle: they are imported from a CDN the first
+   time a file that needs one is previewed, and cached for the session.
+
+   Which means this is the one thing in filemill that talks to the network, and
+   the app's whole pitch is that your folder does not. So:
+
+     · it is a setting, off-switchable, and the choice is remembered — consent
+       that resets on every reload is not consent;
+     · nothing about the file is ever *sent*. The request is for the library,
+       not with your content;
+     · every failure falls back to PreviewLocal — the raw <pre>, or nothing for
+       a binary — so offline is a downgrade in fidelity, never a broken pane.
+
+   Version pins are deliberate: "@latest" would mean a preview that renders
+   differently next week, and a supply chain that can change under you.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const CDN = {
+  "markdown-it":            "https://esm.sh/markdown-it@14.1.0",
+  "markdown-it-footnote":   "https://esm.sh/markdown-it-footnote@4.0.0",
+  "markdown-it-deflist":    "https://esm.sh/markdown-it-deflist@3.0.0",
+  "markdown-it-task-lists": "https://esm.sh/markdown-it-task-lists@2.1.1",
+  "markdown-it-anchor":     "https://esm.sh/markdown-it-anchor@9.2.0",
+  "highlight.js":           "https://esm.sh/highlight.js@11.10.0",
+  "mammoth":                "https://esm.sh/mammoth@1.8.0",
+  "hljs-css":               "https://esm.sh/highlight.js@11.10.0/styles/github.css",
+};
+
+/* Tests point this at local stubs — there is no other way to exercise the
+   loaded path without a network. */
+const cdn = name => (globalThis.FILEMILL_CDN && globalThis.FILEMILL_CDN[name]) || CDN[name];
+
+const RICH_KEY = "filemill.rich";
+const richEnabled = () => localStorage.getItem(RICH_KEY) !== "off";
+const setRich = on => {
+  localStorage.setItem(RICH_KEY, on ? "on" : "off");
+  loaded.clear();                       /* re-attempt after being switched on */
+};
+
+/* Cache the promise, not the module: two previews opened in the same tick must
+   not each start a download. A rejected load is dropped so that reconnecting
+   and clicking again retries, rather than being offline once and forever. */
+const loaded = new Map();
+
+function load(name) {
+  if (loaded.has(name)) return loaded.get(name);
+  const p = import(cdn(name))
+    .then(m => m.default || m)
+    .catch(err => { loaded.delete(name); throw err; });
+  loaded.set(name, p);
+  return p;
+}
+
+/* The highlighter needs its stylesheet, and a <link> cannot be awaited usefully
+   — a moment of unstyled code is not worth blocking the preview for. */
+let cssAdded = false;
+function addHljsCSS() {
+  if (cssAdded) return;
+  cssAdded = true;
+  const l = document.createElement("link");
+  l.rel = "stylesheet";
+  l.href = cdn("hljs-css");
+  l.onerror = () => { cssAdded = false; l.remove(); };
+  document.head.appendChild(l);
+}
+
+offerRichToggle(richEnabled, setRich);
+
+const MD_RE   = /\.(md|markdown)$/i;
+const DOCX_RE = /\.docx$/i;
+const CODE_RE = /\.(js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|json|jsonc|ya?ml|toml|ini|cfg|conf|xml|html?|css|scss|less)$/i;
+
+const NOTE = `<p class="pv-note">Offline — showing the source. Rich rendering ` +
+             `needs a one-time download.</p>`;
+
+/* ── Markdown ────────────────────────────────────────────────────────────── */
+let mdInstance = null;
+
+async function markdown(text) {
+  if (!mdInstance) {
+    const [MarkdownIt, footnote, deflist, tasklists, anchor, hljs] = await Promise.all([
+      load("markdown-it"), load("markdown-it-footnote"), load("markdown-it-deflist"),
+      load("markdown-it-task-lists"), load("markdown-it-anchor"), load("highlight.js"),
+    ]);
+    addHljsCSS();
+    mdInstance = new MarkdownIt({
+      linkify: true, typographer: false, html: false,
+      highlight: (code, lang) => {
+        try {
+          return lang && hljs.getLanguage(lang)
+            ? `<pre class="hljs"><code>${hljs.highlight(code, { language: lang }).value}</code></pre>`
+            : `<pre class="hljs"><code>${hljs.highlightAuto(code).value}</code></pre>`;
+        } catch { return ""; }
+      },
+    }).use(footnote).use(deflist).use(tasklists).use(anchor);
+
+    /* pykofinder renders [[PageName]]; markdown-it has no such plugin, and the
+       rule is small enough that matching it is cheaper than finding one. The
+       target is resolved by the shared navigator, not by the browser, so the
+       link stays inside the app. */
+    mdInstance.core.ruler.push("wikilink", state => {
+      for (const tok of state.tokens) {
+        if (tok.type !== "inline") continue;
+        for (const child of tok.children) {
+          if (child.type !== "text" || !child.content.includes("[[")) continue;
+          child.type = "html_inline";
+          child.content = child.content.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,
+            (_, target, label) =>
+              `<a class="wikilink" href="#" data-wiki="${esc(target.trim())}">` +
+              `${esc((label || target).trim())}</a>`);
+        }
+      }
+    });
+  }
+  return mdInstance.render(text);
+}
+
+/* ── The provider ────────────────────────────────────────────────────────── */
+const PreviewRich = {
+  revoke() { PreviewLocal.revoke(); },
+
+  async render(node) {
+    if (!richEnabled()) return PreviewLocal.render(node);
+
+    const rich = MD_RE.test(node.name) || DOCX_RE.test(node.name)
+              || CODE_RE.test(node.name);
+    if (!rich) return PreviewLocal.render(node);
+
+    const blob = await FS.blob(node);
+    if (!blob) return PreviewLocal.render(node);
+
+    try {
+      if (DOCX_RE.test(node.name)) {
+        const mammoth = await load("mammoth");
+        const { value } = await mammoth.convertToHtml(
+          { arrayBuffer: await blob.arrayBuffer() });
+        return `<div class="pv-rich">${value}</div>`;
+      }
+
+      if (blob.size > 512 * 1024) return PreviewLocal.render(node);
+      const text = await blob.text();
+
+      if (MD_RE.test(node.name))
+        return `<div class="pv-rich">${await markdown(text)}</div>`;
+
+      const hljs = await load("highlight.js");
+      addHljsCSS();
+      const ext = node.name.split(".").pop().toLowerCase();
+      const r = hljs.getLanguage(ext)
+        ? hljs.highlight(text, { language: ext })
+        : hljs.highlightAuto(text);
+      return `<div class="pv-rich"><pre class="hljs"><code>${r.value}</code></pre></div>`;
+    } catch (err) {
+      /* Offline, blocked, or the CDN moved. The file is still readable. */
+      const fallback = await PreviewLocal.render(node);
+      return fallback ? NOTE + fallback : null;
+    }
+  },
+};
+
+/* A wikilink resolves against the folder being browsed, not the web — so it
+   selects a row in the column the file itself is in, exactly as clicking that
+   row would. Only that directory is searched: walking the whole tree would mean
+   reading every folder under the root to resolve one link. */
+function openWikilink(target) {
+  const col = path.length - 1;
+  const kids = visibleKids(path[col]);
+  const want = target.toLowerCase();
+  const ri = kids.findIndex(k => {
+    const n = k.name.toLowerCase();
+    return n === want || n === want + ".md" || splitName(k.name)[0].toLowerCase() === want;
+  });
+  if (ri >= 0) choose(col, kids[ri], ri);
+}
+
+document.addEventListener("click", e => {
+  const a = e.target.closest && e.target.closest("a.wikilink");
+  if (!a) return;
+  e.preventDefault();
+  openWikilink(a.dataset.wiki);
+});

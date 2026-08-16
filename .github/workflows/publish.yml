@@ -54,6 +54,8 @@ jobs:
           python3 test-ui.py --dev
           python3 test-url.py
           python3 test-url.py --dev
+          python3 test-rich.py
+          python3 test-rich.py --dev
 
   publish:
     needs: test

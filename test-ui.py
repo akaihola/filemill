@@ -94,6 +94,11 @@ async def main():
 
         print(f"\n── {TARGET.relative_to(ROOT)} ───────────────────────────────")
         await pg.goto(TARGET.as_uri())
+        # This suite is about the UI, not the one feature that reaches the
+        # network. Left on, every .md preview would try a CDN import, fail (no
+        # network in CI), and log two console errors — see test-rich.py, which
+        # covers both sides of that switch deliberately.
+        await pg.evaluate("localStorage.setItem('filemill.rich','off')")
         await pg.wait_for_timeout(400)
         check("file:// shows the localhost hint, not a dead picker",
               "file://" in await pg.inner_text("#w-msg"))

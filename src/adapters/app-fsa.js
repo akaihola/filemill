@@ -11,7 +11,7 @@
    than one of them — which the server build does — without script order
    silently deciding which wins. */
 useFilesystem(FSA);
-usePreview(PreviewLocal);
+usePreview(PreviewRich);
 useRouter(RouterHash);
 
 /* A deep link read at startup, held until a root is mounted that can satisfy

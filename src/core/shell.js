@@ -30,6 +30,9 @@ document.body.insertAdjacentHTML("afterbegin", `
       <button id="s-dot"     role="menuitemcheckbox" aria-checked="false"><span class="tick">✓</span>Show dotfiles</button>
       <button id="s-density" role="menuitemcheckbox" aria-checked="true"><span class="tick">✓</span>Compact rows</button>
       <hr>
+      <div class="grp">Previews</div>
+      <button id="s-rich" role="menuitemcheckbox" aria-checked="true" hidden><span class="tick">✓</span>Rich previews<span class="hint">downloads a renderer</span></button>
+      <hr id="s-rich-hr" hidden>
       <div class="grp">Appearance</div>
       <button id="s-theme"   role="menuitemcheckbox" aria-checked="false"><span class="tick">✓</span>Dark theme</button>
     </div>

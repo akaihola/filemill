@@ -36,6 +36,7 @@ filemill/
 ├── hotreload.py            ← optional CDP live-patcher for dev mode
 ├── test-ui.py              ← headless suite, fake handle (31 checks)
 ├── test-url.py             ← deep-link suite over localhost (12 checks)
+├── test-rich.py            ← CDN renderers: offline, switch, loaded (14 checks)
 ├── test-e2e.py             ← headed suite, real folder + real picker
 ├── src/                    ← THE SOURCE
 │   ├── index.html          ← dev entry point: <link>/<script src> references
@@ -56,6 +57,7 @@ filemill/
 │       ├── fsa.js          ← FS: File System Access API      (filemill)
 │       ├── http.js         ← FS: GET /api/dir                (pykofinder)
 │       ├── preview-local.js  ← PREVIEW: text, image, PDF, .desktop
+│       ├── preview-rich.js   ← PREVIEW: markdown-it/highlight.js/mammoth from a CDN
 │       ├── preview-http.js   ← PREVIEW: GET /api/preview — the Python renderers
 │       ├── preview-upload.js ← PREVIEW: local bytes → POST /api/render
 │       ├── router-hash.js  ← ROUTER: #r=root&p=a/b.md        (filemill)
@@ -138,8 +140,17 @@ uv run --with "playwright==1.61.0" python3 test-ui.py          # bundle
 uv run --with "playwright==1.61.0" python3 test-ui.py --dev    # modular sources
 uv run --with "playwright==1.61.0" python3 test-url.py         # deep links
 uv run --with "playwright==1.61.0" python3 test-url.py --dev
+uv run --with "playwright==1.61.0" python3 test-rich.py        # CDN renderers
+uv run --with "playwright==1.61.0" python3 test-rich.py --dev
 uv run --with "playwright==1.61.0" python3 test-e2e.py         # real folder
 ```
+
+`test-rich.py` covers the only feature that touches the network. It needs no
+network itself: the offline path is the sandbox's natural state, and the loaded
+path runs against stub modules served from the same loopback port via
+`window.FILEMILL_CDN`. `test-ui.py` and `test-url.py` switch rich previews off,
+because a failed CDN import logs console errors that would drown their own
+assertions.
 
 `test-url.py` is separate because it needs a real origin: `history.pushState`
 throws on the opaque origin of a `file://` page, which is the case `test-ui.py`
@@ -189,6 +200,10 @@ folders are restored from IndexedDB — reloading is cheap.
 | `content-visibility: auto` on `.row` | Rows have a fixed height, so off-screen ones are skipped: forced layouts (`scrollIntoView`) stop being O(entries) |
 | Click handler on `.col`, not just rows | A folded column hides its rows, so "click a spine to unfold" must be handled by the column (the design study advertised this but never wired it) |
 | Read-only (`mode: "read"`) | Nothing in the app writes, so never ask for write permission |
+| Rich renderers lazy-loaded from a CDN, not bundled | markdown-it + plugins + highlight.js + mammoth are ~1 MB against the app's 140 KB. Fetching them on first use keeps the single file portable and gives it pykofinder's rendering |
+| …but behind a remembered switch, defaulting on | It is the only thing here that talks to the network, and the pitch is that your folder does not. Consent that resets every reload is not consent. Nothing about the file is ever *sent* — the request is for the library |
+| Every renderer failure falls back to `PreviewLocal` | Offline must be a loss of fidelity, not a broken pane: raw `<pre>` with a one-line note, or nothing for a binary |
+| Version pins on every CDN URL | `@latest` means a preview that renders differently next week, and a dependency that can change under you |
 | `core/` + `adapters/`, three ports | The same UI runs over the File System Access API and over a server. pykofinder browses with `core/` untouched, which is the only way two apps stay identical — a copied UI diverges one bug fix at a time |
 | The chrome is built by `core/shell.js`, not written in the HTML | There are two HTML files and the markup has to match in both. A shared *file* would need a build step or a fetch, and the static build can afford neither |
 | Hash URLs in the static build, path URLs on the server | A hash survives `file://`, a bare `http.server`, and any static host — none of which can rewrite paths. The server has a root, so its URL path can mirror the file path exactly |

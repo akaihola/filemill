@@ -66,13 +66,12 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
 
 ## 🔭 Open — worth considering
 
-- [ ] **Rich previews — a second build profile.** Markdown, syntax
-      highlighting and .docx need `markdown-it`, a highlighter and
-      `mammoth.js`, roughly 1 MB against today's 138 KB. The seam is already
-      there (`usePreview`), so this is vendoring plus a `--profile full` flag —
-      *not* CDN lazy-loading, which would break the no-network promise. Note
-      that markdown-it and mammoth.js are the *upstreams* of the Python
-      libraries pykofinder uses, so parity is reachable
+- [x] **Rich previews** — `preview-rich.js` lazy-loads markdown-it (+ footnote,
+      deflist, task-lists, anchor), highlight.js and mammoth from a CDN on first
+      use, so the bundle stays one portable file. Behind a remembered ⚙ switch
+      because it is the only thing here that touches the network; every failure
+      falls back to the raw source with a one-line note. Wikilinks resolve
+      inside the browsed folder
 - [ ] **One repo with pykofinder.** `src/pykofinder/ui/` is a vendored copy
       kept in step by `tools/sync-ui.py --check`. Merging deletes that script
 
