@@ -1,7 +1,9 @@
 # PLAN-20 — One frontend for Pykofinder and Filemill
 
 Status: **steps 2–6 and 9 implemented**; see the sequence in §7 for what is
-done and what is left. The analysis below is unchanged from the proposal.
+done and what is left. Publishing (§7 note) is done too: `build-index.py --check`
+plus a Pages workflow in filemill. The analysis below is unchanged from the
+proposal.
 
 Scope: how to share as much code as possible between `filemill` (static
 single-HTML, File System Access API) and `pykofinder` (FastHTML server) as
@@ -288,14 +290,16 @@ Each step leaves both apps working.
    `POST /api/render`, all root-relative and guarded by `_resolve_safe()`.
 5. ✅ **`http.js` + path router** — the shared UI runs at `/n/`, the HTMX UI at
    `/f/` untouched. `test_browser_new_ui.py` drives it in a real browser.
-6. ⬜ **VFS through the adapter** — SQLite/JSON/CSV as directories with a
-   `vpath`, plus a `node.icon` override. The port already permits it; nothing
-   is wired yet.
+6. ✅ **VFS through the adapter** — SQLite/JSON/CSV as directories with a
+   `vpath`, plus the predicted `node.icon` override. It needed no change to
+   `core/` at all, which is the strongest evidence the seam is in the right
+   place. `/n/sample.db/users/1` deep-links to a row.
 7. ⬜ **Cut over** — point `UI_BASE` at `/`, delete `columns.py` and the JS/CSS
    blob in `styles.py`, keep the PWA manifest and service worker.
 8. ⬜ **`filemill --profile full`** — JS renderers. `preview-local.js` gained
    PDF and `.desktop` at zero bundle cost; Markdown/highlighting/docx need
-   vendored libraries and belong in a second build profile.
+   vendored libraries and belong in a second build profile. The seam
+   (`usePreview`) is in place, so this is vendoring, not design.
 9. ✅ **"Open local folder…" in Pykofinder** — `app-http.js` re-points the ports
    at `FSA` + `PreviewUpload` at runtime, so the served page browses a granted
    folder with the Python renderers still doing the previews.

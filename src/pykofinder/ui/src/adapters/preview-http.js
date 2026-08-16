@@ -19,7 +19,8 @@ const PreviewHTTP = {
     const ctl = (inflight = new AbortController());
     let r;
     try {
-      r = await fetch(`${API}/preview?p=${encodeURIComponent(node.rel)}`,
+      r = await fetch(`${API}/preview?p=${encodeURIComponent(node.rel)}` +
+                      (node.vpath ? `&v=${encodeURIComponent(node.vpath)}` : ""),
                       { signal: ctl.signal });
     } catch (err) {
       if (err.name === "AbortError") return null;

@@ -9,6 +9,9 @@ const FOLDER_PATH =
 const FOLDER_SVG = `<svg viewBox="0 0 16 16">${FOLDER_PATH}</svg>`;
 
 function iconHTML(node) {
+  /* An adapter may name its own glyph — a virtual filesystem's tables and rows
+     are not files and have no extension to look up. */
+  if (node.icon) return `<span class="ico glyph">${esc(node.icon)}</span>`;
   if (node.dir) return `<span class="ico dir">${FOLDER_SVG}</span>`;
   const lower = node.name.toLowerCase(), ext = lower.split(".").pop();
   const e = SETI.name[lower] || SETI.ext[ext] || SUPP[ext] || SETI.default;

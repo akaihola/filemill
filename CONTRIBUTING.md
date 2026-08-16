@@ -52,6 +52,17 @@ adapters the shared `core/` is handed:
 | preview | text/image, in the browser | `GET /api/preview` — **this module's renderers** |
 | router | `#r=root&p=a/b.md` | `/n/a/b.md` |
 
+Virtual filesystems ride through the same adapter. A `.db` is listed as a
+directory (only when its provider actually yields entries — the CSV stub stays a
+file), and its children carry a **`vpath`**: a path *inside* the file. An entry
+with a `vpath` keeps its parent's real path and descends virtually; one without
+joins its name on. The server decides which by putting a `vpath` on the entries
+it returns, so `ui/src/core/` never learns that virtual nodes exist.
+
+`/n/sample.db/users/1` is therefore one URL naming two things. `api.split_vfs()`
+separates them, and is what a deep link is validated through — the joined form
+exists only in the address bar.
+
 That is why `preview.py`, `rendering.py`, `vfs.py` and `providers/` never had to
 be rewritten in JavaScript, and why `POST /api/render` exists: when the browser
 opens a *local* folder the server cannot read it, so the bytes are posted and
