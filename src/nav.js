@@ -1,5 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Navigation
+
+   Focus follows the *selection*, not the newly opened column: selecting a
+   directory opens its column as a preview but keeps you where you are, so ↑/↓
+   keep walking the current column. → is what moves you in, ← what moves out.
    ═══════════════════════════════════════════════════════════════════════════ */
 async function choose(colIdx, node, rowIdx) {
   path = path.slice(0, colIdx + 1);
@@ -7,7 +11,8 @@ async function choose(colIdx, node, rowIdx) {
   sel[colIdx] = node.name;
   cursor = { [colIdx]: rowIdx };
   focusCol = colIdx;
-  if (node.dir) { path.push(node); focusCol = colIdx + 1; cursor[focusCol] = 0; }
+  path[colIdx].lastSel = node.name;   /* → returns to where you were last time */
+  if (node.dir) path.push(node);
   render();
   if (node.dir && node.kids === null) {
     await ensureLoaded(node);
@@ -35,6 +40,18 @@ function renderCrumbs() {
     path.map(p => p.name).join(" / ") + (sel[path.length-1] ? " / " + sel[path.length-1] : "");
 }
 
+/* Entering a column: the row it was left on, else the one it remembers, else
+   the first. The column may still be reading, so this can run twice. */
+function enterColumn(i) {
+  const c = colCache.get(path[i]);
+  if (!c || !c.rows.length) return;
+  let ri = cursor[i];
+  if (ri == null) ri = c.kids.findIndex(k => k.name === path[i].lastSel);
+  cursor[i] = ri = Math.max(0, Math.min(c.rows.length - 1, ri < 0 ? 0 : ri));
+  c.rows[ri].click();
+  c.rows[ri].scrollIntoView({ block: "nearest" });
+}
+
 document.addEventListener("keydown", e => {
   if (!welcome.hidden) return;
   /* the cached column knows its rows — never re-query them, a directory can
@@ -48,23 +65,27 @@ document.addEventListener("keydown", e => {
   if (e.key === "ArrowDown" || e.key === "ArrowUp") {
     e.preventDefault();
     if (!rows.length) return;
-    /* a freshly opened column has a cursor but no selection yet — the first
+    /* a freshly entered column has a cursor but no selection yet — the first
        press should commit that row, not skip past it */
     if (sel[focusCol] !== undefined)
       ci = Math.max(0, Math.min(rows.length - 1, ci + (e.key === "ArrowDown" ? 1 : -1)));
     rows[ci].click();
     rows[ci].scrollIntoView({ block: "nearest" });
+  } else if (e.key === "Home" || e.key === "End") {
+    e.preventDefault();
+    if (!rows.length) return;
+    const ri = e.key === "Home" ? 0 : rows.length - 1;
+    rows[ri].click();
+    rows[ri].scrollIntoView({ block: "nearest" });
   } else if (e.key === "ArrowRight" || e.key === "Enter") {
     e.preventDefault();
     const next = path[focusCol + 1];
-    /* nothing open to the right yet: commit the cursor row, which descends
-       into it when it is a directory */
+    /* nothing open to the right: commit the cursor row, which opens it when it
+       is a directory — a second → then steps into that column */
     if (!next) return void rows[ci]?.click();
-    focusCol++; cursor[focusCol] ??= 0;
-    /* the column may still be reading — land on its first row once it is there */
-    const enter = () => strip
-      .querySelectorAll(`.col[data-i="${focusCol}"] .row`)[cursor[focusCol]]?.click();
-    if (next.kids === null) ensureLoaded(next).then(enter); else enter();
+    focusCol++;
+    if (next.kids === null) ensureLoaded(next).then(() => enterColumn(focusCol));
+    else enterColumn(focusCol);
   } else if (e.key === "ArrowLeft") {
     e.preventDefault();
     if (focusCol > 0) { focusCol--; if (folded > focusCol) unfoldTo(focusCol); render(true); }
