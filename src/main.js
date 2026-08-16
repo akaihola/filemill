@@ -1,52 +1,82 @@
-/* ════════════════════════════════════════════════════════════════
-   PWA Setup
-   ════════════════════════════════════════════════════════════════ */
-(function setupPWA() {
-  const manifest = {
-    name: 'Finder — Column View', short_name: 'Finder',
-    start_url: '.', display: 'standalone',
-    background_color: '#ececec', theme_color: '#c8c8c8',
-    icons: [{ src: 'data:image/svg+xml,' + encodeURIComponent(
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">' +
-      '<rect width="192" height="192" rx="40" fill="#1070cf"/>' +
-      '<text x="96" y="130" font-size="110" text-anchor="middle" fill="white">⌘</text></svg>'
-    ), sizes: '192x192', type: 'image/svg+xml' }]
-  };
-  const mlink = document.createElement('link');
-  mlink.rel = 'manifest';
-  mlink.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' }));
-  document.head.appendChild(mlink);
+/* ═══════════════════════════════════════════════════════════════════════════
+   Opening a folder — the only entry point into the tree.
+   ═══════════════════════════════════════════════════════════════════════════ */
+async function mount(handle) {
+  const node = mkNode(handle.name, handle);
+  colCache.clear();
+  path = [node]; sel = []; focusCol = 0; cursor = { 0: 0 };
+  welcome.hidden = true;
+  document.title = handle.name + " — filemill";
+  render();
+  await ensureLoaded(node);
+  render();
+}
 
-  if ('serviceWorker' in navigator) {
-    const sw = `const C='finder-v1';
-self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.add('/')));self.skipWaiting();});
-self.addEventListener('activate',e=>{self.clients.claim();});
-self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;
-    navigator.serviceWorker.register(
-      URL.createObjectURL(new Blob([sw], { type: 'application/javascript' }))
-    ).catch(() => {});
+async function pickFolder() {
+  if (!window.showDirectoryPicker) return showBlocked("unsupported");
+  try {
+    const handle = await window.showDirectoryPicker({ mode: "read", id: "filemill" });
+    await rememberRoot(handle);
+    await mount(handle);
+  } catch (err) {
+    if (err.name === "AbortError") return;
+    /* Chrome refuses the picker on an opaque origin — i.e. a file:// page */
+    if (err.name === "SecurityError") return showBlocked("file");
+    console.error(err);
   }
+}
+
+/* Opening a remembered folder. 'granted' mounts straight away; anything else
+   needs requestPermission(), which is only allowed from this click. */
+async function openRemembered(handle) {
+  const perm = await handle.queryPermission({ mode: "read" });
+  if (perm === "granted" || await handle.requestPermission({ mode: "read" }) === "granted")
+    return mount(handle);
+}
+
+function renderRecents(handles) {
+  const box = document.getElementById("w-recent");
+  const list = box.querySelector(".rec-list");
+  list.textContent = "";
+  handles.forEach(h => {
+    const b = document.createElement("button");
+    b.className = "rec";
+    b.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true">${FOLDER_PATH}</svg>`;
+    b.appendChild(document.createTextNode(h.name));
+    b.onclick = () => openRemembered(h);
+    list.appendChild(b);
+  });
+  box.hidden = !handles.length;
+}
+
+/* Both failure modes end at the welcome screen, since there is nothing to show
+   without a folder. Keep the wording actionable — the fix differs per case. */
+function showBlocked(why) {
+  welcome.hidden = false;
+  document.getElementById("w-pick").hidden = why === "unsupported";
+  document.getElementById("w-recent").hidden = true;
+  document.getElementById("w-msg").innerHTML = why === "unsupported"
+    ? "This browser has no File System Access API, so local folders cannot be opened. " +
+      "Try Chrome, Edge or another Chromium-based desktop browser."
+    : "Chrome blocks folder access on <code>file://</code> pages. Serve this file over " +
+      "localhost instead:<br><code>python3 -m http.server -d " +
+      "&lt;folder containing index.html&gt;</code><br>then open " +
+      "<code>http://localhost:8000/index.html</code>.";
+}
+
+document.getElementById("open").onclick = pickFolder;
+document.getElementById("w-pick").onclick = pickFolder;
+
+(async function start() {
+  if (!window.showDirectoryPicker) return showBlocked("unsupported");
+  if (location.protocol === "file:") return showBlocked("file");
+  const handles = await recallRoots();
+  if (!handles.length) return;
+  /* queryPermission needs no gesture, so a folder still granted from an earlier
+     visit opens with no dialog at all */
+  if (await handles[0].queryPermission({ mode: "read" }) === "granted")
+    return mount(handles[0]);
+  renderRecents(handles);
 })();
 
-/* ════════════════════════════════════════════════════════════════
-   Init — start with mock data (OWC → Images → Finder Views Column Cover → ColumnView.tiff)
-   ════════════════════════════════════════════════════════════════ */
-// Derive activeSidebarIdx from the label so it's resilient to list reordering
-activeSidebarIdx = SIDEBAR_ITEMS.findIndex(s => s.label === 'OWC');
-
-initToMockPath(
-  ['Users', 'casey', 'OWC'],
-  ['Images', 'Finder Views Column Cover', 'ColumnView.tiff']
-);
-render();
-scrollToActiveColumn();
-pushHistory();
-
-setTimeout(() => {
-  document.getElementById('columns-container').focus();
-  focusedColIdx = Math.max(0, columns.length - 2);
-}, 50);
-
-// Restore previously-authorised FSA handles from IndexedDB (no user gesture needed
-// for queryPermission — only 'granted' ones are restored silently).
-restoreFSAHandlesFromIDB();
+document.fonts.ready.then(() => render(true));

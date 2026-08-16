@@ -2,5 +2,23 @@ __pycache__/
 *.pyc
 *.pyo
 .DS_Store
-# Override global gitignore — dist/ is our production bundle
-!dist/
+# index.html is generated but committed — it is the deliverable
+!index.html
+
+# Agent/editor scratch — not part of the project
+.serena/
+.claude/
+.ruff_cache/
+
+# Zero-byte files created by the sandbox environment
+.bash_profile
+.bashrc
+.gitconfig
+.gitmodules
+.idea
+.mcp.json
+.profile
+.ripgreprc
+.vscode
+.zprofile
+.zshrc

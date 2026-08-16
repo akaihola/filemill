@@ -1,16 +1,23 @@
 #!/usr/bin/env python3
 """
-fndr hot-reloader — watches src/ and patches the live page via CDP.
+filemill hot-reloader — watches src/ and patches the live page via CDP.
 
-JavaScript:  uses Debugger.setScriptSource  → function bodies updated in-place,
-             all page state (including FSA handles) is preserved.
-CSS:         injects a <style id="fndr-hot-css"> tag replacing the original sheet.
+Only useful against the DEV entry point, http://localhost:PORT/src/index.html,
+which loads src/*.js and src/styles.css as separate files. The bundled
+index.html has everything inlined and has to be rebuilt + reloaded instead.
+
+JavaScript:  Debugger.setScriptSource  → function bodies updated in-place, all
+             page state (open folder, FSA handles, scroll position) preserved.
+CSS:         injects a <style id="filemill-hot-css"> after the original sheet.
 
 Usage:
-    uv run --with "playwright==1.57.0" python3 hotreload.py
+    python3 -m http.server 8000 -d .          # serve the repo
+    # open http://localhost:8000/src/index.html in Chromium started with
+    #   --remote-debugging-port=9222
+    uv run --with "playwright==1.61.0" python3 hotreload.py
 
-Chromium must already be running with --remote-debugging-port=9222
-(the user's existing session on port 9222 is used — never open a new browser).
+Reloading the page is cheap anyway — the last folder is restored from
+IndexedDB — so reach for this only when a re-grant prompt would interrupt you.
 """
 
 import asyncio
@@ -65,21 +72,21 @@ async def main():
     try:
         from playwright.async_api import async_playwright
     except ImportError:
-        sys.exit("Install playwright: uv run --with 'playwright==1.57.0' python3 hotreload.py")
+        sys.exit("Install playwright: uv run --with 'playwright==1.61.0' python3 hotreload.py")
 
     async with async_playwright() as pw:
         print(f"🔌 Connecting to Chromium at {CHROME_ADDR} …")
         try:
             browser = await pw.chromium.connect_over_cdp(CHROME_ADDR)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — any connect failure is fatal here
             sys.exit(f"Cannot connect: {e}\nMake sure Chromium is running with --remote-debugging-port=9222")
 
-        # Find the fndr page
+        # Find the filemill page
         page = None
         for ctx in browser.contexts:
             for pg in ctx.pages:
                 url = pg.url
-                if "fndr" in url or "localhost" in url or url.startswith("file://"):
+                if "localhost" in url or url.startswith("file://"):
                     page = pg
                     break
             if page:
@@ -101,7 +108,7 @@ async def main():
             url = params.get("url", "")
             sid = params.get("scriptId", "")
             # Track only our src/ scripts
-            if "/fndr/src/" in url and sid:
+            if "/src/" in url and url.endswith(".js") and sid:
                 fname = url.rsplit("/", 1)[-1]
                 script_map[url] = sid
                 print(f"  📝 tracked {fname} ({sid})")
@@ -145,19 +152,19 @@ async def main():
                 print(f"[{ts}] 🔄 {fpath.name}", end=" … ", flush=True)
 
                 if fpath.suffix == ".css":
-                    # Replace/create a <style id="fndr-hot-css"> with new content
+                    # Replace/create a <style id="filemill-hot-css"> with new content
                     js = (
                         "(()=>{"
-                        "let el=document.getElementById('fndr-hot-css');"
+                        "let el=document.getElementById('filemill-hot-css');"
                         "if(!el){el=document.createElement('style');"
-                        "el.id='fndr-hot-css';document.head.appendChild(el);}"
+                        "el.id='filemill-hot-css';document.head.appendChild(el);}"
                         f"el.textContent={json.dumps(content)};"
                         "})()"
                     )
                     try:
                         await cdp.send("Runtime.evaluate", {"expression": js})
                         print("✓ CSS injected")
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001 — keep watching
                         print(f"✗ {e}")
 
                 elif fpath.suffix == ".js":
@@ -176,7 +183,7 @@ async def main():
                             print("✓ setScriptSource ok", end="")
                         else:
                             print(f"⚠ setScriptSource status={status}", end="")
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001 — keep watching
                         print(f"⚠ setScriptSource failed: {e}", end="")
 
                     # Also inject via Runtime.evaluate so NEW top-level function
@@ -193,7 +200,7 @@ async def main():
                             print(f" / eval ✗ {r2['result']['description']}")
                         else:
                             print(" / eval ✓ new fns surfaced")
-                    except Exception as e2:
+                    except Exception as e2:  # noqa: BLE001 — keep watching
                         print(f" / eval ✗ {e2}")
 
 

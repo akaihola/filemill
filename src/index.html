@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light" data-density="compact">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>filemill</title>
+<link rel="stylesheet" href="styles.css">
+<script src="../vendor/seti-map.js"></script>
+</head>
+<body>
+<div id="shell">
+  <div id="bar">
+    <div id="crumbs"></div>
+    <div class="spacer"></div>
+    <button class="tb" id="open" title="Open a different folder">
+      <svg class="tb-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/></svg>
+      Open Folder…</button>
+    <button class="tb" id="gear" aria-expanded="false" title="Settings">⚙</button>
+    <div id="settings" hidden>
+      <div class="grp">View</div>
+      <button id="s-dot"     role="menuitemcheckbox" aria-checked="false"><span class="tick">✓</span>Show dotfiles</button>
+      <button id="s-density" role="menuitemcheckbox" aria-checked="true"><span class="tick">✓</span>Compact rows</button>
+      <hr>
+      <div class="grp">Appearance</div>
+      <button id="s-theme"   role="menuitemcheckbox" aria-checked="false"><span class="tick">✓</span>Dark theme</button>
+    </div>
+  </div>
+
+  <div id="finder">
+    <div id="rail">
+      <div id="stage">
+        <svg id="trail"></svg>
+        <div id="strip"><!-- columns + preview injected here --></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="status">
+    <span id="st-path"></span>
+    <div class="spacer"></div>
+    <span id="st-fold"></span>
+    <span><kbd>↑</kbd><kbd>↓</kbd> move</span>
+    <span><kbd>→</kbd> open</span>
+    <span><kbd>←</kbd> back</span>
+    <span><kbd>⇧</kbd>+wheel fold</span>
+  </div>
+</div>
+
+<div id="welcome">
+  <svg class="mark" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/></svg>
+  <h1>filemill</h1>
+  <p id="w-msg">Pick a folder on this machine to browse it in Miller columns.
+     Nothing leaves the browser — the folder is read locally, on demand.</p>
+  <button class="btn" id="w-pick">Choose Folder…</button>
+  <div id="w-recent" hidden>
+    <div class="rec-head">Recently opened</div>
+    <div class="rec-list"></div>
+  </div>
+  <p class="note">Needs a Chromium-based desktop browser (File System Access API).</p>
+</div>
+
+<!-- Load order is dependency order; only main.js runs anything at load time. -->
+<script src="fs.js"></script>
+<script src="icons.js"></script>
+<script src="state.js"></script>
+<script src="render.js"></script>
+<script src="layout.js"></script>
+<script src="trail.js"></script>
+<script src="nav.js"></script>
+<script src="settings.js"></script>
+<script src="storage.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
