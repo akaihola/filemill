@@ -23,7 +23,9 @@ inline for Markdown, DOCX, PPTX, PDF, images, plain text, and source code.
   [filemill](../filemill): column headers with counts, three selection states, a
   drawn trail between selected rows, and horizontal scroll as a fold dial. Its
   URL path mirrors the file path relative to the browsed root exactly
-  (`/n/docs/readme.md`), and previews still come from the Python renderers below
+  (`/n/docs/readme.md`), and previews still come from the Python renderers below.
+  SQLite/JSON virtual filesystems browse through it too — `/n/sample.db/users/1`
+  deep-links to a single row
 - **Open local folder…** – the same page can browse a folder on *your* machine
   through the File System Access API instead of the served root; previews are
   still rendered by markdown-it-py, Pygments and mammoth, because the bytes are

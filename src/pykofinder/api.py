@@ -30,6 +30,8 @@ from pathlib import Path
 
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
+from pykofinder.vfs import REGISTRY
+
 # Largest upload /api/render will render. Generous for text, small enough that a
 # stray multi-gigabyte file cannot be turned into a memory exhaustion bug.
 RENDER_MAX = 8 * 1024 * 1024
@@ -69,6 +71,8 @@ def dir_json(target: Path) -> JSONResponse:
                     st = child.stat()
                     e["size"] = st.st_size
                     e["mod"] = int(st.st_mtime * 1000)
+                    if _opens_as_folder(child):
+                        e["dir"] = True
                 entries.append(e)
             except OSError:
                 # A broken symlink is an entry that exists and cannot be
@@ -79,6 +83,97 @@ def dir_json(target: Path) -> JSONResponse:
     except OSError as exc:
         denied = str(exc)
     return JSONResponse({"entries": entries, "denied": denied})
+
+
+def _opens_as_folder(path: Path) -> bool:
+    """True when a *file* should open a column instead of a preview.
+
+    A `.db` is a directory of tables as far as the UI is concerned. Asking the
+    provider rather than trusting the extension keeps a provider that yields
+    nothing — the CSV stub — a plain file with a preview, instead of a folder
+    that is always empty.
+    """
+    provider = REGISTRY.get(path)
+    if provider is None:
+        return False
+    try:
+        return bool(provider.list_entries(path, ""))
+    except Exception:
+        return False
+
+
+def vfs_dir_json(target: Path, vpath: str) -> JSONResponse:
+    """List one level inside a virtual filesystem.
+
+    The entries carry their own `vpath`, which is how the client knows to keep
+    the real path and descend virtually instead of joining a name onto it.
+    """
+    provider = REGISTRY.get(target)
+    if provider is None:
+        return JSONResponse({"entries": [], "denied": "Not a virtual filesystem"}, 404)
+    try:
+        listed = provider.list_entries(target, vpath)
+    except Exception as exc:
+        return JSONResponse({"entries": [], "denied": str(exc)})
+    return JSONResponse(
+        {
+            "entries": [
+                {
+                    "name": e.name,
+                    "dir": e.is_folder,
+                    "vpath": e.vpath,
+                    "icon": e.icon,
+                    "size": 0,
+                    "mod": 0,
+                }
+                for e in listed
+            ],
+            "denied": None,
+        }
+    )
+
+
+def vfs_preview(target: Path, vpath: str, fmt: str = "") -> Response:
+    """Render the preview for one virtual entry."""
+    provider = REGISTRY.get(target)
+    if provider is None:
+        return HTMLResponse("", status_code=404)
+    try:
+        return HTMLResponse(
+            provider.render_preview(
+                target, vpath, fmt or provider.default_fmt(vpath), page=1, limit=1000
+            )
+        )
+    except Exception as exc:
+        return HTMLResponse(
+            f'<div class="preview-error">Preview error: '
+            f"{html_lib.escape(str(exc))}</div>"
+        )
+
+
+def split_vfs(rel: str, root: Path, resolve) -> tuple[str, str] | None:
+    """Split a root-relative path into its real part and its virtual remainder.
+
+    `sample.db/users/42` is one URL but two things: a file on disk and a key
+    inside it. Only the address bar ever sees them joined — the API keeps them
+    apart — so this is what a deep link has to be validated through.
+
+    Returns None when the real part does not resolve safely.
+    """
+    parts = [p for p in rel.split("/") if p]
+    for i in range(len(parts), 0, -1):
+        candidate = rel_to_abs("/".join(parts[:i]), root)
+        if candidate is None:
+            return None
+        real = resolve(str(candidate))
+        if real is None or not real.exists():
+            continue
+        if i == len(parts):
+            return "/".join(parts[:i]), ""
+        if REGISTRY.get(real) is not None:
+            return "/".join(parts[:i]), "/".join(parts[i:])
+        return None
+    return ("", "") if not parts else None
 
 
 def raw_response(target: Path) -> Response:

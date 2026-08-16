@@ -14,6 +14,7 @@ by the app — so it also passes in an offline sandbox.
 from __future__ import annotations
 
 import socket
+import sqlite3
 import subprocess
 import sys
 import time
@@ -45,6 +46,12 @@ def ui_root(tmp_path: Path) -> Path:
     (tmp_path / "empty").mkdir()
     (tmp_path / "README.md").write_text("# Readme\n")
     (tmp_path / ".hidden").write_text("h")
+    con = sqlite3.connect(str(tmp_path / "sample.db"))
+    con.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
+    for i in range(1, 4):
+        con.execute("INSERT INTO users VALUES (?, ?)", (i, f"User{i}"))
+    con.commit()
+    con.close()
     return tmp_path
 
 
@@ -122,7 +129,7 @@ def test_the_root_column_lists_the_served_directory(page):
     names = page.eval_on_selector_all(
         '.col[data-i="0"] .row .label', "els => els.map(e => e.textContent)"
     )
-    assert {"notes", "code", "empty", "README.md"} <= set(names)
+    assert {"notes", "code", "empty", "README.md", "sample.db"} <= set(names)
     assert ".hidden" not in names  # dotfiles off by default, as in filemill
 
 
@@ -331,3 +338,69 @@ def test_no_console_errors(page):
     page.click('.col[data-i="0"] .row:has-text("code")')
     page.wait_for_timeout(400)
     assert page.errors == []
+
+
+# ── virtual filesystems ──────────────────────────────────────────────────────
+#
+# The claim in ui/src/core/ports.js is that a node only needs name/dir/kids, so a
+# SQLite table can be a directory with no change to core/. These are what make
+# that a fact rather than an assertion.
+
+
+def test_a_database_opens_as_a_column_of_tables(page):
+    page.open()
+    page.click('.col[data-i="0"] .row:has-text("sample.db")')
+    page.wait_for_selector('.col[data-i="1"] .row', timeout=5000)
+    names = page.eval_on_selector_all(
+        '.col[data-i="1"] .row .label', "els => els.map(e => e.textContent)"
+    )
+    assert "users" in names
+
+
+def test_a_table_opens_as_a_column_of_rows(page):
+    page.open()
+    page.click('.col[data-i="0"] .row:has-text("sample.db")')
+    page.wait_for_selector('.col[data-i="1"] .row', timeout=5000)
+    page.click('.col[data-i="1"] .row:has-text("users")')
+    page.wait_for_selector('.col[data-i="2"] .row', timeout=5000)
+    assert page.locator('.col[data-i="2"] .row').count() == 3
+
+
+def test_a_row_previews_through_the_provider(page):
+    page.open()
+    page.click('.col[data-i="0"] .row:has-text("sample.db")')
+    page.wait_for_selector('.col[data-i="1"] .row', timeout=5000)
+    page.click('.col[data-i="1"] .row:has-text("users")')
+    page.wait_for_selector('.col[data-i="2"] .row', timeout=5000)
+    page.click('.col[data-i="2"] .row >> nth=0')
+    page.wait_for_selector("#preview .pv-rich", timeout=5000)
+    assert "User1" in page.inner_text("#preview .pv-rich")
+
+
+def test_virtual_nodes_keep_the_real_path_and_descend_by_vpath(page):
+    """The rule the whole design rests on: one file on disk, many nodes."""
+    page.open("sample.db/users")
+    assert page.evaluate("path.map(p => p.rel)")[-1] == "sample.db"
+    assert page.evaluate("path.map(p => p.vpath)")[-1] == "users"
+
+
+def test_a_virtual_entry_uses_the_provider_glyph(page):
+    page.open("sample.db")
+    page.wait_for_selector('.col[data-i="1"] .row .ico.glyph', timeout=5000)
+    assert page.locator('.col[data-i="1"] .row .ico.glyph').count() >= 1
+
+
+def test_the_url_names_a_row_inside_a_database(page):
+    page.open()
+    page.click('.col[data-i="0"] .row:has-text("sample.db")')
+    page.wait_for_selector('.col[data-i="1"] .row', timeout=5000)
+    page.click('.col[data-i="1"] .row:has-text("users")')
+    page.wait_for_timeout(400)
+    assert page.url.endswith("/n/sample.db/users")
+
+
+def test_a_deep_link_into_a_database_restores_the_columns(page):
+    page.open("sample.db/users/1")
+    assert page.evaluate("sel")[-1] == "1"
+    page.wait_for_selector("#preview .pv-rich", timeout=5000)
+    assert "User1" in page.inner_text("#preview .pv-rich")

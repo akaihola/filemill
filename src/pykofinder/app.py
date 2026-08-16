@@ -755,14 +755,12 @@ def ui_view(path: str = ""):
     The path is validated but not otherwise used: the client walks down to it
     from the root, so a request for a file that has gone is a 404 here and a
     "the folder it was in" fallback there. Both are better than a blank page.
+
+    Validation goes through ``split_vfs`` because ``/n/sample.db/users/42`` is a
+    real file plus a key inside it — the joined form exists only in the URL.
     """
-    target = api.rel_to_abs(path, ROOT)
-    if target is None:
+    if path and api.split_vfs(path, ROOT, _resolve_safe) is None:
         return HTMLResponse("Not found", status_code=404)
-    if path:
-        p = _resolve_safe(str(target))
-        if p is None or not p.exists():
-            return HTMLResponse("Not found", status_code=404)
     return _ui_shell()
 
 
@@ -778,10 +776,19 @@ def _api_target(p: str) -> Path | None:
 
 
 @rt("/api/dir")
-def api_dir(p: str = ""):
-    """List a directory for the UI's HTTP filesystem adapter."""
+def api_dir(p: str = "", v: str = ""):
+    """List a directory — or one level inside a virtual filesystem.
+
+    ``v`` is the virtual path *within* the file named by ``p``. Keeping the two
+    apart is what lets a `.db` be a directory of tables to the UI while staying
+    one file to ``_resolve_safe``.
+    """
     target = _api_target(p)
-    if target is None or not target.is_dir():
+    if target is None:
+        return JSONResponse({"entries": [], "denied": "Not found"}, status_code=404)
+    if target.is_file():
+        return api.vfs_dir_json(target, v)
+    if not target.is_dir():
         return JSONResponse({"entries": [], "denied": "Not found"}, status_code=404)
     return api.dir_json(target)
 
@@ -796,11 +803,13 @@ def api_raw(p: str = ""):
 
 
 @rt("/api/preview")
-def api_preview(p: str = ""):
+def api_preview(p: str = "", v: str = "", fmt: str = ""):
     """Render a preview body with the existing Python pipeline."""
     target = _api_target(p)
     if target is None:
         return HTMLResponse("", status_code=404)
+    if v:
+        return api.vfs_preview(target, v, fmt)
     return api.preview_fragment(target, render_preview)
 
 

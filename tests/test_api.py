@@ -234,3 +234,91 @@ def test_the_htmx_ui_still_serves(client, tmp_root: Path):
     """The migration is additive until the cutover; /f/ must not have moved."""
     assert client.get("/f/").status_code == 200
     assert client.get("/", follow_redirects=False).status_code == 302
+
+
+# ── virtual filesystems through the new API ──────────────────────────────────
+
+
+def test_a_database_lists_as_a_folder(db_client, db_root: Path):
+    """A .db has to open a column, not a preview — so the listing calls it a
+    directory even though it is a file on disk."""
+    by_name = {e["name"]: e for e in db_client.get("/api/dir?p=").json()["entries"]}
+    assert by_name["sample.db"]["dir"] is True
+
+
+def test_a_provider_with_no_entries_stays_a_file(client, tmp_root: Path):
+    """The CSV provider is a stub that yields nothing; calling it a folder would
+    make it an always-empty column with no preview."""
+    (tmp_root / "data.csv").write_text("a,b\n1,2\n")
+    by_name = {e["name"]: e for e in client.get("/api/dir?p=").json()["entries"]}
+    assert by_name["data.csv"]["dir"] is False
+
+
+def test_dir_inside_a_database_lists_its_tables(db_client, db_root: Path):
+    j = db_client.get("/api/dir?p=sample.db").json()
+    names = {e["name"] for e in j["entries"]}
+    assert "users" in names
+    users = next(e for e in j["entries"] if e["name"] == "users")
+    assert users["dir"] is True
+    assert users["vpath"] == "users"
+    assert users["icon"]
+
+
+def test_dir_inside_a_table_lists_its_rows(db_client, db_root: Path):
+    j = db_client.get("/api/dir?p=sample.db&v=users").json()
+    assert len(j["entries"]) == 5
+    row = j["entries"][0]
+    assert row["dir"] is False
+    assert row["vpath"].startswith("users/")
+
+
+def test_a_virtual_entry_carries_a_vpath_and_a_real_one_does_not(client, tmp_root):
+    """That distinction is the client's entire rule: an entry with a vpath keeps
+    its parent's real path, one without joins its name onto it."""
+    assert all("vpath" not in e for e in client.get("/api/dir?p=").json()["entries"])
+
+
+def test_preview_of_a_virtual_row_uses_the_provider(db_client, db_root: Path):
+    html = db_client.get("/api/preview?p=sample.db&v=users/1").text
+    assert "User1" in html
+
+
+def test_preview_of_a_table_uses_the_provider(db_client, db_root: Path):
+    html = db_client.get("/api/preview?p=sample.db&v=users&fmt=spreadsheet").text
+    assert "User1" in html
+
+
+def test_vfs_paths_are_not_a_way_around_resolve_safe(db_client, db_root: Path):
+    for p in ("../outside.db", "/etc/passwd"):
+        assert db_client.get(f"/api/dir?p={p}&v=users").status_code == 404
+
+
+# ── deep links into a virtual filesystem ─────────────────────────────────────
+
+
+def test_split_vfs_separates_the_real_path_from_the_virtual_one(db_root: Path):
+    from pykofinder.api import split_vfs
+
+    resolve = app_module._resolve_safe
+    assert split_vfs("sample.db/users/1", db_root, resolve) == ("sample.db", "users/1")
+    assert split_vfs("sample.db", db_root, resolve) == ("sample.db", "")
+    assert split_vfs("subdir", db_root, resolve) == ("subdir", "")
+    assert split_vfs("", db_root, resolve) == ("", "")
+
+
+def test_split_vfs_refuses_a_path_that_is_not_virtual(tmp_root: Path):
+    """readme.md has no provider, so readme.md/anything is simply not a path."""
+    from pykofinder.api import split_vfs
+
+    assert split_vfs("readme.md/nope", tmp_root, app_module._resolve_safe) is None
+    assert split_vfs("nope/at/all", tmp_root, app_module._resolve_safe) is None
+
+
+def test_a_url_can_name_a_row_inside_a_database(db_client, db_root: Path):
+    """/n/sample.db/users/1 is one URL but two things — a file and a key in it."""
+    assert db_client.get("/n/sample.db/users/1").status_code == 200
+    assert db_client.get("/n/sample.db").status_code == 200
+
+
+def test_a_url_into_a_non_virtual_file_is_404(client, tmp_root: Path):
+    assert client.get("/n/readme.md/nope").status_code == 404
