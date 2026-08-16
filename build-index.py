@@ -6,11 +6,13 @@ Dev entry point : src/index.html  — plain <link>/<script src> references, so i
 Bundle          : index.html      — every reference inlined, including the Seti
                   icon font as a base64 data URI. No external requests at all.
 
-Run ./build-index.py after editing anything in src/.
+Run ./build-index.py after editing anything in src/, and
+./build-index.py --check to verify the committed bundle matches the sources.
 """
 
 import base64
 import re
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).parent
@@ -46,5 +48,18 @@ if not n_css:
     raise SystemExit("no stylesheet reference found in src/index.html")
 
 out = ROOT / "index.html"
+
+# The bundle is generated *and* committed, which is the arrangement that lets
+# anyone download one file — and the arrangement that silently ships a stale
+# one. CI runs --check so a src/ edit without a rebuild fails the build instead
+# of quietly publishing last week's app.
+if "--check" in sys.argv:
+    current = out.read_text(encoding="utf-8") if out.is_file() else None
+    if current == html:
+        print(f"{out.name} is up to date ({len(html.encode()):,} bytes)")
+        raise SystemExit(0)
+    print(f"{out.name} is stale — run ./build-index.py", file=sys.stderr)
+    raise SystemExit(1)
+
 out.write_text(html, encoding="utf-8")
 print(f"Built {out.name}  ({out.stat().st_size:,} bytes, {n_css} css + {n_js} js inlined)")

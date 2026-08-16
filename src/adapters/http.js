@@ -16,13 +16,22 @@ const API = (document.currentScript?.dataset.api) || "/api";
    root — instead of leaking the root's display name into every request. */
 const relOf = (parentRel, name) => (parentRel ? parentRel + "/" + name : name);
 
-const httpNode = (name, rel, dir, meta) => ({
+/* `vpath` is a path *inside* a file: a table in a SQLite database, a key in a
+   JSON document. Such an entry keeps its parent's `rel` — the file on disk is
+   the same one — and descends virtually instead. The server tells them apart by
+   putting a `vpath` on the entries it returns; there is nothing to detect here,
+   and core/ never learns that virtual nodes exist at all. */
+const httpNode = (name, rel, dir, meta, vpath, icon) => ({
   name, rel, dir,
+  vpath: vpath || "",
+  icon: icon || undefined,
   kids: dir ? null : undefined,
   meta: meta || undefined,
 });
 
-const q = rel => `${API}/dir?p=${encodeURIComponent(rel)}`;
+const q = (rel, vpath) =>
+  `${API}/dir?p=${encodeURIComponent(rel)}` +
+  (vpath ? `&v=${encodeURIComponent(vpath)}` : "");
 
 const HTTP = {
   node: (name, rel) => httpNode(name, rel || "", true),
@@ -32,13 +41,16 @@ const HTTP = {
     if (node.loading) return node.loading;
     node.loading = (async () => {
       try {
-        const r = await fetch(q(node.rel), { headers: { Accept: "application/json" } });
+        const r = await fetch(q(node.rel, node.vpath),
+                              { headers: { Accept: "application/json" } });
         if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
         const j = await r.json();
         node.denied = j.denied || undefined;
-        node.kids = (j.entries || []).map(e =>
-          httpNode(e.name, relOf(node.rel, e.name), e.dir,
-                 e.dir ? undefined : { size: e.size, mod: e.mod }));
+        node.kids = (j.entries || []).map(e => e.vpath !== undefined
+          /* virtual: same file, deeper key */
+          ? httpNode(e.name, node.rel, e.dir, { size: 0, mod: 0 }, e.vpath, e.icon)
+          : httpNode(e.name, relOf(node.rel, e.name), e.dir,
+                     e.dir ? undefined : { size: e.size, mod: e.mod }));
       } catch (err) {
         node.denied = String(err.message || err);
         node.kids = [];

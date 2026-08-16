@@ -82,6 +82,28 @@ python3 -m http.server 8000 -d .     # then …
 browser would have fetched, and swaps the `@font-face` URL for a base64 data
 URI — the same trick the old `build.py` used, extended to cover the font.
 
+`./build-index.py --check` exits non-zero when the committed bundle no longer
+matches `src/`. CI runs it, because a generated-and-committed file is exactly
+the kind that gets published a week stale.
+
+---
+
+## Publishing
+
+`.github/workflows/publish.yml` tests every push and deploys `index.html` — and
+only that file — to GitHub Pages from `main`.
+
+Pages is the right target for a reason beyond convenience: `showDirectoryPicker()`
+needs a **secure context**, so a downloaded `index.html` opened from disk hits
+the `file://` welcome screen instead of a folder picker (see below). An
+`https://` page just works, which turns "browse a local folder, install nothing"
+into one link. Nothing published can read anything — there is no backend, and
+the folder is read in the visitor's browser after they grant it.
+
+Note the workflow runs `playwright install`, which is **forbidden on the dev
+machines** where browsers come from the Nix store; on a stock CI runner it is
+the only way to get them.
+
 ---
 
 ## Serve it over localhost — `file://` cannot work

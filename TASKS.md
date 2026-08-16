@@ -55,6 +55,10 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       reveals dotfiles. 12 checks in `test-url.py`
 - [x] **`core/shell.js`** — the chrome is emitted by one file, so this app and
       the server one cannot drift apart on markup
+- [x] **Publishing** — `.github/workflows/publish.yml` tests every push and
+      deploys the bundle to GitHub Pages from `main`. Pages is a secure context,
+      so the picker works there; a downloaded file opened from disk cannot use
+      it. `./build-index.py --check` fails a stale committed bundle
 - [x] **PDF and `.desktop` previews** — object URL in an `<iframe>` (Chromium
       renders PDF natively) and a 20-line INI parse. No bundle cost
 

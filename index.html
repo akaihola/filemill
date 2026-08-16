@@ -387,6 +387,11 @@ body {
   max-width: 100%; max-height: 46vh; border-radius: 8px; margin-bottom: 18px;
   box-shadow: 0 1px 6px rgba(0,0,0,.14); background: var(--hover);
 }
+/* An adapter-supplied glyph (a virtual filesystem's tables and rows) sits where
+   a Seti icon would, at the same optical size. */
+.ico.glyph { font-size: 11px; line-height: 1; text-align: center; }
+.pv-hero .ico.glyph { font-size: 30px; }
+
 .pv-pdf {
   width: 100%; height: 46vh; border: 1px solid var(--hairline);
   border-radius: 8px; margin-bottom: 18px; background: var(--hover);
@@ -613,6 +618,9 @@ const FOLDER_PATH =
 const FOLDER_SVG = `<svg viewBox="0 0 16 16">${FOLDER_PATH}</svg>`;
 
 function iconHTML(node) {
+  /* An adapter may name its own glyph — a virtual filesystem's tables and rows
+     are not files and have no extension to look up. */
+  if (node.icon) return `<span class="ico glyph">${esc(node.icon)}</span>`;
   if (node.dir) return `<span class="ico dir">${FOLDER_SVG}</span>`;
   const lower = node.name.toLowerCase(), ext = lower.split(".").pop();
   const e = SETI.name[lower] || SETI.ext[ext] || SUPP[ext] || SETI.default;
