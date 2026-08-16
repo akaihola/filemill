@@ -60,5 +60,3 @@ const HTTP = {
 
   rawURL: node => `${API}/raw?p=${encodeURIComponent(node.rel)}`,
 };
-
-useFilesystem(HTTP);

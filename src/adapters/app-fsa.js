@@ -6,6 +6,14 @@
    this) and owns the one entry point into the tree, mount().
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* Adapters define themselves; the app entry is what chooses. Selecting here
+   rather than at the bottom of each adapter file means a page may load more
+   than one of them — which the server build does — without script order
+   silently deciding which wins. */
+useFilesystem(FSA);
+usePreview(PreviewLocal);
+useRouter(RouterHash);
+
 /* A deep link read at startup, held until a root is mounted that can satisfy
    it — the URL names a folder, but a folder is not browsable until the browser
    has granted it. */

@@ -35,5 +35,3 @@ const RouterPath = {
     addEventListener("popstate", () => cb(RouterPath.read()));
   },
 };
-
-useRouter(RouterPath);

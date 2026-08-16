@@ -66,5 +66,3 @@ const PreviewLocal = {
     return null;
   },
 };
-
-usePreview(PreviewLocal);

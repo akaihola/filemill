@@ -48,5 +48,3 @@ const FSA = {
     return node.file || null;
   },
 };
-
-useFilesystem(FSA);

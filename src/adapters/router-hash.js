@@ -51,5 +51,3 @@ const RouterHash = {
     addEventListener("hashchange", () => cb(RouterHash.read()));
   },
 };
-
-useRouter(RouterHash);

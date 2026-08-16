@@ -30,5 +30,3 @@ const PreviewHTTP = {
     return html.trim() ? `<div class="pv-rich">${html}</div>` : null;
   },
 };
-
-usePreview(PreviewHTTP);

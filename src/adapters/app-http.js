@@ -10,8 +10,7 @@
    at runtime and keep every other thing about the app identical. Nothing in
    core/ notices.
    ═══════════════════════════════════════════════════════════════════════════ */
-const SHELL = document.getElementById("shell");
-const ROOT_NAME = SHELL?.dataset.root || "/";
+const ROOT_NAME = document.documentElement.dataset.root || "/";
 
 /* Which side is serving the tree right now. Local mode gives up the address
    bar: a URL path names a file under the *server's* root, and a folder the
@@ -24,6 +23,12 @@ async function mountServer() {
   useFilesystem(HTTP);
   usePreview(PreviewHTTP);
   useRouter(RouterPath);
+
+  /* Read the link *before* the first render. render() syncs the URL, and the
+     state it syncs from is the bare root — so rendering first would rewrite
+     /notes/deep/leaf.md down to / and then faithfully restore nothing. */
+  const loc = RouterPath.read();
+
   const node = HTTP.node(ROOT_NAME, "");
   colCache.clear();
   path = [node]; sel = []; focusCol = 0; cursor = { 0: 0 };
@@ -32,7 +37,6 @@ async function mountServer() {
   render();
   await FS.ensureLoaded(node);
 
-  const loc = RouterPath.read();
   if (loc && loc.path.length) await applyPath(loc.path);
   else render();
   startRouting();
