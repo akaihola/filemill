@@ -1,306 +1,186 @@
-/* ════════════════════════════════════════════════════════════════
-   HTML helpers
-   ════════════════════════════════════════════════════════════════ */
-function escapeHtml(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
+/* ═══════════════════════════════════════════════════════════════════════════
+   Render
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* Building a column is O(entries), and real directories hold thousands of them
+   — far too expensive to redo on every arrow key. A column's DOM is therefore
+   built once per (node, entry list) and cached; a re-render only re-applies the
+   state that actually changed: depth, selection, cursor, width.
+   Anything that alters how a row *looks* (dotfile filter, density, theme icon
+   colours) is part of the signature and drops the whole cache. */
+const colCache = new Map();
+let cacheSig = null;
+const CACHE_MAX = 24;
 
-/**
- * Return an HTML string for `name` with the best match of `query`
- * wrapped in <mark>. Priority: prefix → substring → fuzzy.
- * Returns plain escaped name when query is empty or there is no match.
- */
-function highlightLabel(name, query) {
-  if (!query) return escapeHtml(name);
-  const nameLower  = name.toLowerCase();
-  const q          = query.toLowerCase();
+/* Writing the value a property already holds still dirties it — and a width or
+   custom-property write on a column relays out every row inside it. Guard the
+   writes and a re-render of an unchanged column costs nothing. */
+const set = (obj, key, value) => { if (obj[key] !== value) obj[key] = value; };
+const setVar = (el, name, value) => {
+  if (el.style.getPropertyValue(name) !== value) el.style.setProperty(name, value);
+};
 
-  // 1. Prefix match
-  if (nameLower.startsWith(q)) {
-    return `<mark>${escapeHtml(name.slice(0, q.length))}</mark>${escapeHtml(name.slice(q.length))}`;
-  }
-  // 2. Substring match
-  const si = nameLower.indexOf(q);
-  if (si >= 0) {
-    return `${escapeHtml(name.slice(0, si))}<mark>${escapeHtml(name.slice(si, si + q.length))}</mark>${escapeHtml(name.slice(si + q.length))}`;
-  }
-  // 3. Fuzzy — highlight individual matched chars
-  let result = '', qi = 0;
-  for (let i = 0; i < name.length; i++) {
-    if (qi < q.length && name[i].toLowerCase() === q[qi]) {
-      result += `<mark>${escapeHtml(name[i])}</mark>`;
-      qi++;
-    } else {
-      result += escapeHtml(name[i]);
-    }
-  }
-  if (qi === q.length) return result;
-  return escapeHtml(name); // no match — plain text
-}
-
-/* ════════════════════════════════════════════════════════════════
-   Render — Sidebar
-   ════════════════════════════════════════════════════════════════ */
-function renderSidebar() {
-  const sb = document.getElementById('sidebar');
-  let html = `<div class="sidebar-section-header">Favorites</div>`;
-  SIDEBAR_ITEMS.forEach((item, idx) => {
-    const isSel = idx === activeSidebarIdx;
-    const isKbd = isSel && sidebarFocused;
-    const cls   = 'sidebar-item' + (isSel ? ' selected' : '') + (isKbd ? ' kbd-focused' : '');
-    html += `<div class="${cls}" data-sb-idx="${idx}">
-      <span class="si-icon">${item.icon}</span>
-      <span class="si-label">${escapeHtml(item.label)}</span>
+function buildCol(node) {
+  const kids = visibleKids(node);
+  const el = document.createElement("div");
+  el.className = "col";
+  el.innerHTML = `
+    <div class="col-head">
+      <span class="name"><span>${esc(node.name)}</span></span>
+      <span class="count">${node.kids === null ? "" : kids.length}</span>
+    </div>
+    <div class="col-body"></div>
+    <div class="spine-label" title="${esc(node.name)} — click to unfold">
+      <span class="dot"></span>
+      <span class="txt">${esc(node.name)}</span>
     </div>`;
+
+  const body = el.querySelector(".col-body");
+  if (node.kids === null) {
+    body.innerHTML = `<div class="col-note"><span class="spinner"></span>Reading…</div>`;
+  } else if (node.denied) {
+    body.innerHTML = `<div class="col-note">⚠ ${esc(node.denied)}</div>`;
+  } else if (!kids.length) {
+    body.innerHTML = `<div class="col-note">Empty</div>`;
+  }
+  /* a folded column hides its rows, so the click lands on the column itself —
+     that is what makes the advertised "click a spine to unfold" work */
+  el.onclick = () => { if (el.classList.contains("spine")) unfoldTo(+el.dataset.i); };
+
+  const rows = kids.map((k, ri) => {
+    const [stem, ext] = splitName(k.name);
+    const row = document.createElement("div");
+    row.className = "row" + (k.name.startsWith(".") ? " dotfile" : "");
+    row.title = k.name;   /* the full name is always one hover away */
+    row.innerHTML = iconHTML(k)
+      + `<span class="label">${esc(stem)}<span class="dim">${esc(ext)}</span></span>`
+      + (k.dir ? `<span class="chev">›</span>` : "");
+    /* read the index off the element: the same node keeps its DOM across
+       re-renders, and its column position is only known at render time */
+    row.onclick = () => choose(+el.dataset.i, k, ri);
+    body.appendChild(row);
+    return row;
   });
-  html += `<div class="sidebar-section-header">Tags</div>`;
-  SIDEBAR_TAGS.forEach(t => {
-    html += `<div class="sidebar-item" data-tag="${t.label}">
-      <span class="si-icon"><span class="sidebar-tag-dot" style="background:${t.color}"></span></span>
-      <span class="si-label">${t.label}</span>
-    </div>`;
-  });
-  sb.innerHTML = html;
+  body.onscroll = paintTrail;
+
+  return { el, body, kids, rows, kidsRef: node.kids,
+           dot: el.querySelector(".dot"), width: measure(node) };
 }
 
-/* ════════════════════════════════════════════════════════════════
-   Render — Columns
-   ════════════════════════════════════════════════════════════════ */
-function renderColumns() {
-  const inner     = document.getElementById('columns-inner');
-  const container = document.getElementById('columns-container');
-  inner.innerHTML = '';
-
-  // Remove any stale placeholder
-  container.querySelectorAll('.columns-empty-state').forEach(el => el.remove());
-
-  // Builtin sidebar items (AirDrop, iCloud Drive, All My Files) show a
-  // centred placeholder instead of file columns.
-  if (sidebarBuiltin) {
-    const label = SIDEBAR_ITEMS[activeSidebarIdx]?.label || 'This location';
-    const ph = document.createElement('div');
-    ph.className = 'columns-empty-state';
-    ph.textContent = `${label} is not available in this view.`;
-    container.appendChild(ph);
-    return;
+function columnFor(node) {
+  let c = colCache.get(node);
+  if (c && c.kidsRef !== node.kids) c = null;      /* directory finished reading */
+  if (!c) c = buildCol(node);
+  colCache.delete(node);                            /* re-insert = most recently used */
+  colCache.set(node, c);
+  for (const k of colCache.keys()) {
+    if (colCache.size <= CACHE_MAX) break;
+    if (!path.includes(k)) colCache.delete(k);
   }
+  return c;
+}
 
-  columns.forEach((col, ci) => {
-    const colEl = document.createElement('div');
-    const isFocused = ci === focusedColIdx && !sidebarFocused;
-    colEl.className = 'col' + (isFocused ? ' focused' : '');
-    colEl.dataset.colidx = ci;
+function render(keepScroll) {
+  if (!path.length) return;
+  const sig = `${state.dotfiles}|${root.dataset.density}|${root.dataset.theme}`;
+  if (sig !== cacheSig) { colCache.clear(); cacheSig = sig; }
 
-    const scroll = document.createElement('div');
-    scroll.className = 'col-scroll';
+  widths = [];
+  const cols = path.map((node, i) => {
+    const c = columnFor(node);
+    widths.push(c.width);
 
-    if (col.node._loading) {
-      // Show spinner while FSA directory loads
-      const ld = document.createElement('div');
-      ld.className = 'col-loading';
-      ld.innerHTML = '<div class="spinner"></div> Loading…';
-      scroll.appendChild(ld);
-    } else {
-      const items = getChildrenFiltered(col.node) || [];
-      if (items.length === 0 && col.node.children !== null) {
-        const empty = document.createElement('div');
-        empty.className = 'col-loading';
-        empty.textContent = 'Empty';
-        scroll.appendChild(empty);
-      }
-      // Only apply type-ahead highlights to the focused column
-      const queryForHighlight = isFocused ? colSearch : '';
-      items.forEach(item => {
-        const isFolder   = item.type === 'folder';
-        const isSelected = item.name === col.selectedName;
-        const div = document.createElement('div');
-        div.className   = 'col-item' + (isSelected ? ' selected-active' : '');
-        div.dataset.colidx = ci;
-        div.dataset.name   = item.name;
-        div.innerHTML = `<span class="item-icon">${getIconSVG(item)}</span>` +
-                        `<span class="item-label">${highlightLabel(item.name, queryForHighlight)}</span>` +
-                        (isFolder && !(Array.isArray(item.children) && item.children.length === 0) ? '<span class="col-arrow">▶</span>' : '');
-        scroll.appendChild(div);
-      });
+    set(c.el, "className", "col " +
+      (i < focusCol ? "ancestor" : i > focusCol ? "descendant" : "focus"));
+    set(c.el.dataset, "depth", String(Math.min(5, Math.max(0, focusCol - i))));
+    set(c.el.dataset, "i", String(i));
+    set(c.el.style, "width", c.width + "px");
+
+    if (c.dotFor !== sel[i]) {                 /* spine icon of the chosen child */
+      const chosen = c.kids.find(k => k.name === sel[i]);
+      c.dot.innerHTML = chosen ? iconHTML(chosen) : "";
+      c.dotFor = sel[i];
     }
-
-    const rh = document.createElement('div');
-    rh.className = 'col-resize';
-    rh.dataset.colidx = ci;
-
-    colEl.appendChild(scroll);
-    colEl.appendChild(rh);
-    inner.appendChild(colEl);
-  });
-}
-
-/* ════════════════════════════════════════════════════════════════
-   Render — Preview Panel
-   ════════════════════════════════════════════════════════════════ */
-function renderPreview() {
-  const pv = document.getElementById('preview');
-  const f  = selectedFile;
-
-  if (!f) {
-    // Show selected folder info if any
-    const lastSel = columns.findLast(c => c.selectedName);
-    const child   = lastSel?.node.children?.find(c => c.name === lastSel.selectedName);
-    if (child?.type === 'folder') {
-      const count = child.children === null ? '—' : child.children.length;
-      pv.innerHTML =
-        `<div style="margin-top:16px">${bigFolderSVG()}</div>
-         <div id="preview-name">${child.name}</div>
-         <div id="preview-kind">Folder</div>
-         <div id="preview-sep"></div>
-         <div id="preview-meta">
-           <div class="meta-row"><span class="meta-key">Items</span><span class="meta-val">${count}</span></div>
-         </div>
-         <div id="preview-tags"><a>Add Tags…</a></div>`;
-    } else {
-      pv.innerHTML = '<div id="preview-empty">Select a file<br>to see a preview</div>';
-    }
-    return;
-  }
-
-  const ext = f.name.split('.').pop().toLowerCase();
-  const kindMap = {
-    tiff:'TIFF image', tif:'TIFF image',
-    jpg:'JPEG image', jpeg:'JPEG image',
-    png:'PNG image', gif:'GIF image', webp:'WebP image', heic:'HEIC image',
-    mp4:'MPEG-4 movie', mov:'QuickTime movie',
-    mp3:'MP3 audio', aac:'AAC audio',
-    pdf:'PDF document', doc:'Word document', docx:'Word document',
-    txt:'Plain text', md:'Markdown text',
-    zip:'ZIP archive', dmg:'Disk Image', pkg:'Installer package',
-    pages:'Pages document', numbers:'Numbers spreadsheet', key:'Keynote presentation',
-  };
-  const kind = kindMap[ext] || (f.type === 'app' ? 'Application' : 'Document');
-
-  pv.innerHTML =
-    `<div id="preview-icon">${getBigIcon(f)}</div>
-     <div id="preview-name">${f.name}</div>
-     <div id="preview-kind">${kind}</div>
-     <div id="preview-sep"></div>
-     <div id="preview-meta">
-       ${f.size       ? `<div class="meta-row"><span class="meta-key">Size</span><span class="meta-val">${f.size}</span></div>` : ''}
-       ${f.created    ? `<div class="meta-row"><span class="meta-key">Created</span><span class="meta-val">${f.created}</span></div>` : ''}
-       ${f.modified   ? `<div class="meta-row"><span class="meta-key">Modified</span><span class="meta-val">${f.modified}</span></div>` : ''}
-       ${f.lastOpened ? `<div class="meta-row"><span class="meta-key">Last opened</span><span class="meta-val">${f.lastOpened}</span></div>` : ''}
-       ${f.dims       ? `<div class="meta-row"><span class="meta-key">Dimensions</span><span class="meta-val">${f.dims}</span></div>` : ''}
-     </div>
-     <div id="preview-tags"><a>Add Tags…</a></div>`;
-}
-
-/* ════════════════════════════════════════════════════════════════
-   Render — Path Bar & Status Bar
-   ════════════════════════════════════════════════════════════════ */
-function renderPathBar() {
-  const pb = document.getElementById('pathbar');
-  if (sidebarBuiltin) {
-    const si = SIDEBAR_ITEMS[activeSidebarIdx];
-    pb.innerHTML = si ? `<span class="path-item active">${si.label}</span>` : '';
-    return;
-  }
-  const allNames = [...sidebarRootPath, ...getFullPath()];
-  let html = '';
-  allNames.forEach((name, i) => {
-    const last = i === allNames.length - 1;
-    html += `<span class="path-item${last ? ' active' : ''}" data-pathidx="${i}">${name}</span>`;
-    if (!last) html += `<span class="path-sep">▸</span>`;
-  });
-  pb.innerHTML = html || '<span class="path-item">Finder</span>';
-}
-
-function renderStatusBar() {
-  const sb = document.getElementById('statusbar');
-  if (selectedFile) {
-    const parentCol = columns.findLast(c => c.selectedName &&
-      c.node.children?.find(ch => ch.name === c.selectedName && ch.type !== 'folder'));
-    const total = parentCol ? parentCol.node.children.length : 1;
-    sb.textContent = `1 of ${total} selected, 709.59 GB available`;
-  } else {
-    const lastSel = columns.findLast(c => c.selectedName);
-    const child   = lastSel?.node.children?.find(c => c.name === lastSel.selectedName);
-    if (child?.type === 'folder' && child.children !== null) {
-      sb.textContent = `${child.children.length} items, 709.59 GB available`;
-    } else {
-      sb.textContent = '709.59 GB available';
-    }
-  }
-}
-
-function render() {
-  renderSidebar();
-  renderColumns();
-  renderPreview();
-  renderPathBar();
-  renderStatusBar();
-  applyColumnWidths();
-  // Scroll after paint so the DOM is fully laid out
-  requestAnimationFrame(() => {
-    scrollSelectedIntoView();
-  });
-  // Window title = deepest open folder (last column's node), matching real Finder
-  // behaviour where the title shows the folder whose *contents* are displayed,
-  // not the name of the selected file within it.
-  const si = SIDEBAR_ITEMS[activeSidebarIdx];
-  const windowTitle = sidebarBuiltin
-    ? (si?.label || 'Finder')
-    : (columns.at(-1)?.node.name || si?.label || 'Finder');
-  document.title = windowTitle === 'Finder' ? 'Finder' : `${windowTitle} — Finder`;
-  const wt = document.getElementById('window-title');
-  if (wt) wt.textContent = windowTitle;
-}
-
-/* ════════════════════════════════════════════════════════════════
-   Scroll active item into view within its column
-   ════════════════════════════════════════════════════════════════ */
-function scrollSelectedIntoView() {
-  document.querySelectorAll('.col-item.selected-active').forEach(el => {
-    el.scrollIntoView({ block: 'nearest' });
-  });
-}
-
-/* ════════════════════════════════════════════════════════════════
-   Dynamic column width — canvas.measureText()
-   ════════════════════════════════════════════════════════════════ */
-function applyColumnWidths() {
-  if (globalColWidth > 0) {
-    document.documentElement.style.setProperty('--col-width', globalColWidth + 'px');
-    return;
-  }
-
-  const container = document.getElementById('columns-container');
-  const available = container.offsetWidth;
-  const numCols   = columns.length;
-  if (numCols === 0 || sidebarBuiltin) return;
-
-  const canvas = document.createElement('canvas');
-  const ctx    = canvas.getContext('2d');
-  // Match the font used for column items
-  ctx.font = '13px -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif';
-
-  let maxTextWidth = 80;
-  columns.forEach(col => {
-    const items = getChildrenFiltered(col.node) || [];
-    items.forEach(item => {
-      const w = ctx.measureText(item.name).width;
-      if (w > maxTextWidth) maxTextWidth = w;
+    c.rows.forEach((row, ri) => {
+      row.classList.toggle("sel", c.kids[ri].name === sel[i]);
+      row.classList.toggle("cursor", i === focusCol && cursor[i] === ri);
     });
+    return c;
   });
 
-  // icon (16) + gap (5) + text + right-pad (24 for arrow) + left-pad (8)
-  const padding   = 16 + 5 + 24 + 8 + 8;
-  const computed  = Math.min(maxTextWidth + padding, Math.floor(available / numCols));
-  const clamped   = Math.max(120, Math.min(600, computed));
-  document.documentElement.style.setProperty('--col-width', clamped + 'px');
+  /* Reconcile instead of replaceChildren: re-inserting an element detaches it,
+     which throws away the style and layout of every row underneath it. Columns
+     that keep their slot must not be touched at all. */
+  const want = [...cols.map(c => c.el), renderPreview()];
+  want.forEach((el, i) => {
+    if (strip.childNodes[i] !== el) strip.insertBefore(el, strip.childNodes[i] || null);
+  });
+  while (strip.childNodes.length > want.length) strip.lastChild.remove();
+  for (const c of cols)
+    c.el.classList.toggle("scrollable-down", c.body.scrollHeight > c.body.clientHeight + 4);
+  renderCrumbs();
+  layout(keepScroll);
 }
 
-/* ════════════════════════════════════════════════════════════════
-   Auto-scroll columns to keep selection visible
-   ════════════════════════════════════════════════════════════════ */
-function scrollToActiveColumn() {
-  const container = document.getElementById('columns-container');
-  const inner     = document.getElementById('columns-inner');
-  setTimeout(() => { container.scrollLeft = inner.scrollWidth; }, 0);
+function renderPreview() {
+  const n = previewNode();
+  const pv = document.createElement("div");
+  pv.id = "preview";
+  if (pvURL) { URL.revokeObjectURL(pvURL); pvURL = null; }
+  if (!n) {
+    pv.innerHTML = `<div class="pv-empty"><div class="glyph">◫</div>
+                    <div>Select a file to preview</div></div>`;
+    return pv;
+  }
+  const [stem, ext] = splitName(n.name);
+  pv.innerHTML = `
+    <div class="col-head"><span class="name"><span>${esc(n.name)}</span></span></div>
+    <div class="pv-body">
+      <div class="pv-hero">
+        ${iconHTML(n)}
+        <div><h2>${esc(stem)}<span style="color:var(--ink-3)">${esc(ext)}</span></h2>
+             <div class="sub" id="pv-sub">reading…</div></div>
+      </div>
+      <div id="pv-content"></div>
+      <dl class="meta">
+        <dt>Where</dt><dd>${esc(path.map(p => p.name).join(" / "))}</dd>
+        <dt>Size</dt><dd id="pv-size">—</dd>
+        <dt>Modified</dt><dd id="pv-mod">—</dd>
+      </dl>
+    </div>`;
+  fillPreview(n);
+  return pv;
+}
+
+/* Metadata and contents arrive after the layout is already on screen; the token
+   makes sure a slow read for a file you have since navigated away from is dropped. */
+const TEXT_RE = /\.(txt|md|markdown|log|json|jsonc|ya?ml|toml|ini|cfg|conf|csv|tsv|xml|svg|html?|css|scss|less|js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|gitignore|env)$/i;
+const IMG_RE  = /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
+const TEXT_MAX = 512 * 1024, TEXT_CHARS = 8000;
+
+async function fillPreview(n) {
+  const token = ++pvToken;
+  await loadMeta(n);
+  if (token !== pvToken) return;
+  const m = n.meta || {};
+  const sub  = document.getElementById("pv-sub");
+  if (!sub) return;
+  if (m.error) { sub.textContent = "unreadable"; return; }
+  sub.textContent = `${fmtSize(m.size)} · modified ${fmtDate(m.mod)}`;
+  document.getElementById("pv-size").textContent = `${fmtSize(m.size)} (${m.size.toLocaleString()} bytes)`;
+  document.getElementById("pv-mod").textContent  = fmtDate(m.mod);
+
+  const host = document.getElementById("pv-content");
+  if (IMG_RE.test(n.name)) {
+    pvURL = URL.createObjectURL(n.file);
+    host.innerHTML = `<img class="pv-img" src="${pvURL}" alt="">`;
+  } else if (TEXT_RE.test(n.name) && m.size <= TEXT_MAX) {
+    const text = await n.file.slice(0, TEXT_MAX).text();
+    if (token !== pvToken) return;
+    const clipped = text.length > TEXT_CHARS;
+    host.innerHTML = `<pre class="pv-text">${esc(text.slice(0, TEXT_CHARS))}` +
+                     `${clipped ? "\n…" : ""}</pre>`;
+  } else {
+    host.innerHTML = `<p>No inline preview for this file type.</p>`;
+  }
+  paintTrail();
 }

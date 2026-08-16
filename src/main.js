@@ -1,52 +1,58 @@
-/* ════════════════════════════════════════════════════════════════
-   PWA Setup
-   ════════════════════════════════════════════════════════════════ */
-(function setupPWA() {
-  const manifest = {
-    name: 'Finder — Column View', short_name: 'Finder',
-    start_url: '.', display: 'standalone',
-    background_color: '#ececec', theme_color: '#c8c8c8',
-    icons: [{ src: 'data:image/svg+xml,' + encodeURIComponent(
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">' +
-      '<rect width="192" height="192" rx="40" fill="#1070cf"/>' +
-      '<text x="96" y="130" font-size="110" text-anchor="middle" fill="white">⌘</text></svg>'
-    ), sizes: '192x192', type: 'image/svg+xml' }]
-  };
-  const mlink = document.createElement('link');
-  mlink.rel = 'manifest';
-  mlink.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' }));
-  document.head.appendChild(mlink);
+async function mount(handle) {
+  const node = mkNode(handle.name, handle);
+  colCache.clear();
+  path = [node]; sel = []; focusCol = 0; cursor = { 0: 0 };
+  welcome.hidden = true;
+  document.title = handle.name + " — filemill";
+  render();
+  await ensureLoaded(node);
+  render();
+}
 
-  if ('serviceWorker' in navigator) {
-    const sw = `const C='finder-v1';
-self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.add('/')));self.skipWaiting();});
-self.addEventListener('activate',e=>{self.clients.claim();});
-self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;
-    navigator.serviceWorker.register(
-      URL.createObjectURL(new Blob([sw], { type: 'application/javascript' }))
-    ).catch(() => {});
+async function pickFolder() {
+  if (!window.showDirectoryPicker) return showBlocked("unsupported");
+  try {
+    const handle = await window.showDirectoryPicker({ mode: "read", id: "filemill" });
+    await rememberRoot(handle);
+    await mount(handle);
+  } catch (err) {
+    if (err.name === "AbortError") return;
+    /* Chrome refuses the picker on an opaque origin — i.e. a file:// page */
+    if (err.name === "SecurityError") return showBlocked("file");
+    console.error(err);
   }
+}
+
+/* Both failure modes end at the welcome screen, since there is nothing to show
+   without a folder. Keep the wording actionable — the fix differs per case. */
+function showBlocked(why) {
+  welcome.hidden = false;
+  document.getElementById("w-pick").hidden = why === "unsupported";
+  document.getElementById("w-msg").innerHTML = why === "unsupported"
+    ? "This browser has no File System Access API, so local folders cannot be opened. " +
+      "Try Chrome, Edge or another Chromium-based desktop browser."
+    : "Chrome blocks folder access on <code>file://</code> pages. Serve this file over " +
+      "localhost instead:<br><code>python3 -m http.server -d " +
+      "&lt;folder containing index.html&gt;</code><br>then open " +
+      "<code>http://localhost:8000/index.html</code>.";
+}
+
+document.getElementById("open").onclick = pickFolder;
+document.getElementById("w-pick").onclick = pickFolder;
+
+(async function start() {
+  if (!window.showDirectoryPicker) return showBlocked("unsupported");
+  if (location.protocol === "file:") return showBlocked("file");
+  const handle = await recallRoot();
+  if (!handle) return;
+  if (await handle.queryPermission({ mode: "read" }) === "granted") return mount(handle);
+  /* permission lapsed with the session — one click re-grants it */
+  const again = document.getElementById("w-again");
+  again.textContent = `Reopen “${handle.name}”`;
+  again.hidden = false;
+  again.onclick = async () => {
+    if (await handle.requestPermission({ mode: "read" }) === "granted") mount(handle);
+  };
 })();
 
-/* ════════════════════════════════════════════════════════════════
-   Init — start with mock data (OWC → Images → Finder Views Column Cover → ColumnView.tiff)
-   ════════════════════════════════════════════════════════════════ */
-// Derive activeSidebarIdx from the label so it's resilient to list reordering
-activeSidebarIdx = SIDEBAR_ITEMS.findIndex(s => s.label === 'OWC');
-
-initToMockPath(
-  ['Users', 'casey', 'OWC'],
-  ['Images', 'Finder Views Column Cover', 'ColumnView.tiff']
-);
-render();
-scrollToActiveColumn();
-pushHistory();
-
-setTimeout(() => {
-  document.getElementById('columns-container').focus();
-  focusedColIdx = Math.max(0, columns.length - 2);
-}, 50);
-
-// Restore previously-authorised FSA handles from IndexedDB (no user gesture needed
-// for queryPermission — only 'granted' ones are restored silently).
-restoreFSAHandlesFromIDB();
+document.fonts.ready.then(() => render(true));
