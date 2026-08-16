@@ -48,7 +48,7 @@ const HTTP = {
         node.denied = j.denied || undefined;
         node.kids = (j.entries || []).map(e => e.vpath !== undefined
           /* virtual: same file, deeper key */
-          ? httpNode(e.name, node.rel, e.dir, { size: 0, mod: 0 }, e.vpath, e.icon)
+          ? httpNode(e.name, node.rel, e.dir, { virtual: true }, e.vpath, e.icon)
           : httpNode(e.name, relOf(node.rel, e.name), e.dir,
                      e.dir ? undefined : { size: e.size, mod: e.mod }));
       } catch (err) {
@@ -60,7 +60,8 @@ const HTTP = {
     return node.loading;
   },
 
-  /* The listing already carried it. */
+  /* The listing already carried it — or there is none to carry, for a node
+     that is not a file. Either way there is nothing to fetch. */
   async loadMeta(node) {
     if (!node.dir && !node.meta) node.meta = { error: "no metadata" };
   },

@@ -164,9 +164,16 @@ async function fillPreview(n) {
   const sub  = document.getElementById("pv-sub");
   if (!sub) return;
   if (m.error) { sub.textContent = "unreadable"; return; }
-  sub.textContent = `${fmtSize(m.size)} · modified ${fmtDate(m.mod)}`;
-  document.getElementById("pv-size").textContent = `${fmtSize(m.size)} (${m.size.toLocaleString()} bytes)`;
-  document.getElementById("pv-mod").textContent  = fmtDate(m.mod);
+  /* Not everything a column can hold is a file. A row inside a database has no
+     size and no mtime, and inventing them prints "0 B · 1 Jan 1970" — so leave
+     the fields at their dashes and go straight to the body. */
+  if (m.size == null) {
+    sub.textContent = "";
+  } else {
+    sub.textContent = `${fmtSize(m.size)} · modified ${fmtDate(m.mod)}`;
+    document.getElementById("pv-size").textContent = `${fmtSize(m.size)} (${m.size.toLocaleString()} bytes)`;
+    document.getElementById("pv-mod").textContent  = fmtDate(m.mod);
+  }
 
   let html = null;
   try {
