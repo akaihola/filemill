@@ -1,93 +1,70 @@
-# File System Access API — Manual Test Checklist
+# Manual test checklist
 
-The automated script `fsa-test.py` covers most of these. This checklist
-captures what to observe *visually* during a live test run, and edge cases
-the script doesn't reach.
+`test-ui.py` covers everything a fake handle can reach and `test-e2e.py` covers
+a real folder. This file is what is left: things you have to *look at*, and
+things only a real browser session can produce.
 
-Run the script:
+Run both first:
+
+```bash
+uv run --with "playwright==1.61.0" python3 test-ui.py     # headless, ~30 s
+uv run --with "playwright==1.61.0" python3 test-e2e.py    # headed, one folder pick
 ```
-uv run --with "playwright==1.57.0" python3 fsa-test.py
-```
 
 ---
 
-## Automated checks (covered by fsa-test.py)
+## Visual
 
-| # | Check |
-|---|-------|
-| 1 | App loads without JS errors |
-| 2 | "Open…" button is present in DOM |
-| 3 | After picking folder: FSA entry prepended to sidebar |
-| 4 | Column 0 shows directory contents |
-| 5 | Dot-files (`.DS_Store`, `.git`, etc.) are absent |
-| 6 | Path bar shows the picked folder name |
-| 7 | Clicking a file: preview name matches filename |
-| 8 | Clicking a file: preview shows Size (from `getFile()`) |
-| 9 | Clicking a file: preview shows Modified date |
-| 10 | Clicking a file: no "Created" row (FSA doesn't expose it) |
-| 11 | Status bar shows "1 of N selected" |
-| 12 | Clicking a folder: column 1 appears |
-| 13 | Cancelling the picker (AbortError) leaves UI unchanged |
-| 14 | Alert shown if `showDirectoryPicker` is absent (unsupported browser) |
+- [ ] **Trail** — the elbow from the selected row into the next column's header
+      is continuous, sits in the middle of the gutter, and disappears when the
+      selected row is scrolled out of its column
+- [ ] **Folding** — dragging the horizontal scrollbar narrows columns from the
+      left one at a time; the crossfade to the vertical spine label has no jump
+- [ ] **Spine icon** — a folded column still shows the icon of its chosen child
+      in the accent dot, and the trail re-anchors to it
+- [ ] **Depth recession** — ancestor columns are progressively darker than the
+      focused one; the focused column has the accent underline in its header
+- [ ] **Selection states** — focused column solid accent, ancestors tinted pill,
+      descendants dashed ghost; all three legible in light *and* dark theme
+- [ ] **Long names** — an 80-character filename ellipsises without widening the
+      column past 380 px; hovering shows the full name
+- [ ] **Icons** — file types get distinct Seti glyphs and colours; unknown
+      extensions fall back to the default glyph, never a blank square
 
----
+## Real filesystem
 
-## Visual checks (observe in the browser window)
+- [ ] A folder with thousands of entries opens without freezing the UI, and
+      arrow keys stay responsive while scrolling through it
+- [ ] A folder you cannot read (e.g. `/root`) shows "⚠ No permission to read",
+      not an empty column
+- [ ] Symlinked directories open; a broken symlink does not break the column
+- [ ] Non-ASCII names (accents, CJK, emoji) render and sort sensibly
+- [ ] A file changed on disk shows the new size/mtime after re-selecting it
+      (there is no directory watcher — reopening the folder re-reads it)
+- [ ] Large image previews scale to fit; a 100 MB binary shows "No inline
+      preview" rather than trying to read it
 
-- [ ] **Spinner** — briefly visible in column 0 while root directory loads
-      (fast drives may make this nearly invisible)
-- [ ] **Spinner in column 1** — visible when clicking an unloaded sub-folder
-      (test on a large directory)
-- [ ] **Folder arrow (▶)** — shown for sub-folders; absent for files
-- [ ] **Empty folder** — no new column opens; status bar says "0 items"
-- [ ] **Sort order** — folders first, then files; each group alpha-sorted
-- [ ] **Column width** — auto-computed to fit longest filename
-- [ ] **Sidebar highlight** — FSA item at top of Favorites highlighted in blue
-- [ ] **Path bar** — shows picked folder name as first breadcrumb; grows as you navigate
-- [ ] **Window title** — changes to `"<filename> — Finder"` when a file is selected
+## Permissions and persistence
 
----
-
-## Keyboard navigation (manual)
-
-- [ ] Arrow ↓/↑ — navigate items in the focused column
-- [ ] Arrow → — open sub-folder (triggers spinner + lazy load)
-- [ ] Arrow ← — deselect rightmost item; focus moves left
-- [ ] Arrow ← from column 0 — moves focus to sidebar (item gets blue outline)
-- [ ] Arrow ↑/↓ in sidebar — moves between sidebar items; FSA item shows correct columns
-- [ ] Type-ahead — type partial filename to jump to match (highlighted in yellow)
-- [ ] Escape — clears type-ahead
-
----
-
-## Permission persistence (across browser launches)
-
-- [ ] Re-run `fsa-test.py` with the same `/tmp/fndr-chrome-profile`
-- [ ] When you pick the SAME folder again: Chrome does **not** show the
-      "Allow site to view and edit files?" confirmation dialog (skipped by profile)
-- [ ] When you pick a NEW folder: confirmation dialog appears once, then stored
-
----
-
-## Edge cases to try manually
-
-- [ ] Pick the root of a large directory (thousands of files) — spinner should
-      appear; UI should not freeze; loading completes correctly
-- [ ] Pick a folder containing only sub-folders (no files) — preview area shows
-      folder info, not "Select a file to see a preview"
-- [ ] Click "Open…" twice without picking the first time (cancel both) — no
-      duplicate sidebar entries, no JS errors in console
-- [ ] Click "Open…", pick folder A; click "Open…" again, pick same folder A —
-      sidebar should have exactly one entry for A (deduplication)
-
----
+- [ ] First visit: welcome screen with **Choose Folder…** only
+- [ ] After picking: reload the page → mounts the same folder with **no dialog**
+- [ ] Pick 2–3 different folders, then reload → all appear under
+      **Recently opened**, most recent first, no duplicates
+- [ ] Quit the browser entirely and reopen: Chrome downgrades the grant to
+      "prompt", so the folders still appear but clicking one shows Chrome's
+      "Let site view files?" bar — one click, no OS picker
+- [ ] Cancel the picker (Esc) → nothing changes, no console error
+- [ ] Open `index.html` as a `file://` URL → localhost instructions, not a
+      broken picker
+- [ ] Firefox/Safari → "no File System Access API" message
 
 ## Known limitations (not bugs)
 
 | Limitation | Reason |
 |------------|--------|
-| `Created` date absent in preview | FSA `File` object only exposes `lastModified` |
-| Disk free space is "709.59 GB" (mock) | No web API for disk stats |
-| OS file picker can't be automated | Browser security; user must interact once |
-| Requires Chrome or Edge desktop | `showDirectoryPicker` not in Firefox stable |
-| Requires `localhost` or HTTPS | FSA blocked on plain `file://` origin in Chrome |
+| Needs `localhost` or HTTPS | Chrome blocks the FSA picker on opaque origins |
+| Chrome/Edge desktop only | `showDirectoryPicker` is not in Firefox or Safari |
+| No "created" date | FSA's `File` only exposes `lastModified` |
+| No live refresh when the disk changes | No directory-watch API; reopen the folder |
+| Permission is re-prompted after a browser restart | Chrome only persists grants for installed PWAs |
+| Read-only | The app never asks for `mode: "readwrite"` |
