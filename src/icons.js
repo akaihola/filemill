@@ -4,8 +4,9 @@
 /* Seti has glyphs for these but mapping.less never binds them to an extension. */
 const SUPP = { nix: ["e019","#519aba"], db: ["e022","#dd4b78"], sqlite: ["e022","#dd4b78"],
                lock: ["e05d","#7fae42"], desktop: ["e019","#6d8086"] };
-const FOLDER_SVG =
-  '<svg viewBox="0 0 16 16"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/></svg>';
+const FOLDER_PATH =
+  '<path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/>';
+const FOLDER_SVG = `<svg viewBox="0 0 16 16">${FOLDER_PATH}</svg>`;
 
 function iconHTML(node) {
   if (node.dir) return `<span class="ico dir">${FOLDER_SVG}</span>`;

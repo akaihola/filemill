@@ -406,7 +406,23 @@ body {
   color: var(--ink); background: var(--surface);
   box-shadow: inset 0 0 0 1px var(--hairline-2);
 }
-#welcome .row2 { display: flex; gap: 9px; flex-wrap: wrap; justify-content: center; }
+#welcome #w-recent { margin-top: 26px; }
+#welcome #w-recent[hidden] { display: none; }
+#welcome .rec-head {
+  font-size: 10px; letter-spacing: .5px; text-transform: uppercase;
+  color: var(--ink-3); margin-bottom: 7px;
+}
+#welcome .rec-list { display: flex; gap: 7px; flex-wrap: wrap; justify-content: center; max-width: 60ch; }
+#welcome .rec {
+  font: inherit; font-size: var(--fs-head); color: var(--ink);
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface); border: 0; border-radius: 7px;
+  padding: 6px 11px; cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--hairline-2);
+}
+#welcome .rec:hover { box-shadow: inset 0 0 0 1px var(--accent-soft); color: var(--accent-ink); }
+#welcome .rec svg { width: 13px; height: 13px; fill: var(--ink-3); flex: 0 0 auto; }
+#welcome .rec:hover svg { fill: var(--accent); }
 #welcome .note { margin: 18px 0 0; font-size: var(--fs-meta); color: var(--ink-3); }
 #welcome code {
   font-family: var(--mono); font-size: 11.5px; color: var(--ink);
@@ -470,9 +486,10 @@ window.SETI = {"default":["e023","#d4d7d6"],"ext":{"ad":["e003","#519aba"],"ai":
   <h1>filemill</h1>
   <p id="w-msg">Pick a folder on this machine to browse it in Miller columns.
      Nothing leaves the browser — the folder is read locally, on demand.</p>
-  <div class="row2">
-    <button class="btn" id="w-pick">Choose Folder…</button>
-    <button class="btn ghost" id="w-again" hidden></button>
+  <button class="btn" id="w-pick">Choose Folder…</button>
+  <div id="w-recent" hidden>
+    <div class="rec-head">Recently opened</div>
+    <div class="rec-list"></div>
   </div>
   <p class="note">Needs a Chromium-based desktop browser (File System Access API).</p>
 </div>
@@ -537,8 +554,9 @@ const fmtDate = ms => new Date(ms).toLocaleString(undefined,
 /* Seti has glyphs for these but mapping.less never binds them to an extension. */
 const SUPP = { nix: ["e019","#519aba"], db: ["e022","#dd4b78"], sqlite: ["e022","#dd4b78"],
                lock: ["e05d","#7fae42"], desktop: ["e019","#6d8086"] };
-const FOLDER_SVG =
-  '<svg viewBox="0 0 16 16"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/></svg>';
+const FOLDER_PATH =
+  '<path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/>';
+const FOLDER_SVG = `<svg viewBox="0 0 16 16">${FOLDER_PATH}</svg>`;
 
 function iconHTML(node) {
   if (node.dir) return `<span class="ico dir">${FOLDER_SVG}</span>`;
@@ -1048,12 +1066,17 @@ toggle("s-theme",   () => root.dataset.theme === "dark",
 </script>
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════
-   Opening a folder — the only entry point into the tree.
+   Remembering folders across sessions.
 
-   The picked handle is kept in IndexedDB (FileSystemHandle is structured-
-   cloneable), so a reload can offer the same folder back. queryPermission()
-   needs no user gesture; requestPermission() does — hence the second button.
+   FileSystemHandle is structured-cloneable, so the picked roots survive in
+   IndexedDB and the OS folder dialog is not needed twice for the same folder.
+   What does NOT survive is the *permission*: Chrome usually downgrades it to
+   "prompt" when the tab session ends, and requestPermission() needs a user
+   gesture. So a remembered folder is either re-mounted silently (still
+   'granted') or offered as a one-click button on the welcome screen.
    ═══════════════════════════════════════════════════════════════════════════ */
+const RECENT_MAX = 8;
+
 const idb = () => new Promise((res, rej) => {
   const r = indexedDB.open("filemill", 1);
   r.onupgradeneeded = e => e.target.result.createObjectStore("kv");
@@ -1061,26 +1084,40 @@ const idb = () => new Promise((res, rej) => {
   r.onerror   = e => rej(e.target.error);
 });
 
+const kvGet = (db, key) => new Promise((res, rej) => {
+  const r = db.transaction("kv", "readonly").objectStore("kv").get(key);
+  r.onsuccess = () => res(r.result);
+  r.onerror   = () => rej(r.error);
+});
+
+const kvPut = (db, key, value) =>
+  db.transaction("kv", "readwrite").objectStore("kv").put(value, key);
+
 async function rememberRoot(handle) {
   try {
     const db = await idb();
-    db.transaction("kv", "readwrite").objectStore("kv").put(handle, "root");
+    const kept = [];
+    for (const h of (await kvGet(db, "recent")) || [])
+      if (!(await h.isSameEntry(handle))) kept.push(h);   /* same folder, one entry */
+    kvPut(db, "recent", [handle, ...kept].slice(0, RECENT_MAX));
   } catch (err) { console.warn("could not remember folder:", err); }
 }
 
-async function recallRoot() {
+async function recallRoots() {
   try {
     const db = await idb();
-    const st = db.transaction("kv", "readonly").objectStore("kv");
-    return await new Promise((res, rej) => {
-      const r = st.get("root");
-      r.onsuccess = () => res(r.result || null);
-      r.onerror   = () => rej(r.error);
-    });
-  } catch (err) { return null; }
+    return (await kvGet(db, "recent")) || [];
+  } catch (err) { return []; }         /* private mode, file://, … — just ask */
+}
+
+async function forgetRoots() {
+  try { kvPut(await idb(), "recent", []); } catch (err) { /* nothing to forget */ }
 }
 </script>
 <script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   Opening a folder — the only entry point into the tree.
+   ═══════════════════════════════════════════════════════════════════════════ */
 async function mount(handle) {
   const node = mkNode(handle.name, handle);
   colCache.clear();
@@ -1106,11 +1143,35 @@ async function pickFolder() {
   }
 }
 
+/* Opening a remembered folder. 'granted' mounts straight away; anything else
+   needs requestPermission(), which is only allowed from this click. */
+async function openRemembered(handle) {
+  const perm = await handle.queryPermission({ mode: "read" });
+  if (perm === "granted" || await handle.requestPermission({ mode: "read" }) === "granted")
+    return mount(handle);
+}
+
+function renderRecents(handles) {
+  const box = document.getElementById("w-recent");
+  const list = box.querySelector(".rec-list");
+  list.textContent = "";
+  handles.forEach(h => {
+    const b = document.createElement("button");
+    b.className = "rec";
+    b.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true">${FOLDER_PATH}</svg>`;
+    b.appendChild(document.createTextNode(h.name));
+    b.onclick = () => openRemembered(h);
+    list.appendChild(b);
+  });
+  box.hidden = !handles.length;
+}
+
 /* Both failure modes end at the welcome screen, since there is nothing to show
    without a folder. Keep the wording actionable — the fix differs per case. */
 function showBlocked(why) {
   welcome.hidden = false;
   document.getElementById("w-pick").hidden = why === "unsupported";
+  document.getElementById("w-recent").hidden = true;
   document.getElementById("w-msg").innerHTML = why === "unsupported"
     ? "This browser has no File System Access API, so local folders cannot be opened. " +
       "Try Chrome, Edge or another Chromium-based desktop browser."
@@ -1126,16 +1187,13 @@ document.getElementById("w-pick").onclick = pickFolder;
 (async function start() {
   if (!window.showDirectoryPicker) return showBlocked("unsupported");
   if (location.protocol === "file:") return showBlocked("file");
-  const handle = await recallRoot();
-  if (!handle) return;
-  if (await handle.queryPermission({ mode: "read" }) === "granted") return mount(handle);
-  /* permission lapsed with the session — one click re-grants it */
-  const again = document.getElementById("w-again");
-  again.textContent = `Reopen “${handle.name}”`;
-  again.hidden = false;
-  again.onclick = async () => {
-    if (await handle.requestPermission({ mode: "read" }) === "granted") mount(handle);
-  };
+  const handles = await recallRoots();
+  if (!handles.length) return;
+  /* queryPermission needs no gesture, so a folder still granted from an earlier
+     visit opens with no dialog at all */
+  if (await handles[0].queryPermission({ mode: "read" }) === "granted")
+    return mount(handles[0]);
+  renderRecents(handles);
 })();
 
 document.fonts.ready.then(() => render(true));

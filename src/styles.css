@@ -399,7 +399,23 @@ body {
   color: var(--ink); background: var(--surface);
   box-shadow: inset 0 0 0 1px var(--hairline-2);
 }
-#welcome .row2 { display: flex; gap: 9px; flex-wrap: wrap; justify-content: center; }
+#welcome #w-recent { margin-top: 26px; }
+#welcome #w-recent[hidden] { display: none; }
+#welcome .rec-head {
+  font-size: 10px; letter-spacing: .5px; text-transform: uppercase;
+  color: var(--ink-3); margin-bottom: 7px;
+}
+#welcome .rec-list { display: flex; gap: 7px; flex-wrap: wrap; justify-content: center; max-width: 60ch; }
+#welcome .rec {
+  font: inherit; font-size: var(--fs-head); color: var(--ink);
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface); border: 0; border-radius: 7px;
+  padding: 6px 11px; cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--hairline-2);
+}
+#welcome .rec:hover { box-shadow: inset 0 0 0 1px var(--accent-soft); color: var(--accent-ink); }
+#welcome .rec svg { width: 13px; height: 13px; fill: var(--ink-3); flex: 0 0 auto; }
+#welcome .rec:hover svg { fill: var(--accent); }
 #welcome .note { margin: 18px 0 0; font-size: var(--fs-meta); color: var(--ink-3); }
 #welcome code {
   font-family: var(--mono); font-size: 11.5px; color: var(--ink);

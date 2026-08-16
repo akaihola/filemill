@@ -51,9 +51,10 @@
   <h1>filemill</h1>
   <p id="w-msg">Pick a folder on this machine to browse it in Miller columns.
      Nothing leaves the browser — the folder is read locally, on demand.</p>
-  <div class="row2">
-    <button class="btn" id="w-pick">Choose Folder…</button>
-    <button class="btn ghost" id="w-again" hidden></button>
+  <button class="btn" id="w-pick">Choose Folder…</button>
+  <div id="w-recent" hidden>
+    <div class="rec-head">Recently opened</div>
+    <div class="rec-list"></div>
   </div>
   <p class="note">Needs a Chromium-based desktop browser (File System Access API).</p>
 </div>
