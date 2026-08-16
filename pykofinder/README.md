@@ -19,8 +19,8 @@ inline for Markdown, DOCX, PPTX, PDF, images, plain text, and source code.
 - **Zoom** – expand preview pane to full viewport width
 - **`.desktop` hyperlinks** – open service URLs directly from the browser
 - **Symlink support** – safely follows symlink bookmarks in the configured root
-- **Miller-columns UI (new, at `/n/`)** – the frontend shared verbatim with
-  [filemill](../filemill): column headers with counts, three selection states, a
+- **Miller-columns UI (new, at `/n/`)** – the frontend shared with
+  [filemill](../filemill), from [`../ui/`](../ui): column headers with counts, three selection states, a
   drawn trail between selected rows, and horizontal scroll as a fold dial. Its
   URL path mirrors the file path relative to the browsed root exactly
   (`/n/docs/readme.md`), and previews still come from the Python renderers below.
@@ -81,14 +81,15 @@ src/pykofinder/
 ├── vfs.py          # Virtual-filesystem registry + provider protocol
 ├── providers/      # VFS backends: SQLite, JSON, CSV
 ├── static/         # Bundled PWA assets: manifest.json, sw.js, icons/
-└── ui/             # Vendored copy of filemill's frontend — do not edit
+└── ui/             # Packaging copy of ../../../ui — do not edit
 ```
 
 Two user interfaces are served side by side during the migration: the HTMX one
 at `/f/` (the default) and the shared Miller-columns one at `/n/`. Only the
-adapters differ between `/n/` and filemill — `ui/src/core/` is byte-identical in
-both, which is what keeps the two applications from drifting apart. Re-vendor it
-with `tools/sync-ui.py`; see [CONTRIBUTING.md](CONTRIBUTING.md).
+adapters differ between `/n/` and filemill — the source of both is
+[`../ui/`](../ui) in this repository, so there is no version of it to drift.
+`src/pykofinder/ui/` is a packaging copy refreshed by `tools/sync-ui.py`; see
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

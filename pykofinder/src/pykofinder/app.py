@@ -665,11 +665,12 @@ def finder_view(path: str = "", vpath: str = ""):
 
 # ── The shared Miller-columns UI ─────────────────────────────────────────────
 #
-# ui/ is filemill's frontend, vendored verbatim by tools/sync-ui.py — see
-# ui/adapters/README.md. Its core/ is source-agnostic; the adapters loaded below
-# point it at this server. Nothing under ui/ is edited here, ever: a UI that is
-# copied and then touched is a fork, and the whole point is that both projects
-# show the same app.
+# ui/ is a copy of the repository's shared frontend at ../../../ui, made by
+# tools/sync-ui.py so a wheel carries what it needs at runtime — see
+# ui/adapters/README.md. filemill builds its single file from that same
+# directory, which is what makes these the same app rather than two that
+# resemble each other. Its core/ is source-agnostic; the adapters loaded below
+# point it at this server. Nothing under ui/ is edited here, ever.
 #
 # Mounted under /n/ during the migration, so the HTMX UI at /f/ keeps working.
 # Cutting over is changing UI_BASE to "/" and letting the catch-all serve the
@@ -721,13 +722,13 @@ def _ui_shell():
             Meta(name="theme-color", content="#0770C9"),
             Link(rel="manifest", href="/manifest.json"),
             Link(rel="apple-touch-icon", href="/icons/icon-192.png"),
-            Link(rel="stylesheet", href="/ui/src/core/styles.css"),
+            Link(rel="stylesheet", href="/ui/core/styles.css"),
             Script(src="/ui/vendor/seti-map.js"),
         ),
         Body(
-            *[Script(src=f"/ui/src/core/{n}") for n in _UI_CORE],
+            *[Script(src=f"/ui/core/{n}") for n in _UI_CORE],
             *[
-                Script(src=f"/ui/src/adapters/{n}", **_ui_script_attrs(n))
+                Script(src=f"/ui/adapters/{n}", **_ui_script_attrs(n))
                 for n in _UI_ADAPTERS
             ],
         ),

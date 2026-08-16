@@ -42,9 +42,10 @@ tests/
 
 ### The shared UI
 
-`src/pykofinder/ui/` is **a verbatim copy of filemill's frontend**, not a fork.
-filemill and pykofinder show the same application; the only difference is which
-adapters the shared `core/` is handed:
+The frontend lives at **`../ui/`**, the repository root's shared directory.
+filemill builds its single-file bundle from it and this package serves it, so
+the two are the same application — not two that resemble each other. The only
+difference is which adapters the shared `core/` is handed:
 
 | | filemill | pykofinder |
 | --- | --- | --- |
@@ -68,17 +69,18 @@ be rewritten in JavaScript, and why `POST /api/render` exists: when the browser
 opens a *local* folder the server cannot read it, so the bytes are posted and
 come back through the same markdown-it-py/Pygments/mammoth pipeline.
 
-**Never edit anything under `ui/`.** Change it in filemill, then:
+**Never edit anything under `src/pykofinder/ui/`.** That is a copy of `../ui/`,
+made so a wheel is self-contained — a package cannot reach outside itself at
+runtime. Edit `../ui/`, then:
 
 ```bash
-tools/sync-ui.py [path/to/filemill]   # re-vendor
-tools/sync-ui.py --check              # exits 1 if the copy is stale
+tools/sync-ui.py            # refresh the packaged copy from ../ui
+tools/sync-ui.py --check    # exits 1 if it is stale; CI runs this
 ```
 
-The copy keeps filemill's directory shape (`ui/src/{core,adapters}` beside
-`ui/vendor`) because `styles.css` reaches the icon font as
-`../../vendor/seti.woff` — flattening a level 404s it. `ui/src/adapters/README.md`
-documents the three ports.
+Because it is one repository, a UI change lands in both projects in one commit;
+the copy is a packaging step, not a synchronisation problem.
+`../ui/adapters/README.md` documents the three ports.
 
 The new UI is mounted at `UI_BASE = "/n/"` while the HTMX UI at `/f/` is still
 the default. Cutting over means pointing `UI_BASE` at `/`, after which the URL

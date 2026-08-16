@@ -37,8 +37,16 @@ jobs:
       # index.html is generated *and* committed, so that one file is all anyone
       # needs. That is also how a stale bundle gets published: this fails the
       # build when src/ has moved on without a rebuild.
-      - name: The committed bundle matches the sources
+      # Both copies of ui/ are generated: filemill's bundle inlines it, and
+      # pykofinder's package carries it so a wheel is self-contained. Either can
+      # go stale without anything else noticing.
+      - name: The committed bundle matches ui/
         run: ./build-index.py --check
+        working-directory: filemill
+
+      - name: The packaged copy matches ui/
+        run: ./tools/sync-ui.py --check
+        working-directory: pykofinder
 
       - name: Install Playwright
         run: |
@@ -48,7 +56,8 @@ jobs:
       # `playwright install` is correct here and forbidden on the NixOS dev
       # machines, where the browsers come from the store and the pinned version
       # has to match them — see AGENTS.md.
-      - name: Test the bundle and the modular sources
+      - name: Test the bundle and the shared sources
+        working-directory: filemill
         run: |
           python3 test-ui.py
           python3 test-ui.py --dev
@@ -56,6 +65,15 @@ jobs:
           python3 test-url.py --dev
           python3 test-rich.py
           python3 test-rich.py --dev
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      # The same ui/, driven against a real server — this is what would catch a
+      # change that suits one project and breaks the other.
+      - name: pykofinder
+        working-directory: pykofinder
+        run: uv run --with "playwright==1.61.0" pytest
 
   publish:
     needs: test
@@ -76,7 +94,7 @@ jobs:
       - name: Collect the bundle
         run: |
           mkdir -p _site
-          cp index.html _site/index.html
+          cp filemill/index.html _site/index.html
 
       - uses: actions/upload-pages-artifact@v3
         with:

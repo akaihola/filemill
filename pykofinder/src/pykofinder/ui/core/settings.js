@@ -20,3 +20,12 @@ toggle("s-density", () => root.dataset.density === "compact",
                     v => root.dataset.density = v ? "compact" : "comfortable");
 toggle("s-theme",   () => root.dataset.theme === "dark",
                     v => root.dataset.theme = v ? "dark" : "light");
+
+/* Only the builds that can actually fetch a renderer show the switch — on the
+   server build the previews come from Python and nothing is downloaded, so the
+   row would be a promise the page does not keep. preview-rich.js reveals it. */
+function offerRichToggle(get, set) {
+  document.getElementById("s-rich").hidden = false;
+  document.getElementById("s-rich-hr").hidden = false;
+  toggle("s-rich", get, set);
+}

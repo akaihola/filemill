@@ -1,9 +1,13 @@
 # Adapters — how one UI serves two apps
 
-`src/core/` is the Miller-columns app: columns, folding, the trail, the keyboard
+`../core/` is the Miller-columns app: columns, folding, the trail, the keyboard
 model, the preview pane, deep links. It knows about **nodes**, and nothing about
 where a node comes from. Everything source-specific lives here, behind the three
 ports declared in [`../core/ports.js`](../core/ports.js).
+
+Both projects in this repository load these files from here — `filemill/` inlines
+them into its single-file bundle, `pykofinder/` copies them into its package for
+distribution. Neither has its own version to drift.
 
 Pick a different set of adapters and the same UI browses something else. That is
 the whole mechanism — there is no framework under it.
@@ -14,7 +18,8 @@ the whole mechanism — there is no framework under it.
 | preview | `preview-local.js` — text, images, PDF, `.desktop` | `preview-http.js` — `GET /api/preview`, rendered by Python |
 | router | `router-hash.js` — `#r=root&p=a/b.md` | `router-path.js` — `/a/b.md` |
 | boot | `app-fsa.js` — picker + welcome screen | `app-http.js` — root comes from the server |
-| extra | `storage.js` — remembered roots in IndexedDB | `preview-upload.js` — local bytes, Python renderer |
+| extra | `preview-rich.js` — renderers fetched from a CDN | `preview-upload.js` — local bytes, Python renderer |
+| | `storage.js` — remembered roots in IndexedDB | |
 
 ## The ports
 
@@ -46,10 +51,15 @@ come back rendered by the same Python pipeline. Local-folder mode is therefore
 not a downgrade; only the address bar goes quiet, because a URL path names a
 file under the server's root and a granted folder is not under it.
 
-## Adding a rich provider to the static build
+## Rich rendering in the static build
 
-Rich rendering in `filemill` is a *different provider*, not a bigger
-`preview-local.js`: drop in `markdown-it`, a highlighter, `mammoth.js`, and
-register with `usePreview(…)`. It belongs in a second build profile — the point
-of the lean bundle is that it is one portable file with no network at all, and
-those libraries are an order of magnitude larger than the app.
+`preview-rich.js` is a *different provider*, not a bigger `preview-local.js`. It
+imports markdown-it, highlight.js and mammoth from a CDN the first time a file
+needs one, because bundling them would make the portable file eight times
+bigger. It sits behind a remembered switch — the app's pitch is that your folder
+does not leave the browser, and this is the one thing that talks to the network
+at all — and every failure falls back to `preview-local.js`, so offline costs
+fidelity rather than the pane.
+
+`pykofinder` does not load it: its previews come from Python, including for a
+local folder (`preview-upload.js`), which is strictly better.

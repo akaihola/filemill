@@ -4,7 +4,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 @font-face {
   font-family: "seti";
-  src: url("../../vendor/seti.woff") format("woff");   /* build inlines this as base64 */
+  src: url("../vendor/seti.woff") format("woff");   /* build inlines this as base64 */
   font-display: block;
 }
 
