@@ -34,21 +34,35 @@ filemill/
 ├── index.html              ← GENERATED bundle (do not hand-edit)
 ├── build-index.py          ← src/index.html + assets → index.html
 ├── hotreload.py            ← optional CDP live-patcher for dev mode
-├── test-ui.py              ← headless suite, fake handle (28 checks)
+├── test-ui.py              ← headless suite, fake handle (31 checks)
+├── test-url.py             ← deep-link suite over localhost (12 checks)
 ├── test-e2e.py             ← headed suite, real folder + real picker
 ├── src/                    ← THE SOURCE
 │   ├── index.html          ← dev entry point: <link>/<script src> references
-│   ├── styles.css          ← every design token + rule
-│   ├── fs.js               ← FSA layer: mkNode, ensureLoaded, loadMeta, fmt*
-│   ├── icons.js            ← Seti lookup, folder glyph, esc()
-│   ├── state.js            ← globals, visibleKids, measure, previewNode
-│   ├── render.js           ← buildCol, columnFor, render, preview
-│   ├── layout.js           ← the fold dial: stripSpan, layout, applyScroll
-│   ├── trail.js            ← the SVG elbows between columns
-│   ├── nav.js              ← choose(), crumbs, all keyboard handling
-│   ├── settings.js         ← ⚙ popover toggles
-│   ├── storage.js          ← IndexedDB: remembered folders
-│   └── main.js             ← mount, picker, welcome screen, startup
+│   ├── core/               ← the shared UI — knows nothing about its source
+│   │   ├── styles.css      ← every design token + rule
+│   │   ├── shell.js        ← the chrome, so both builds emit the same DOM
+│   │   ├── ports.js        ← the FS / PREVIEW / ROUTER seams
+│   │   ├── icons.js        ← Seti lookup, folder glyph, esc()
+│   │   ├── state.js        ← globals, visibleKids, measure, fmt*
+│   │   ├── render.js       ← buildCol, columnFor, render, preview
+│   │   ├── layout.js       ← the fold dial: stripSpan, layout, applyScroll
+│   │   ├── trail.js        ← the SVG elbows between columns
+│   │   ├── nav.js          ← choose(), crumbs, all keyboard handling
+│   │   ├── deeplink.js     ← path ⇄ column chain; push-vs-replace policy
+│   │   └── settings.js     ← ⚙ popover toggles
+│   └── adapters/           ← everything source-specific  (see its README)
+│       ├── README.md       ← the port contracts, and why both apps share core/
+│       ├── fsa.js          ← FS: File System Access API      (filemill)
+│       ├── http.js         ← FS: GET /api/dir                (pykofinder)
+│       ├── preview-local.js  ← PREVIEW: text, image, PDF, .desktop
+│       ├── preview-http.js   ← PREVIEW: GET /api/preview — the Python renderers
+│       ├── preview-upload.js ← PREVIEW: local bytes → POST /api/render
+│       ├── router-hash.js  ← ROUTER: #r=root&p=a/b.md        (filemill)
+│       ├── router-path.js  ← ROUTER: /a/b.md                 (pykofinder)
+│       ├── storage.js      ← IndexedDB: remembered folders
+│       ├── app-fsa.js      ← boot: picker, welcome screen    (filemill)
+│       └── app-http.js     ← boot: server root + Open local folder…
 └── vendor/
     ├── seti-map.js         ← extension → [codepoint, colour] (MIT)
     ├── seti.woff           ← Seti UI icon font (MIT)
@@ -100,8 +114,14 @@ picked roots in the `filemill` database, `kv` store, key `recent`.
 ```bash
 uv run --with "playwright==1.61.0" python3 test-ui.py          # bundle
 uv run --with "playwright==1.61.0" python3 test-ui.py --dev    # modular sources
+uv run --with "playwright==1.61.0" python3 test-url.py         # deep links
+uv run --with "playwright==1.61.0" python3 test-url.py --dev
 uv run --with "playwright==1.61.0" python3 test-e2e.py         # real folder
 ```
+
+`test-url.py` is separate because it needs a real origin: `history.pushState`
+throws on the opaque origin of a `file://` page, which is the case `test-ui.py`
+covers. It serves the repo on a loopback port and drives the same fake handle.
 
 **Never run `playwright install`.** Pin the version matching the
 NixOS-installed browsers — currently rev 1228 → `playwright==1.61.0`, which is
@@ -147,6 +167,11 @@ folders are restored from IndexedDB — reloading is cheap.
 | `content-visibility: auto` on `.row` | Rows have a fixed height, so off-screen ones are skipped: forced layouts (`scrollIntoView`) stop being O(entries) |
 | Click handler on `.col`, not just rows | A folded column hides its rows, so "click a spine to unfold" must be handled by the column (the design study advertised this but never wired it) |
 | Read-only (`mode: "read"`) | Nothing in the app writes, so never ask for write permission |
+| `core/` + `adapters/`, three ports | The same UI runs over the File System Access API and over a server. pykofinder browses with `core/` untouched, which is the only way two apps stay identical — a copied UI diverges one bug fix at a time |
+| The chrome is built by `core/shell.js`, not written in the HTML | There are two HTML files and the markup has to match in both. A shared *file* would need a build step or a fetch, and the static build can afford neither |
+| Hash URLs in the static build, path URLs on the server | A hash survives `file://`, a bare `http.server`, and any static host — none of which can rewrite paths. The server has a root, so its URL path can mirror the file path exactly |
+| `#r=<root>` names the folder, matched against the remembered roots | A `FileSystemDirectoryHandle` is not a path: the URL cannot name a folder the browser has not already granted, and a page that could name arbitrary directories would be worse |
+| History pushes on entering a column, rewrites otherwise | Selecting a folder opens its column without moving focus, so ↑/↓ down a list of folders would otherwise push a history entry per row and make Back useless |
 
 ---
 

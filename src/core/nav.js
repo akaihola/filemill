@@ -22,7 +22,7 @@ async function choose(colIdx, node, rowIdx) {
   path[colIdx].lastSel = node.name;   /* → returns to where you were last time */
   if (!node.dir) return void render();
 
-  const reading = node.kids === null ? ensureLoaded(node) : null;
+  const reading = node.kids === null ? FS.ensureLoaded(node) : null;
   if (reading) {
     /* Highlight the row at once, but hold its column back for a moment: a
        column measures the names it holds, and one built before the read lands
@@ -115,7 +115,7 @@ document.addEventListener("keydown", e => {
     /* nothing open to the right: commit the cursor row, which opens it when it
        is a directory — a second → then steps into that column */
     if (!next) return void rows[ci]?.click();
-    if (next.kids === null) ensureLoaded(next).then(() => { render(); stepInto(next); });
+    if (next.kids === null) FS.ensureLoaded(next).then(() => { render(); stepInto(next); });
     else stepInto(next);
   } else if (e.key === "ArrowLeft") {
     e.preventDefault();

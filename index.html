@@ -103,6 +103,22 @@ body {
 .crumb-sep { color: var(--ink-3); opacity: .55; user-select: none; }
 .spacer { flex: 1; }
 
+/* Shown only by the server build, while a local folder has replaced the served
+   tree — the one state where the address bar cannot describe what you see. */
+#local-badge {
+  display: flex; align-items: center; gap: 5px; margin-right: 6px;
+  padding: 2px 4px 2px 7px; border-radius: 11px; white-space: nowrap;
+  font-size: var(--fs-meta); color: var(--ink-2);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+#local-badge[hidden] { display: none; }
+#local-badge svg { width: 12px; height: 12px; fill: var(--accent); }
+#local-badge button {
+  font: inherit; line-height: 1; color: var(--ink-3); cursor: pointer;
+  background: transparent; border: 0; border-radius: 50%; padding: 2px 4px;
+}
+#local-badge button:hover { background: var(--hover); color: var(--ink); }
+
 /* ── Toolbar buttons ───────────────────────────────────────────────────── */
 .tb {
   font: inherit; font-size: var(--fs-head); line-height: 1; color: var(--ink-2);
@@ -371,6 +387,29 @@ body {
   max-width: 100%; max-height: 46vh; border-radius: 8px; margin-bottom: 18px;
   box-shadow: 0 1px 6px rgba(0,0,0,.14); background: var(--hover);
 }
+.pv-pdf {
+  width: 100%; height: 46vh; border: 1px solid var(--hairline);
+  border-radius: 8px; margin-bottom: 18px; background: var(--hover);
+}
+.pv-link { margin-bottom: 18px; }
+.pv-link h3 { margin: 0 0 4px; font-size: 14px; font-weight: 600; }
+.pv-link .sub { color: var(--ink-3); font-size: var(--fs-meta); margin: 0 0 10px; }
+.pv-link a { color: var(--accent); overflow-wrap: anywhere; }
+.pv-err { color: var(--danger, #c0392b); }
+
+/* Server-rendered preview bodies (pykofinder): markdown, Pygments, docx, pptx.
+   The provider supplies the markup; these are the containers it lands in. */
+.pv-rich { margin-bottom: 18px; overflow-wrap: anywhere; }
+.pv-rich > :first-child { margin-top: 0; }
+.pv-rich pre {
+  font-family: var(--mono); font-size: 11.5px; line-height: 1.55;
+  padding: 12px 14px; border-radius: 8px; background: var(--hover);
+  overflow: auto; max-height: 46vh;
+}
+.pv-rich img { max-width: 100%; border-radius: 6px; }
+.pv-rich table { border-collapse: collapse; font-size: 12px; }
+.pv-rich th, .pv-rich td { border: 1px solid var(--hairline); padding: 3px 8px; }
+.pv-rich a { color: var(--accent); }
 
 /* ── Status strip ──────────────────────────────────────────────────────── */
 #status {
@@ -443,11 +482,38 @@ window.SETI = {"default":["e023","#d4d7d6"],"ext":{"ad":["e003","#519aba"],"ai":
 </script>
 </head>
 <body>
+<!-- The page is built by core/shell.js — one copy of the chrome for both the
+     static build and the server build. See src/adapters/README.md.
+
+     core/ is the shared UI and knows nothing about where its nodes come from;
+     adapters/ chooses. Swap the four adapter lines and the same app browses a
+     server instead — that is exactly what the pykofinder page does.
+     Load order is dependency order; only app-*.js runs anything at load time. -->
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   The chrome — top bar, stage, status strip, welcome screen.
+
+   In JavaScript rather than in the HTML file because there are two HTML files
+   (a static one and one the server emits) and this markup has to be the same
+   in both. A shared *file* would need a build step or a fetch; the static build
+   can afford neither, since it has to keep running unbuilt from src/ and, once
+   bundled, from a file:// page with no network at all.
+
+   So: one page structure, emitted before anything queries it. Every id below is
+   part of the contract core/ relies on — state.js takes its element handles the
+   moment it loads, which is why this script comes first.
+   ═══════════════════════════════════════════════════════════════════════════ */
+document.body.insertAdjacentHTML("afterbegin", `
 <div id="shell">
   <div id="bar">
     <div id="crumbs"></div>
     <div class="spacer"></div>
-    <button class="tb" id="open" title="Open a different folder">
+    <span id="local-badge" hidden>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/></svg>
+      <span class="nm"></span>
+      <button id="leave-local" title="Back to the served folder">✕</button>
+    </span>
+    <button class="tb" id="open" title="Open a folder on this machine">
       <svg class="tb-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/></svg>
       Open Folder…</button>
     <button class="tb" id="gear" aria-expanded="false" title="Settings">⚙</button>
@@ -483,7 +549,7 @@ window.SETI = {"default":["e023","#d4d7d6"],"ext":{"ad":["e003","#519aba"],"ai":
 
 <div id="welcome">
   <svg class="mark" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/></svg>
-  <h1>filemill</h1>
+  <h1 id="w-title">filemill</h1>
   <p id="w-msg">Pick a folder on this machine to browse it in Miller columns.
      Nothing leaves the browser — the folder is read locally, on demand.</p>
   <button class="btn" id="w-pick">Choose Folder…</button>
@@ -492,60 +558,48 @@ window.SETI = {"default":["e023","#d4d7d6"],"ext":{"ad":["e003","#519aba"],"ai":
     <div class="rec-list"></div>
   </div>
   <p class="note">Needs a Chromium-based desktop browser (File System Access API).</p>
-</div>
-
-<!-- Load order is dependency order; only main.js runs anything at load time. -->
+</div>`);
+</script>
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════
-   Filesystem — File System Access API, read-only, loaded one level at a time.
+   Ports — the three seams between the shared UI and whatever is behind it.
 
-   Node shape mirrors the design study's mock nodes so the renderer is
-   unchanged:  { name, dir, kids }  — plus a handle and lazy metadata.
-     kids === null   directory not read yet
-     kids === []     read, and empty (or unreadable — see .denied)
+   Everything in core/ is source-agnostic: it knows about nodes, columns and
+   keystrokes, never about the File System Access API, HTTP, or a URL scheme.
+   The three objects below are what an adapter fills in. Pick a different set
+   and the same UI browses a server instead of a local folder.
+
+   ── FS ─ the filesystem ────────────────────────────────────────────────────
+   A node is  { name, dir, kids }  plus whatever the adapter needs to fetch it:
+       kids === null        directory, not read yet   → spinner
+       kids === []          read, and empty (or unreadable — see .denied)
+       kids === [Node…]     read
+       node.denied          string; shown in place of the rows
+       node.meta            { size, mod, type } once loadMeta has run
+       node.lastSel         UI scratch — written by the UI, never by an adapter
+
+     ensureLoaded(node) → Promise   fills node.kids (idempotent, debounced)
+     loadMeta(node)     → Promise   fills node.meta  (may be a no-op if the
+                                    listing already carried the metadata)
+
+   ── PREVIEW ─ the preview body ─────────────────────────────────────────────
+     render(node) → Promise<string|null>
+         HTML for the preview body, or null for "no inline preview". The pane's
+         chrome — header, hero, size/modified list — is core's, and so is the
+         staleness guard: a provider may take as long as it likes.
+     revoke()  → void                optional; release object URLs
+
+   ── ROUTER ─ the address bar ───────────────────────────────────────────────
+     read()          → {root, path:[names…]} | null    the location right now
+     write(state)    → void                            reflect state, no reload
+     onNavigate(cb)  → void                            back/forward pressed
+     Set to null to run with no URL syncing at all.
    ═══════════════════════════════════════════════════════════════════════════ */
-const mkNode = (name, handle) => ({
-  name, handle,
-  dir: handle.kind === "directory",
-  kids: handle.kind === "directory" ? null : undefined,
-});
+let FS = null, PREVIEW = null, ROUTER = null;
 
-async function ensureLoaded(node) {
-  if (!node.dir || node.kids !== null) return;
-  if (node.loading) return node.loading;          /* debounce concurrent calls */
-  node.loading = (async () => {
-    const kids = [];
-    try {
-      for await (const [name, handle] of node.handle.entries()) kids.push(mkNode(name, handle));
-    } catch (err) {
-      node.denied = err.name === "NotAllowedError" ? "No permission to read" : String(err.message || err);
-    }
-    node.kids = kids;
-    node.loading = null;
-  })();
-  return node.loading;
-}
-
-/* File metadata is a separate round-trip per file — only fetched on preview. */
-async function loadMeta(node) {
-  if (node.dir || node.meta) return;
-  try {
-    const file = await node.handle.getFile();
-    node.meta = { size: file.size, mod: file.lastModified, type: file.type };
-    node.file = file;
-  } catch (err) {
-    node.meta = { error: String(err.message || err) };
-  }
-}
-
-const fmtSize = b =>
-  b < 1024 ? `${b} B`
-  : b < 1024 ** 2 ? `${(b / 1024).toFixed(b < 10240 ? 1 : 0)} KB`
-  : b < 1024 ** 3 ? `${(b / 1024 ** 2).toFixed(1)} MB`
-  : `${(b / 1024 ** 3).toFixed(2)} GB`;
-
-const fmtDate = ms => new Date(ms).toLocaleString(undefined,
-  { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+const useFilesystem = a => { FS = a; };
+const usePreview    = p => { PREVIEW = p; };
+const useRouter     = r => { ROUTER = r; };
 </script>
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -587,7 +641,6 @@ let cursor = {};                                         // col index -> row ind
 let widths = [];                                         // natural width per column
 let folded = 0;                                          // columns currently folded
 let pvToken = 0;                                         // guards async preview fills
-let pvURL   = null;                                      // object URL to revoke
 const state = { dotfiles: false };
 
 const GUTTER = () => parseInt(getComputedStyle(root).getPropertyValue("--gutter"));
@@ -596,6 +649,15 @@ const SPINE  = () => parseInt(getComputedStyle(root).getPropertyValue("--spine-w
 const visibleKids = node =>
   (node.kids || []).filter(k => state.dotfiles || !k.name.startsWith("."))
     .sort((a,b) => (!!b.dir - !!a.dir) || a.name.localeCompare(b.name, undefined, {numeric:true}));
+
+const fmtSize = b =>
+  b < 1024 ? `${b} B`
+  : b < 1024 ** 2 ? `${(b / 1024).toFixed(b < 10240 ? 1 : 0)} KB`
+  : b < 1024 ** 3 ? `${(b / 1024 ** 2).toFixed(1)} MB`
+  : `${(b / 1024 ** 3).toFixed(2)} GB`;
+
+const fmtDate = ms => new Date(ms).toLocaleString(undefined,
+  { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
 const splitName = name => {
   const i = name.lastIndexOf(".");
@@ -749,13 +811,14 @@ function render(keepScroll) {
     c.el.classList.toggle("scrollable-down", c.body.scrollHeight > c.body.clientHeight + 4);
   renderCrumbs();
   layout(keepScroll);
+  syncURL();
 }
 
 function renderPreview() {
   const n = previewNode();
   const pv = document.createElement("div");
   pv.id = "preview";
-  if (pvURL) { URL.revokeObjectURL(pvURL); pvURL = null; }
+  PREVIEW.revoke?.();
   if (!n) {
     pv.innerHTML = `<div class="pv-empty"><div class="glyph">◫</div>
                     <div>Select a file to preview</div></div>`;
@@ -782,14 +845,12 @@ function renderPreview() {
 }
 
 /* Metadata and contents arrive after the layout is already on screen; the token
-   makes sure a slow read for a file you have since navigated away from is dropped. */
-const TEXT_RE = /\.(txt|md|markdown|log|json|jsonc|ya?ml|toml|ini|cfg|conf|csv|tsv|xml|svg|html?|css|scss|less|js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|gitignore|env)$/i;
-const IMG_RE  = /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
-const TEXT_MAX = 512 * 1024, TEXT_CHARS = 8000;
-
+   makes sure a slow read for a file you have since navigated away from is
+   dropped. That guard lives here, not in the provider, so a provider is free to
+   be as slow as it needs to be — a server round-trip, a WASM highlighter. */
 async function fillPreview(n) {
   const token = ++pvToken;
-  await loadMeta(n);
+  await FS.loadMeta(n);
   if (token !== pvToken) return;
   const m = n.meta || {};
   const sub  = document.getElementById("pv-sub");
@@ -799,19 +860,16 @@ async function fillPreview(n) {
   document.getElementById("pv-size").textContent = `${fmtSize(m.size)} (${m.size.toLocaleString()} bytes)`;
   document.getElementById("pv-mod").textContent  = fmtDate(m.mod);
 
-  const host = document.getElementById("pv-content");
-  if (IMG_RE.test(n.name)) {
-    pvURL = URL.createObjectURL(n.file);
-    host.innerHTML = `<img class="pv-img" src="${pvURL}" alt="">`;
-  } else if (TEXT_RE.test(n.name) && m.size <= TEXT_MAX) {
-    const text = await n.file.slice(0, TEXT_MAX).text();
-    if (token !== pvToken) return;
-    const clipped = text.length > TEXT_CHARS;
-    host.innerHTML = `<pre class="pv-text">${esc(text.slice(0, TEXT_CHARS))}` +
-                     `${clipped ? "\n…" : ""}</pre>`;
-  } else {
-    host.innerHTML = `<p>No inline preview for this file type.</p>`;
+  let html = null;
+  try {
+    html = await PREVIEW.render(n);
+  } catch (err) {
+    html = `<p class="pv-err">Preview failed: ${esc(String(err.message || err))}</p>`;
   }
+  if (token !== pvToken) return;
+  const host = document.getElementById("pv-content");
+  if (!host) return;
+  host.innerHTML = html ?? `<p>No inline preview for this file type.</p>`;
   paintTrail();
 }
 </script>
@@ -968,7 +1026,7 @@ async function choose(colIdx, node, rowIdx) {
   path[colIdx].lastSel = node.name;   /* → returns to where you were last time */
   if (!node.dir) return void render();
 
-  const reading = node.kids === null ? ensureLoaded(node) : null;
+  const reading = node.kids === null ? FS.ensureLoaded(node) : null;
   if (reading) {
     /* Highlight the row at once, but hold its column back for a moment: a
        column measures the names it holds, and one built before the read lands
@@ -1061,7 +1119,7 @@ document.addEventListener("keydown", e => {
     /* nothing open to the right: commit the cursor row, which opens it when it
        is a directory — a second → then steps into that column */
     if (!next) return void rows[ci]?.click();
-    if (next.kids === null) ensureLoaded(next).then(() => { render(); stepInto(next); });
+    if (next.kids === null) FS.ensureLoaded(next).then(() => { render(); stepInto(next); });
     else stepInto(next);
   } else if (e.key === "ArrowLeft") {
     e.preventDefault();
@@ -1070,6 +1128,121 @@ document.addEventListener("keydown", e => {
     closeSettings();
   }
 });
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   Deep links — turning the selection into a path and back.
+
+   Shared verbatim between the static build and the server build; only the
+   ROUTER differs (a hash in one, a real URL path in the other). Everything
+   here speaks in *names below the root*:
+
+       path = [workspace, src, core]      →   ["src", "core", "state.js"]
+       sel  = ["src", "core", "state.js"]
+
+   The last segment is the selection in the deepest open column, which is the
+   thing the address bar should name — a file when a file is selected, and the
+   directory itself when one is open with nothing chosen inside it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* render() runs on resize and on every keystroke, so writing the URL from it is
+   only safe if an unchanged location is left alone — otherwise Back fills up
+   with duplicates. applying is the re-entrancy guard: a URL being *read* must
+   not be immediately re-written from the half-built state it produces. */
+let applying = false;
+
+function currentPath() {
+  const names = path.slice(1).map(p => p.name);
+  const leaf = sel[path.length - 1];
+  if (leaf !== undefined) names.push(leaf);
+  return names;
+}
+
+/* Walking a column with ↑/↓ is one selection change per keystroke — pushing a
+   history entry for each would make Back useless. What counts as a navigation
+   is *entering* a column, not opening one: selecting a folder opens its column
+   without moving focus (that is the whole focus model), and ↑/↓ down a list of
+   folders would otherwise push an entry per row. So the history key is the
+   chain up to the focused column, and everything else rewrites in place.
+   Back then steps back out of folders, which is what it looks like it does. */
+let lastKey = null;
+
+function syncURL() {
+  if (applying || !ROUTER || !path.length) return;
+  const key = path.slice(0, focusCol + 1).map(p => p.name).join("/");
+  ROUTER.write({ root: path[0].name, path: currentPath() }, lastKey === key);
+  lastKey = key;
+}
+
+/* Walk down from the root, opening each directory in turn. Stops at the first
+   segment that is not there — a link into a folder that has since been renamed
+   still gets you as far as it can rather than showing nothing. */
+async function applyPath(names) {
+  if (!path.length) return false;
+  names = (names || []).filter(Boolean);
+
+  /* a link to a dotfile has to reveal dotfiles, or visibleKids would hide the
+     very thing the URL asked for */
+  if (!state.dotfiles && names.some(n => n.startsWith("."))) {
+    state.dotfiles = true;
+    const b = document.getElementById("s-dot");
+    if (b) b.setAttribute("aria-checked", "true");
+  }
+
+  applying = true;
+  try {
+    const rootNode = path[0];
+    path = [rootNode]; sel = []; cursor = { 0: 0 }; focusCol = 0;
+    await FS.ensureLoaded(rootNode);
+    let complete = true;
+
+    for (let i = 0; i < names.length; i++) {
+      const parent = path[i];
+      const kids = visibleKids(parent);
+      const ri = kids.findIndex(k => k.name === names[i]);
+      if (ri < 0) { complete = false; break; }
+
+      const node = kids[ri];
+      sel[i] = node.name;
+      cursor[i] = ri;
+      focusCol = i;                  /* focus stays on the column holding it */
+      parent.lastSel = node.name;
+      if (!node.dir) break;
+      await FS.ensureLoaded(node);
+      path.push(node);
+    }
+    return complete;
+  } finally {
+    applying = false;
+    render();
+    scrollCursorIntoView();
+  }
+}
+
+/* A restored selection can be thousands of rows down a column; the row exists
+   but nothing has ever scrolled to it. */
+function scrollCursorIntoView() {
+  for (let i = 0; i < path.length; i++) {
+    const c = colCache.get(path[i]);
+    const ri = cursor[i];
+    if (c && ri != null && c.rows[ri]) c.rows[ri].scrollIntoView({ block: "nearest" });
+  }
+}
+
+/* Wire Back/Forward once a root is mounted — and only once, however many roots
+   are opened after it, or one Back would replay through every listener. */
+let routing = false;
+
+function startRouting() {
+  if (routing || !ROUTER) return;
+  routing = true;
+  ROUTER.onNavigate(loc => {
+    /* Only the path is honoured: a Back that lands on a different root cannot
+       remount it without a user gesture, so it would silently walk the wrong
+       tree. Leaving the columns where they are is the honest outcome. */
+    if (loc && (!loc.root || loc.root === path[0]?.name)) applyPath(loc.path);
+  });
+}
 </script>
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1094,6 +1267,190 @@ toggle("s-density", () => root.dataset.density === "compact",
                     v => root.dataset.density = v ? "compact" : "comfortable");
 toggle("s-theme",   () => root.dataset.theme === "dark",
                     v => root.dataset.theme = v ? "dark" : "light");
+</script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   Filesystem adapter — File System Access API, read-only, one level at a time.
+
+   Fills the FS port (see core/ports.js). Nodes carry the handle they came
+   from; nothing else in the app ever touches it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const fsaNode = (name, handle) => ({
+  name, handle,
+  dir: handle.kind === "directory",
+  kids: handle.kind === "directory" ? null : undefined,
+});
+
+const FSA = {
+  node: fsaNode,
+
+  async ensureLoaded(node) {
+    if (!node.dir || node.kids !== null) return;
+    if (node.loading) return node.loading;        /* debounce concurrent calls */
+    node.loading = (async () => {
+      const kids = [];
+      try {
+        for await (const [name, handle] of node.handle.entries()) kids.push(fsaNode(name, handle));
+      } catch (err) {
+        node.denied = err.name === "NotAllowedError" ? "No permission to read" : String(err.message || err);
+      }
+      node.kids = kids;
+      node.loading = null;
+    })();
+    return node.loading;
+  },
+
+  /* File metadata is a separate round-trip per file — only fetched on preview. */
+  async loadMeta(node) {
+    if (node.dir || node.meta) return;
+    try {
+      const file = await node.handle.getFile();
+      node.meta = { size: file.size, mod: file.lastModified, type: file.type };
+      node.file = file;
+    } catch (err) {
+      node.meta = { error: String(err.message || err) };
+    }
+  },
+
+  /* The preview providers read bytes through this, so they never need to know
+     whether the node came from a handle or a URL. */
+  async blob(node) {
+    await FSA.loadMeta(node);
+    return node.file || null;
+  },
+};
+
+useFilesystem(FSA);
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   Preview provider — in-browser, zero dependencies.
+
+   Fills the PREVIEW port (see core/ports.js). Everything here works from the
+   bytes alone, so it costs nothing in the bundle and works with no network:
+
+     images   → object URL
+     PDF      → object URL in an <iframe>; Chromium renders it natively, so a
+                PDF viewer is not something this has to carry
+     .desktop → the same link card the server build shows, parsed in 20 lines
+     text     → escaped <pre>, clipped
+
+   Rich rendering (Markdown, syntax highlighting, docx, pptx) is a *different
+   provider*, not a bigger version of this one: see preview-http.js for the
+   server-rendered variant, and the "full" build profile for a bundled one.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const TEXT_RE = /\.(txt|md|markdown|log|json|jsonc|ya?ml|toml|ini|cfg|conf|csv|tsv|xml|svg|html?|css|scss|less|js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|gitignore|env)$/i;
+const IMG_RE  = /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
+const TEXT_MAX = 512 * 1024, TEXT_CHARS = 8000;
+
+let pvURL = null;
+
+/* .desktop is an INI file; only Type=Link entries have anything to show. */
+function desktopCard(text) {
+  const e = {};
+  let inEntry = false;
+  for (const line of text.split(/\r?\n/)) {
+    const s = line.trim();
+    if (s.startsWith("[")) { inEntry = s === "[Desktop Entry]"; continue; }
+    if (!inEntry || !s || s.startsWith("#")) continue;
+    const i = s.indexOf("=");
+    if (i > 0) e[s.slice(0, i).trim()] = s.slice(i + 1).trim();
+  }
+  if (e.Type !== "Link" || !e.URL) return null;
+  const url = esc(e.URL);
+  return `<div class="pv-link">
+      <h3>${esc(e.Name || "")}</h3>
+      ${e.Comment ? `<p class="sub">${esc(e.Comment)}</p>` : ""}
+      <p>🔗 <a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a></p>
+    </div>`;
+}
+
+const PreviewLocal = {
+  revoke() { if (pvURL) { URL.revokeObjectURL(pvURL); pvURL = null; } },
+
+  async render(node) {
+    const blob = await FS.blob(node);
+    if (!blob) return null;
+
+    if (IMG_RE.test(node.name)) {
+      pvURL = URL.createObjectURL(blob);
+      return `<img class="pv-img" src="${pvURL}" alt="">`;
+    }
+    if (/\.pdf$/i.test(node.name)) {
+      pvURL = URL.createObjectURL(blob.slice(0, blob.size, "application/pdf"));
+      return `<iframe class="pv-pdf" src="${pvURL}" title="${esc(node.name)}"></iframe>`;
+    }
+    if (/\.desktop$/i.test(node.name) && blob.size <= TEXT_MAX)
+      return desktopCard(await blob.text()) ?? null;
+
+    if (TEXT_RE.test(node.name) && blob.size <= TEXT_MAX) {
+      const text = await blob.slice(0, TEXT_MAX).text();
+      const clipped = text.length > TEXT_CHARS;
+      return `<pre class="pv-text">${esc(text.slice(0, TEXT_CHARS))}${clipped ? "\n…" : ""}</pre>`;
+    }
+    return null;
+  },
+};
+
+usePreview(PreviewLocal);
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   Router — the fragment, for the static build.
+
+       #r=workspace&p=src/core/state.js
+
+   A hash and not a query string, because the static build has to survive being
+   opened from anywhere: a `file://` page, a bare `python3 -m http.server`, a
+   gist, a USB stick. A path-shaped URL needs a server that rewrites; a query
+   string needs one that ignores it. A hash needs nothing.
+
+   `r` names the *root folder*, and it has to be there because a
+   FileSystemDirectoryHandle is not a path: the URL cannot name a folder the
+   browser has not already granted. It is matched against the remembered roots
+   in IndexedDB, so a link only re-opens a folder you have opened before — by
+   design, since the alternative would be a page that can name arbitrary
+   directories on your disk. Folder *names* are what is matched, so two
+   different folders with the same basename resolve to the more recent one.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const encSeg = s => encodeURIComponent(s).replace(/%2F/gi, "%2F");
+
+/* A file:// page has an opaque origin and pushState throws SecurityError on it.
+   That page cannot open a folder either (see showBlocked), so there is nothing
+   to address — but the test suite does mount a fake tree there, and a throw on
+   every render would be fatal. Fail once, then stay quiet. */
+let dead = false;
+
+const RouterHash = {
+  read() {
+    const h = location.hash.replace(/^#/, "");
+    if (!h) return null;
+    const q = new URLSearchParams(h);
+    const p = q.get("p") || "";
+    return {
+      root: q.get("r") || null,
+      path: p.split("/").filter(Boolean).map(decodeURIComponent),
+    };
+  },
+
+  write({ root, path }, replace) {
+    if (dead) return;
+    const q = "#r=" + encSeg(root) + (path.length ? "&p=" + path.map(encSeg).join("/") : "");
+    if (q === location.hash) return;
+    /* history.*State, not an assignment to location.hash: assigning always
+       pushes, and it fires hashchange, which would loop straight back in
+       through onNavigate. */
+    try { history[replace ? "replaceState" : "pushState"](null, "", q); }
+    catch (err) { dead = true; }
+  },
+
+  onNavigate(cb) {
+    addEventListener("hashchange", () => cb(RouterHash.read()));
+  },
+};
+
+useRouter(RouterHash);
 </script>
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1147,17 +1504,39 @@ async function forgetRoots() {
 </script>
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════
-   Opening a folder — the only entry point into the tree.
+   Static build — boot, folder picker, welcome screen.
+
+   The only file that knows this is the local-folder flavour of the app. It
+   picks the adapters (fsa + preview-local + router-hash, all loaded before
+   this) and owns the one entry point into the tree, mount().
    ═══════════════════════════════════════════════════════════════════════════ */
-async function mount(handle) {
-  const node = mkNode(handle.name, handle);
+
+/* A deep link read at startup, held until a root is mounted that can satisfy
+   it — the URL names a folder, but a folder is not browsable until the browser
+   has granted it. */
+let pendingLoc = null;
+
+async function mount(handle, loc) {
+  const node = FS.node(handle.name, handle);
   colCache.clear();
   path = [node]; sel = []; focusCol = 0; cursor = { 0: 0 };
   welcome.hidden = true;
   document.title = handle.name + " — filemill";
   render();
-  await ensureLoaded(node);
-  render();
+  await FS.ensureLoaded(node);
+
+  const want = loc ?? takePending(handle.name);
+  if (want && want.path.length) await applyPath(want.path);
+  else render();
+  startRouting();
+}
+
+/* A pending link only applies to the root it named — mounting some other folder
+   must not try to walk that folder's path into it. */
+function takePending(rootName) {
+  const p = pendingLoc;
+  pendingLoc = null;
+  return p && (!p.root || p.root === rootName) ? p : null;
 }
 
 async function pickFolder() {
@@ -1218,12 +1597,20 @@ document.getElementById("w-pick").onclick = pickFolder;
 (async function start() {
   if (!window.showDirectoryPicker) return showBlocked("unsupported");
   if (location.protocol === "file:") return showBlocked("file");
+
+  pendingLoc = ROUTER.read();
   const handles = await recallRoots();
   if (!handles.length) return;
+
+  /* A link names its root, so prefer that folder over the most recent one —
+     otherwise reopening a bookmark would silently browse the wrong tree. */
+  const wanted = pendingLoc?.root
+    ? handles.find(h => h.name === pendingLoc.root) : null;
+  const first = wanted || handles[0];
+
   /* queryPermission needs no gesture, so a folder still granted from an earlier
      visit opens with no dialog at all */
-  if (await handles[0].queryPermission({ mode: "read" }) === "granted")
-    return mount(handles[0]);
+  if (await first.queryPermission({ mode: "read" }) === "granted") return mount(first);
   renderRecents(handles);
 })();
 

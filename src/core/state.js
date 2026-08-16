@@ -16,7 +16,6 @@ let cursor = {};                                         // col index -> row ind
 let widths = [];                                         // natural width per column
 let folded = 0;                                          // columns currently folded
 let pvToken = 0;                                         // guards async preview fills
-let pvURL   = null;                                      // object URL to revoke
 const state = { dotfiles: false };
 
 const GUTTER = () => parseInt(getComputedStyle(root).getPropertyValue("--gutter"));
@@ -25,6 +24,15 @@ const SPINE  = () => parseInt(getComputedStyle(root).getPropertyValue("--spine-w
 const visibleKids = node =>
   (node.kids || []).filter(k => state.dotfiles || !k.name.startsWith("."))
     .sort((a,b) => (!!b.dir - !!a.dir) || a.name.localeCompare(b.name, undefined, {numeric:true}));
+
+const fmtSize = b =>
+  b < 1024 ? `${b} B`
+  : b < 1024 ** 2 ? `${(b / 1024).toFixed(b < 10240 ? 1 : 0)} KB`
+  : b < 1024 ** 3 ? `${(b / 1024 ** 2).toFixed(1)} MB`
+  : `${(b / 1024 ** 3).toFixed(2)} GB`;
+
+const fmtDate = ms => new Date(ms).toLocaleString(undefined,
+  { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
 const splitName = name => {
   const i = name.lastIndexOf(".");

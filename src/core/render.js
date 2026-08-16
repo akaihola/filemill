@@ -119,13 +119,14 @@ function render(keepScroll) {
     c.el.classList.toggle("scrollable-down", c.body.scrollHeight > c.body.clientHeight + 4);
   renderCrumbs();
   layout(keepScroll);
+  syncURL();
 }
 
 function renderPreview() {
   const n = previewNode();
   const pv = document.createElement("div");
   pv.id = "preview";
-  if (pvURL) { URL.revokeObjectURL(pvURL); pvURL = null; }
+  PREVIEW.revoke?.();
   if (!n) {
     pv.innerHTML = `<div class="pv-empty"><div class="glyph">◫</div>
                     <div>Select a file to preview</div></div>`;
@@ -152,14 +153,12 @@ function renderPreview() {
 }
 
 /* Metadata and contents arrive after the layout is already on screen; the token
-   makes sure a slow read for a file you have since navigated away from is dropped. */
-const TEXT_RE = /\.(txt|md|markdown|log|json|jsonc|ya?ml|toml|ini|cfg|conf|csv|tsv|xml|svg|html?|css|scss|less|js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|gitignore|env)$/i;
-const IMG_RE  = /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
-const TEXT_MAX = 512 * 1024, TEXT_CHARS = 8000;
-
+   makes sure a slow read for a file you have since navigated away from is
+   dropped. That guard lives here, not in the provider, so a provider is free to
+   be as slow as it needs to be — a server round-trip, a WASM highlighter. */
 async function fillPreview(n) {
   const token = ++pvToken;
-  await loadMeta(n);
+  await FS.loadMeta(n);
   if (token !== pvToken) return;
   const m = n.meta || {};
   const sub  = document.getElementById("pv-sub");
@@ -169,18 +168,15 @@ async function fillPreview(n) {
   document.getElementById("pv-size").textContent = `${fmtSize(m.size)} (${m.size.toLocaleString()} bytes)`;
   document.getElementById("pv-mod").textContent  = fmtDate(m.mod);
 
-  const host = document.getElementById("pv-content");
-  if (IMG_RE.test(n.name)) {
-    pvURL = URL.createObjectURL(n.file);
-    host.innerHTML = `<img class="pv-img" src="${pvURL}" alt="">`;
-  } else if (TEXT_RE.test(n.name) && m.size <= TEXT_MAX) {
-    const text = await n.file.slice(0, TEXT_MAX).text();
-    if (token !== pvToken) return;
-    const clipped = text.length > TEXT_CHARS;
-    host.innerHTML = `<pre class="pv-text">${esc(text.slice(0, TEXT_CHARS))}` +
-                     `${clipped ? "\n…" : ""}</pre>`;
-  } else {
-    host.innerHTML = `<p>No inline preview for this file type.</p>`;
+  let html = null;
+  try {
+    html = await PREVIEW.render(n);
+  } catch (err) {
+    html = `<p class="pv-err">Preview failed: ${esc(String(err.message || err))}</p>`;
   }
+  if (token !== pvToken) return;
+  const host = document.getElementById("pv-content");
+  if (!host) return;
+  host.innerHTML = html ?? `<p>No inline preview for this file type.</p>`;
   paintTrail();
 }

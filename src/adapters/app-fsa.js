@@ -1,15 +1,37 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Opening a folder — the only entry point into the tree.
+   Static build — boot, folder picker, welcome screen.
+
+   The only file that knows this is the local-folder flavour of the app. It
+   picks the adapters (fsa + preview-local + router-hash, all loaded before
+   this) and owns the one entry point into the tree, mount().
    ═══════════════════════════════════════════════════════════════════════════ */
-async function mount(handle) {
-  const node = mkNode(handle.name, handle);
+
+/* A deep link read at startup, held until a root is mounted that can satisfy
+   it — the URL names a folder, but a folder is not browsable until the browser
+   has granted it. */
+let pendingLoc = null;
+
+async function mount(handle, loc) {
+  const node = FS.node(handle.name, handle);
   colCache.clear();
   path = [node]; sel = []; focusCol = 0; cursor = { 0: 0 };
   welcome.hidden = true;
   document.title = handle.name + " — filemill";
   render();
-  await ensureLoaded(node);
-  render();
+  await FS.ensureLoaded(node);
+
+  const want = loc ?? takePending(handle.name);
+  if (want && want.path.length) await applyPath(want.path);
+  else render();
+  startRouting();
+}
+
+/* A pending link only applies to the root it named — mounting some other folder
+   must not try to walk that folder's path into it. */
+function takePending(rootName) {
+  const p = pendingLoc;
+  pendingLoc = null;
+  return p && (!p.root || p.root === rootName) ? p : null;
 }
 
 async function pickFolder() {
@@ -70,12 +92,20 @@ document.getElementById("w-pick").onclick = pickFolder;
 (async function start() {
   if (!window.showDirectoryPicker) return showBlocked("unsupported");
   if (location.protocol === "file:") return showBlocked("file");
+
+  pendingLoc = ROUTER.read();
   const handles = await recallRoots();
   if (!handles.length) return;
+
+  /* A link names its root, so prefer that folder over the most recent one —
+     otherwise reopening a bookmark would silently browse the wrong tree. */
+  const wanted = pendingLoc?.root
+    ? handles.find(h => h.name === pendingLoc.root) : null;
+  const first = wanted || handles[0];
+
   /* queryPermission needs no gesture, so a folder still granted from an earlier
      visit opens with no dialog at all */
-  if (await handles[0].queryPermission({ mode: "read" }) === "granted")
-    return mount(handles[0]);
+  if (await first.queryPermission({ mode: "read" }) === "granted") return mount(first);
   renderRecents(handles);
 })();
 
