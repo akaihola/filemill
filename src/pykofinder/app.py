@@ -21,8 +21,15 @@ from fasthtml.common import (
     fast_app,
 )
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import FileResponse, HTMLResponse, RedirectResponse, Response
+from starlette.responses import (
+    FileResponse,
+    HTMLResponse,
+    JSONResponse,
+    RedirectResponse,
+    Response,
+)
 
+from pykofinder import api
 from pykofinder.columns import (
     initial_columns,
     list_column,
@@ -151,8 +158,9 @@ async def sse_reload():
 
         return Response(status_code=404)
 
-    from starlette.responses import StreamingResponse
     import asyncio
+
+    from starlette.responses import StreamingResponse
 
     async def event_generator():
         try:
@@ -365,7 +373,7 @@ def _parse_desktop_url(path: Path) -> str | None:
             if entry.get("Type", "").strip() == "Link":
                 url = entry.get("URL", "").strip()
                 return url or None
-    except Exception:
+    except Exception:  # noqa: S110 — a malformed .desktop file simply has no URL
         pass
     return None
 
@@ -655,6 +663,153 @@ def finder_view(path: str = "", vpath: str = ""):
     return _shell_html(Script(nav_js))
 
 
+# ── The shared Miller-columns UI ─────────────────────────────────────────────
+#
+# ui/ is filemill's frontend, vendored verbatim by tools/sync-ui.py — see
+# ui/adapters/README.md. Its core/ is source-agnostic; the adapters loaded below
+# point it at this server. Nothing under ui/ is edited here, ever: a UI that is
+# copied and then touched is a fork, and the whole point is that both projects
+# show the same app.
+#
+# Mounted under /n/ during the migration, so the HTMX UI at /f/ keeps working.
+# Cutting over is changing UI_BASE to "/" and letting the catch-all serve the
+# shell — at which point the URL path *is* the file path relative to ROOT, with
+# no prefix at all.
+
+UI_BASE = "/n/"
+_UI_DIR: Path = Path(__file__).parent / "ui"
+
+_UI_CORE = [
+    "shell.js", "ports.js", "icons.js", "state.js", "render.js",
+    "layout.js", "trail.js", "nav.js", "deeplink.js", "settings.js",
+]
+
+# Load order is dependency order. Both filesystem adapters are present because
+# "Open local folder…" switches between them at runtime; app-http.js is what
+# selects, so the order of the adapter files themselves does not matter.
+_UI_ADAPTERS = [
+    "http.js", "preview-http.js", "preview-local.js", "preview-upload.js",
+    "router-path.js", "fsa.js", "storage.js", "app-http.js",
+]
+
+
+@rt("/ui/{path:path}")
+def ui_asset(path: str):
+    """Serve a vendored UI file."""
+    parts = [p for p in path.split("/") if p not in ("", ".", "..")]
+    target = _UI_DIR.joinpath(*parts)
+    if len(parts) < 2 or not target.is_file():
+        return HTMLResponse("Not found", status_code=404)
+    media = {
+        ".js": "application/javascript",
+        ".css": "text/css",
+        ".woff": "font/woff",
+    }.get(target.suffix, "application/octet-stream")
+    return FileResponse(str(target), media_type=media)
+
+
+def _ui_shell():
+    """The app shell for the shared UI. Deliberately almost empty.
+
+    The chrome is built by ui/core/shell.js so that this page and filemill's
+    index.html cannot drift apart — there is no markup here to keep in step.
+    """
+    return Html(
+        Head(
+            Title(ROOT.name or "pykofinder"),
+            Meta(name="viewport", content="width=device-width, initial-scale=1"),
+            Meta(name="theme-color", content="#0770C9"),
+            Link(rel="manifest", href="/manifest.json"),
+            Link(rel="apple-touch-icon", href="/icons/icon-192.png"),
+            Link(rel="stylesheet", href="/ui/src/core/styles.css"),
+            Script(src="/ui/vendor/seti-map.js"),
+        ),
+        Body(
+            *[Script(src=f"/ui/src/core/{n}") for n in _UI_CORE],
+            *[
+                Script(src=f"/ui/src/adapters/{n}", **_ui_script_attrs(n))
+                for n in _UI_ADAPTERS
+            ],
+        ),
+        lang="en",
+        data_theme="light",
+        data_density="compact",
+        data_root=ROOT.name or "/",
+    )
+
+
+def _ui_script_attrs(name: str) -> dict:
+    """Per-adapter configuration, read back via ``document.currentScript``."""
+    if name == "http.js":
+        return {"data_api": "/api"}
+    if name == "router-path.js":
+        return {"data_base": UI_BASE}
+    return {}
+
+
+@rt(UI_BASE)
+@rt(UI_BASE + "{path:path}")
+def ui_view(path: str = ""):
+    """Serve the shell for any path under the UI base.
+
+    The path is validated but not otherwise used: the client walks down to it
+    from the root, so a request for a file that has gone is a 404 here and a
+    "the folder it was in" fallback there. Both are better than a blank page.
+    """
+    target = api.rel_to_abs(path, ROOT)
+    if target is None:
+        return HTMLResponse("Not found", status_code=404)
+    if path:
+        p = _resolve_safe(str(target))
+        if p is None or not p.exists():
+            return HTMLResponse("Not found", status_code=404)
+    return _ui_shell()
+
+
+# ── JSON/fragment API behind the shared UI ───────────────────────────────────
+
+
+def _api_target(p: str) -> Path | None:
+    """Root-relative request path → a safe absolute path, or None."""
+    candidate = api.rel_to_abs(p, ROOT)
+    if candidate is None:
+        return None
+    return _resolve_safe(str(candidate))
+
+
+@rt("/api/dir")
+def api_dir(p: str = ""):
+    """List a directory for the UI's HTTP filesystem adapter."""
+    target = _api_target(p)
+    if target is None or not target.is_dir():
+        return JSONResponse({"entries": [], "denied": "Not found"}, status_code=404)
+    return api.dir_json(target)
+
+
+@rt("/api/raw")
+def api_raw(p: str = ""):
+    """Serve a file's bytes."""
+    target = _api_target(p)
+    if target is None:
+        return HTMLResponse("Not found", status_code=404)
+    return api.raw_response(target)
+
+
+@rt("/api/preview")
+def api_preview(p: str = ""):
+    """Render a preview body with the existing Python pipeline."""
+    target = _api_target(p)
+    if target is None:
+        return HTMLResponse("", status_code=404)
+    return api.preview_fragment(target, render_preview)
+
+
+@rt("/api/render", methods=["POST"])
+async def api_render(request):
+    """Render posted bytes — the local-folder case, where the server has no path."""
+    return await api.render_upload(request, render_preview)
+
+
 # ── PWA static files ─────────────────────────────────────────────────────────
 
 
@@ -725,6 +880,15 @@ def _reorder_routes() -> None:
         "/manifest.json",
         "/sw.js",
         "/icons/{name}",
+        # Without these, the catch-all eats every /ui/**.js and .css the shell
+        # asks for and the new UI is a blank page.
+        "/ui/{path:path}",
+        UI_BASE,
+        UI_BASE + "{path:path}",
+        "/api/dir",
+        "/api/raw",
+        "/api/preview",
+        "/api/render",
     }
     priority, rest = [], []
     for r in routes:

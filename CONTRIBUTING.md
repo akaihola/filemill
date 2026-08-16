@@ -12,18 +12,22 @@ plain text, code with syntax highlighting).
 ```
 src/pykofinder/
 ├── app.py          # FastHTML app, routes, _resolve_safe()
+├── api.py          # JSON/fragment API behind the shared UI (/api/*)
 ├── cli.py          # Typer CLI entry point
-├── columns.py      # Column HTML generation + breadcrumb + pruning JS
+├── columns.py      # Column HTML generation + breadcrumb + pruning JS  (old UI)
 ├── preview.py      # Preview dispatcher (md / docx / pptx / pdf / img / code / raw)
 ├── rendering.py    # markdown-it-py instance with plugins
 ├── styles.py       # CSS + Pygments theme + HTMX + keyboard + live-reload JS
 ├── vfs.py          # Virtual-filesystem registry + provider protocol
 ├── providers/      # VFS backends (SQLite, JSON, CSV)
-└── static/         # Bundled PWA assets (manifest.json, sw.js, icons/)
+├── static/         # Bundled PWA assets (manifest.json, sw.js, icons/)
+└── ui/             # VENDORED — filemill's frontend; see "The shared UI" below
 
 tests/
 ├── conftest.py               # Shared fixtures (tmp dirs, test client)
+├── test_api.py               # /api/* contract + the shared UI's shell
 ├── test_app.py               # Route-level integration tests
+├── test_browser_new_ui.py    # The shared UI, driven in a real browser
 ├── test_cli.py               # CLI smoke tests
 ├── test_columns.py           # Column HTML generation + breadcrumb
 ├── test_integration_vfs.py   # End-to-end VFS navigation tests
@@ -36,6 +40,39 @@ tests/
 └── test_vfs.py               # VFS registry and provider protocol
 ```
 
+### The shared UI
+
+`src/pykofinder/ui/` is **a verbatim copy of filemill's frontend**, not a fork.
+filemill and pykofinder show the same application; the only difference is which
+adapters the shared `core/` is handed:
+
+| | filemill | pykofinder |
+| --- | --- | --- |
+| filesystem | File System Access API | `GET /api/dir` |
+| preview | text/image, in the browser | `GET /api/preview` — **this module's renderers** |
+| router | `#r=root&p=a/b.md` | `/n/a/b.md` |
+
+That is why `preview.py`, `rendering.py`, `vfs.py` and `providers/` never had to
+be rewritten in JavaScript, and why `POST /api/render` exists: when the browser
+opens a *local* folder the server cannot read it, so the bytes are posted and
+come back through the same markdown-it-py/Pygments/mammoth pipeline.
+
+**Never edit anything under `ui/`.** Change it in filemill, then:
+
+```bash
+tools/sync-ui.py [path/to/filemill]   # re-vendor
+tools/sync-ui.py --check              # exits 1 if the copy is stale
+```
+
+The copy keeps filemill's directory shape (`ui/src/{core,adapters}` beside
+`ui/vendor`) because `styles.css` reaches the icon font as
+`../../vendor/seti.woff` — flattening a level 404s it. `ui/src/adapters/README.md`
+documents the three ports.
+
+The new UI is mounted at `UI_BASE = "/n/"` while the HTMX UI at `/f/` is still
+the default. Cutting over means pointing `UI_BASE` at `/`, after which the URL
+path *is* the file path relative to ROOT, with no prefix.
+
 ### Key invariants
 
 - All routes are under a configurable `ROOT` directory; `_resolve_safe()` in
@@ -45,11 +82,20 @@ tests/
   `/w/<symlink-name>/...`.
 - Column pruning is done client-side via a small `<script>` injected into each
   click response – no server round-trip needed.
-- HTMX drives all dynamic updates; there is no JavaScript build step.
+- HTMX drives all dynamic updates in the `/f/` UI; there is no JavaScript build
+  step in either UI.
+- Every path in the `/api/*` and `/n/` routes is **relative to ROOT**; absolute
+  paths are refused outright (`api.rel_to_abs`), because `ROOT / "/etc/passwd"`
+  is `/etc/passwd`. Containment is still checked afterwards by `_resolve_safe()`.
+- The shared UI fetches nothing from a network: every asset it needs is served
+  from `ui/`. The `/f/` UI's htmx and mermaid CDN tags are why its browser tests
+  cannot run offline.
 - Client-side keyboard navigation must keep the browser URL in sync with the visible Finder state; if a key handler changes columns/preview without an HTMX request, it must update history explicitly.
 - PWA static assets (`/manifest.json`, `/sw.js`, `/icons/*`) are served from
   `src/pykofinder/static/` and are bundled with the package; they are
   prioritised above FastHTML's static catch-all route in `_reorder_routes()`.
+  So are `/ui/`, `/n/` and `/api/*` — without that, the catch-all swallows every
+  `.js` and `.css` the shared UI asks for and it renders as a blank page.
 
 ---
 

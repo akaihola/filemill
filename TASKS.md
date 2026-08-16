@@ -21,6 +21,10 @@
 
 ## In progress
 
+- [~] **New UI migration** — the shared Miller-columns frontend now runs at `/n/`
+      beside the HTMX UI at `/f/`. Remaining before cutover: VFS entries through
+      the HTTP adapter, mobile/touch behaviour, `.desktop`/`/w/` affordances,
+      then point `UI_BASE` at `/`. See `PLAN-20-shared-frontend.md`.
 - [x] #45 Mobile: column bottom clipped + directory nav scrolls to preview
 
 ---
@@ -46,6 +50,11 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 
 ## Done
 
+- [x] **Shared frontend with filemill** — `src/pykofinder/ui/` is filemill's
+      frontend vendored verbatim (`tools/sync-ui.py`); `/api/dir|raw|preview`
+      back it, `POST /api/render` renders local-folder bytes through the Python
+      pipeline, and "Open local folder…" switches adapters at runtime.
+      44 new tests (`test_api.py`, `test_browser_new_ui.py`)
 - [x] #42 Mobile preview pane fills 90 vw with `scroll-snap` column peek on narrow viewports
 - [x] #41 Dotfile column always shows selected entry – CSS override for `li.dotfile.selected`
 - [x] #40 Web-mode bar now emitted in `/restore` for `.html`/`.htm` files (was missing on direct `/f/` URL)

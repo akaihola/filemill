@@ -30,6 +30,12 @@ dev = [
     "playwright>=1.57.0",
 ]
 
+[tool.ruff.lint]
+# The preview/VFS pipelines deliberately catch Exception per file: one unreadable
+# or malformed document must degrade to a "Preview error" card, never take down
+# the route that was listing a directory. That is the design, not an oversight.
+ignore = ["BLE001"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--cov=src/pykofinder --cov-branch --cov-report=term-missing"

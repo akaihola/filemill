@@ -19,6 +19,15 @@ inline for Markdown, DOCX, PPTX, PDF, images, plain text, and source code.
 - **Zoom** – expand preview pane to full viewport width
 - **`.desktop` hyperlinks** – open service URLs directly from the browser
 - **Symlink support** – safely follows symlink bookmarks in the configured root
+- **Miller-columns UI (new, at `/n/`)** – the frontend shared verbatim with
+  [filemill](../filemill): column headers with counts, three selection states, a
+  drawn trail between selected rows, and horizontal scroll as a fold dial. Its
+  URL path mirrors the file path relative to the browsed root exactly
+  (`/n/docs/readme.md`), and previews still come from the Python renderers below
+- **Open local folder…** – the same page can browse a folder on *your* machine
+  through the File System Access API instead of the served root; previews are
+  still rendered by markdown-it-py, Pygments and mammoth, because the bytes are
+  posted to `/api/render`
 - **PWA** – installable as a Progressive Web App; includes a Web App Manifest, service worker (stale-while-revalidate for the app shell, network-only for dynamic partials), and full icon set
 
 ## Installation
@@ -61,15 +70,23 @@ timeout 120 PLAYWRIGHT_BROWSERS_PATH="$PLAYWRIGHT_BROWSERS_PATH" \
 ```
 src/pykofinder/
 ├── app.py          # FastHTML app, routes, _resolve_safe()
+├── api.py          # /api/dir, /api/raw, /api/preview, /api/render
 ├── cli.py          # Typer CLI entry point
-├── columns.py      # Column HTML generation + breadcrumb + pruning JS
+├── columns.py      # Column HTML generation + breadcrumb + pruning JS  (/f/ UI)
 ├── preview.py      # Preview dispatcher (md / docx / pptx / pdf / img / code / raw)
 ├── rendering.py    # markdown-it-py instance with plugins
 ├── styles.py       # CSS + Pygments theme + HTMX + keyboard + live-reload JS
 ├── vfs.py          # Virtual-filesystem registry + provider protocol
 ├── providers/      # VFS backends: SQLite, JSON, CSV
-└── static/         # Bundled PWA assets: manifest.json, sw.js, icons/
+├── static/         # Bundled PWA assets: manifest.json, sw.js, icons/
+└── ui/             # Vendored copy of filemill's frontend — do not edit
 ```
+
+Two user interfaces are served side by side during the migration: the HTMX one
+at `/f/` (the default) and the shared Miller-columns one at `/n/`. Only the
+adapters differ between `/n/` and filemill — `ui/src/core/` is byte-identical in
+both, which is what keeps the two applications from drifting apart. Re-vendor it
+with `tools/sync-ui.py`; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
