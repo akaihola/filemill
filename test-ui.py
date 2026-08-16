@@ -97,6 +97,17 @@ async def main():
             await pg.wait_for_timeout(250)
             note = await pg.inner_text('.col[data-i="1"] .col-note')
             check(f"{row} directory shows “{expect}”", expect in note, note)
+            # A column with no rows has nothing to highlight, so → must not move
+            # focus into it — that read as a no-op while killing ↑/↓.
+            await pg.keyboard.press("ArrowRight")
+            await pg.wait_for_timeout(250)
+            stayed = await pg.evaluate("focusCol") == 0
+            await pg.keyboard.press("ArrowDown")
+            await pg.wait_for_timeout(250)
+            st = await pg.evaluate("__state()")
+            check(f"→ does not enter the {row} column, ↑/↓ keep working",
+                  stayed and st["focusCol"] == 0 and st["sel"][0] != row,
+                  json.dumps(st))
         await pg.click('.col[data-i="0"] .row:has-text("slow")')
         try:      # the fake read takes 500 ms; don't race it with a fixed sleep
             await pg.wait_for_selector('.col[data-i="1"] .spinner', timeout=2000)

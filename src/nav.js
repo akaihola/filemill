@@ -52,6 +52,17 @@ function enterColumn(i) {
   c.rows[ri].scrollIntoView({ block: "nearest" });
 }
 
+/* Stepping right into a column that has no rows would move focus with nothing
+   to highlight — the screen would not change, yet ↑/↓ would go dead. Stay put.
+   columnFor rebuilds the column if it finished reading since the last render. */
+function stepInto(node) {
+  const i = path.indexOf(node);
+  if (i < 0) return;                    /* moved on while it was still reading */
+  if (!columnFor(node).rows.length) return;
+  focusCol = i;
+  enterColumn(i);
+}
+
 document.addEventListener("keydown", e => {
   if (!welcome.hidden) return;
   /* the cached column knows its rows — never re-query them, a directory can
@@ -83,9 +94,8 @@ document.addEventListener("keydown", e => {
     /* nothing open to the right: commit the cursor row, which opens it when it
        is a directory — a second → then steps into that column */
     if (!next) return void rows[ci]?.click();
-    focusCol++;
-    if (next.kids === null) ensureLoaded(next).then(() => enterColumn(focusCol));
-    else enterColumn(focusCol);
+    if (next.kids === null) ensureLoaded(next).then(() => { render(); stepInto(next); });
+    else stepInto(next);
   } else if (e.key === "ArrowLeft") {
     e.preventDefault();
     if (focusCol > 0) { focusCol--; if (folded > focusCol) unfoldTo(focusCol); render(true); }
