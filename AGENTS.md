@@ -117,7 +117,7 @@ async def main():
     async with async_playwright() as p:
         browser = await p.chromium.launch()
         page = await browser.new_page(viewport={'width': 1280, 'height': 800})
-        await page.goto('file:///home/akaihola/prg/fndr/index.html')
+        await page.goto('file:///path/to/fndr/index.html')
         await page.wait_for_timeout(1200)
         await page.screenshot(path='/tmp/fndr-test.png')
         await browser.close()
