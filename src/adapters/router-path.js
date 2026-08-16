@@ -15,6 +15,8 @@
 const BASE = (document.currentScript?.dataset.base || "/").replace(/\/*$/, "/");
 
 const RouterPath = {
+  base: BASE,
+
   read() {
     if (!location.pathname.startsWith(BASE)) return null;
     return {
