@@ -42,7 +42,35 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
 
 ---
 
+## ✅ Done — shared with pykofinder
+
+- [x] **`core/` + `adapters/`** — the UI runs over the File System Access API
+      *and* over a server, through three ports (`core/ports.js`): FS, PREVIEW,
+      ROUTER. pykofinder serves `core/` byte-for-byte and fills the ports with
+      fetch, Python-rendered fragments and real URL paths
+- [x] **Deep links** — the URL follows the selection and a link restores it.
+      `#r=<root>&p=<path>` here (a hash survives `file://` and any static host);
+      pykofinder uses the real path. `core/deeplink.js` is shared verbatim.
+      Stale links open the deepest folder that still exists; a link to a dotfile
+      reveals dotfiles. 12 checks in `test-url.py`
+- [x] **`core/shell.js`** — the chrome is emitted by one file, so this app and
+      the server one cannot drift apart on markup
+- [x] **PDF and `.desktop` previews** — object URL in an `<iframe>` (Chromium
+      renders PDF natively) and a 20-line INI parse. No bundle cost
+
+---
+
 ## 🔭 Open — worth considering
+
+- [ ] **Rich previews — a second build profile.** Markdown, syntax
+      highlighting and .docx need `markdown-it`, a highlighter and
+      `mammoth.js`, roughly 1 MB against today's 138 KB. The seam is already
+      there (`usePreview`), so this is vendoring plus a `--profile full` flag —
+      *not* CDN lazy-loading, which would break the no-network promise. Note
+      that markdown-it and mammoth.js are the *upstreams* of the Python
+      libraries pykofinder uses, so parity is reachable
+- [ ] **One repo with pykofinder.** `src/pykofinder/ui/` is a vendored copy
+      kept in step by `tools/sync-ui.py --check`. Merging deletes that script
 
 - [ ] **Refresh a directory** — nothing re-reads a folder after the disk
       changes. A ⟳ button or F5-on-column would re-run `ensureLoaded` on the

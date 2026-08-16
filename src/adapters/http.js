@@ -57,6 +57,4 @@ const HTTP = {
     const r = await fetch(`${API}/raw?p=${encodeURIComponent(node.rel)}`);
     return r.ok ? await r.blob() : null;
   },
-
-  rawURL: node => `${API}/raw?p=${encodeURIComponent(node.rel)}`,
 };
