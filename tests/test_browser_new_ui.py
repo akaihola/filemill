@@ -399,6 +399,23 @@ def test_the_url_names_a_row_inside_a_database(page):
     assert page.url.endswith("/n/sample.db/users")
 
 
+def test_a_row_shows_no_invented_size_or_date(page):
+    """A row inside a database is not a file. Zeroed metadata would print
+    "0 B · modified 1 Jan 1970", which is worse than nothing."""
+    page.open("sample.db/users/1")
+    page.wait_for_selector("#preview .pv-rich", timeout=5000)
+    assert page.inner_text("#pv-sub").strip() == ""
+    assert page.inner_text("#pv-size").strip() == "—"
+    assert page.inner_text("#pv-mod").strip() == "—"
+
+
+def test_a_real_file_still_shows_its_size_and_date(page):
+    page.open("notes/plain.txt")
+    page.wait_for_timeout(400)
+    assert "5 B" in page.inner_text("#pv-size")
+    assert "modified" in page.inner_text("#pv-sub")
+
+
 def test_a_deep_link_into_a_database_restores_the_columns(page):
     page.open("sample.db/users/1")
     assert page.evaluate("sel")[-1] == "1"
