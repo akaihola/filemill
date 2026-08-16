@@ -12,14 +12,12 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 const ROOT_NAME = document.documentElement.dataset.root || "/";
 
-/* Which side is serving the tree right now. Local mode gives up the address
-   bar: a URL path names a file under the *server's* root, and a folder the
-   browser granted is not under it. Pretending otherwise would produce links
-   that resolve to the wrong file. */
-let localMode = false;
+/* Local mode gives up the address bar: a URL path names a file under the
+   *server's* root, and a folder the browser granted is not under it.
+   Pretending otherwise would produce links that resolve to the wrong file —
+   hence useRouter(null) below, and the badge that says which side you are on. */
 
 async function mountServer() {
-  localMode = false;
   useFilesystem(HTTP);
   usePreview(PreviewHTTP);
   useRouter(RouterPath);
@@ -46,7 +44,6 @@ async function mountServer() {
    Python renderers — see PreviewUpload — so switching sides costs no fidelity;
    only the URL goes quiet. */
 async function mount(handle) {
-  localMode = true;
   useFilesystem(FSA);
   usePreview(PreviewUpload);
   useRouter(null);
