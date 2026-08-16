@@ -55,7 +55,9 @@ async function mount(handle) {
   path = [node]; sel = []; focusCol = 0; cursor = { 0: 0 };
   if (welcome) welcome.hidden = true;
   document.title = handle.name;
-  history.replaceState(null, "", location.pathname.replace(/[^/]*$/, ""));
+  /* Back to the bare base, not one segment up: the URL was naming a file
+     under the server's root and nothing here is under it any more. */
+  history.replaceState(null, "", RouterPath.base);
   render();
   await FS.ensureLoaded(node);
   render();

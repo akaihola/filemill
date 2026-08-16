@@ -218,12 +218,96 @@ def test_back_steps_out_of_the_folder_it_entered(page):
     assert page.evaluate("sel").count("deep") <= 1
 
 
+# A fake FileSystemDirectoryHandle — the whole API surface the FSA adapter
+# touches. The OS picker itself cannot be driven headlessly, but everything
+# behind it can: mount() is what the picker calls once a folder is granted.
+FAKE_HANDLE = r"""
+window.__local = () => {
+  const F = (name, text) => ({kind: 'file', name,
+    getFile: async () => new File([text], name, {lastModified: Date.now()})});
+  const D = (name, kids) => ({kind: 'directory', name,
+    entries: async function*(){ for (const k of kids) yield [k.name, k]; }});
+  return D('my-laptop-folder', [
+    F('local.md', '# Local heading\n\n**bold** from a folder the server cannot see\n'),
+    F('local.py', 'def f():\n    return 1\n'),
+  ]);
+};
+"""
+
+
 def test_open_local_folder_is_offered(page):
     """The hybrid: the served page carries the FSA adapter too."""
     page.open()
     assert page.is_visible("#open")
     assert page.evaluate("typeof FSA === 'object' && typeof PreviewUpload === 'object'")
     assert page.evaluate("typeof window.showDirectoryPicker === 'function'")
+
+
+def test_a_local_folder_replaces_the_served_tree(page):
+    page.open()
+    page.evaluate(FAKE_HANDLE)
+    page.evaluate("mount(__local())")
+    page.wait_for_timeout(400)
+    assert page.evaluate("path[0].name") == "my-laptop-folder"
+    names = page.eval_on_selector_all(
+        '.col[data-i="0"] .row .label', "els => els.map(e => e.textContent)"
+    )
+    assert set(names) == {"local.md", "local.py"}
+    assert page.is_visible("#local-badge")
+
+
+def test_local_files_are_still_rendered_by_python(page):
+    """The point of POST /api/render: opening a local folder is not a downgrade.
+
+    markdown-it-py renders bytes the server has never had a path to.
+    """
+    page.open()
+    page.evaluate(FAKE_HANDLE)
+    page.evaluate("mount(__local())")
+    page.wait_for_timeout(300)
+    page.click('.col[data-i="0"] .row:has-text("local.md")')
+    page.wait_for_selector("#preview .pv-rich h1", timeout=5000)
+    assert "Local heading" in page.inner_text("#preview .pv-rich h1")
+    assert page.locator("#preview .pv-rich strong").count() >= 1
+
+
+def test_local_source_is_still_highlighted_by_pygments(page):
+    page.open()
+    page.evaluate(FAKE_HANDLE)
+    page.evaluate("mount(__local())")
+    page.wait_for_timeout(300)
+    page.click('.col[data-i="0"] .row:has-text("local.py")')
+    page.wait_for_selector("#preview .pv-rich .preview-code", timeout=5000)
+
+
+def test_local_mode_stops_writing_the_url(page):
+    """A URL path names a file under the server's root; a granted folder is not
+    under it, so the address bar has to go quiet rather than lie."""
+    page.open("notes/plain.txt")
+    page.evaluate(FAKE_HANDLE)
+    page.evaluate("mount(__local())")
+    page.wait_for_timeout(300)
+    before = page.url
+    page.click('.col[data-i="0"] .row:has-text("local.md")')
+    page.wait_for_timeout(400)
+    assert page.url == before
+    assert page.url.rstrip("/").endswith("/n")
+
+
+def test_leaving_local_mode_restores_the_served_tree(page):
+    page.open()
+    root_name = page.evaluate("document.documentElement.dataset.root")
+    page.evaluate(FAKE_HANDLE)
+    page.evaluate("mount(__local())")
+    page.wait_for_timeout(300)
+    page.click("#leave-local")
+    page.wait_for_timeout(600)
+    assert page.evaluate("path[0].name") == root_name
+    assert not page.is_visible("#local-badge")
+    names = page.eval_on_selector_all(
+        '.col[data-i="0"] .row .label', "els => els.map(e => e.textContent)"
+    )
+    assert "notes" in names
 
 
 def test_nothing_is_fetched_from_a_cdn(page):
