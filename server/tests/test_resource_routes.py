@@ -354,3 +354,62 @@ def test_click_route_still_answers_its_own_path(client, site):
     resp = client.get(f"/click?path={quote(str(target))}&col=1")
     assert resp.status_code == 200
     assert "preview-md" in resp.text
+
+
+# ── Internal links keep the reader's state (PLAN-19 §1) ──────────────────────
+
+
+def test_markdown_link_targets_the_files_own_path(site, client):
+    """A [link](other.md) resolves to /other.md?pykofinder-view=rendered."""
+    (site / "note.md").write_text("[link](other.md)\n")
+    (site / "other.md").write_text("# Other\n")
+    resp = client.get("/note.md?pykofinder-view=rendered")
+    assert 'href="/other.md?pykofinder-view=rendered"' in resp.text
+
+
+def test_markdown_link_keeps_a_no_columns_reader_in_no_columns(site, client):
+    """Following a link inside an embedded document must not open the finder."""
+    (site / "note.md").write_text("[link](other.md)\n")
+    (site / "other.md").write_text("# Other\n")
+    resp = client.get("/note.md?pykofinder-view=rendered&layout=no-columns")
+    assert (
+        'href="/other.md?pykofinder-view=rendered&amp;layout=no-columns"' in resp.text
+    )
+
+
+def test_markdown_link_keeps_hidden(site, client):
+    (site / "note.md").write_text("[link](other.md)\n")
+    (site / "other.md").write_text("# Other\n")
+    resp = client.get("/note.md?pykofinder-view=rendered&hidden=show")
+    assert 'href="/other.md?pykofinder-view=rendered&amp;hidden=show"' in resp.text
+
+
+def test_markdown_image_src_is_left_relative_and_now_resolves(site, client):
+    """Relative asset references need no rewriting under this contract.
+
+    Image tokens were never rewritten — only <a href> is — so ``![](photo.png)``
+    stays relative. Under the old ``/f/<mount>/…`` URLs that was broken: the
+    browser resolved it against ``/f/menu/docs/note.md`` and asked for
+    ``/f/menu/docs/photo.png``, which served the finder shell rather than the
+    image. Now the document lives at ``/docs/note.md``, so the same relative
+    reference resolves to ``/docs/photo.png`` and gets the bytes. The contract
+    fixed a bug by removing a special case rather than adding one.
+    """
+    (site / "docs" / "note.md").write_text("![photo](../photo.png)\n")
+    resp = client.get("/docs/note.md?pykofinder-view=rendered")
+    assert 'src="../photo.png"' in resp.text
+
+    # The browser would resolve that against /docs/note.md. Follow it and check.
+    resolved = client.get("/photo.png")
+    assert resolved.status_code == 200
+    assert "image/png" in resolved.headers["content-type"]
+
+
+def test_click_fragment_links_do_not_gain_a_layout(site, client):
+    """/click has no ViewState, so its links carry the documented defaults."""
+    from urllib.parse import quote
+
+    (site / "note.md").write_text("[link](other.md)\n")
+    (site / "other.md").write_text("# Other\n")
+    resp = client.get(f"/click?path={quote(str(site / 'note.md'))}&col=1")
+    assert 'href="/other.md?pykofinder-view=rendered"' in resp.text
