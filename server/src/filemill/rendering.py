@@ -10,6 +10,7 @@ from pygments import highlight
 from pygments.lexers import get_lexer_by_name, guess_lexer
 from pygments.lexers.special import TextLexer
 
+from filemill import urls
 from filemill.styles import PYGMENTS_FORMATTER
 
 
@@ -88,19 +89,36 @@ def _find_file_for_href(href: str, source_path: Path) -> Path | None:
     return None
 
 
-def _href_for_file(abs_path: Path) -> str:
+def _href_for_file(abs_path: Path, state=None) -> str:
     """Return a public filemill URL for a resolved file path.
 
-    Markdown documents open through the finder UI (`/f/<mount>/<relative>`), while
-    static assets use the raw named-mount path (`/w/<mount>/<relative>`) when the
-    file is reachable from a known mount.
+    The URL is the file's path relative to the configured root. A Markdown
+    document adds ``?pykofinder-view=rendered``, because a link from one document
+    to another should land on the rendered document rather than download its
+    source. Everything else uses the bare path, which serves the bytes — so an
+    ``![image](photo.png)`` in Markdown resolves to ``/photo.png`` and renders.
+
+    *state* is the request's ``ViewState`` when one is known. Its layout and
+    dotfile choices ride along, so following a link inside an embedded
+    ``layout=no-columns`` document does not dump the reader into the full finder.
+    The state's ``vpath`` is deliberately not carried: it addresses a node inside
+    the *source* document and means nothing in the target.
+
+    Falls back to the named-mount ``/w/`` URL, then to ``/raw?path=``, for a file
+    with no root-relative address at all — a standalone bookmark mount target
+    reached from outside the visible tree.
     """
     import filemill.app as app_module
 
-    if abs_path.suffix.lower() == ".md":
-        finder_url = app_module._finder_url(abs_path)
-        if finder_url is not None:
-            return finder_url
+    rel = app_module._rel_url_path(abs_path)
+    if rel is not None:
+        layout = hidden = None
+        if state is not None:
+            layout = state.layout if state.layout != urls.DEFAULT_LAYOUT else None
+            hidden = state.hidden if state.hidden != urls.DEFAULT_HIDDEN else None
+        view = urls.VIEW_RENDERED if abs_path.suffix.lower() == ".md" else None
+        return urls.build_url(rel, view=view, layout=layout, hidden=hidden)
+
     web_url = app_module._web_url(abs_path)
     if web_url is not None:
         return web_url
@@ -189,7 +207,7 @@ def _link_open_rule(renderer, tokens, idx, options, env):
     if source_path is not None and token.attrs and "href" in token.attrs:
         found = _find_file_for_href(token.attrs["href"], source_path)
         if found is not None:
-            token.attrs["href"] = _href_for_file(found)
+            token.attrs["href"] = _href_for_file(found, env.get("view_state"))
     return renderer.renderToken(tokens, idx, options, env)
 
 
@@ -237,7 +255,7 @@ def _wikilink_render(renderer, tokens, idx, options, env):
         for candidate in (target, target + ".md"):
             found = _find_file_for_href(candidate, source_path)
             if found is not None:
-                href = _href_for_file(found)
+                href = _href_for_file(found, env.get("view_state"))
                 break
 
     if href is None:
