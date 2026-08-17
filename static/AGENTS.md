@@ -40,7 +40,8 @@ the user makes to your behaviour — capture it here so it survives a context re
 │   │   ├── render.js       ← buildCol, columnFor, render, preview
 │   │   ├── layout.js       ← the fold dial: stripSpan, layout, applyScroll
 │   │   ├── trail.js        ← the SVG elbows between columns
-│   │   ├── nav.js          ← choose(), crumbs, all keyboard handling
+│   │   ├── typeahead.js    ← prefix → substring → fuzzy, <mark>, idle buffer
+│   │   ├── nav.js          ← choose(), crumbs, copy path, all keyboard handling
 │   │   ├── deeplink.js     ← path ⇄ column chain; push-vs-replace policy
 │   │   └── settings.js     ← ⚙ popover toggles
 │   ├── adapters/           ← everything source-specific
@@ -65,7 +66,7 @@ the user makes to your behaviour — capture it here so it survives a context re
     ├── index-dev.html          ← dev entry point: <script src="../ui/…">
     ├── build-index.py          ← index-dev.html + ../ui → index.html
     ├── hotreload.py            ← optional CDP live-patcher for dev mode
-    ├── test-ui.py              ← headless suite, fake handle (31 checks)
+    ├── test-ui.py              ← headless suite, fake handle (53 checks)
     ├── test-url.py             ← deep-link suite over localhost (12 checks)
     ├── test-rich.py            ← CDN renderers: offline/switch/loaded (14)
     └── test-e2e.py             ← headed suite, real folder + real picker
@@ -174,8 +175,24 @@ mount(D('workspace', [D('src', [F('app.py', 'print(1)')]), F('README.md', '# hi'
 
 A `file://` page is fine for it — `mount(fake)` bypasses the picker. Measure
 render cost **in-page** (`performance.now()` around `render()`), never by timing
-Playwright keystrokes; the round-trip dominates. Budget: re-render ≤ 20 ms and
-keystroke ≤ 25 ms at 3 000 entries (the suite asserts this).
+Playwright keystrokes; the round-trip dominates. The suite asserts a 100 ms
+ceiling at 3 000 entries, which exists to catch the O(entries)-per-keystroke
+regression that cost 500–740 ms, not to benchmark a loaded machine. Read the
+numbers it prints *relative to each other in the same run*, because absolute
+figures move by 3× with load: a type-ahead hit should land near the arrow-key
+keystroke it shares a re-render with, and a type-ahead miss well under it.
+
+A bench that points at the wrong column reports a wonderful number instead of
+failing. `__typebench` therefore returns the row count it searched and the check
+asserts it — the first version measured the 8-row root column and reported 0 ms,
+because `__keybench` had walked the 3 000-entry directory off the path first.
+
+Attribution matters more than the totals. Selecting a *file* inside a
+3 000-entry directory costs ~60 ms on its own (a preview build plus a
+re-render), which swamps anything type-ahead does; the suite therefore measures
+an arrow key in that same column for comparison and times `taSearch` separately.
+Isolated at 3 000 entries: matching 1.1–1.8 ms, mark plus un-mark 0.07 ms, the
+status-strip write 0.01 ms, a whole no-match keystroke 2.3–3.3 ms.
 
 `hotreload.py` patches `src/*.js` into a live page over CDP without reloading,
 for when a permission re-grant would interrupt you. Mostly unnecessary now that
@@ -210,6 +227,11 @@ folders are restored from IndexedDB — reloading is cheap.
 | The chrome is built by `core/shell.js`, not written in the HTML | There are two HTML files and the markup has to match in both. A shared *file* would need a build step or a fetch, and the static build can afford neither |
 | Hash URLs in the static build, path URLs on the server | A hash survives `file://`, a bare `http.server`, and any static host — none of which can rewrite paths. The server has a root, so its URL path can mirror the file path exactly |
 | `#r=<root>` names the folder, matched against the remembered roots | A `FileSystemDirectoryHandle` is not a path: the URL cannot name a folder the browser has not already granted, and a page that could name arbitrary directories would be worse |
+| Type-ahead rungs are three passes, not one scored scan | The rungs have to rank across the *whole* column: a name starting with "notes" on row 300 must beat one containing it on row 3. Each pass stops at its own first hit, so an early prefix match never looks at the rest |
+| Only the matched row gets `<mark>` | Marking every matching row is an innerHTML write per entry — the O(entries)-per-keystroke cost the column cache exists to avoid. One row is also the honest signal: type-ahead jumps to one place |
+| Lower-cased names cached on the column entry (`c.lower`) | Lower-casing 3 000 names costs ~1.4 ms; per keystroke that is most of the search budget. Cached beside `c.kids`, so the two die together and can never disagree |
+| A refused clipboard selects the path instead | `writeText` can be refused by policy or context. Failing silently means the next paste hands over something else with nothing to say so; selecting the path puts the browser's own ⌘C one keystroke away, and that one needs no permission |
+| The status path joins with `/`, not ` / ` | Clicking it copies it, and the refusal fallback copies the characters on screen. A display string that differs from the copied string makes the fallback quietly wrong |
 | History pushes on entering a column, rewrites otherwise | Selecting a folder opens its column without moving focus, so ↑/↓ down a list of folders would otherwise push a history entry per row and make Back useless |
 
 ---

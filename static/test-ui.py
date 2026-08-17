@@ -294,13 +294,16 @@ async def main():
         await in_search()
         await pg.keyboard.type("re")
         await pg.wait_for_timeout(150)
-        check("Prefix: “re” jumps to readme.md",
-              await pg.evaluate("sel[1]") == "readme.md", await pg.evaluate("sel[1]"))
-        check("The matched characters are marked",
-              await pg.evaluate(marks) == ["re"], str(await pg.evaluate(marks)))
+        # One round-trip, not three: every assertion made between the two typed
+        # groups below is time the 1.2 s buffer is running down, and a suite
+        # that spends it fails on a feature that works.
+        snap = await pg.evaluate(
+            f"({{sel: sel[1], marks: {marks},"
+            " find: document.getElementById('st-find').textContent})")
+        check("Prefix: “re” jumps to readme.md", snap["sel"] == "readme.md", snap["sel"])
+        check("The matched characters are marked", snap["marks"] == ["re"], str(snap["marks"]))
         check("The buffer is shown, so a search in progress is visible",
-              (await pg.inner_text("#st-find")).strip() == "⌕ re",
-              await pg.inner_text("#st-find"))
+              snap["find"].strip() == "⌕ re", snap["find"])
 
         # Within the idle window the buffer keeps growing: "re" + "l" is one
         # search for "rel", not a fresh search for "l".
@@ -426,23 +429,35 @@ async def main():
             key = await pg.evaluate("__keybench(20)")
             check(f"{n:,} entries: re-render {ms} ms, keystroke {key} ms (budget {budget} ms)",
                   ms < budget and key < budget)
-            # Type-ahead runs on every letter, so it gets the same ceiling as
-            # the arrow keys. Two numbers, because they cost different things:
-            # a hit is one search plus a click and a full re-render, a miss is
-            # three complete passes over every name and no render at all.
-            # __keybench walked 20 rows down the root column, which dropped the
-            # big directory off the path — re-open it before stepping in.
+            # Type-ahead runs on every letter, so it needs its own ceiling. What
+            # to bound is the cost of the *search*, not the cost of the row it
+            # lands on: picking a file out of a 3 000-entry directory builds a
+            # preview and re-renders, ~60 ms here, whether an arrow key or a
+            # letter asked for it. Measuring both in the same column separates
+            # the two — __keybench walked 20 rows down the root column, so the
+            # big directory has to be re-opened before stepping in.
             await pg.click('.col[data-i="0"] .row:has-text("big")')
             await pg.wait_for_function(
                 "colCache.get(path[1]) && colCache.get(path[1]).rows.length > 0", timeout=30_000)
             await pg.wait_for_timeout(200)
             await pg.keyboard.press("ArrowRight")     # focus the big column
             await pg.wait_for_timeout(200)
+            arrow = await pg.evaluate("__keybench(20)")
             hit = await pg.evaluate("__typebench(20, 'f', true)")
             miss = await pg.evaluate("__typebench(20, 'q', false)")
-            check(f"{n:,} entries: type-ahead {hit['ms']} ms on a hit, "
-                  f"{miss['ms']} ms on a miss (budget {budget} ms)",
-                  hit["ms"] < budget and miss["ms"] < budget
+            # The matcher alone: three complete passes, no row clicked and
+            # nothing re-rendered. This is the number that moves if someone
+            # drops the c.lower cache or makes matching quadratic, and it is
+            # the only one here that does not ride on the preview.
+            find = await pg.evaluate(
+                "(() => { const c = colCache.get(path[focusCol]);"
+                " const t = performance.now();"
+                " for (let i=0;i<20;i++) taSearch(c.lower, 'qqq');"
+                " return +((performance.now()-t)/20).toFixed(2); })()")
+            check(f"{n:,} entries: matching {find} ms; a whole keystroke is "
+                  f"{miss['ms']} ms with no match and {hit['ms']} ms with one, "
+                  f"against {arrow} ms for an arrow key in the same column",
+                  find < 25 and miss["ms"] < budget and hit["ms"] < arrow + budget
                   and hit["rows"] == n and miss["rows"] == n,
                   f"searched {hit['rows']} rows, expected {n}")
 
