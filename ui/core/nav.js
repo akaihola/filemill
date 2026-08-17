@@ -67,7 +67,11 @@ function renderCrumbs() {
     b.onclick = () => { path = path.slice(0, i+1); sel = sel.slice(0, i); focusCol = i; render(); };
     el.appendChild(b);
   });
-  document.getElementById("st-path").textContent = pathParts().join(" / ");
+  /* "/" rather than the " / " this strip used to show: clicking it copies the
+     string, and a fallback selection copies the characters on screen. The two
+     have to be the same string or the fallback quietly hands over a path that
+     no shell will take. */
+  document.getElementById("st-path").textContent = pathParts().join("/");
 }
 
 /* ── Copy path ──────────────────────────────────────────────────────────────
@@ -100,7 +104,7 @@ function selectPath() {
 }
 
 async function copyPath() {
-  const text = pathParts().join("/");
+  const text = document.getElementById("st-path").textContent;
   if (!text) return;
   try {
     await navigator.clipboard.writeText(text);
