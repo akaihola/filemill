@@ -188,6 +188,25 @@ FastHTML's static catch-all from the **working directory**; it now serves
 `ROOT/notes/todo.txt`. That is the point of the change, and it is the safer of
 the two.
 
+## Running the tests
+
+    timeout 900 uv run pytest
+
+Two things about this suite are worth knowing before you read a red run.
+
+**The browser tests need outbound network.** The finder shell loads htmx from
+`unpkg.com` and mermaid from `cdn.jsdelivr.net`. With no route to them the page
+loads and `#col-0` renders, but nothing responds to a click, so 20 tests in
+`test_browser_keyboard.py` fail in ways that read like a navigation regression.
+The tell is `407 Proxy Authentication Required` in the *browser* console, which
+pytest never prints. If you are in a sandbox, allow those two hosts before
+believing the failures. Diagnosing this cost a round trip during this work.
+
+**`test_find_git_root_returns_none_when_no_git` fails wherever a `.git` exists
+above the temp directory.** It walks up from `tmp_path` expecting to find none;
+on a machine with `/tmp/.git` it finds `/tmp`. That predates this branch and is
+the one failure left in an otherwise green run.
+
 ## What the plan got wrong
 
 **It contradicted itself about `raw`.** §1 lists a default static representation
