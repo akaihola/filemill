@@ -45,8 +45,43 @@ window.__mk = (nbig) => {
     SLOW('slow', [F('one.txt','1'), F('two.txt','2')]),
     D('big', big),
     D('wide', [F('a-quite-long-file-name-1.txt'), F('a-quite-long-file-name-2.txt')]),
+    // Names chosen so each type-ahead rung is the *only* one that can explain
+    // the answer. Sorted: Alpha Report.txt, beta-notes.md, changelog.md,
+    // notes.txt, readme.md, release-notes.md.
+    //   "notes" → notes.txt      prefix beats beta-notes.md's earlier substring
+    //   "log"   → changelog.md   substring; nothing starts with it
+    //   "arp"   → Alpha Report   fuzzy; no other name has a, r, p in order
+    D('search', [F('readme.md'), F('release-notes.md'), F('beta-notes.md'),
+                 F('changelog.md'), F('notes.txt'), F('Alpha Report.txt')]),
     F('README.md','# hi\n'),
   ]);
+};
+/* The clipboard is a permission away in a real browser and refused outright in
+   some contexts, so the suite drives both branches itself rather than asking
+   Chromium for a grant it may not give. */
+window.__clip = (fail) => {
+  window.__clipped = [];
+  Object.defineProperty(navigator, 'clipboard', {configurable: true, value: {
+    writeText: async t => {
+      window.__clipped.push(t);
+      if (fail) throw Object.assign(new Error('denied'), {name: 'NotAllowedError'});
+    }}});
+};
+/* Mean cost of one letter. `reset` sends Escape first, so every iteration is a
+   fresh single-letter search that finds a row and re-renders — the realistic
+   case. Without it the buffer grows and stops matching, which is the worst
+   case: three full passes over every name in the column. */
+window.__typebench = (n, key, reset) => {
+  const hit = k => document.dispatchEvent(new KeyboardEvent('keydown', {key: k}));
+  /* Report the column actually searched. A bench pointed at the wrong column
+     reads as a wonderful result instead of as a broken measurement — the first
+     version of this measured the 8-row root and reported 0 ms. */
+  const rows = colCache.get(path[focusCol]).rows.length;
+  const t0 = performance.now();
+  for (let i=0;i<n;i++) { if (reset) hit('Escape'); hit(key); }
+  const ms = +((performance.now()-t0)/n).toFixed(1);
+  hit('Escape');
+  return {ms, rows};
 };
 /* every width a column is ever painted at, to catch one that opens narrow and
    then jumps once its names arrive */
@@ -244,6 +279,139 @@ async def main():
             await pg.click(b_id)
         await pg.keyboard.press("Escape")
 
+        print("\n── Type-ahead ───────────────────────────────────────────────")
+        marks = ('[...document.querySelectorAll(\'.col[data-i="1"] .row mark\')]'
+                 ".map(m => m.textContent)")
+
+        async def in_search():
+            """Focus the `search` column — type-ahead runs on the focused one."""
+            await mount(pg)
+            await pg.click('.col[data-i="0"] .row:has-text("search")')
+            await pg.wait_for_timeout(250)
+            await pg.keyboard.press("ArrowRight")
+            await pg.wait_for_timeout(250)
+
+        await in_search()
+        await pg.keyboard.type("re")
+        await pg.wait_for_timeout(150)
+        check("Prefix: “re” jumps to readme.md",
+              await pg.evaluate("sel[1]") == "readme.md", await pg.evaluate("sel[1]"))
+        check("The matched characters are marked",
+              await pg.evaluate(marks) == ["re"], str(await pg.evaluate(marks)))
+        check("The buffer is shown, so a search in progress is visible",
+              (await pg.inner_text("#st-find")).strip() == "⌕ re",
+              await pg.inner_text("#st-find"))
+
+        # Within the idle window the buffer keeps growing: "re" + "l" is one
+        # search for "rel", not a fresh search for "l".
+        await pg.keyboard.type("l")
+        await pg.wait_for_timeout(150)
+        check("A letter typed straight after extends the buffer (“rel”)",
+              await pg.evaluate("sel[1]") == "release-notes.md",
+              await pg.evaluate("sel[1]"))
+        await pg.wait_for_timeout(1400)          # longer than TA_IDLE = 1200 ms
+        await pg.keyboard.type("c")
+        await pg.wait_for_timeout(150)
+        check("A pause starts a new search (“c”, not “relc”)",
+              await pg.evaluate("sel[1]") == "changelog.md", await pg.evaluate("sel[1]"))
+
+        await in_search()
+        await pg.keyboard.type("notes")
+        await pg.wait_for_timeout(150)
+        check("Prefix outranks substring: “notes” → notes.txt, not beta-notes.md",
+              await pg.evaluate("sel[1]") == "notes.txt", await pg.evaluate("sel[1]"))
+
+        await in_search()
+        await pg.keyboard.type("log")
+        await pg.wait_for_timeout(150)
+        check("Substring: “log” → changelog.md, which nothing starts with",
+              await pg.evaluate("sel[1]") == "changelog.md", await pg.evaluate("sel[1]"))
+
+        await in_search()
+        await pg.keyboard.type("arp")
+        await pg.wait_for_timeout(150)
+        check("Fuzzy: “arp” → Alpha Report.txt",
+              await pg.evaluate("sel[1]") == "Alpha Report.txt", await pg.evaluate("sel[1]"))
+        check("Fuzzy marks the scattered characters, not a run",
+              await pg.evaluate(marks) == ["A", "R", "p"], str(await pg.evaluate(marks)))
+
+        await in_search()
+        await pg.keyboard.type("zz")
+        await pg.wait_for_timeout(150)
+        check("No match says so and moves nothing",
+              await pg.evaluate("sel[1]") == "Alpha Report.txt"
+              and "no match" in await pg.inner_text("#st-find"),
+              await pg.inner_text("#st-find"))
+        # Backspace has to undo a typo, so a failed search keeps its buffer.
+        await pg.keyboard.press("Backspace")
+        await pg.keyboard.press("Backspace")
+        await pg.keyboard.type("re")
+        await pg.wait_for_timeout(150)
+        check("Backspace undoes a typo instead of dropping the search",
+              await pg.evaluate("sel[1]") == "readme.md", await pg.evaluate("sel[1]"))
+
+        await in_search()
+        await pg.keyboard.type("re")
+        await pg.wait_for_timeout(120)
+        await pg.keyboard.press("Escape")
+        await pg.wait_for_timeout(120)
+        check("Escape abandons the search and clears the marks",
+              not await pg.evaluate(marks)
+              and not (await pg.inner_text("#st-find")).strip())
+
+        await in_search()
+        await pg.keyboard.type("re")
+        await pg.wait_for_timeout(120)
+        await pg.keyboard.press("ArrowDown")
+        await pg.wait_for_timeout(150)
+        check("↑/↓ still walk the column, and end the search",
+              await pg.evaluate("sel[1]") == "release-notes.md"
+              and not await pg.evaluate(marks), await pg.evaluate("sel[1]"))
+
+        await in_search()
+        await pg.keyboard.press("Control+r")     # a browser shortcut, not a search
+        await pg.wait_for_timeout(150)
+        check("A letter with a modifier held is not type-ahead",
+              await pg.evaluate("sel[1]") == "Alpha Report.txt"
+              and not (await pg.inner_text("#st-find")).strip(),
+              await pg.evaluate("sel[1]"))
+
+        print("\n── Copy path ────────────────────────────────────────────────")
+        await mount(pg)
+        await pg.evaluate("__clip(false)")
+        await pg.click('.col[data-i="0"] .row:has-text("mixed")')
+        await pg.wait_for_timeout(250)
+        await pg.click('.col[data-i="1"] .row:has-text("note.md")')
+        await pg.wait_for_timeout(250)
+        check("The status strip shows the path in the form it copies",
+              await pg.inner_text("#st-path") == "workspace/mixed/note.md",
+              await pg.inner_text("#st-path"))
+        await pg.keyboard.press("Control+c")
+        await pg.wait_for_timeout(250)
+        check("⌘C / Ctrl+C copies the selected item's path",
+              await pg.evaluate("__clipped") == ["workspace/mixed/note.md"],
+              str(await pg.evaluate("__clipped")))
+        check("A copy that worked says so",
+              (await pg.inner_text("#st-copy")).strip() == "copied")
+
+        await pg.evaluate("__clip(false)")
+        await pg.click("#st-path")
+        await pg.wait_for_timeout(250)
+        check("Clicking the status path copies it too",
+              await pg.evaluate("__clipped") == ["workspace/mixed/note.md"],
+              str(await pg.evaluate("__clipped")))
+
+        # The clipboard API can be refused, and a refusal that says nothing is
+        # worse than no button: the next paste hands over something else.
+        await pg.evaluate("__clip(true)")
+        await pg.click("#st-path")
+        await pg.wait_for_timeout(250)
+        note = await pg.inner_text("#st-copy")
+        check("A refused clipboard is visible, not silent", "refused" in note, note)
+        check("…and the path is left selected, so the browser's own copy works",
+              await pg.evaluate("getSelection().toString()") == "workspace/mixed/note.md",
+              await pg.evaluate("getSelection().toString()"))
+
         print("\n── Render cost ──────────────────────────────────────────────")
         # Generous ceilings: they exist to catch the O(entries)-per-keystroke
         # regression (which cost 500–740 ms), not to benchmark a loaded machine.
@@ -258,6 +426,25 @@ async def main():
             key = await pg.evaluate("__keybench(20)")
             check(f"{n:,} entries: re-render {ms} ms, keystroke {key} ms (budget {budget} ms)",
                   ms < budget and key < budget)
+            # Type-ahead runs on every letter, so it gets the same ceiling as
+            # the arrow keys. Two numbers, because they cost different things:
+            # a hit is one search plus a click and a full re-render, a miss is
+            # three complete passes over every name and no render at all.
+            # __keybench walked 20 rows down the root column, which dropped the
+            # big directory off the path — re-open it before stepping in.
+            await pg.click('.col[data-i="0"] .row:has-text("big")')
+            await pg.wait_for_function(
+                "colCache.get(path[1]) && colCache.get(path[1]).rows.length > 0", timeout=30_000)
+            await pg.wait_for_timeout(200)
+            await pg.keyboard.press("ArrowRight")     # focus the big column
+            await pg.wait_for_timeout(200)
+            hit = await pg.evaluate("__typebench(20, 'f', true)")
+            miss = await pg.evaluate("__typebench(20, 'q', false)")
+            check(f"{n:,} entries: type-ahead {hit['ms']} ms on a hit, "
+                  f"{miss['ms']} ms on a miss (budget {budget} ms)",
+                  hit["ms"] < budget and miss["ms"] < budget
+                  and hit["rows"] == n and miss["rows"] == n,
+                  f"searched {hit['rows']} rows, expected {n}")
 
         check("No console errors anywhere", not errs, "; ".join(errs[:3]))
         await b.close()
