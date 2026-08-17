@@ -37,6 +37,7 @@ WANTED = {
         "render.js",
         "layout.js",
         "trail.js",
+        "typeahead.js",
         "nav.js",
         "deeplink.js",
         "settings.js",

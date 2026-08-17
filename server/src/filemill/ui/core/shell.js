@@ -48,12 +48,16 @@ document.body.insertAdjacentHTML("afterbegin", `
   </div>
 
   <div id="status">
-    <span id="st-path"></span>
+    <span id="st-path" title="Click to copy this path"></span>
+    <span id="st-copy"></span>
     <div class="spacer"></div>
+    <span id="st-find"></span>
     <span id="st-fold"></span>
     <span><kbd>↑</kbd><kbd>↓</kbd> move</span>
     <span><kbd>→</kbd> open</span>
     <span><kbd>←</kbd> back</span>
+    <span><kbd>a…z</kbd> find</span>
+    <span><kbd id="kbd-copy">⌘C</kbd> copy path</span>
     <span><kbd>⇧</kbd>+wheel fold</span>
   </div>
 </div>
