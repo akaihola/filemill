@@ -10,19 +10,24 @@ SYNTAX_SIZE_LIMIT = 512 * 1024  # 512 KB
 RAW_SIZE_LIMIT = 256 * 1024  # 256 KB
 
 
-def render_preview(path: Path) -> str:
+def render_preview(path: Path, state=None) -> str:
     """Return an HTML string (inner body fragment) for the given file path.
 
     This is the *rendered* representation: it dispatches on suffix, so Markdown
     arrives as HTML and a .docx as its text. ``render_source`` is the other side
     of that same file — see ``filemill.urls`` for the contract they implement.
+
+    *state* is the request's ``ViewState`` when the caller has one. It only
+    reaches the Markdown renderer, where it decides whether links keep the
+    reader's layout and dotfile choices. ``/click`` and ``/restore`` pass nothing
+    and get the documented defaults, which is why the signature stays optional.
     """
     ext = path.suffix.lower()
 
     if ext == ".desktop":
         return _preview_desktop(path)
     elif ext == ".md":
-        return _preview_md(path)
+        return _preview_md(path, state)
     elif ext == ".docx":
         return _preview_docx(path)
     elif ext == ".pptx":
@@ -123,12 +128,13 @@ def _raw_text(path: Path) -> str | None:
     return None
 
 
-def _preview_md(path: Path) -> str:
+def _preview_md(path: Path, state=None) -> str:
     try:
         from filemill.rendering import md as md_renderer
 
         html_body = md_renderer.render(
-            path.read_text(encoding="utf-8"), {"source_path": path}
+            path.read_text(encoding="utf-8"),
+            {"source_path": path, "view_state": state},
         )
         return f'<div class="preview-md">{html_body}</div>'
     except Exception as e:

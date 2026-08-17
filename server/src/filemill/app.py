@@ -979,7 +979,9 @@ def _representation_html(target: Path, rel: str, state, vpath: str) -> str:
         if state.view == urls.VIEW_HIGHLIGHTED:
             body = render_source(target)
         else:
-            body = render_preview(target)
+            # The state reaches the Markdown renderer so links inside the
+            # document keep the reader's layout and dotfile choices.
+            body = render_preview(target, state)
     except Exception as exc:
         body = f'<div class="preview-error">{html_lib.escape(str(exc))}</div>'
     return _view_switch_html(rel, state) + body
