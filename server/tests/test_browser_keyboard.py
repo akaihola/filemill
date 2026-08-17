@@ -219,9 +219,17 @@ def test_legacy_query_url_canonicalizes_after_nested_navigation(
 
 
 @pytest.mark.integration
-def test_rendered_relative_markdown_link_uses_canonical_url(
+def test_rendered_relative_markdown_link_uses_root_relative_url(
     live_server: str, browser_root: Path
 ):
+    """A link inside rendered Markdown points at the target's own path.
+
+    The browser-level counterpart of the unit tests in test_rendering.py. This
+    asserted ``/f/{root}/my-knowledge/docs/subdir/next.md`` before the PLAN-19
+    URL contract landed; generated links now use the path relative to the
+    configured root. The legacy /f/ URL this test still *navigates to* keeps
+    working, which is the other half of the story.
+    """
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 1400, "height": 900})
@@ -232,16 +240,15 @@ def test_rendered_relative_markdown_link_uses_canonical_url(
         page.wait_for_timeout(900)
 
         preview_link = page.locator(
-            '#preview a[href$="/f/'
-            + browser_root.name
-            + '/my-knowledge/docs/subdir/next.md"]'
+            '#preview a[href="/my-knowledge/docs/subdir/next.md'
+            '?pykofinder-view=rendered"]'
         ).first
         assert preview_link.count() == 1
         preview_link.click()
         page.wait_for_timeout(900)
 
         assert page.url.endswith(
-            f"/f/{browser_root.name}/my-knowledge/docs/subdir/next.md"
+            "/my-knowledge/docs/subdir/next.md?pykofinder-view=rendered"
         )
         assert "Next" in page.locator("#preview").inner_text()
 
