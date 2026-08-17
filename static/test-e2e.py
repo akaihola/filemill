@@ -18,6 +18,7 @@ import sys
 import threading
 from pathlib import Path
 
+from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright.async_api import async_playwright
 
@@ -118,6 +119,49 @@ async def main():
             check("Preview shows real size + mtime from getFile()",
                   "modified" in sub and "reading" not in sub, sub)
             await pg.screenshot(path=str(SHOTS / "02-file.png"))
+
+        print("\n── Type-ahead over real names ───────────────────────────────")
+        # Whatever the folder holds, typing the first three letters of an entry
+        # has to land on an entry starting with those letters. The row it picks
+        # is the first such row in the column, which need not be this one.
+        target = next((n for n in shown if len(n) >= 3 and n[:3].isalpha()), None)
+        if target is None:
+            print("  ⚠️   No entry starts with three letters — skipping type-ahead")
+        else:
+            q = target[:3]
+            await pg.keyboard.type(q)
+            await pg.wait_for_timeout(400)
+            landed = await pg.evaluate("sel[0]") or ""
+            check(f"Typing “{q}” jumps to a matching row",
+                  landed.lower().startswith(q.lower()), f"landed on “{landed}”")
+            check("The matched characters are marked on the row it landed on",
+                  await pg.eval_on_selector_all('.col[data-i="0"] .row mark',
+                                                "e => e.length") > 0)
+            await pg.screenshot(path=str(SHOTS / "03-typeahead.png"))
+            await pg.keyboard.press("Escape")
+            await pg.wait_for_timeout(200)
+
+        print("\n── Copy path, real clipboard ────────────────────────────────")
+        # test-ui.py stubs navigator.clipboard, so this is the only place the
+        # real permission-gated API is exercised. A granted clipboard is the
+        # good path; the refusal path is the stubbed one over there.
+        await ctx.grant_permissions(["clipboard-read", "clipboard-write"],
+                                    origin=f"http://localhost:{PORT}")
+        await pg.evaluate("getSelection().removeAllRanges()")
+        await pg.click('.col[data-i="0"] .row')
+        await pg.wait_for_timeout(400)
+        shown_path = await pg.inner_text("#st-path")
+        await pg.keyboard.press("Control+c")
+        await pg.wait_for_timeout(500)
+        try:
+            pasted = await pg.evaluate("navigator.clipboard.readText()")
+        except PlaywrightError as exc:                # a refusal is a result too
+            pasted = f"<unreadable: {exc}>"
+        check("Ctrl+C puts the real path on the real clipboard",
+              pasted == shown_path, f"clipboard {pasted!r}, status bar {shown_path!r}")
+        check("A copy that worked says so in the status strip",
+              (await pg.inner_text("#st-copy")).strip() == "copied",
+              await pg.inner_text("#st-copy"))
 
         print("\n── Persistence ──────────────────────────────────────────────")
         stored = await pg.evaluate("recallRoots().then(h => h.map(x => x.name))")

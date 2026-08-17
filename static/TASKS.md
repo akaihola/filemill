@@ -35,9 +35,10 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       and `content-visibility`; ~5 ms re-render and 4–9 ms keystrokes at 3 000
       entries, down from ~500 ms and ~740 ms
 - [x] **Spine click unfolds** — the design study advertised it but never wired it
-- [x] **Tests** — `test-ui.py` (28 headless checks incl. a perf budget, runs
+- [x] **Tests** — `test-ui.py` (53 headless checks incl. a perf budget, runs
       against both the bundle and the modular sources), `test-e2e.py` (real
-      folder, real picker, persistence), `FSA-TEST-CHECKLIST.md` for the rest
+      folder, real picker, persistence, the real clipboard),
+      `FSA-TEST-CHECKLIST.md` for the rest
 - [x] **`hotreload.py`** — retargeted at the dev entry point
 
 ---
@@ -79,10 +80,50 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
 - [ ] **Refresh a directory** — nothing re-reads a folder after the disk
       changes. A ⟳ button or F5-on-column would re-run `ensureLoaded` on the
       focused directory (there is no watch API; it has to be manual)
-- [ ] **Type-ahead** — typing letters should jump to the matching row in the
-      focused column. The previous implementation did prefix → substring →
-      fuzzy with `<mark>` highlighting; worth porting
-- [ ] **Copy path** — ⌘C / a status-bar click to copy the selected item's path
+- [x] **Type-ahead** — typing letters jumps to the matching row in the focused
+      column. For the person browsing, a folder of 400 entries goes from about
+      200 presses of ↓ to three letters. Three rungs run in order over the whole
+      column and the first hit wins: prefix, then substring, then fuzzy. Keeping
+      them as separate passes is what lets a name *starting* with "notes" beat
+      one on row 3 that merely contains it. The rung that matched also decides
+      the `<mark>` runs, so the highlight explains the jump: one pill for prefix
+      and substring, scattered characters for fuzzy.
+
+      The buffer expires 1.2 s after the last letter, so "re" then "adme" finds
+      `readme.md` while a pause starts a new search. Arrows, Home/End and Escape
+      keep the meanings the keyboard model already gave them and each ends a
+      live search; Escape ends the search when there is one and closes the ⚙
+      popover otherwise, so one press does one thing. A letter with Ctrl, ⌘ or
+      Alt held is a shortcut, never a search — swallowing ⌘R would break reload.
+      Matching runs on the rows the column already holds, so a directory still
+      being read reports "still reading" instead of matching a stale list.
+
+      Lives in `ui/core/typeahead.js`, so pykofinder gets it with no adapter
+      work: a column is a list of names whichever port filled it. Only two rows
+      are rewritten per keystroke, the one that was marked and the one that now
+      is; marking every matching row would be an innerHTML write per entry,
+      which is the O(entries) cost this app already paid to delete.
+
+      Measured at 3 000 entries, in-page, `test-ui.py`: matching costs **1.1 ms**
+      (bundle) and **1.8 ms** (modular sources), and a keystroke that finds
+      nothing costs **2.3–3.3 ms** end to end, including the status-strip write.
+      A keystroke that *does* find something costs 45.5 ms, against 67.4 ms for
+      an arrow key moving through the same column — both numbers are the price
+      of selecting a file there (a preview build plus a re-render, ~60 ms), not
+      the price of searching. Marking and un-marking a row together measure
+      0.07 ms. Nothing in the 4–9 ms keystroke figure above regressed: the
+      arrow-key path is untouched
+- [x] **Copy path** — ⌘C / Ctrl+C, or a click on the status-bar path, copies the
+      selected item's path. The strip now joins with `/` rather than ` / `,
+      because clicking it copies the string on screen and the two have to match.
+      `navigator.clipboard.writeText` can be refused, and a silent refusal is
+      the worst outcome: the next paste hands over whatever was there before and
+      nothing says so. A refusal therefore names the error and selects the path,
+      which puts the browser's own copy one keystroke away and needs no
+      permission, because the user presses it. In `ui/core/nav.js` next to
+      `renderCrumbs`, which is what writes that path. Note the root is a folder
+      *name*: the File System Access API never hands out an absolute path, so
+      `workspace/mixed/note.md` is everything the app knows
 - [ ] **Virtualised rows** — `content-visibility` made forced layout cheap, but
       a 100 k-entry directory still builds 100 k DOM nodes (~1 s). Only worth
       doing if such folders show up in practice
