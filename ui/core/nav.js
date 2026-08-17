@@ -46,6 +46,16 @@ function unfoldTo(i) {
   finder.scrollTo({ left: Math.round(i * foldUnit() * range()), behavior: "smooth" });
 }
 
+/* Where you are, from the root down to the selected row. The first element is a
+   folder *name*, not an absolute path: the File System Access API never hands
+   one out, so this is everything the app knows about the location. */
+function pathParts() {
+  const parts = path.map(p => p.name);
+  const leaf = sel[path.length - 1];
+  if (leaf) parts.push(leaf);
+  return parts;
+}
+
 function renderCrumbs() {
   const el = document.getElementById("crumbs");
   el.textContent = "";
@@ -57,9 +67,54 @@ function renderCrumbs() {
     b.onclick = () => { path = path.slice(0, i+1); sel = sel.slice(0, i); focusCol = i; render(); };
     el.appendChild(b);
   });
-  document.getElementById("st-path").textContent =
-    path.map(p => p.name).join(" / ") + (sel[path.length-1] ? " / " + sel[path.length-1] : "");
+  document.getElementById("st-path").textContent = pathParts().join(" / ");
 }
+
+/* ── Copy path ──────────────────────────────────────────────────────────────
+   The status strip already shows where you are; ⌘C, or a click on it, puts that
+   path on the clipboard.
+
+   navigator.clipboard.writeText can be refused: a browser policy, a page the
+   user has not touched yet, an insecure context with no clipboard object at
+   all. A silent refusal is the worst outcome, because the next paste hands over
+   whatever was on the clipboard before and nothing says so. So a refusal says
+   so and selects the path, which leaves the browser's own ⌘C one keystroke
+   away — the fallback needs no permission because the user presses it. */
+function sayCopy(msg, ok) {
+  const el = document.getElementById("st-copy");
+  el.textContent = msg;
+  el.classList.toggle("bad", !ok);
+  clearTimeout(sayCopy.t);
+  /* a success can flash; a refusal has to stay long enough to be read and
+     acted on, because it is asking for a second keystroke */
+  sayCopy.t = setTimeout(() => { el.textContent = ""; el.classList.remove("bad"); },
+                         ok ? 1600 : 8000);
+}
+
+function selectPath() {
+  const r = document.createRange();
+  r.selectNodeContents(document.getElementById("st-path"));
+  const s = getSelection();
+  s.removeAllRanges();
+  s.addRange(r);
+}
+
+async function copyPath() {
+  const text = pathParts().join("/");
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    sayCopy("copied", true);
+  } catch (err) {
+    selectPath();
+    sayCopy(`clipboard refused (${err.name || "error"}) — press ${COPY_KEY} again`, false);
+  }
+}
+
+const MAC = /Mac|iP(hone|ad)/.test(navigator.userAgentData?.platform || navigator.platform || "");
+const COPY_KEY = MAC ? "⌘C" : "Ctrl+C";
+document.getElementById("kbd-copy").textContent = COPY_KEY;
+document.getElementById("st-path").onclick = copyPath;
 
 /* Entering a column: the row it was left on, else the one it remembers, else
    the first. The column may still be reading, so this can run twice. */
@@ -94,6 +149,22 @@ document.addEventListener("keydown", e => {
   let ci = cursor[focusCol] ?? c.kids.findIndex(k => k.name === sel[focusCol]);
   if (ci < 0) ci = 0;
 
+  /* ⌘C / Ctrl+C. A live text selection wins: the user highlighted something and
+     asked for *that*, and after a refused copy the selected path is exactly
+     what the second press has to reach. */
+  if (e.key === "c" && (e.metaKey || e.ctrlKey) && !getSelection().toString()) {
+    e.preventDefault();
+    return void copyPath();
+  }
+  /* Letters go to the search unless an arrow, Home/End or Escape claimed the
+     keystroke first — those four are the navigation model and type-ahead does
+     not get to argue with them. Each of them also ends a live search. */
+  if (taWants(e)) {
+    e.preventDefault();
+    return void taType(e.key, c);
+  }
+  if (e.key !== "Escape") taCancel();
+
   if (e.key === "ArrowDown" || e.key === "ArrowUp") {
     e.preventDefault();
     if (!rows.length) return;
@@ -121,6 +192,9 @@ document.addEventListener("keydown", e => {
     e.preventDefault();
     if (focusCol > 0) { focusCol--; if (folded > focusCol) unfoldTo(focusCol); render(true); }
   } else if (e.key === "Escape") {
-    closeSettings();
+    /* one Escape does one thing: abandon the search if there is one, otherwise
+       close the popover. Both at once would make it impossible to tell which
+       one the key just did. */
+    if (taLive()) taCancel(); else closeSettings();
   }
 });
