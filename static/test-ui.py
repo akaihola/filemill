@@ -34,8 +34,23 @@ window.__mk = (nbig) => {
   const SLOW = (name, kids) => ({kind:'directory', name,
     entries: async function*(){ await new Promise(r=>setTimeout(r,500));
                                 for (const k of kids) yield [k.name, k]; }});
+  /* Snapshots its entry list *before* the wait, the way a real read does: the
+     directory the port hands back is the one that existed when the call
+     started. Without that, a read in flight would silently pick up a change
+     made while it slept, and the refresh-versus-load race would have nothing
+     to catch it out on. */
+  const RACE = (name, ref) => ({kind:'directory', name,
+    entries: async function*(){ const snap = ref.slice();
+                                await new Promise(r=>setTimeout(r,400));
+                                for (const k of snap) yield [k.name, k]; }});
   const big = [];
   for (let i=0;i<(nbig||0);i++) big.push(F(`file-${String(i).padStart(5,'0')}.txt`));
+  /* rebuilt per mount(), so one test's added and removed files cannot leak
+     into the next one */
+  window.__F = F;
+  window.__live = [D('sub',[F('deep.txt','d'), D('twig',[F('tip.txt','t')])]),
+                   F('one.txt','1'), F('two.txt','2')];
+  window.__race = [F('alpha.txt','a'), F('bravo.txt','b')];
   return D('workspace', [
     D('deep',  [D('alpha',[D('beta',[D('gamma',[F('leaf.md','# leaf')])])])]),
     D('mixed', [D('sub',[F('a.py','print(1)')]), F('.dotfile','h'),
@@ -53,9 +68,23 @@ window.__mk = (nbig) => {
     //   "arp"   → Alpha Report   fuzzy; no other name has a, r, p in order
     D('search', [F('readme.md'), F('release-notes.md'), F('beta-notes.md'),
                  F('changelog.md'), F('notes.txt'), F('Alpha Report.txt')]),
+    // Two directories whose entry lists the test edits, which is how "the disk
+    // moved under the app" is rehearsed without writing to a real folder.
+    // Both sort after "mixed", so the row indices the keyboard checks above
+    // rely on do not move.
+    D('refresh', window.__live),
+    RACE('racing', window.__race),
     F('README.md','# hi\n'),
   ]);
 };
+/* Live entry lists, and the two edits a test makes to them. The node factories
+   live inside __mk, so the helpers are bound here rather than re-derived. */
+window.__live = [];
+window.__race = [];
+window.__F = null;
+window.__add = (into, name) => into.push(window.__F(name, name));
+window.__rm  = (from, name) =>
+  from.splice(from.findIndex(k => k.name === name), 1);
 /* The clipboard is a permission away in a real browser and refused outright in
    some contexts, so the suite drives both branches itself rather than asking
    Chromium for a grant it may not give. */
@@ -415,6 +444,133 @@ async def main():
               await pg.evaluate("getSelection().toString()") == "workspace/mixed/note.md",
               await pg.evaluate("getSelection().toString()"))
 
+        print("\n── Refresh a directory ──────────────────────────────────────")
+        # Nothing here touches a real folder: what changes is the fake handle's
+        # entry list. test-e2e.py runs the real-disk version, against a
+        # temporary directory it creates and deletes itself.
+        rows1 = '.col[data-i="1"] .row'
+
+        async def in_refresh():
+            """Mount fresh and focus the `refresh` column (row 0 = the `sub` folder)."""
+            await mount(pg)
+            await pg.click('.col[data-i="0"] .row:has-text("refresh")')
+            await pg.wait_for_timeout(250)
+            await pg.keyboard.press("ArrowRight")
+            await pg.wait_for_timeout(250)
+
+        await in_refresh()
+        before = await pg.eval_on_selector_all(rows1, "e=>e.length")
+        await pg.evaluate("__add(__live, 'three.txt')")
+        await pg.wait_for_timeout(120)
+        check("A file another program wrote stays invisible until asked",
+              await pg.eval_on_selector_all(rows1, "e=>e.length") == before,
+              "no watch API exists — which is the whole reason refresh is manual")
+        await pg.evaluate("window.__sentinel = 42")
+        await pg.keyboard.press("F5")
+        await pg.wait_for_timeout(600)
+        snap = await pg.evaluate(
+            "({...__state(), rows: colCache.get(path[1]).rows.length,"
+            " sentinel: window.__sentinel,"
+            " say: document.getElementById('st-refresh').textContent})")
+        check("F5 re-reads the focused column and the new file appears",
+              snap["rows"] == before + 1, f"{before}→{snap['rows']}")
+        check("F5 refreshes the folder instead of reloading the page",
+              snap["sentinel"] == 42,
+              f"page marker {snap['sentinel']}, 42 means the page survived")
+        check("The selection survives the re-read, and so does the column it opened",
+              snap["sel"] == ["refresh", "sub"] and snap["focusCol"] == 1
+              and snap["path"] == ["workspace", "refresh", "sub"], json.dumps(snap))
+        check("The strip says what changed, in entries rather than adjectives",
+              snap["say"].strip() == "⟳ 1 new, 0 gone", snap["say"])
+
+        await in_refresh()
+        before = await pg.eval_on_selector_all(rows1, "e=>e.length")
+        await pg.evaluate("__add(__live, 'four.txt')")
+        await pg.click('.col[data-i="1"] .col-head .rf')
+        await pg.wait_for_timeout(600)
+        check("The ⟳ button on the column header does the same job as F5",
+              await pg.eval_on_selector_all(rows1, "e=>e.length") == before + 1)
+
+        # The entry you were on is gone. Selecting whatever slid into its place
+        # would show a preview of a file nobody asked for, so nothing is
+        # selected — but the cursor stays, because ↑/↓ should resume where you
+        # were rather than at the top of a 3 000-row list.
+        await in_refresh()
+        for _ in range(2):
+            await pg.keyboard.press("ArrowDown")
+            await pg.wait_for_timeout(150)
+        check("(a file two rows down is selected)",
+              await pg.evaluate("sel[1]") == "two.txt", await pg.evaluate("sel[1]"))
+        await pg.evaluate("__rm(__live, 'two.txt')")
+        await pg.keyboard.press("F5")
+        await pg.wait_for_timeout(600)
+        snap = await pg.evaluate(
+            "({...__state(), cursor1: cursor[1],"
+            " say: document.getElementById('st-refresh').textContent})")
+        check("A selected file that vanished leaves nothing selected, and says so",
+              snap["sel"] == ["refresh"] and snap["focusCol"] == 1
+              and "two.txt is gone" in snap["say"], json.dumps(snap))
+        check("…and the cursor stays on that row index, clamped to what is left",
+              snap["cursor1"] == 1, str(snap["cursor1"]))
+        await pg.keyboard.press("ArrowDown")
+        await pg.wait_for_timeout(250)
+        check("…so ↓ resumes next to the missing file, not at the top",
+              await pg.evaluate("sel[1]") == "one.txt", await pg.evaluate("sel[1]"))
+
+        # Refreshing a parent must not quietly throw away the columns to its
+        # right. A re-read hands back new node objects, so the chain is walked
+        # again by name rather than kept by identity.
+        async def deep_chain():
+            await mount(pg)
+            await pg.click('.col[data-i="0"] .row:has-text("refresh")')
+            await pg.wait_for_timeout(250)
+            for _ in range(3):                    # → sub → twig → tip.txt
+                await pg.keyboard.press("ArrowRight")
+                await pg.wait_for_timeout(250)
+            for _ in range(2):                    # ← back out to the `refresh` column
+                await pg.keyboard.press("ArrowLeft")
+                await pg.wait_for_timeout(150)
+
+        await deep_chain()
+        await pg.keyboard.press("F5")
+        await pg.wait_for_timeout(900)
+        st = await pg.evaluate("__state()")
+        check("Refreshing a parent keeps the whole chain open below it",
+              st["path"] == ["workspace", "refresh", "sub", "twig"]
+              and st["sel"] == ["refresh", "sub", "twig", "tip.txt"], json.dumps(st))
+        check("…and leaves focus on the column the user was actually in",
+              st["focusCol"] == 1, str(st["focusCol"]))
+
+        await deep_chain()
+        await pg.evaluate("__rm(__live, 'sub')")
+        await pg.keyboard.press("F5")
+        await pg.wait_for_timeout(900)
+        snap = await pg.evaluate(
+            "({...__state(), say: document.getElementById('st-refresh').textContent})")
+        check("A chain that stopped existing is restored as far as it is real, "
+              "and no further",
+              snap["path"] == ["workspace", "refresh"] and snap["sel"] == ["refresh"]
+              and snap["focusCol"] == 1 and "sub is gone" in snap["say"],
+              json.dumps(snap))
+
+        # The race the pvToken/ensureLoaded reuse exists for. `racing` snapshots
+        # its entries before a 400 ms wait, so a refresh that simply re-entered
+        # ensureLoaded would be handed the in-flight promise and win the *old*
+        # listing — two reads, one field, and the wrong one landing last.
+        await mount(pg)
+        await pg.click('.col[data-i="0"] .row:has-text("racing")')
+        await pg.wait_for_timeout(150)                 # the 400 ms read is in flight
+        await pg.evaluate("__add(__race, 'charlie.txt')")
+        await pg.evaluate("refreshColumn(1)")
+        await pg.wait_for_timeout(1600)
+        got = await pg.eval_on_selector_all(rows1, "e=>e.map(x=>x.title)")
+        head = (await pg.inner_text('.col[data-i="1"] .count')).strip()
+        check("A refresh that lands on a read already in flight waits for it, then "
+              "re-reads once — one listing wins",
+              got == ["alpha.txt", "bravo.txt", "charlie.txt"] and head == "3"
+              and await pg.evaluate("path[1].loading") is None,
+              f"{got}, header says {head}")
+
         print("\n── Render cost ──────────────────────────────────────────────")
         # Generous ceilings: they exist to catch the O(entries)-per-keystroke
         # regression (which cost 500–740 ms), not to benchmark a loaded machine.
@@ -460,6 +616,23 @@ async def main():
                   find < 25 and miss["ms"] < budget and hit["ms"] < arrow + budget
                   and hit["rows"] == n and miss["rows"] == n,
                   f"searched {hit['rows']} rows, expected {n}")
+
+            # Refresh is the one action that throws a cached column away on
+            # purpose: the entry list really did change, so the DOM has to be
+            # rebuilt. Its price is therefore the build price the cache exists
+            # to avoid paying per keystroke — once, when the user asks. What
+            # matters is that it is not on the keystroke path, so the assertion
+            # is on the arrow key measured *after* it, not on the refresh.
+            rf = await pg.evaluate(
+                "(async () => { const t = performance.now();"
+                " await refreshColumn(focusCol);"
+                " return +(performance.now()-t).toFixed(1); })()")
+            after = await pg.evaluate("__keybench(20)")
+            check(f"{n:,} entries: a refresh rebuilds the column in {rf} ms, and the "
+                  f"next keystroke still costs {after} ms (budget {budget} ms)",
+                  after < budget and await pg.evaluate("colCache.get(path[focusCol])"
+                                                       ".rows.length") == n,
+                  f"keystroke {after} ms after a {rf} ms refresh")
 
         check("No console errors anywhere", not errs, "; ".join(errs[:3]))
         await b.close()

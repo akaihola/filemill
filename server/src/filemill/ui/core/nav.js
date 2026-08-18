@@ -41,6 +41,91 @@ async function choose(colIdx, node, rowIdx) {
   }
 }
 
+/* ── Refresh ────────────────────────────────────────────────────────────────
+   Neither port can tell the app that a directory changed. The File System
+   Access API has no watch call at all, and the server one would need a socket
+   the static build cannot open. So a folder read once stays as it was read
+   until somebody asks again, and asking has to be a thing the user does.
+
+   Refreshing is *not* a second way to load a directory. It empties node.kids
+   and calls the same FS.ensureLoaded every other caller uses — one loading
+   path, one debounce, one place where node.kids is written. A separate
+   "reload" call would be two writers on one field, and the interleaving that
+   loses is the one you never reproduce.
+
+   Which columns it touches, and what survives:
+
+     the focused column          re-read from the port
+     columns open below it       re-read too — they are on screen, and a fresh
+                                 column beside three stale ones is worse than
+                                 the extra reads. Closed subtrees are untouched
+     the selection at each level matched again by name: a re-read hands back
+                                 new node objects, so the chain is re-walked
+                                 rather than kept by identity
+     a selected name that is gone the walk stops there. The cursor stays on that
+                                 row index, clamped, and nothing is selected —
+                                 ↓ resumes where the user was, and the app
+                                 never shows a selection that is not real
+     columns below the stop      closed, because their parent no longer has the
+                                 entry that opened them
+     focus                       where it was, clamped to the new depth        */
+async function refreshColumn(i) {
+  const node = path[i];
+  if (!node || !node.dir || !FS) return;
+
+  const seq = ++navSeq;              /* a click, a key or a second ⟳ overtakes */
+  const names = currentPath();
+  const keepFocus = focusCol, keepCursor = { ...cursor };
+  /* the ⟳ spins on the column that is on screen now; the re-render replaces
+     that element, which is exactly when the spinning should stop */
+  const spinning = colCache.get(node)?.el;
+  spinning?.classList.add("busy");
+
+  try {
+    /* A read already in flight owns node.kids. Wait for it before invalidating:
+       ensureLoaded hands a concurrent caller the in-flight promise, so asking
+       now would return the very listing this refresh was called to replace,
+       and two reads would race to write the same field. */
+    if (node.loading) await node.loading;
+    if (seq !== navSeq) return;
+
+    const before = new Set(visibleKids(node).map(k => k.name));
+    node.kids = null;
+    node.denied = undefined;
+    /* Nothing renders between here and the read landing. The column cache still
+       holds the previous DOM, so the screen keeps showing the old listing
+       instead of flashing back to "Reading…" and losing its scroll position. */
+    await FS.ensureLoaded(node);
+    if (seq !== navSeq) return;
+
+    const after = visibleKids(node);
+    const added = after.reduce((n, k) => n + !before.has(k.name), 0);
+    const gone = before.size - (after.length - added);
+
+    /* The same walk a deep link uses: down from the root by name, stopping at
+       the first segment that is not there. Three callers, one implementation —
+       refresh, a pasted link, and a restored folder cannot disagree about what
+       a half-valid chain means. */
+    const complete = await applyPath(names, keepFocus);
+    if (seq !== navSeq) return;
+
+    if (complete) {
+      saySt("st-refresh", added || gone ? `⟳ ${added} new, ${gone} gone` : "⟳ no change",
+            true);
+      return;
+    }
+    const stop = path.length - 1;              /* where the walk ran out */
+    const col = colCache.get(path[stop]);
+    if (col && col.rows.length && keepCursor[stop] != null)
+      cursor[stop] = Math.min(keepCursor[stop], col.rows.length - 1);
+    render(true);
+    scrollCursorIntoView();
+    saySt("st-refresh", `⟳ ${names[stop]} is gone`, false);
+  } finally {
+    spinning?.classList.remove("busy");
+  }
+}
+
 /* clicking a spine scrolls back just far enough to unfold it */
 function unfoldTo(i) {
   finder.scrollTo({ left: Math.round(i * foldUnit() * range()), behavior: "smooth" });
@@ -84,16 +169,19 @@ function renderCrumbs() {
    whatever was on the clipboard before and nothing says so. So a refusal says
    so and selects the path, which leaves the browser's own ⌘C one keystroke
    away — the fallback needs no permission because the user presses it. */
-function sayCopy(msg, ok) {
-  const el = document.getElementById("st-copy");
+/* One transient line in the status strip, per slot, cleared on a timer. A
+   success can flash; a refusal or a loss stays long enough to be read and acted
+   on, because it is asking the user to do something about it. */
+function saySt(id, msg, ok) {
+  const el = document.getElementById(id);
   el.textContent = msg;
   el.classList.toggle("bad", !ok);
-  clearTimeout(sayCopy.t);
-  /* a success can flash; a refusal has to stay long enough to be read and
-     acted on, because it is asking for a second keystroke */
-  sayCopy.t = setTimeout(() => { el.textContent = ""; el.classList.remove("bad"); },
-                         ok ? 1600 : 8000);
+  clearTimeout((saySt.t ||= {})[id]);
+  saySt.t[id] = setTimeout(() => { el.textContent = ""; el.classList.remove("bad"); },
+                           ok ? 1600 : 8000);
 }
+
+const sayCopy = (msg, ok) => saySt("st-copy", msg, ok);
 
 function selectPath() {
   const r = document.createRange();
@@ -195,6 +283,14 @@ document.addEventListener("keydown", e => {
   } else if (e.key === "ArrowLeft") {
     e.preventDefault();
     if (focusCol > 0) { focusCol--; if (folded > focusCol) unfoldTo(focusCol); render(true); }
+  } else if (e.key === "F5" && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+    /* Every desktop file manager reads F5 as "re-read this folder", and here a
+       page reload is a far worse trade: it drops the mounted root, the whole
+       column chain and the scroll position, then asks the browser for the
+       folder again. ⌘R, Ctrl+R and Ctrl+F5 are left alone, so a real reload is
+       still one keystroke away — the same rule type-ahead follows for ⌘R. */
+    e.preventDefault();
+    refreshColumn(focusCol);
   } else if (e.key === "Escape") {
     /* one Escape does one thing: abandon the search if there is one, otherwise
        close the popover. Both at once would make it impossible to tell which

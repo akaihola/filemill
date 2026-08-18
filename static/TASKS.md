@@ -30,12 +30,12 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       failing silently on Chrome's `SecurityError`
 - [x] **Keyboard model** — ↑/↓ stay in the focused column, → descends (and
       returns to the row a column was last left on), ← comes back out,
-      Home/End, Escape closes the popover
+      Home/End, F5 re-reads the focused folder, Escape closes the popover
 - [x] **Performance** — column DOM cache, in-place reconciliation, write guards
       and `content-visibility`; ~5 ms re-render and 4–9 ms keystrokes at 3 000
       entries, down from ~500 ms and ~740 ms
 - [x] **Spine click unfolds** — the design study advertised it but never wired it
-- [x] **Tests** — `test-ui.py` (53 headless checks incl. a perf budget, runs
+- [x] **Tests** — `test-ui.py` (69 headless checks incl. a perf budget, runs
       against both the bundle and the modular sources), `test-e2e.py` (real
       folder, real picker, persistence, the real clipboard),
       `FSA-TEST-CHECKLIST.md` for the rest
@@ -77,9 +77,56 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       `server/tools/sync-ui.py --check` now guards a *packaging* copy rather
       than two repositories
 
-- [ ] **Refresh a directory** — nothing re-reads a folder after the disk
-      changes. A ⟳ button or F5-on-column would re-run `ensureLoaded` on the
-      focused directory (there is no watch API; it has to be manual)
+- [x] **Refresh a directory** — ⟳ in the focused column's header, or F5.
+
+      For the person browsing: a file another program wrote used to be invisible
+      until the whole app was reloaded, and reloading drops the mounted folder,
+      every open column and the scroll position. Now one key re-reads the folder
+      and everything stays where it is. The strip says what moved — `⟳ 2 new,
+      1 gone`, or `⟳ no change`, so a refresh that found nothing still answers.
+
+      Why it has to be manual: neither port can tell the app a directory
+      changed. The File System Access API has no watch call, and the server one
+      would need a socket the static single file cannot open. A folder read once
+      stays as it was read until somebody asks. Polling instead would re-read
+      folders nobody is looking at, on a battery, forever.
+
+      **Refresh is not a second way to load a directory.** It empties
+      `node.kids` and calls the same `FS.ensureLoaded` every other caller uses,
+      so there is one loading path, one debounce, and exactly one writer of
+      `node.kids`. Two loaders on one field is a race that reproduces once a
+      month on somebody else's machine.
+
+      | Situation | Result |
+      | --------- | ------ |
+      | The selected entry is still there | Stays selected. Every column open below it stays open |
+      | The selected entry is gone | Nothing is selected — selecting whatever slid into its place would preview a file nobody asked for. The cursor stays on that row index, clamped to the shorter list, so ↓ resumes beside it. The strip names what went |
+      | A folder deeper in the chain is gone | The chain is walked again by name and stops at the first level that no longer exists. Columns below that close |
+      | Refresh lands on a read already in flight | It waits for that read, then re-reads once. `ensureLoaded` hands a concurrent caller the *in-flight* promise, so asking without waiting returns the very listing the refresh was called to replace |
+      | The user clicks or presses a key mid-refresh | The refresh drops its repaint. It bumps `navSeq`, the counter `choose` already uses for the same reason |
+      | A preview was being built for the old node | The re-render calls `fillPreview` on the new node, which bumps `pvToken`; the older read is discarded when it lands |
+      | Focus | Stays on the column the user was in, clamped to the new depth |
+
+      Refreshing a parent re-reads the columns open below it as well. It has to:
+      a re-read hands back new node objects, so identity is gone and the chain
+      must be matched by name anyway. Re-reading is also the honest answer —
+      those columns are on screen, and one fresh column beside three stale ones
+      is worse than the extra reads. Closed subtrees are untouched.
+
+      The walk is `applyPath`, the one a deep link already used. Three callers
+      now share it — refresh, a pasted link, and a restored folder — so they
+      cannot disagree about what a half-valid chain means.
+
+      In `ui/core/nav.js` (`refreshColumn`), the button in `render.js`'s
+      `buildCol`, and one optional `wantFocus` argument on `applyPath`. pykofinder
+      gets refresh with no adapter work: `HTTP.ensureLoaded` re-fetches for the
+      same reason `FSA.ensureLoaded` re-reads.
+
+      Measured at 3 000 entries, in-page, `test-ui.py`: a refresh rebuilds the
+      column in **371 ms**, which is the build cost the column cache exists to
+      avoid paying *per keystroke* — here it is paid once, when the user asks,
+      because the entry list really did change. The arrow key straight after it
+      still costs **7.5 ms**, inside the 4–9 ms budget. 16 checks in `test-ui.py`
 - [x] **Type-ahead** — typing letters jumps to the matching row in the focused
       column. For the person browsing, a folder of 400 entries goes from about
       200 presses of ↓ to three letters. Three rungs run in order over the whole
