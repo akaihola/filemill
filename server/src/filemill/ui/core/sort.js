@@ -30,7 +30,11 @@ const SORT_LABEL = { name: "name", size: "size", mtime: "modified" };
 
 const sortNeedsMeta = () => state.sort.key !== "name";
 
-const byName = (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true });
+/* One collator, reused. `"a".localeCompare(b, undefined, {numeric: true})` has
+   to resolve those options on every call, and this comparator runs n log n
+   times per column build — about 35 000 times at 3 000 entries. */
+const NAME_COLLATOR = new Intl.Collator(undefined, { numeric: true });
+const byName = (a, b) => NAME_COLLATOR.compare(a.name, b.name);
 
 /* The number to order on, or null for "this row has none". A file the port
    could not open carries `meta.error`; a row inside a database carries
