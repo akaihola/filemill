@@ -128,6 +128,40 @@ window.__keybench = (n) => {
   return +((performance.now()-t0)/n).toFixed(1);
 };
 window.__state = () => ({path: path.map(p=>p.name), sel, focusCol, folded});
+/* Put a `recent` list straight into the real database, to prove the record
+   format and its migration rather than a stub of them. Only plain objects go in
+   — a fake handle carries an async generator, which structuredClone refuses.
+   test-e2e.py stores a real FileSystemDirectoryHandle in a real profile. */
+window.__seed = (recent) => new Promise((res, rej) => {
+  const r = indexedDB.open('filemill', 1);
+  r.onupgradeneeded = e => e.target.result.createObjectStore('kv');
+  r.onsuccess = e => { const tx = e.target.result.transaction('kv', 'readwrite');
+                       tx.objectStore('kv').put(recent, 'recent');
+                       tx.oncomplete = () => res(true);
+                       tx.onerror = () => rej(tx.error); };
+  r.onerror = e => rej(e.target.error);
+});
+/* Stand in for one remembered folder. isSameEntry is what recallView matches
+   on, and the real one is the only correct answer — two folders can share a
+   basename — so the stub answers by name and nothing in the app has to. */
+window.__remember = (chain) => {
+  window.recallRoots = async () => [{
+    handle: {name: 'workspace', isSameEntry: async h => h.name === 'workspace'},
+    path: chain}];
+};
+/* Watch what the app decides to store, without storing it. */
+window.__spySaves = () => {
+  window.__saved = [];
+  window.recallRoots = async () => [];
+  window.rememberRoot = async (h, p) => window.__saved.push([h.name, p]);
+};
+/* End on a value, never on an assignment. Playwright evaluates this string and
+   *calls the result if it is a function* — and the result is the completion
+   value of the last statement. Ending on `window.__spySaves = () => {…}` handed
+   Playwright that arrow, which it duly invoked, stubbing recallRoots before a
+   single check ran. The two storage checks then read an empty list from a
+   database that visibly had a record in it. */
+"fake handle ready";
 """
 
 passed, failed = [], []
@@ -570,6 +604,74 @@ async def main():
               got == ["alpha.txt", "bravo.txt", "charlie.txt"] and head == "3"
               and await pg.evaluate("path[1].loading") is None,
               f"{got}, header says {head}")
+
+        print("\n── Remember view state per folder ───────────────────────────")
+        # The record and its migration go through the real database. The restore
+        # itself is driven by stubbing recallRoots, because a fake handle is not
+        # structured-cloneable — test-e2e.py does the real-handle round trip.
+        await pg.evaluate("__seed([{kind:'directory', name:'legacy'}])")
+        got = await pg.evaluate("recallRoots()")
+        check("A database written before view state keeps its folders",
+              got == [{"handle": {"kind": "directory", "name": "legacy"}, "path": []}],
+              str(got))
+        await pg.evaluate(
+            "__seed([{handle:{kind:'directory',name:'w'}, path:['mixed','sub']}])")
+        got = await pg.evaluate("recallRoots()")
+        check("A stored chain comes back attached to the folder it belongs to",
+              len(got) == 1 and got[0]["path"] == ["mixed", "sub"], str(got))
+
+        await pg.evaluate("__remember([])")
+        check("A folder last left on its own root asks for no restore",
+              await pg.evaluate("recallView({name:'workspace'})") is None)
+
+        await pg.evaluate("__remember(['mixed','sub','a.py'])")
+        await pg.evaluate("mount(__mk(0))")
+        await pg.wait_for_timeout(350)
+        st = await pg.evaluate("__state()")
+        check("Re-mounting a remembered folder puts the user back on the chain",
+              st["path"] == ["workspace", "mixed", "sub"]
+              and st["sel"] == ["mixed", "sub", "a.py"], json.dumps(st))
+
+        # The case that matters: the folder is still there, the chain is not.
+        await pg.evaluate("__remember(['mixed','gone','x.py'])")
+        await pg.evaluate("mount(__mk(0))")
+        await pg.wait_for_timeout(350)
+        st = await pg.evaluate("__state()")
+        check("A remembered chain that no longer exists restores as far as it is "
+              "real, and stops",
+              st["path"] == ["workspace", "mixed"] and st["sel"] == ["mixed"],
+              json.dumps(st))
+        check("…and shows no selection inside the folder it stopped at, because "
+              "there is none to show",
+              len(st["sel"]) == 1 and st["focusCol"] == 0, json.dumps(st))
+
+        await pg.evaluate("__remember(['mixed','sub'])")
+        await pg.evaluate("pendingLoc = {root:'workspace', path:['deep','alpha']}")
+        await pg.evaluate("mount(__mk(0))")
+        await pg.wait_for_timeout(350)
+        st = await pg.evaluate("__state()")
+        check("A link in the address bar beats the remembered chain",
+              st["path"] == ["workspace", "deep", "alpha"], json.dumps(st))
+
+        # The write side. Walking a column is one location change per keystroke,
+        # so the saves are debounced — a write per keystroke would be the
+        # per-entry cost this app spent a rewrite deleting, in another costume.
+        await pg.evaluate("__spySaves()")
+        await pg.evaluate("mount(__mk(0))")
+        await pg.wait_for_timeout(350)
+        start_saves = await pg.evaluate("__saved.length")
+        await pg.click('.col[data-i="0"] .row:has-text("mixed")')
+        await pg.wait_for_timeout(150)
+        await pg.click('.col[data-i="1"] .row:has-text("note.md")')
+        early = await pg.evaluate("__saved.length")
+        await pg.wait_for_timeout(800)
+        saved = await pg.evaluate("__saved")
+        check("Mounting a folder does not overwrite the chain it just restored",
+              start_saves == 0, f"{start_saves} writes during mount")
+        check("Two navigations 150 ms apart collapse into one write",
+              early == 0 and len(saved) == 1, f"{early} early, {len(saved)} total")
+        check("What is stored is the folder and the chain inside it",
+              saved == [["workspace", ["mixed", "note.md"]]], str(saved))
 
         print("\n── Render cost ──────────────────────────────────────────────")
         # Generous ceilings: they exist to catch the O(entries)-per-keystroke

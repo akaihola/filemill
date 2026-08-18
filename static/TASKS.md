@@ -35,9 +35,10 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       and `content-visibility`; ~5 ms re-render and 4–9 ms keystrokes at 3 000
       entries, down from ~500 ms and ~740 ms
 - [x] **Spine click unfolds** — the design study advertised it but never wired it
-- [x] **Tests** — `test-ui.py` (69 headless checks incl. a perf budget, runs
+- [x] **Tests** — `test-ui.py` (79 headless checks incl. a perf budget, runs
       against both the bundle and the modular sources), `test-e2e.py` (real
-      folder, real picker, persistence, the real clipboard),
+      folder, real picker, persistence, the real clipboard, and refresh plus
+      view-state restore against a throwaway folder it creates and deletes),
       `FSA-TEST-CHECKLIST.md` for the rest
 - [x] **`hotreload.py`** — retargeted at the dev entry point
 
@@ -176,7 +177,57 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       doing if such folders show up in practice
 - [ ] **Sort options** — name / size / mtime, ascending or descending. Needs
       metadata for every row, so it implies a `getFile()` sweep per directory
-- [ ] **Remember view state per folder** — restore the last selection chain when
-      re-mounting a remembered root
+- [x] **Remember view state per folder** — re-mounting a remembered root
+      restores the selection chain it was left on.
+
+      For the person browsing: a folder left open three columns deep used to
+      reopen at its root, so every visit began by re-walking the same three
+      rows. Now the columns come back and the file is selected again. The
+      welcome screen's "Recently opened" buttons say where each one will land
+      (`workspace › notes › drafts`), which is the only place on that screen the
+      kept chain is visible before you commit to a click.
+
+      The record in IndexedDB grew a field instead of gaining a neighbour:
+
+          { handle: FileSystemDirectoryHandle, path: ["notes", "drafts"] }
+
+      A second store keyed by folder would need its own key — and a handle is
+      not a path, so the only honest key is the handle already in this record.
+      Two stores would also drift the first time one is pruned to 8 and the
+      other is not. `asRoot` normalises a bare handle on read, so a database
+      written by the previous build keeps all eight of its folders.
+
+      The chain is a list of *names*. Node objects are built from a read that
+      has not happened when the page loads, and a name outlives anything. It is
+      the same list a deep link carries, so `applyPath` restores both.
+
+      | Situation | Result |
+      | --------- | ------ |
+      | Every name still exists | The columns reopen, the file is selected, the row is scrolled into view |
+      | A folder partway down is gone | The walk stops there. Columns above it are open, nothing below is, and nothing is selected in the column it stopped at |
+      | The remembered file is gone, its folder is not | The folder opens with no selection, rather than picking whatever now sits in that row |
+      | The folder was last left on its own root | Nothing to restore, so it mounts plainly |
+      | A deep link is in the address bar | The link wins. The user followed it just now; the chain is only where they last stopped |
+      | The database predates the chain | `asRoot` reads a bare handle as `{handle, path: []}` — the upgrade costs nobody their folders |
+      | A truncated chain is saved back | Yes, truncated. The app remembers where the user actually is; keeping a chain that no longer exists would be storing a selection that is not real |
+
+      Saving hangs off `ROUTER.write`, which core already calls on every
+      selection change and nowhere else, so `ui/adapters/app-fsa.js` wraps it
+      rather than core growing a hook — the server build has no remembered
+      folders to hook. Writes are debounced 400 ms and skip unchanged
+      locations, because `render()` also runs on resize and walking a column
+      with ↓ held is one location change per keystroke; a write per keystroke
+      would be the per-entry cost this app spent a rewrite deleting, in
+      another costume. `visibilitychange` flushes the pending write, so a tab
+      closed 100 ms after the last click still records it.
+
+      `mounted` is set only once a mount finishes, so the mount's own renders
+      cannot save a bare root over the very chain they are about to restore.
+
+      In `ui/adapters/storage.js` and `ui/adapters/app-fsa.js` — both adapters,
+      because a remembered *handle* is what this build has and the server build
+      has a root path instead. No `ui/core/` file changed for this. 10 checks in
+      `test-ui.py`, 5 more in `test-e2e.py` against a real folder the test
+      creates, edits and deletes
 - [ ] **PWA manifest + service worker** — the old app had one; would let the
       bundle be installed and launched as a standalone window
