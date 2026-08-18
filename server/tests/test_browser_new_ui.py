@@ -4,11 +4,15 @@ This is the test that actually proves the sharing works: `ui/` is filemill's
 frontend byte-for-byte, and here it is browsing a real directory tree over
 `/api/dir` and `/api/preview` with nothing about `core/` changed.
 
-Unlike the HTMX suite, nothing here reaches the network — every asset is served
-by the app — so it also passes in an offline sandbox.
+Unlike the HTMX suite, nothing here reaches the network. The app serves every
+asset, `test_nothing_is_fetched_from_a_cdn` holds it to that, and so these 27
+tests pass in an offline sandbox.
 
-    timeout 300 PLAYWRIGHT_BROWSERS_PATH="$PLAYWRIGHT_BROWSERS_PATH" \
-      uv run --with "playwright==1.61.0" pytest tests/test_browser_new_ui.py
+    timeout 600 uv run pytest tests/test_browser_new_ui.py
+
+No `--with`: `uv sync` installs the Playwright `pyproject.toml` pins, and that is
+the one whose driver matches the browsers at `$PLAYWRIGHT_BROWSERS_PATH`. See
+CONTRIBUTING.md, "Do Not Pass `--with playwright==…`".
 """
 
 from __future__ import annotations
