@@ -44,8 +44,13 @@ function syncURL() {
 
 /* Walk down from the root, opening each directory in turn. Stops at the first
    segment that is not there — a link into a folder that has since been renamed
-   still gets you as far as it can rather than showing nothing. */
-async function applyPath(names) {
+   still gets you as far as it can rather than showing nothing. Returns whether
+   every segment was found, which is how a caller learns the chain was cut.
+
+   `wantFocus` is for the callers that already know where the user was looking:
+   a refresh must not move focus to the deepest column just because it re-walked
+   the chain to get there. A link has no such opinion and omits it. */
+async function applyPath(names, wantFocus) {
   if (!path.length) return false;
   names = (names || []).filter(Boolean);
 
@@ -82,6 +87,9 @@ async function applyPath(names) {
     return complete;
   } finally {
     applying = false;
+    /* clamped: the chain may have come back shorter than the column that had
+       focus, and focusing a column that is no longer open kills ↑/↓ */
+    if (wantFocus != null) focusCol = Math.max(0, Math.min(wantFocus, path.length - 1));
     render();
     scrollCursorIntoView();
   }

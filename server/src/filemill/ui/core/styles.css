@@ -217,6 +217,22 @@ body {
   margin-left: auto; font-size: var(--fs-meta); font-weight: 450;
   color: var(--ink-3); font-variant-numeric: tabular-nums;
 }
+/* ⟳ sits in the header of every column but only shows on the one being read or
+   pointed at: a button on all seven at once is noise, and the key does the same
+   job without one. `visibility` rather than `display` so the header never
+   re-measures when it appears — a width change here would relay out the rows. */
+.col-head .rf {
+  all: unset; visibility: hidden; cursor: pointer;
+  margin-right: -3px; padding: 0 3px; border-radius: 4px;
+  font-size: 12px; line-height: 1; color: var(--ink-3);
+}
+.col.focus .col-head .rf, .col:hover .col-head .rf { visibility: visible; }
+.col-head .rf:hover { color: var(--accent); background: var(--hairline); }
+.col.busy .col-head .rf { visibility: visible; color: var(--accent);
+                          animation: rf-spin .7s linear infinite; }
+@keyframes rf-spin { to { transform: rotate(360deg); } }
+.col.spine .rf, .col.folding .rf { display: none; }
+
 .col.focus .col-head { color: var(--ink); }
 .col.focus .col-head::after {
   content: ""; position: absolute; left: 9px; right: 9px;
@@ -440,9 +456,10 @@ body {
   cursor: pointer;
 }
 #st-path:hover { color: var(--ink-2); text-decoration: underline; text-underline-offset: 2px; }
-#st-copy { color: var(--accent); }
-#st-copy.bad { color: #d2544a; }
-:root[data-theme="dark"] #st-copy.bad { color: #ff8a7d; }
+#st-copy, #st-refresh { color: var(--accent); white-space: nowrap; }
+#st-copy.bad, #st-refresh.bad { color: #d2544a; }
+:root[data-theme="dark"] #st-copy.bad,
+:root[data-theme="dark"] #st-refresh.bad { color: #ff8a7d; }
 #st-find { color: var(--accent); font-family: var(--mono); white-space: nowrap; }
 
 /* ── Type-ahead marks ──────────────────────────────────────────────────────

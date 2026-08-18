@@ -41,7 +41,7 @@ the user makes to your behaviour — capture it here so it survives a context re
 │   │   ├── layout.js       ← the fold dial: stripSpan, layout, applyScroll
 │   │   ├── trail.js        ← the SVG elbows between columns
 │   │   ├── typeahead.js    ← prefix → substring → fuzzy, <mark>, idle buffer
-│   │   ├── nav.js          ← choose(), crumbs, copy path, all keyboard handling
+│   │   ├── nav.js          ← choose(), crumbs, copy path, refresh, all keys
 │   │   ├── deeplink.js     ← path ⇄ column chain; push-vs-replace policy
 │   │   └── settings.js     ← ⚙ popover toggles
 │   ├── adapters/           ← everything source-specific
@@ -66,7 +66,7 @@ the user makes to your behaviour — capture it here so it survives a context re
     ├── index-dev.html          ← dev entry point: <script src="../ui/…">
     ├── build-index.py          ← index-dev.html + ../ui → index.html
     ├── hotreload.py            ← optional CDP live-patcher for dev mode
-    ├── test-ui.py              ← headless suite, fake handle (53 checks)
+    ├── test-ui.py              ← headless suite, fake handle (69 checks)
     ├── test-url.py             ← deep-link suite over localhost (12 checks)
     ├── test-rich.py            ← CDN renderers: offline/switch/loaded (14)
     └── test-e2e.py             ← headed suite, real folder + real picker
@@ -233,6 +233,12 @@ folders are restored from IndexedDB — reloading is cheap.
 | A refused clipboard selects the path instead | `writeText` can be refused by policy or context. Failing silently means the next paste hands over something else with nothing to say so; selecting the path puts the browser's own ⌘C one keystroke away, and that one needs no permission |
 | The status path joins with `/`, not ` / ` | Clicking it copies it, and the refusal fallback copies the characters on screen. A display string that differs from the copied string makes the fallback quietly wrong |
 | History pushes on entering a column, rewrites otherwise | Selecting a folder opens its column without moving focus, so ↑/↓ down a list of folders would otherwise push a history entry per row and make Back useless |
+| Refresh empties `node.kids` and re-enters `ensureLoaded` | One loading path, one debounce, one writer of `node.kids`. A separate reload call would be a second writer on the same field, and the interleaving that loses is the one nobody reproduces |
+| …but waits for an in-flight read before emptying it | `ensureLoaded` hands a concurrent caller the *in-flight* promise. Invalidating and asking immediately therefore returns the very listing the refresh was called to replace, and looks like a refresh that silently did nothing |
+| Nothing renders between invalidating and the read landing | The column cache still holds the old DOM, so the screen keeps the previous listing instead of flashing to "Reading…" and losing its scroll position. The ⟳ spins in place instead |
+| F5 is claimed; ⌘R, Ctrl+R and Ctrl+F5 are not | Every desktop file manager reads F5 as "re-read this folder", and here a reload costs the mounted root, the column chain and the scroll position. A real reload stays one keystroke away — the rule type-ahead already follows for ⌘R |
+| Refreshing a parent re-reads the columns open below it | A re-read hands back new node objects, so the chain has to be matched by name regardless. Those columns are also on screen, and one fresh column beside three stale ones is worse than the extra reads. Closed subtrees are untouched |
+| `applyPath` restores refresh, links and remembered folders alike | Three callers, one walk: they cannot disagree about what a half-valid chain means. It stops at the first name that is gone, so no caller can present a selection that is not real |
 
 ---
 
