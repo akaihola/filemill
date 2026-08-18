@@ -890,7 +890,10 @@ function ensureMeta(node) {
      is built once in the right order rather than built and rebuilt. */
   if (!todo.length) { node.metaDone = true; return null; }
 
-  let done = 0;
+  /* Files still to read in *this* column. The strip sums it across the columns
+     sweeping at once, so the number it shows is the number of getFile() calls
+     outstanding and nothing else. */
+  node.metaPending = todo.length;
   node.metaLoading = (async () => {
     const t0 = performance.now();
     await Promise.all(todo.map(k => FS.loadMeta(k)
@@ -902,9 +905,9 @@ function ensureMeta(node) {
          bucket sortValue reads as "unknown". */
       .catch(err => { k.meta = { error: String((err && err.message) || err) }; })
       /* One status write per row would cost more than the sweep it reports.
-         Every 64th is an update per ~8 ms at the rates measured here, which is
+         Every 64th is an update per ~20 ms at the rates measured here, which is
          faster than anyone reads. */
-      .then(() => { if (++done % 64 === 0) sortProgress(done, todo.length); })));
+      .then(() => { if (--node.metaPending % 64 === 0) sortSay(sortStatus()); })));
     node.metaSwept = { n: todo.length, ms: Math.round(performance.now() - t0) };
     /* A refresh replaces node.kids wholesale. A sweep that started on the old
        array has just filled objects nobody can see, and marking the *new* list
@@ -949,19 +952,24 @@ const sortSay = msg => {
   if (el) el.textContent = msg;
 };
 
-const sortProgress = (done, total) =>
-  sortSay(`⇅ ${SORT_LABEL[state.sort.key]} — read ${done} of ${total}`);
+/* Written by render(), and again by the sweep as it counts down. Silent on the
+   default, name ascending: a strip that always says something says nothing.
 
-/* Written by render(), so it follows the focused column. Silent on the default
-   (name, ascending): a strip that always says something says nothing. */
+   While a sweep runs it shows the files still to read, summed over every column
+   sweeping at once, because one sort can start several. When it is over it names
+   the deepest column that was swept — the folder the user just stepped into is
+   the one they are asking about, and a per-column figure beats a total that
+   double-counts sweeps which overlapped. */
 function sortStatus() {
-  const busy = path.find(n => n.metaLoading);
-  if (busy) return `⇅ ${SORT_LABEL[state.sort.key]} — reading ${busy.kids.length} entries…`;
   const { key, desc } = state.sort;
+  const left = path.reduce((n, x) => n + (x.metaLoading ? x.metaPending : 0), 0);
+  if (left) return `⇅ ${SORT_LABEL[key]} — reading ${left} files…`;
   if (key === "name" && !desc) return "";
-  const swept = sortNeedsMeta() && path[focusCol] && path[focusCol].metaSwept;
+  const deepest = sortNeedsMeta()
+    && [...path].reverse().find(n => n.metaSwept && n.metaSwept.n);
   return `⇅ ${SORT_LABEL[key]} ${desc ? "↓" : "↑"}`
-       + (swept ? ` · ${swept.n} read in ${swept.ms} ms` : "");
+       + (deepest ? ` · ${deepest.name}: ${deepest.metaSwept.n} files read in `
+                    + `${deepest.metaSwept.ms} ms` : "");
 }
 
 /* ── Remembering it ─────────────────────────────────────────────────────────
