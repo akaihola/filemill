@@ -18,11 +18,13 @@ under the system temp directory and `owned()` refuses any path outside it.
 """
 import asyncio
 import http.server
+import os
 import shutil
 import socketserver
 import sys
 import tempfile
 import threading
+from datetime import datetime
 from pathlib import Path
 
 from playwright.async_api import Error as PlaywrightError
@@ -42,6 +44,16 @@ def check(name, cond, detail=""):
     print(f"  {'✅' if cond else '❌'}  {name}" + (f" — {detail}" if detail else ""))
 
 
+# Three real files whose names, sizes and dates each give a different order, so
+# a sort by size or date on a real disk cannot be the sort by name in disguise.
+#   name:     a-large, b-small, c-medium
+#   size:     b-small(10) < c-medium(300) < a-large(3000)
+#   modified: c-medium(Jan) < a-large(Feb) < b-small(Mar)
+SIZED = [("a-large.txt", 3000, "2026-02-03"),
+         ("b-small.txt", 10, "2026-03-04"),
+         ("c-medium.txt", 300, "2026-01-02")]
+
+
 def fixture() -> Path:
     """A folder this script owns, so no check ever edits a folder you picked."""
     d = Path(tempfile.mkdtemp(prefix="filemill-e2e-"))
@@ -49,6 +61,12 @@ def fixture() -> Path:
     (d / "notes" / "one.txt").write_text("one\n")
     (d / "notes" / "two.txt").write_text("two\n")
     (d / "readme.md").write_text("# fixture\n")
+    (d / "sized").mkdir()
+    for name, size, when in SIZED:
+        f = d / "sized" / name
+        f.write_text("x" * size)
+        ts = datetime.fromisoformat(when).timestamp()
+        os.utime(f, (ts, ts))
     return d
 
 
@@ -66,6 +84,18 @@ def owned(root: Path, target: Path) -> Path:
 
 
 STATE = "({path: path.map(p => p.name), sel, focusCol})"
+
+# Count the real getFile() calls. The claim under test is not only that a size
+# sort puts the right file first — it is that the name sort put it there for
+# nothing, and that flipping to a date sort asks for nothing more.
+COUNT_META = """
+window.__countMeta = () => {
+  const real = FS.loadMeta.bind(FS);
+  window.__metas = 0;
+  FS.loadMeta = async n => { window.__metas++; return real(n); };
+};
+"metadata counter ready";
+"""
 
 
 async def refresh_and_restore(pg):
@@ -87,6 +117,41 @@ async def refresh_and_restore(pg):
             check("Test folder opened", False, f"timed out waiting for {root.name}")
             return
         await pg.wait_for_timeout(600)
+
+        print("\n── Sort a real folder by size and by date ───────────────────")
+        # test-url.py measures the sweep against the origin private file system,
+        # which is real but is the browser's own store. This is the user's disk,
+        # reached through the picker they clicked, which is the only thing the
+        # OPFS run cannot claim to be.
+        await pg.evaluate("setSort('name', false)")
+        await pg.evaluate(COUNT_META)
+        await pg.evaluate("__countMeta()")
+        await pg.click('.col[data-i="0"] .row:has-text("sized")')
+        await pg.wait_for_timeout(600)
+        rows1 = '.col[data-i="1"] .row'
+        names = await pg.eval_on_selector_all(rows1, "e => e.map(x => x.title)")
+        check("A real folder opens in name order without reading one file",
+              names == [n for n, _, _ in SIZED] and await pg.evaluate("__metas") == 0,
+              f"{names}, {await pg.evaluate('__metas')} getFile() calls")
+
+        await pg.evaluate("setSort('size', true)")
+        await pg.wait_for_function("path[1] && path[1].metaDone", timeout=30_000)
+        await pg.wait_for_timeout(400)
+        names = await pg.eval_on_selector_all(rows1, "e => e.map(x => x.title)")
+        swept = await pg.evaluate("path[1].metaSwept")
+        paid = await pg.evaluate("__metas")
+        check(f"Biggest first puts the 3 000-byte file at the top, after "
+              f"{swept['n']} real getFile() calls in {swept['ms']} ms",
+              names == ["a-large.txt", "c-medium.txt", "b-small.txt"], str(names))
+
+        await pg.evaluate("setSort('mtime', false)")
+        await pg.wait_for_timeout(500)
+        names = await pg.eval_on_selector_all(rows1, "e => e.map(x => x.title)")
+        again = await pg.evaluate("__metas") - paid
+        check("Oldest first orders by the real mtime and reads nothing more",
+              names == ["c-medium.txt", "a-large.txt", "b-small.txt"] and again == 0,
+              f"{names}, {again} further getFile() calls")
+        await pg.evaluate("setSort('name', false)")
 
         print("\n── Refresh against a real folder ────────────────────────────")
         await pg.click('.col[data-i="0"] .row:has-text("notes")')

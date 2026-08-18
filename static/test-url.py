@@ -1,9 +1,20 @@
 #!/usr/bin/env python3
-"""filemill deep-link suite — the address bar, over a real origin.
+"""filemill — the checks that need a real origin.
 
-Separate from test-ui.py because history.pushState throws on a file:// page's
-opaque origin, which is exactly the case test-ui.py covers. Here the bundle is
-served over localhost, so the router is live.
+Separate from test-ui.py because a file:// page's opaque origin refuses two
+things this suite needs. history.pushState throws on it, so the router is dead
+there; and navigator.storage.getDirectory() throws "SecurityError: … unsafe for
+access within a Web application", so there is no filesystem to read either.
+Here the bundle is served over localhost and both work.
+
+Two sections, therefore:
+
+  * deep links — the address bar follows the selection, and a link restores it
+  * a real filesystem — the origin private file system hands out a genuine
+    FileSystemDirectoryHandle with no folder dialog, so the FSA adapter can be
+    run against real files headlessly. That is where the cost of a size sort is
+    measured: against a fake handle getFile() returns without touching a disk,
+    and the syscall is the whole price.
 
     uv run --with "playwright==1.61.0" python3 test-url.py [--bundle|--dev]
 """
@@ -36,6 +47,54 @@ window.__mk = () => {
   ]);
 };
 window.__state = () => ({path: path.map(p=>p.name), sel, focusCol});
+"""
+
+# A real directory, built inside the origin private file system. Sizes run
+# 1…13 bytes and disagree with the names, so an order by size cannot be the
+# order by name wearing a different label.
+OPFS_BUILD = r"""
+async (n) => {
+  const root = await navigator.storage.getDirectory();
+  try { await root.removeEntry('bench', {recursive: true}); } catch (e) {}
+  const d = await root.getDirectoryHandle('bench', {create: true});
+  /* 250 at a time. One at a time takes 25 s for 3 000 files, and this is
+     fixture building, not the thing being measured. */
+  const one = async i => {
+    const fh = await d.getFileHandle(`file-${String(i).padStart(5,'0')}.txt`,
+                                     {create: true});
+    const w = await fh.createWritable();
+    await w.write('x'.repeat((i % 13) + 1));
+    await w.close();
+  };
+  for (let b = 0; b < n; b += 250)
+    await Promise.all(Array.from({length: Math.min(250, n - b)}, (_, j) => one(b + j)));
+  return n;
+}
+"""
+
+# Three costs, separated, because only one of them is new. The listing is what
+# opening any folder already costs; the sweep is what a size sort adds; the
+# comparison is what people assume sorting *is*.
+OPFS_SWEEP = r"""
+async () => {
+  const d = await (await navigator.storage.getDirectory()).getDirectoryHandle('bench');
+  const node = FSA.node('bench', d);
+  const t1 = performance.now();
+  await FS.ensureLoaded(node);
+  const listMs = performance.now() - t1;
+  const t2 = performance.now();
+  await ensureMeta(node);
+  const sweepMs = performance.now() - t2;
+  const was = state.sort;
+  state.sort = {key: 'size', desc: true};
+  const t3 = performance.now();
+  const rows = visibleKids(node);
+  const sortMs = performance.now() - t3;
+  state.sort = was;
+  return {rows: rows.length, listMs: +listMs.toFixed(0),
+          sweepMs: +sweepMs.toFixed(0), sortMs: +sortMs.toFixed(1),
+          unread: rows.filter(k => !k.meta || k.meta.error).length};
+}
 """
 
 passed, failed = [], []
@@ -165,6 +224,52 @@ async def main():
         check("Forward returns to it",
               (await pg.evaluate("__state()"))["sel"] == ["deep", "alpha"],
               str(await pg.evaluate("__state()")))
+
+        # ── A real filesystem, through OPFS ──────────────────────────────
+        # The origin private file system is a real FileSystemDirectoryHandle:
+        # same entries(), same getFile(), same browser-side plumbing, and no
+        # folder dialog. It is the only way this repo can run its own adapter
+        # against real files without a person at the keyboard, and the only
+        # place the true cost of a size sort is visible — the fake handle in
+        # test-ui.py answers getFile() out of memory.
+        print("\n── A real filesystem, through OPFS ──────────────────────────")
+        N = 3000
+        await open_at(pg, base)
+        built = await pg.evaluate(OPFS_BUILD, N)
+        r = await pg.evaluate(OPFS_SWEEP)
+        per = r["sweepMs"] / max(r["rows"], 1) * 1000
+        check(f"{N:,} real files: entries() costs {r['listMs']} ms, the getFile() "
+              f"sweep a size sort adds costs {r['sweepMs']} ms "
+              f"({per:.0f} µs per file), and the comparison itself "
+              f"{r['sortMs']} ms",
+              r["rows"] == N and r["unread"] == 0 and r["sortMs"] < 200
+              and r["sweepMs"] < 30_000,
+              f"built {built}, {r['unread']} rows without metadata")
+        # Load moves the absolute figures by 3×, so the claim worth pinning is
+        # the ratio: reading every file costs a small multiple of reading the
+        # directory, not a multiple of the number of files. A sweep that waited
+        # for each getFile() in turn would be tens of times the listing.
+        check(f"…which is {r['sweepMs'] / max(r['listMs'], 1):.1f}× the directory "
+              f"read the app already pays on every folder it opens",
+              r["sweepMs"] < r["listMs"] * 12,
+              f"sweep {r['sweepMs']} ms against listing {r['listMs']} ms")
+
+        # End to end, on real files: mount the folder, ask for biggest first.
+        await pg.evaluate("setSort('size', true)")
+        await pg.evaluate(
+            "(async () => mount(await (await navigator.storage.getDirectory())"
+            ".getDirectoryHandle('bench')))()")
+        await pg.wait_for_function(
+            "path.length && path[0].metaDone && colCache.get(path[0])", timeout=60_000)
+        await pg.wait_for_timeout(400)
+        top = await pg.eval_on_selector_all(
+            '.col[data-i="0"] .row', "e => e.slice(0,3).map(x => x.title)")
+        biggest = await pg.evaluate(
+            "path[0].kids.filter(k => k.meta.size === 13).map(k => k.name)")
+        check("A real folder mounted and sorted biggest-first puts the 13-byte "
+              "files at the top",
+              len(top) == 3 and all(t in biggest for t in top), str(top))
+        await pg.evaluate("setSort('name', false)")
 
         check("No console errors anywhere", not errs, "; ".join(errs[:3]))
         await b.close()
