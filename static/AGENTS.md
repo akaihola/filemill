@@ -230,6 +230,22 @@ failing. `__typebench` therefore returns the row count it searched and the check
 asserts it — the first version measured the 8-row root column and reported 0 ms,
 because `__keybench` had walked the 3 000-entry directory off the path first.
 
+**Assert against a number from the same run, not a wall clock.** An arrow key
+at 3 000 entries measured 11.5 to 89.9 ms over 12 runs on one machine and 106 ms
+on a slower one. A check that puts a flat 100 ms on that decides by machine load
+rather than by code, and it fails for whoever happens to be running something
+else. The sort suite therefore compares the keystroke after a sweep against the
+arrow key measured in the same run and the same column, allowing the budget as
+slack, which is the form the type-ahead check already uses.
+
+**Back a relative timing with an exact assertion.** `arrow + budget` is still
+loose enough to hide a re-sort per keystroke, which costs 18–90 ms at this size.
+The sort check therefore also asserts something with no clock in it: after 20
+presses the focused column is the *same cached entry*. Prove such a pair works
+by injecting the regression rather than reasoning about it — a `buildCol` whose
+`metaRef` never matches took the keystroke to 569–640 ms against a 109–139 ms
+threshold and flipped the identity check false.
+
 Attribution matters more than the totals. Selecting a *file* inside a
 3 000-entry directory costs ~60 ms on its own (a preview build plus a
 re-render), which swamps anything type-ahead does; the suite therefore measures

@@ -206,8 +206,8 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       | `entries()`, the listing every folder open already pays | 363–1 117 ms |
       | the `getFile()` sweep a size or date sort adds | **851–1 707 ms**, 284–569 µs per file |
       | the comparison itself | 18–90 ms |
-      | the app's own share of a sweep, port answering from memory | 6.4 ms |
-      | the arrow key straight after a sweep | 10 ms, budget 100 ms |
+      | the app's own share of a sweep, port answering from memory | 1.7–30 ms |
+      | the arrow key straight after a sweep | 11.5–106 ms, and so is one before it |
 
       Each range spans six runs on one machine, from idle to three suites
       running beside each other; absolute figures here move by 3× with load.
@@ -217,6 +217,30 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       column rebuild beside it costs. It is paid once, when the user asks, on
       the columns they are looking at. Opening `sorting` beside the root reads
       5 files, and the nine other directories in that tree are not touched.
+
+      **The keystroke check is relative, and it is backed by an exact one.** An
+      arrow key at 3 000 entries measured 11.5 to 89.9 ms over 12 runs on one
+      machine and 106 ms on a slower one, against a 100 ms budget. A fixed
+      ceiling on that decides by machine load rather than by code. Sorting by
+      size does not move the number: a probe alternating the keys on one column
+      measured 19.4–40.4 ms by size against 16.4–45.8 ms by name, less spread
+      than either condition has on its own. So the timing assertion compares the
+      keystroke after a sweep against the arrow key measured in the *same run
+      and same column*, allowing the budget as slack, which is the form the
+      type-ahead check already uses.
+
+      That alone would be too loose, because a re-sort per keystroke costs
+      18–90 ms here and would fit inside the slack. So the check also asserts
+      something exact and clockless: after 20 presses the focused column is
+      still the *same cached entry*. Rebuilding it per keystroke is the
+      O(entries) cost the column cache exists to delete, and `metaDone` is a new
+      way to trip it. Both halves were verified against an injected regression,
+      a `buildCol` whose `metaRef` never matches: the keystroke went to 569–640
+      ms against a 109–139 ms threshold, and the identity check went false.
+
+      The `refresh` check one line above still asserts a flat 100 ms and carries
+      the same exposure. It has not failed yet, and quietly widening a budget
+      that is not this feature's would hide the question rather than answer it.
 
       | Situation | Result |
       | --------- | ------ |
