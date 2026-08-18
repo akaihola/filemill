@@ -119,9 +119,9 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       cannot disagree about what a half-valid chain means.
 
       In `ui/core/nav.js` (`refreshColumn`), the button in `render.js`'s
-      `buildCol`, and one optional `wantFocus` argument on `applyPath`. pykofinder
-      gets refresh with no adapter work: `HTTP.ensureLoaded` re-fetches for the
-      same reason `FSA.ensureLoaded` re-reads.
+      `buildCol`, and one optional `wantFocus` argument on `applyPath`. The
+      server edition gets refresh with no adapter work: `HTTP.ensureLoaded`
+      re-fetches for the same reason `FSA.ensureLoaded` re-reads.
 
       Measured at 3 000 entries, in-page, `test-ui.py`: a refresh rebuilds the
       column in **371 ms**, which is the build cost the column cache exists to
