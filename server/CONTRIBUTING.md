@@ -187,6 +187,17 @@ variable but drops the credentials in it.
 asset itself. `test_nothing_is_fetched_from_a_cdn` holds it to that, so those 27
 tests pass with no network at all.
 
+### Wait for an Element, Never for a Duration
+
+The `/f/` shell fills its columns after the page reports `networkidle`, so
+`page.wait_for_timeout(900)` is a guess about how loaded the machine is. On this
+4-core host with four busy loops running, 2 of 6 attempts still had no `#col-0`
+at 800 ms. `_click_item()` waits for the entry with `page.wait_for_function` and
+then clicks it, so a missing entry raises a `TimeoutError` naming the column.
+Write new browser assertions the same way. A helper that returns quietly when it
+finds nothing turns a slow machine into an assertion failure three lines away
+from the cause.
+
 ## Submitting changes
 
 1. Open an issue in `ISSUES.md` and set its status to `in-progress`.

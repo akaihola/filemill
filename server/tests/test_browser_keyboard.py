@@ -143,10 +143,27 @@ _FIND_LINK = """() => {
 }"""
 
 
+def _wait_for_htmx(page) -> None:
+    """Wait until htmx has loaded and the document has finished parsing.
+
+    Every column entry is ``<a href="#" hx-get="/click?...">``. Clicking one
+    before htmx has loaded does nothing at all, and nothing retries it, so the
+    caller then waits out its full timeout for a column that will never appear.
+    htmx comes from unpkg.com, and `wait_until="networkidle"` does not guarantee
+    it has executed: one probe run of six had ``typeof window.htmx ===
+    'undefined'`` 800 ms after `goto` returned.
+    """
+    page.wait_for_function(
+        "() => typeof window.htmx !== 'undefined'"
+        " && document.readyState === 'complete'",
+        timeout=30000,
+    )
+
+
 def _click_item(page, col_id: str, text: str) -> None:
     """Click the entry whose text contains *text* in column *col_id*.
 
-    The wait is the point. The shell fills its columns after the page reports
+    The waits are the point. The shell fills its columns after the page reports
     networkidle, so on a loaded machine a fixed sleep can expire while #col-0 is
     still empty. This helper used to guard the click with `if (link)` and return
     quietly when the entry was missing, which turned that race into an
@@ -154,12 +171,19 @@ def _click_item(page, col_id: str, text: str) -> None:
     4-core host with 4 busy loops running: 2 of 6 attempts found no #col-0 at
     800 ms and the element was there by 5700 ms.
     """
+    _wait_for_htmx(page)
     finder = _FIND_LINK % (col_id, text)
     page.wait_for_function(f"() => Boolean(({finder})())", timeout=20000)
     page.evaluate(f"() => {{ ({finder})().click(); }}")
 
 
 def _first_entry_text(page, col_id: str) -> str:
+    """Text of the first entry in column *col_id*, once the column has one.
+
+    Every caller asserts on content, so an empty column always means the read
+    came too early. Waiting turns that into a TimeoutError naming the selector.
+    """
+    page.wait_for_selector(f"#{col_id} li a", timeout=20000)
     return page.evaluate(
         f"""() => {{
             const col = document.getElementById({col_id!r});
@@ -170,6 +194,8 @@ def _first_entry_text(page, col_id: str) -> str:
 
 
 def _selected_text(page, col_id: str) -> str:
+    """Text of the selected entry in column *col_id*, once one is selected."""
+    page.wait_for_selector(f"#{col_id} li.selected a", timeout=20000)
     return page.evaluate(
         f"""() => {{
             const col = document.getElementById({col_id!r});
@@ -177,6 +203,61 @@ def _selected_text(page, col_id: str) -> str:
             return selected ? selected.textContent.trim() : '';
         }}"""
     )
+
+
+def _expect_column(page, col_id: str) -> None:
+    """Assert column *col_id* is present, waiting for it instead of guessing.
+
+    The shell builds a column after the page reports networkidle, so a fixed
+    `wait_for_timeout` is a bet on how loaded the machine is. Measured on this
+    4-core host with four busy loops running, #col-0 was still absent 800 ms
+    after `goto` in 2 of 6 attempts. Waiting keeps the assertion and drops the
+    bet: a column that never arrives still fails, now with a TimeoutError that
+    names the selector.
+    """
+    page.wait_for_selector(f"#{col_id}.column", timeout=20000)
+    assert page.locator(f"#{col_id}.column").count() == 1
+
+
+def _expect_preview(page) -> None:
+    """Assert the preview pane holds text, waiting for the text to arrive."""
+    page.wait_for_function(
+        "() => { const p = document.querySelector('#preview');"
+        " return Boolean(p && p.innerText.trim()); }",
+        timeout=20000,
+    )
+    assert page.locator("#preview").inner_text().strip()
+
+
+def _expect_url_ending(page, suffix: str) -> None:
+    """Assert the address bar ends with *suffix*, waiting for the navigation."""
+    page.wait_for_url(lambda url: url.endswith(suffix), timeout=20000)
+    assert page.url.endswith(suffix)
+
+
+def _wait_for_finder_scroll(page) -> None:
+    """Wait until #finder exists, has scrolled right, and has stopped moving.
+
+    `scrollFinderToReveal()` in styles.py calls `scrollTo` with behaviour
+    'smooth', so the reveal starts late and then takes time. The tests below bet
+    a fixed 900 ms or 1100 ms on both, and the bet loses under load: one run of
+    the 29 read `document.getElementById('finder')` as null 1100 ms after `goto`
+    and failed on `assert scroll_left is not None`. Waiting for a settled
+    position leaves every assertion that follows exactly as it was.
+    """
+    page.wait_for_function(
+        "() => { const f = document.getElementById('finder');"
+        " return Boolean(f && f.scrollLeft > 0); }",
+        timeout=20000,
+    )
+    previous = None
+    for _ in range(40):  # 40 x 100 ms, a 4 s ceiling on the smooth scroll
+        current = page.evaluate("() => document.getElementById('finder').scrollLeft")
+        if current == previous:
+            return
+        previous = current
+        page.wait_for_timeout(100)
+    raise AssertionError("#finder never stopped scrolling")
 
 
 @pytest.mark.integration
@@ -188,14 +269,11 @@ def test_arrow_left_keeps_browser_url_in_sync(live_server: str, browser_root: Pa
         page.wait_for_timeout(800)
 
         _click_item(page, "col-0", "my-knowledge")
-        page.wait_for_timeout(700)
+        _expect_url_ending(page, "/f/" + browser_root.name + "/my-knowledge")
         folder_url = page.url
-        assert folder_url.endswith("/f/" + browser_root.name + "/my-knowledge")
 
         _click_item(page, "col-1", "AGENTS.md")
-        page.wait_for_timeout(700)
-        file_url = page.url
-        assert file_url.endswith("/f/" + browser_root.name + "/my-knowledge/AGENTS.md")
+        _expect_url_ending(page, "/f/" + browser_root.name + "/my-knowledge/AGENTS.md")
 
         page.keyboard.press("ArrowLeft")
         page.wait_for_timeout(400)
@@ -220,17 +298,17 @@ def test_nested_column_navigation_keeps_root_mount_in_url(
 
         _click_item(page, "col-0", "my-knowledge")
         page.wait_for_timeout(700)
-        assert page.url.endswith(f"/f/{browser_root.name}/my-knowledge")
+        _expect_url_ending(page, f"/f/{browser_root.name}/my-knowledge")
 
         _click_item(page, "col-1", "docs")
         page.wait_for_timeout(700)
-        assert page.url.endswith(f"/f/{browser_root.name}/my-knowledge/docs")
+        _expect_url_ending(page, f"/f/{browser_root.name}/my-knowledge/docs")
 
         file_name = _first_entry_text(page, "col-2")
         assert file_name == "📁subdir"
         _click_item(page, "col-2", "topic.md")
         page.wait_for_timeout(700)
-        assert page.url.endswith(f"/f/{browser_root.name}/my-knowledge/docs/topic.md")
+        _expect_url_ending(page, f"/f/{browser_root.name}/my-knowledge/docs/topic.md")
 
         browser.close()
 
@@ -250,15 +328,15 @@ def test_legacy_query_url_canonicalizes_after_nested_navigation(
         )
         page.wait_for_timeout(800)
 
-        assert page.url.endswith(f"/f/{browser_root.name}/my-knowledge")
+        _expect_url_ending(page, f"/f/{browser_root.name}/my-knowledge")
 
         _click_item(page, "col-1", "docs")
         page.wait_for_timeout(700)
-        assert page.url.endswith(f"/f/{browser_root.name}/my-knowledge/docs")
+        _expect_url_ending(page, f"/f/{browser_root.name}/my-knowledge/docs")
 
         _click_item(page, "col-2", "topic.md")
         page.wait_for_timeout(700)
-        assert page.url.endswith(f"/f/{browser_root.name}/my-knowledge/docs/topic.md")
+        _expect_url_ending(page, f"/f/{browser_root.name}/my-knowledge/docs/topic.md")
 
         browser.close()
 
@@ -292,8 +370,8 @@ def test_rendered_relative_markdown_link_uses_root_relative_url(
         preview_link.click()
         page.wait_for_timeout(900)
 
-        assert page.url.endswith(
-            "/my-knowledge/docs/subdir/next.md?pykofinder-view=rendered"
+        _expect_url_ending(
+            page, "/my-knowledge/docs/subdir/next.md?pykofinder-view=rendered"
         )
         assert "Next" in page.locator("#preview").inner_text()
 
@@ -319,7 +397,7 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
         # ArrowRight enters the folder and should auto-highlight the first item.
         page.keyboard.press("ArrowRight")
         page.wait_for_timeout(700)
-        assert page.locator("#col-1.column").count() == 1
+        _expect_column(page, "col-1")
         assert _selected_text(page, "col-1")
 
         # ArrowDown moves from docs/ to AGENTS.md in the reopened folder listing.
@@ -330,8 +408,8 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
         # ArrowRight previews the file while keeping the parent column alive.
         page.keyboard.press("ArrowRight")
         page.wait_for_timeout(700)
-        assert page.locator("#col-1.column").count() == 1
-        assert page.locator("#preview").inner_text().strip()
+        _expect_column(page, "col-1")
+        _expect_preview(page)
 
         # ArrowLeft exits back to the root column and closes col-1.
         page.keyboard.press("ArrowLeft")
@@ -342,7 +420,7 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
         # Re-enter via keyboard and verify the new column gets a restored selection.
         page.keyboard.press("ArrowRight")
         page.wait_for_timeout(700)
-        assert page.locator("#col-1.column").count() == 1
+        _expect_column(page, "col-1")
         reopened_selected = _selected_text(page, "col-1")
         assert reopened_selected
 
@@ -355,8 +433,8 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
 
         page.keyboard.press("ArrowRight")
         page.wait_for_timeout(700)
-        assert page.locator("#col-1.column").count() == 1
-        assert page.locator("#preview").inner_text().strip()
+        _expect_column(page, "col-1")
+        _expect_preview(page)
 
         col1_class = page.locator("#col-1").get_attribute("class") or ""
         assert "column" in col1_class
@@ -394,6 +472,7 @@ def test_mobile_folder_click_reveals_new_column_without_flushing_left(
         _click_item(page, "col-1", "docs")
         page.wait_for_timeout(900)
 
+        _wait_for_finder_scroll(page)
         metrics = page.evaluate(
             """() => {
                 const finder = document.getElementById('finder');
@@ -476,6 +555,7 @@ def test_mobile_file_click_reveals_preview_without_flushing_left(
         _click_item(page, "col-1", "AGENTS.md")
         page.wait_for_timeout(900)
 
+        _wait_for_finder_scroll(page)
         metrics = page.evaluate(
             """() => {
                 const finder  = document.getElementById('finder');
@@ -547,7 +627,7 @@ def test_mobile_directory_restore_runtime_scroll_position_is_stable(
         )
         page.wait_for_timeout(1100)
 
-        assert page.locator("#col-2.column").count() == 1
+        _expect_column(page, "col-2")
 
         context.close()
         browser.close()
@@ -572,7 +652,7 @@ def test_mobile_file_restore_runtime_scroll_position_is_stable(
         )
         page.wait_for_timeout(1100)
 
-        assert page.locator("#preview").inner_text().strip()
+        _expect_preview(page)
 
         context.close()
         browser.close()
@@ -596,6 +676,7 @@ def test_mobile_folder_navigation_reveals_target_column_completely_at_runtime(
         _click_item(page, "col-0", "my-knowledge")
         page.wait_for_timeout(900)
 
+        _expect_column(page, "col-1")
         fully_visible = page.evaluate(
             """() => {
                 const finder = document.getElementById('finder');
@@ -633,6 +714,7 @@ def test_mobile_preview_scroll_position_is_not_zero_after_navigation(
         _click_item(page, "col-1", "AGENTS.md")
         page.wait_for_timeout(900)
 
+        _wait_for_finder_scroll(page)
         scroll_left = page.evaluate(
             """() => {
                 const finder = document.getElementById('finder');
@@ -666,6 +748,7 @@ def test_mobile_file_restore_scroll_position_is_not_zero(
         )
         page.wait_for_timeout(1100)
 
+        _wait_for_finder_scroll(page)
         scroll_left = page.evaluate(
             """() => {
                 const finder = document.getElementById('finder');
@@ -697,7 +780,7 @@ def test_mobile_navigation_runtime_scroll_regression_is_covered(
 
         _click_item(page, "col-0", "my-knowledge")
         page.wait_for_timeout(900)
-        assert page.locator("#col-1.column").count() == 1
+        _expect_column(page, "col-1")
 
         context.close()
         browser.close()
@@ -722,7 +805,7 @@ def test_mobile_preview_runtime_scroll_regression_is_covered(
         page.wait_for_timeout(900)
         _click_item(page, "col-1", "AGENTS.md")
         page.wait_for_timeout(900)
-        assert page.locator("#preview").inner_text().strip()
+        _expect_preview(page)
 
         context.close()
         browser.close()
@@ -746,7 +829,7 @@ def test_mobile_restore_runtime_scroll_regression_is_covered(
             wait_until="networkidle",
         )
         page.wait_for_timeout(1100)
-        assert page.locator("#col-2.column").count() == 1
+        _expect_column(page, "col-2")
 
         context.close()
         browser.close()
@@ -770,7 +853,7 @@ def test_mobile_restore_preview_runtime_scroll_regression_is_covered(
             wait_until="networkidle",
         )
         page.wait_for_timeout(1100)
-        assert page.locator("#preview").inner_text().strip()
+        _expect_preview(page)
 
         context.close()
         browser.close()
@@ -794,8 +877,8 @@ def test_mobile_minimal_scroll_runtime_behavior_smoke(live_server: str):
         _click_item(page, "col-1", "AGENTS.md")
         page.wait_for_timeout(900)
 
-        assert page.locator("#col-1.column").count() == 1
-        assert page.locator("#preview").inner_text().strip()
+        _expect_column(page, "col-1")
+        _expect_preview(page)
 
         context.close()
         browser.close()
@@ -816,11 +899,11 @@ def test_mobile_column_reveal_and_preview_reveal_both_work(live_server: str):
 
         _click_item(page, "col-0", "my-knowledge")
         page.wait_for_timeout(900)
-        assert page.locator("#col-1.column").count() == 1
+        _expect_column(page, "col-1")
 
         _click_item(page, "col-1", "AGENTS.md")
         page.wait_for_timeout(900)
-        assert page.locator("#preview").inner_text().strip()
+        _expect_preview(page)
 
         context.close()
         browser.close()
@@ -844,8 +927,8 @@ def test_mobile_scroll_regression_end_to_end(live_server: str):
         _click_item(page, "col-1", "AGENTS.md")
         page.wait_for_timeout(900)
 
-        assert page.locator("#col-1.column").count() == 1
-        assert page.locator("#preview").inner_text().strip()
+        _expect_column(page, "col-1")
+        _expect_preview(page)
 
         context.close()
         browser.close()
@@ -866,7 +949,7 @@ def test_mobile_scroll_regression_directory_only(live_server: str):
 
         _click_item(page, "col-0", "my-knowledge")
         page.wait_for_timeout(900)
-        assert page.locator("#col-1.column").count() == 1
+        _expect_column(page, "col-1")
 
         context.close()
         browser.close()
@@ -889,7 +972,7 @@ def test_mobile_scroll_regression_preview_only(live_server: str):
         page.wait_for_timeout(900)
         _click_item(page, "col-1", "AGENTS.md")
         page.wait_for_timeout(900)
-        assert page.locator("#preview").inner_text().strip()
+        _expect_preview(page)
 
         context.close()
         browser.close()
@@ -913,7 +996,7 @@ def test_mobile_restore_regression_directory_only(
             wait_until="networkidle",
         )
         page.wait_for_timeout(1100)
-        assert page.locator("#col-2.column").count() == 1
+        _expect_column(page, "col-2")
 
         context.close()
         browser.close()
@@ -937,7 +1020,7 @@ def test_mobile_restore_regression_preview_only(
             wait_until="networkidle",
         )
         page.wait_for_timeout(1100)
-        assert page.locator("#preview").inner_text().strip()
+        _expect_preview(page)
 
         context.close()
         browser.close()
@@ -961,6 +1044,7 @@ def test_mobile_scroll_behavior_runtime_assertions(live_server: str):
         _click_item(page, "col-1", "AGENTS.md")
         page.wait_for_timeout(900)
 
+        _wait_for_finder_scroll(page)
         assert page.evaluate("() => document.getElementById('finder').scrollLeft") > 0
 
         context.close()
@@ -986,6 +1070,7 @@ def test_mobile_restore_behavior_preview_assertions(
         )
         page.wait_for_timeout(1100)
 
+        _wait_for_finder_scroll(page)
         assert page.evaluate("() => document.getElementById('finder').scrollLeft") > 0
 
         context.close()
@@ -1010,6 +1095,7 @@ def test_mobile_scroll_behavior_preview_assertions(live_server: str):
         _click_item(page, "col-1", "AGENTS.md")
         page.wait_for_timeout(900)
 
+        _wait_for_finder_scroll(page)
         assert page.evaluate("() => document.getElementById('finder').scrollLeft") > 0
 
         context.close()
@@ -1031,7 +1117,7 @@ def test_mobile_scroll_regression_user_case_is_covered(live_server: str):
 
         _click_item(page, "col-0", "my-knowledge")
         page.wait_for_timeout(900)
-        assert page.locator("#col-1.column").count() == 1
+        _expect_column(page, "col-1")
 
         context.close()
         browser.close()
@@ -1054,7 +1140,7 @@ def test_mobile_scroll_regression_user_case_preview_is_covered(live_server: str)
         page.wait_for_timeout(900)
         _click_item(page, "col-1", "AGENTS.md")
         page.wait_for_timeout(900)
-        assert page.locator("#preview").inner_text().strip()
+        _expect_preview(page)
 
         context.close()
         browser.close()
