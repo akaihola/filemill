@@ -430,6 +430,32 @@ body {
 }
 #st-fold { color: var(--ink-2); }
 
+/* The path is the copy target, so it has to look like one — and it has to stay
+   selectable, because selecting it by hand is the fallback when the clipboard
+   API is refused. Bounded width keeps a deep path from pushing the key hints
+   off the strip; the full text is still in the DOM, so a fallback selection
+   copies all of it even when the display ellipsises. */
+#st-path {
+  max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  cursor: pointer;
+}
+#st-path:hover { color: var(--ink-2); text-decoration: underline; text-underline-offset: 2px; }
+#st-copy { color: var(--accent); }
+#st-copy.bad { color: #d2544a; }
+:root[data-theme="dark"] #st-copy.bad { color: #ff8a7d; }
+#st-find { color: var(--accent); font-family: var(--mono); white-space: nowrap; }
+
+/* ── Type-ahead marks ──────────────────────────────────────────────────────
+   The matched row is also the selected row, so the mark sits on white-on-accent
+   as often as on a plain background. Deriving it from currentColor means one
+   rule reads correctly on every selection state and in both themes, with no
+   colour to keep in step. */
+.row mark {
+  background: color-mix(in srgb, currentColor 20%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 26%, transparent);
+  color: inherit; border-radius: 3px;
+}
+
 /* ── Folder picker / welcome screen ────────────────────────────────────── */
 #welcome {
   position: fixed; inset: 0; z-index: 60;
