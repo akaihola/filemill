@@ -209,9 +209,10 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       | the app's own share of a sweep, port answering from memory | 6.4 ms |
       | the arrow key straight after a sweep | 10 ms, budget 100 ms |
 
-      Those ranges are one machine, quiet against three suites running beside
-      each other; absolute figures here move by 3× with load. What holds across
-      all of them is the ratio: **the sweep costs 1.5 to 2.9× the directory read
+      Each range spans six runs on one machine, from idle to three suites
+      running beside each other; absolute figures here move by 3× with load.
+      What holds across all of them is the ratio: **the sweep costs 1.5 to
+      2.9× the directory read
       this app already makes on every folder it opens**, and roughly what the
       column rebuild beside it costs. It is paid once, when the user asks, on
       the columns they are looking at. Opening `sorting` beside the root reads
