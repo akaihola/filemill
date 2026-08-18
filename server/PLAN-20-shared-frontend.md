@@ -1,4 +1,11 @@
-# PLAN-20 — One frontend for Filemill and Filemill
+# PLAN-20 — One frontend for Pykofinder and Filemill
+
+> **Historical.** Written while these were two projects: *filemill*, the static
+> HTML explorer, and *pykofinder*, the Python server. They are now one
+> repository and one product — `static/` and `server/` editions of **Filemill**
+> — so read every "pykofinder" below as the server edition and every "filemill"
+> as the static one. The document is left in the names it was written in
+> because a plan rewritten to match the outcome stops being a record of it.
 
 Status: **implemented, except the cutover (step 7) and mobile.** See §7 for the
 per-step state. Two decisions went against this document and are marked there:
@@ -7,14 +14,14 @@ is CDN-loaded rather than a second build profile (§7.8, overriding §4b). The
 analysis below is otherwise unchanged from the proposal.
 
 Scope: how to share as much code as possible between `filemill` (static
-single-HTML, File System Access API) and `filemill` (FastHTML server) as
-Filemill migrates to the Miller-columns UI, and whether to merge the repos.
+single-HTML, File System Access API) and `pykofinder` (FastHTML server) as
+Pykofinder migrates to the Miller-columns UI, and whether to merge the repos.
 
 ---
 
 ## 1 · Where the two stand today
 
-| | filemill | filemill |
+| | filemill | pykofinder |
 | --- | --- | --- |
 | UI | Miller columns, fold dial, trail elbows, ⚙ popover — the productionised "Trail" study | old Finder-style columns, server-rendered |
 | Rendering | client-side JS, `src/*.js` (~1 100 lines incl. CSS) | server-side Python → HTML fragments, HTMX swaps |
@@ -22,9 +29,9 @@ Filemill migrates to the Miller-columns UI, and whether to merge the repos.
 | Data source | `FileSystemDirectoryHandle` (FSA) | real filesystem + VFS providers (SQLite/JSON/CSV) |
 | Previews | `<pre>` text + `<img>` only | markdown-it-py + plugins, Pygments, mammoth, python-pptx, PDF iframe, `.desktop` |
 | URLs | none — reload loses everything | canonical `/f/<mount>/<path>`, deep-link restore, PWA |
-| Ship | `build-index.py` → one 117 KB `index.html` | `uv run filemill`, PyPI package |
+| Ship | `build-index.py` → one 117 KB `index.html` | `uv run pykofinder`, PyPI package |
 
-The valuable, non-overlapping assets are: **filemill's UI** and **filemill's
+The valuable, non-overlapping assets are: **filemill's UI** and **pykofinder's
 Python rendering + VFS + URL model**. Nothing about the first depends on the
 second, and vice versa — which is why this is worth doing.
 
@@ -60,7 +67,7 @@ So the sharing story is not "extract a component library". It is:
 
 ```js
 // filemill: today's fs.js, unchanged
-// filemill: same shape, HTTP-backed
+// pykofinder: same shape, HTTP-backed
 async function ensureLoaded(node) {
   if (!node.dir || node.kids !== null) return;
   node.loading ??= fetch(`/api/dir?p=${enc(node.path)}`)
@@ -89,7 +96,7 @@ HTML inline. Replace with a provider:
 previewProvider.render(node) → Promise<{html, kind}>
 ```
 
-- **Filemill**: `fetch('/api/preview?p=…')` → the existing `preview.py`
+- **Pykofinder**: `fetch('/api/preview?p=…')` → the existing `preview.py`
   output verbatim. Markdown-it-py plugins, Pygments, mammoth, python-pptx,
   wikilinks, Mermaid — all of it, unchanged, zero porting.
 - **Filemill**: JS renderers (§4), or the lean text/image fallback that exists
@@ -100,14 +107,14 @@ shared; only the body fragment differs.
 
 ### Adapter 3 — router
 
-See §5. Today filemill has none and Filemill has a good one.
+See §5. Today filemill has none and Pykofinder has a good one.
 
 ---
 
-## 3 · What Filemill gains, beyond the UI
+## 3 · What Pykofinder gains, beyond the UI
 
 **"Open local folder…" is nearly free.** Once the UI is adapter-driven, the
-Filemill page can carry *both* adapters and switch at runtime: server-backed
+Pykofinder page can carry *both* adapters and switch at runtime: server-backed
 by default, FSA-backed when the user picks a local folder. Same page, same
 keyboard model, same styles. This is the single strongest argument for one
 codebase rather than two lookalikes.
@@ -118,7 +125,7 @@ codebase rather than two lookalikes.
 fragment. Same origin, localhost, the user already granted the folder. Cost is
 one POST per preview on loopback, which is nothing, with a size cap.
 
-> **Consequence: Filemill never needs the JS renderers at all**, even in
+> **Consequence: Pykofinder never needs the JS renderers at all**, even in
 > local-folder mode. The JS renderer work is *purely* a filemill concern, and
 > can be deferred without blocking the migration.
 
@@ -141,9 +148,9 @@ HTML file. Not viable.
 
 ### 4b · JS renderers for filemill — **recommended, and cheaper than it looks**
 
-Filemill's Python stack is, for the most part, *ports of JS libraries*:
+Pykofinder's Python stack is, for the most part, *ports of JS libraries*:
 
-| Filemill (Python) | JS equivalent | Note |
+| Pykofinder (Python) | JS equivalent | Note |
 | --- | --- | --- |
 | `markdown-it-py` + `mdit-py-plugins` | `markdown-it` + `markdown-it-*` | markdown-it is the **upstream**; same plugin names, same API, same output |
 | `mammoth` (docx) | `mammoth.js` | same author, JS is the original |
@@ -172,7 +179,7 @@ build.py --profile full  → filemill-full.html  (~1 MB, md/code/docx/pptx)
 Do *not* lazy-load renderers from a CDN — that breaks the "no network" promise
 that makes the single file worth shipping.
 
-### 4c · Keep Python server-side only — **the Filemill answer**
+### 4c · Keep Python server-side only — **the Pykofinder answer**
 
 Per §3, this is already true and requires no work.
 
@@ -185,20 +192,20 @@ projects need the same function:
 
 ```js
 // walk the chain from root, loading each directory, select the leaf
-async function applyPath(relPath)   // "src/filemill/app.py" → path[]/sel[]/focusCol
-function currentPath()              // path[]/sel[] → "src/filemill/app.py"
+async function applyPath(relPath)   // "src/pykofinder/app.py" → path[]/sel[]/focusCol
+function currentPath()              // path[]/sel[] → "src/pykofinder/app.py"
 ```
 
-`applyPath` is shared verbatim; it is exactly what Filemill's `/restore` does
+`applyPath` is shared verbatim; it is exactly what Pykofinder's `/restore` does
 today in Python, and it is entirely missing from filemill. Only the *transport*
 differs:
 
-**Filemill** — `history.pushState` on the real path, mirroring the file path
+**Pykofinder** — `history.pushState` on the real path, mirroring the file path
 relative to root, exactly as PLAN-19 specifies:
 
 ```
-/src/filemill/app.py
-/src/filemill/app.py?filemill-view=highlighted
+/src/pykofinder/app.py
+/src/pykofinder/app.py?pykofinder-view=highlighted
 ```
 
 Query params carry representation/layout/dotfiles; the path carries only the
@@ -231,9 +238,9 @@ Three options considered:
 
 1. **One repo, shared `ui/`** — recommended.
 2. Separate repos, `ui/` as a git submodule or subtree.
-3. Filemill vendors filemill's built `index.html`.
+3. Pykofinder vendors filemill's built `index.html`.
 
-Option 3 is out: Filemill needs the *modular* source to swap adapters, not
+Option 3 is out: Pykofinder needs the *modular* source to swap adapters, not
 the bundle. Option 2 is the usual submodule tax — two clones, two branches, and
 a lockstep-bump ritual for every UI change, which is most changes.
 
@@ -258,13 +265,13 @@ finder/                       ← merged repo
 │   └── tests/                ← the Playwright suite, one copy, both adapters
 ├── filemill/
 │   └── build.py              ← ui/ + profile → filemill.html
-└── filemill/               ← the Python package, published to PyPI
+└── pykofinder/               ← the Python package, published to PyPI
     ├── pyproject.toml
-    └── src/filemill/       ← app.py (JSON API), preview.py, rendering.py,
+    └── src/pykofinder/       ← app.py (JSON API), preview.py, rendering.py,
                                 vfs.py, providers/
 ```
 
-Filemill serves `ui/` as static assets in dev and embeds it at wheel-build
+Pykofinder serves `ui/` as static assets in dev and embeds it at wheel-build
 time, so the PyPI artifact stays self-contained. Filemill's single-file
 deliverable is a build target in the same tree — "publish the static HTML"
 becomes one command in CI, which is the other thing the merge buys.
@@ -279,7 +286,8 @@ neither project's history needs to be discarded.
 Each step leaves both apps working.
 
 1. ✅ **Merge the repos** — subtree merge preserving both histories, then
-   `ui/` + `filemill/` + `filemill/`. `tools/sync-ui.py` survives but changes
+   `ui/` + `static/` + `server/` (named `filemill/` and `pykofinder/` at the
+   time). `tools/sync-ui.py` survives but changes
    meaning: it is no longer holding two repositories in step, it is copying
    `../ui/` into the package so a wheel is self-contained. That was the one
    thing §6 got wrong — a merge does not remove the copy, only the drift.
@@ -288,7 +296,7 @@ Each step leaves both apps working.
    `test-ui.py` stayed at 31/31 throughout.
 3. ✅ **`applyPath`/`currentPath` + hash router** — `core/deeplink.js` and
    `adapters/router-hash.js`. 12 new checks in `test-url.py`.
-4. ✅ **Filemill JSON API** — `/api/dir`, `/api/raw`, `/api/preview`,
+4. ✅ **Pykofinder JSON API** — `/api/dir`, `/api/raw`, `/api/preview`,
    `POST /api/render`, all root-relative and guarded by `_resolve_safe()`.
 5. ✅ **`http.js` + path router** — the shared UI runs at `/n/`, the HTMX UI at
    `/f/` untouched. `test_browser_new_ui.py` drives it in a real browser.
@@ -303,8 +311,8 @@ Each step leaves both apps working.
    task-lists, anchor), highlight.js and mammoth are imported on first use, so
    the bundle stays one portable file. Behind a remembered switch, since it is
    the only thing there that touches the network, and every failure falls back
-   to the raw source. `filemill` does not load it — Python renders better.
-9. ✅ **"Open local folder…" in Filemill** — `app-http.js` re-points the ports
+   to the raw source. `pykofinder` does not load it — Python renders better.
+9. ✅ **"Open local folder…" in Pykofinder** — `app-http.js` re-points the ports
    at `FSA` + `PreviewUpload` at runtime, so the served page browses a granted
    folder with the Python renderers still doing the previews.
 
@@ -331,13 +339,13 @@ Two things turned out differently from the plan:
   localhost".
 - **Pygments ↔ highlight.js class mismatch.** Don't fight it; ship a stylesheet
   per highlighter.
-- **Mobile.** Filemill has real mobile work (issues #42, #43, #45); the
+- **Mobile.** Pykofinder has real mobile work (issues #42, #43, #45); the
   Miller-columns UI has none. Whether the fold dial has a touch story is an
   open design question and may be the largest unbudgeted item here.
-- **PWA.** Filemill's manifest/SW carry over. Filemill's TASKS.md wants the
+- **PWA.** Pykofinder's manifest/SW carry over. Filemill's TASKS.md wants the
   same — shared once the repos are.
 - **Bundle figures in §4b are estimates**, not measured. Measure before
   committing to the two-profile design.
 - **Non-Chromium browsers.** Filemill is Chromium-only by construction (FSA).
-  Filemill is not, and must not become so — the FSA adapter has to be
+  Pykofinder is not, and must not become so — the FSA adapter has to be
   feature-detected, not assumed.

@@ -1,4 +1,4 @@
-# filemill — Task List
+# Filemill, static edition — Task List
 
 Legend: `[ ]` open · `[~]` in progress · `[x]` done
 
@@ -72,8 +72,9 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       because it is the only thing here that touches the network; every failure
       falls back to the raw source with a one-line note. Wikilinks resolve
       inside the browsed folder
-- [ ] **One repo with filemill.** `src/filemill/ui/` is a vendored copy
-      kept in step by `tools/sync-ui.py --check`. Merging deletes that script
+- [x] **One repo with the server edition** — done; `ui/` is shared, and
+      `server/tools/sync-ui.py --check` now guards a *packaging* copy rather
+      than two repositories
 
 - [ ] **Refresh a directory** — nothing re-reads a folder after the disk
       changes. A ⟳ button or F5-on-column would re-run `ensureLoaded` on the

@@ -1,4 +1,4 @@
-# filemill Tasks
+# Filemill, server edition — Tasks
 
 ## How tracking works
 
@@ -51,8 +51,8 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 
 ## Done
 
-- [x] **Shared frontend with filemill** — `src/filemill/ui/` is filemill's
-      frontend vendored verbatim (`tools/sync-ui.py`); `/api/dir|raw|preview`
+- [x] **Shared frontend with the static edition** — `src/filemill/ui/` is a
+      packaging copy of the repository's `../ui/` (`tools/sync-ui.py`); `/api/dir|raw|preview`
       back it, `POST /api/render` renders local-folder bytes through the Python
       pipeline, and "Open local folder…" switches adapters at runtime.
       SQLite/JSON/CSV browse through the same adapter via a `vpath`.

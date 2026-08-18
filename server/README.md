@@ -1,8 +1,13 @@
-# filemill
+# Filemill — server edition
 
-A macOS Finder-style column-view file browser and previewer, served as a local
-web application. Navigate directories by clicking column entries; previews render
-inline for Markdown, DOCX, PPTX, PDF, images, plain text, and source code.
+A column-view file browser and previewer, served as a local web application.
+Navigate directories by clicking column entries; previews render inline for
+Markdown, DOCX, PPTX, PDF, images, plain text, and source code.
+
+This is one of two editions sharing a frontend — see the
+[repository README](../README.md). The other, [`../static`](../static), is a
+single HTML file that browses a folder on your own machine and needs no server
+at all.
 
 ## Features
 
@@ -19,8 +24,8 @@ inline for Markdown, DOCX, PPTX, PDF, images, plain text, and source code.
 - **Zoom** – expand preview pane to full viewport width
 - **`.desktop` hyperlinks** – open service URLs directly from the browser
 - **Symlink support** – safely follows symlink bookmarks in the configured root
-- **Miller-columns UI (new, at `/n/`)** – the frontend shared with
-  [filemill](../filemill), from [`../ui/`](../ui): column headers with counts, three selection states, a
+- **Miller-columns UI (new, at `/n/`)** – the shared frontend from
+  [`../ui/`](../ui): column headers with counts, three selection states, a
   drawn trail between selected rows, and horizontal scroll as a fold dial. Its
   URL path mirrors the file path relative to the browsed root exactly
   (`/n/docs/readme.md`), and previews still come from the Python renderers below.
@@ -90,6 +95,9 @@ adapters differ between `/n/` and filemill — the source of both is
 [`../ui/`](../ui) in this repository, so there is no version of it to drift.
 `src/filemill/ui/` is a packaging copy refreshed by `tools/sync-ui.py`; see
 [CONTRIBUTING.md](CONTRIBUTING.md).
+
+> Renamed from **pykofinder**. `PYKOFINDER_ROOT`, `PYKOFINDER_BIND` and
+> `PYKOFINDER_LIVE` are still honoured, so an existing setup keeps running.
 
 ## License
 
