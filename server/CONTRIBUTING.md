@@ -188,6 +188,17 @@ variable but drops the credentials in it.
 asset itself, so those 27 tests pass with no network at all. Measured on a host
 with no proxy credentials given to Chromium: 27 passed in 115 s.
 
+Two measurements of this file disagree, and the disagreement is unresolved. On
+2026-08-18 one agent recorded 27 passed in 115 s and 118 s on a 4-core host,
+including the two local-folder tests three times alone at 9.42 s, 9.26 s and
+8.60 s, and passing under four busy loops in 24.68 s. A second agent on a
+different host recorded `test_local_files_are_still_rendered_by_python` and
+`test_local_source_is_still_highlighted_by_pygments` failing on
+`wait_for_selector("#preview .pv-rich h1")`, with and without proxy variables
+set, and running only those two. Nobody has explained the difference. If you see
+those two fail, you are the third data point: capture the browser console and
+whether `POST /api/render` answered, and say which host you were on.
+
 `test_nothing_is_fetched_from_a_cdn` is what holds the `/n/` UI to that, and it
 now watches both halves. The served half goes through `preview-http.js` and
 `GET /api/preview`; the local-folder half goes through `preview-upload.js` and
