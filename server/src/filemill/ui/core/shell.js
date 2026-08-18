@@ -30,6 +30,15 @@ document.body.insertAdjacentHTML("afterbegin", `
       <button id="s-dot"     role="menuitemcheckbox" aria-checked="false"><span class="tick">✓</span>Show dotfiles</button>
       <button id="s-density" role="menuitemcheckbox" aria-checked="true"><span class="tick">✓</span>Compact rows</button>
       <hr>
+      <!-- The hints are the point of this group: sorting by size or date has to
+           read every file in the folder, and the menu is where that price can
+           be shown before it is paid. Name asks for nothing and is the default. -->
+      <div class="grp">Sort by</div>
+      <button id="s-sort-name"  role="menuitemradio" aria-checked="true"><span class="tick">✓</span>Name</button>
+      <button id="s-sort-size"  role="menuitemradio" aria-checked="false"><span class="tick">✓</span>Size<span class="hint">reads every file</span></button>
+      <button id="s-sort-mtime" role="menuitemradio" aria-checked="false"><span class="tick">✓</span>Modified<span class="hint">reads every file</span></button>
+      <button id="s-sort-desc"  role="menuitemcheckbox" aria-checked="false"><span class="tick">✓</span>Descending</button>
+      <hr>
       <div class="grp">Previews</div>
       <button id="s-rich" role="menuitemcheckbox" aria-checked="true" hidden><span class="tick">✓</span>Rich previews<span class="hint">downloads a renderer</span></button>
       <hr id="s-rich-hr" hidden>
@@ -52,6 +61,7 @@ document.body.insertAdjacentHTML("afterbegin", `
     <span id="st-copy"></span>
     <div class="spacer"></div>
     <span id="st-find"></span>
+    <span id="st-sort"></span>
     <span id="st-refresh"></span>
     <span id="st-fold"></span>
     <span><kbd>↑</kbd><kbd>↓</kbd> move</span>

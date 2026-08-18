@@ -682,7 +682,7 @@ UI_BASE = "/n/"
 _UI_DIR: Path = Path(__file__).parent / "ui"
 
 _UI_CORE = [
-    "shell.js", "ports.js", "icons.js", "state.js", "render.js",
+    "shell.js", "ports.js", "icons.js", "state.js", "sort.js", "render.js",
     "layout.js", "trail.js", "typeahead.js", "nav.js", "deeplink.js",
     "settings.js",
 ]
