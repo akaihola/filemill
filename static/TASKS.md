@@ -228,7 +228,7 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       In `ui/adapters/storage.js` and `ui/adapters/app-fsa.js` — both adapters,
       because a remembered *handle* is what this build has and the server build
       has a root path instead. No `ui/core/` file changed for this. 10 checks in
-      `test-ui.py`, 5 more in `test-e2e.py` against a real folder the test
+      `test-ui.py`, 3 more in `test-e2e.py` against a real folder the test
       creates, edits and deletes
 - [ ] **PWA manifest + service worker** — the old app had one; would let the
       bundle be installed and launched as a standalone window
