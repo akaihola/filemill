@@ -35,7 +35,7 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       and `content-visibility`; ~5 ms re-render and 4–9 ms keystrokes at 3 000
       entries, down from ~500 ms and ~740 ms
 - [x] **Spine click unfolds** — the design study advertised it but never wired it
-- [x] **Tests** — `test-ui.py` (79 headless checks incl. a perf budget, runs
+- [x] **Tests** — `test-ui.py` (80 headless checks incl. a perf budget, runs
       against both the bundle and the modular sources), `test-e2e.py` (real
       folder, real picker, persistence, the real clipboard, and refresh plus
       view-state restore against a throwaway folder it creates and deletes),
@@ -104,7 +104,7 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       | The selected entry is gone | Nothing is selected — selecting whatever slid into its place would preview a file nobody asked for. The cursor stays on that row index, clamped to the shorter list, so ↓ resumes beside it. The strip names what went |
       | A folder deeper in the chain is gone | The chain is walked again by name and stops at the first level that no longer exists. Columns below that close |
       | Refresh lands on a read already in flight | It waits for that read, then re-reads once. `ensureLoaded` hands a concurrent caller the *in-flight* promise, so asking without waiting returns the very listing the refresh was called to replace |
-      | The user clicks or presses a key mid-refresh | The refresh drops its repaint. It bumps `navSeq`, the counter `choose` already uses for the same reason |
+      | The user clicks or presses a key mid-refresh | Whoever the user asked for last wins, and the columns still agree with each other. The refresh drops its repaint by bumping `navSeq`, the counter `choose` already uses for the same reason |
       | A preview was being built for the old node | The re-render calls `fillPreview` on the new node, which bumps `pvToken`; the older read is discarded when it lands |
       | Focus | Stays on the column the user was in, clamped to the new depth |
 
@@ -127,7 +127,8 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       column in **371 ms**, which is the build cost the column cache exists to
       avoid paying *per keystroke* — here it is paid once, when the user asks,
       because the entry list really did change. The arrow key straight after it
-      still costs **7.5 ms**, inside the 4–9 ms budget. 16 checks in `test-ui.py`
+      still costs **7.5 ms**, inside the 4–9 ms budget. 17 checks in
+      `test-ui.py`, 3 more in `test-e2e.py` against a real folder
 - [x] **Type-ahead** — typing letters jumps to the matching row in the focused
       column. For the person browsing, a folder of 400 entries goes from about
       200 presses of ↓ to three letters. Three rungs run in order over the whole

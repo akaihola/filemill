@@ -605,6 +605,29 @@ async def main():
               and await pg.evaluate("path[1].loading") is None,
               f"{got}, header says {head}")
 
+        # The other way round: the user clicks somewhere else while a refresh is
+        # still walking the chain back down. Refreshing the root re-reads `slow`
+        # (500 ms), which is a wide enough window to land a click in. Whoever
+        # the user asked for last has to win, and the columns must still agree
+        # with each other — every open column is the child the level above
+        # selected. A half-applied walk shows up here as a chain that does not.
+        await mount(pg)
+        await pg.click('.col[data-i="0"] .row:has-text("slow")')
+        await pg.wait_for_timeout(900)
+        await pg.keyboard.press("ArrowRight")
+        await pg.wait_for_timeout(300)
+        await pg.evaluate("refreshColumn(0)")       # deliberately not awaited
+        await pg.wait_for_timeout(120)
+        await pg.click('.col[data-i="0"] .row:has-text("mixed")')
+        await pg.wait_for_timeout(2500)
+        st = await pg.evaluate("__state()")
+        coherent = all(st["sel"][i] == st["path"][i + 1]
+                       for i in range(len(st["path"]) - 1))
+        check("A click during a refresh wins, and leaves the columns agreeing "
+              "with each other",
+              st["path"] == ["workspace", "mixed"] and st["sel"] == ["mixed"]
+              and coherent, json.dumps(st))
+
         print("\n── Remember view state per folder ───────────────────────────")
         # The record and its migration go through the real database. The restore
         # itself is driven by stubbing recallRoots, because a fake handle is not

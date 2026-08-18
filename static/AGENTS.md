@@ -66,7 +66,7 @@ the user makes to your behaviour — capture it here so it survives a context re
     ├── index-dev.html          ← dev entry point: <script src="../ui/…">
     ├── build-index.py          ← index-dev.html + ../ui → index.html
     ├── hotreload.py            ← optional CDP live-patcher for dev mode
-    ├── test-ui.py              ← headless suite, fake handle (79 checks)
+    ├── test-ui.py              ← headless suite, fake handle (80 checks)
     ├── test-url.py             ← deep-link suite over localhost (12 checks)
     ├── test-rich.py            ← CDN renderers: offline/switch/loaded (14)
     └── test-e2e.py             ← headed suite, real folder + real picker

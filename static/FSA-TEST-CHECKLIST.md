@@ -40,7 +40,15 @@ uv run --with "playwright==1.61.0" python3 test-e2e.py    # headed, one folder p
 - [ ] Symlinked directories open; a broken symlink does not break the column
 - [ ] Non-ASCII names (accents, CJK, emoji) render and sort sensibly
 - [ ] A file changed on disk shows the new size/mtime after re-selecting it
-      (there is no directory watcher — reopening the folder re-reads it)
+      (there is no directory watcher; F5 or ⟳ re-reads the folder)
+- [ ] ⟳ on a folder held on a network share or an unmounted drive: the read
+      fails rather than hanging forever, and the column says so instead of
+      keeping the old listing with a spinner on top
+- [ ] Refresh a folder of 100 000 entries: the old listing stays on screen with
+      the ⟳ spinning until the new one is built, rather than blanking to
+      "Reading…" — the rebuild is ~370 ms at 3 000 entries and scales with it
+- [ ] Rename the *root* folder while it is open, then F5: the handle still
+      resolves (a handle is not a path), so the columns are unaffected
 - [ ] Large image previews scale to fit; a 100 MB binary shows "No inline
       preview" rather than trying to read it
 
@@ -53,6 +61,12 @@ uv run --with "playwright==1.61.0" python3 test-e2e.py    # headed, one folder p
 - [ ] Quit the browser entirely and reopen: Chrome downgrades the grant to
       "prompt", so the folders still appear but clicking one shows Chrome's
       "Let site view files?" bar — one click, no OS picker
+- [ ] Open a folder three columns deep, quit the browser, reopen, click that
+      folder under **Recently opened**: the three columns come back and the
+      file is selected again. The button already said where it would land
+- [ ] Two remembered folders with the same basename (`~/a/notes`, `~/b/notes`):
+      each keeps its own chain. `isSameEntry` is what tells them apart, so a
+      restore that mixes them up means something is matching on the name
 - [ ] Cancel the picker (Esc) → nothing changes, no console error
 - [ ] Open `index.html` as a `file://` URL → localhost instructions, not a
       broken picker
@@ -65,6 +79,6 @@ uv run --with "playwright==1.61.0" python3 test-e2e.py    # headed, one folder p
 | Needs `localhost` or HTTPS | Chrome blocks the FSA picker on opaque origins |
 | Chrome/Edge desktop only | `showDirectoryPicker` is not in Firefox or Safari |
 | No "created" date | FSA's `File` only exposes `lastModified` |
-| No live refresh when the disk changes | No directory-watch API; reopen the folder |
+| The disk changing does not update the columns on its own | No directory-watch API exists behind either port, so refresh is a thing the user asks for: F5, or ⟳ in the focused column's header |
 | Permission is re-prompted after a browser restart | Chrome only persists grants for installed PWAs |
 | Read-only | The app never asks for `mode: "readwrite"` |
