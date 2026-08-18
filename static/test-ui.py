@@ -815,10 +815,16 @@ async def main():
         await pg.evaluate("mount(__mk(0))")
         await pg.wait_for_timeout(350)
         start_saves = await pg.evaluate("__saved.length")
-        await pg.click('.col[data-i="0"] .row:has-text("mixed")')
-        await pg.wait_for_timeout(150)
-        await pg.click('.col[data-i="1"] .row:has-text("note.md")')
-        early = await pg.evaluate("__saved.length")
+        # Both clicks inside one page call, so the 150 ms gap is 150 ms of app
+        # time. Driven from here it was two Playwright round-trips wide, and on
+        # a loaded machine that exceeds the 400 ms debounce and splits the write
+        # this check exists to prove is single. It flaked twice in five runs.
+        early = await pg.evaluate("""(async () => {
+          document.querySelector('.col[data-i="0"] .row[title="mixed"]').click();
+          await new Promise(r => setTimeout(r, 150));
+          document.querySelector('.col[data-i="1"] .row[title="note.md"]').click();
+          return __saved.length;
+        })()""")
         await pg.wait_for_timeout(800)
         saved = await pg.evaluate("__saved")
         check("Mounting a folder does not overwrite the chain it just restored",
@@ -922,10 +928,56 @@ async def main():
               == '{"key":"size","desc":true}',
               await pg.evaluate("JSON.stringify(state.sort)"))
 
+        # The cursor is a row *index*, and a re-sort moves the row it named.
+        # small.txt sits at row 2 ascending and row 4 descending, so a cursor
+        # left behind would put ↓ on medium.md instead of locked.txt.
+        await in_sorting()
+        await pg.evaluate("setSort('size', false)")
+        await pg.wait_for_timeout(400)
+        await pg.keyboard.press("ArrowRight")
+        await pg.wait_for_timeout(250)
+        await pg.click('.col[data-i="1"] .row:has-text("small.txt")')
+        await pg.wait_for_timeout(250)
+        await pg.evaluate("setSort('size', true)")
+        await pg.wait_for_timeout(400)
+        await pg.keyboard.press("ArrowDown")
+        await pg.wait_for_timeout(250)
+        check("↓ after a re-sort steps off the row that is still selected, not "
+              "off the row number it used to have",
+              await pg.evaluate("sel[1]") == "locked.txt",
+              await pg.evaluate("sel[1]"))
+
+        # A refresh lands while the sweep is still reading. Those metadata reads
+        # are about objects the new listing no longer contains, so the sweep
+        # must not mark the new one done — and the app has to notice and ask
+        # again rather than sit on a half-ordered column.
+        await pg.evaluate("setSort('name', false)")
+        await mount(pg)
+        await pg.click('.col[data-i="0"] .row:has-text("refresh")')
+        await pg.wait_for_timeout(300)
+        await pg.evaluate("__slowMeta(400)")
+        await pg.evaluate("setSort('size', false)")
+        await pg.wait_for_timeout(120)                  # the sweep is in flight
+        await pg.evaluate("__add(__live, 'zero.txt')")  # 8 bytes; one/two are 1
+        await pg.evaluate("refreshColumn(1)")
+        await pg.wait_for_timeout(2500)
+        rows = await pg.evaluate("__rows(1)")
+        check("A refresh during a sweep re-reads and sweeps again, rather than "
+              "trusting metadata about entries that are gone",
+              rows == ["sub", "one.txt", "two.txt", "zero.txt"]
+              and await pg.evaluate("path[1].metaDone") is True
+              and await pg.eval_on_selector_all(".col.sorting", "e=>e.length") == 0,
+              str(rows))
+        await pg.evaluate("__slowMeta(0)")
+
         # A sweep is the one thing here that can take a visible moment, so the
         # column has to say it is working rather than sit there in name order.
+        # 2 s per read, not 400 ms: three Playwright round-trips have to land
+        # inside the window, and on a loaded machine each of those can take
+        # hundreds of milliseconds. A window this wide fails only if the
+        # spinner is genuinely absent.
         await in_sorting()
-        await pg.evaluate("__slowMeta(400)")
+        await pg.evaluate("__slowMeta(2000)")
         await pg.evaluate("setSort('size', false)")
         await pg.wait_for_timeout(150)
         spinning = await pg.eval_on_selector_all(".col.sorting", "e=>e.length")
@@ -935,7 +987,8 @@ async def main():
         check("A column still reading its metadata says so, rather than freezing",
               spinning > 0 and "reading 5 files" in say,
               f"{spinning} columns spinning, strip says {say!r}")
-        await pg.wait_for_timeout(900)
+        await pg.wait_for_function("!path.some(n => n.metaLoading)", timeout=30_000)
+        await pg.wait_for_timeout(300)
         say = (await pg.inner_text("#st-sort")).strip()
         check("…and when the sweep lands the strip names the folder and what it "
               "cost to read",
