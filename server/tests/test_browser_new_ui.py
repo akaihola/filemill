@@ -277,6 +277,25 @@ def test_a_local_folder_replaces_the_served_tree(page):
     assert page.is_visible("#local-badge")
 
 
+def _click_local(page, name: str, selector: str) -> None:
+    """Click a local-folder entry, wait for the server to answer, then to draw.
+
+    `preview-upload.js` posts the bytes to `POST /api/render`, because the server
+    cannot read a file the browser granted through the File System Access API.
+    Waiting a fixed 5000 ms for the rendered element was a bet on how fast that
+    round trip is, and the bet is not ours to make: a peer agent measured it
+    losing on their host while the same two tests passed here in 24.68 s with
+    four busy loops running. Waiting for the response names the round trip, so a
+    slow render and a missing element now fail with different messages.
+    """
+    with page.expect_response(
+        lambda r: r.url.endswith("/api/render") and r.request.method == "POST",
+        timeout=30000,
+    ):
+        page.click(f'.col[data-i="0"] .row:has-text("{name}")')
+    page.wait_for_selector(selector, timeout=15000)
+
+
 def test_local_files_are_still_rendered_by_python(page):
     """The point of POST /api/render: opening a local folder is not a downgrade.
 
@@ -286,8 +305,7 @@ def test_local_files_are_still_rendered_by_python(page):
     page.evaluate(FAKE_HANDLE)
     page.evaluate("mount(__local())")
     page.wait_for_timeout(300)
-    page.click('.col[data-i="0"] .row:has-text("local.md")')
-    page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
+    _click_local(page, "local.md", "#preview .pv-rich h1")
     assert "Local heading" in page.inner_text("#preview .pv-rich h1")
     assert page.locator("#preview .pv-rich strong").count() >= 1
 
@@ -297,8 +315,7 @@ def test_local_source_is_still_highlighted_by_pygments(page):
     page.evaluate(FAKE_HANDLE)
     page.evaluate("mount(__local())")
     page.wait_for_timeout(300)
-    page.click('.col[data-i="0"] .row:has-text("local.py")')
-    page.wait_for_selector("#preview .pv-rich .preview-code", timeout=15000)
+    _click_local(page, "local.py", "#preview .pv-rich .preview-code")
 
 
 def test_local_mode_stops_writing_the_url(page):
@@ -359,8 +376,7 @@ def test_nothing_is_fetched_from_a_cdn(page):
     page.evaluate("mount(__local())")
     page.wait_for_timeout(300)
     for name in ("local.md", "local.py"):
-        page.click(f'.col[data-i="0"] .row:has-text("{name}")')
-        page.wait_for_selector("#preview .pv-rich", timeout=10000)
+        _click_local(page, name, "#preview .pv-rich")
     assert external == []
 
 
