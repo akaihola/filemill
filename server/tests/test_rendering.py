@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import patch
 
 from filemill.rendering import (
@@ -122,10 +123,20 @@ def test_find_git_root_finds_ancestor(tmp_path):
     assert _find_git_root(sub) == tmp_path
 
 
-def test_find_git_root_returns_none_when_no_git(tmp_path):
-    sub = tmp_path / "a" / "b"
-    sub.mkdir(parents=True)
-    assert _find_git_root(sub) is None
+def test_find_git_root_returns_none_when_no_git(tmp_path, monkeypatch):
+    """The walk returns None when no directory it visits holds a ``.git``.
+
+    The start path is relative on purpose, so the walk pins its own root. An
+    absolute ``tmp_path / "a" / "b"`` walks all the way to ``/`` and so depends on
+    every directory above the temp directory: this host has a real ``/tmp/.git``
+    and pytest puts ``tmp_path`` under ``/tmp``, which made the assertion read
+    ``assert Path('/tmp') is None``. ``Path("a/b").parents`` is ``a`` and ``.``
+    and stops, so after chdir the three directories the walk visits are the three
+    this test created.
+    """
+    (tmp_path / "a" / "b").mkdir(parents=True)
+    monkeypatch.chdir(tmp_path)
+    assert _find_git_root(Path("a/b")) is None
 
 
 def test_find_git_root_on_git_dir_itself(tmp_path):
