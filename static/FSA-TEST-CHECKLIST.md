@@ -51,8 +51,8 @@ uv run --with "playwright==1.61.0" python3 test-e2e.py    # headed, one folder p
       resolves (a handle is not a path), so the columns are unaffected
 - [ ] Sort by size on a folder of 100 000 entries: the column keeps its names on
       screen and spins beside the count while it reads. One `getFile()` per
-      entry, ~284 µs each on a local disk, so expect tens of seconds there.
-      Arrow keys and the ⚙ popover stay responsive throughout
+      entry, roughly 300 µs each, so expect tens of seconds there. Arrow keys
+      and the ⚙ popover stay responsive throughout
 - [ ] Sort by size on a network share or a spinning disk: the same sweep over a
       slow device. What matters is that the app stays usable and the strip keeps
       counting down, not how long it takes
