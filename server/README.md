@@ -66,7 +66,8 @@ Quick start:
 uv sync
 timeout 1800 uv run pytest         # everything, browser tests included
 
-# Just the 56 real-browser tests (needs PLAYWRIGHT_BROWSERS_PATH; takes ~9 min)
+# Just the 56 real-browser tests. Needs PLAYWRIGHT_BROWSERS_PATH. The 29 in
+# test_browser_keyboard.py alone took 342 s on a 4-core host, so budget minutes.
 timeout 1800 uv run pytest tests/test_browser_keyboard.py tests/test_browser_new_ui.py
 ```
 
