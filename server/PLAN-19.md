@@ -218,7 +218,10 @@ through `/f/?path=<absolute>` and watches it canonicalise. Band 1 still beats
 band 3 where a browser can see it.
 
 The 27 tests in `tests/test_browser_new_ui.py` all pass too, so the `/n/` shared
-UI is untouched by the contract.
+UI is untouched by the contract. They pass with no proxy credentials given to
+Chromium, which is the evidence that the `/n/` UI needs no network:
+`test_nothing_is_fetched_from_a_cdn` now watches the local-folder path as well as
+the served one, so both halves of that claim are enforced rather than asserted.
 
 What the browser tests do **not** cover: no browser test requests
 `?layout=no-columns`, `?layout=compressed-columns`, `?hidden=show`, or
