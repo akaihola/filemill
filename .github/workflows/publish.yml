@@ -1,0 +1,102 @@
+# Test both editions, then publish the static one to GitHub Pages.
+#
+# Pages is the natural home for this deliverable, and not only because it is one
+# static file: `showDirectoryPicker()` requires a secure context, so a
+# downloaded index.html opened from disk shows the "serve me over localhost"
+# screen instead of a folder picker. An https:// page just works — which makes
+# "browse a folder on your own machine, install nothing" a single link.
+#
+# Nothing published here can read anything: the app has no backend, and the
+# folder is only ever read in the visitor's browser, after they grant it.
+
+name: publish
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Both copies of ui/ are generated: the static edition inlines it into
+      # index.html, the server edition carries it inside its package so a wheel
+      # is self-contained. Either can go stale without anything else noticing,
+      # and index.html is committed, so a stale one would be published.
+      - name: The committed bundle matches ui/
+        run: ./build-index.py --check
+        working-directory: static
+
+      - name: The packaged copy matches ui/
+        run: ./tools/sync-ui.py --check
+        working-directory: server
+
+      - name: Install Playwright
+        run: |
+          pip install "playwright==1.61.0"
+          playwright install --with-deps chromium
+
+      # `playwright install` is correct here and forbidden on the NixOS dev
+      # machines, where the browsers come from the store and the pinned version
+      # has to match them — see AGENTS.md.
+      - name: Test the bundle and the shared sources
+        working-directory: static
+        run: |
+          python3 test-ui.py
+          python3 test-ui.py --dev
+          python3 test-url.py
+          python3 test-url.py --dev
+          python3 test-rich.py
+          python3 test-rich.py --dev
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      # The same ui/, driven against a real server — this is what would catch a
+      # change that suits one project and breaks the other.
+      - name: The server edition
+        working-directory: server
+        run: uv run --with "playwright==1.61.0" pytest
+
+  publish:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Only the one file. Nothing under ui/ is needed at runtime — that is the
+      # point of the bundle — and shipping it would invite links to the unbuilt
+      # entry point, which loads a dozen separate scripts.
+      - name: Collect the bundle
+        run: |
+          mkdir -p _site
+          cp static/index.html _site/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
