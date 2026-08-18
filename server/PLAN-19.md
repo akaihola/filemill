@@ -188,24 +188,86 @@ FastHTML's static catch-all from the **working directory**; it now serves
 `ROOT/notes/todo.txt`. That is the point of the change, and it is the safer of
 the two.
 
-## Running the tests
+## What a Real Browser Confirmed
 
-    timeout 900 uv run pytest
+Unit tests check the contract in pieces. `test_urls.py` checks that
+`build_url()` emits the right string, and `test_resource_routes.py` checks that
+a `TestClient` request for that string gets the right response. Neither one
+proves that a person clicking a link in Chromium arrives at the document.
+`test_rendered_relative_markdown_link_uses_root_relative_url` in
+`tests/test_browser_keyboard.py` is the only test that closes that loop, and it
+passes. It does four things in one page:
+
+1. It opens the **legacy** URL `/f/{root}/my-knowledge/docs/topic.md`. That URL
+   still answers, in a browser, after `_reorder_routes()` was rewritten.
+2. `topic.md` contains `[Next](subdir/next.md)`. The rendered page carries the
+   href `/my-knowledge/docs/subdir/next.md?pykofinder-view=rendered`, matched
+   character for character by a CSS attribute selector. The generated link uses
+   the new contract even though the reader arrived on an old URL.
+3. Chromium clicks that link. `page.url` then ends with the same string, so the
+   `/{path:path}` route answers a real navigation and not only a `TestClient`
+   call.
+4. `#preview` contains "Next", so the target document rendered.
+
+Three more browser tests confirm the old addresses survived the route reorder,
+which is the claim in "The old URLs still work" above:
+`test_arrow_left_keeps_browser_url_in_sync` walks `/f/` URLs with the keyboard,
+`test_nested_column_navigation_keeps_root_mount_in_url` walks three columns
+deep, and `test_legacy_query_url_canonicalizes_after_nested_navigation` enters
+through `/f/?path=<absolute>` and watches it canonicalise. Band 1 still beats
+band 3 where a browser can see it.
+
+The 27 tests in `tests/test_browser_new_ui.py` all pass too, so the `/n/` shared
+UI is untouched by the contract.
+
+What the browser tests do **not** cover: no browser test requests
+`?layout=no-columns`, `?layout=compressed-columns`, `?hidden=show`, or
+`?pykofinder-view=highlighted`. Those three query groups are checked only by
+`test_resource_routes.py` through a `TestClient`. The embedding case that
+motivates the whole contract, a dashboard pane holding `layout=no-columns`, has
+never been opened in a real browser.
+
+## Running the Tests
+
+    timeout 1800 uv run pytest
+
+The browser files are 29 tests in `test_browser_keyboard.py` and 27 in
+`test_browser_new_ui.py`.
 
 Two things about this suite are worth knowing before you read a red run.
 
-**The browser tests need outbound network.** The finder shell loads htmx from
-`unpkg.com` and mermaid from `cdn.jsdelivr.net`. With no route to them the page
-loads and `#col-0` renders, but nothing responds to a click, so 20 tests in
+**Never add `--with playwright==…`.** Older revisions of `README.md` and
+`CONTRIBUTING.md` told you to, and that command now fails with
+`BrowserType.launch: Executable doesn't exist at
+.../chromium_headless_shell-1200/...` and a banner asking you to run `playwright
+install`. Ignore the banner. `pyproject.toml` pins `playwright~=1.61.0` because
+that is the release whose driver matches the Nix bundle's `chromium-1228`, and
+`--with` overrides the pin. CONTRIBUTING.md carries the full explanation.
+
+**The `/f/` browser tests need outbound network.** The finder shell loads htmx
+from `unpkg.com` and mermaid from `cdn.jsdelivr.net`. With no route to them the
+page loads and `#col-0` renders, but nothing responds to a click, so 20 tests in
 `test_browser_keyboard.py` fail in ways that read like a navigation regression.
 The tell is `407 Proxy Authentication Required` in the *browser* console, which
-pytest never prints. If you are in a sandbox, allow those two hosts before
-believing the failures. Diagnosing this cost a round trip during this work.
+pytest never prints. `_proxy_from_env()` in that file now hands Chromium the
+credentials from `$HTTPS_PROXY`, which Chromium reads but strips, so the tests
+run behind an authenticated proxy. They still need a route to those two hosts.
 
-**`test_find_git_root_returns_none_when_no_git` fails wherever a `.git` exists
-above the temp directory.** It walks up from `tmp_path` expecting to find none;
-on a machine with `/tmp/.git` it finds `/tmp`. That predates this branch and is
-the one failure left in an otherwise green run.
+**The `/f/` browser tests used to guess how long the shell takes.** 32
+assertions read `page.wait_for_timeout(900)` and then checked for a column, a
+preview or a URL. That is a bet on machine load, and the bet lost twice in two
+full-suite runs while the same tests passed 5 times out of 5 on their own.
+`_expect_column()`, `_expect_preview()` and `_expect_url_ending()` now wait for
+the thing itself, up to 20 seconds, and assert exactly what they asserted
+before. `_click_item()` waits for the entry instead of clicking whatever is
+there.
+
+An earlier revision of this section named a third thing:
+`test_find_git_root_returns_none_when_no_git` failed wherever a `.git` directory
+sat above the temp directory, and this host has `/tmp/.git`. That test now
+chdirs into `tmp_path` and starts the walk from the relative path `"a/b"`, whose
+parents are `"a"` and `"."` and stop there. It no longer depends on anything
+above `$TMPDIR`.
 
 ## What the plan got wrong
 
