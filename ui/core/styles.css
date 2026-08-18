@@ -509,6 +509,13 @@ body {
   box-shadow: inset 0 0 0 1px var(--hairline-2);
 }
 #welcome .rec:hover { box-shadow: inset 0 0 0 1px var(--accent-soft); color: var(--accent-ink); }
+/* Where the click will land. A folder that reopens three columns deep is a
+   surprise worth one dim line, and it is the only evidence on this screen that
+   the chain was kept at all. */
+#welcome .rec-where {
+  color: var(--ink-3); font-size: var(--fs-meta);
+  max-width: 26ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 #welcome .rec svg { width: 13px; height: 13px; fill: var(--ink-3); flex: 0 0 auto; }
 #welcome .rec:hover svg { fill: var(--accent); }
 #welcome .note { margin: 18px 0 0; font-size: var(--fs-meta); color: var(--ink-3); }

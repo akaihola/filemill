@@ -516,6 +516,13 @@ body {
   box-shadow: inset 0 0 0 1px var(--hairline-2);
 }
 #welcome .rec:hover { box-shadow: inset 0 0 0 1px var(--accent-soft); color: var(--accent-ink); }
+/* Where the click will land. A folder that reopens three columns deep is a
+   surprise worth one dim line, and it is the only evidence on this screen that
+   the chain was kept at all. */
+#welcome .rec-where {
+  color: var(--ink-3); font-size: var(--fs-meta);
+  max-width: 26ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 #welcome .rec svg { width: 13px; height: 13px; fill: var(--ink-3); flex: 0 0 auto; }
 #welcome .rec:hover svg { fill: var(--accent); }
 #welcome .note { margin: 18px 0 0; font-size: var(--fs-meta); color: var(--ink-3); }
@@ -2080,8 +2087,21 @@ const RouterHash = {
    "prompt" when the tab session ends, and requestPermission() needs a user
    gesture. So a remembered folder is either re-mounted silently (still
    'granted') or offered as a one-click button on the welcome screen.
+
+   A record is the handle *and* the selection chain inside it:
+
+       { handle: FileSystemDirectoryHandle, path: ["src", "core", "nav.js"] }
+
+   The chain is a list of names rather than nodes, because a node is built from
+   a read that has not happened yet when the page loads, and a name survives
+   anything. It is the same list a deep link carries, so one walk restores both.
    ═══════════════════════════════════════════════════════════════════════════ */
 const RECENT_MAX = 8;
+
+/* Databases written before the chain existed hold a bare handle. Normalising on
+   read is what keeps those folders in the list instead of dropping eight of
+   them the first time a user loads a newer build. */
+const asRoot = r => (r && r.kind === "directory") ? { handle: r, path: [] } : r;
 
 const idb = () => new Promise((res, rej) => {
   const r = indexedDB.open("filemill", 1);
@@ -2099,21 +2119,37 @@ const kvGet = (db, key) => new Promise((res, rej) => {
 const kvPut = (db, key, value) =>
   db.transaction("kv", "readwrite").objectStore("kv").put(value, key);
 
-async function rememberRoot(handle) {
+/* Move a root to the front of the list. `path` is the selection chain inside
+   it; leave it out and whatever was stored stays, because picking the same
+   folder again from the OS dialog must not forget where you were in it. */
+async function rememberRoot(handle, path) {
   try {
     const db = await idb();
     const kept = [];
-    for (const h of (await kvGet(db, "recent")) || [])
-      if (!(await h.isSameEntry(handle))) kept.push(h);   /* same folder, one entry */
-    kvPut(db, "recent", [handle, ...kept].slice(0, RECENT_MAX));
+    let had = null;
+    for (const r of ((await kvGet(db, "recent")) || []).map(asRoot))
+      if (await r.handle.isSameEntry(handle)) had = r;    /* same folder, one entry */
+      else kept.push(r);
+    kvPut(db, "recent", [{ handle, path: path ?? had?.path ?? [] }, ...kept]
+      .slice(0, RECENT_MAX));
   } catch (err) { console.warn("could not remember folder:", err); }
 }
 
 async function recallRoots() {
   try {
     const db = await idb();
-    return (await kvGet(db, "recent")) || [];
+    return ((await kvGet(db, "recent")) || []).map(asRoot);
   } catch (err) { return []; }         /* private mode, file://, … — just ask */
+}
+
+/* The chain stored for one folder, in the shape applyPath already speaks. Null
+   when the folder is new, or was last left sitting on its own root — there is
+   nothing to restore then, and mounting plainly is the honest result. */
+async function recallView(handle) {
+  for (const r of await recallRoots())
+    if (await r.handle.isSameEntry(handle))
+      return r.path.length ? { root: handle.name, path: r.path } : null;
+  return null;
 }
 
 async function forgetRoots() {
@@ -2135,25 +2171,72 @@ async function forgetRoots() {
    silently deciding which wins. */
 useFilesystem(FSA);
 usePreview(PreviewRich);
-useRouter(RouterHash);
+/* The router is already the one place that hears "the selection changed": core
+   writes the location there and nowhere else. Wrapping write() here, rather
+   than adding a hook to core, keeps remembering in the only file that knows
+   this build has remembered folders at all — the server build has none. */
+useRouter({
+  ...RouterHash,
+  write(loc, replace) { RouterHash.write(loc, replace); keepView(loc); },
+});
 
 /* A deep link read at startup, held until a root is mounted that can satisfy
    it — the URL names a folder, but a folder is not browsable until the browser
    has granted it. */
 let pendingLoc = null;
 
+/* ── Where the user was, per folder ─────────────────────────────────────────
+   Saved against the mounted root and restored on the way back in. `mounted` is
+   set only once a root is fully mounted: a save fired mid-mount would store the
+   bare root and overwrite the very chain the mount is about to restore. */
+let mounted = null, pendingView = null, viewTimer = null, keptAt = null;
+
+/* Debounced, because walking a column with ↓ held is one location change per
+   keystroke, and an IndexedDB write per keystroke is the O(entries) mistake in
+   a different costume. Unchanged locations return before touching the timer:
+   render() also runs on resize and on the font load, and rescheduling on those
+   would let a busy page starve the write it is waiting to make. */
+function keepView(loc) {
+  if (!mounted || !loc) return;
+  const at = loc.path.join("/");
+  if (at === keptAt) return;
+  keptAt = at;
+  pendingView = { handle: mounted, path: loc.path };
+  clearTimeout(viewTimer);
+  viewTimer = setTimeout(flushView, 400);
+}
+
+/* Also flushed on the way out. A tab closed 100 ms after the last click would
+   otherwise lose that click, and "it forgot the last thing I did" is the
+   failure people actually notice. */
+function flushView() {
+  clearTimeout(viewTimer);
+  const p = pendingView;
+  pendingView = null;
+  if (p) rememberRoot(p.handle, p.path);
+}
+document.addEventListener("visibilitychange",
+  () => { if (document.visibilityState === "hidden") flushView(); });
+
 async function mount(handle, loc) {
   const node = FS.node(handle.name, handle);
   colCache.clear();
   path = [node]; sel = []; focusCol = 0; cursor = { 0: 0 };
+  mounted = null; keptAt = null;
   welcome.hidden = true;
   document.title = handle.name + " — Filemill";
   render();
   await FS.ensureLoaded(node);
 
-  const want = loc ?? takePending(handle.name);
+  /* A link in the address bar beats the remembered chain: the user followed it
+     just now, where the chain is only where they happened to stop last time.
+     applyPath walks as far as the names still exist and stops, so a folder
+     deleted since the last visit lands them at the deepest part that is real
+     rather than on a selection that is not. */
+  const want = loc ?? takePending(handle.name) ?? await recallView(handle);
   if (want && want.path.length) await applyPath(want.path);
   else render();
+  mounted = handle;
   startRouting();
 }
 
@@ -2181,25 +2264,35 @@ async function pickFolder() {
 
 /* Opening a remembered folder. 'granted' mounts straight away; anything else
    needs requestPermission(), which is only allowed from this click. */
-async function openRemembered(handle) {
-  const perm = await handle.queryPermission({ mode: "read" });
-  if (perm === "granted" || await handle.requestPermission({ mode: "read" }) === "granted")
-    return mount(handle);
+async function openRemembered(root) {
+  const perm = await root.handle.queryPermission({ mode: "read" });
+  if (perm === "granted" ||
+      await root.handle.requestPermission({ mode: "read" }) === "granted")
+    return mount(root.handle);
 }
 
-function renderRecents(handles) {
+function renderRecents(roots) {
   const box = document.getElementById("w-recent");
   const list = box.querySelector(".rec-list");
   list.textContent = "";
-  handles.forEach(h => {
+  roots.forEach(r => {
     const b = document.createElement("button");
     b.className = "rec";
     b.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true">${FOLDER_PATH}</svg>`;
-    b.appendChild(document.createTextNode(h.name));
-    b.onclick = () => openRemembered(h);
+    b.appendChild(document.createTextNode(r.handle.name));
+    /* Say where the click will land. The chain is the point of the button, and
+       a folder that reopens three columns deep is a surprise worth spending
+       one line of the welcome screen on. */
+    if (r.path.length) {
+      const where = document.createElement("span");
+      where.className = "rec-where";
+      where.textContent = "› " + r.path.join(" › ");
+      b.appendChild(where);
+    }
+    b.onclick = () => openRemembered(r);
     list.appendChild(b);
   });
-  box.hidden = !handles.length;
+  box.hidden = !roots.length;
 }
 
 /* Both failure modes end at the welcome screen, since there is nothing to show
@@ -2225,19 +2318,21 @@ document.getElementById("w-pick").onclick = pickFolder;
   if (location.protocol === "file:") return showBlocked("file");
 
   pendingLoc = ROUTER.read();
-  const handles = await recallRoots();
-  if (!handles.length) return;
+  const roots = await recallRoots();
+  if (!roots.length) return;
 
   /* A link names its root, so prefer that folder over the most recent one —
      otherwise reopening a bookmark would silently browse the wrong tree. */
   const wanted = pendingLoc?.root
-    ? handles.find(h => h.name === pendingLoc.root) : null;
-  const first = wanted || handles[0];
+    ? roots.find(r => r.handle.name === pendingLoc.root) : null;
+  const first = wanted || roots[0];
 
   /* queryPermission needs no gesture, so a folder still granted from an earlier
-     visit opens with no dialog at all */
-  if (await first.queryPermission({ mode: "read" }) === "granted") return mount(first);
-  renderRecents(handles);
+     visit opens with no dialog at all — and mount() puts the user back on the
+     chain it stored, so the whole return trip costs no clicks */
+  if (await first.handle.queryPermission({ mode: "read" }) === "granted")
+    return mount(first.handle);
+  renderRecents(roots);
 })();
 
 document.fonts.ready.then(() => render(true));
