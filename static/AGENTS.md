@@ -183,9 +183,11 @@ same `entries()`, same `getFile()`, same browser-side plumbing as a picked
 folder. `test-url.py` builds 3 000 real files in it (250 at a time; one at a
 time takes 25 s) and runs `FSA` against them. That is the only place the cost of
 a size sort is visible, because the fake handle answers `getFile()` out of
-memory. Measured there: `entries()` 363 ms, the sweep 851 ms (284 µs per file),
-the comparison 18 ms. What OPFS cannot claim to be is the user's own disk, which
-is `test-e2e.py`'s job.
+memory. Measured there at 3 000 files: `entries()` 363–1 117 ms, the sweep
+851–1 707 ms (284–569 µs per file), the comparison 18–90 ms. Read the ratio, not
+the milliseconds: the sweep lands at 1.5–2.9× the listing in the same run, and
+the check asserts that rather than a wall-clock ceiling. What OPFS cannot claim
+to be is the user's own disk, which is `test-e2e.py`'s job.
 
 **Never run `playwright install`.** Pin the version matching the
 NixOS-installed browsers — currently rev 1228 → `playwright==1.61.0`, which is

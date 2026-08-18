@@ -203,17 +203,19 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
 
       | At 3 000 entries | |
       | --- | --- |
-      | `entries()`, the listing every folder open already pays | 363 ms |
-      | the `getFile()` sweep a size or date sort adds | **851 ms**, 284 µs per file |
-      | the comparison itself | 18 ms |
+      | `entries()`, the listing every folder open already pays | 363–1 117 ms |
+      | the `getFile()` sweep a size or date sort adds | **851–1 707 ms**, 284–569 µs per file |
+      | the comparison itself | 18–90 ms |
       | the app's own share of a sweep, port answering from memory | 6.4 ms |
       | the arrow key straight after a sweep | 10 ms, budget 100 ms |
 
-      So the sweep costs 2.3× the directory read this app already makes on every
-      folder, and roughly what the 304 ms column rebuild beside it costs. It is
-      paid once, when the user asks, on the columns they are looking at: opening
-      `sorting` beside the root reads 5 files, and the nine other directories in
-      that tree are not touched.
+      Those ranges are one machine, quiet against three suites running beside
+      each other; absolute figures here move by 3× with load. What holds across
+      all of them is the ratio: **the sweep costs 1.5 to 2.9× the directory read
+      this app already makes on every folder it opens**, and roughly what the
+      column rebuild beside it costs. It is paid once, when the user asks, on
+      the columns they are looking at. Opening `sorting` beside the root reads
+      5 files, and the nine other directories in that tree are not touched.
 
       | Situation | Result |
       | --------- | ------ |
