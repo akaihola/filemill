@@ -1,4 +1,4 @@
-# Test the app, then publish the single-file build to GitHub Pages.
+# Test both editions, then publish the static one to GitHub Pages.
 #
 # Pages is the natural home for this deliverable, and not only because it is one
 # static file: `showDirectoryPicker()` requires a secure context, so a
@@ -34,19 +34,17 @@ jobs:
         with:
           python-version: "3.12"
 
-      # index.html is generated *and* committed, so that one file is all anyone
-      # needs. That is also how a stale bundle gets published: this fails the
-      # build when src/ has moved on without a rebuild.
-      # Both copies of ui/ are generated: filemill's bundle inlines it, and
-      # pykofinder's package carries it so a wheel is self-contained. Either can
-      # go stale without anything else noticing.
+      # Both copies of ui/ are generated: the static edition inlines it into
+      # index.html, the server edition carries it inside its package so a wheel
+      # is self-contained. Either can go stale without anything else noticing,
+      # and index.html is committed, so a stale one would be published.
       - name: The committed bundle matches ui/
         run: ./build-index.py --check
-        working-directory: filemill
+        working-directory: static
 
       - name: The packaged copy matches ui/
         run: ./tools/sync-ui.py --check
-        working-directory: pykofinder
+        working-directory: server
 
       - name: Install Playwright
         run: |
@@ -57,7 +55,7 @@ jobs:
       # machines, where the browsers come from the store and the pinned version
       # has to match them — see AGENTS.md.
       - name: Test the bundle and the shared sources
-        working-directory: filemill
+        working-directory: static
         run: |
           python3 test-ui.py
           python3 test-ui.py --dev
@@ -71,8 +69,8 @@ jobs:
 
       # The same ui/, driven against a real server — this is what would catch a
       # change that suits one project and breaks the other.
-      - name: pykofinder
-        working-directory: pykofinder
+      - name: The server edition
+        working-directory: server
         run: uv run --with "playwright==1.61.0" pytest
 
   publish:
@@ -88,13 +86,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Only the one file. Nothing under src/ is needed at runtime — that is the
+      # Only the one file. Nothing under ui/ is needed at runtime — that is the
       # point of the bundle — and shipping it would invite links to the unbuilt
       # entry point, which loads a dozen separate scripts.
       - name: Collect the bundle
         run: |
           mkdir -p _site
-          cp filemill/index.html _site/index.html
+          cp static/index.html _site/index.html
 
       - uses: actions/upload-pages-artifact@v3
         with:

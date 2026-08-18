@@ -6,13 +6,13 @@ where a node comes from. Everything source-specific lives here, behind the three
 ports declared in [`../core/ports.js`](../core/ports.js).
 
 Both projects in this repository load these files from here — `filemill/` inlines
-them into its single-file bundle, `pykofinder/` copies them into its package for
+them into its single-file bundle, `filemill/` copies them into its package for
 distribution. Neither has its own version to drift.
 
 Pick a different set of adapters and the same UI browses something else. That is
 the whole mechanism — there is no framework under it.
 
-| | `filemill` (static HTML) | `pykofinder` (server) |
+| | **static** (one HTML file) | **server** (Python) |
 | --- | --- | --- |
 | filesystem | `fsa.js` — File System Access API | `http.js` — `GET /api/dir` |
 | preview | `preview-local.js` — text, images, PDF, `.desktop` | `preview-http.js` — `GET /api/preview`, rendered by Python |
@@ -61,5 +61,5 @@ does not leave the browser, and this is the one thing that talks to the network
 at all — and every failure falls back to `preview-local.js`, so offline costs
 fidelity rather than the pane.
 
-`pykofinder` does not load it: its previews come from Python, including for a
+The server edition does not load it: its previews come from Python, including for a
 local folder (`preview-upload.js`), which is strictly better.

@@ -403,7 +403,7 @@ body {
 .pv-rich .wikilink { color: var(--accent); cursor: pointer; }
 .pv-rich .hljs { background: var(--hover) !important; }
 
-/* Server-rendered preview bodies (pykofinder): markdown, Pygments, docx, pptx.
+/* Server-rendered preview bodies (filemill): markdown, Pygments, docx, pptx.
    The provider supplies the markup; these are the containers it lands in. */
 .pv-rich { margin-bottom: 18px; overflow-wrap: anywhere; }
 .pv-rich > :first-child { margin-top: 0; }

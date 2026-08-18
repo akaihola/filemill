@@ -1,12 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Router — the real URL path, for the server build.
 
-       /src/pykofinder/app.py
+       /src/filemill/app.py
 
    The path *is* the file path relative to the browsed root: no mount prefix,
    no ?path=, nothing in the address bar that is not the file you are looking
    at. Query parameters stay free for representation and layout state
-   (pykofinder-view, layout, hidden) and are preserved verbatim through every
+   (filemill-view, layout, hidden) and are preserved verbatim through every
    navigation, because they say how to show the file, not which one.
 
    Needs a server that serves the app shell for any path under BASE — which is

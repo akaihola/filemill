@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Preview provider — rich rendering, fetched on demand.
 
-   Markdown, syntax highlighting and .docx, to match what pykofinder's Python
+   Markdown, syntax highlighting and .docx, to match what filemill's Python
    renderers produce. The libraries are an order of magnitude larger than this
    app, so they are not in the bundle: they are imported from a CDN the first
    time a file that needs one is previewed, and cached for the session.
@@ -98,7 +98,7 @@ async function markdown(text) {
       },
     }).use(footnote).use(deflist).use(tasklists).use(anchor);
 
-    /* pykofinder renders [[PageName]]; markdown-it has no such plugin, and the
+    /* filemill renders [[PageName]]; markdown-it has no such plugin, and the
        rule is small enough that matching it is cheaper than finding one. The
        target is resolved by the shared navigator, not by the browser, so the
        link stays inside the app. */

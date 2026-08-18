@@ -24,7 +24,7 @@ async function mount(handle, loc) {
   colCache.clear();
   path = [node]; sel = []; focusCol = 0; cursor = { 0: 0 };
   welcome.hidden = true;
-  document.title = handle.name + " — filemill";
+  document.title = handle.name + " — Filemill";
   render();
   await FS.ensureLoaded(node);
 

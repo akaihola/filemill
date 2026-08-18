@@ -60,7 +60,7 @@ document.body.insertAdjacentHTML("afterbegin", `
 
 <div id="welcome">
   <svg class="mark" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/></svg>
-  <h1 id="w-title">filemill</h1>
+  <h1 id="w-title">Filemill</h1>
   <p id="w-msg">Pick a folder on this machine to browse it in Miller columns.
      Nothing leaves the browser — the folder is read locally, on demand.</p>
   <button class="btn" id="w-pick">Choose Folder…</button>
