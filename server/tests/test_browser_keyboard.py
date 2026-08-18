@@ -6,6 +6,7 @@ import subprocess
 import time
 from pathlib import Path
 from textwrap import dedent
+from urllib.parse import urlsplit
 
 import pytest
 
@@ -18,6 +19,38 @@ def _free_port() -> int:
     port = sock.getsockname()[1]
     sock.close()
     return port
+
+
+def _proxy_from_env() -> dict[str, str] | None:
+    """Return Playwright's proxy settings from ``$HTTPS_PROXY``, or None.
+
+    The finder shell loads htmx from unpkg.com and mermaid from cdn.jsdelivr.net.
+    Chromium reads ``$HTTPS_PROXY`` but drops the credentials in it, so behind an
+    authenticated proxy both scripts come back "407 Proxy Authentication
+    Required", ``window.htmx`` stays undefined, and every click is ignored. The
+    tests then fail on their navigation assertions, which reads like a routing
+    regression and is not one. Passing the credentials here is what makes these
+    tests run in a sandbox at all.
+    """
+    url = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
+    if not url:
+        return None
+    parts = urlsplit(url)
+    if not parts.hostname or not parts.username:
+        return None
+    return {
+        "server": f"{parts.scheme}://{parts.hostname}:{parts.port}",
+        "username": parts.username,
+        "password": parts.password or "",
+        # Without a bypass Chromium sends the test server's own 127.0.0.1 address
+        # to the proxy, which answers 502 Bad Gateway and no page ever loads.
+        "bypass": os.environ.get("NO_PROXY") or "localhost,127.0.0.1,::1",
+    }
+
+
+def _launch(p):
+    """Headless Chromium, carrying the environment's proxy when there is one."""
+    return p.chromium.launch(headless=True, proxy=_proxy_from_env())
 
 
 @pytest.fixture()
@@ -137,7 +170,7 @@ def _selected_text(page, col_id: str) -> str:
 @pytest.mark.integration
 def test_arrow_left_keeps_browser_url_in_sync(live_server: str, browser_root: Path):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         page = browser.new_page(viewport={"width": 1400, "height": 900})
         page.goto(live_server, wait_until="networkidle")
         page.wait_for_timeout(800)
@@ -168,7 +201,7 @@ def test_nested_column_navigation_keeps_root_mount_in_url(
     live_server: str, browser_root: Path
 ):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         page = browser.new_page(viewport={"width": 1400, "height": 900})
         page.goto(live_server, wait_until="networkidle")
         page.wait_for_timeout(800)
@@ -197,7 +230,7 @@ def test_legacy_query_url_canonicalizes_after_nested_navigation(
     legacy_path = browser_root / "my-knowledge"
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         page = browser.new_page(viewport={"width": 1400, "height": 900})
         page.goto(
             f"{live_server}/f/?path={legacy_path}",
@@ -231,7 +264,7 @@ def test_rendered_relative_markdown_link_uses_root_relative_url(
     working, which is the other half of the story.
     """
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         page = browser.new_page(viewport={"width": 1400, "height": 900})
         page.goto(
             f"{live_server}/f/{browser_root.name}/my-knowledge/docs/topic.md",
@@ -260,7 +293,7 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
     live_server: str,
 ):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         page = browser.new_page(viewport={"width": 1400, "height": 900})
         page.goto(live_server, wait_until="networkidle")
         page.wait_for_timeout(800)
@@ -331,7 +364,7 @@ def test_mobile_folder_click_reveals_new_column_without_flushing_left(
     never fired and the CSS snap locked the new column flush-left.
     """
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -416,7 +449,7 @@ def test_mobile_file_click_reveals_preview_without_flushing_left(
     scrolled all the way to the end).
     """
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -489,7 +522,7 @@ def test_mobile_directory_restore_runtime_scroll_position_is_stable(
     browser_root: Path,
 ):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -514,7 +547,7 @@ def test_mobile_file_restore_runtime_scroll_position_is_stable(
     browser_root: Path,
 ):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -538,7 +571,7 @@ def test_mobile_folder_navigation_reveals_target_column_completely_at_runtime(
     live_server: str,
 ):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -573,7 +606,7 @@ def test_mobile_preview_scroll_position_is_not_zero_after_navigation(
     live_server: str,
 ):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -608,7 +641,7 @@ def test_mobile_file_restore_scroll_position_is_not_zero(
     browser_root: Path,
 ):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -640,7 +673,7 @@ def test_mobile_navigation_runtime_scroll_regression_is_covered(
     live_server: str,
 ):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -663,7 +696,7 @@ def test_mobile_preview_runtime_scroll_regression_is_covered(
     live_server: str,
 ):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -689,7 +722,7 @@ def test_mobile_restore_runtime_scroll_regression_is_covered(
     browser_root: Path,
 ):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -713,7 +746,7 @@ def test_mobile_restore_preview_runtime_scroll_regression_is_covered(
     browser_root: Path,
 ):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -734,7 +767,7 @@ def test_mobile_restore_preview_runtime_scroll_regression_is_covered(
 @pytest.mark.integration
 def test_mobile_minimal_scroll_runtime_behavior_smoke(live_server: str):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -759,7 +792,7 @@ def test_mobile_minimal_scroll_runtime_behavior_smoke(live_server: str):
 @pytest.mark.integration
 def test_mobile_column_reveal_and_preview_reveal_both_work(live_server: str):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -784,7 +817,7 @@ def test_mobile_column_reveal_and_preview_reveal_both_work(live_server: str):
 @pytest.mark.integration
 def test_mobile_scroll_regression_end_to_end(live_server: str):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -809,7 +842,7 @@ def test_mobile_scroll_regression_end_to_end(live_server: str):
 @pytest.mark.integration
 def test_mobile_scroll_regression_directory_only(live_server: str):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -830,7 +863,7 @@ def test_mobile_scroll_regression_directory_only(live_server: str):
 @pytest.mark.integration
 def test_mobile_scroll_regression_preview_only(live_server: str):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -856,7 +889,7 @@ def test_mobile_restore_regression_directory_only(
     browser_root: Path,
 ):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -880,7 +913,7 @@ def test_mobile_restore_regression_preview_only(
     browser_root: Path,
 ):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -901,7 +934,7 @@ def test_mobile_restore_regression_preview_only(
 @pytest.mark.integration
 def test_mobile_scroll_behavior_runtime_assertions(live_server: str):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -928,7 +961,7 @@ def test_mobile_restore_behavior_preview_assertions(
     browser_root: Path,
 ):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -950,7 +983,7 @@ def test_mobile_restore_behavior_preview_assertions(
 @pytest.mark.integration
 def test_mobile_scroll_behavior_preview_assertions(live_server: str):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -974,7 +1007,7 @@ def test_mobile_scroll_behavior_preview_assertions(live_server: str):
 @pytest.mark.integration
 def test_mobile_scroll_regression_user_case_is_covered(live_server: str):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -995,7 +1028,7 @@ def test_mobile_scroll_regression_user_case_is_covered(live_server: str):
 @pytest.mark.integration
 def test_mobile_scroll_regression_user_case_preview_is_covered(live_server: str):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
@@ -1018,7 +1051,7 @@ def test_mobile_scroll_regression_user_case_preview_is_covered(live_server: str)
 @pytest.mark.integration
 def test_mobile_scroll_runtime_minimal_reveal_assertion(live_server: str):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch(p)
         context = browser.new_context(
             viewport={"width": 390, "height": 844},
             is_mobile=True,
