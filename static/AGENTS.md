@@ -37,6 +37,7 @@ the user makes to your behaviour — capture it here so it survives a context re
 │   │   ├── ports.js        ← the FS / PREVIEW / ROUTER seams
 │   │   ├── icons.js        ← Seti lookup, folder glyph, esc()
 │   │   ├── state.js        ← globals, visibleKids, measure, fmt*
+│   │   ├── sort.js         ← name/size/mtime order + the getFile() sweep
 │   │   ├── render.js       ← buildCol, columnFor, render, preview
 │   │   ├── layout.js       ← the fold dial: stripSpan, layout, applyScroll
 │   │   ├── trail.js        ← the SVG elbows between columns
@@ -66,8 +67,9 @@ the user makes to your behaviour — capture it here so it survives a context re
     ├── index-dev.html          ← dev entry point: <script src="../ui/…">
     ├── build-index.py          ← index-dev.html + ../ui → index.html
     ├── hotreload.py            ← optional CDP live-patcher for dev mode
-    ├── test-ui.py              ← headless suite, fake handle (84 checks)
-    ├── test-url.py             ← deep-link suite over localhost (12 checks)
+    ├── test-ui.py              ← headless suite, fake handle (104 checks)
+    ├── test-url.py             ← needs a real origin: deep links, and a real
+    │                             filesystem through OPFS (15 checks)
     ├── test-rich.py            ← CDN renderers: offline/switch/loaded (14)
     └── test-e2e.py             ← headed suite, real folder + real picker
 ```
@@ -169,9 +171,21 @@ path runs against stub modules served from the same loopback port via
 because a failed CDN import logs console errors that would drown their own
 assertions.
 
-`test-url.py` is separate because it needs a real origin: `history.pushState`
-throws on the opaque origin of a `file://` page, which is the case `test-ui.py`
-covers. It serves the repo on a loopback port and drives the same fake handle.
+`test-url.py` is separate because it needs a real origin, and two things need
+one. `history.pushState` throws on the opaque origin of a `file://` page, which
+is the case `test-ui.py` covers. So does `navigator.storage.getDirectory()`,
+with `SecurityError: … unsafe for access within a Web application`. It serves
+the repo on a loopback port and drives the same fake handle for the links.
+
+**The origin private file system is how this repo tests real files headlessly.**
+OPFS hands out a genuine `FileSystemDirectoryHandle` with no folder dialog:
+same `entries()`, same `getFile()`, same browser-side plumbing as a picked
+folder. `test-url.py` builds 3 000 real files in it (250 at a time; one at a
+time takes 25 s) and runs `FSA` against them. That is the only place the cost of
+a size sort is visible, because the fake handle answers `getFile()` out of
+memory. Measured there: `entries()` 363 ms, the sweep 851 ms (284 µs per file),
+the comparison 18 ms. What OPFS cannot claim to be is the user's own disk, which
+is `test-e2e.py`'s job.
 
 **Never run `playwright install`.** Pin the version matching the
 NixOS-installed browsers — currently rev 1228 → `playwright==1.61.0`, which is
@@ -237,7 +251,17 @@ folders are restored from IndexedDB — reloading is cheap.
 | Folder picker as a full-screen welcome state | `showDirectoryPicker()` needs a user gesture and there is nothing to show before one exists |
 | `kids === null` means "not read yet" | Distinguishes an unread directory (spinner) from an empty one ("Empty") |
 | `node.loading` promise, awaited by concurrent callers | Fast arrow-key navigation can hit the same directory twice before the first read finishes |
-| Metadata fetched only on preview | `getFile()` is a syscall per file — per row it would stall large directories |
+| Metadata fetched only on preview, or when a sort asks for it | `getFile()` is a syscall per file: 284 µs each, 851 ms for 3 000 of them, measured against a real filesystem in `test-url.py`. Per row on every open it would stall large directories |
+| Sorting by name is the default and reads nothing | The listing already carries the names. Only size and mtime need the sweep, so the expensive path is entered by the option that asked for it and by nothing else |
+| The sweep runs from `render()`, over the columns in `path` | No navigation path has to remember to ask, and nothing off screen is read. Opening one folder beside the root reads those two columns, not the tree |
+| `ensureMeta` mirrors `FS.ensureLoaded` | One in-flight promise on the node, one writer of the field, so a second render joins the sweep running instead of starting a rival — the same reason `node.loading` exists |
+| `columnFor` treats `metaDone` like `kidsRef` | A sweep reorders the rows, so the DOM built before it is no longer the column. Testing it there means a repaint the sweep chose to drop self-heals on the next render, instead of leaving an order that is no longer true |
+| A sweep repaints only while its node is still in `path` | It can outlive the column that started it. What it read is kept either way, because a file's size is a fact about that file and stepping back into the folder finds it there |
+| Unreadable metadata sorts last in **both** directions | "Biggest first" asks what is biggest; a file the app could not open is not the answer, and putting one at the top is how a permission error gets read as a result. The row is never dropped |
+| Directories are never ordered by size or time | No port can give a directory either number: there is no `getFile()` for a directory handle, and pykofinder's listing sends metadata for files only |
+| The sweep catches a rejecting `loadMeta` per row | The port promises to *fill* `node.meta`, not that it never rejects. One escaping rejection would leave `metaLoading` set for good and the column spinning until the tab closed |
+| The sort lives in `localStorage`, not the per-folder record | It is how a person reads a list, not a property of the folder. The record also offers no hook: `keepView` fires from `ROUTER.write`, which core calls when the *location* changes, and choosing a sort moves nobody |
+| One `Intl.Collator`, not `localeCompare` per call | The comparator runs ~35 000 times per column build at 3 000 entries. Reusing it took ordering 3 000 real files from 116.6 ms to 18.2 ms |
 | `pvToken` guards preview fills | A slow read for a file you have navigated away from must not overwrite the current preview |
 | Horizontal scroll = fold dial, not translation | `#stage` is sticky so nothing moves; `scrollLeft` is read as 0–100 %. Keeps the preview readable with no manual splitter |
 | Column DOM cached per `(node, kids)` in `colCache` | Rebuilding a 3 000-entry column per keystroke cost ~500 ms. Re-renders now only re-apply depth/selection/cursor classes |
