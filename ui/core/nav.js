@@ -92,6 +92,10 @@ async function refreshColumn(i) {
     const before = new Set(visibleKids(node).map(k => k.name));
     node.kids = null;
     node.denied = undefined;
+    /* The entries are about to be different objects, so what was swept is about
+       to be about files that are no longer in this listing. A size sort re-reads
+       them; a name sort never asked. */
+    node.metaDone = false;
     /* Nothing renders between here and the read landing. The column cache still
        holds the previous DOM, so the screen keeps showing the old listing
        instead of flashing back to "Reading…" and losing its scroll position. */
