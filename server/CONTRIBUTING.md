@@ -185,8 +185,20 @@ reads `$HTTPS_PROXY` and passes the credentials to Chromium, which reads the
 variable but drops the credentials in it.
 
 `tests/test_browser_new_ui.py` drives the `/n/` shared UI, which serves every
-asset itself. `test_nothing_is_fetched_from_a_cdn` holds it to that, so those 27
-tests pass with no network at all.
+asset itself, so those 27 tests pass with no network at all. Measured on a host
+with no proxy credentials given to Chromium: 27 passed in 115 s.
+
+`test_nothing_is_fetched_from_a_cdn` is what holds the `/n/` UI to that, and it
+now watches both halves. The served half goes through `preview-http.js` and
+`GET /api/preview`; the local-folder half goes through `preview-upload.js` and
+`POST /api/render`. It used to watch only the served half, which left the half
+its own docstring is about unchecked.
+
+The adapter that would break this is `ui/adapters/preview-rich.js`, which
+lazy-loads a renderer from a CDN. `tools/sync-ui.py` does not vendor it into
+`src/pykofinder/ui/adapters/`, and that omission is load-bearing. If a future
+sync ships it, `test_nothing_is_fetched_from_a_cdn` fails with the fetched URL in
+the assertion, which is the failure you want.
 
 ### Wait for an Element, Never for a Duration
 
