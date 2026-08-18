@@ -113,7 +113,8 @@ function ensureMeta(node) {
       /* One status write per row would cost more than the sweep it reports.
          Every 64th is an update per ~20 ms at the rates measured here, which is
          faster than anyone reads. */
-      .then(() => { if (--node.metaPending % 64 === 0) sortSay(sortStatus()); })));
+      .then(() => { if (--node.metaPending > 0 && node.metaPending % 64 === 0)
+                      sortSay(sortStatus()); })));
     node.metaSwept = { n: todo.length, ms: Math.round(performance.now() - t0) };
     /* A refresh replaces node.kids wholesale. A sweep that started on the old
        array has just filled objects nobody can see, and marking the *new* list
@@ -168,8 +169,14 @@ const sortSay = msg => {
    double-counts sweeps which overlapped. */
 function sortStatus() {
   const { key, desc } = state.sort;
-  const left = path.reduce((n, x) => n + (x.metaLoading ? x.metaPending : 0), 0);
-  if (left) return `⇅ ${SORT_LABEL[key]} — reading ${left} files…`;
+  /* `metaLoading` decides, not the count, because the count reaches 0 a
+     microtask before the sweep resolves. Deciding on the count would let the
+     strip report a finished sort while the column beside it still spins, and
+     the two are describing the same thing. */
+  if (path.some(x => x.metaLoading)) {
+    const left = path.reduce((n, x) => n + (x.metaLoading ? x.metaPending : 0), 0);
+    return `⇅ ${SORT_LABEL[key]} — reading ${Math.max(left, 1)} files…`;
+  }
   if (key === "name" && !desc) return "";
   const deepest = sortNeedsMeta()
     && [...path].reverse().find(n => n.metaSwept && n.metaSwept.n);

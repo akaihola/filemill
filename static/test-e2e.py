@@ -249,6 +249,10 @@ async def main():
 
         await pg.goto(f"http://localhost:{PORT}/index.html")
         await pg.wait_for_timeout(1200)
+        # The profile is persistent, so a run that stopped halfway through the
+        # sort section would leave its key in localStorage and re-order every
+        # column the checks below read.
+        await pg.evaluate("setSort('name', false)")
 
         print("\n── Startup ──────────────────────────────────────────────────")
         mounted = await pg.evaluate("welcome.hidden")
