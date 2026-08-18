@@ -136,15 +136,27 @@ def live_server(browser_root: Path):
             proc.wait(timeout=5)
 
 
+_FIND_LINK = """() => {
+    const col = document.getElementById(%r);
+    return col && Array.from(col.querySelectorAll('li a'))
+        .find(a => a.textContent.includes(%r));
+}"""
+
+
 def _click_item(page, col_id: str, text: str) -> None:
-    page.evaluate(
-        f"""() => {{
-            const col = document.getElementById({col_id!r});
-            const link = col && Array.from(col.querySelectorAll('li a'))
-                .find(a => a.textContent.includes({text!r}));
-            if (link) link.click();
-        }}"""
-    )
+    """Click the entry whose text contains *text* in column *col_id*.
+
+    The wait is the point. The shell fills its columns after the page reports
+    networkidle, so on a loaded machine a fixed sleep can expire while #col-0 is
+    still empty. This helper used to guard the click with `if (link)` and return
+    quietly when the entry was missing, which turned that race into an
+    unexplained `assert 0 == 1` two lines later in the caller. Measured on a
+    4-core host with 4 busy loops running: 2 of 6 attempts found no #col-0 at
+    800 ms and the element was there by 5700 ms.
+    """
+    finder = _FIND_LINK % (col_id, text)
+    page.wait_for_function(f"() => Boolean(({finder})())", timeout=20000)
+    page.evaluate(f"() => {{ ({finder})().click(); }}")
 
 
 def _first_entry_text(page, col_id: str) -> str:
