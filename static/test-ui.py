@@ -525,6 +525,23 @@ async def main():
         check("The ⟳ button on the column header does the same job as F5",
               await pg.eval_on_selector_all(rows1, "e=>e.length") == before + 1)
 
+        # A re-read replaces every node object in the column, including the one
+        # whose preview is on screen. The guard is pvToken, the same counter a
+        # slow file read already answers to: the re-render starts a new fill,
+        # which retires the old one wherever it had got to.
+        await in_refresh()
+        await pg.keyboard.press("ArrowDown")           # one.txt, contents "1"
+        await pg.wait_for_timeout(500)
+        was = await pg.evaluate("pvToken")
+        await pg.keyboard.press("F5")
+        await pg.wait_for_timeout(700)
+        now = await pg.evaluate("pvToken")
+        body = (await pg.inner_text(".pv-text")).strip()
+        check("A refresh retires the preview built for the node it replaced, "
+              "and the new one shows the same file",
+              now > was and body == "1" and await pg.evaluate("sel[1]") == "one.txt",
+              f"pvToken {was}→{now}, preview {body!r}")
+
         # The entry you were on is gone. Selecting whatever slid into its place
         # would show a preview of a file nobody asked for, so nothing is
         # selected — but the cursor stays, because ↑/↓ should resume where you
