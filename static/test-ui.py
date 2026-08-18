@@ -1112,13 +1112,39 @@ async def main():
             sweep = await pg.evaluate("__sweepbench()")
             await pg.evaluate("setSort('size', false)")
             await pg.wait_for_timeout(300)
-            after = await pg.evaluate("__keybench(20)")
+            swept_key = await pg.evaluate("__keybench(20)")
+            # Two assertions, because a stopwatch alone cannot carry this one.
+            #
+            # `arrow` is the same key, same column, earlier in this same run.
+            # A fixed ceiling would decide by machine load rather than by code:
+            # an arrow key at 3 000 entries came in between 11.5 ms and 89.9 ms
+            # over 12 runs here and 106 ms on a slower machine, against a 100 ms
+            # budget. Sorting by size does not move it — a probe alternating the
+            # keys on one column measured 19.4–40.4 ms by size against
+            # 16.4–45.8 ms by name, less spread than either has on its own.
+            #
+            # But `arrow + budget` is loose enough to hide a re-sort per
+            # keystroke, which costs 18–90 ms at this size. So the second
+            # assertion is exact and has no clock in it: after 20 presses the
+            # focused column must still be the *same cached entry*. Rebuilding
+            # it per keystroke is the O(entries) regression the column cache
+            # exists to prevent, and `metaDone` is a new way to trip it.
+            # Verified by injecting exactly that (a buildCol whose metaRef never
+            # matches): the keystroke went to 639.5 ms against a 109 ms
+            # threshold, and the identity check went false.
+            kept = await pg.evaluate(
+                "(() => { const c = colCache.get(path[focusCol]);"
+                " for (let i = 0; i < 20; i++)"
+                "   document.dispatchEvent(new KeyboardEvent('keydown', {key:'ArrowDown'}));"
+                " return colCache.get(path[focusCol]) === c; })()")
             check(f"{n:,} entries: a size sort sweeps the directory in "
                   f"{sweep['ms']} ms of app time ({sweep['reads']} getFile() "
-                  f"calls), and the next keystroke costs {after} ms "
-                  f"(budget {budget} ms)",
-                  after < budget and sweep["reads"] == n and sweep["rows"] == n,
-                  f"{sweep['reads']} reads for {sweep['rows']} rows")
+                  f"calls); the keystroke after it costs {swept_key} ms against "
+                  f"{arrow} ms for the same key before it, and rebuilds nothing",
+                  swept_key < arrow + budget and kept and sweep["reads"] == n
+                  and sweep["rows"] == n,
+                  f"{sweep['reads']} reads for {sweep['rows']} rows, "
+                  f"column {'kept' if kept else 'REBUILT'}")
             await pg.evaluate("setSort('name', false)")
 
         check("No console errors anywhere", not errs, "; ".join(errs[:3]))
