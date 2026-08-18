@@ -1,4 +1,4 @@
-# Contributing to filemill
+# Contributing to Filemill — server edition
 
 ## Project context
 
@@ -42,12 +42,12 @@ tests/
 
 ### The shared UI
 
-The frontend lives at **`../ui/`**, the repository root's shared directory.
-filemill builds its single-file bundle from it and this package serves it, so
-the two are the same application — not two that resemble each other. The only
+The frontend lives at **`../ui/`**, the repository root's shared directory. The
+static edition builds its single-file bundle from it and this package serves it,
+so the two are the same application — not two that resemble each other. The only
 difference is which adapters the shared `core/` is handed:
 
-| | filemill | filemill |
+| | **static** | **server** (here) |
 | --- | --- | --- |
 | filesystem | File System Access API | `GET /api/dir` |
 | preview | text/image, in the browser | `GET /api/preview` — **this module's renderers** |
@@ -82,8 +82,8 @@ Because it is one repository, a UI change lands in both projects in one commit;
 the copy is a packaging step, not a synchronisation problem.
 `../ui/adapters/README.md` documents the three ports.
 
-The new UI is mounted at `UI_BASE = "/n/"` while the HTMX UI at `/f/` is still
-the default. Cutting over means pointing `UI_BASE` at `/`, after which the URL
+The shared UI is mounted at `UI_BASE = "/n/"` while the HTMX UI at `/f/` is
+still the default. Cutting over means pointing `UI_BASE` at `/`, after which the URL
 path *is* the file path relative to ROOT, with no prefix.
 
 ### Key invariants
@@ -100,9 +100,10 @@ path *is* the file path relative to ROOT, with no prefix.
 - Every path in the `/api/*` and `/n/` routes is **relative to ROOT**; absolute
   paths are refused outright (`api.rel_to_abs`), because `ROOT / "/etc/passwd"`
   is `/etc/passwd`. Containment is still checked afterwards by `_resolve_safe()`.
-- The shared UI fetches nothing from a network: every asset it needs is served
-  from `ui/`. The `/f/` UI's htmx and mermaid CDN tags are why its browser tests
-  cannot run offline.
+- The shared UI fetches nothing from a network here: every asset it needs is
+  served from `ui/`, and previews are rendered in Python. (The static edition
+  fetches renderers from a CDN; this one has no reason to.) The `/f/` UI's htmx
+  and mermaid CDN tags are why *its* browser tests cannot run offline.
 - Client-side keyboard navigation must keep the browser URL in sync with the visible Finder state; if a key handler changes columns/preview without an HTMX request, it must update history explicitly.
 - PWA static assets (`/manifest.json`, `/sw.js`, `/icons/*`) are served from
   `src/filemill/static/` and are bundled with the package; they are

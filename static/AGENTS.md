@@ -1,4 +1,4 @@
-# filemill — Project Agent Guide
+# Filemill, static edition — Project Agent Guide
 
 ## What this project is
 
