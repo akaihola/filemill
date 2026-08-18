@@ -64,13 +64,32 @@ Quick start:
 
 ```bash
 uv sync
-timeout 120 uv run pytest          # unit + integration tests with coverage
+timeout 1800 uv run pytest         # everything, browser tests included
 
-# Real-browser regression tests (requires PLAYWRIGHT_BROWSERS_PATH)
-# Covers ArrowLeft URL sync and the keyboard-only parent-column survival regression.
-timeout 120 PLAYWRIGHT_BROWSERS_PATH="$PLAYWRIGHT_BROWSERS_PATH" \
-  uv run --with "playwright==1.57.0" pytest tests/test_browser_keyboard.py
+# Just the 56 real-browser tests (needs PLAYWRIGHT_BROWSERS_PATH; takes ~9 min)
+timeout 1800 uv run pytest tests/test_browser_keyboard.py tests/test_browser_new_ui.py
 ```
+
+Note the absence of `--with`. `uv sync` installs the Playwright the lock pins,
+and that version is the one whose driver matches the browsers Nix provides.
+`uv run --with "playwright==1.57.0"` overrides the lock and fails like this:
+
+```
+BrowserType.launch: Executable doesn't exist at
+  .../chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+```
+
+The message ends by telling you to run `playwright install`. Do not. Nix already
+ships the browsers, one revision per bundle, and `pyproject.toml` pins the
+Playwright that matches them.
+
+The 29 tests in `tests/test_browser_keyboard.py` need outbound network: the `/f/`
+finder shell loads htmx from `unpkg.com` and mermaid from `cdn.jsdelivr.net`.
+They read `$HTTPS_PROXY` and hand Chromium its credentials, because Chromium
+reads that variable but drops the username and password in it. Without a route
+to those two hosts the page still draws its first column and then ignores every
+click, which reads like a navigation bug and is not one. The 27 tests in
+`tests/test_browser_new_ui.py` serve every asset themselves and pass offline.
 
 ## Architecture
 

@@ -132,18 +132,60 @@ path *is* the file path relative to ROOT, with no prefix.
 
 ```bash
 uv sync
-uv run pytest                  # unit + integration (with coverage)
+timeout 1800 uv run pytest     # everything, browser tests included
 
-# Real-browser regression tests (optional; requires PLAYWRIGHT_BROWSERS_PATH)
-# Keep browser regressions here for keyboard URL sync and keyboard-only column-survival flows.
-PLAYWRIGHT_BROWSERS_PATH="$PLAYWRIGHT_BROWSERS_PATH" \
-  uv run --with "playwright==1.57.0" pytest tests/test_browser_keyboard.py
+# Just the 56 real-browser tests (needs PLAYWRIGHT_BROWSERS_PATH; takes ~9 min)
+timeout 1800 uv run pytest tests/test_browser_keyboard.py tests/test_browser_new_ui.py
 ```
 
-> **Important:** always wrap `uv run pytest` in a shell-level timeout (e.g.
-> `timeout 120 uv run pytest`) when calling it from a script or agent tool.
-> SSE streaming tests that misbehave can otherwise block indefinitely (see
+> **Important:** always wrap `uv run pytest` in a shell-level timeout when
+> calling it from a script or agent tool. SSE streaming tests that misbehave can
+> otherwise block indefinitely (see
 > [issue #17](ISSUES.md#17--fix-hanging-sse-test-test_sse_reload_exists_with_live_mode)).
+> Use 1800 seconds, not 120: the browser tests alone take about 9 minutes.
+
+### Do Not Pass `--with playwright==…`
+
+Earlier versions of this file told you to. The command it gave now fails:
+
+```
+$ uv run --with "playwright==1.57.0" pytest tests/test_browser_new_ui.py
+BrowserType.launch: Executable doesn't exist at
+  .../chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+╔════════════════════════════════════════════════════════════╗
+║ Looks like Playwright was just installed or updated.       ║
+║ Please run the following command to download new browsers: ║
+║     playwright install                                     ║
+╚════════════════════════════════════════════════════════════╝
+```
+
+Ignore that banner. Each Playwright release carries exactly one browser
+revision, each Nix browser bundle carries exactly one, and they have to be the
+same one. `$PLAYWRIGHT_BROWSERS_PATH` here holds `chromium-1228` and
+`chromium_headless_shell-1228`, so 1.61.x is the only version that launches:
+1.57.0 asks for revision 1200 and 1.62.0 asks for 1234. `pyproject.toml` pins
+`playwright~=1.61.0` for that reason, and `--with` overrides the pin. Running
+`playwright install` would download a fourth copy of a browser Nix already
+provides, so do not run it. Re-pin from the constraint file instead:
+
+```bash
+uv lock --upgrade-package "$(grep -E '^playwright[=<>~!]' "$UV_CONSTRAINT")"
+```
+
+### The `/f/` Browser Tests Need Outbound Network
+
+`tests/test_browser_keyboard.py` drives the HTMX finder shell, which loads htmx
+from `unpkg.com` and mermaid from `cdn.jsdelivr.net`. With no route to those two
+hosts the page draws `#col-0` and then ignores every click, so the tests fail on
+their navigation assertions and look like a routing regression. Behind an
+authenticated proxy the tell is `407 Proxy Authentication Required` in the
+*browser* console, which pytest never prints. `_proxy_from_env()` in that file
+reads `$HTTPS_PROXY` and passes the credentials to Chromium, which reads the
+variable but drops the credentials in it.
+
+`tests/test_browser_new_ui.py` drives the `/n/` shared UI, which serves every
+asset itself. `test_nothing_is_fetched_from_a_cdn` holds it to that, so those 27
+tests pass with no network at all.
 
 ## Submitting changes
 
