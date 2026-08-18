@@ -27,6 +27,7 @@ from pathlib import Path
 import pytest
 
 pytest.importorskip("playwright")
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
 pytestmark = pytest.mark.integration
@@ -278,22 +279,52 @@ def test_a_local_folder_replaces_the_served_tree(page):
 
 
 def _click_local(page, name: str, selector: str) -> None:
-    """Click a local-folder entry, wait for the server to answer, then to draw.
+    """Click a local-folder entry, then hold the render it triggers to account.
 
     `preview-upload.js` posts the bytes to `POST /api/render`, because the server
     cannot read a file the browser granted through the File System Access API.
-    Waiting a fixed 5000 ms for the rendered element was a bet on how fast that
-    round trip is, and the bet is not ours to make: a peer agent measured it
-    losing on their host while the same two tests passed here in 24.68 s with
-    four busy loops running. Waiting for the response names the round trip, so a
-    slow render and a missing element now fail with different messages.
+    Two of its branches are silent by design, and from the outside they look
+    identical to each other and to a slow machine::
+
+        if (!r.ok) return PreviewLocal.render(node);   /* draws no .pv-rich */
+        return html.trim() ? `<div class="pv-rich">${html}</div>` : null;
+
+    A non-2xx falls back to a renderer that emits no ``.pv-rich`` at all, and an
+    empty body draws nothing. Either way the caller waits out its timeout for a
+    selector that will never exist, which is a symptom rather than a cause. A
+    peer agent hit exactly that on another host: the POST completed and
+    ``#preview .pv-rich h1`` never appeared, and the timeout said nothing about
+    why. So this reports the status, the first bytes, and whether ``.pv-rich``
+    reached the DOM, which separates a bad response from an error card that
+    simply has no heading in it.
     """
     with page.expect_response(
         lambda r: r.url.endswith("/api/render") and r.request.method == "POST",
         timeout=30000,
-    ):
+    ) as caught:
         page.click(f'.col[data-i="0"] .row:has-text("{name}")')
-    page.wait_for_selector(selector, timeout=15000)
+    response = caught.value
+    body = response.text()
+    assert response.ok, (
+        f"POST /api/render answered {response.status} for {name}, so "
+        f"preview-upload.js fell back silently and drew no .pv-rich. "
+        f"First 300 bytes: {body[:300]!r}"
+    )
+    assert body.strip(), (
+        f"POST /api/render answered 200 with an empty body for {name}, so "
+        f"preview-upload.js returned null and drew nothing."
+    )
+    try:
+        page.wait_for_selector(selector, timeout=15000)
+    except PlaywrightTimeoutError as exc:
+        raise AssertionError(
+            f"{selector} never appeared for {name}. POST /api/render answered "
+            f"{response.status} with {len(body)} bytes, and #preview .pv-rich "
+            f"count is {page.locator('#preview .pv-rich').count()}. A count of 0 "
+            f"means nothing was injected; a count of 1 means the server rendered "
+            f"something without that element in it. "
+            f"First 300 bytes: {body[:300]!r}"
+        ) from exc
 
 
 def test_local_files_are_still_rendered_by_python(page):
