@@ -188,16 +188,46 @@ variable but drops the credentials in it.
 asset itself, so those 27 tests pass with no network at all. Measured on a host
 with no proxy credentials given to Chromium: 27 passed in 115 s.
 
-Two measurements of this file disagree, and the disagreement is unresolved. On
+### Two Measurements of the Local-Folder Tests Disagree
+
+The disagreement is unresolved, and both conditions are reproducible. On
 2026-08-18 one agent recorded 27 passed in 115 s and 118 s on a 4-core host,
-including the two local-folder tests three times alone at 9.42 s, 9.26 s and
-8.60 s, and passing under four busy loops in 24.68 s. A second agent on a
-different host recorded `test_local_files_are_still_rendered_by_python` and
-`test_local_source_is_still_highlighted_by_pygments` failing on
-`wait_for_selector("#preview .pv-rich h1")`, with and without proxy variables
-set, and running only those two. Nobody has explained the difference. If you see
-those two fail, you are the third data point: capture the browser console and
-whether `POST /api/render` answered, and say which host you were on.
+including `test_local_files_are_still_rendered_by_python` and
+`test_local_source_is_still_highlighted_by_pygments` three times alone at 9.42 s,
+9.26 s and 8.60 s, and passing under four busy loops in 24.68 s. A second agent
+on a different host recorded those same two failing, with and without proxy
+variables set, and when running only those two.
+
+What the second agent's runs established: `POST /api/render` completes, and
+`#preview .pv-rich h1` still never appears. That rules out slowness and rules out
+the round trip.
+
+The mechanism to look at is in `ui/adapters/preview-upload.js`, which has two
+branches that are silent by design:
+
+```js
+if (!r.ok) return PreviewLocal.render(node);   /* draws no .pv-rich */
+return html.trim() ? `<div class="pv-rich">${html}</div>` : null;
+```
+
+A non-2xx falls back to a renderer that emits no `.pv-rich`, and an empty body
+draws nothing. Both look like a slow machine from the test's side. `_click_local()`
+now reports which one happened. Its two failure messages, verified by mutating
+`api.render_upload()`:
+
+```
+POST /api/render answered 500 for local.md, so preview-upload.js fell back
+silently and drew no .pv-rich. First 300 bytes: 'boom'
+
+#preview .pv-rich h1 never appeared for local.md. POST /api/render answered 200
+with 48 bytes, and #preview .pv-rich count is 1. A count of 0 means nothing was
+injected; a count of 1 means the server rendered something without that element
+in it. First 300 bytes: '<div class="preview-error">no heading here</div>'
+```
+
+If you hit this, run those two tests and paste the message. It names the status
+and the first 300 bytes the server sent, which is the cause rather than a
+timeout.
 
 `test_nothing_is_fetched_from_a_cdn` is what holds the `/n/` UI to that, and it
 now watches both halves. The served half goes through `preview-http.js` and
