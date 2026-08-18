@@ -678,10 +678,18 @@ document.body.insertAdjacentHTML("afterbegin", `
        node.denied          string; shown in place of the rows
        node.meta            { size, mod, type } once loadMeta has run
        node.lastSel         UI scratch — written by the UI, never by an adapter
+       node.metaDone        UI scratch — every kid's meta has been asked for
 
      ensureLoaded(node) → Promise   fills node.kids (idempotent, debounced)
      loadMeta(node)     → Promise   fills node.meta  (may be a no-op if the
                                     listing already carried the metadata)
+
+   loadMeta is called once per selected file, and once per *row* when the user
+   sorts a column by size or by modification time — see core/sort.js. A port
+   whose listing already carries the metadata pays nothing for that sort; one
+   that does not pays a round-trip per row, which is why name is the default
+   order and the only one that never calls this. Record a failure on the node
+   (`node.meta = {error}`) rather than rejecting, the way both adapters here do.
 
    ── PREVIEW ─ the preview body ─────────────────────────────────────────────
      render(node) → Promise<string|null>

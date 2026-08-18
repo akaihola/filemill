@@ -35,10 +35,10 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       and `content-visibility`; ~5 ms re-render and 4–9 ms keystrokes at 3 000
       entries, down from ~500 ms and ~740 ms
 - [x] **Spine click unfolds** — the design study advertised it but never wired it
-- [x] **Tests** — `test-ui.py` (84 headless checks incl. a perf budget, runs
+- [x] **Tests** — `test-ui.py` (104 headless checks incl. a perf budget, runs
       against both the bundle and the modular sources), `test-e2e.py` (real
-      folder, real picker, persistence, the real clipboard, and refresh plus
-      view-state restore against a throwaway folder it creates and deletes),
+      folder, real picker, persistence, the real clipboard, and refresh, sorting
+      and view-state restore against a throwaway folder it creates and deletes),
       `FSA-TEST-CHECKLIST.md` for the rest
 - [x] **`hotreload.py`** — retargeted at the dev entry point
 
@@ -54,7 +54,8 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       `#r=<root>&p=<path>` here (a hash survives `file://` and any static host);
       filemill uses the real path. `core/deeplink.js` is shared verbatim.
       Stale links open the deepest folder that still exists; a link to a dotfile
-      reveals dotfiles. 12 checks in `test-url.py`
+      reveals dotfiles. 12 checks in `test-url.py`, which also holds the 3 that
+      need a real filesystem rather than a real origin
 - [x] **`core/shell.js`** — the chrome is emitted by one file, so this app and
       the server one cannot drift apart on markup
 - [x] **Publishing** — `.github/workflows/publish.yml` tests every push and
@@ -176,8 +177,82 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
 - [ ] **Virtualised rows** — `content-visibility` made forced layout cheap, but
       a 100 k-entry directory still builds 100 k DOM nodes (~1 s). Only worth
       doing if such folders show up in practice
-- [ ] **Sort options** — name / size / mtime, ascending or descending. Needs
-      metadata for every row, so it implies a `getFile()` sweep per directory
+- [x] **Sort options** — name, size or modification time, ascending or
+      descending, from the ⚙ popover.
+
+      For the person browsing: finding the biggest file in a folder of 400 used
+      to mean clicking rows one at a time and reading the preview's size line.
+      Now it is two clicks and the answer is row one. "What did I edit last
+      week" is the same two clicks on a different key.
+
+      **The three keys do not cost the same, and that asymmetry is the design.**
+      A File System Access API listing carries names and nothing else:
+      `entries()` yields a name and a handle, so a size costs one `getFile()`
+      per row. Sorting by name therefore compares what the column is already
+      holding and fetches nothing, which is why it is the default and why
+      opening a folder still costs zero reads. Sorting by size or date sweeps
+      the directories on screen, once each, and each column spins beside its
+      count while it reads. One sweep answers both metadata keys, because
+      `getFile()` hands back the size and the mtime together, so switching from
+      size to modified re-sorts what is already in hand.
+
+      Measured at 3 000 entries. The first three rows are a real filesystem,
+      through the origin private file system, which hands out a genuine
+      `FileSystemDirectoryHandle` with no folder dialog and so lets `test-url.py`
+      run this app's own adapter against real files headlessly:
+
+      | At 3 000 entries | |
+      | --- | --- |
+      | `entries()`, the listing every folder open already pays | 363 ms |
+      | the `getFile()` sweep a size or date sort adds | **851 ms**, 284 µs per file |
+      | the comparison itself | 18 ms |
+      | the app's own share of a sweep, port answering from memory | 6.4 ms |
+      | the arrow key straight after a sweep | 10 ms, budget 100 ms |
+
+      So the sweep costs 2.3× the directory read this app already makes on every
+      folder, and roughly what the 304 ms column rebuild beside it costs. It is
+      paid once, when the user asks, on the columns they are looking at: opening
+      `sorting` beside the root reads 5 files, and the nine other directories in
+      that tree are not touched.
+
+      | Situation | Result |
+      | --------- | ------ |
+      | Sorting by name | No `getFile()`, ever. The listing already had the names |
+      | A row whose `getFile()` rejects | Sorts last, in name order, in **both** directions, and is never dropped. "Biggest first" must not answer with a file nobody could open, and hiding the row would make the app lie about what is in the folder |
+      | A directory | Above the files under every key, in name order. Neither port can give a directory a size or an mtime, and an invented 0 would sit at one end of every size sort meaning nothing |
+      | The sweep lands after the user opened another folder | No repaint. What it read is kept, so stepping back in shows the sorted column and asks for nothing |
+      | A refresh replaced the entries mid-sweep | `metaDone` stays false: the objects that were filled are not in this listing any more |
+      | A re-render, a direction flip, a switch to the other metadata key | Zero further reads |
+      | The port rejects rather than recording the error on the row | The sweep still finishes. One escaping rejection would leave `metaLoading` set for good, and the column would spin until the tab closed |
+      | A hidden dotfile | Swept with the rest, so revealing dotfiles needs no second sweep |
+      | Tomorrow | Same key, same direction |
+
+      **Remembered in `localStorage["filemill.sort"]`, not in the per-folder
+      record.** The sort is how a person reads a list, not a property of the
+      folder they are reading, which is the argument that already keeps
+      dotfiles, density and the rich-preview switch out of that record. It is
+      also the only store both builds have, since pykofinder serves the same
+      file and has no remembered folders at all. And the record offers nowhere
+      to hang it: `keepView` fires from `ROUTER.write`, which core calls when
+      the *location* changes, and choosing a sort moves nobody. A remembered
+      size sort does mean a mount can start a sweep this session did not ask
+      for. The user asked last session, and the column says so while it reads.
+
+      In `ui/core/sort.js`, shared rather than app-specific, because the sweep
+      speaks only through `FS.loadMeta`. pykofinder gets the same option for one
+      comparison per row and no round-trips: its listing already carried size
+      and mtime, so `ensureMeta` finds nothing to fetch and returns on one `if`.
+      That is the trade `ui/adapters/http.js` wrote down before this existed.
+      `ensureMeta` mirrors `FS.ensureLoaded` — one in-flight promise on the
+      node, one writer of the field — and `columnFor` treats `metaDone` like
+      `kidsRef`, so a dropped repaint self-heals on the next render instead of
+      leaving an order that is no longer true.
+
+      16 checks in `test-ui.py` plus a sweep figure at 1 000 and 3 000 entries,
+      3 in `test-url.py` against a real filesystem, 3 more in `test-e2e.py`
+      against the throwaway folder it creates. Half of the `test-ui.py` ones
+      assert on `getFile()` counts rather than on the order, because the order
+      alone would pass just as well for an app that swept on every render
 - [x] **Remember view state per folder** — re-mounting a remembered root
       restores the selection chain it was left on.
 
