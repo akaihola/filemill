@@ -231,7 +231,13 @@ body {
 .col.busy .col-head .rf { visibility: visible; color: var(--accent);
                           animation: rf-spin .7s linear infinite; }
 @keyframes rf-spin { to { transform: rotate(360deg); } }
-.col.spine .rf, .col.folding .rf { display: none; }
+/* No rule hides this while a column folds, and that is deliberate. `folding` is
+   not a transient animation state: layout.js sets it on column `folded`, so at
+   rest — nothing scrolled — it sits on the root column permanently. Hiding the
+   button there hid it on the root for ever, and on whichever column the dial
+   was mid-fold on. A spine already has `display: none` on its whole header, and
+   a folding header carries an opacity the button inherits, so both cases are
+   handled without naming either. */
 
 .col.focus .col-head { color: var(--ink); }
 .col.focus .col-head::after {
