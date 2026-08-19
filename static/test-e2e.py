@@ -10,11 +10,18 @@ second run, that the remembered folder opens with no dialog at all.
 Run it twice: the persistent profile in /tmp/filemill-profile keeps both the
 IndexedDB entry and Chrome's permission grant, so the second run should mount
 straight into the same folder (or offer it as a one-click "Recently opened").
+
+The refresh and view-state checks need the directory to change under the app,
+so they run against a throwaway folder this script creates, fills, edits and
+deletes. Nothing here ever writes to a folder you picked: `fixture()` builds it
+under the system temp directory and `owned()` refuses any path outside it.
 """
 import asyncio
 import http.server
+import shutil
 import socketserver
 import sys
+import tempfile
 import threading
 from pathlib import Path
 
@@ -33,6 +40,119 @@ passed, failed = [], []
 def check(name, cond, detail=""):
     (passed if cond else failed).append(name)
     print(f"  {'✅' if cond else '❌'}  {name}" + (f" — {detail}" if detail else ""))
+
+
+def fixture() -> Path:
+    """A folder this script owns, so no check ever edits a folder you picked."""
+    d = Path(tempfile.mkdtemp(prefix="filemill-e2e-"))
+    (d / "notes").mkdir()
+    (d / "notes" / "one.txt").write_text("one\n")
+    (d / "notes" / "two.txt").write_text("two\n")
+    (d / "readme.md").write_text("# fixture\n")
+    return d
+
+
+def owned(root: Path, target: Path) -> Path:
+    """Refuse to touch anything outside the throwaway folder.
+
+    The app is read-only and the suite has to stay that way about real data. A
+    guard on the path is cheap; a test that deleted the wrong file once is not.
+    """
+    tmp = Path(tempfile.gettempdir()).resolve()
+    t, r = target.resolve(), root.resolve()
+    if not (r.is_relative_to(tmp) and t.is_relative_to(r)):
+        raise SystemExit(f"refusing to touch {t}: outside the test folder {r}")
+    return t
+
+
+STATE = "({path: path.map(p => p.name), sel, focusCol})"
+
+
+async def refresh_and_restore(pg):
+    """Drive refresh and view-state restore against a folder this script owns.
+
+    The other checks read whatever folder you picked. These two cannot: refresh
+    only means something once the directory changes, and a restore only means
+    something once you have navigated somewhere and come back. So this builds
+    its own folder, asks for one more pick, edits it, and deletes it after.
+    """
+    root = fixture()
+    print(f"\n  👆  Click “Open Folder…” and pick this folder:\n      {root}")
+    try:
+        try:
+            await pg.wait_for_function(
+                "name => path.length && path[0].name === name",
+                arg=root.name, timeout=120_000)
+        except PlaywrightTimeoutError:
+            check("Test folder opened", False, f"timed out waiting for {root.name}")
+            return
+        await pg.wait_for_timeout(600)
+
+        print("\n── Refresh against a real folder ────────────────────────────")
+        await pg.click('.col[data-i="0"] .row:has-text("notes")')
+        await pg.wait_for_timeout(400)
+        await pg.keyboard.press("ArrowRight")          # focus the notes column
+        await pg.wait_for_timeout(400)
+        before = await pg.eval_on_selector_all('.col[data-i="1"] .row', "e => e.length")
+
+        owned(root, root / "notes" / "three.txt").write_text("three\n")
+        await pg.wait_for_timeout(300)
+        check("A file written on disk is invisible until the app is asked",
+              await pg.eval_on_selector_all('.col[data-i="1"] .row',
+                                            "e => e.length") == before,
+              "no watch API — the read already happened")
+        await pg.keyboard.press("F5")
+        await pg.wait_for_timeout(900)
+        shown = await pg.eval_on_selector_all('.col[data-i="1"] .row',
+                                              "e => e.map(x => x.title)")
+        check("F5 re-reads the real directory and the new file appears",
+              "three.txt" in shown, str(shown))
+
+        # Select a file, delete it on disk, refresh: the app must not keep
+        # showing a selection that no longer exists anywhere.
+        await pg.click('.col[data-i="1"] .row:has-text("two.txt")')
+        await pg.wait_for_timeout(500)
+        owned(root, root / "notes" / "two.txt").unlink()
+        await pg.keyboard.press("F5")
+        await pg.wait_for_timeout(900)
+        st = await pg.evaluate(STATE)
+        say = await pg.inner_text("#st-refresh")
+        check("A selected file deleted on disk leaves no selection behind",
+              len(st["sel"]) == 1 and "two.txt is gone" in say,
+              f"{st['sel']}, strip says {say!r}")
+
+        print("\n── The chain comes back after a reload ──────────────────────")
+        await pg.click('.col[data-i="1"] .row:has-text("one.txt")')
+        await pg.wait_for_timeout(1000)                # longer than the 400 ms debounce
+        want = await pg.evaluate(STATE)
+        await pg.reload()
+        try:
+            await pg.wait_for_function("welcome.hidden && path.length", timeout=20_000)
+        except PlaywrightTimeoutError:
+            check("Remembered folder re-mounted after a reload", False,
+                  "landed on the welcome screen — the grant was dropped")
+            return
+        await pg.wait_for_timeout(1200)
+        got = await pg.evaluate(STATE)
+        check("A reload puts the user back on the chain they left",
+              got == want, f"left {want}, came back to {got}")
+
+        # The case that matters: the folder is still granted, the chain is not
+        # all there any more.
+        owned(root, root / "notes" / "one.txt").unlink()
+        await pg.reload()
+        await pg.wait_for_function("welcome.hidden && path.length", timeout=20_000)
+        await pg.wait_for_timeout(1200)
+        got = await pg.evaluate(STATE)
+        check("A chain whose file was deleted restores as far as it is real",
+              got["path"] == [root.name, "notes"] and got["sel"] == ["notes"],
+              str(got))
+        check("…and offers no selection inside the folder it stopped at",
+              len(got["sel"]) == 1, str(got["sel"]))
+        await pg.screenshot(path=str(SHOTS / "04-restored.png"))
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+        print(f"  🧹  Removed {root}")
 
 
 def serve():
@@ -164,8 +284,10 @@ async def main():
               await pg.inner_text("#st-copy"))
 
         print("\n── Persistence ──────────────────────────────────────────────")
-        stored = await pg.evaluate("recallRoots().then(h => h.map(x => x.name))")
+        stored = await pg.evaluate("recallRoots().then(r => r.map(x => x.handle.name))")
         check("Folder recorded in IndexedDB for next session", bool(stored), str(stored))
+
+        await refresh_and_restore(pg)
         check("No page errors", not errs, "; ".join(errs[:2]))
 
         print(f"\n{'═' * 62}\n  {len(passed)} passed, {len(failed)} failed")

@@ -217,6 +217,28 @@ body {
   margin-left: auto; font-size: var(--fs-meta); font-weight: 450;
   color: var(--ink-3); font-variant-numeric: tabular-nums;
 }
+/* ⟳ sits in the header of every column but only shows on the one being read or
+   pointed at: a button on all seven at once is noise, and the key does the same
+   job without one. `visibility` rather than `display` so the header never
+   re-measures when it appears — a width change here would relay out the rows. */
+.col-head .rf {
+  all: unset; visibility: hidden; cursor: pointer;
+  margin-right: -3px; padding: 0 3px; border-radius: 4px;
+  font-size: 12px; line-height: 1; color: var(--ink-3);
+}
+.col.focus .col-head .rf, .col:hover .col-head .rf { visibility: visible; }
+.col-head .rf:hover { color: var(--accent); background: var(--hairline); }
+.col.busy .col-head .rf { visibility: visible; color: var(--accent);
+                          animation: rf-spin .7s linear infinite; }
+@keyframes rf-spin { to { transform: rotate(360deg); } }
+/* No rule hides this while a column folds, and that is deliberate. `folding` is
+   not a transient animation state: layout.js sets it on column `folded`, so at
+   rest — nothing scrolled — it sits on the root column permanently. Hiding the
+   button there hid it on the root for ever, and on whichever column the dial
+   was mid-fold on. A spine already has `display: none` on its whole header, and
+   a folding header carries an opacity the button inherits, so both cases are
+   handled without naming either. */
+
 .col.focus .col-head { color: var(--ink); }
 .col.focus .col-head::after {
   content: ""; position: absolute; left: 9px; right: 9px;
@@ -440,9 +462,10 @@ body {
   cursor: pointer;
 }
 #st-path:hover { color: var(--ink-2); text-decoration: underline; text-underline-offset: 2px; }
-#st-copy { color: var(--accent); }
-#st-copy.bad { color: #d2544a; }
-:root[data-theme="dark"] #st-copy.bad { color: #ff8a7d; }
+#st-copy, #st-refresh { color: var(--accent); white-space: nowrap; }
+#st-copy.bad, #st-refresh.bad { color: #d2544a; }
+:root[data-theme="dark"] #st-copy.bad,
+:root[data-theme="dark"] #st-refresh.bad { color: #ff8a7d; }
 #st-find { color: var(--accent); font-family: var(--mono); white-space: nowrap; }
 
 /* ── Type-ahead marks ──────────────────────────────────────────────────────
@@ -492,6 +515,13 @@ body {
   box-shadow: inset 0 0 0 1px var(--hairline-2);
 }
 #welcome .rec:hover { box-shadow: inset 0 0 0 1px var(--accent-soft); color: var(--accent-ink); }
+/* Where the click will land. A folder that reopens three columns deep is a
+   surprise worth one dim line, and it is the only evidence on this screen that
+   the chain was kept at all. */
+#welcome .rec-where {
+  color: var(--ink-3); font-size: var(--fs-meta);
+  max-width: 26ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 #welcome .rec svg { width: 13px; height: 13px; fill: var(--ink-3); flex: 0 0 auto; }
 #welcome .rec:hover svg { fill: var(--accent); }
 #welcome .note { margin: 18px 0 0; font-size: var(--fs-meta); color: var(--ink-3); }

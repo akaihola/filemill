@@ -41,7 +41,7 @@ the user makes to your behaviour — capture it here so it survives a context re
 │   │   ├── layout.js       ← the fold dial: stripSpan, layout, applyScroll
 │   │   ├── trail.js        ← the SVG elbows between columns
 │   │   ├── typeahead.js    ← prefix → substring → fuzzy, <mark>, idle buffer
-│   │   ├── nav.js          ← choose(), crumbs, copy path, all keyboard handling
+│   │   ├── nav.js          ← choose(), crumbs, copy path, refresh, all keys
 │   │   ├── deeplink.js     ← path ⇄ column chain; push-vs-replace policy
 │   │   └── settings.js     ← ⚙ popover toggles
 │   ├── adapters/           ← everything source-specific
@@ -66,7 +66,7 @@ the user makes to your behaviour — capture it here so it survives a context re
     ├── index-dev.html          ← dev entry point: <script src="../ui/…">
     ├── build-index.py          ← index-dev.html + ../ui → index.html
     ├── hotreload.py            ← optional CDP live-patcher for dev mode
-    ├── test-ui.py              ← headless suite, fake handle (53 checks)
+    ├── test-ui.py              ← headless suite, fake handle (84 checks)
     ├── test-url.py             ← deep-link suite over localhost (12 checks)
     ├── test-rich.py            ← CDN renderers: offline/switch/loaded (14)
     └── test-e2e.py             ← headed suite, real folder + real picker
@@ -124,11 +124,25 @@ welcome screen instead of a folder, by design (`showBlocked("file")` in
 ## Remembered folders (IndexedDB)
 
 `FileSystemHandle` is structured-cloneable, so `storage.js` keeps the last 8
-picked roots in the `filemill` database, `kv` store, key `recent`.
+picked roots in the `filemill` database, `kv` store, key `recent`. A record is
+the handle **and** the selection chain inside it:
 
-- `rememberRoot()` after every successful pick; `isSameEntry()` dedupes.
+```js
+{ handle: FileSystemDirectoryHandle, path: ["notes", "drafts"] }
+```
+
+- `rememberRoot(handle[, path])` after every successful pick and, debounced
+  400 ms, after every selection change; `isSameEntry()` dedupes. Omit `path`
+  and the stored chain is kept, so re-picking a folder does not forget it.
 - `recallRoots()` at startup. `queryPermission()` needs no user gesture, so a
-  folder still `'granted'` **re-mounts with no dialog at all**.
+  folder still `'granted'` **re-mounts with no dialog at all** — and `mount()`
+  walks it back to `recallView()`'s chain, so the return trip costs no clicks.
+- `asRoot` reads a bare handle as `{handle, path: []}`, so a database written
+  before the chain existed keeps its folders instead of losing all eight.
+- Saving hangs off `ROUTER.write` in `app-fsa.js`, which is the one place core
+  already reports a selection change. `mounted` is set only when a mount has
+  finished, so the mount's own renders cannot overwrite the chain they are
+  about to restore.
 - Otherwise the roots are listed under "Recently opened" on the welcome screen;
   clicking one calls `requestPermission()` from that gesture. Chrome usually
   downgrades grants to `'prompt'` when the browser restarts, so expect one
@@ -182,6 +196,19 @@ numbers it prints *relative to each other in the same run*, because absolute
 figures move by 3× with load: a type-ahead hit should land near the arrow-key
 keystroke it shares a re-render with, and a type-ahead miss well under it.
 
+**End `FAKE` on a value, never on an assignment.** Playwright evaluates the
+string and *calls the result if it is a function*, and the result is the
+completion value of the last statement. Ending on `window.__spySaves = () => {…}`
+handed Playwright that arrow, which it duly invoked — stubbing `recallRoots`
+before a single check ran, so two storage checks read an empty list out of a
+database that visibly held a record. The trailing `"fake handle ready";` is
+load-bearing.
+
+`test-e2e.py` is the only suite that changes a directory, and it changes one it
+made itself: `fixture()` builds a folder under the system temp directory and
+`owned()` refuses any path outside it, so no check can edit a folder you picked.
+It deletes the folder in a `finally`.
+
 A bench that points at the wrong column reports a wonderful number instead of
 failing. `__typebench` therefore returns the row count it searched and the check
 asserts it — the first version measured the 8-row root column and reported 0 ms,
@@ -233,6 +260,17 @@ folders are restored from IndexedDB — reloading is cheap.
 | A refused clipboard selects the path instead | `writeText` can be refused by policy or context. Failing silently means the next paste hands over something else with nothing to say so; selecting the path puts the browser's own ⌘C one keystroke away, and that one needs no permission |
 | The status path joins with `/`, not ` / ` | Clicking it copies it, and the refusal fallback copies the characters on screen. A display string that differs from the copied string makes the fallback quietly wrong |
 | History pushes on entering a column, rewrites otherwise | Selecting a folder opens its column without moving focus, so ↑/↓ down a list of folders would otherwise push a history entry per row and make Back useless |
+| Refresh empties `node.kids` and re-enters `ensureLoaded` | One loading path, one debounce, one writer of `node.kids`. A separate reload call would be a second writer on the same field, and the interleaving that loses is the one nobody reproduces |
+| …but waits for an in-flight read before emptying it | `ensureLoaded` hands a concurrent caller the *in-flight* promise. Invalidating and asking immediately therefore returns the very listing the refresh was called to replace, and looks like a refresh that silently did nothing |
+| Nothing renders between invalidating and the read landing | The column cache still holds the old DOM, so the screen keeps the previous listing instead of flashing to "Reading…" and losing its scroll position. The ⟳ spins in place instead |
+| No rule in `styles.css` keys off `.col.folding` to hide chrome | `folding` is **not** a transient animation state. `layout.js` sets it on column `folded`, so with nothing scrolled it sits on the *root* column permanently. A `display: none` keyed on it hid the ⟳ on the root for ever, and on whichever column the dial happened to be mid-fold on — which read as two unrelated bugs. Let the header's own opacity crossfade carry anything inside it |
+| F5 is claimed; ⌘R, Ctrl+R and Ctrl+F5 are not | Every desktop file manager reads F5 as "re-read this folder", and here a reload costs the mounted root, the column chain and the scroll position. A real reload stays one keystroke away — the rule type-ahead already follows for ⌘R |
+| Refreshing a parent re-reads the columns open below it | A re-read hands back new node objects, so the chain has to be matched by name regardless. Those columns are also on screen, and one fresh column beside three stale ones is worse than the extra reads. Closed subtrees are untouched |
+| `applyPath` restores refresh, links and remembered folders alike | Three callers, one walk: they cannot disagree about what a half-valid chain means. It stops at the first name that is gone, so no caller can present a selection that is not real |
+| The view chain extends the `recent` record, rather than getting its own store | A handle is not a path, so the only honest key for a per-folder store is the handle already sitting in this record. Two stores would also drift the first time one is pruned to 8 and the other is not |
+| The chain is stored as names, not nodes | A node comes from a read that has not happened when the page loads. A name outlives a reload, a rename of its parent, and the node cache |
+| A truncated restore is saved back truncated | The app remembers where the user actually is. Keeping the deeper chain would mean storing a selection that does not exist, which is the thing both features refuse to display |
+| View saves hang off `ROUTER.write`, in the adapter | Core already writes the location on every selection change and nowhere else, so there is nothing to add to core — and the server build has no remembered folders to hook |
 
 ---
 
