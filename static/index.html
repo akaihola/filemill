@@ -825,9 +825,10 @@ function measure(node) {
    in hand and fetches nothing.
 
    Nothing here knows where metadata comes from. `FS.loadMeta` does, which is
-   what makes this shared: pykofinder's listing carries size and mtime already,
-   so its sweep finds nothing to fetch and returns on one `if`. The same option
-   costs the server build a comparison and the local build a syscall per row.
+   what makes this shared: the server build's listing carries size and mtime
+   already, so its sweep finds nothing to fetch and returns on one `if`. The
+   same option costs the server build a comparison and the static build a
+   syscall per row.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const SORT_KEYS  = ["name", "size", "mtime"];
@@ -856,9 +857,10 @@ const sortValue = (k, field) => {
 
    Directories are never ordered by size or time. Neither port can give a
    directory either number: the File System Access API has no `getFile()` for a
-   directory handle, and pykofinder's listing sends metadata for files only. A
-   folder ordered by an invented 0 would sit at one end of every size sort and
-   mean nothing there, so folders keep the one order that is real for them.
+   directory handle, and the server build's listing sends metadata for files
+   only. A folder ordered by an invented 0 would sit at one end of every size
+   sort and mean nothing there, so folders keep the one order that is real for
+   them.
 
    A file whose metadata could not be read sorts last, in name order, in *both*
    directions. Sorting by size descending asks "what is biggest here"; a file
@@ -897,9 +899,10 @@ function ensureMeta(node) {
   if (node.metaLoading) return node.metaLoading;
   const kids = node.kids;
   const todo = kids.filter(k => !k.dir && !k.meta);
-  /* Nothing to fetch: the listing carried it (pykofinder), or a preview already
-     did. Settle it here, before columnFor runs, so a column that needs no sweep
-     is built once in the right order rather than built and rebuilt. */
+  /* Nothing to fetch: the listing carried it (the server build), or a preview
+     already did. Settle it here, before columnFor runs, so a column with no
+     sweep to run is built once in the right order rather than built and
+     rebuilt. */
   if (!todo.length) { node.metaDone = true; return null; }
 
   /* Files still to read in *this* column. The strip sums it across the columns
@@ -995,10 +998,10 @@ function sortStatus() {
    localStorage, not the per-folder record in IndexedDB. The sort is a property
    of how a person reads a list, not of the folder they are reading — the same
    argument that already keeps dotfiles, density and the rich-preview switch out
-   of that record. It is also the only store both builds have: pykofinder serves
-   this file and has no remembered folders at all. And the record offers nowhere
-   to hang it: `keepView` fires from `ROUTER.write`, which core calls when the
-   *location* changes, and choosing a sort moves nobody.
+   of that record. It is also the only store both builds have: the server build
+   serves this file and has no remembered folders at all. And the record offers
+   nowhere to hang it: `keepView` fires from `ROUTER.write`, which core calls
+   when the *location* changes, and choosing a sort moves nobody.
 
    A remembered size sort does mean a mount can start a sweep the user did not
    ask for in this session. They did ask for it, last session, and the column

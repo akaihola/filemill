@@ -148,7 +148,7 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       Matching runs on the rows the column already holds, so a directory still
       being read reports "still reading" instead of matching a stale list.
 
-      Lives in `ui/core/typeahead.js`, so pykofinder gets it with no adapter
+      Lives in `ui/core/typeahead.js`, so the server build gets it with no adapter
       work: a column is a list of names whichever port filled it. Only two rows
       are rewritten per keystroke, the one that was marked and the one that now
       is; marking every matching row would be an innerHTML write per entry,
@@ -258,7 +258,7 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       record.** The sort is how a person reads a list, not a property of the
       folder they are reading, which is the argument that already keeps
       dotfiles, density and the rich-preview switch out of that record. It is
-      also the only store both builds have, since pykofinder serves the same
+      also the only store both builds have, since the server build serves the same
       file and has no remembered folders at all. And the record offers nowhere
       to hang it: `keepView` fires from `ROUTER.write`, which core calls when
       the *location* changes, and choosing a sort moves nobody. A remembered
@@ -266,7 +266,7 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       for. The user asked last session, and the column says so while it reads.
 
       In `ui/core/sort.js`, shared rather than app-specific, because the sweep
-      speaks only through `FS.loadMeta`. pykofinder gets the same option for one
+      speaks only through `FS.loadMeta`. The server build gets the same option for one
       comparison per row and no round-trips: its listing already carried size
       and mtime, so `ensureMeta` finds nothing to fetch and returns on one `if`.
       That is the trade `ui/adapters/http.js` wrote down before this existed.
