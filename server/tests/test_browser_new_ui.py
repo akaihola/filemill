@@ -388,8 +388,8 @@ def test_nothing_is_fetched_from_a_cdn(page):
     goes through preview-upload.js and `POST /api/render`, which is the path the
     docstring is actually about. `ui/adapters/preview-rich.js` does lazy-load a
     renderer from a CDN, and it is the one adapter `tools/sync-ui.py` does not
-    vendor into pykofinder. Vendoring it would break this test, which is the
-    point of the test.
+    vendor into the server edition. Vendoring it would break this test, which
+    is the point of the test.
     """
     external = []
     page.on(
