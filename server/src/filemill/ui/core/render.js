@@ -27,6 +27,8 @@ function buildCol(node) {
     <div class="col-head">
       <span class="name"><span>${esc(node.name)}</span></span>
       <span class="count">${node.kids === null ? "" : kids.length}</span>
+      <button class="rf" tabindex="-1" title="Re-read this folder (F5)"
+              aria-label="Refresh ${esc(node.name)}">⟳</button>
     </div>
     <div class="col-body"></div>
     <div class="spine-label" title="${esc(node.name)} — click to unfold">
@@ -45,6 +47,13 @@ function buildCol(node) {
   /* a folded column hides its rows, so the click lands on the column itself —
      that is what makes the advertised "click a spine to unfold" work */
   el.onclick = () => { if (el.classList.contains("spine")) unfoldTo(+el.dataset.i); };
+  /* Read the index off the element for the same reason a row does: the node
+     keeps its DOM across re-renders, and only render time knows its column.
+     stopPropagation, or a ⟳ on a folded spine would unfold it instead. */
+  el.querySelector(".rf").onclick = e => {
+    e.stopPropagation();
+    refreshColumn(+el.dataset.i);
+  };
 
   const rows = kids.map((k, ri) => {
     const [stem, ext] = splitName(k.name);

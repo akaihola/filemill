@@ -30,14 +30,15 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       failing silently on Chrome's `SecurityError`
 - [x] **Keyboard model** — ↑/↓ stay in the focused column, → descends (and
       returns to the row a column was last left on), ← comes back out,
-      Home/End, Escape closes the popover
+      Home/End, F5 re-reads the focused folder, Escape closes the popover
 - [x] **Performance** — column DOM cache, in-place reconciliation, write guards
       and `content-visibility`; ~5 ms re-render and 4–9 ms keystrokes at 3 000
       entries, down from ~500 ms and ~740 ms
 - [x] **Spine click unfolds** — the design study advertised it but never wired it
-- [x] **Tests** — `test-ui.py` (53 headless checks incl. a perf budget, runs
+- [x] **Tests** — `test-ui.py` (84 headless checks incl. a perf budget, runs
       against both the bundle and the modular sources), `test-e2e.py` (real
-      folder, real picker, persistence, the real clipboard),
+      folder, real picker, persistence, the real clipboard, and refresh plus
+      view-state restore against a throwaway folder it creates and deletes),
       `FSA-TEST-CHECKLIST.md` for the rest
 - [x] **`hotreload.py`** — retargeted at the dev entry point
 
@@ -77,9 +78,57 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       `server/tools/sync-ui.py --check` now guards a *packaging* copy rather
       than two repositories
 
-- [ ] **Refresh a directory** — nothing re-reads a folder after the disk
-      changes. A ⟳ button or F5-on-column would re-run `ensureLoaded` on the
-      focused directory (there is no watch API; it has to be manual)
+- [x] **Refresh a directory** — ⟳ in the focused column's header, or F5.
+
+      For the person browsing: a file another program wrote used to be invisible
+      until the whole app was reloaded, and reloading drops the mounted folder,
+      every open column and the scroll position. Now one key re-reads the folder
+      and everything stays where it is. The strip says what moved — `⟳ 2 new,
+      1 gone`, or `⟳ no change`, so a refresh that found nothing still answers.
+
+      Why it has to be manual: neither port can tell the app a directory
+      changed. The File System Access API has no watch call, and the server one
+      would need a socket the static single file cannot open. A folder read once
+      stays as it was read until somebody asks. Polling instead would re-read
+      folders nobody is looking at, on a battery, forever.
+
+      **Refresh is not a second way to load a directory.** It empties
+      `node.kids` and calls the same `FS.ensureLoaded` every other caller uses,
+      so there is one loading path, one debounce, and exactly one writer of
+      `node.kids`. Two loaders on one field is a race that reproduces once a
+      month on somebody else's machine.
+
+      | Situation | Result |
+      | --------- | ------ |
+      | The selected entry is still there | Stays selected. Every column open below it stays open |
+      | The selected entry is gone | Nothing is selected — selecting whatever slid into its place would preview a file nobody asked for. The cursor stays on that row index, clamped to the shorter list, so ↓ resumes beside it. The strip names what went |
+      | A folder deeper in the chain is gone | The chain is walked again by name and stops at the first level that no longer exists. Columns below that close |
+      | Refresh lands on a read already in flight | It waits for that read, then re-reads once. `ensureLoaded` hands a concurrent caller the *in-flight* promise, so asking without waiting returns the very listing the refresh was called to replace |
+      | The user clicks or presses a key mid-refresh | Whoever the user asked for last wins, and the columns still agree with each other. The refresh drops its repaint by bumping `navSeq`, the counter `choose` already uses for the same reason |
+      | A preview was being built for the old node | The re-render calls `fillPreview` on the new node, which bumps `pvToken`; the older read is discarded when it lands |
+      | Focus | Stays on the column the user was in, clamped to the new depth |
+
+      Refreshing a parent re-reads the columns open below it as well. It has to:
+      a re-read hands back new node objects, so identity is gone and the chain
+      must be matched by name anyway. Re-reading is also the honest answer —
+      those columns are on screen, and one fresh column beside three stale ones
+      is worse than the extra reads. Closed subtrees are untouched.
+
+      The walk is `applyPath`, the one a deep link already used. Three callers
+      now share it — refresh, a pasted link, and a restored folder — so they
+      cannot disagree about what a half-valid chain means.
+
+      In `ui/core/nav.js` (`refreshColumn`), the button in `render.js`'s
+      `buildCol`, and one optional `wantFocus` argument on `applyPath`. The
+      server edition gets refresh with no adapter work: `HTTP.ensureLoaded`
+      re-fetches for the same reason `FSA.ensureLoaded` re-reads.
+
+      Measured at 3 000 entries, in-page, `test-ui.py`: a refresh rebuilds the
+      column in **371 ms**, which is the build cost the column cache exists to
+      avoid paying *per keystroke* — here it is paid once, when the user asks,
+      because the entry list really did change. The arrow key straight after it
+      still costs **7.5 ms**, inside the 4–9 ms budget. 20 checks in
+      `test-ui.py`, 3 more in `test-e2e.py` against a real folder
 - [x] **Type-ahead** — typing letters jumps to the matching row in the focused
       column. For the person browsing, a folder of 400 entries goes from about
       200 presses of ↓ to three letters. Three rungs run in order over the whole
@@ -129,7 +178,57 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       doing if such folders show up in practice
 - [ ] **Sort options** — name / size / mtime, ascending or descending. Needs
       metadata for every row, so it implies a `getFile()` sweep per directory
-- [ ] **Remember view state per folder** — restore the last selection chain when
-      re-mounting a remembered root
+- [x] **Remember view state per folder** — re-mounting a remembered root
+      restores the selection chain it was left on.
+
+      For the person browsing: a folder left open three columns deep used to
+      reopen at its root, so every visit began by re-walking the same three
+      rows. Now the columns come back and the file is selected again. The
+      welcome screen's "Recently opened" buttons say where each one will land
+      (`workspace › notes › drafts`), which is the only place on that screen the
+      kept chain is visible before you commit to a click.
+
+      The record in IndexedDB grew a field instead of gaining a neighbour:
+
+          { handle: FileSystemDirectoryHandle, path: ["notes", "drafts"] }
+
+      A second store keyed by folder would need its own key — and a handle is
+      not a path, so the only honest key is the handle already in this record.
+      Two stores would also drift the first time one is pruned to 8 and the
+      other is not. `asRoot` normalises a bare handle on read, so a database
+      written by the previous build keeps all eight of its folders.
+
+      The chain is a list of *names*. Node objects are built from a read that
+      has not happened when the page loads, and a name outlives anything. It is
+      the same list a deep link carries, so `applyPath` restores both.
+
+      | Situation | Result |
+      | --------- | ------ |
+      | Every name still exists | The columns reopen, the file is selected, the row is scrolled into view |
+      | A folder partway down is gone | The walk stops there. Columns above it are open, nothing below is, and nothing is selected in the column it stopped at |
+      | The remembered file is gone, its folder is not | The folder opens with no selection, rather than picking whatever now sits in that row |
+      | The folder was last left on its own root | Nothing to restore, so it mounts plainly |
+      | A deep link is in the address bar | The link wins. The user followed it just now; the chain is only where they last stopped |
+      | The database predates the chain | `asRoot` reads a bare handle as `{handle, path: []}` — the upgrade costs nobody their folders |
+      | A truncated chain is saved back | Yes, truncated. The app remembers where the user actually is; keeping a chain that no longer exists would be storing a selection that is not real |
+
+      Saving hangs off `ROUTER.write`, which core already calls on every
+      selection change and nowhere else, so `ui/adapters/app-fsa.js` wraps it
+      rather than core growing a hook — the server build has no remembered
+      folders to hook. Writes are debounced 400 ms and skip unchanged
+      locations, because `render()` also runs on resize and walking a column
+      with ↓ held is one location change per keystroke; a write per keystroke
+      would be the per-entry cost this app spent a rewrite deleting, in
+      another costume. `visibilitychange` flushes the pending write, so a tab
+      closed 100 ms after the last click still records it.
+
+      `mounted` is set only once a mount finishes, so the mount's own renders
+      cannot save a bare root over the very chain they are about to restore.
+
+      In `ui/adapters/storage.js` and `ui/adapters/app-fsa.js` — both adapters,
+      because a remembered *handle* is what this build has and the server build
+      has a root path instead. No `ui/core/` file changed for this. 10 checks in
+      `test-ui.py`, 3 more in `test-e2e.py` against a real folder the test
+      creates, edits and deletes
 - [ ] **PWA manifest + service worker** — the old app had one; would let the
       bundle be installed and launched as a standalone window
