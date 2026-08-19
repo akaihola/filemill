@@ -1011,7 +1011,7 @@ def resource(request, path: str = ""):
         /docs/readme.md?pykofinder-view=raw          the bytes, said out loud
 
     GET only. PLAN-19 §3 makes the router-facing surface read-only, and
-    pykofinder never writes a file under any route.
+    Filemill never writes a file under any route.
     """
     state = urls.parse_state(request.query_params)
     found = _resource_target(path)
