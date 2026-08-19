@@ -525,6 +525,53 @@ async def main():
         check("The ⟳ button on the column header does the same job as F5",
               await pg.eval_on_selector_all(rows1, "e=>e.length") == before + 1)
 
+        # The button has to be *painted* on the focused column, not merely
+        # present. `folding` is not a transient state — layout.js puts it on
+        # column `folded`, which at rest is the root — so a rule keyed on it hid
+        # the button on the root for ever, and on whichever column the dial was
+        # mid-fold on. Park the pointer first: `.col:hover` would otherwise show
+        # the button and hide the bug, which is exactly why it read as a
+        # keyboard-only fault.
+        await mount(pg)
+        await pg.mouse.move(1499, 899)
+        await pg.wait_for_timeout(200)
+        root_col = await pg.evaluate(
+            "({cls: document.querySelector('.col[data-i=\"0\"]').className,"
+            " w: document.querySelector('.col[data-i=\"0\"] .col-head .rf')"
+            "     .getBoundingClientRect().width})")
+        check("The focused root column shows ⟳, even though the dial calls it "
+              "“folding”",
+              root_col["w"] > 0 and "focus" in root_col["cls"],
+              f"class={root_col['cls']!r}, painted width {root_col['w']}")
+        check("(the root really is the folding column, so the check has teeth)",
+              "folding" in root_col["cls"], root_col["cls"])
+
+        # …and after ← lands focus on a column the dial is folding.
+        await pg.set_viewport_size({"width": 760, "height": 700})
+        await pg.keyboard.press("Home")
+        await pg.wait_for_timeout(250)
+        await pg.keyboard.press("ArrowDown")            # "deep"
+        await pg.wait_for_timeout(250)
+        for _ in range(4):                              # walk to the leaf
+            await pg.keyboard.press("ArrowRight")
+            await pg.wait_for_timeout(350)
+        await pg.mouse.move(759, 699)
+        painted = []
+        for _ in range(4):                              # and back out again
+            st = await pg.evaluate(
+                "(() => { const el = document.querySelector('.col.focus');"
+                " const rf = el && el.querySelector('.col-head .rf');"
+                " return {cls: el && el.className,"
+                "         w: rf ? rf.getBoundingClientRect().width : -1}; })()")
+            painted.append((st["cls"], st["w"]))
+            await pg.keyboard.press("ArrowLeft")
+            await pg.wait_for_timeout(350)
+        check("Every column ← lands on shows ⟳, folding or not",
+              all(w > 0 for _, w in painted),
+              "; ".join(f"{c}→{w}" for c, w in painted))
+        await pg.set_viewport_size({"width": 1500, "height": 900})
+        await pg.wait_for_timeout(200)
+
         # A re-read replaces every node object in the column, including the one
         # whose preview is on screen. The guard is pvToken, the same counter a
         # slow file read already answers to: the re-render starts a new fill,

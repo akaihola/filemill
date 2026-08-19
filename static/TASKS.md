@@ -35,7 +35,7 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       and `content-visibility`; ~5 ms re-render and 4–9 ms keystrokes at 3 000
       entries, down from ~500 ms and ~740 ms
 - [x] **Spine click unfolds** — the design study advertised it but never wired it
-- [x] **Tests** — `test-ui.py` (80 headless checks incl. a perf budget, runs
+- [x] **Tests** — `test-ui.py` (84 headless checks incl. a perf budget, runs
       against both the bundle and the modular sources), `test-e2e.py` (real
       folder, real picker, persistence, the real clipboard, and refresh plus
       view-state restore against a throwaway folder it creates and deletes),
@@ -127,7 +127,7 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       column in **371 ms**, which is the build cost the column cache exists to
       avoid paying *per keystroke* — here it is paid once, when the user asks,
       because the entry list really did change. The arrow key straight after it
-      still costs **7.5 ms**, inside the 4–9 ms budget. 17 checks in
+      still costs **7.5 ms**, inside the 4–9 ms budget. 20 checks in
       `test-ui.py`, 3 more in `test-e2e.py` against a real folder
 - [x] **Type-ahead** — typing letters jumps to the matching row in the focused
       column. For the person browsing, a folder of 400 entries goes from about

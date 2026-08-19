@@ -66,7 +66,7 @@ the user makes to your behaviour — capture it here so it survives a context re
     ├── index-dev.html          ← dev entry point: <script src="../ui/…">
     ├── build-index.py          ← index-dev.html + ../ui → index.html
     ├── hotreload.py            ← optional CDP live-patcher for dev mode
-    ├── test-ui.py              ← headless suite, fake handle (80 checks)
+    ├── test-ui.py              ← headless suite, fake handle (84 checks)
     ├── test-url.py             ← deep-link suite over localhost (12 checks)
     ├── test-rich.py            ← CDN renderers: offline/switch/loaded (14)
     └── test-e2e.py             ← headed suite, real folder + real picker
@@ -263,6 +263,7 @@ folders are restored from IndexedDB — reloading is cheap.
 | Refresh empties `node.kids` and re-enters `ensureLoaded` | One loading path, one debounce, one writer of `node.kids`. A separate reload call would be a second writer on the same field, and the interleaving that loses is the one nobody reproduces |
 | …but waits for an in-flight read before emptying it | `ensureLoaded` hands a concurrent caller the *in-flight* promise. Invalidating and asking immediately therefore returns the very listing the refresh was called to replace, and looks like a refresh that silently did nothing |
 | Nothing renders between invalidating and the read landing | The column cache still holds the old DOM, so the screen keeps the previous listing instead of flashing to "Reading…" and losing its scroll position. The ⟳ spins in place instead |
+| No rule in `styles.css` keys off `.col.folding` to hide chrome | `folding` is **not** a transient animation state. `layout.js` sets it on column `folded`, so with nothing scrolled it sits on the *root* column permanently. A `display: none` keyed on it hid the ⟳ on the root for ever, and on whichever column the dial happened to be mid-fold on — which read as two unrelated bugs. Let the header's own opacity crossfade carry anything inside it |
 | F5 is claimed; ⌘R, Ctrl+R and Ctrl+F5 are not | Every desktop file manager reads F5 as "re-read this folder", and here a reload costs the mounted root, the column chain and the scroll position. A real reload stays one keystroke away — the rule type-ahead already follows for ⌘R |
 | Refreshing a parent re-reads the columns open below it | A re-read hands back new node objects, so the chain has to be matched by name regardless. Those columns are also on screen, and one fresh column beside three stale ones is worse than the extra reads. Closed subtrees are untouched |
 | `applyPath` restores refresh, links and remembered folders alike | Three callers, one walk: they cannot disagree about what a half-valid chain means. It stops at the first name that is gone, so no caller can present a selection that is not real |
