@@ -608,12 +608,7 @@ function toggleDotfiles() {
 }
 
 function initDotfilesToggle() {
-    // ?hidden=show|hide is an explicit request and outranks the stored
-    // preference; without it, the reader's last choice still wins.
-    var requested = document.body.getAttribute('data-hidden');
-    var show = requested
-        ? requested === 'show'
-        : localStorage.getItem(_DOT_KEY) === '1';
+    var show = localStorage.getItem(_DOT_KEY) === '1';
     document.body.classList.toggle('show-dotfiles', show);
     _syncDotBtn();
 }

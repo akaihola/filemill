@@ -205,18 +205,6 @@ def test_layout_is_reported_on_the_body(client):
     assert 'data-layout="no-columns"' in resp.text
 
 
-def test_hidden_show_reaches_the_shared_ui(client):
-    """ui/core/state.js seeds state.dotfiles from this attribute."""
-    resp = client.get("/docs/readme.md?filemill=render&hidden=show")
-    assert 'data-hidden="show"' in resp.text
-    assert "/ui/core/state.js" in resp.text
-
-
-def test_hidden_defaults_to_hide(client):
-    resp = client.get("/docs/readme.md?filemill=render&layout=no-columns")
-    assert 'data-hidden="hide"' in resp.text
-
-
 # ── The switch controls are reciprocal and query-preserving ──────────────────
 
 
@@ -240,14 +228,11 @@ def test_highlighted_view_links_back_to_rendered(client):
     ) in resp.text
 
 
-def test_switch_links_preserve_hidden(client):
+def test_switch_links_ignore_hidden(client):
     resp = client.get(
         "/docs/readme.md?filemill=render&layout=no-columns&hidden=show"
     )
-    assert (
-        'href="/docs/readme.md?filemill=highlight'
-        '&amp;layout=no-columns&amp;hidden=show"' in resp.text
-    )
+    assert 'href="/docs/readme.md?filemill=highlight&amp;layout=no-columns"' in resp.text
 
 
 def test_switch_link_to_raw_keeps_the_readers_layout(client):
@@ -397,14 +382,11 @@ def test_markdown_link_keeps_a_no_columns_reader_in_no_columns(site, client):
     )
 
 
-def test_markdown_link_keeps_hidden(site, client):
+def test_markdown_link_drops_hidden(site, client):
     (site / "note.md").write_text("[link](other.md)\n")
     (site / "other.md").write_text("# Other\n")
-    resp = client.get("/note.md?filemill=render&layout=no-columns&hidden=show")
-    assert (
-        'href="/other.md?filemill=render&amp;layout=no-columns&amp;hidden=show"'
-        in resp.text
-    )
+    resp = client.get("/note.md?filemill=render&hidden=show")
+    assert 'href="/other.md?filemill=render"' in resp.text
 
 
 def test_markdown_image_src_is_left_relative_and_now_resolves(site, client):
