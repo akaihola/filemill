@@ -49,6 +49,15 @@ uv run --with "playwright==1.61.0" python3 test-e2e.py    # headed, one folder p
       "Reading…" — the rebuild is ~370 ms at 3 000 entries and scales with it
 - [ ] Rename the *root* folder while it is open, then F5: the handle still
       resolves (a handle is not a path), so the columns are unaffected
+- [ ] Sort by size on a folder of 100 000 entries: the column keeps its names on
+      screen and spins beside the count while it reads. One `getFile()` per
+      entry, roughly 300 µs each, so expect tens of seconds there. Arrow keys
+      and the ⚙ popover stay responsive throughout
+- [ ] Sort by size on a network share or a spinning disk: the same sweep over a
+      slow device. What matters is that the app stays usable and the strip keeps
+      counting down, not how long it takes
+- [ ] Sort by size on a folder holding a file the OS will not let you read: it
+      lands at the bottom of the column under both directions, and stays visible
 - [ ] Large image previews scale to fit; a 100 MB binary shows "No inline
       preview" rather than trying to read it
 

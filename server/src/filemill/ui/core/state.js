@@ -16,14 +16,16 @@ let cursor = {};                                         // col index -> row ind
 let widths = [];                                         // natural width per column
 let folded = 0;                                          // columns currently folded
 let pvToken = 0;                                         // guards async preview fills
-const state = { dotfiles: false };
+const state = { dotfiles: false, sort: { key: "name", desc: false } };
 
 const GUTTER = () => parseInt(getComputedStyle(root).getPropertyValue("--gutter"));
 const SPINE  = () => parseInt(getComputedStyle(root).getPropertyValue("--spine-w"));
 
+/* One filtered copy per call, ordered by core/sort.js. Every column build, every
+   width measurement and every path walk comes through here, which is what keeps
+   the rows, the cursor indices and a restored chain agreeing on what row 4 is. */
 const visibleKids = node =>
-  (node.kids || []).filter(k => state.dotfiles || !k.name.startsWith("."))
-    .sort((a,b) => (!!b.dir - !!a.dir) || a.name.localeCompare(b.name, undefined, {numeric:true}));
+  sortKids((node.kids || []).filter(k => state.dotfiles || !k.name.startsWith(".")));
 
 const fmtSize = b =>
   b < 1024 ? `${b} B`

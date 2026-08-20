@@ -239,6 +239,19 @@ body {
    a folding header carries an opacity the button inherits, so both cases are
    handled without naming either. */
 
+/* Ordering by size or date cannot begin until every row has been read, and that
+   is the one thing in this app that takes a visible moment. The column keeps
+   showing its names in name order meanwhile and spins beside the count, so a
+   wait is never mistaken for a sort that did nothing. `::before` on the count,
+   because the count is already there — an element that appears would re-measure
+   the header and relay out every row underneath it. */
+.col.sorting .col-head .count::before {
+  content: ""; display: inline-block; vertical-align: -1px;
+  width: 9px; height: 9px; margin-right: 5px; border-radius: 50%;
+  border: 1.5px solid var(--hairline-2); border-top-color: var(--accent);
+  animation: spin .7s linear infinite;
+}
+
 .col.focus .col-head { color: var(--ink); }
 .col.focus .col-head::after {
   content: ""; position: absolute; left: 9px; right: 9px;

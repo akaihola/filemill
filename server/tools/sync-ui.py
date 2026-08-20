@@ -34,6 +34,7 @@ WANTED = {
         "ports.js",
         "icons.js",
         "state.js",
+        "sort.js",
         "render.js",
         "layout.js",
         "trail.js",
