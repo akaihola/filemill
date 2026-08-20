@@ -11,7 +11,6 @@ Three query groups, each with one documented default:
     filemill = raw | render | highlight            (default: raw)
     layout   = full-columns | compressed-columns | no-columns
                                                    (default: full-columns)
-    hidden   = hide | show                         (default: hide)
 
 ``raw`` is the default because the bare path has to serve the bytes: a stylesheet
 at ``/site/main.css`` must arrive as ``text/css``, not as a preview of one.
@@ -33,7 +32,6 @@ from urllib.parse import urlencode
 
 VIEW_PARAM = "filemill"
 LAYOUT_PARAM = "layout"
-HIDDEN_PARAM = "hidden"
 VPATH_PARAM = "vpath"
 
 VIEW_RAW = "raw"
@@ -46,13 +44,8 @@ LAYOUT_COMPRESSED = "compressed-columns"
 LAYOUT_NONE = "no-columns"
 LAYOUTS: tuple[str, ...] = (LAYOUT_FULL, LAYOUT_COMPRESSED, LAYOUT_NONE)
 
-HIDDEN_HIDE = "hide"
-HIDDEN_SHOW = "show"
-HIDDEN_VALUES: tuple[str, ...] = (HIDDEN_HIDE, HIDDEN_SHOW)
-
 DEFAULT_VIEW = VIEW_RAW
 DEFAULT_LAYOUT = LAYOUT_FULL
-DEFAULT_HIDDEN = HIDDEN_HIDE
 
 # Human labels for the switch controls, in the order they are rendered.
 VIEW_LABELS: tuple[tuple[str, str], ...] = (
@@ -68,18 +61,12 @@ class ViewState:
 
     view: str = DEFAULT_VIEW
     layout: str = DEFAULT_LAYOUT
-    hidden: str = DEFAULT_HIDDEN
     vpath: str = ""
 
     @property
     def wants_columns(self) -> bool:
         """True when the response should carry the Miller-columns finder shell."""
         return self.layout != LAYOUT_NONE
-
-    @property
-    def show_hidden(self) -> bool:
-        """True when dotfiles are visible."""
-        return self.hidden == HIDDEN_SHOW
 
     def with_view(self, view: str) -> ViewState:
         """Return the same state pointed at another representation."""
@@ -118,7 +105,6 @@ def parse_state(params) -> ViewState:
     return ViewState(
         view=_one_of(_last(params, VIEW_PARAM), VIEWS, DEFAULT_VIEW),
         layout=_one_of(_last(params, LAYOUT_PARAM), LAYOUTS, DEFAULT_LAYOUT),
-        hidden=_one_of(_last(params, HIDDEN_PARAM), HIDDEN_VALUES, DEFAULT_HIDDEN),
         vpath=vpath.strip("/"),
     )
 
@@ -128,7 +114,6 @@ def build_url(
     *,
     view: str | None = None,
     layout: str | None = None,
-    hidden: str | None = None,
     vpath: str | None = None,
 ) -> str:
     """Build a root-relative URL: ``/`` + *rel*, plus the parameters given.
@@ -148,8 +133,6 @@ def build_url(
         pairs.append((VIEW_PARAM, view))
     if layout is not None and layout in LAYOUTS:
         pairs.append((LAYOUT_PARAM, layout))
-    if hidden is not None and hidden in HIDDEN_VALUES:
-        pairs.append((HIDDEN_PARAM, hidden))
     if vpath:
         pairs.append((VPATH_PARAM, vpath.strip("/")))
     return f"{path}?{urlencode(pairs)}" if pairs else path
@@ -167,6 +150,5 @@ def url_for_state(rel: str, state: ViewState, *, view: str | None = None) -> str
         rel,
         view=chosen if chosen != DEFAULT_VIEW else None,
         layout=state.layout if state.layout != DEFAULT_LAYOUT else None,
-        hidden=state.hidden if state.hidden != DEFAULT_HIDDEN else None,
         vpath=state.vpath or None,
     )
