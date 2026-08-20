@@ -25,8 +25,24 @@ TARGET = ROOT / ("index-dev.html" if "--dev" in sys.argv else "index.html")
 # A fake FileSystemDirectoryHandle tree: async-iterable entries(), getFile().
 FAKE = r"""
 window.__mk = (nbig) => {
-  const F = (name, text) => ({kind:'file', name,
-    getFile: async () => new File([text ?? 'x'], name, {lastModified: Date.parse('2026-08-01')})});
+  /* Every getFile() is counted. A sort by size is the only feature here that
+     reads a whole directory file by file, so "how many reads did that cost"
+     is the number the sort checks are really about — an assertion on the
+     order alone would pass just as well if the app swept on every render. */
+  window.__gets = 0;
+  /* The File is built once and handed back on every call. Constructing 3 000
+     Blobs costs more than the sweep that asks for them, and a bench dominated
+     by the fake measures the fake. The call is still counted, which is what the
+     sort checks assert on. */
+  const F = (name, text, mod) => { let f = null; return {kind:'file', name,
+    getFile: async () => { window.__gets++;
+      return f ||= new File([text ?? 'x'], name,
+                            {lastModified: Date.parse(mod || '2026-08-01')}); }}; };
+  /* A file the port cannot stat: the permission case, which still has to sort
+     somewhere and must never be dropped from the listing. */
+  const FX = (name) => ({kind:'file', name,
+    getFile: async () => { window.__gets++;
+      throw Object.assign(new Error('no'), {name:'NotAllowedError'}); }});
   const D = (name, kids) => ({kind:'directory', name,
     entries: async function*(){ for (const k of kids) yield [k.name, k]; }});
   const DENIED = (name) => ({kind:'directory', name,
@@ -43,8 +59,12 @@ window.__mk = (nbig) => {
     entries: async function*(){ const snap = ref.slice();
                                 await new Promise(r=>setTimeout(r,400));
                                 for (const k of snap) yield [k.name, k]; }});
+  /* Sizes and mtimes that disagree with the name order in both directions, so a
+     size or date sort cannot be mistaken for the name sort it replaced. */
   const big = [];
-  for (let i=0;i<(nbig||0);i++) big.push(F(`file-${String(i).padStart(5,'0')}.txt`));
+  for (let i=0;i<(nbig||0);i++)
+    big.push(F(`file-${String(i).padStart(5,'0')}.txt`, 'x'.repeat((i % 13) + 1),
+               `2026-0${(i % 9) + 1}-01`));
   /* rebuilt per mount(), so one test's added and removed files cannot leak
      into the next one */
   window.__F = F;
@@ -74,9 +94,23 @@ window.__mk = (nbig) => {
     // rely on do not move.
     D('refresh', window.__live),
     RACE('racing', window.__race),
+    // Six orderings, all different, so no check can pass by accident. By name
+    // the files read big, locked, medium, small; by size small(10) <
+    // medium(100) < big(300); by date medium(Jan) < small(Feb) < big(Mar).
+    // locked.txt has neither a size nor a date — getFile() refuses it.
+    // Sorts after "slow", so the root row indices the keyboard checks use are
+    // exactly where they were.
+    D('sorting', [D('zeta', []), D('alpha', []),
+                  F('big.bin',   'x'.repeat(300), '2026-03-02'),
+                  F('small.txt', 'x'.repeat(10),  '2026-02-04'),
+                  F('medium.md', 'x'.repeat(100), '2026-01-03'),
+                  FX('locked.txt')]),
     F('README.md','# hi\n'),
   ]);
 };
+/* Row names in a column, in the order the DOM has them. */
+window.__rows = (i) =>
+  [...document.querySelectorAll(`.col[data-i="${i}"] .row`)].map(r => r.title);
 /* Live entry lists, and the two edits a test makes to them. The node factories
    live inside __mk, so the helpers are bound here rather than re-derived. */
 window.__live = [];
@@ -111,6 +145,40 @@ window.__typebench = (n, key, reset) => {
   const ms = +((performance.now()-t0)/n).toFixed(1);
   hit('Escape');
   return {ms, rows};
+};
+/* Make every metadata read take `ms`, so a sweep can be caught in flight and
+   raced against a navigation. The real getFile() answers in microseconds on a
+   fake handle, which is the one thing a race check cannot work with. */
+window.__slowMeta = (ms) => {
+  const real = window.__realMeta || (window.__realMeta = FS.loadMeta.bind(FS));
+  FS.loadMeta = ms
+    ? async n => { await new Promise(r => setTimeout(r, ms)); return real(n); }
+    : real;
+};
+/* A port that rejects instead of recording the error on the row. FSA.loadMeta
+   catches its own failures, but the port contract only promises to *fill*
+   node.meta — and one rejection escaping the sweep would leave the column
+   spinning until the tab closed. */
+window.__brokenMeta = () => {
+  window.__realMeta = window.__realMeta || FS.loadMeta.bind(FS);
+  FS.loadMeta = async () => { throw new Error('boom'); };
+};
+/* The app's own share of a sweep: the fan-out, the awaits and the bookkeeping,
+   with the port answering out of memory. Swept once first, so the fake's own
+   File construction is behind us and the timed pass measures this app.
+   The syscall the real port makes is measured in test-url.py, against a real
+   filesystem, where it is the whole cost. */
+window.__sweepbench = async () => {
+  const node = path[focusCol];
+  const clear = () => { node.metaDone = false;
+                        for (const k of node.kids) delete k.meta; };
+  clear(); await ensureMeta(node);          /* warm */
+  clear();
+  const before = window.__gets;
+  const t0 = performance.now();
+  await ensureMeta(node);
+  return {ms: +(performance.now()-t0).toFixed(1), reads: window.__gets - before,
+          rows: node.kids.length};
 };
 /* every width a column is ever painted at, to catch one that opens narrow and
    then jumps once its names arrive */
@@ -747,10 +815,16 @@ async def main():
         await pg.evaluate("mount(__mk(0))")
         await pg.wait_for_timeout(350)
         start_saves = await pg.evaluate("__saved.length")
-        await pg.click('.col[data-i="0"] .row:has-text("mixed")')
-        await pg.wait_for_timeout(150)
-        await pg.click('.col[data-i="1"] .row:has-text("note.md")')
-        early = await pg.evaluate("__saved.length")
+        # Both clicks inside one page call, so the 150 ms gap is 150 ms of app
+        # time. Driven from here it was two Playwright round-trips wide, and on
+        # a loaded machine that exceeds the 400 ms debounce and splits the write
+        # this check exists to prove is single. It flaked twice in five runs.
+        early = await pg.evaluate("""(async () => {
+          document.querySelector('.col[data-i="0"] .row[title="mixed"]').click();
+          await new Promise(r => setTimeout(r, 150));
+          document.querySelector('.col[data-i="1"] .row[title="note.md"]').click();
+          return __saved.length;
+        })()""")
         await pg.wait_for_timeout(800)
         saved = await pg.evaluate("__saved")
         check("Mounting a folder does not overwrite the chain it just restored",
@@ -759,6 +833,210 @@ async def main():
               early == 0 and len(saved) == 1, f"{early} early, {len(saved)} total")
         check("What is stored is the folder and the chain inside it",
               saved == [["workspace", ["mixed", "note.md"]]], str(saved))
+
+        print("\n── Sort options ─────────────────────────────────────────────")
+        # The `sorting` folder is built so that every ordering below disagrees
+        # with every other one. What the checks are really about is the *reads*:
+        # sorting by name must cost none, and sorting by size must cost one
+        # getFile() per row and then never ask again.
+        NAME_ASC = ["alpha", "zeta", "big.bin", "locked.txt", "medium.md", "small.txt"]
+        NAME_DESC = ["zeta", "alpha", "small.txt", "medium.md", "locked.txt", "big.bin"]
+        SIZE_ASC = ["alpha", "zeta", "small.txt", "medium.md", "big.bin", "locked.txt"]
+        SIZE_DESC = ["alpha", "zeta", "big.bin", "medium.md", "small.txt", "locked.txt"]
+        MTIME_ASC = ["alpha", "zeta", "medium.md", "small.txt", "big.bin", "locked.txt"]
+
+        async def in_sorting():
+            """Mount fresh on the default sort and open the `sorting` folder."""
+            await pg.evaluate("setSort('name', false)")
+            await mount(pg)
+            await pg.click('.col[data-i="0"] .row:has-text("sorting")')
+            await pg.wait_for_timeout(300)
+
+        await in_sorting()
+        gets = await pg.evaluate("__gets")
+        check("The default sort is by name, and it opens a folder without "
+              "reading a single file",
+              await pg.evaluate("__rows(1)") == NAME_ASC and gets == 0,
+              f"{gets} getFile() calls — a name is already in the listing")
+
+        await pg.evaluate("setSort('size', false)")
+        await pg.wait_for_timeout(400)
+        gets = await pg.evaluate("__gets")
+        # 4 files in `sorting` and 1 (README.md) in the root column beside it.
+        # The other nine directories in the tree are not on screen and are not
+        # touched: the sweep covers what is displayed, not what exists.
+        check("Sorting by size reorders the column, at one getFile() per row",
+              await pg.evaluate("__rows(1)") == SIZE_ASC and gets == 5,
+              f"{gets} reads: 4 files here, 1 in the root column, 0 elsewhere")
+
+        await pg.evaluate("render(true)")
+        await pg.wait_for_timeout(200)
+        check("…and a re-render re-reads none of them",
+              await pg.evaluate("__gets") == gets,
+              f"{await pg.evaluate('__gets') - gets} extra reads")
+
+        await pg.evaluate("setSort('size', true)")
+        await pg.wait_for_timeout(300)
+        desc = await pg.evaluate("__rows(1)")
+        check("Descending reverses the order and sweeps nothing a second time",
+              desc == SIZE_DESC and await pg.evaluate("__gets") == gets, str(desc))
+        check("A file the port refused to stat sorts last in both directions, "
+              "and is dropped from neither",
+              SIZE_ASC[-1] == "locked.txt" and desc[-1] == "locked.txt"
+              and len(desc) == 6,
+              "biggest-first must not answer with a file nobody could open")
+
+        await pg.evaluate("setSort('mtime', false)")
+        await pg.wait_for_timeout(300)
+        check("Modified orders by date, on the sweep the size sort already paid",
+              await pg.evaluate("__rows(1)") == MTIME_ASC
+              and await pg.evaluate("__gets") == gets,
+              "getFile() hands back the size and the mtime together")
+
+        await pg.evaluate("setSort('name', true)")
+        await pg.wait_for_timeout(300)
+        check("Folders stay above files under every key, and follow the direction",
+              await pg.evaluate("__rows(1)") == NAME_DESC,
+              "no port can give a directory a size or an mtime")
+
+        await pg.evaluate("setSort('name', false)")
+        await pg.click("#gear")
+        await pg.click("#s-sort-size")
+        await pg.wait_for_timeout(400)
+        ticked = await pg.evaluate(
+            "SORT_KEYS.map(k => document.getElementById('s-sort-'+k)"
+            ".getAttribute('aria-checked'))")
+        check("The ⚙ menu picks the key and shows which one is active",
+              await pg.evaluate("__rows(1)") == SIZE_ASC
+              and ticked == ["false", "true", "false"], str(ticked))
+        await pg.click("#s-sort-desc")
+        await pg.wait_for_timeout(300)
+        check("…and the direction is a separate switch that applies to that key",
+              await pg.evaluate("__rows(1)") == SIZE_DESC
+              and await pg.evaluate(
+                  "document.getElementById('s-sort-desc').getAttribute('aria-checked')")
+              == "true")
+
+        # Remembered in localStorage rather than in the per-folder record: the
+        # sort is how a person reads a list, not a property of the folder.
+        check("The choice is remembered, so the next session opens the same way",
+              await pg.evaluate("localStorage.getItem('filemill.sort')") == "size:desc",
+              await pg.evaluate("localStorage.getItem('filemill.sort')"))
+        await pg.evaluate("state.sort = {key:'name', desc:false}; loadSort()")
+        check("…and a reload reads it back",
+              await pg.evaluate("JSON.stringify(state.sort)")
+              == '{"key":"size","desc":true}',
+              await pg.evaluate("JSON.stringify(state.sort)"))
+
+        # The cursor is a row *index*, and a re-sort moves the row it named.
+        # small.txt sits at row 2 ascending and row 4 descending, so a cursor
+        # left behind would put ↓ on medium.md instead of locked.txt.
+        await in_sorting()
+        await pg.evaluate("setSort('size', false)")
+        await pg.wait_for_timeout(400)
+        await pg.keyboard.press("ArrowRight")
+        await pg.wait_for_timeout(250)
+        await pg.click('.col[data-i="1"] .row:has-text("small.txt")')
+        await pg.wait_for_timeout(250)
+        await pg.evaluate("setSort('size', true)")
+        await pg.wait_for_timeout(400)
+        await pg.keyboard.press("ArrowDown")
+        await pg.wait_for_timeout(250)
+        check("↓ after a re-sort steps off the row that is still selected, not "
+              "off the row number it used to have",
+              await pg.evaluate("sel[1]") == "locked.txt",
+              await pg.evaluate("sel[1]"))
+
+        # A refresh lands while the sweep is still reading. Those metadata reads
+        # are about objects the new listing no longer contains, so the sweep
+        # must not mark the new one done — and the app has to notice and ask
+        # again rather than sit on a half-ordered column.
+        await pg.evaluate("setSort('name', false)")
+        await mount(pg)
+        await pg.click('.col[data-i="0"] .row:has-text("refresh")')
+        await pg.wait_for_timeout(300)
+        await pg.evaluate("__slowMeta(400)")
+        await pg.evaluate("setSort('size', false)")
+        await pg.wait_for_timeout(120)                  # the sweep is in flight
+        await pg.evaluate("__add(__live, 'zero.txt')")  # 8 bytes; one/two are 1
+        await pg.evaluate("refreshColumn(1)")
+        await pg.wait_for_timeout(2500)
+        rows = await pg.evaluate("__rows(1)")
+        check("A refresh during a sweep re-reads and sweeps again, rather than "
+              "trusting metadata about entries that are gone",
+              rows == ["sub", "one.txt", "two.txt", "zero.txt"]
+              and await pg.evaluate("path[1].metaDone") is True
+              and await pg.eval_on_selector_all(".col.sorting", "e=>e.length") == 0,
+              str(rows))
+        await pg.evaluate("__slowMeta(0)")
+
+        # A sweep is the one thing here that can take a visible moment, so the
+        # column has to say it is working rather than sit there in name order.
+        # 2 s per read, not 400 ms: three Playwright round-trips have to land
+        # inside the window, and on a loaded machine each of those can take
+        # hundreds of milliseconds. A window this wide fails only if the
+        # spinner is genuinely absent.
+        await in_sorting()
+        await pg.evaluate("__slowMeta(2000)")
+        await pg.evaluate("setSort('size', false)")
+        await pg.wait_for_timeout(150)
+        spinning = await pg.eval_on_selector_all(".col.sorting", "e=>e.length")
+        say = (await pg.inner_text("#st-sort")).strip()
+        # 5 files, which is exactly the getFile() count the check above pinned:
+        # the strip counts calls outstanding, not entries in view.
+        check("A column still reading its metadata says so, rather than freezing",
+              spinning > 0 and "reading 5 files" in say,
+              f"{spinning} columns spinning, strip says {say!r}")
+        await pg.wait_for_function("!path.some(n => n.metaLoading)", timeout=30_000)
+        await pg.wait_for_timeout(300)
+        say = (await pg.inner_text("#st-sort")).strip()
+        check("…and when the sweep lands the strip names the folder and what it "
+              "cost to read",
+              "size" in say and "sorting: 4 files read in" in say
+              and await pg.eval_on_selector_all(".col.sorting", "e=>e.length") == 0,
+              say)
+
+        # The race the design has to survive: the sweep is slow, and the user
+        # walks off before it lands.
+        await in_sorting()
+        await pg.evaluate("__slowMeta(500)")
+        await pg.evaluate("setSort('size', false)")
+        await pg.wait_for_timeout(120)                  # the sweep is in flight
+        await pg.click('.col[data-i="0"] .row:has-text("mixed")')
+        await pg.wait_for_timeout(1500)                 # long enough for it to land
+        st = await pg.evaluate("__state()")
+        coherent = all(st["sel"][i] == st["path"][i + 1]
+                       for i in range(len(st["path"]) - 1))
+        check("A sweep that lands after the user walked off does not repaint the "
+              "column it no longer describes",
+              st["path"] == ["workspace", "mixed"] and st["sel"] == ["mixed"]
+              and coherent, json.dumps(st))
+
+        await pg.evaluate("__slowMeta(0)")
+        gets = await pg.evaluate("__gets")
+        await pg.click('.col[data-i="0"] .row:has-text("sorting")')
+        await pg.wait_for_timeout(500)
+        again = await pg.evaluate("__gets") - gets
+        check("…but what it read is kept, so stepping back in shows the sorted "
+              "column and asks for nothing",
+              await pg.evaluate("__rows(1)") == SIZE_ASC and again == 0,
+              f"{again} further getFile() calls")
+
+        # A port that rejects instead of recording the error would otherwise
+        # leave metaLoading set for good, and the column would spin until the
+        # tab closed.
+        await in_sorting()
+        await pg.evaluate("__brokenMeta()")
+        await pg.evaluate("setSort('size', false)")
+        await pg.wait_for_timeout(700)
+        rows = await pg.evaluate("__rows(1)")
+        check("A port that rejects every read finishes the sweep instead of "
+              "spinning for ever, and keeps every row",
+              await pg.eval_on_selector_all(".col.sorting", "e=>e.length") == 0
+              and sorted(rows) == sorted(NAME_ASC)
+              and await pg.evaluate("path[1].metaDone") is True,
+              f"{len(rows)} rows, metaDone {await pg.evaluate('path[1].metaDone')}")
+        await pg.evaluate("__slowMeta(0); setSort('name', false)")
 
         print("\n── Render cost ──────────────────────────────────────────────")
         # Generous ceilings: they exist to catch the O(entries)-per-keystroke
@@ -822,6 +1100,52 @@ async def main():
                   after < budget and await pg.evaluate("colCache.get(path[focusCol])"
                                                        ".rows.length") == n,
                   f"keystroke {after} ms after a {rf} ms refresh")
+
+            # The sweep a size or date sort has to finish before it can place
+            # the first row. Against a fake handle getFile() returns without
+            # touching a disk, so this is the app's own share of the cost — the
+            # fan-out, the sort and the rebuild — and it is the part a
+            # regression here would show up in. The syscall itself is measured
+            # against a real filesystem in test-url.py, where it dominates.
+            # Like refresh, this is a price paid once, when the user asks, and
+            # the assertion is on the arrow key measured *after* it.
+            sweep = await pg.evaluate("__sweepbench()")
+            await pg.evaluate("setSort('size', false)")
+            await pg.wait_for_timeout(300)
+            swept_key = await pg.evaluate("__keybench(20)")
+            # Two assertions, because a stopwatch alone cannot carry this one.
+            #
+            # `arrow` is the same key, same column, earlier in this same run.
+            # A fixed ceiling would decide by machine load rather than by code:
+            # an arrow key at 3 000 entries came in between 11.5 ms and 89.9 ms
+            # over 12 runs here and 106 ms on a slower machine, against a 100 ms
+            # budget. Sorting by size does not move it — a probe alternating the
+            # keys on one column measured 19.4–40.4 ms by size against
+            # 16.4–45.8 ms by name, less spread than either has on its own.
+            #
+            # But `arrow + budget` is loose enough to hide a re-sort per
+            # keystroke, which costs 18–90 ms at this size. So the second
+            # assertion is exact and has no clock in it: after 20 presses the
+            # focused column must still be the *same cached entry*. Rebuilding
+            # it per keystroke is the O(entries) regression the column cache
+            # exists to prevent, and `metaDone` is a new way to trip it.
+            # Verified by injecting exactly that (a buildCol whose metaRef never
+            # matches): the keystroke went to 639.5 ms against a 109 ms
+            # threshold, and the identity check went false.
+            kept = await pg.evaluate(
+                "(() => { const c = colCache.get(path[focusCol]);"
+                " for (let i = 0; i < 20; i++)"
+                "   document.dispatchEvent(new KeyboardEvent('keydown', {key:'ArrowDown'}));"
+                " return colCache.get(path[focusCol]) === c; })()")
+            check(f"{n:,} entries: a size sort sweeps the directory in "
+                  f"{sweep['ms']} ms of app time ({sweep['reads']} getFile() "
+                  f"calls); the keystroke after it costs {swept_key} ms against "
+                  f"{arrow} ms for the same key before it, and rebuilds nothing",
+                  swept_key < arrow + budget and kept and sweep["reads"] == n
+                  and sweep["rows"] == n,
+                  f"{sweep['reads']} reads for {sweep['rows']} rows, "
+                  f"column {'kept' if kept else 'REBUILT'}")
+            await pg.evaluate("setSort('name', false)")
 
         check("No console errors anywhere", not errs, "; ".join(errs[:3]))
         await b.close()

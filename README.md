@@ -4,7 +4,8 @@ A file explorer in Miller columns, in two editions that are the same
 application.
 
 ```
-ui/        the shared UI — columns, folding, the trail, keyboard, deep links
+ui/        the shared UI — columns, folding, the trail, keyboard, deep links,
+           sort order
 static/    one portable index.html that browses a folder on your own machine
 server/    a local web app that browses a folder on the server, in Python
 ```
@@ -18,6 +19,13 @@ through three small ports declared in [`ui/core/ports.js`](ui/core/ports.js):
 | filesystem | File System Access API | `GET /api/dir` |
 | preview | markdown-it / highlight.js, fetched on demand | `GET /api/preview` — Python renderers |
 | router | `#r=root&p=a/b.md` | `/n/a/b.md` — the path *is* the file path |
+
+A port is also where the two editions' costs differ. Sorting a column by size
+needs a size per row: the server's listing already carries one, while the File
+System Access API hands out names and handles only, so the static edition pays
+one `getFile()` per entry (roughly 300 µs each, about a second for 3 000). One
+implementation in `ui/core/sort.js`, two prices, and neither edition had to know
+about the other.
 
 One repository because the alternative was two, and two lookalike UIs drift
 apart one bug fix at a time however much discipline is applied to copying

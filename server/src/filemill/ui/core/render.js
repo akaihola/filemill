@@ -71,13 +71,16 @@ function buildCol(node) {
   });
   body.onscroll = paintTrail;
 
-  return { el, body, kids, rows, kidsRef: node.kids,
+  return { el, body, kids, rows, kidsRef: node.kids, metaRef: !!node.metaDone,
            dot: el.querySelector(".dot"), width: measure(node) };
 }
 
 function columnFor(node) {
   let c = colCache.get(node);
-  if (c && c.kidsRef !== node.kids) c = null;      /* directory finished reading */
+  /* Two ways this DOM stops being the column: the directory was re-read, or a
+     metadata sweep landed and re-ordered the rows under it. Same test, one
+     field along. */
+  if (c && (c.kidsRef !== node.kids || c.metaRef !== !!node.metaDone)) c = null;
   if (!c) c = buildCol(node);
   colCache.delete(node);                            /* re-insert = most recently used */
   colCache.set(node, c);
@@ -90,16 +93,35 @@ function columnFor(node) {
 
 function render(keepScroll) {
   if (!path.length) return;
-  const sig = `${state.dotfiles}|${root.dataset.density}|${root.dataset.theme}`;
+  const sig = `${state.dotfiles}|${root.dataset.density}|${root.dataset.theme}` +
+              `|${state.sort.key}|${state.sort.desc}`;
   if (sig !== cacheSig) { colCache.clear(); cacheSig = sig; }
 
   widths = [];
   const cols = path.map((node, i) => {
+    /* Before columnFor, so a directory that needs no fetch — the server build,
+       or one a preview has already read — is built once in the sorted order
+       rather than built and rebuilt. */
+    sweepMeta(node);
+    const had = colCache.get(node);
     const c = columnFor(node);
+    /* A rebuilt column is the only place row indices can have moved: a sweep
+       re-ordered it, the sort changed, dotfiles appeared, the read landed. The
+       cursor is an index, so re-point it at the entry that is still selected
+       here, or ↓ resumes from whatever slid into that number. Reading c.kids,
+       which the build just produced, keeps this off the keystroke path — an
+       unchanged column skips it entirely. */
+    if (c !== had && sel[i] !== undefined) {
+      const ri = c.kids.findIndex(k => k.name === sel[i]);
+      if (ri >= 0) cursor[i] = ri;
+    }
     widths.push(c.width);
 
+    /* `sorting` goes in the class string rather than on classList, because this
+       write replaces the whole attribute and would drop it a frame later. */
     set(c.el, "className", "col " +
-      (i < focusCol ? "ancestor" : i > focusCol ? "descendant" : "focus"));
+      (i < focusCol ? "ancestor" : i > focusCol ? "descendant" : "focus") +
+      (node.metaLoading ? " sorting" : ""));
     set(c.el.dataset, "depth", String(Math.min(5, Math.max(0, focusCol - i))));
     set(c.el.dataset, "i", String(i));
     set(c.el.style, "width", c.width + "px");
@@ -127,6 +149,7 @@ function render(keepScroll) {
   for (const c of cols)
     c.el.classList.toggle("scrollable-down", c.body.scrollHeight > c.body.clientHeight + 4);
   renderCrumbs();
+  sortSay(sortStatus());
   layout(keepScroll);
   syncURL();
 }
