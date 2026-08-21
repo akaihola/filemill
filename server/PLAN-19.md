@@ -342,6 +342,21 @@ changes.** Not done — see below.
 
 ## What remains
 
+### Design decision: `compressed-columns`
+
+Keep `layout=compressed-columns` as a named URL preset, but make its behavior
+match its promise: the leftmost columns fold to narrow spines while the
+remaining columns retain their width. The current `body.zoomed` implementation
+is not acceptable because it hides every column and is effectively
+`no-columns` with a breadcrumb.
+
+Implement the fold behavior in the HTMX UI as a bridge to the shared-frontend
+cutover. Match the `/n/` implementation's semantics and CSS variables closely
+so the temporary duplication is bounded and convergence is mechanical. Keep
+the URL value as one deterministic preset; expose an arbitrary fold position,
+if needed later, through a separate numeric parameter rather than additional
+enum values.
+
 1. **Raw HTML in Markdown reaches the browser.** `MarkdownIt("commonmark")` sets
    `html: True`, so a `<script>` written into a Markdown file under ROOT runs.
    This predates PLAN-19 and no test covered it;
