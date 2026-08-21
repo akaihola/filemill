@@ -3,15 +3,15 @@
 A file has one address. ``/docs/readme.md`` names the resource; the query says
 which representation of it you want. That split is what lets the gogo dashboard
 embed a document without minting a second URL for it — the dashboard asks the
-same path for ``?pykofinder-view=rendered&layout=no-columns``, and a colleague
-who pastes the link into chat opens the same document with the finder around it.
+same path for ``?filemill=render&layout=no-columns``, and a colleague who
+pastes the link into chat opens the same document with the finder around it.
 
 Three query groups, each with one documented default:
 
-    pykofinder-view = raw | rendered | highlighted     (default: raw)
-    layout          = full-columns | compressed-columns | no-columns
-                                                       (default: full-columns)
-    hidden          = hide | show                      (default: hide)
+    filemill = raw | render | highlight            (default: raw)
+    layout   = full-columns | compressed-columns | no-columns
+                                                   (default: full-columns)
+    hidden   = hide | show                         (default: hide)
 
 ``raw`` is the default because the bare path has to serve the bytes: a stylesheet
 at ``/site/main.css`` must arrive as ``text/css``, not as a preview of one.
@@ -31,15 +31,15 @@ from dataclasses import dataclass, replace
 from urllib.parse import quote as urlquote
 from urllib.parse import urlencode
 
-VIEW_PARAM = "pykofinder-view"
+VIEW_PARAM = "filemill"
 LAYOUT_PARAM = "layout"
 HIDDEN_PARAM = "hidden"
 VPATH_PARAM = "vpath"
 
 VIEW_RAW = "raw"
-VIEW_RENDERED = "rendered"
-VIEW_HIGHLIGHTED = "highlighted"
-VIEWS: tuple[str, ...] = (VIEW_RAW, VIEW_RENDERED, VIEW_HIGHLIGHTED)
+VIEW_RENDER = "render"
+VIEW_HIGHLIGHT = "highlight"
+VIEWS: tuple[str, ...] = (VIEW_RAW, VIEW_RENDER, VIEW_HIGHLIGHT)
 
 LAYOUT_FULL = "full-columns"
 LAYOUT_COMPRESSED = "compressed-columns"
@@ -56,8 +56,8 @@ DEFAULT_HIDDEN = HIDDEN_HIDE
 
 # Human labels for the switch controls, in the order they are rendered.
 VIEW_LABELS: tuple[tuple[str, str], ...] = (
-    (VIEW_RENDERED, "Rendered"),
-    (VIEW_HIGHLIGHTED, "Source"),
+    (VIEW_RENDER, "Rendered"),
+    (VIEW_HIGHLIGHT, "Source"),
     (VIEW_RAW, "Raw"),
 )
 

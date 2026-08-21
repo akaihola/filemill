@@ -9,9 +9,9 @@ from filemill.urls import (
     DEFAULT_VIEW,
     LAYOUT_COMPRESSED,
     LAYOUT_NONE,
-    VIEW_HIGHLIGHTED,
+    VIEW_HIGHLIGHT,
     VIEW_RAW,
-    VIEW_RENDERED,
+    VIEW_RENDER,
     ViewState,
     build_url,
     parse_state,
@@ -36,9 +36,9 @@ def test_empty_query_gives_documented_defaults():
     )
 
 
-@pytest.mark.parametrize("view", ["rendered", "highlighted", "raw"])
+@pytest.mark.parametrize("view", ["render", "highlight", "raw"])
 def test_each_view_value_parses(view):
-    assert parse_state(QueryParams(f"pykofinder-view={view}")).view == view
+    assert parse_state(QueryParams(f"filemill={view}")).view == view
 
 
 @pytest.mark.parametrize("layout", ["full-columns", "compressed-columns", "no-columns"])
@@ -57,11 +57,11 @@ def test_each_hidden_value_parses(hidden):
 @pytest.mark.parametrize(
     "query",
     [
-        "pykofinder-view=nonsense",
-        "pykofinder-view=",
-        "pykofinder-view=RENDERED",
-        "pykofinder-view=rendered%00",
-        "pykofinder-view=../../etc/passwd",
+        "filemill=nonsense",
+        "filemill=",
+        "filemill=RENDER",
+        "filemill=render%00",
+        "filemill=../../etc/passwd",
     ],
 )
 def test_invalid_view_falls_back_to_default(query):
@@ -80,8 +80,8 @@ def test_invalid_hidden_falls_back_to_default(query):
 
 def test_repeated_value_takes_the_last_occurrence():
     """A rewriting router appends; the appended value has to win."""
-    state = parse_state(QueryParams("pykofinder-view=raw&pykofinder-view=rendered"))
-    assert state.view == VIEW_RENDERED
+    state = parse_state(QueryParams("filemill=raw&filemill=render"))
+    assert state.view == VIEW_RENDER
 
 
 def test_repeated_value_with_invalid_last_falls_back_to_default():
@@ -90,8 +90,8 @@ def test_repeated_value_with_invalid_last_falls_back_to_default():
 
 
 def test_unknown_parameters_are_ignored():
-    state = parse_state(QueryParams("view=rendered&mode=raw&pykofinder-view=rendered"))
-    assert state.view == VIEW_RENDERED
+    state = parse_state(QueryParams("view=rendered&mode=raw&filemill=render"))
+    assert state.view == VIEW_RENDER
 
 
 def test_vpath_is_stripped_of_surrounding_slashes():
@@ -100,7 +100,7 @@ def test_vpath_is_stripped_of_surrounding_slashes():
 
 def test_plain_dict_parses_like_query_params():
     """The parser accepts a plain mapping, which keeps unit tests cheap."""
-    assert parse_state({"pykofinder-view": "highlighted"}).view == VIEW_HIGHLIGHTED
+    assert parse_state({"filemill": "highlight"}).view == VIEW_HIGHLIGHT
 
 
 # ── Derived flags ────────────────────────────────────────────────────────────
@@ -135,13 +135,13 @@ def test_root_is_a_single_slash():
     assert build_url("") == "/"
 
 
-def test_view_parameter_is_named_pykofinder_view():
-    assert build_url("a.md", view=VIEW_RENDERED) == "/a.md?pykofinder-view=rendered"
+def test_view_parameter_is_named_filemill():
+    assert build_url("a.md", view=VIEW_RENDER) == "/a.md?filemill=render"
 
 
 def test_all_three_groups_appear_in_a_stable_order():
-    url = build_url("a.md", view=VIEW_RENDERED, layout=LAYOUT_NONE, hidden="show")
-    assert url == "/a.md?pykofinder-view=rendered&layout=no-columns&hidden=show"
+    url = build_url("a.md", view=VIEW_RENDER, layout=LAYOUT_NONE, hidden="show")
+    assert url == "/a.md?filemill=render&layout=no-columns&hidden=show"
 
 
 def test_invalid_values_are_dropped_not_emitted():
@@ -188,7 +188,7 @@ def test_url_for_state_keeps_non_default_layout_when_switching_view():
     is the contract's own best explanation of itself. The layout and dotfile
     choices they already made ride along.
     """
-    state = ViewState(view=VIEW_RENDERED, layout=LAYOUT_NONE, hidden="show")
+    state = ViewState(view=VIEW_RENDER, layout=LAYOUT_NONE, hidden="show")
     assert url_for_state("a.md", state, view=VIEW_RAW) == (
         "/a.md?layout=no-columns&hidden=show"
     )
@@ -196,7 +196,7 @@ def test_url_for_state_keeps_non_default_layout_when_switching_view():
 
 def test_build_url_can_still_pin_the_raw_view_explicitly():
     """A router that must not rely on the default spells the value out."""
-    assert build_url("a.md", view=VIEW_RAW) == "/a.md?pykofinder-view=raw"
+    assert build_url("a.md", view=VIEW_RAW) == "/a.md?filemill=raw"
 
 
 def test_url_for_state_omits_defaults():
@@ -205,16 +205,16 @@ def test_url_for_state_omits_defaults():
 
 
 def test_url_for_state_keeps_vpath():
-    state = ViewState(view=VIEW_RENDERED, vpath="users/42")
+    state = ViewState(view=VIEW_RENDER, vpath="users/42")
     assert url_for_state("sample.db", state) == (
-        "/sample.db?pykofinder-view=rendered&vpath=users%2F42"
+        "/sample.db?filemill=render&vpath=users%2F42"
     )
 
 
 def test_with_view_replaces_only_the_view():
     state = ViewState(view=VIEW_RAW, layout=LAYOUT_COMPRESSED, hidden="show")
-    switched = state.with_view(VIEW_HIGHLIGHTED)
-    assert switched.view == VIEW_HIGHLIGHTED
+    switched = state.with_view(VIEW_HIGHLIGHT)
+    assert switched.view == VIEW_HIGHLIGHT
     assert (switched.layout, switched.hidden) == (LAYOUT_COMPRESSED, "show")
 
 

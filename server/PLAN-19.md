@@ -12,7 +12,7 @@ and you look at your services in the other, and moving between them means
 switching tabs and losing your position.
 
 After this change, a document can be *in* the dashboard. The dashboard asks
-Filemill for `/docs/readme.md?pykofinder-view=rendered&layout=no-columns` and
+Filemill for `/docs/readme.md?filemill=render&layout=no-columns` and
 gets back the rendered note with no column rail and no breadcrumb, so it drops
 into a dashboard pane without two sets of navigation fighting each other.
 
@@ -27,9 +27,9 @@ more. Same address, three different things:
 | What you want | What you type |
 | --- | --- |
 | the file itself | `/docs/readme.md` |
-| it rendered, in the finder | `/docs/readme.md?pykofinder-view=rendered` |
-| it rendered, alone, for embedding | `/docs/readme.md?pykofinder-view=rendered&layout=no-columns` |
-| its source, coloured | `/docs/readme.md?pykofinder-view=highlighted` |
+| it rendered, in the finder | `/docs/readme.md?filemill=render` |
+| it rendered, alone, for embedding | `/docs/readme.md?filemill=render&layout=no-columns` |
+| its source, coloured | `/docs/readme.md?filemill=highlight` |
 
 There is one address to remember and one thing to add to it. Nobody has to know
 that `/f/` means the finder and `/w/` means the web view.
@@ -79,7 +79,7 @@ boundary" below.
 
 | Parameter | Values | Default |
 | --- | --- | --- |
-| `pykofinder-view` | `raw`, `rendered`, `highlighted` | `raw` |
+| `filemill` | `raw`, `render`, `highlight` | `raw` |
 | `layout` | `full-columns`, `compressed-columns`, `no-columns` | `full-columns` |
 | `hidden` | `hide`, `show` | `hide` |
 | `vpath` | a path inside a virtual filesystem | empty |
@@ -129,7 +129,7 @@ template and no embedded-mode branch in a handler.
 
 One divergence, commented at the branch that causes it: a node inside a virtual
 filesystem (`/sample.db/users/42`) has no bytes of its own, so `raw` has nothing
-to serve there and `rendered` becomes the default. It diverges because there are
+to serve there and `render` becomes the default. It diverges because there are
 no bytes, not because embedding is different.
 
 ## The safety boundary
@@ -178,7 +178,7 @@ preview routes, HTMX fragments, and deep-link restoration.
 All four assert on links Filemill *generates*, not on URLs it *accepts*:
 
     was  /f/menu/docs/guide.md
-    now  /docs/guide.md?pykofinder-view=rendered
+    now  /docs/guide.md?filemill=render
 
 A reader with an old bookmark sees exactly what they saw before, because `/f/`
 and `/w/` are still routed. Only newly rendered documents link differently.
@@ -201,7 +201,7 @@ passes. It does four things in one page:
 1. It opens the **legacy** URL `/f/{root}/my-knowledge/docs/topic.md`. That URL
    still answers, in a browser, after `_reorder_routes()` was rewritten.
 2. `topic.md` contains `[Next](subdir/next.md)`. The rendered page carries the
-   href `/my-knowledge/docs/subdir/next.md?pykofinder-view=rendered`, matched
+   href `/my-knowledge/docs/subdir/next.md?filemill=render`, matched
    character for character by a CSS attribute selector. The generated link uses
    the new contract even though the reader arrived on an old URL.
 3. Chromium clicks that link. `page.url` then ends with the same string, so the
@@ -225,7 +225,7 @@ the served one, so both halves of that claim are enforced rather than asserted.
 
 What the browser tests do **not** cover: no browser test requests
 `?layout=no-columns`, `?layout=compressed-columns`, `?hidden=show`, or
-`?pykofinder-view=highlighted`. Those three query groups are checked only by
+`?filemill=highlight`. Those three query groups are checked only by
 `test_resource_routes.py` through a `TestClient`. The embedding case that
 motivates the whole contract, a dashboard pane holding `layout=no-columns`, has
 never been opened in a real browser.
@@ -276,7 +276,7 @@ above `$TMPDIR`.
 ## What the plan got wrong
 
 **It contradicted itself about `raw`.** §1 lists a default static representation
-*and* a `pykofinder-view=raw` one. §5 then says both "the raw view has a
+*and* a `filemill=raw` one. §5 then says both "the raw view has a
 reciprocal link to the matching rendered or highlighted view" and "direct raw
 responses remain bytes with correct Content-Type" — a bytes response cannot carry
 a link. Resolved by making `raw` the default and the bare path identical to it,
@@ -341,7 +341,7 @@ contract is a promise to users, and this part of it over-promises.
 
 I would also drop `hidden` from the contract. It is a display preference, it is
 already persisted in `localStorage`, and it is the one parameter that does not
-change what the URL *identifies* — unlike `pykofinder-view` and `layout`, which
+change what the URL *identifies* — unlike `filemill` and `layout`, which
 select a representation and a presentation of it. Three parameters where two
 would do makes the contract harder to teach for no gain.
 
@@ -377,7 +377,7 @@ do not carry an absolute filesystem path.
 
 1. **URL and query contract.** Use the same path for all representations.
    `/docs/readme.md` serves the static file by default;
-   `?pykofinder-view=rendered|highlighted|raw` selects the others; `layout=` and
+   `?filemill=render|highlight|raw` selects the others; `layout=` and
    `hidden=` select the Finder layout and dotfile visibility. Missing or invalid
    query values use documented defaults and never change the requested file path.
    Use one shared query parser and URL builder. Encode query values once and
@@ -390,12 +390,12 @@ do not carry an absolute filesystem path.
 3. **Raw-file/router integration.** Router-facing static/raw requests are
    GET-only and return a file response with detected media type. Rendered
    endpoints return HTML fragments or the full shell as specified; raw bytes must
-   not fall through FastHTML's catch-all. Preserve `pykofinder-view`, `layout`,
+   not fall through FastHTML's catch-all. Preserve `filemill`, `layout`,
    and `hidden` when the dashboard router forwards or rewrites requests. Keep
    route ordering explicit. Preserve existing `/w/` CORS behavior only for
    web-static requests.
 4. **Rendered Markdown and syntax-highlighted views.** Markdown uses
-   `pykofinder-view=rendered`; source/code uses `highlighted`; `raw` returns the
+   `filemill=render`; source/code uses `highlight`; `raw` returns the
    source. Keep relative links, wikilinks, linkify, Mermaid, escaping, size
    limits, and encoding fallbacks. Reuse existing Markdown/Pygments pipelines.
 5. **Raw-file switch link contract.** A visible switch link has a stable class or

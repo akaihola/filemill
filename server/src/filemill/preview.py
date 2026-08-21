@@ -53,7 +53,7 @@ def render_source(path: Path) -> str:
     """Return the file's own text, syntax-highlighted and never interpreted.
 
     ``render_preview`` dispatches on suffix, so a .md file becomes rendered HTML
-    there and a .html file becomes a page. This is what ``pykofinder-view=
+    there and a .html file becomes a page. This is what ``filemill=
     highlighted`` asks for instead: the characters the author typed, coloured but
     not obeyed. Escaping happens in both branches below, so a file that contains
     markup shows that markup rather than running it.
