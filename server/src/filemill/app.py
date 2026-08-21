@@ -762,11 +762,16 @@ def ui_asset(path: str):
     return FileResponse(str(target), media_type=media)
 
 
-def _ui_shell():
+def _ui_shell(state, base: str):
     """The app shell for the shared UI. Deliberately almost empty.
 
     The chrome is built by ui/core/shell.js so that this page and filemill's
     index.html cannot drift apart — there is no markup here to keep in step.
+
+    *state* reaches the client as three data attributes on ``<html>``, beside
+    the theme and density the shell already reads from there. *base* is the URL
+    prefix the router strips: ``/n/`` for the migration mount, ``/`` for the
+    resource route, where the path already is the file path.
     """
     return Html(
         Head(
@@ -781,7 +786,7 @@ def _ui_shell():
         Body(
             *[Script(src=f"/ui/core/{n}") for n in _UI_CORE],
             *[
-                Script(src=f"/ui/adapters/{n}", **_ui_script_attrs(n))
+                Script(src=f"/ui/adapters/{n}", **_ui_script_attrs(n, base))
                 for n in _UI_ADAPTERS
             ],
         ),
@@ -789,15 +794,18 @@ def _ui_shell():
         data_theme="light",
         data_density="compact",
         data_root=ROOT.name or "/",
+        data_filemill=state.view,
+        data_layout=state.layout,
+        data_hidden=state.hidden,
     )
 
 
-def _ui_script_attrs(name: str) -> dict:
+def _ui_script_attrs(name: str, base: str) -> dict:
     """Per-adapter configuration, read back via ``document.currentScript``."""
     if name == "http.js":
         return {"data_api": "/api"}
     if name == "router-path.js":
-        return {"data_base": UI_BASE}
+        return {"data_base": base}
     return {}
 
 
@@ -815,7 +823,7 @@ def ui_view(path: str = ""):
     """
     if path and api.split_vfs(path, ROOT, _resolve_safe) is None:
         return HTMLResponse("Not found", status_code=404)
-    return _ui_shell()
+    return _ui_shell(urls.ViewState(), UI_BASE)
 
 
 # ── JSON/fragment API behind the shared UI ───────────────────────────────────
@@ -857,14 +865,20 @@ def api_raw(p: str = ""):
 
 
 @rt("/api/preview")
-def api_preview(p: str = "", v: str = "", fmt: str = ""):
-    """Render a preview body with the existing Python pipeline."""
+def api_preview(p: str = "", v: str = "", fmt: str = "", filemill: str = ""):
+    """Render a preview body with the existing Python pipeline.
+
+    ``filemill`` is the view from the page's own URL, forwarded by
+    ui/adapters/preview-http.js. It picks the renderer and nothing else, so
+    ``highlight`` means the same coloured source here as on the embedded page.
+    """
     target = _api_target(p)
     if target is None:
         return HTMLResponse("", status_code=404)
     if v:
         return api.vfs_preview(target, v, fmt)
-    return api.preview_fragment(target, render_preview)
+    render = render_source if filemill == urls.VIEW_HIGHLIGHT else render_preview
+    return api.preview_fragment(target, render)
 
 
 @rt("/api/render", methods=["POST"])
@@ -1027,7 +1041,7 @@ def resource(request, path: str = ""):
         # layout still applies: no-columns gives the one pane, and the column
         # layouts give the finder opened at that directory.
         if state.wants_columns:
-            return _page_html([NotStr(_finder_fragment(target, ""))], state)
+            return _ui_shell(state, "/")
         return _page_html([list_column(target, ROOT, col_index=0)], state)
 
     if vpath:
@@ -1043,10 +1057,12 @@ def resource(request, path: str = ""):
         # default: the bare path has to be the file itself.
         return api.raw_response(target)
 
-    body = _representation_html(target, rel, state, vpath)
     if state.wants_columns:
-        return _page_html([NotStr(_finder_fragment(target, vpath, body))], state)
-    return _document_page(rel, state, body)
+        # The columns are the shared UI's, not the HTMX shell's. The client
+        # walks to this path and asks /api/preview for the representation, so
+        # the document is not rendered twice.
+        return _ui_shell(state, "/")
+    return _document_page(rel, state, _representation_html(target, rel, state, vpath))
 
 
 # ── PWA static files ─────────────────────────────────────────────────────────

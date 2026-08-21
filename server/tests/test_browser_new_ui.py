@@ -125,6 +125,12 @@ class Harness:
     def __getattr__(self, name):
         return getattr(self._pg, name)
 
+    def open_resource(self, path: str) -> None:
+        """Open the resource route, where the URL path is the file path."""
+        self._pg.goto(f"{self.base}/{path}")
+        self._pg.wait_for_function("typeof path !== 'undefined' && path.length >= 1")
+        self._pg.wait_for_timeout(400)
+
     def open(self, path: str = "") -> None:
         self._pg.goto(f"{self.base}/n/{path}")
         self._pg.wait_for_function("typeof path !== 'undefined' && path.length >= 1")
@@ -492,6 +498,45 @@ def test_a_real_file_still_shows_its_size_and_date(page):
     page.wait_for_timeout(400)
     assert "5 B" in page.inner_text("#pv-size")
     assert "modified" in page.inner_text("#pv-sub")
+
+
+# ── The resource route serves this UI (PLAN-19) ──────────────────────────────
+#
+# `/docs/topic.md?filemill=render` used to answer with the HTMX shell. These
+# four are the only tests that prove the swap through a real browser: a
+# TestClient sees an almost empty shell, because the chrome and the document
+# both arrive after JavaScript runs.
+
+
+def test_the_resource_route_opens_this_ui_at_the_file(page):
+    page.open_resource("notes/deep/leaf.md?filemill=render")
+    assert page.evaluate("sel") == ["notes", "deep", "leaf.md"]
+    assert "Leaf" in page.inner_text("#preview .pv-rich h1")
+
+
+def test_the_resource_route_keeps_the_query_while_you_browse(page):
+    """router-path.js preserves the query, so the view survives a click."""
+    page.open_resource("notes/deep/leaf.md?filemill=render")
+    page.click('.col[data-i="0"] .row:has-text("code")')
+    page.wait_for_timeout(400)
+    assert page.url.endswith("/code?filemill=render")
+
+
+def test_highlight_shows_the_source_in_the_columns(page):
+    """The view reaches /api/preview through preview-http.js."""
+    page.open_resource("notes/deep/leaf.md?filemill=highlight")
+    page.wait_for_selector("#preview .pv-rich .preview-code", timeout=15000)
+    assert "# Leaf" in page.inner_text("#preview .pv-rich")
+    assert page.locator("#preview .pv-rich h1").count() == 0
+
+
+def test_hidden_show_starts_with_dotfiles_visible(page):
+    """ui/core/state.js seeds state.dotfiles from the URL."""
+    page.open_resource("README.md?filemill=render&hidden=show")
+    names = page.eval_on_selector_all(
+        '.col[data-i="0"] .row .label', "els => els.map(e => e.textContent)"
+    )
+    assert ".hidden" in names
 
 
 def test_a_deep_link_into_a_database_restores_the_columns(page):

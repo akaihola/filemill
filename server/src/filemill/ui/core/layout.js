@@ -22,9 +22,12 @@ function layout(keepScroll) {
   rail.style.width = (stageW + range()) + "px";
 
   if (!keepScroll) {
-    /* default: the least folding that still gives the preview its full width */
+    /* default: the least folding that still gives the preview its full width.
+       ?layout=compressed-columns asks for every column folded instead, which is
+       the dial at 99% and the one thing the HTMX shell could never do. */
     let k = 0;
     while (k < path.length && stripSpan(k) + previewTarget() > stageW) k++;
+    if (root.dataset.layout === "compressed-columns") k = path.length;
     finder.scrollLeft = Math.round(k * foldUnit() * range());
   }
   applyScroll();

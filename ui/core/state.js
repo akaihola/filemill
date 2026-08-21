@@ -16,7 +16,8 @@ let cursor = {};                                         // col index -> row ind
 let widths = [];                                         // natural width per column
 let folded = 0;                                          // columns currently folded
 let pvToken = 0;                                         // guards async preview fills
-const state = { dotfiles: false, sort: { key: "name", desc: false } };
+const state = { dotfiles: root.dataset.hidden === "show",
+                sort: { key: "name", desc: false } };
 
 const GUTTER = () => parseInt(getComputedStyle(root).getPropertyValue("--gutter"));
 const SPINE  = () => parseInt(getComputedStyle(root).getPropertyValue("--spine-w"));
