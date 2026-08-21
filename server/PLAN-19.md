@@ -120,6 +120,38 @@ explicit `?hidden=` outranks the stored preference.
 **Tests.** `test_urls.py` (49), `test_resource_routes.py` (47),
 `test_resource_safety.py` (229).
 
+### Which UI Answers
+
+The column layouts serve the **shared UI**, the one `ui/` builds for both
+editions. The legacy HTMX shell answers only under `/f/` now.
+
+    /docs/topic.md?filemill=render                the shared UI, opened there
+    /docs/topic.md?filemill=render&layout=no-columns   the document alone
+    /docs/topic.md                                the bytes
+
+`ui/adapters/router-path.js` made this cheap. Its `BASE` already defaulted to
+`/`, and it already preserved `location.search` through every navigation, so the
+view survives a click. The resource route serves the same shell `/n/` serves,
+with `data-base="/"`.
+
+Each query group costs one line in the shared UI, and each is a browser test:
+
+| Parameter | Where the client reads it | What it does |
+| --- | --- | --- |
+| `filemill=highlight` | `ui/adapters/preview-http.js` | forwards it to `/api/preview`, which picks `render_source` |
+| `hidden=show` | `ui/core/state.js` | seeds `state.dotfiles` |
+| `layout=compressed-columns` | `ui/core/layout.js` | folds every column to a spine |
+
+`compressed-columns` now does what its name says. This document called it an
+over-promise, because the HTMX shell could only hide the columns. The shared UI
+has the fold dial, so the promise is kept rather than renamed.
+
+**What this costs.** The reciprocal switch bar (§5) exists only on
+`layout=no-columns`. The shared UI builds its chrome in `ui/core/shell.js`, and a
+preview-pane view control belongs there. Putting it in `/api/preview` would make
+a document-body endpoint return navigation, so it is left undone and written
+down here.
+
 ### Standalone and embedded share one code path
 
 They differ by two attributes on `<body>` and nothing else. `compressed-columns`
@@ -223,10 +255,18 @@ Chromium, which is the evidence that the `/n/` UI needs no network:
 `test_nothing_is_fetched_from_a_cdn` now watches the local-folder path as well as
 the served one, so both halves of that claim are enforced rather than asserted.
 
+Four more browser tests cover the shared UI on the resource route, and they
+are the only tests that can: a `TestClient` sees an almost empty shell, because
+the chrome and the document both arrive after JavaScript runs.
+`test_the_resource_route_opens_this_ui_at_the_file` checks the column chain and
+the rendered document. `test_the_resource_route_keeps_the_query_while_you_browse`
+clicks a folder and checks `?filemill=render` is still in the address bar.
+`test_highlight_shows_the_source_in_the_columns` checks the coloured source
+arrives, and fails if `preview-http.js` stops forwarding the view.
+`test_hidden_show_starts_with_dotfiles_visible` checks the dotfile.
+
 What the browser tests do **not** cover: no browser test requests
-`?layout=no-columns`, `?layout=compressed-columns`, `?hidden=show`, or
-`?filemill=highlight`. Those three query groups are checked only by
-`test_resource_routes.py` through a `TestClient`. The embedding case that
+`?layout=no-columns` or `?layout=compressed-columns`. The embedding case that
 motivates the whole contract, a dashboard pane holding `layout=no-columns`, has
 never been opened in a real browser.
 
@@ -330,14 +370,13 @@ changes.** Not done — see below.
 
 ## What I would design differently
 
-`compressed-columns` is the weakest of the three layout values. It reuses the
-`zoomed` class, which hides the columns entirely rather than folding them to
-spines — the shared UI in `ui/core/layout.js` has a real fold dial with exactly
-that behaviour, and the HTMX shell has nothing like it. The name promises
-something the HTMX UI cannot yet deliver. I would either rename it to match what
-it does today or hold it back until the `/n/` cutover makes the fold dial
-available. It is honest about being a placeholder in the code comment, but a URL
-contract is a promise to users, and this part of it over-promises.
+`compressed-columns` was the weakest of the three layout values, and it is
+fixed. It reused the `zoomed` class, which hides the columns entirely rather than
+folding them to spines. The two ways out were renaming it to match what it did or
+waiting for the fold dial in `ui/core/layout.js`. Serving the shared UI from the
+resource route took the second, so the name is now accurate. The lesson stands:
+a URL contract is a promise to users, and a placeholder in a code comment does
+not make an over-promise honest.
 
 I would also drop `hidden` from the contract. It is a display preference, it is
 already persisted in `localStorage`, and it is the one parameter that does not
