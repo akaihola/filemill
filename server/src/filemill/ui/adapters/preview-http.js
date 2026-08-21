@@ -9,6 +9,11 @@
    The staleness guard is core's (see fillPreview), so this may take as long as
    it takes; the abort is only good manners for a preview nobody is waiting for.
    ═══════════════════════════════════════════════════════════════════════════ */
+/* The page's own ?filemill= value. The server puts it on <html>; forwarding it
+   keeps `highlight` meaning the same coloured source in the columns as it does
+   on the embedded page. Absent on the static build, which has no server. */
+const VIEW = document.documentElement.dataset.filemill || "";
+
 let inflight = null;
 
 const PreviewHTTP = {
@@ -20,7 +25,8 @@ const PreviewHTTP = {
     let r;
     try {
       r = await fetch(`${API}/preview?p=${encodeURIComponent(node.rel)}` +
-                      (node.vpath ? `&v=${encodeURIComponent(node.vpath)}` : ""),
+                      (node.vpath ? `&v=${encodeURIComponent(node.vpath)}` : "") +
+                      (VIEW ? `&filemill=${encodeURIComponent(VIEW)}` : ""),
                       { signal: ctl.signal });
     } catch (err) {
       if (err.name === "AbortError") return null;

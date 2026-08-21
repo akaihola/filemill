@@ -51,6 +51,12 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 
 ## Done
 
+- [x] **The browser suite runs again** — `pyproject.toml` pins
+      `playwright~=1.61.0` instead of flooring at `>=1.57.0`, `README.md` and
+      `CONTRIBUTING.md` drop the `--with "playwright==1.57.0"` that broke it, and
+      `test_browser_keyboard.py` hands Chromium the credentials from
+      `$HTTPS_PROXY`. All 56 browser tests pass; PLAN-19 records what they
+      confirmed about the URL contract.
 - [x] **Shared frontend with the static edition** — `src/filemill/ui/` is a
       packaging copy of the repository's `../ui/` (`tools/sync-ui.py`); `/api/dir|raw|preview`
       back it, `POST /api/render` renders local-folder bytes through the Python

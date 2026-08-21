@@ -27,7 +27,15 @@ dev = [
     "pytest>=8",
     "httpx>=0.27",
     "pytest-cov>=5",
-    "playwright>=1.57.0",
+    # Pinned, not floored. A Playwright release carries one browser revision, and
+    # the Nix bundle at $PLAYWRIGHT_BROWSERS_PATH carries one too: chromium-1228
+    # and chromium_headless_shell-1228. Only 1.61.x matches. Measured on this
+    # host: 1.57.0 asks for chromium_headless_shell-1200 and 1.62.0 asks for
+    # 1234, and both die at BrowserType.launch with "Executable doesn't exist at
+    # ..." plus a banner telling you to run `playwright install`. Do not run it;
+    # it would download a revision Nix already provides. Re-pin instead:
+    #   uv lock --upgrade-package "$(grep -E '^playwright[=<>~!]' "$UV_CONSTRAINT")"
+    "playwright~=1.61.0",
 ]
 
 [tool.ruff.lint]

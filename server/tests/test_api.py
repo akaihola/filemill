@@ -109,6 +109,26 @@ def test_preview_highlights_source_with_pygments(client, tmp_root: Path):
     assert "highlight" in html
 
 
+def test_preview_serves_the_source_when_the_page_asked_for_highlight(
+    client, tmp_root: Path
+):
+    """?filemill=highlight reaches here from the page's own URL.
+
+    ui/adapters/preview-http.js forwards it, so the columns show the same
+    coloured source that ?layout=no-columns renders on the server.
+    """
+    html = client.get("/api/preview?p=readme.md&filemill=highlight").text
+    assert "preview-code" in html
+    assert "<h1" not in html
+
+
+def test_preview_renders_the_document_for_every_other_view(client, tmp_root: Path):
+    """render and raw both mean "the document" once a preview pane is asking."""
+    for query in ("", "&filemill=render", "&filemill=raw", "&filemill=nonsense"):
+        html = client.get(f"/api/preview?p=readme.md{query}").text
+        assert "<h1" in html, query
+
+
 def test_preview_renders_a_desktop_link(client, tmp_root: Path):
     html = client.get("/api/preview?p=link.desktop").text
     assert "https://example.com" in html
