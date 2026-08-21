@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import patch
 
 from filemill.rendering import (
@@ -122,10 +123,20 @@ def test_find_git_root_finds_ancestor(tmp_path):
     assert _find_git_root(sub) == tmp_path
 
 
-def test_find_git_root_returns_none_when_no_git(tmp_path):
-    sub = tmp_path / "a" / "b"
-    sub.mkdir(parents=True)
-    assert _find_git_root(sub) is None
+def test_find_git_root_returns_none_when_no_git(tmp_path, monkeypatch):
+    """The walk returns None when no directory it visits holds a ``.git``.
+
+    The start path is relative on purpose, so the walk pins its own root. An
+    absolute ``tmp_path / "a" / "b"`` walks all the way to ``/`` and so depends on
+    every directory above the temp directory: this host has a real ``/tmp/.git``
+    and pytest puts ``tmp_path`` under ``/tmp``, which made the assertion read
+    ``assert Path('/tmp') is None``. ``Path("a/b").parents`` is ``a`` and ``.``
+    and stops, so after chdir the three directories the walk visits are the three
+    this test created.
+    """
+    (tmp_path / "a" / "b").mkdir(parents=True)
+    monkeypatch.chdir(tmp_path)
+    assert _find_git_root(Path("a/b")) is None
 
 
 def test_find_git_root_on_git_dir_itself(tmp_path):
@@ -227,21 +238,29 @@ def test_find_file_for_href_no_git_still_finds_relative(tmp_path):
 # ── #19 href URL generation ───────────────────────────────────────────────────
 
 
-def test_href_for_md_file_uses_canonical_finder_path(tmp_path, monkeypatch):
-    """.md files get a canonical /f/{mount}/{relative} URL when ROOT matches the workspace."""
+def test_href_for_md_file_uses_root_relative_rendered_url(tmp_path, monkeypatch):
+    """.md files get their own path plus filemill=render (PLAN-19 §4).
+
+    Was ``/f/{mount}/page.md`` before the URL contract landed. The old form is
+    still routed and still answers, so an existing bookmark is unaffected; only
+    newly generated links moved.
+    """
     import filemill.app as app_module
 
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     f = tmp_path / "page.md"
     f.touch()
-    href = _href_for_file(f)
-    assert href == f"/f/{tmp_path.name}/page.md"
+    assert _href_for_file(f) == "/page.md?filemill=render"
 
 
 def test_href_for_md_file_uses_canonical_finder_path_for_symlink_child(
     tmp_path, monkeypatch
 ):
-    """Markdown under a direct symlink child keeps the ROOT mount in finder URLs."""
+    """Markdown under a direct symlink child keeps the *visible* path, not the target's.
+
+    The reader sees ``/my-knowledge/docs/topic.md``, the path they navigated, not
+    the workspace directory the symlink resolves to.
+    """
     import filemill.app as app_module
 
     workspace = tmp_path / "workspace"
@@ -255,7 +274,7 @@ def test_href_for_md_file_uses_canonical_finder_path_for_symlink_child(
     f = docs / "topic.md"
     f.touch()
     href = _href_for_file(f.resolve())
-    assert href == "/f/menu/my-knowledge/docs/topic.md"
+    assert href == "/my-knowledge/docs/topic.md?filemill=render"
 
 
 def test_href_for_other_file_uses_raw(tmp_path):
@@ -268,7 +287,7 @@ def test_href_for_other_file_uses_raw(tmp_path):
 
 
 def test_md_link_relative_normalized(tmp_path, monkeypatch):
-    """A relative [text](file.md) link is rewritten to a canonical /f/{mount}/{relative} URL."""
+    """A relative [text](file.md) link is rewritten to the target's own path."""
     import filemill.app as app_module
 
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
@@ -277,7 +296,7 @@ def test_md_link_relative_normalized(tmp_path, monkeypatch):
     target = tmp_path / "other.md"
     target.touch()
     rendered = md.render(src.read_text(), env={"source_path": src})
-    assert f"/f/{tmp_path.name}/other.md" in rendered
+    assert 'href="/other.md?filemill=render"' in rendered
     assert "/?path=" not in rendered
 
 
@@ -327,7 +346,7 @@ def test_wikilink_unresolved_gets_hash_href():
 
 
 def test_wikilink_resolved_gets_proper_href(tmp_path, monkeypatch):
-    """A [[WikiLink]] that resolves to a .md file gets a canonical /f/{mount}/{relative} href."""
+    """A [[WikiLink]] resolving to a .md file gets that file's own path."""
     import filemill.app as app_module
 
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
@@ -336,7 +355,7 @@ def test_wikilink_resolved_gets_proper_href(tmp_path, monkeypatch):
     target = tmp_path / "Target.md"
     target.touch()
     rendered = md.render(src.read_text(), env={"source_path": src})
-    assert f"/f/{tmp_path.name}/Target.md" in rendered
+    assert "/Target.md?filemill=render" in rendered
     assert "/?path=" not in rendered
 
 

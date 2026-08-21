@@ -4,11 +4,15 @@ This is the test that actually proves the sharing works: `ui/` is filemill's
 frontend byte-for-byte, and here it is browsing a real directory tree over
 `/api/dir` and `/api/preview` with nothing about `core/` changed.
 
-Unlike the HTMX suite, nothing here reaches the network — every asset is served
-by the app — so it also passes in an offline sandbox.
+Unlike the HTMX suite, nothing here reaches the network. The app serves every
+asset, `test_nothing_is_fetched_from_a_cdn` holds it to that, and so these 27
+tests pass in an offline sandbox.
 
-    timeout 300 PLAYWRIGHT_BROWSERS_PATH="$PLAYWRIGHT_BROWSERS_PATH" \
-      uv run --with "playwright==1.61.0" pytest tests/test_browser_new_ui.py
+    timeout 600 uv run pytest tests/test_browser_new_ui.py
+
+No `--with`: `uv sync` installs the Playwright `pyproject.toml` pins, and that is
+the one whose driver matches the browsers at `$PLAYWRIGHT_BROWSERS_PATH`. See
+CONTRIBUTING.md, "Do Not Pass `--with playwright==…`".
 """
 
 from __future__ import annotations
@@ -23,6 +27,7 @@ from pathlib import Path
 import pytest
 
 pytest.importorskip("playwright")
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
 pytestmark = pytest.mark.integration
@@ -120,6 +125,12 @@ class Harness:
     def __getattr__(self, name):
         return getattr(self._pg, name)
 
+    def open_resource(self, path: str) -> None:
+        """Open the resource route, where the URL path is the file path."""
+        self._pg.goto(f"{self.base}/{path}")
+        self._pg.wait_for_function("typeof path !== 'undefined' && path.length >= 1")
+        self._pg.wait_for_timeout(400)
+
     def open(self, path: str = "") -> None:
         self._pg.goto(f"{self.base}/n/{path}")
         self._pg.wait_for_function("typeof path !== 'undefined' && path.length >= 1")
@@ -178,13 +189,13 @@ def test_an_empty_directory_says_so(page):
 def test_the_preview_comes_from_the_python_renderer(page):
     """The point of preview-http.js: markdown-it-py output, in filemill's pane."""
     page.open("README.md")
-    page.wait_for_selector("#preview .pv-rich h1", timeout=5000)
+    page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     assert "Readme" in page.inner_text("#preview .pv-rich h1")
 
 
 def test_source_is_highlighted_by_pygments(page):
     page.open("code/sample.py")
-    page.wait_for_selector("#preview .pv-rich .preview-code", timeout=5000)
+    page.wait_for_selector("#preview .pv-rich .preview-code", timeout=15000)
     assert page.locator("#preview .pv-rich .highlight").count() >= 1
 
 
@@ -273,6 +284,55 @@ def test_a_local_folder_replaces_the_served_tree(page):
     assert page.is_visible("#local-badge")
 
 
+def _click_local(page, name: str, selector: str) -> None:
+    """Click a local-folder entry, then hold the render it triggers to account.
+
+    `preview-upload.js` posts the bytes to `POST /api/render`, because the server
+    cannot read a file the browser granted through the File System Access API.
+    Two of its branches are silent by design, and from the outside they look
+    identical to each other and to a slow machine::
+
+        if (!r.ok) return PreviewLocal.render(node);   /* draws no .pv-rich */
+        return html.trim() ? `<div class="pv-rich">${html}</div>` : null;
+
+    A non-2xx falls back to a renderer that emits no ``.pv-rich`` at all, and an
+    empty body draws nothing. Either way the caller waits out its timeout for a
+    selector that will never exist, which is a symptom rather than a cause. A
+    peer agent hit exactly that on another host: the POST completed and
+    ``#preview .pv-rich h1`` never appeared, and the timeout said nothing about
+    why. So this reports the status, the first bytes, and whether ``.pv-rich``
+    reached the DOM, which separates a bad response from an error card that
+    simply has no heading in it.
+    """
+    with page.expect_response(
+        lambda r: r.url.endswith("/api/render") and r.request.method == "POST",
+        timeout=30000,
+    ) as caught:
+        page.click(f'.col[data-i="0"] .row:has-text("{name}")')
+    response = caught.value
+    body = response.text()
+    assert response.ok, (
+        f"POST /api/render answered {response.status} for {name}, so "
+        f"preview-upload.js fell back silently and drew no .pv-rich. "
+        f"First 300 bytes: {body[:300]!r}"
+    )
+    assert body.strip(), (
+        f"POST /api/render answered 200 with an empty body for {name}, so "
+        f"preview-upload.js returned null and drew nothing."
+    )
+    try:
+        page.wait_for_selector(selector, timeout=15000)
+    except PlaywrightTimeoutError as exc:
+        raise AssertionError(
+            f"{selector} never appeared for {name}. POST /api/render answered "
+            f"{response.status} with {len(body)} bytes, and #preview .pv-rich "
+            f"count is {page.locator('#preview .pv-rich').count()}. A count of 0 "
+            f"means nothing was injected; a count of 1 means the server rendered "
+            f"something without that element in it. "
+            f"First 300 bytes: {body[:300]!r}"
+        ) from exc
+
+
 def test_local_files_are_still_rendered_by_python(page):
     """The point of POST /api/render: opening a local folder is not a downgrade.
 
@@ -282,8 +342,7 @@ def test_local_files_are_still_rendered_by_python(page):
     page.evaluate(FAKE_HANDLE)
     page.evaluate("mount(__local())")
     page.wait_for_timeout(300)
-    page.click('.col[data-i="0"] .row:has-text("local.md")')
-    page.wait_for_selector("#preview .pv-rich h1", timeout=5000)
+    _click_local(page, "local.md", "#preview .pv-rich h1")
     assert "Local heading" in page.inner_text("#preview .pv-rich h1")
     assert page.locator("#preview .pv-rich strong").count() >= 1
 
@@ -293,8 +352,7 @@ def test_local_source_is_still_highlighted_by_pygments(page):
     page.evaluate(FAKE_HANDLE)
     page.evaluate("mount(__local())")
     page.wait_for_timeout(300)
-    page.click('.col[data-i="0"] .row:has-text("local.py")')
-    page.wait_for_selector("#preview .pv-rich .preview-code", timeout=5000)
+    _click_local(page, "local.py", "#preview .pv-rich .preview-code")
 
 
 def test_local_mode_stops_writing_the_url(page):
@@ -329,7 +387,16 @@ def test_leaving_local_mode_restores_the_served_tree(page):
 
 def test_nothing_is_fetched_from_a_cdn(page):
     """The HTMX UI pulls htmx and mermaid off the network; this one must not,
-    or 'open a folder and browse it' would depend on being online."""
+    or 'open a folder and browse it' would depend on being online.
+
+    Both halves matter, and this test used to check only the first. The served
+    half goes through preview-http.js and `/api/preview`; the local-folder half
+    goes through preview-upload.js and `POST /api/render`, which is the path the
+    docstring is actually about. `ui/adapters/preview-rich.js` does lazy-load a
+    renderer from a CDN, and it is the one adapter `tools/sync-ui.py` does not
+    vendor into the server edition. Vendoring it would break this test, which
+    is the point of the test.
+    """
     external = []
     page.on(
         "request",
@@ -340,6 +407,13 @@ def test_nothing_is_fetched_from_a_cdn(page):
         ),
     )
     page.open("notes/deep/leaf.md")
+    assert external == []
+
+    page.evaluate(FAKE_HANDLE)
+    page.evaluate("mount(__local())")
+    page.wait_for_timeout(300)
+    for name in ("local.md", "local.py"):
+        _click_local(page, name, "#preview .pv-rich")
     assert external == []
 
 
@@ -360,7 +434,7 @@ def test_no_console_errors(page):
 def test_a_database_opens_as_a_column_of_tables(page):
     page.open()
     page.click('.col[data-i="0"] .row:has-text("sample.db")')
-    page.wait_for_selector('.col[data-i="1"] .row', timeout=5000)
+    page.wait_for_selector('.col[data-i="1"] .row', timeout=15000)
     names = page.eval_on_selector_all(
         '.col[data-i="1"] .row .label', "els => els.map(e => e.textContent)"
     )
@@ -370,20 +444,20 @@ def test_a_database_opens_as_a_column_of_tables(page):
 def test_a_table_opens_as_a_column_of_rows(page):
     page.open()
     page.click('.col[data-i="0"] .row:has-text("sample.db")')
-    page.wait_for_selector('.col[data-i="1"] .row', timeout=5000)
+    page.wait_for_selector('.col[data-i="1"] .row', timeout=15000)
     page.click('.col[data-i="1"] .row:has-text("users")')
-    page.wait_for_selector('.col[data-i="2"] .row', timeout=5000)
+    page.wait_for_selector('.col[data-i="2"] .row', timeout=15000)
     assert page.locator('.col[data-i="2"] .row').count() == 3
 
 
 def test_a_row_previews_through_the_provider(page):
     page.open()
     page.click('.col[data-i="0"] .row:has-text("sample.db")')
-    page.wait_for_selector('.col[data-i="1"] .row', timeout=5000)
+    page.wait_for_selector('.col[data-i="1"] .row', timeout=15000)
     page.click('.col[data-i="1"] .row:has-text("users")')
-    page.wait_for_selector('.col[data-i="2"] .row', timeout=5000)
+    page.wait_for_selector('.col[data-i="2"] .row', timeout=15000)
     page.click('.col[data-i="2"] .row >> nth=0')
-    page.wait_for_selector("#preview .pv-rich", timeout=5000)
+    page.wait_for_selector("#preview .pv-rich", timeout=15000)
     assert "User1" in page.inner_text("#preview .pv-rich")
 
 
@@ -396,14 +470,14 @@ def test_virtual_nodes_keep_the_real_path_and_descend_by_vpath(page):
 
 def test_a_virtual_entry_uses_the_provider_glyph(page):
     page.open("sample.db")
-    page.wait_for_selector('.col[data-i="1"] .row .ico.glyph', timeout=5000)
+    page.wait_for_selector('.col[data-i="1"] .row .ico.glyph', timeout=15000)
     assert page.locator('.col[data-i="1"] .row .ico.glyph').count() >= 1
 
 
 def test_the_url_names_a_row_inside_a_database(page):
     page.open()
     page.click('.col[data-i="0"] .row:has-text("sample.db")')
-    page.wait_for_selector('.col[data-i="1"] .row', timeout=5000)
+    page.wait_for_selector('.col[data-i="1"] .row', timeout=15000)
     page.click('.col[data-i="1"] .row:has-text("users")')
     page.wait_for_timeout(400)
     assert page.url.endswith("/n/sample.db/users")
@@ -413,7 +487,7 @@ def test_a_row_shows_no_invented_size_or_date(page):
     """A row inside a database is not a file. Zeroed metadata would print
     "0 B · modified 1 Jan 1970", which is worse than nothing."""
     page.open("sample.db/users/1")
-    page.wait_for_selector("#preview .pv-rich", timeout=5000)
+    page.wait_for_selector("#preview .pv-rich", timeout=15000)
     assert page.inner_text("#pv-sub").strip() == ""
     assert page.inner_text("#pv-size").strip() == "—"
     assert page.inner_text("#pv-mod").strip() == "—"
@@ -426,8 +500,47 @@ def test_a_real_file_still_shows_its_size_and_date(page):
     assert "modified" in page.inner_text("#pv-sub")
 
 
+# ── The resource route serves this UI (PLAN-19) ──────────────────────────────
+#
+# `/docs/topic.md?filemill=render` used to answer with the HTMX shell. These
+# four are the only tests that prove the swap through a real browser: a
+# TestClient sees an almost empty shell, because the chrome and the document
+# both arrive after JavaScript runs.
+
+
+def test_the_resource_route_opens_this_ui_at_the_file(page):
+    page.open_resource("notes/deep/leaf.md?filemill=render")
+    assert page.evaluate("sel") == ["notes", "deep", "leaf.md"]
+    assert "Leaf" in page.inner_text("#preview .pv-rich h1")
+
+
+def test_the_resource_route_keeps_the_query_while_you_browse(page):
+    """router-path.js preserves the query, so the view survives a click."""
+    page.open_resource("notes/deep/leaf.md?filemill=render")
+    page.click('.col[data-i="0"] .row:has-text("code")')
+    page.wait_for_timeout(400)
+    assert page.url.endswith("/code?filemill=render")
+
+
+def test_highlight_shows_the_source_in_the_columns(page):
+    """The view reaches /api/preview through preview-http.js."""
+    page.open_resource("notes/deep/leaf.md?filemill=highlight")
+    page.wait_for_selector("#preview .pv-rich .preview-code", timeout=15000)
+    assert "# Leaf" in page.inner_text("#preview .pv-rich")
+    assert page.locator("#preview .pv-rich h1").count() == 0
+
+
+def test_hidden_show_starts_with_dotfiles_visible(page):
+    """ui/core/state.js seeds state.dotfiles from the URL."""
+    page.open_resource("README.md?filemill=render&hidden=show")
+    names = page.eval_on_selector_all(
+        '.col[data-i="0"] .row .label', "els => els.map(e => e.textContent)"
+    )
+    assert ".hidden" in names
+
+
 def test_a_deep_link_into_a_database_restores_the_columns(page):
     page.open("sample.db/users/1")
     assert page.evaluate("sel")[-1] == "1"
-    page.wait_for_selector("#preview .pv-rich", timeout=5000)
+    page.wait_for_selector("#preview .pv-rich", timeout=15000)
     assert "User1" in page.inner_text("#preview .pv-rich")

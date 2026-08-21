@@ -29,7 +29,7 @@ from starlette.responses import (
     Response,
 )
 
-from filemill import api
+from filemill import api, urls
 from filemill.columns import (
     initial_columns,
     list_column,
@@ -37,7 +37,7 @@ from filemill.columns import (
     render_breadcrumb,
 )
 from filemill.env import env
-from filemill.preview import render_preview
+from filemill.preview import render_preview, render_source
 from filemill.styles import APP_CSS, COLUMN_JS, LIVE_RELOAD_JS
 from filemill.vfs import REGISTRY
 
@@ -116,32 +116,63 @@ def _resolve_safe(path_str: str, root: Path | None = None) -> Path | None:
         return None
 
 
+def _head_tags(*extra_head_scripts):
+    """Return the ``<head>`` every Filemill page shares."""
+    extra_scripts = [Script(LIVE_RELOAD_JS)] if LIVE_MODE else []
+    return Head(
+        Title("Filemill"),
+        Meta(name="viewport", content="width=device-width, initial-scale=1"),
+        Meta(name="theme-color", content="#0770C9"),
+        Meta(name="mobile-web-app-capable", content="yes"),
+        Meta(name="apple-mobile-web-app-capable", content="yes"),
+        Meta(
+            name="apple-mobile-web-app-status-bar-style",
+            content="black-translucent",
+        ),
+        Meta(name="apple-mobile-web-app-title", content="filemill"),
+        Link(rel="manifest", href="/manifest.json"),
+        Link(rel="apple-touch-icon", href="/icons/icon-192.png"),
+        Style(APP_CSS),
+        Script(src="https://unpkg.com/htmx.org@1.9.12"),
+        Script(src=_MERMAID_CDN),
+        Script(COLUMN_JS),
+        Script(_SW_REGISTER_JS),
+        *extra_scripts,
+        *extra_head_scripts,
+    )
+
+
 def _shell_html(*extra_head_scripts):
     """Return the full app-shell HTML page."""
-    extra_scripts = [Script(LIVE_RELOAD_JS)] if LIVE_MODE else []
+    return Html(_head_tags(*extra_head_scripts), Body(initial_columns(ROOT)))
+
+
+def _page_html(body_children, state, *extra_head_scripts):
+    """Wrap body content in a full page whose ``<body>`` carries the layout.
+
+    The layout is an attribute, not a second template. ``compressed-columns``
+    reuses the ``zoomed`` presentation the ⛶ button already toggles, and
+    ``hidden=show`` reuses the ``show-dotfiles`` class the .* button toggles. The
+    embedded dashboard page and the standalone page therefore run identical code
+    and differ by two strings on one element.
+
+    ``data-layout`` and ``data-hidden`` are set as well as the classes so the
+    client can read the requested state back without inferring it from styling.
+    """
+    classes = []
+    if state.layout == urls.LAYOUT_COMPRESSED:
+        classes.append("zoomed")
+    if state.show_hidden:
+        classes.append("show-dotfiles")
+    attrs = {"cls": " ".join(classes)} if classes else {}
     return Html(
-        Head(
-            Title("Filemill"),
-            Meta(name="viewport", content="width=device-width, initial-scale=1"),
-            Meta(name="theme-color", content="#0770C9"),
-            Meta(name="mobile-web-app-capable", content="yes"),
-            Meta(name="apple-mobile-web-app-capable", content="yes"),
-            Meta(
-                name="apple-mobile-web-app-status-bar-style",
-                content="black-translucent",
-            ),
-            Meta(name="apple-mobile-web-app-title", content="filemill"),
-            Link(rel="manifest", href="/manifest.json"),
-            Link(rel="apple-touch-icon", href="/icons/icon-192.png"),
-            Style(APP_CSS),
-            Script(src="https://unpkg.com/htmx.org@1.9.12"),
-            Script(src=_MERMAID_CDN),
-            Script(COLUMN_JS),
-            Script(_SW_REGISTER_JS),
-            *extra_scripts,
-            *extra_head_scripts,
+        _head_tags(*extra_head_scripts),
+        Body(
+            *body_children,
+            data_layout=state.layout,
+            data_hidden=state.hidden,
+            **attrs,
         ),
-        Body(initial_columns(ROOT)),
     )
 
 
@@ -387,7 +418,23 @@ def restore(path: str, vpath: str = ""):
         # Fall back to root view
         shell = initial_columns(ROOT)
         return HTMLResponse(repr(shell))
+    return HTMLResponse(_finder_fragment(p, vpath))
 
+
+def _finder_fragment(
+    p: Path, vpath: str = "", preview_override: str | None = None
+) -> str:
+    """Return the ``#app-shell`` fragment: columns down to *p*, plus its preview.
+
+    Three callers share this one builder — the ``/restore`` deep link, the
+    root-relative finder page, and the same page embedded in the dashboard — so a
+    column that appears in one of them appears in all three. That is the whole
+    reason it was lifted out of ``restore()``.
+
+    *preview_override* replaces what fills the preview pane. It is how
+    ``?filemill=`` picks a representation without a second shell template:
+    the columns are the same, only the pane differs.
+    """
     # Build ancestor chain: ROOT plus each directory step down to p
     try:
         rel = p.relative_to(ROOT)
@@ -444,6 +491,9 @@ def restore(path: str, vpath: str = ""):
                 if not entries:
                     # Leaf or empty node: render preview regardless of vpath depth
                     # (e.g. JSON files have no navigable children even at root vpath).
+                    if preview_override is not None:
+                        preview_html = preview_override
+                        break
                     try:
                         preview_html = provider.render_preview(
                             p, current_vpath, "folders", 1, 1000, col=sentinel_idx
@@ -466,6 +516,8 @@ def restore(path: str, vpath: str = ""):
                 cols_html += repr(vfs_col)
                 sentinel_idx += 1
             sentinel_html = f'<div id="col-{sentinel_idx}"></div>'
+        elif preview_override is not None:
+            preview_html = preview_override
         else:
             try:
                 preview_html = render_preview(p)
@@ -487,11 +539,10 @@ def restore(path: str, vpath: str = ""):
     preview_div = f'<div id="preview" class="{preview_cls}">{preview_html}</div>'
     bc_html = render_breadcrumb(p, ROOT)
 
-    full = (
+    return (
         f'<div id="app-shell">{bc_html}'
         f'<div id="finder">{cols_html}{sentinel_html}{preview_div}</div></div>'
     )
-    return HTMLResponse(full)
 
 
 @rt("/open-link")
@@ -711,11 +762,16 @@ def ui_asset(path: str):
     return FileResponse(str(target), media_type=media)
 
 
-def _ui_shell():
+def _ui_shell(state, base: str):
     """The app shell for the shared UI. Deliberately almost empty.
 
     The chrome is built by ui/core/shell.js so that this page and filemill's
     index.html cannot drift apart — there is no markup here to keep in step.
+
+    *state* reaches the client as three data attributes on ``<html>``, beside
+    the theme and density the shell already reads from there. *base* is the URL
+    prefix the router strips: ``/n/`` for the migration mount, ``/`` for the
+    resource route, where the path already is the file path.
     """
     return Html(
         Head(
@@ -730,7 +786,7 @@ def _ui_shell():
         Body(
             *[Script(src=f"/ui/core/{n}") for n in _UI_CORE],
             *[
-                Script(src=f"/ui/adapters/{n}", **_ui_script_attrs(n))
+                Script(src=f"/ui/adapters/{n}", **_ui_script_attrs(n, base))
                 for n in _UI_ADAPTERS
             ],
         ),
@@ -738,15 +794,18 @@ def _ui_shell():
         data_theme="light",
         data_density="compact",
         data_root=ROOT.name or "/",
+        data_filemill=state.view,
+        data_layout=state.layout,
+        data_hidden=state.hidden,
     )
 
 
-def _ui_script_attrs(name: str) -> dict:
+def _ui_script_attrs(name: str, base: str) -> dict:
     """Per-adapter configuration, read back via ``document.currentScript``."""
     if name == "http.js":
         return {"data_api": "/api"}
     if name == "router-path.js":
-        return {"data_base": UI_BASE}
+        return {"data_base": base}
     return {}
 
 
@@ -764,7 +823,7 @@ def ui_view(path: str = ""):
     """
     if path and api.split_vfs(path, ROOT, _resolve_safe) is None:
         return HTMLResponse("Not found", status_code=404)
-    return _ui_shell()
+    return _ui_shell(urls.ViewState(), UI_BASE)
 
 
 # ── JSON/fragment API behind the shared UI ───────────────────────────────────
@@ -806,20 +865,204 @@ def api_raw(p: str = ""):
 
 
 @rt("/api/preview")
-def api_preview(p: str = "", v: str = "", fmt: str = ""):
-    """Render a preview body with the existing Python pipeline."""
+def api_preview(p: str = "", v: str = "", fmt: str = "", filemill: str = ""):
+    """Render a preview body with the existing Python pipeline.
+
+    ``filemill`` is the view from the page's own URL, forwarded by
+    ui/adapters/preview-http.js. It picks the renderer and nothing else, so
+    ``highlight`` means the same coloured source here as on the embedded page.
+    """
     target = _api_target(p)
     if target is None:
         return HTMLResponse("", status_code=404)
     if v:
         return api.vfs_preview(target, v, fmt)
-    return api.preview_fragment(target, render_preview)
+    render = render_source if filemill == urls.VIEW_HIGHLIGHT else render_preview
+    return api.preview_fragment(target, render)
 
 
 @rt("/api/render", methods=["POST"])
 async def api_render(request):
     """Render posted bytes — the local-folder case, where the server has no path."""
     return await api.render_upload(request, render_preview)
+
+
+# ── The root-relative resource route (PLAN-19) ───────────────────────────────
+#
+# Every route above this line is addressed by a prefix that names a *mechanism*:
+# /click is an HTMX fragment, /w/ is a static mount, /api/ is JSON, /n/ is the
+# shared UI. Those names are reserved and they win, so a directory in ROOT
+# actually called "api" is not reachable under its own name. That is the one
+# cost of putting files at the top level, and it is why the reserved set is
+# written down here rather than discovered by a user hitting it.
+#
+# Everything else is addressed by the file's own path relative to ROOT. The
+# resource and its representation are different things: /docs/readme.md names
+# the file, and ?filemill= says which of its representations to send.
+
+_RESOURCE_ROUTE = "/{path:path}"
+
+
+def _rel_url_path(p: Path) -> str | None:
+    """Return *p* as a ROOT-relative URL path, or None when it has no such path.
+
+    Shares ``_mounted_path_parts`` with the ``/f/`` and ``/w/`` URL builders, so
+    a bookmark symlink in ROOT keeps producing the visible path a reader expects
+    (``bookmark/sub/file``) rather than the target's real location on disk.
+    A standalone bookmark mount that is *not* reachable through the visible tree
+    has no root-relative address at all, and says so with None.
+    """
+    mounted = _mounted_path_parts(p)
+    if mounted is None:
+        return None
+    mount_name, rel = mounted
+    if mount_name != ROOT.name:
+        return None
+    return rel.as_posix() if rel.parts else ""
+
+
+def _resource_target(rel: str) -> tuple[Path, str, str] | None:
+    """Root-relative URL path → (safe absolute path, real part, virtual part).
+
+    ``sample.db/users/42`` is one URL naming two things: a file on disk and a key
+    inside it. The split has to happen before resolution, because only the real
+    part is a filesystem path — hence ``api.split_vfs`` rather than a plain join.
+
+    Returns None when nothing safe is addressed. Every path still goes through
+    ``_resolve_safe``, and the query never takes part in that decision.
+    """
+    split = api.split_vfs(rel, ROOT, _resolve_safe)
+    if split is None:
+        return None
+    real_rel, vpath = split
+    candidate = api.rel_to_abs(real_rel, ROOT)
+    if candidate is None:
+        return None
+    target = _resolve_safe(str(candidate))
+    if target is None or not target.exists():
+        return None
+    return target, real_rel, vpath
+
+
+def _view_switch_html(rel: str, state) -> str:
+    """Return the reciprocal representation controls (PLAN-19 §5).
+
+    Every view links to every other view of the same path, so the controls are
+    reciprocal by construction rather than by three hand-written bars. The stable
+    hooks are the ``filemill-view-switch`` class and the ``data-filemill``
+    attribute; the visible labels are not part of the contract.
+
+    ``url_for_state`` carries the reader's layout and dotfile choices across the
+    switch and HTML-escaping happens here, at the output boundary.
+    """
+    links = []
+    for view, label in urls.VIEW_LABELS:
+        href = html_lib.escape(urls.url_for_state(rel, state, view=view))
+        active = " active" if view == state.view else ""
+        current = ' aria-current="page"' if view == state.view else ""
+        links.append(
+            f'<a class="filemill-view-link{active}"'
+            f' data-filemill="{view}" href="{href}"{current}>{label}</a>'
+        )
+    return (
+        '<div class="preview-webmode-bar filemill-view-switch">'
+        f"{''.join(links)}</div>"
+    )
+
+
+def _representation_html(target: Path, rel: str, state, vpath: str) -> str:
+    """Render one representation of *target*, with the switch controls above it.
+
+    Both branches reuse the existing pipelines rather than duplicating them:
+    ``render_preview`` is the same function ``/click`` and ``/restore`` call, and
+    ``render_source`` shares its Pygments and ``<pre>`` fallbacks.
+    """
+    if vpath:
+        provider = REGISTRY.get(target)
+        if provider is None:
+            return '<div class="preview-error">Not a virtual filesystem</div>'
+        try:
+            body = provider.render_preview(
+                target, vpath, provider.default_fmt(vpath), page=1, limit=1000
+            )
+        except Exception as exc:
+            body = f'<div class="preview-error">{html_lib.escape(str(exc))}</div>'
+        return _view_switch_html(rel, state) + body
+
+    try:
+        if state.view == urls.VIEW_HIGHLIGHT:
+            body = render_source(target)
+        else:
+            # The state reaches the Markdown renderer so links inside the
+            # document keep the reader's layout and dotfile choices.
+            body = render_preview(target, state)
+    except Exception as exc:
+        body = f'<div class="preview-error">{html_lib.escape(str(exc))}</div>'
+    return _view_switch_html(rel, state) + body
+
+
+def _document_page(rel: str, state, body_html: str):
+    """Return the ``layout=no-columns`` page: the representation and nothing else.
+
+    This is what the gogo dashboard embeds. It carries no breadcrumb and no
+    column rail, because the dashboard supplies its own chrome and two sets of
+    navigation in one pane help nobody.
+    """
+    return _page_html(
+        [Div(NotStr(body_html), id="preview", cls="preview-standalone")], state
+    )
+
+
+@rt(_RESOURCE_ROUTE, methods=["GET"])
+def resource(request, path: str = ""):
+    """Serve any representation of the file at ``ROOT / path``.
+
+    The path names the resource; the query names the representation:
+
+        /docs/readme.md                              the file's bytes
+        /docs/readme.md?filemill=render     Markdown as HTML
+        /docs/readme.md?filemill=highlight  the source, coloured
+        /docs/readme.md?filemill=raw          the bytes, said out loud
+
+    GET only. PLAN-19 §3 makes the router-facing surface read-only, and
+    Filemill never writes a file under any route.
+    """
+    state = urls.parse_state(request.query_params)
+    found = _resource_target(path)
+    if found is None:
+        # One 404 for "outside ROOT", "denied", and "missing" alike, so a probe
+        # cannot learn from the status code whether an outside file exists.
+        return HTMLResponse("Not found", status_code=404)
+    target, rel, vpath = found
+    vpath = vpath or state.vpath
+
+    if target.is_dir():
+        # A directory has no bytes, so every view value renders its listing. The
+        # layout still applies: no-columns gives the one pane, and the column
+        # layouts give the finder opened at that directory.
+        if state.wants_columns:
+            return _ui_shell(state, "/")
+        return _page_html([list_column(target, ROOT, col_index=0)], state)
+
+    if vpath:
+        # A node inside a virtual filesystem has no bytes of its own, so `raw`
+        # has nothing to serve there and the rendered view becomes the default.
+        # This is the one place standalone and embedded diverge from "the bare
+        # path serves bytes", and it diverges because there are no bytes.
+        if state.view == urls.VIEW_RAW:
+            state = state.with_view(urls.VIEW_RENDER)
+    elif state.view == urls.VIEW_RAW:
+        # Bytes, a detected media type, no HTML wrapper. This is what an <img
+        # src> and a <link rel=stylesheet> need, and it is why raw is the
+        # default: the bare path has to be the file itself.
+        return api.raw_response(target)
+
+    if state.wants_columns:
+        # The columns are the shared UI's, not the HTMX shell's. The client
+        # walks to this path and asks /api/preview for the representation, so
+        # the document is not rendered twice.
+        return _ui_shell(state, "/")
+    return _document_page(rel, state, _representation_html(target, rel, state, vpath))
 
 
 # ── PWA static files ─────────────────────────────────────────────────────────
@@ -881,8 +1124,22 @@ app.add_middleware(_WebStaticCORSMiddleware)
 
 # ── Route priority fix ────────────────────────────────────────────────────────
 # FastHTML registers a catch-all /{fname:path}.{ext:static} at index 0 that
-# intercepts any path with a known static extension (including .html, .txt, …).
-# Move /w/ and /f/ in front of it so they are matched first.
+# intercepts any path with a known static extension (including .html, .txt, …)
+# and serves it from the *working directory*. Move /w/ and /f/ in front of it so
+# they are matched first.
+#
+# The root-relative resource route is a catch-all too, so ordering decides the
+# whole contract and is stated in one place rather than left to registration
+# order. Four bands, most specific first:
+#
+#   1. the named prefixes below            /w/, /f/, /api/, /n/, PWA files
+#   2. every other explicitly named route  /click, /raw, /restore, /, …
+#   3. /{path:path}                        the file's own path under ROOT
+#   4. FastHTML's /{fname:path}.{ext:static}
+#
+# Band 3 answers before band 4, so a request for /notes/todo.txt now serves
+# ROOT/notes/todo.txt rather than ./notes/todo.txt from the working directory.
+# That is the point: the URL path is a path relative to the configured root.
 def _reorder_routes() -> None:
     routes = app.router.routes
     _prefixes = {
@@ -902,10 +1159,18 @@ def _reorder_routes() -> None:
         "/api/preview",
         "/api/render",
     }
-    priority, rest = [], []
+    priority, rest, resource_route, static_fallback = [], [], [], []
     for r in routes:
-        (priority if getattr(r, "path", "") in _prefixes else rest).append(r)
-    routes[:] = priority + rest
+        path = getattr(r, "path", "")
+        if path == _RESOURCE_ROUTE:
+            resource_route.append(r)
+        elif "{ext:static}" in path:
+            static_fallback.append(r)
+        elif path in _prefixes:
+            priority.append(r)
+        else:
+            rest.append(r)
+    routes[:] = priority + rest + resource_route + static_fallback
 
 
 _reorder_routes()

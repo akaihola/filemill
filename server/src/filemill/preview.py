@@ -3,18 +3,31 @@ import html as html_lib
 from pathlib import Path
 from urllib.parse import quote as urlquote
 
-
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
 
+# Largest file Pygments is asked to colour, and largest one shown as plain <pre>.
+SYNTAX_SIZE_LIMIT = 512 * 1024  # 512 KB
+RAW_SIZE_LIMIT = 256 * 1024  # 256 KB
 
-def render_preview(path: Path) -> str:
-    """Return an HTML string (inner body fragment) for the given file path."""
+
+def render_preview(path: Path, state=None) -> str:
+    """Return an HTML string (inner body fragment) for the given file path.
+
+    This is the *rendered* representation: it dispatches on suffix, so Markdown
+    arrives as HTML and a .docx as its text. ``render_source`` is the other side
+    of that same file — see ``filemill.urls`` for the contract they implement.
+
+    *state* is the request's ``ViewState`` when the caller has one. It only
+    reaches the Markdown renderer, where it decides whether links keep the
+    reader's layout and dotfile choices. ``/click`` and ``/restore`` pass nothing
+    and get the documented defaults, which is why the signature stays optional.
+    """
     ext = path.suffix.lower()
 
     if ext == ".desktop":
         return _preview_desktop(path)
     elif ext == ".md":
-        return _preview_md(path)
+        return _preview_md(path, state)
     elif ext == ".docx":
         return _preview_docx(path)
     elif ext == ".pptx":
@@ -25,55 +38,103 @@ def render_preview(path: Path) -> str:
         return _preview_image(path)
     else:
         # Try Pygments syntax highlighting (before raw text fallback)
-        SYNTAX_SIZE_LIMIT = 512 * 1024  # 512 KB
-        try:
-            from pygments import highlight as pyg_highlight
-            from pygments.formatters import HtmlFormatter as PygHtmlFormatter
-            from pygments.lexers import (
-                ClassNotFound,
-                TextLexer,
-                get_lexer_by_name,
-                guess_lexer,
-            )
-
-            if path.stat().st_size <= SYNTAX_SIZE_LIMIT:
-                try:
-                    content = path.read_text(encoding="utf-8")
-                except UnicodeDecodeError:
-                    content = None
-                if content is not None:
-                    lexer = None
-                    try:
-                        lexer = get_lexer_by_name(ext.lstrip("."))
-                    except ClassNotFound:
-                        try:
-                            lexer = guess_lexer(content)
-                        except Exception:
-                            pass
-                    # Skip TextLexer – unrecognised plain text falls through to <pre>
-                    if lexer is not None and not isinstance(lexer, TextLexer):
-                        formatter = PygHtmlFormatter(style="friendly", nowrap=False)
-                        highlighted = pyg_highlight(content, lexer, formatter)
-                        return f'<div class="preview-code">{highlighted}</div>'
-        except Exception:
-            pass
+        highlighted = _highlight_source(path, ext)
+        if highlighted is not None:
+            return highlighted
         # UTF-8 fallback: show any small-enough text file as raw <pre>
-        if path.stat().st_size <= 256 * 1024:
-            try:
-                content = path.read_text(encoding="utf-8")
-                return f'<pre class="preview-raw">{html_lib.escape(content)}</pre>'
-            except UnicodeDecodeError:
-                pass
+        raw = _raw_text(path)
+        if raw is not None:
+            return raw
         safe_ext = html_lib.escape(ext or "(no extension)")
         return f'<div class="preview-unsupported"><em>No preview available for {safe_ext} files.</em></div>'
 
 
-def _preview_md(path: Path) -> str:
+def render_source(path: Path) -> str:
+    """Return the file's own text, syntax-highlighted and never interpreted.
+
+    ``render_preview`` dispatches on suffix, so a .md file becomes rendered HTML
+    there and a .html file becomes a page. This is what ``filemill=
+    highlighted`` asks for instead: the characters the author typed, coloured but
+    not obeyed. Escaping happens in both branches below, so a file that contains
+    markup shows that markup rather than running it.
+
+    Falls through the same two steps as ``render_preview``: Pygments first, then
+    a plain ``<pre>``, then an explicit "no source view" note for bytes that are
+    not UTF-8 text.
+    """
+    ext = path.suffix.lower()
+    highlighted = _highlight_source(path, ext)
+    if highlighted is not None:
+        return highlighted
+    raw = _raw_text(path)
+    if raw is not None:
+        return raw
+    safe_ext = html_lib.escape(ext or "(no extension)")
+    return (
+        f'<div class="preview-unsupported">'
+        f"<em>No source view available for {safe_ext} files.</em></div>"
+    )
+
+
+def _highlight_source(path: Path, ext: str) -> str | None:
+    """Return Pygments-highlighted HTML, or None when it does not apply.
+
+    None means one of: the file is over ``SYNTAX_SIZE_LIMIT``, it is not UTF-8,
+    or no lexer other than ``TextLexer`` matched. Unrecognised plain text falls
+    through to ``_raw_text`` rather than being wrapped in a pointless colour div.
+    """
+    try:
+        from pygments import highlight as pyg_highlight
+        from pygments.formatters import HtmlFormatter as PygHtmlFormatter
+        from pygments.lexers import (
+            ClassNotFound,
+            TextLexer,
+            get_lexer_by_name,
+            guess_lexer,
+        )
+
+        if path.stat().st_size <= SYNTAX_SIZE_LIMIT:
+            try:
+                content = path.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                content = None
+            if content is not None:
+                lexer = None
+                try:
+                    lexer = get_lexer_by_name(ext.lstrip("."))
+                except ClassNotFound:
+                    try:
+                        lexer = guess_lexer(content)
+                    except Exception:  # noqa: S110 — no guess means no colour
+                        pass
+                # Skip TextLexer – unrecognised plain text falls through to <pre>
+                if lexer is not None and not isinstance(lexer, TextLexer):
+                    formatter = PygHtmlFormatter(style="friendly", nowrap=False)
+                    highlighted = pyg_highlight(content, lexer, formatter)
+                    return f'<div class="preview-code">{highlighted}</div>'
+    except Exception:  # noqa: S110 — colour is optional; the <pre> fallback is not
+        pass
+    return None
+
+
+def _raw_text(path: Path) -> str | None:
+    """Return a small-enough UTF-8 file as an escaped ``<pre>``, else None."""
+    try:
+        if path.stat().st_size <= RAW_SIZE_LIMIT:
+            content = path.read_text(encoding="utf-8")
+            return f'<pre class="preview-raw">{html_lib.escape(content)}</pre>'
+    except (UnicodeDecodeError, OSError):
+        pass
+    return None
+
+
+def _preview_md(path: Path, state=None) -> str:
     try:
         from filemill.rendering import md as md_renderer
 
         html_body = md_renderer.render(
-            path.read_text(encoding="utf-8"), {"source_path": path}
+            path.read_text(encoding="utf-8"),
+            {"source_path": path, "view_state": state},
         )
         return f'<div class="preview-md">{html_body}</div>'
     except Exception as e:

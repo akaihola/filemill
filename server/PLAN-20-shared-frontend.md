@@ -205,7 +205,7 @@ relative to root, exactly as PLAN-19 specifies:
 
 ```
 /src/pykofinder/app.py
-/src/pykofinder/app.py?pykofinder-view=highlighted
+/src/pykofinder/app.py?filemill=highlight
 ```
 
 Query params carry representation/layout/dotfiles; the path carries only the

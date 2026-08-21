@@ -132,18 +132,125 @@ path *is* the file path relative to ROOT, with no prefix.
 
 ```bash
 uv sync
-uv run pytest                  # unit + integration (with coverage)
+timeout 1800 uv run pytest     # everything, browser tests included
 
-# Real-browser regression tests (optional; requires PLAYWRIGHT_BROWSERS_PATH)
-# Keep browser regressions here for keyboard URL sync and keyboard-only column-survival flows.
-PLAYWRIGHT_BROWSERS_PATH="$PLAYWRIGHT_BROWSERS_PATH" \
-  uv run --with "playwright==1.57.0" pytest tests/test_browser_keyboard.py
+# Just the 56 real-browser tests. Needs PLAYWRIGHT_BROWSERS_PATH. The 29 in
+# test_browser_keyboard.py alone took 342 s on a 4-core host, so budget minutes.
+timeout 1800 uv run pytest tests/test_browser_keyboard.py tests/test_browser_new_ui.py
 ```
 
-> **Important:** always wrap `uv run pytest` in a shell-level timeout (e.g.
-> `timeout 120 uv run pytest`) when calling it from a script or agent tool.
-> SSE streaming tests that misbehave can otherwise block indefinitely (see
+> **Important:** always wrap `uv run pytest` in a shell-level timeout when
+> calling it from a script or agent tool. SSE streaming tests that misbehave can
+> otherwise block indefinitely (see
 > [issue #17](ISSUES.md#17--fix-hanging-sse-test-test_sse_reload_exists_with_live_mode)).
+> Use 1800 seconds, not 120: the browser tests alone take about 9 minutes.
+
+### Do Not Pass `--with playwright==…`
+
+Earlier versions of this file told you to. The command it gave now fails:
+
+```
+$ uv run --with "playwright==1.57.0" pytest tests/test_browser_new_ui.py
+BrowserType.launch: Executable doesn't exist at
+  .../chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+╔════════════════════════════════════════════════════════════╗
+║ Looks like Playwright was just installed or updated.       ║
+║ Please run the following command to download new browsers: ║
+║     playwright install                                     ║
+╚════════════════════════════════════════════════════════════╝
+```
+
+Ignore that banner. Each Playwright release carries exactly one browser
+revision, each Nix browser bundle carries exactly one, and they have to be the
+same one. `$PLAYWRIGHT_BROWSERS_PATH` here holds `chromium-1228` and
+`chromium_headless_shell-1228`, so 1.61.x is the only version that launches:
+1.57.0 asks for revision 1200 and 1.62.0 asks for 1234. `pyproject.toml` pins
+`playwright~=1.61.0` for that reason, and `--with` overrides the pin. Running
+`playwright install` would download a fourth copy of a browser Nix already
+provides, so do not run it. Re-pin from the constraint file instead:
+
+```bash
+uv lock --upgrade-package "$(grep -E '^playwright[=<>~!]' "$UV_CONSTRAINT")"
+```
+
+### The `/f/` Browser Tests Need Outbound Network
+
+`tests/test_browser_keyboard.py` drives the HTMX finder shell, which loads htmx
+from `unpkg.com` and mermaid from `cdn.jsdelivr.net`. With no route to those two
+hosts the page draws `#col-0` and then ignores every click, so the tests fail on
+their navigation assertions and look like a routing regression. Behind an
+authenticated proxy the tell is `407 Proxy Authentication Required` in the
+*browser* console, which pytest never prints. `_proxy_from_env()` in that file
+reads `$HTTPS_PROXY` and passes the credentials to Chromium, which reads the
+variable but drops the credentials in it.
+
+`tests/test_browser_new_ui.py` drives the `/n/` shared UI, which serves every
+asset itself, so those 27 tests pass with no network at all. Measured on a host
+with no proxy credentials given to Chromium: 27 passed in 115 s.
+
+### Two Measurements of the Local-Folder Tests Disagree
+
+The disagreement is unresolved, and both conditions are reproducible. On
+2026-08-18 one agent recorded 27 passed in 115 s and 118 s on a 4-core host,
+including `test_local_files_are_still_rendered_by_python` and
+`test_local_source_is_still_highlighted_by_pygments` three times alone at 9.42 s,
+9.26 s and 8.60 s, and passing under four busy loops in 24.68 s. A second agent
+on a different host recorded those same two failing, with and without proxy
+variables set, and when running only those two.
+
+What the second agent's runs established: `POST /api/render` completes, and
+`#preview .pv-rich h1` still never appears. That rules out slowness and rules out
+the round trip.
+
+The mechanism to look at is in `ui/adapters/preview-upload.js`, which has two
+branches that are silent by design:
+
+```js
+if (!r.ok) return PreviewLocal.render(node);   /* draws no .pv-rich */
+return html.trim() ? `<div class="pv-rich">${html}</div>` : null;
+```
+
+A non-2xx falls back to a renderer that emits no `.pv-rich`, and an empty body
+draws nothing. Both look like a slow machine from the test's side. `_click_local()`
+now reports which one happened. Its two failure messages, verified by mutating
+`api.render_upload()`:
+
+```
+POST /api/render answered 500 for local.md, so preview-upload.js fell back
+silently and drew no .pv-rich. First 300 bytes: 'boom'
+
+#preview .pv-rich h1 never appeared for local.md. POST /api/render answered 200
+with 48 bytes, and #preview .pv-rich count is 1. A count of 0 means nothing was
+injected; a count of 1 means the server rendered something without that element
+in it. First 300 bytes: '<div class="preview-error">no heading here</div>'
+```
+
+If you hit this, run those two tests and paste the message. It names the status
+and the first 300 bytes the server sent, which is the cause rather than a
+timeout.
+
+`test_nothing_is_fetched_from_a_cdn` is what holds the `/n/` UI to that, and it
+now watches both halves. The served half goes through `preview-http.js` and
+`GET /api/preview`; the local-folder half goes through `preview-upload.js` and
+`POST /api/render`. It used to watch only the served half, which left the half
+its own docstring is about unchecked.
+
+The adapter that would break this is `ui/adapters/preview-rich.js`, which
+lazy-loads a renderer from a CDN. `tools/sync-ui.py` does not vendor it into
+`src/filemill/ui/adapters/`, and that omission is load-bearing. If a future
+sync ships it, `test_nothing_is_fetched_from_a_cdn` fails with the fetched URL in
+the assertion, which is the failure you want.
+
+### Wait for an Element, Never for a Duration
+
+The `/f/` shell fills its columns after the page reports `networkidle`, so
+`page.wait_for_timeout(900)` is a guess about how loaded the machine is. On this
+4-core host with four busy loops running, 2 of 6 attempts still had no `#col-0`
+at 800 ms. `_click_item()` waits for the entry with `page.wait_for_function` and
+then clicks it, so a missing entry raises a `TimeoutError` naming the column.
+Write new browser assertions the same way. A helper that returns quietly when it
+finds nothing turns a slow machine into an assertion failure three lines away
+from the cause.
 
 ## Submitting changes
 
