@@ -364,14 +364,14 @@ def test_rendered_relative_markdown_link_uses_root_relative_url(
 
         preview_link = page.locator(
             '#preview a[href="/my-knowledge/docs/subdir/next.md'
-            '?pykofinder-view=rendered"]'
+            '?filemill=render"]'
         ).first
         assert preview_link.count() == 1
         preview_link.click()
         page.wait_for_timeout(900)
 
         _expect_url_ending(
-            page, "/my-knowledge/docs/subdir/next.md?pykofinder-view=rendered"
+            page, "/my-knowledge/docs/subdir/next.md?filemill=render"
         )
         assert "Next" in page.locator("#preview").inner_text()
 

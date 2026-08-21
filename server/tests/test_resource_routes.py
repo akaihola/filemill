@@ -3,9 +3,9 @@
 For a configured root containing ``docs/readme.md``, these are the addresses:
 
     /docs/readme.md                              the file's bytes
-    /docs/readme.md?pykofinder-view=rendered     Markdown as HTML
-    /docs/readme.md?pykofinder-view=highlighted  the source, coloured
-    /docs/readme.md?pykofinder-view=raw          the bytes, said out loud
+    /docs/readme.md?filemill=render     Markdown as HTML
+    /docs/readme.md?filemill=highlight  the source, coloured
+    /docs/readme.md?filemill=raw          the bytes, said out loud
 
     ?layout=full-columns        the finder, opened there   (default)
     ?layout=compressed-columns  the same, columns folded
@@ -83,9 +83,9 @@ def test_bare_path_serves_html_as_html(client):
 
 
 def test_raw_view_is_identical_to_the_bare_path(client):
-    """pykofinder-view=raw names the default rather than adding a fourth thing."""
+    """filemill=raw names the default rather than adding a fourth thing."""
     bare = client.get("/docs/readme.md")
-    named = client.get("/docs/readme.md?pykofinder-view=raw")
+    named = client.get("/docs/readme.md?filemill=raw")
     assert named.status_code == bare.status_code == 200
     assert named.text == bare.text
     assert named.headers["content-type"] == bare.headers["content-type"]
@@ -101,7 +101,7 @@ def test_a_space_in_a_path_is_served(client):
 
 
 def test_rendered_view_renders_markdown(client):
-    resp = client.get("/docs/readme.md?pykofinder-view=rendered")
+    resp = client.get("/docs/readme.md?filemill=render")
     assert resp.status_code == 200
     assert "text/html" in resp.headers["content-type"]
     assert ">Guide</h1>" in resp.text
@@ -118,13 +118,13 @@ def test_rendered_view_passes_raw_html_through_unescaped(client):
     rendered page is now served same-origin with the dashboard that embeds it,
     which raises the stakes of the existing choice. See PLAN-19 "What remains".
     """
-    resp = client.get("/docs/readme.md?pykofinder-view=rendered")
+    resp = client.get("/docs/readme.md?filemill=render")
     assert "<script>alert(1)</script>" in resp.text
 
 
 def test_highlighted_view_shows_the_source_not_the_rendering(client):
     """The characters the author typed, coloured but not obeyed."""
-    resp = client.get("/docs/readme.md?pykofinder-view=highlighted")
+    resp = client.get("/docs/readme.md?filemill=highlight")
     assert resp.status_code == 200
     assert ">Guide</h1>" not in resp.text
     assert "# Guide" in resp.text
@@ -133,13 +133,13 @@ def test_highlighted_view_shows_the_source_not_the_rendering(client):
 
 def test_highlighted_view_escapes_markup_in_the_source(client):
     """The same <script> that runs in the rendered view is inert here."""
-    resp = client.get("/docs/readme.md?pykofinder-view=highlighted")
+    resp = client.get("/docs/readme.md?filemill=highlight")
     assert "<script>alert(1)</script>" not in resp.text
     assert "&lt;" in resp.text and "script" in resp.text
 
 
 def test_highlighted_view_colours_source_code(client):
-    resp = client.get("/hello.py?pykofinder-view=highlighted")
+    resp = client.get("/hello.py?filemill=highlight")
     assert resp.status_code == 200
     assert 'class="preview-code"' in resp.text
     assert "hello" in resp.text
@@ -147,7 +147,7 @@ def test_highlighted_view_colours_source_code(client):
 
 def test_highlighted_view_of_html_shows_the_markup_not_the_page(client):
     """Pygments splits the tag across spans, so the angle brackets arrive escaped."""
-    resp = client.get("/page.html?pykofinder-view=highlighted")
+    resp = client.get("/page.html?filemill=highlight")
     assert resp.status_code == 200
     assert 'class="preview-code"' in resp.text
     assert "&lt;" in resp.text
@@ -158,7 +158,7 @@ def test_highlighted_view_of_html_shows_the_markup_not_the_page(client):
 
 
 def test_no_columns_layout_omits_the_column_rail(client):
-    resp = client.get("/docs/readme.md?pykofinder-view=rendered&layout=no-columns")
+    resp = client.get("/docs/readme.md?filemill=render&layout=no-columns")
     assert resp.status_code == 200
     assert 'class="column"' not in resp.text
     assert 'id="breadcrumb"' not in resp.text
@@ -166,7 +166,7 @@ def test_no_columns_layout_omits_the_column_rail(client):
 
 
 def test_full_columns_layout_carries_the_column_rail(client):
-    resp = client.get("/docs/readme.md?pykofinder-view=rendered&layout=full-columns")
+    resp = client.get("/docs/readme.md?filemill=render&layout=full-columns")
     assert resp.status_code == 200
     assert 'class="column"' in resp.text
     assert 'id="breadcrumb"' in resp.text
@@ -175,9 +175,9 @@ def test_full_columns_layout_carries_the_column_rail(client):
 
 def test_default_layout_is_full_columns(client):
     """Omitting layout gives the same page as asking for full-columns."""
-    default = client.get("/docs/readme.md?pykofinder-view=rendered")
+    default = client.get("/docs/readme.md?filemill=render")
     explicit = client.get(
-        "/docs/readme.md?pykofinder-view=rendered&layout=full-columns"
+        "/docs/readme.md?filemill=render&layout=full-columns"
     )
     assert default.text == explicit.text
 
@@ -185,25 +185,25 @@ def test_default_layout_is_full_columns(client):
 def test_compressed_columns_sets_the_zoomed_presentation(client):
     """compressed-columns reuses the class the ⛶ button already toggles."""
     resp = client.get(
-        "/docs/readme.md?pykofinder-view=rendered&layout=compressed-columns"
+        "/docs/readme.md?filemill=render&layout=compressed-columns"
     )
     assert 'data-layout="compressed-columns"' in resp.text
     assert "zoomed" in resp.text
 
 
 def test_layout_is_reported_on_the_body(client):
-    resp = client.get("/docs/readme.md?pykofinder-view=rendered&layout=no-columns")
+    resp = client.get("/docs/readme.md?filemill=render&layout=no-columns")
     assert 'data-layout="no-columns"' in resp.text
 
 
 def test_hidden_show_reaches_the_body(client):
-    resp = client.get("/docs/readme.md?pykofinder-view=rendered&hidden=show")
+    resp = client.get("/docs/readme.md?filemill=render&hidden=show")
     assert 'data-hidden="show"' in resp.text
     assert "show-dotfiles" in resp.text
 
 
 def test_hidden_defaults_to_hide(client):
-    resp = client.get("/docs/readme.md?pykofinder-view=rendered")
+    resp = client.get("/docs/readme.md?filemill=render")
     assert 'data-hidden="hide"' in resp.text
 
 
@@ -211,50 +211,50 @@ def test_hidden_defaults_to_hide(client):
 
 
 def test_rendered_view_links_to_the_other_two(client):
-    resp = client.get("/docs/readme.md?pykofinder-view=rendered&layout=no-columns")
+    resp = client.get("/docs/readme.md?filemill=render&layout=no-columns")
     assert (
-        'data-pykofinder-view="highlighted"'
-        ' href="/docs/readme.md?pykofinder-view=highlighted&amp;layout=no-columns"'
+        'data-filemill="highlight"'
+        ' href="/docs/readme.md?filemill=highlight&amp;layout=no-columns"'
     ) in resp.text
-    assert 'data-pykofinder-view="raw" href="/docs/readme.md?layout=no-columns"' in (
+    assert 'data-filemill="raw" href="/docs/readme.md?layout=no-columns"' in (
         resp.text
     )
 
 
 def test_highlighted_view_links_back_to_rendered(client):
     """The reciprocal half of the pair, asserted as an exact href."""
-    resp = client.get("/docs/readme.md?pykofinder-view=highlighted&layout=no-columns")
+    resp = client.get("/docs/readme.md?filemill=highlight&layout=no-columns")
     assert (
-        'data-pykofinder-view="rendered"'
-        ' href="/docs/readme.md?pykofinder-view=rendered&amp;layout=no-columns"'
+        'data-filemill="render"'
+        ' href="/docs/readme.md?filemill=render&amp;layout=no-columns"'
     ) in resp.text
 
 
 def test_switch_links_preserve_hidden(client):
     resp = client.get(
-        "/docs/readme.md?pykofinder-view=rendered&layout=no-columns&hidden=show"
+        "/docs/readme.md?filemill=render&layout=no-columns&hidden=show"
     )
     assert (
-        'href="/docs/readme.md?pykofinder-view=highlighted'
+        'href="/docs/readme.md?filemill=highlight'
         '&amp;layout=no-columns&amp;hidden=show"' in resp.text
     )
 
 
 def test_switch_link_to_raw_is_the_bare_path_when_nothing_else_is_set(client):
     """Clicking Raw lands on the canonical short URL, which teaches the contract."""
-    resp = client.get("/docs/readme.md?pykofinder-view=rendered")
-    assert 'data-pykofinder-view="raw" href="/docs/readme.md"' in resp.text
+    resp = client.get("/docs/readme.md?filemill=render")
+    assert 'data-filemill="raw" href="/docs/readme.md"' in resp.text
 
 
 def test_the_active_view_is_marked(client):
-    resp = client.get("/docs/readme.md?pykofinder-view=rendered")
-    assert 'data-pykofinder-view="rendered" href=' in resp.text
+    resp = client.get("/docs/readme.md?filemill=render")
+    assert 'data-filemill="render" href=' in resp.text
     assert 'aria-current="page"' in resp.text
 
 
 def test_the_switch_has_a_stable_class(client):
-    resp = client.get("/docs/readme.md?pykofinder-view=rendered")
-    assert "pykofinder-view-switch" in resp.text
+    resp = client.get("/docs/readme.md?filemill=render")
+    assert "filemill-view-switch" in resp.text
 
 
 # ── Invalid and repeated query values ────────────────────────────────────────
@@ -263,11 +263,11 @@ def test_the_switch_has_a_stable_class(client):
 @pytest.mark.parametrize(
     "query",
     [
-        "?pykofinder-view=nonsense",
-        "?pykofinder-view=",
+        "?filemill=nonsense",
+        "?filemill=",
         "?layout=wide",
         "?hidden=maybe",
-        "?pykofinder-view=nonsense&layout=nonsense&hidden=nonsense",
+        "?filemill=nonsense&layout=nonsense&hidden=nonsense",
     ],
 )
 def test_invalid_query_values_serve_the_default_representation(client, query):
@@ -279,7 +279,7 @@ def test_invalid_query_values_serve_the_default_representation(client, query):
 
 def test_repeated_view_takes_the_last_occurrence(client):
     resp = client.get(
-        "/docs/readme.md?pykofinder-view=raw&pykofinder-view=rendered&layout=no-columns"
+        "/docs/readme.md?filemill=raw&filemill=render&layout=no-columns"
     )
     assert ">Guide</h1>" in resp.text
 
@@ -360,28 +360,28 @@ def test_click_route_still_answers_its_own_path(client, site):
 
 
 def test_markdown_link_targets_the_files_own_path(site, client):
-    """A [link](other.md) resolves to /other.md?pykofinder-view=rendered."""
+    """A [link](other.md) resolves to /other.md?filemill=render."""
     (site / "note.md").write_text("[link](other.md)\n")
     (site / "other.md").write_text("# Other\n")
-    resp = client.get("/note.md?pykofinder-view=rendered")
-    assert 'href="/other.md?pykofinder-view=rendered"' in resp.text
+    resp = client.get("/note.md?filemill=render")
+    assert 'href="/other.md?filemill=render"' in resp.text
 
 
 def test_markdown_link_keeps_a_no_columns_reader_in_no_columns(site, client):
     """Following a link inside an embedded document must not open the finder."""
     (site / "note.md").write_text("[link](other.md)\n")
     (site / "other.md").write_text("# Other\n")
-    resp = client.get("/note.md?pykofinder-view=rendered&layout=no-columns")
+    resp = client.get("/note.md?filemill=render&layout=no-columns")
     assert (
-        'href="/other.md?pykofinder-view=rendered&amp;layout=no-columns"' in resp.text
+        'href="/other.md?filemill=render&amp;layout=no-columns"' in resp.text
     )
 
 
 def test_markdown_link_keeps_hidden(site, client):
     (site / "note.md").write_text("[link](other.md)\n")
     (site / "other.md").write_text("# Other\n")
-    resp = client.get("/note.md?pykofinder-view=rendered&hidden=show")
-    assert 'href="/other.md?pykofinder-view=rendered&amp;hidden=show"' in resp.text
+    resp = client.get("/note.md?filemill=render&hidden=show")
+    assert 'href="/other.md?filemill=render&amp;hidden=show"' in resp.text
 
 
 def test_markdown_image_src_is_left_relative_and_now_resolves(site, client):
@@ -396,7 +396,7 @@ def test_markdown_image_src_is_left_relative_and_now_resolves(site, client):
     fixed a bug by removing a special case rather than adding one.
     """
     (site / "docs" / "note.md").write_text("![photo](../photo.png)\n")
-    resp = client.get("/docs/note.md?pykofinder-view=rendered")
+    resp = client.get("/docs/note.md?filemill=render")
     assert 'src="../photo.png"' in resp.text
 
     # The browser would resolve that against /docs/note.md. Follow it and check.
@@ -412,4 +412,4 @@ def test_click_fragment_links_do_not_gain_a_layout(site, client):
     (site / "note.md").write_text("[link](other.md)\n")
     (site / "other.md").write_text("# Other\n")
     resp = client.get(f"/click?path={quote(str(site / 'note.md'))}&col=1")
-    assert 'href="/other.md?pykofinder-view=rendered"' in resp.text
+    assert 'href="/other.md?filemill=render"' in resp.text

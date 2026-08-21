@@ -432,7 +432,7 @@ def _finder_fragment(
     reason it was lifted out of ``restore()``.
 
     *preview_override* replaces what fills the preview pane. It is how
-    ``?pykofinder-view=`` picks a representation without a second shell template:
+    ``?filemill=`` picks a representation without a second shell template:
     the columns are the same, only the pane differs.
     """
     # Build ancestor chain: ROOT plus each directory step down to p
@@ -884,7 +884,7 @@ async def api_render(request):
 #
 # Everything else is addressed by the file's own path relative to ROOT. The
 # resource and its representation are different things: /docs/readme.md names
-# the file, and ?pykofinder-view= says which of its representations to send.
+# the file, and ?filemill= says which of its representations to send.
 
 _RESOURCE_ROUTE = "/{path:path}"
 
@@ -935,7 +935,7 @@ def _view_switch_html(rel: str, state) -> str:
 
     Every view links to every other view of the same path, so the controls are
     reciprocal by construction rather than by three hand-written bars. The stable
-    hooks are the ``pykofinder-view-switch`` class and the ``data-pykofinder-view``
+    hooks are the ``filemill-view-switch`` class and the ``data-filemill``
     attribute; the visible labels are not part of the contract.
 
     ``url_for_state`` carries the reader's layout and dotfile choices across the
@@ -947,11 +947,11 @@ def _view_switch_html(rel: str, state) -> str:
         active = " active" if view == state.view else ""
         current = ' aria-current="page"' if view == state.view else ""
         links.append(
-            f'<a class="pykofinder-view-link{active}"'
-            f' data-pykofinder-view="{view}" href="{href}"{current}>{label}</a>'
+            f'<a class="filemill-view-link{active}"'
+            f' data-filemill="{view}" href="{href}"{current}>{label}</a>'
         )
     return (
-        '<div class="preview-webmode-bar pykofinder-view-switch">'
+        '<div class="preview-webmode-bar filemill-view-switch">'
         f"{''.join(links)}</div>"
     )
 
@@ -976,7 +976,7 @@ def _representation_html(target: Path, rel: str, state, vpath: str) -> str:
         return _view_switch_html(rel, state) + body
 
     try:
-        if state.view == urls.VIEW_HIGHLIGHTED:
+        if state.view == urls.VIEW_HIGHLIGHT:
             body = render_source(target)
         else:
             # The state reaches the Markdown renderer so links inside the
@@ -1006,9 +1006,9 @@ def resource(request, path: str = ""):
     The path names the resource; the query names the representation:
 
         /docs/readme.md                              the file's bytes
-        /docs/readme.md?pykofinder-view=rendered     Markdown as HTML
-        /docs/readme.md?pykofinder-view=highlighted  the source, coloured
-        /docs/readme.md?pykofinder-view=raw          the bytes, said out loud
+        /docs/readme.md?filemill=render     Markdown as HTML
+        /docs/readme.md?filemill=highlight  the source, coloured
+        /docs/readme.md?filemill=raw          the bytes, said out loud
 
     GET only. PLAN-19 §3 makes the router-facing surface read-only, and
     Filemill never writes a file under any route.
@@ -1036,7 +1036,7 @@ def resource(request, path: str = ""):
         # This is the one place standalone and embedded diverge from "the bare
         # path serves bytes", and it diverges because there are no bytes.
         if state.view == urls.VIEW_RAW:
-            state = state.with_view(urls.VIEW_RENDERED)
+            state = state.with_view(urls.VIEW_RENDER)
     elif state.view == urls.VIEW_RAW:
         # Bytes, a detected media type, no HTML wrapper. This is what an <img
         # src> and a <link rel=stylesheet> need, and it is why raw is the

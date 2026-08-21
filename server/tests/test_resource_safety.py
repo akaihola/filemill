@@ -3,7 +3,7 @@
 ``_resolve_safe()`` exists because a path that arrived in a URL must not escape
 the configured root. PLAN-19 adds a query-parameter dimension on top of that
 path, so the question this module answers is narrow and specific: does any
-combination of ``pykofinder-view`` and ``layout`` open a way past it?
+combination of ``filemill`` and ``layout`` open a way past it?
 
 Every test here asserts on the **resolved path**, not on the request string. A
 request string can be normalised by the client before it reaches the server —
@@ -120,7 +120,7 @@ def _client():
 def _query(view: str, layout: str) -> str:
     pairs = []
     if view:
-        pairs.append(("pykofinder-view", view))
+        pairs.append(("filemill", view))
     if layout:
         pairs.append(("layout", layout))
     return f"?{urlencode(pairs)}" if pairs else ""

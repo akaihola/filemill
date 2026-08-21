@@ -93,7 +93,7 @@ def _href_for_file(abs_path: Path, state=None) -> str:
     """Return a public filemill URL for a resolved file path.
 
     The URL is the file's path relative to the configured root. A Markdown
-    document adds ``?pykofinder-view=rendered``, because a link from one document
+    document adds ``?filemill=render``, because a link from one document
     to another should land on the rendered document rather than download its
     source. Everything else uses the bare path, which serves the bytes — so an
     ``![image](photo.png)`` in Markdown resolves to ``/photo.png`` and renders.
@@ -116,7 +116,7 @@ def _href_for_file(abs_path: Path, state=None) -> str:
         if state is not None:
             layout = state.layout if state.layout != urls.DEFAULT_LAYOUT else None
             hidden = state.hidden if state.hidden != urls.DEFAULT_HIDDEN else None
-        view = urls.VIEW_RENDERED if abs_path.suffix.lower() == ".md" else None
+        view = urls.VIEW_RENDER if abs_path.suffix.lower() == ".md" else None
         return urls.build_url(rel, view=view, layout=layout, hidden=hidden)
 
     web_url = app_module._web_url(abs_path)

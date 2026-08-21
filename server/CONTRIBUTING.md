@@ -237,7 +237,7 @@ its own docstring is about unchecked.
 
 The adapter that would break this is `ui/adapters/preview-rich.js`, which
 lazy-loads a renderer from a CDN. `tools/sync-ui.py` does not vendor it into
-`src/pykofinder/ui/adapters/`, and that omission is load-bearing. If a future
+`src/filemill/ui/adapters/`, and that omission is load-bearing. If a future
 sync ships it, `test_nothing_is_fetched_from_a_cdn` fails with the fetched URL in
 the assertion, which is the failure you want.
 
