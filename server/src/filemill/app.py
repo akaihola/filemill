@@ -152,25 +152,20 @@ def _page_html(body_children, state, *extra_head_scripts):
 
     The layout is an attribute, not a second template. ``compressed-columns``
     reuses the ``zoomed`` presentation the ⛶ button already toggles, and
-    ``hidden=show`` reuses the ``show-dotfiles`` class the .* button toggles. The
-    embedded dashboard page and the standalone page therefore run identical code
-    and differ by two strings on one element.
+    The .* button and localStorage preference control dotfile visibility in the
+    browser; it is not part of the resource URL contract.
 
-    ``data-layout`` and ``data-hidden`` are set as well as the classes so the
-    client can read the requested state back without inferring it from styling.
+    ``data-layout`` is set so the client can read the requested state back.
     """
     classes = []
     if state.layout == urls.LAYOUT_COMPRESSED:
         classes.append("zoomed")
-    if state.show_hidden:
-        classes.append("show-dotfiles")
     attrs = {"cls": " ".join(classes)} if classes else {}
     return Html(
         _head_tags(*extra_head_scripts),
         Body(
             *body_children,
             data_layout=state.layout,
-            data_hidden=state.hidden,
             **attrs,
         ),
     )

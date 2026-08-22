@@ -112,12 +112,11 @@ def _href_for_file(abs_path: Path, state=None) -> str:
 
     rel = app_module._rel_url_path(abs_path)
     if rel is not None:
-        layout = hidden = None
+        layout = None
         if state is not None:
             layout = state.layout if state.layout != urls.DEFAULT_LAYOUT else None
-            hidden = state.hidden if state.hidden != urls.DEFAULT_HIDDEN else None
         view = urls.VIEW_RENDER if abs_path.suffix.lower() == ".md" else None
-        return urls.build_url(rel, view=view, layout=layout, hidden=hidden)
+        return urls.build_url(rel, view=view, layout=layout)
 
     web_url = app_module._web_url(abs_path)
     if web_url is not None:
