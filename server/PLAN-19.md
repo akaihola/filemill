@@ -81,7 +81,6 @@ boundary" below.
 | --- | --- | --- |
 | `filemill` | `raw`, `render`, `highlight` | `raw` |
 | `layout` | `full-columns`, `compressed-columns`, `no-columns` | `full-columns` |
-| `hidden` | `hide`, `show` | `hide` |
 | `vpath` | a path inside a virtual filesystem | empty |
 
 `raw` is the default because the bare path has to serve bytes: `/site/main.css`
@@ -112,10 +111,10 @@ sharing `_highlight_source()` and `_raw_text()`. `render_preview(path, state=Non
 threads the request state to the Markdown renderer only.
 
 **`src/filemill/rendering.py`.** `_href_for_file()` emits root-relative URLs;
-Markdown and wikilink hrefs carry the reader's `layout` and `hidden`.
+Markdown and wikilink hrefs carry the reader's `layout`.
 
-**`src/filemill/styles.py`.** `initDotfilesToggle()` reads `data-hidden`, so an
-explicit `?hidden=` outranks the stored preference.
+**`src/filemill/styles.py`.** `initDotfilesToggle()` reads the stored
+preference for dotfile visibility.
 
 **Tests.** `test_urls.py` (49), `test_resource_routes.py` (47),
 `test_resource_safety.py` (229).
@@ -155,8 +154,8 @@ down here.
 ### Standalone and embedded share one code path
 
 They differ by two attributes on `<body>` and nothing else. `compressed-columns`
-sets the `zoomed` class the ⛶ button already toggles; `hidden=show` sets the
-`show-dotfiles` class the `.*` button already toggles. There is no second
+sets the `zoomed` class the ⛶ button already toggles. Dotfile visibility remains
+a local browser preference controlled by the `.*` button. There is no second
 template and no embedded-mode branch in a handler.
 
 One divergence, commented at the branch that causes it: a node inside a virtual
@@ -431,8 +430,9 @@ do not carry an absolute filesystem path.
 
 1. **URL and query contract.** Use the same path for all representations.
    `/docs/readme.md` serves the static file by default;
-   `?filemill=render|highlight|raw` selects the others; `layout=` and
-   `hidden=` select the Finder layout and dotfile visibility. Missing or invalid
+   `?filemill=render|highlight|raw` selects the others; `layout=` selects the
+   Finder layout. Dotfile visibility is a local browser preference. Missing or
+   invalid
    query values use documented defaults and never change the requested file path.
    Use one shared query parser and URL builder. Encode query values once and
    apply HTML escaping at output boundaries.

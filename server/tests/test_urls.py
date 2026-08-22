@@ -4,7 +4,6 @@ import pytest
 from starlette.datastructures import QueryParams
 
 from filemill.urls import (
-    DEFAULT_HIDDEN,
     DEFAULT_LAYOUT,
     DEFAULT_VIEW,
     LAYOUT_COMPRESSED,
@@ -24,15 +23,13 @@ from filemill.urls import (
 def test_empty_query_gives_documented_defaults():
     """No query at all means raw bytes, full columns, dotfiles hidden."""
     state = parse_state(QueryParams(""))
-    assert (state.view, state.layout, state.hidden) == (
+    assert (state.view, state.layout) == (
         DEFAULT_VIEW,
         DEFAULT_LAYOUT,
-        DEFAULT_HIDDEN,
     )
-    assert (DEFAULT_VIEW, DEFAULT_LAYOUT, DEFAULT_HIDDEN) == (
+    assert (DEFAULT_VIEW, DEFAULT_LAYOUT) == (
         "raw",
         "full-columns",
-        "hide",
     )
 
 
@@ -44,11 +41,6 @@ def test_each_view_value_parses(view):
 @pytest.mark.parametrize("layout", ["full-columns", "compressed-columns", "no-columns"])
 def test_each_layout_value_parses(layout):
     assert parse_state(QueryParams(f"layout={layout}")).layout == layout
-
-
-@pytest.mark.parametrize("hidden", ["show", "hide"])
-def test_each_hidden_value_parses(hidden):
-    assert parse_state(QueryParams(f"hidden={hidden}")).hidden == hidden
 
 
 # ── Malformed, empty, repeated, encoded ──────────────────────────────────────
@@ -71,11 +63,6 @@ def test_invalid_view_falls_back_to_default(query):
 @pytest.mark.parametrize("query", ["layout=wide", "layout=", "layout=no-columns2"])
 def test_invalid_layout_falls_back_to_default(query):
     assert parse_state(QueryParams(query)).layout == DEFAULT_LAYOUT
-
-
-@pytest.mark.parametrize("query", ["hidden=maybe", "hidden=", "hidden=1"])
-def test_invalid_hidden_falls_back_to_default(query):
-    assert parse_state(QueryParams(query)).hidden == DEFAULT_HIDDEN
 
 
 def test_repeated_value_takes_the_last_occurrence():
@@ -115,11 +102,6 @@ def test_column_layouts_report_columns(layout):
     assert parse_state(QueryParams(f"layout={layout}")).wants_columns is True
 
 
-def test_show_hidden_flag():
-    assert parse_state(QueryParams("hidden=show")).show_hidden is True
-    assert parse_state(QueryParams("hidden=hide")).show_hidden is False
-
-
 # ── build_url ────────────────────────────────────────────────────────────────
 
 
@@ -139,14 +121,14 @@ def test_view_parameter_is_named_filemill():
     assert build_url("a.md", view=VIEW_RENDER) == "/a.md?filemill=render"
 
 
-def test_all_three_groups_appear_in_a_stable_order():
-    url = build_url("a.md", view=VIEW_RENDER, layout=LAYOUT_NONE, hidden="show")
-    assert url == "/a.md?filemill=render&layout=no-columns&hidden=show"
+def test_view_and_layout_appear_in_a_stable_order():
+    url = build_url("a.md", view=VIEW_RENDER, layout=LAYOUT_NONE)
+    assert url == "/a.md?filemill=render&layout=no-columns"
 
 
 def test_invalid_values_are_dropped_not_emitted():
     """Every generated link carries valid values, by construction."""
-    assert build_url("a.md", view="nonsense", layout="wide", hidden="maybe") == "/a.md"
+    assert build_url("a.md", view="nonsense", layout="wide") == "/a.md"
 
 
 def test_path_separators_survive_encoding():
@@ -188,9 +170,9 @@ def test_url_for_state_keeps_non_default_layout_when_switching_view():
     is the contract's own best explanation of itself. The layout and dotfile
     choices they already made ride along.
     """
-    state = ViewState(view=VIEW_RENDER, layout=LAYOUT_NONE, hidden="show")
+    state = ViewState(view=VIEW_RENDER, layout=LAYOUT_NONE)
     assert url_for_state("a.md", state, view=VIEW_RAW) == (
-        "/a.md?layout=no-columns&hidden=show"
+        "/a.md?layout=no-columns"
     )
 
 
@@ -212,10 +194,10 @@ def test_url_for_state_keeps_vpath():
 
 
 def test_with_view_replaces_only_the_view():
-    state = ViewState(view=VIEW_RAW, layout=LAYOUT_COMPRESSED, hidden="show")
+    state = ViewState(view=VIEW_RAW, layout=LAYOUT_COMPRESSED)
     switched = state.with_view(VIEW_HIGHLIGHT)
     assert switched.view == VIEW_HIGHLIGHT
-    assert (switched.layout, switched.hidden) == (LAYOUT_COMPRESSED, "show")
+    assert switched.layout == LAYOUT_COMPRESSED
 
 
 def test_with_view_rejects_an_unknown_value():
