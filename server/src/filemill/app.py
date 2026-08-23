@@ -763,7 +763,7 @@ def _ui_shell(state, base: str):
     The chrome is built by ui/core/shell.js so that this page and filemill's
     index.html cannot drift apart — there is no markup here to keep in step.
 
-    *state* reaches the client as three data attributes on ``<html>``, beside
+    The view and layout reach the client as data attributes on ``<html>``, beside
     the theme and density the shell already reads from there. *base* is the URL
     prefix the router strips: ``/n/`` for the migration mount, ``/`` for the
     resource route, where the path already is the file path.
@@ -791,7 +791,6 @@ def _ui_shell(state, base: str):
         data_root=ROOT.name or "/",
         data_filemill=state.view,
         data_layout=state.layout,
-        data_hidden=state.hidden,
     )
 
 
