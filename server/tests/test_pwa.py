@@ -66,6 +66,16 @@ def test_sw_contains_cache_name(client):
     assert "filemill" in body
 
 
+def test_sw_ignores_non_get_requests(client):
+    body = client.get("/sw.js").text
+    assert 'event.request.method !== "GET"' in body
+
+
+def test_sw_keeps_api_requests_network_only(client):
+    body = client.get("/sw.js").text
+    assert '"/api/"' in body
+
+
 # ── icons ─────────────────────────────────────────────────────────────────────
 
 
@@ -127,5 +137,11 @@ def test_shell_has_apple_touch_icon(client):
 
 def test_shell_registers_sw(client):
     html = client.get("/f/").text
+    assert "serviceWorker" in html
+    assert "/sw.js" in html
+
+
+def test_shared_ui_registers_sw(client):
+    html = client.get("/n/").text
     assert "serviceWorker" in html
     assert "/sw.js" in html

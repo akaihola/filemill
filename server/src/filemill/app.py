@@ -782,6 +782,7 @@ def _ui_shell(state, base: str):
             Link(rel="apple-touch-icon", href="/icons/icon-192.png"),
             Link(rel="stylesheet", href="/ui/core/styles.css"),
             Script(src="/ui/vendor/seti-map.js"),
+            Script(_SW_REGISTER_JS),
         ),
         Body(
             *[Script(src=f"/ui/core/{n}") for n in _UI_CORE],

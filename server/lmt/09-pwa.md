@@ -57,8 +57,8 @@ The service worker uses three strategies depending on the request path:
 
 - **App shell and icons** – stale-while-revalidate: serve from cache
   immediately, update in the background.
-- **Dynamic HTMX partials** (`/click`, `/restore`, `/raw`, etc.) –
-  network-only, never cached.
+- **Dynamic API and HTMX responses** (`/api/*` and the listed HTMX routes) –
+  network-only, never cached. Non-GET requests also bypass the worker.
 - **Everything else** – network-first with shell fallback.
 
 The `install` event pre-caches the shell and icon assets. The `activate`
@@ -70,8 +70,7 @@ event purges old caches when the version string changes.
  * Strategy:
  *   - App shell (/f/) and static assets (icons, manifest) → cache-first,
  *     updated in background (stale-while-revalidate).
- *   - Dynamic HTMX partials (/click, /restore, /raw, /vpage, /sse/*)
- *     → network-only; never cached.
+ *   - Dynamic API and HTMX responses → network-only; never cached.
  *   - Everything else → network-first with shell fallback.
  */
 
@@ -87,6 +86,7 @@ const PRECACHE = [
 
 /* Paths whose responses must never be served from cache. */
 const NETWORK_ONLY_PREFIXES = [
+  "/api/",
   "/click",
   "/restore",
   "/raw",
@@ -118,6 +118,9 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  /* Cache Storage only supports GET requests. */
+  if (event.request.method !== "GET") return;
+
   const url = new URL(event.request.url);
 
   /* Only handle same-origin requests. */

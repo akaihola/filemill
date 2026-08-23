@@ -377,6 +377,21 @@ symlink entry that resolves to `$HOME`.
 
 ---
 
+## #55 – PWA worker intercepts shared-UI API requests
+
+**Type:** bug
+**Status:** closed
+
+The service worker registered by the HTMX UI controlled the shared UI under
+`/n/`. It tried to cache `POST /api/render` and could cache responses from
+`GET /api/*`. This could break local-file previews or show stale file data.
+
+The worker now bypasses non-GET requests and `/api/*`. The shared UI also
+registers the worker, so the PWA setup does not depend on a prior visit to
+`/f/`.
+
+---
+
 ## Open issues
 
-_Items above are all currently open._
+_See each issue's status above._

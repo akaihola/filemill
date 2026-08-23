@@ -72,7 +72,8 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 - [x] #36 Browser regression test covers folder-column survival after ArrowLeft/ArrowRight
 - [x] #35 Browser regression test covers ArrowLeft URL sync in a real page
 - [x] #34 ArrowLeft updates the URL back to the selected parent item/root
-- [x] #33 PWA – manifest, service worker, icons, head tags, 20 tests
+- [x] #55 PWA worker bypasses API requests and runs in both UI shells
+- [x] #33 PWA – manifest, service worker, icons, head tags, 23 tests
 - [x] #32 Column focus-state visual indicators – col-focused / col-ancestor / col-descendant
 - [x] #31 Enhanced keyboard navigation – Home/End/PgUp/PgDn + Left/Right focus model
 - [x] #30 JSON VFS preview – implement `render_preview` + fix `restore()` guard
