@@ -162,15 +162,13 @@ def test_root_without_index_html_serves_shared_ui(tmp_path, monkeypatch):
     assert 'data-base="/"' in resp.text
 
 
-def test_root_with_query_still_redirects_to_finder(tmp_path, monkeypatch):
-    """The bare-root behavior does not apply when the request has a query."""
+def test_root_with_short_view_uses_the_resource_route(tmp_path, monkeypatch):
+    """?f at the root requests the rendered representation."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
-    c = TestClient(
-        app_module.app, raise_server_exceptions=False, follow_redirects=False
-    )
-    resp = c.get("/?example=1")
-    assert resp.status_code == 302
-    assert resp.headers.get("location", "").startswith("/f/")
+    (tmp_path / "index.html").write_text("site index")
+    resp = _client(tmp_path).get("/?f&layout=no-columns")
+    assert resp.status_code == 200
+    assert resp.text != "site index"
 
 
 def test_finder_view_404_for_missing(tmp_path, monkeypatch):
