@@ -172,9 +172,14 @@ def _page_html(body_children, state, *extra_head_scripts):
 
 
 @rt("/")
-def index():
-    """Redirect root to the finder namespace."""
-    return RedirectResponse("/f/", status_code=302)
+def index(request):
+    """Serve a site index or the shared UI for a bare root request."""
+    if request.query_params:
+        return resource(request)
+    index_file = ROOT / "index.html"
+    if index_file.is_file():
+        return FileResponse(str(index_file), media_type="text/html")
+    return _ui_shell(urls.ViewState(), "/")
 
 
 @rt("/sse/reload")
@@ -1017,6 +1022,7 @@ def resource(request, path: str = ""):
         /docs/readme.md?filemill=render     Markdown as HTML
         /docs/readme.md?filemill=highlight  the source, coloured
         /docs/readme.md?filemill=raw          the bytes, said out loud
+        /docs/readme.md/                     redirects to filemill=render
 
     GET only. PLAN-19 §3 makes the router-facing surface read-only, and
     Filemill never writes a file under any route.
@@ -1029,6 +1035,17 @@ def resource(request, path: str = ""):
         return HTMLResponse("Not found", status_code=404)
     target, rel, vpath = found
     vpath = vpath or state.vpath
+
+    if (
+        path.endswith("/")
+        and not target.is_dir()
+        and urls.VIEW_PARAM not in request.query_params
+        and urls.VIEW_SHORT_PARAM not in request.query_params
+    ):
+        canonical = urls.build_url(path, view=urls.VIEW_RENDER)
+        if request.url.query:
+            canonical += "&" + request.url.query
+        return RedirectResponse(canonical, status_code=302)
 
     if target.is_dir():
         # A directory has no bytes, so every view value renders its listing. The

@@ -2,8 +2,9 @@
 
 from urllib.parse import quote
 
-import filemill.app as app_module
 from starlette.testclient import TestClient
+
+import filemill.app as app_module
 
 
 def _client(root):
@@ -141,15 +142,33 @@ def test_finder_view_root_serves_shell(tmp_path, monkeypatch):
     assert "'DOMContentLoaded',function()" not in body
 
 
-def test_root_redirects_to_finder(tmp_path, monkeypatch):
-    """GET / redirects to /f/."""
+def test_root_serves_index_html_as_is(tmp_path, monkeypatch):
+    """A bare root request serves ROOT/index.html as HTML."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
-    c = TestClient(
-        app_module.app, raise_server_exceptions=False, follow_redirects=False
-    )
-    resp = c.get("/")
-    assert resp.status_code == 302
-    assert resp.headers.get("location", "").startswith("/f/")
+    content = "<!doctype html><title>Site index</title>"
+    (tmp_path / "index.html").write_text(content)
+    resp = _client(tmp_path).get("/")
+    assert resp.status_code == 200
+    assert resp.text == content
+    assert resp.headers["content-type"].startswith("text/html")
+
+
+def test_root_without_index_html_serves_shared_ui(tmp_path, monkeypatch):
+    """A bare root request falls back to the shared directory UI."""
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    resp = _client(tmp_path).get("/")
+    assert resp.status_code == 200
+    assert "/ui/core/shell.js" in resp.text
+    assert 'data-base="/"' in resp.text
+
+
+def test_root_with_short_view_uses_the_resource_route(tmp_path, monkeypatch):
+    """?f at the root requests the rendered representation."""
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    (tmp_path / "index.html").write_text("site index")
+    resp = _client(tmp_path).get("/?f&layout=no-columns")
+    assert resp.status_code == 200
+    assert resp.text != "site index"
 
 
 def test_finder_view_404_for_missing(tmp_path, monkeypatch):
@@ -290,9 +309,9 @@ def test_non_html_preview_no_webmode_button(tmp_path, monkeypatch):
 
 
 def test_mermaid_js_in_page_head(tmp_path, monkeypatch):
-    """The app index page includes a mermaid.js CDN script tag."""
+    """The old finder page includes a mermaid.js CDN script tag."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
-    resp = _client(tmp_path).get("/")
+    resp = _client(tmp_path).get("/f/")
     assert resp.status_code == 200
     assert "mermaid" in resp.text.lower()
 
@@ -300,6 +319,6 @@ def test_mermaid_js_in_page_head(tmp_path, monkeypatch):
 def test_mermaid_js_cdn_url_present(tmp_path, monkeypatch):
     """The mermaid CDN URL is in the page source."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
-    resp = _client(tmp_path).get("/")
+    resp = _client(tmp_path).get("/f/")
     assert "cdn.jsdelivr.net" in resp.text
     assert "mermaid" in resp.text

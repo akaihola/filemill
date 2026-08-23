@@ -18,6 +18,7 @@ at ``/site/main.css`` must arrive as ``text/css``, not as a preview of one.
 Rules that hold for every value:
 
 - A missing value uses the default.
+- ``?filemill``, ``?filemill=``, and ``?f`` mean ``?filemill=render``.
 - An unrecognised value uses the default and never changes the requested path.
 - A repeated value uses the last occurrence, then the two rules above.
 - No query value reaches the filesystem. ``_resolve_safe()`` sees the path and
@@ -31,6 +32,7 @@ from urllib.parse import quote as urlquote
 from urllib.parse import urlencode
 
 VIEW_PARAM = "filemill"
+VIEW_SHORT_PARAM = "f"
 LAYOUT_PARAM = "layout"
 VPATH_PARAM = "vpath"
 
@@ -102,8 +104,11 @@ def parse_state(params) -> ViewState:
     dict. Every field comes back valid, so callers never re-check.
     """
     vpath = _last(params, VPATH_PARAM) or ""
+    view = _last(params, VIEW_PARAM)
+    if view is None and _last(params, VIEW_SHORT_PARAM) == "":
+        view = VIEW_RENDER
     return ViewState(
-        view=_one_of(_last(params, VIEW_PARAM), VIEWS, DEFAULT_VIEW),
+        view=VIEW_RENDER if view == "" else _one_of(view, VIEWS, DEFAULT_VIEW),
         layout=_one_of(_last(params, LAYOUT_PARAM), LAYOUTS, DEFAULT_LAYOUT),
         vpath=vpath.strip("/"),
     )
