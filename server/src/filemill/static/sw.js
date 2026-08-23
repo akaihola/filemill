@@ -3,8 +3,7 @@
  * Strategy:
  *   - App shell (/f/) and static assets (icons, manifest) → cache-first,
  *     updated in background (stale-while-revalidate).
- *   - Dynamic HTMX partials (/click, /restore, /raw, /vpage, /sse/*)
- *     → network-only; never cached.
+ *   - Dynamic API and HTMX responses → network-only; never cached.
  *   - Everything else → network-first with shell fallback.
  */
 
@@ -20,6 +19,7 @@ const PRECACHE = [
 
 /* Paths whose responses must never be served from cache. */
 const NETWORK_ONLY_PREFIXES = [
+  "/api/",
   "/click",
   "/restore",
   "/raw",
@@ -51,6 +51,9 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  /* Cache Storage only supports GET requests. */
+  if (event.request.method !== "GET") return;
+
   const url = new URL(event.request.url);
 
   /* Only handle same-origin requests. */

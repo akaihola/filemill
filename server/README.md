@@ -35,7 +35,7 @@ at all.
   through the File System Access API instead of the served root; previews are
   still rendered by markdown-it-py, Pygments and mammoth, because the bytes are
   posted to `/api/render`
-- **PWA** – installable as a Progressive Web App; includes a Web App Manifest, service worker (stale-while-revalidate for the app shell, network-only for dynamic partials), and full icon set
+- **PWA** – installable as a Progressive Web App; includes a Web App Manifest, service worker (stale-while-revalidate for the app shell, network-only for API and dynamic responses), and full icon set
 
 ## Installation
 

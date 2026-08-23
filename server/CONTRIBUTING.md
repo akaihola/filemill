@@ -110,6 +110,9 @@ path *is* the file path relative to ROOT, with no prefix.
   prioritised above FastHTML's static catch-all route in `_reorder_routes()`.
   So are `/ui/`, `/n/` and `/api/*` — without that, the catch-all swallows every
   `.js` and `.css` the shared UI asks for and it renders as a blank page.
+- Both UI shells register the service worker. The worker bypasses non-GET
+  requests and `/api/*`, so it cannot cache file data or intercept local-file
+  uploads.
 
 ---
 
