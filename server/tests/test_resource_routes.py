@@ -266,7 +266,6 @@ def test_the_switch_has_a_stable_class(client):
     "query",
     [
         "?filemill=nonsense",
-        "?filemill=",
         "?layout=wide",
         "?hidden=maybe",
         "?filemill=nonsense&layout=nonsense&hidden=nonsense",
@@ -276,6 +275,35 @@ def test_invalid_query_values_serve_the_default_representation(client, query):
     """An unrecognised value never changes the requested file path."""
     resp = client.get(f"/docs/readme.md{query}")
     assert resp.status_code == 200
+    assert resp.text == MARKDOWN
+
+
+@pytest.mark.parametrize("query", ["?filemill", "?filemill=", "?f", "?f="])
+def test_render_shortcuts_serve_the_rendered_representation(client, query):
+    shorthand = client.get(f"/docs/readme.md{query}&layout=no-columns")
+    explicit = client.get(
+        "/docs/readme.md?filemill=render&layout=no-columns"
+    )
+    assert shorthand.text == explicit.text
+
+
+def test_trailing_slash_redirects_a_file_to_the_rendered_view(client):
+    resp = client.get("/docs/readme.md/", follow_redirects=False)
+    assert resp.status_code == 302
+    assert resp.headers["location"] == "/docs/readme.md?filemill=render"
+
+
+def test_trailing_slash_preserves_other_query_parameters(client):
+    resp = client.get(
+        "/docs/readme.md/?layout=no-columns", follow_redirects=False
+    )
+    assert resp.headers["location"] == (
+        "/docs/readme.md?filemill=render&layout=no-columns"
+    )
+
+
+def test_explicit_raw_view_overrides_trailing_slash(client):
+    resp = client.get("/docs/readme.md/?filemill=raw")
     assert resp.text == MARKDOWN
 
 
@@ -310,7 +338,7 @@ def test_directory_with_no_columns_serves_one_listing(client):
 
 
 def test_root_relative_directory_with_a_trailing_slash(client):
-    assert client.get("/docs/").status_code == 200
+    assert client.get("/docs/", follow_redirects=False).status_code == 200
 
 
 # ── Missing, denied, and method ──────────────────────────────────────────────
