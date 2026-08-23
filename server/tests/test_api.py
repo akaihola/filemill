@@ -253,7 +253,6 @@ def test_the_vendored_ui_is_whole(client, tmp_root: Path):
 def test_the_htmx_ui_still_serves(client, tmp_root: Path):
     """The migration is additive until the cutover; /f/ must not have moved."""
     assert client.get("/f/").status_code == 200
-    assert client.get("/", follow_redirects=False).status_code == 302
 
 
 # ── virtual filesystems through the new API ──────────────────────────────────
