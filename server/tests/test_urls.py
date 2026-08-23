@@ -38,6 +38,15 @@ def test_each_view_value_parses(view):
     assert parse_state(QueryParams(f"filemill={view}")).view == view
 
 
+@pytest.mark.parametrize("query", ["filemill", "filemill=", "f", "f="])
+def test_render_shorthands(query):
+    assert parse_state(QueryParams(query)).view == VIEW_RENDER
+
+
+def test_full_view_parameter_takes_priority_over_shortcut():
+    assert parse_state(QueryParams("f&filemill=raw")).view == VIEW_RAW
+
+
 @pytest.mark.parametrize("layout", ["full-columns", "compressed-columns", "no-columns"])
 def test_each_layout_value_parses(layout):
     assert parse_state(QueryParams(f"layout={layout}")).layout == layout
@@ -50,7 +59,6 @@ def test_each_layout_value_parses(layout):
     "query",
     [
         "filemill=nonsense",
-        "filemill=",
         "filemill=RENDER",
         "filemill=render%00",
         "filemill=../../etc/passwd",
