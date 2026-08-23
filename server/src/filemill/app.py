@@ -172,9 +172,14 @@ def _page_html(body_children, state, *extra_head_scripts):
 
 
 @rt("/")
-def index():
-    """Redirect root to the finder namespace."""
-    return RedirectResponse("/f/", status_code=302)
+def index(request):
+    """Serve a site index or the shared UI for a bare root request."""
+    if request.query_params:
+        return RedirectResponse("/f/", status_code=302)
+    index_file = ROOT / "index.html"
+    if index_file.is_file():
+        return FileResponse(str(index_file), media_type="text/html")
+    return _ui_shell(urls.ViewState(), "/")
 
 
 @rt("/sse/reload")
