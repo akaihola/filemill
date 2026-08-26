@@ -86,6 +86,11 @@ boundary" below.
 `raw` is the default because the bare path has to serve bytes: `/site/main.css`
 must arrive as `text/css`, not as a preview of itself.
 
+A directory has no bytes, so it follows the web rule instead: a bare directory
+URL with **no query at all** serves that directory's `index.html` as-is, with
+`text/html`. This holds for the root and for every directory below it. Any
+query is a request for Filemill, so `/site?filemill=render` gives the listing.
+
 Rules, all tested in `tests/test_urls.py`:
 
 - Missing → the default.
