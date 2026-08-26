@@ -34,6 +34,8 @@ def render_preview(path: Path, state=None) -> str:
         return _preview_pptx(path)
     elif ext == ".pdf":
         return _preview_pdf(path)
+    elif ext in (".html", ".htm"):
+        return _preview_html(path)
     elif ext in IMAGE_EXTS:
         return _preview_image(path)
     else:
@@ -195,6 +197,11 @@ def _preview_pdf(path: Path) -> str:
         return (
             f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'
         )
+
+
+def _preview_html(path: Path) -> str:
+    src = f"/raw?path={urlquote(str(path))}"
+    return f'<div class="preview-html"><iframe src="{src}"></iframe></div>'
 
 
 def _preview_image(path: Path) -> str:

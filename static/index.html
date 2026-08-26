@@ -390,7 +390,8 @@ body {
   background: var(--surface-2); box-shadow: var(--shadow-col);
   display: flex; flex-direction: column; min-height: 0; overflow: hidden;
 }
-#preview .pv-body { flex: 1; min-height: 0; overflow: auto; padding: 22px 26px; }
+#preview .pv-body { flex: 1; min-height: 0; overflow: auto; padding: 22px 26px;
+  container-type: size; }   /* what .pv-html's 100cqh resolves against */
 .pv-hero {
   display: flex; align-items: center; gap: 14px; margin-bottom: 18px;
   padding-bottom: 16px; border-bottom: 1px solid var(--hairline);
@@ -432,6 +433,13 @@ body {
 .pv-pdf {
   width: 100%; height: 46vh; border: 1px solid var(--hairline);
   border-radius: 8px; margin-bottom: 18px; background: var(--hover);
+}
+/* .html in an <iframe>. 100% and 100cqh are one visible screen of .pv-body,
+   so the frame follows the pane as the fold dial gives and takes width. */
+.pv-html, .preview-html iframe {
+  display: block; width: 100%; height: 100cqh;
+  border: 1px solid var(--hairline); border-radius: 8px;
+  background: #fff; margin-bottom: 18px;
 }
 .pv-link { margin-bottom: 18px; }
 .pv-link h3 { margin: 0 0 4px; font-size: 14px; font-weight: 600; }
@@ -753,7 +761,8 @@ let cursor = {};                                         // col index -> row ind
 let widths = [];                                         // natural width per column
 let folded = 0;                                          // columns currently folded
 let pvToken = 0;                                         // guards async preview fills
-const state = { dotfiles: false, sort: { key: "name", desc: false } };
+const state = { dotfiles: root.dataset.hidden === "show",
+                sort: { key: "name", desc: false } };
 
 const GUTTER = () => parseInt(getComputedStyle(root).getPropertyValue("--gutter"));
 const SPINE  = () => parseInt(getComputedStyle(root).getPropertyValue("--spine-w"));
@@ -1286,9 +1295,12 @@ function layout(keepScroll) {
   rail.style.width = (stageW + range()) + "px";
 
   if (!keepScroll) {
-    /* default: the least folding that still gives the preview its full width */
+    /* default: the least folding that still gives the preview its full width.
+       ?layout=compressed-columns asks for every column folded instead, which is
+       the dial at 99% and the one thing the HTMX shell could never do. */
     let k = 0;
     while (k < path.length && stripSpan(k) + previewTarget() > stageW) k++;
+    if (root.dataset.layout === "compressed-columns") k = path.length;
     finder.scrollLeft = Math.round(k * foldUnit() * range());
   }
   applyScroll();
@@ -2094,7 +2106,7 @@ const FSA = {
    provider*, not a bigger version of this one: see preview-http.js for the
    server-rendered variant, and the "full" build profile for a bundled one.
    ═══════════════════════════════════════════════════════════════════════════ */
-const TEXT_RE = /\.(txt|md|markdown|log|json|jsonc|ya?ml|toml|ini|cfg|conf|csv|tsv|xml|svg|html?|css|scss|less|js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|gitignore|env)$/i;
+const TEXT_RE = /\.(txt|md|markdown|log|json|jsonc|ya?ml|toml|ini|cfg|conf|csv|tsv|xml|svg|css|scss|less|js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|gitignore|env)$/i;
 const IMG_RE  = /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
 const TEXT_MAX = 512 * 1024, TEXT_CHARS = 8000;
 
@@ -2134,6 +2146,10 @@ const PreviewLocal = {
     if (/\.pdf$/i.test(node.name)) {
       pvURL = URL.createObjectURL(blob.slice(0, blob.size, "application/pdf"));
       return `<iframe class="pv-pdf" src="${pvURL}" title="${esc(node.name)}"></iframe>`;
+    }
+    if (/\.html?$/i.test(node.name)) {
+      pvURL = URL.createObjectURL(blob.slice(0, blob.size, "text/html"));
+      return `<iframe class="pv-html" src="${pvURL}" title="${esc(node.name)}"></iframe>`;
     }
     if (/\.desktop$/i.test(node.name) && blob.size <= TEXT_MAX)
       return desktopCard(await blob.text()) ?? null;
@@ -2222,7 +2238,7 @@ offerRichToggle(richEnabled, setRich);
 
 const MD_RE   = /\.(md|markdown)$/i;
 const DOCX_RE = /\.docx$/i;
-const CODE_RE = /\.(js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|json|jsonc|ya?ml|toml|ini|cfg|conf|xml|html?|css|scss|less)$/i;
+const CODE_RE = /\.(js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|json|jsonc|ya?ml|toml|ini|cfg|conf|xml|css|scss|less)$/i;
 
 const NOTE = `<p class="pv-note">Offline — showing the source. Rich rendering ` +
              `needs a one-time download.</p>`;

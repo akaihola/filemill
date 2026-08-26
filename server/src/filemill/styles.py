@@ -269,6 +269,12 @@ body:not(.show-dotfiles) .column li.dotfile.selected {
     border: none;
 }
 
+.preview-html iframe {
+    width: 100%;
+    height: 90vh;
+    border: none;
+}
+
 .preview-pptx .slide {
     border: 1px solid #ddd;
     padding: 1rem;

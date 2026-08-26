@@ -5,6 +5,8 @@ from unittest.mock import MagicMock
 
 from filemill.preview import (
     render_preview,
+    render_source,
+    _preview_html,
     _preview_md,
     _preview_docx,
     _preview_pptx,
@@ -225,6 +227,31 @@ def test_preview_pdf_contains_iframe(tmp_path):
     assert "preview-pdf" in html
     assert "<iframe" in html
     assert "/raw?path=" in html
+
+
+# ── _preview_html ─────────────────────────────────────────────────────────────
+
+
+def test_dispatch_html(tmp_path):
+    f = tmp_path / "page.html"
+    f.write_text("<h1>Hi</h1>")
+    assert "preview-html" in render_preview(f)
+
+
+def test_preview_html_contains_iframe(tmp_path):
+    f = tmp_path / "page.htm"
+    f.write_text("<h1>Hi</h1>")
+    html = _preview_html(f)
+    assert "preview-html" in html
+    assert "<iframe" in html
+    assert "/raw?path=" in html
+
+
+def test_source_view_html_stays_source(tmp_path):
+    """?filemill=highlight must keep showing the markup, not an <iframe>."""
+    f = tmp_path / "page.html"
+    f.write_text("<h1>Hi</h1>")
+    assert "<iframe" not in render_source(f)
 
 
 # ── _preview_image ────────────────────────────────────────────────────────────

@@ -72,7 +72,7 @@ offerRichToggle(richEnabled, setRich);
 
 const MD_RE   = /\.(md|markdown)$/i;
 const DOCX_RE = /\.docx$/i;
-const CODE_RE = /\.(js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|json|jsonc|ya?ml|toml|ini|cfg|conf|xml|html?|css|scss|less)$/i;
+const CODE_RE = /\.(js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|json|jsonc|ya?ml|toml|ini|cfg|conf|xml|css|scss|less)$/i;
 
 const NOTE = `<p class="pv-note">Offline — showing the source. Rich rendering ` +
              `needs a one-time download.</p>`;
