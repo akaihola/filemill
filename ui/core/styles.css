@@ -157,6 +157,12 @@ body {
   flex: 1; min-height: 0; overflow-x: auto; overflow-y: hidden;
   scrollbar-width: thin; scrollbar-color: var(--hairline-2) transparent;
 }
+/* layout() moves the dial by setting scrollLeft; scroll-behavior makes that one
+   assignment glide, and applyScroll paints the fold from the scroll events it
+   fires — the exact motion a hand scroll produces, with no JS animation. */
+@media (prefers-reduced-motion: no-preference) {
+  #finder { scroll-behavior: smooth; }
+}
 #finder::-webkit-scrollbar { height: 9px; }
 #finder::-webkit-scrollbar-thumb {
   background: var(--hairline-2); border-radius: 5px;

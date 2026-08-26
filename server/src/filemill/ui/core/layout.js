@@ -27,6 +27,10 @@ function layout(keepScroll) {
        the dial at 99% and the one thing the HTMX shell could never do. */
     let k = 0;
     while (k < path.length && stripSpan(k) + previewTarget() > stageW) k++;
+    /* fold more when the new contents need it, but never unfold on its own.
+       The cap keeps the focused column out of the spines — the cursor has to
+       stay visible. Unfolding further is a user action: scroll, spine, ← */
+    k = Math.max(k, Math.min(folded, focusCol));
     if (root.dataset.layout === "compressed-columns") k = path.length;
     finder.scrollLeft = Math.round(k * foldUnit() * range());
   }
