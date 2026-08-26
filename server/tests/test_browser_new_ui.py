@@ -246,6 +246,56 @@ def test_back_steps_out_of_the_folder_it_entered(page):
     assert page.evaluate("sel").count("deep") <= 1
 
 
+def _scroll_settled(page) -> None:
+    """Wait until the smooth scroll of #finder has stopped moving."""
+    prev = None
+    for _ in range(40):  # 40 × 100 ms — a 4 s ceiling
+        cur = page.evaluate("document.getElementById('finder').scrollLeft")
+        if cur == prev:
+            return
+        prev = cur
+        page.wait_for_timeout(100)
+    raise AssertionError("#finder never stopped scrolling")
+
+
+def test_arrow_navigation_folds_but_never_unfolds(page, ui_root):
+    """Opening a wide chain folds the left columns; arrowing to a narrow entry
+    must keep them folded. layout() may only raise the fold count on its own —
+    unfolding is a user action (a scroll, a spine click, or ←).
+
+    The widths are deterministic: measure() clamps a column to [148, 380] px,
+    so the long file name pins its column to the 380 cap, the short names pin
+    theirs to the 148 floor, and the 1290 px viewport sits between "the wide
+    chain overflows" and "the narrow chain fits"."""
+    inner = ui_root / "w" / "inner"
+    (inner / "a-wide").mkdir(parents=True)
+    (inner / "a-wide" / ("a-name-long-enough-to-hit-the-column-cap" * 2 + ".txt")
+     ).write_text("wide")
+    (inner / "z-narrow").mkdir()
+    (inner / "z-narrow" / "a.txt").write_text("narrow")
+
+    page.set_viewport_size({"width": 1290, "height": 700})
+    page.open()
+    page.click('.col[data-i="0"] .row:has(.label:text-is("w"))')
+    page.wait_for_timeout(300)
+    page.click('.col[data-i="1"] .row:has(.label:text-is("inner"))')
+    page.wait_for_timeout(300)
+    page.click('.col[data-i="2"] .row:has(.label:text-is("a-wide"))')
+    _scroll_settled(page)
+    folded_before = page.evaluate("folded")
+    assert folded_before >= 1, "the wide chain did not fold — the test proves nothing"
+    assert page.evaluate("focusCol") == 2
+
+    page.keyboard.press("ArrowDown")  # z-narrow: fits with no folds at all
+    _scroll_settled(page)
+    assert page.evaluate("sel[2]") == "z-narrow"
+    # guard against a vacuous pass: the old minimal-fit layout would unfold here
+    assert page.evaluate("stripSpan(0) + previewTarget() <= finder.clientWidth")
+    assert page.evaluate("folded") == folded_before
+    # the animation mechanism: layout()'s scrollLeft writes glide, in pure CSS
+    assert page.evaluate("getComputedStyle(finder).scrollBehavior") == "smooth"
+
+
 # A fake FileSystemDirectoryHandle — the whole API surface the FSA adapter
 # touches. The OS picker itself cannot be driven headlessly, but everything
 # behind it can: mount() is what the picker calls once a folder is granted.
