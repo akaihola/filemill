@@ -14,7 +14,7 @@
    provider*, not a bigger version of this one: see preview-http.js for the
    server-rendered variant, and the "full" build profile for a bundled one.
    ═══════════════════════════════════════════════════════════════════════════ */
-const TEXT_RE = /\.(txt|md|markdown|log|json|jsonc|ya?ml|toml|ini|cfg|conf|csv|tsv|xml|svg|html?|css|scss|less|js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|gitignore|env)$/i;
+const TEXT_RE = /\.(txt|md|markdown|log|json|jsonc|ya?ml|toml|ini|cfg|conf|csv|tsv|xml|svg|css|scss|less|js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|gitignore|env)$/i;
 const IMG_RE  = /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
 const TEXT_MAX = 512 * 1024, TEXT_CHARS = 8000;
 
@@ -54,6 +54,10 @@ const PreviewLocal = {
     if (/\.pdf$/i.test(node.name)) {
       pvURL = URL.createObjectURL(blob.slice(0, blob.size, "application/pdf"));
       return `<iframe class="pv-pdf" src="${pvURL}" title="${esc(node.name)}"></iframe>`;
+    }
+    if (/\.html?$/i.test(node.name)) {
+      pvURL = URL.createObjectURL(blob.slice(0, blob.size, "text/html"));
+      return `<iframe class="pv-html" src="${pvURL}" title="${esc(node.name)}"></iframe>`;
     }
     if (/\.desktop$/i.test(node.name) && blob.size <= TEXT_MAX)
       return desktopCard(await blob.text()) ?? null;

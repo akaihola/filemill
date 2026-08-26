@@ -74,7 +74,8 @@ window.__mk = (nbig) => {
   return D('workspace', [
     D('deep',  [D('alpha',[D('beta',[D('gamma',[F('leaf.md','# leaf')])])])]),
     D('mixed', [D('sub',[F('a.py','print(1)')]), F('.dotfile','h'),
-                F('note.md','# note'), F('data.json','{}')]),
+                F('note.md','# note'), F('data.json','{}'),
+                F('page.html','<h1>Hi</h1>')]),
     D('empty', []),
     DENIED('locked'),
     SLOW('slow', [F('one.txt','1'), F('two.txt','2')]),
@@ -383,6 +384,20 @@ async def main():
               (await pg.inner_text(".pv-text")).strip() == "# note")
         check("Preview shows real size and mtime",
               "B ·" in await pg.inner_text("#pv-sub"), await pg.inner_text("#pv-sub"))
+        await pg.click('.col[data-i="1"] .row:has-text("page.html")')
+        await pg.wait_for_timeout(400)
+        check("HTML file previews in an iframe",
+              await pg.is_visible("iframe.pv-html"))
+        # 100cqh/100%: the frame must fill one visible screen of .pv-body,
+        # whatever width the fold dial has left the pane.
+        fit = await pg.evaluate("""(() => {
+          const f = document.querySelector('iframe.pv-html').getBoundingClientRect();
+          const b = document.querySelector('.pv-body'), cs = getComputedStyle(b);
+          return [f.width  - (b.clientWidth  - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)),
+                  f.height - (b.clientHeight - parseFloat(cs.paddingTop)  - parseFloat(cs.paddingBottom))];
+        })()""")
+        check("…sized to one visible screen of the pane",
+              all(abs(d) < 2 for d in fit), str(fit))
         await pg.click('.col[data-i="1"] .row:has-text("sub")')
         await pg.wait_for_timeout(250)
         check("Selecting a folder clears the preview",
