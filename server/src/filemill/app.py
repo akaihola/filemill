@@ -173,13 +173,8 @@ def _page_html(body_children, state, *extra_head_scripts):
 
 @rt("/")
 def index(request):
-    """Serve a site index or the shared UI for a bare root request."""
-    if request.query_params:
-        return resource(request)
-    index_file = ROOT / "index.html"
-    if index_file.is_file():
-        return FileResponse(str(index_file), media_type="text/html")
-    return _ui_shell(urls.ViewState(), "/")
+    """Serve the root directory; ``resource`` holds the one directory rule."""
+    return resource(request)
 
 
 @rt("/sse/reload")
@@ -1049,6 +1044,12 @@ def resource(request, path: str = ""):
         return RedirectResponse(canonical, status_code=302)
 
     if target.is_dir():
+        # A bare directory URL is a web address first: if the directory holds an
+        # index.html, that file is the answer, served as-is. Any query at all is
+        # a request for Filemill, so it falls through to the listing.
+        index_file = target / "index.html"
+        if not request.query_params and index_file.is_file():
+            return FileResponse(str(index_file), media_type="text/html")
         # A directory has no bytes, so every view value renders its listing. The
         # layout still applies: no-columns gives the one pane, and the column
         # layouts give the finder opened at that directory.
