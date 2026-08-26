@@ -162,6 +162,39 @@ def test_root_without_index_html_serves_shared_ui(tmp_path, monkeypatch):
     assert 'data-base="/"' in resp.text
 
 
+def test_directory_serves_its_index_html_as_is(tmp_path, monkeypatch):
+    """A bare directory URL serves that directory's index.html as HTML."""
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    site = tmp_path / "site"
+    site.mkdir()
+    content = "<!doctype html><title>Sub index</title>"
+    (site / "index.html").write_text(content)
+    resp = _client(tmp_path).get("/site")
+    assert resp.status_code == 200
+    assert resp.text == content
+    assert resp.headers["content-type"].startswith("text/html")
+
+
+def test_directory_with_a_query_serves_the_listing(tmp_path, monkeypatch):
+    """Any query asks for Filemill, so index.html does not take over."""
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    site = tmp_path / "site"
+    site.mkdir()
+    (site / "index.html").write_text("sub index")
+    resp = _client(tmp_path).get("/site?f&layout=no-columns")
+    assert resp.status_code == 200
+    assert resp.text != "sub index"
+
+
+def test_directory_without_index_html_serves_the_listing(tmp_path, monkeypatch):
+    """A directory with no index.html still gets the shared UI."""
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    (tmp_path / "site").mkdir()
+    resp = _client(tmp_path).get("/site")
+    assert resp.status_code == 200
+    assert "/ui/core/shell.js" in resp.text
+
+
 def test_root_with_short_view_uses_the_resource_route(tmp_path, monkeypatch):
     """?f at the root requests the rendered representation."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
