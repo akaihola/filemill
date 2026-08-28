@@ -9,10 +9,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
-- Verify and refine TASKS.md rules [*]
 - In the cogwheel menu, there's an empty `PREVIEWS` section [*]
 
 ## Completed
+
+- Verify and refine TASKS.md rules [*]
 
 [*]: TASKS.md
 
