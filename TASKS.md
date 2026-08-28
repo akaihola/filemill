@@ -27,7 +27,7 @@ Here are the rules for TASKS.md usage:
 - Each backlog item must have either
   - a numbered reference-style link (e.g. `[1]`) to a description file, or
   - `[*]` to indicate no description file is needed for a simple task.
-- Link references are listed between `## Done` and `## Rules`.
+- Link references are listed between `## Completed` and `## Rules`.
 - If any issue is missing a link:
   - Create the first missing numbered description file in
     docs/tasks/<NNN-issue-description>.md and add the link
@@ -45,8 +45,8 @@ Here are the rules for TASKS.md usage:
 - Pick the first backlog issue with no dependency to any uncompleted issue.
 - Move it to `In progress` in `main` branch.
 - Create or update, review and refine a plan in
-  docs/tasks/<NNN-issue-description>.md in `main`.
-- Commit description file and TASKS.md in `main`.
+  docs/tasks/<NNN-issue-description>.md in `main` (skip for `[*]` items).
+- Commit description file (if any) and TASKS.md in `main`.
 - From now on, ensure worktree feature branch is always rebased on `main`.
 - Implement the plan, and lint, test, review and refine the implementation in
   the worktree feature branch.
