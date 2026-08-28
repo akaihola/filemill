@@ -36,6 +36,7 @@ document.getElementById("s-sort-desc").onclick =
    server build the previews come from Python and nothing is downloaded, so the
    row would be a promise the page does not keep. preview-rich.js reveals it. */
 function offerRichToggle(get, set) {
+  document.getElementById("s-previews").hidden = false;
   document.getElementById("s-rich").hidden = false;
   document.getElementById("s-rich-hr").hidden = false;
   toggle("s-rich", get, set);

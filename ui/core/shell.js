@@ -39,7 +39,7 @@ document.body.insertAdjacentHTML("afterbegin", `
       <button id="s-sort-mtime" role="menuitemradio" aria-checked="false"><span class="tick">✓</span>Modified<span class="hint">reads every file</span></button>
       <button id="s-sort-desc"  role="menuitemcheckbox" aria-checked="false"><span class="tick">✓</span>Descending</button>
       <hr>
-      <div class="grp">Previews</div>
+      <div class="grp" id="s-previews" hidden>Previews</div>
       <button id="s-rich" role="menuitemcheckbox" aria-checked="true" hidden><span class="tick">✓</span>Rich previews<span class="hint">downloads a renderer</span></button>
       <hr id="s-rich-hr" hidden>
       <div class="grp">Appearance</div>

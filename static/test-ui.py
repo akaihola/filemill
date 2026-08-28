@@ -448,6 +448,11 @@ async def main():
         await pg.wait_for_timeout(200)
         after = await pg.eval_on_selector_all('.col[data-i="1"] .row', "e=>e.length")
         check("Dotfile toggle reveals hidden entries", after == before + 1, f"{before}→{after}")
+        # The Previews group starts hidden and only preview-rich.js (loaded in
+        # this build) reveals it — a build without the toggle shows no heading.
+        check("Previews group is revealed with its rich toggle",
+              await pg.evaluate("!document.getElementById('s-previews').hidden"
+                                " && !document.getElementById('s-rich').hidden"))
         await pg.click("#s-density")
         await pg.wait_for_timeout(200)
         check("Density toggle changes row height",
