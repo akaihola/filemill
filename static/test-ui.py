@@ -74,6 +74,13 @@ window.__mk = (nbig) => {
   return D('workspace', [
     D('deep',  [D('alpha',[D('beta',[D('gamma',[F('leaf.md','# leaf')])])])]),
     D('mixed', [D('sub',[F('a.py','print(1)')]), F('.dotfile','h'),
+                // Auto-preview rungs: README beats README.* beats index.html.
+                // Each folder also holds the losing names, so only the
+                // priority order can explain what gets selected.
+                D('docs', [F('README','plain'), F('README.md','# docs'),
+                           F('index.html','<h1>idx</h1>')]),
+                D('site', [F('README.md','# site'), F('index.html','<h1>s</h1>')]),
+                D('web',  [F('index.html','<h1>w</h1>')]),
                 F('note.md','# note'), F('data.json','{}'),
                 F('page.html','<h1>Hi</h1>')]),
     D('empty', []),
@@ -402,6 +409,35 @@ async def main():
         await pg.wait_for_timeout(250)
         check("Selecting a folder clears the preview",
               await pg.is_visible(".pv-empty"))
+
+        print("\n── Auto-preview ─────────────────────────────────────────────")
+        await pg.click('.col[data-i="1"] .row:has-text("docs")')
+        await pg.wait_for_timeout(250)
+        st = await pg.evaluate("__state()")
+        check("Folder with a README auto-previews it, focus unmoved",
+              st["sel"] == ["mixed", "docs", "README"] and st["focusCol"] == 1,
+              json.dumps(st))
+        check("…dash-selected in the contents column",
+              await pg.get_attribute('.col[data-i="2"].descendant .row.sel', "title")
+              == "README")
+        check("…and named in the preview header",
+              "README" in await pg.inner_text("#preview .col-head .name"))
+        await pg.keyboard.press("ArrowRight")
+        await pg.wait_for_timeout(250)
+        check("→ enters the column on the auto-previewed row",
+              await pg.evaluate("focusCol") == 2 and
+              await pg.evaluate("sel[2]") == "README")
+        await pg.keyboard.press("ArrowLeft")
+        await pg.wait_for_timeout(200)
+        await pg.click('.col[data-i="1"] .row:has-text("site")')
+        await pg.wait_for_timeout(250)
+        check("README.* wins over index.html",
+              await pg.evaluate("sel[2]") == "README.md")
+        await pg.click('.col[data-i="1"] .row:has-text("web")')
+        await pg.wait_for_timeout(400)
+        check("index.html previews when no README exists",
+              await pg.evaluate("sel[2]") == "index.html" and
+              await pg.is_visible("iframe.pv-html"))
 
         print("\n── Settings ─────────────────────────────────────────────────")
         await pg.click('.col[data-i="0"] .row:has-text("mixed")')

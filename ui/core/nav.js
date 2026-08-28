@@ -12,6 +12,19 @@ const OPEN_GRACE = 50;
 
 let navSeq = 0;   /* a read that outlives its selection must not repaint */
 
+/* When a folder opens with nothing chosen inside it, dash-select its README
+   (exact name first, then README.*, then index.html) so the preview shows it.
+   Focus stays where it is — this is a preview, not a navigation. */
+function autoPreview(node) {
+  const i = path.length - 1;
+  if (path[i] !== node || sel[i] !== undefined) return;
+  const files = visibleKids(node).filter(k => !k.dir);
+  const pick = files.find(k => k.name === "README")
+            || files.find(k => k.name.startsWith("README."))
+            || files.find(k => k.name === "index.html");
+  if (pick) sel[i] = pick.name;
+}
+
 async function choose(colIdx, node, rowIdx) {
   const seq = ++navSeq;
   path = path.slice(0, colIdx + 1);
@@ -34,10 +47,13 @@ async function choose(colIdx, node, rowIdx) {
     if (seq !== navSeq) return;       /* selection moved on while it was read */
   }
   path.push(node);
+  autoPreview(node);                  /* kids already in memory (revisit, fast read) */
   render();
   if (reading) {
     await reading;
-    if (seq === navSeq && path.includes(node)) render();   /* still up? repaint */
+    if (seq !== navSeq || !path.includes(node)) return;    /* still up? repaint */
+    autoPreview(node);                /* kids landed after the grace period */
+    render();
   }
 }
 
