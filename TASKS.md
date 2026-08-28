@@ -4,12 +4,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- Verify and refine TASKS.md rules [*]
 - Remove `dl.meta` section (Where/Size/Modified) from preview pane [*]
 - Edit mode for text files in the preview pane [*]
 
 ## In progress
 
+- Verify and refine TASKS.md rules [*]
 - In the cogwheel menu, there's an empty `PREVIEWS` section [*]
 
 ## Completed
