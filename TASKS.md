@@ -4,6 +4,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- Plaintext preview doesn't use all vertical space in preview column.
+  The whole column should scroll, not just the preview area.
+
 ## In progress
 
 
