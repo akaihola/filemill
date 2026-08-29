@@ -204,8 +204,8 @@ def test_metadata_rides_along_with_the_listing(page):
     directory, so the pane is filled without a second round-trip."""
     page.open("notes/plain.txt")
     page.wait_for_timeout(400)
-    assert "5 B" in page.inner_text("#pv-size")
-    assert page.inner_text("#pv-mod").strip() not in ("", "—")
+    assert "5 B" in page.inner_text("#pv-sub")
+    assert "modified" in page.inner_text("#pv-sub")
 
 
 def test_the_url_path_mirrors_the_file_path(page):
@@ -539,14 +539,12 @@ def test_a_row_shows_no_invented_size_or_date(page):
     page.open("sample.db/users/1")
     page.wait_for_selector("#preview .pv-rich", timeout=15000)
     assert page.inner_text("#pv-sub").strip() == ""
-    assert page.inner_text("#pv-size").strip() == "—"
-    assert page.inner_text("#pv-mod").strip() == "—"
 
 
 def test_a_real_file_still_shows_its_size_and_date(page):
     page.open("notes/plain.txt")
     page.wait_for_timeout(400)
-    assert "5 B" in page.inner_text("#pv-size")
+    assert "5 B" in page.inner_text("#pv-sub")
     assert "modified" in page.inner_text("#pv-sub")
 
 
