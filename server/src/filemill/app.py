@@ -882,6 +882,15 @@ async def api_render(request):
     return await api.render_upload(request, render_preview)
 
 
+@rt("/api/save", methods=["POST"])
+async def api_save(request, p: str = ""):
+    """Overwrite a text file — the preview pane's Edit → Save."""
+    target = _api_target(p)
+    if target is None:
+        return JSONResponse({"error": "Not found"}, status_code=404)
+    return api.save_file(target, await request.body())
+
+
 # ── The root-relative resource route (PLAN-19) ───────────────────────────────
 #
 # Every route above this line is addressed by a prefix that names a *mechanism*:
@@ -1171,6 +1180,7 @@ def _reorder_routes() -> None:
         "/api/raw",
         "/api/preview",
         "/api/render",
+        "/api/save",
     }
     priority, rest, resource_route, static_fallback = [], [], [], []
     for r in routes:

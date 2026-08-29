@@ -341,3 +341,39 @@ def test_a_url_can_name_a_row_inside_a_database(db_client, db_root: Path):
 
 def test_a_url_into_a_non_virtual_file_is_404(client, tmp_root: Path):
     assert client.get("/n/readme.md/nope").status_code == 404
+
+
+# ── /api/save ────────────────────────────────────────────────────────────────
+
+
+def test_save_overwrites_and_returns_a_fresh_stat(client, tmp_root: Path):
+    r = client.post("/api/save?p=readme.md", content=b"# changed\n")
+    assert r.status_code == 200
+    assert (tmp_root / "readme.md").read_bytes() == b"# changed\n"
+    j = r.json()
+    assert j["size"] == len("# changed\n")
+    assert j["mod"] > 0
+
+
+def test_save_refuses_paths_outside_root(client, tmp_root: Path):
+    (tmp_root.parent / "outside.txt").write_text("secret")
+    assert client.post("/api/save?p=../outside.txt", content=b"x").status_code == 404
+    assert client.post("/api/save?p=/etc/passwd", content=b"x").status_code == 404
+    assert (tmp_root.parent / "outside.txt").read_text() == "secret"
+
+
+def test_save_only_overwrites_existing_files(client, tmp_root: Path):
+    """Edit mode edits what it previews — no create, and no directories."""
+    assert client.post("/api/save?p=new.txt", content=b"x").status_code == 404
+    assert not (tmp_root / "new.txt").exists()
+    assert client.post("/api/save?p=subdir", content=b"x").status_code == 404
+
+
+def test_save_caps_the_body_size(client, tmp_root: Path):
+    from filemill.api import RENDER_MAX
+
+    assert (
+        client.post("/api/save?p=readme.md", content=b"x" * (RENDER_MAX + 1)).status_code
+        == 413
+    )
+    assert (tmp_root / "readme.md").read_text() == "# Hello\n**world**\n"
