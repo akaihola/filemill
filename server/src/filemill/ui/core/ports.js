@@ -19,6 +19,9 @@
      ensureLoaded(node) → Promise   fills node.kids (idempotent, debounced)
      loadMeta(node)     → Promise   fills node.meta  (may be a no-op if the
                                     listing already carried the metadata)
+     write(node, text)  → Promise   optional; overwrite the file with `text`.
+                                    A port without it is read-only — the
+                                    preview pane then offers no Edit action.
 
    loadMeta is called once per selected file, and once per *row* when the user
    sorts a column by size or by modification time — see core/sort.js. A port

@@ -252,6 +252,10 @@ function stepInto(node) {
 }
 
 document.addEventListener("keydown", e => {
+  /* a keystroke inside a form field (the preview editor) is typing, not
+     navigation — leave it alone */
+  if (e.target.matches?.("input, textarea, select") || e.target.isContentEditable)
+    return;
   if (!welcome.hidden) return;
   /* the cached column knows its rows — never re-query them, a directory can
      hold tens of thousands and this runs on every keystroke */
