@@ -8,10 +8,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
-- Remove `dl.meta` section (Where/Size/Modified) from preview pane [*]
 
 ## Completed
 
+- Remove `dl.meta` section (Where/Size/Modified) from preview pane [*]
 - In the cogwheel menu, there's an empty `PREVIEWS` section [*]
 - Verify and refine TASKS.md rules [*]
 
