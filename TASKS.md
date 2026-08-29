@@ -6,10 +6,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
-- Edit mode for text files in the preview pane [*]
 
 ## Completed
 
+- Edit mode for text files in the preview pane [*]
 - Remove `dl.meta` section (Where/Size/Modified) from preview pane [*]
 - In the cogwheel menu, there's an empty `PREVIEWS` section [*]
 - Verify and refine TASKS.md rules [*]
