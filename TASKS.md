@@ -4,10 +4,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- Edit mode for text files in the preview pane [*]
-
 ## In progress
 
+- Edit mode for text files in the preview pane [*]
 
 ## Completed
 
