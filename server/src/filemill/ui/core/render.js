@@ -174,11 +174,6 @@ function renderPreview() {
              <div class="sub" id="pv-sub">reading…</div></div>
       </div>
       <div id="pv-content"></div>
-      <dl class="meta">
-        <dt>Where</dt><dd>${esc(path.map(p => p.name).join(" / "))}</dd>
-        <dt>Size</dt><dd id="pv-size">—</dd>
-        <dt>Modified</dt><dd id="pv-mod">—</dd>
-      </dl>
     </div>`;
   fillPreview(n);
   return pv;
@@ -198,13 +193,11 @@ async function fillPreview(n) {
   if (m.error) { sub.textContent = "unreadable"; return; }
   /* Not everything a column can hold is a file. A row inside a database has no
      size and no mtime, and inventing them prints "0 B · 1 Jan 1970" — so leave
-     the fields at their dashes and go straight to the body. */
+     the sub-line empty and go straight to the body. */
   if (m.size == null) {
     sub.textContent = "";
   } else {
     sub.textContent = `${fmtSize(m.size)} · modified ${fmtDate(m.mod)}`;
-    document.getElementById("pv-size").textContent = `${fmtSize(m.size)} (${m.size.toLocaleString()} bytes)`;
-    document.getElementById("pv-mod").textContent  = fmtDate(m.mod);
   }
 
   let html = null;
