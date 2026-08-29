@@ -172,6 +172,7 @@ function renderPreview() {
         ${iconHTML(n)}
         <div><h2>${esc(stem)}<span style="color:var(--ink-3)">${esc(ext)}</span></h2>
              <div class="sub" id="pv-sub">reading…</div></div>
+        <button id="pv-edit" hidden>Edit</button>
       </div>
       <div id="pv-content"></div>
     </div>`;
@@ -210,5 +211,51 @@ async function fillPreview(n) {
   const host = document.getElementById("pv-content");
   if (!host) return;
   host.innerHTML = html ?? `<p>No inline preview for this file type.</p>`;
+  const btn = document.getElementById("pv-edit");
+  if (btn && canEdit(n)) { btn.hidden = false; btn.onclick = () => openEditor(n); }
   paintTrail();
+}
+
+/* ── Edit mode ──────────────────────────────────────────────────────────────
+   A plain textarea over FS.write — see ports.js. The gate mirrors the text
+   preview in adapters/preview-local.js (same extensions, same cap), but it is
+   core's own copy: a build picks its preview provider freely, and Edit has to
+   work with any of them. Keep the two lists in step. */
+const EDIT_RE = /\.(txt|md|markdown|log|json|jsonc|ya?ml|toml|ini|cfg|conf|csv|tsv|xml|svg|css|scss|less|js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|gitignore|env)$/i;
+const EDIT_MAX = 512 * 1024;
+
+const canEdit = n => !!(FS.write && !n.dir && !n.vpath &&
+                        EDIT_RE.test(n.name) && (n.meta?.size ?? 0) <= EDIT_MAX);
+
+async function openEditor(n) {
+  const token = pvToken;
+  const blob = await FS.blob(n);
+  if (token !== pvToken || !blob) return;
+  /* the full text — the preview itself is clipped, so it is no source */
+  const text = await blob.text();
+  const host = document.getElementById("pv-content");
+  if (token !== pvToken || !host) return;
+  document.getElementById("pv-edit").hidden = true;
+  host.innerHTML = `
+    <textarea id="pv-editor" spellcheck="false" aria-label="Edit ${esc(n.name)}"></textarea>
+    <div class="pv-edit-bar">
+      <button id="pv-save">Save</button>
+      <button id="pv-cancel">Cancel</button>
+      <span class="pv-err" id="pv-edit-err"></span>
+    </div>`;
+  const ta = document.getElementById("pv-editor");
+  ta.value = text;
+  ta.focus();
+  document.getElementById("pv-cancel").onclick = () => fillPreview(n);
+  document.getElementById("pv-save").onclick = async () => {
+    try {
+      await FS.write(n, ta.value);
+    } catch (err) {
+      const box = document.getElementById("pv-edit-err");
+      if (box) box.textContent = String(err.message || err);
+      return;
+    }
+    /* the pane may have moved on while the write was in flight */
+    if (ta.isConnected) fillPreview(n);
+  };
 }

@@ -70,4 +70,13 @@ const HTTP = {
     const r = await fetch(`${API}/raw?p=${encodeURIComponent(node.rel)}`);
     return r.ok ? await r.blob() : null;
   },
+
+  /* Optional — see ports.js. POST the whole new content; the reply carries the
+     fresh {size, mod}, so the pane's sub-line stays truthful after a save. */
+  async write(node, text) {
+    const r = await fetch(`${API}/save?p=${encodeURIComponent(node.rel)}`,
+                          { method: "POST", body: text });
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    node.meta = await r.json();
+  },
 };
