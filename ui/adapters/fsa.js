@@ -47,4 +47,17 @@ const FSA = {
     await FSA.loadMeta(node);
     return node.file || null;
   },
+
+  /* Optional — see ports.js. A picked folder can be written back through its
+     handles; the permission prompt is the browser's own. */
+  async write(node, text) {
+    if (node.handle.requestPermission &&
+        await node.handle.requestPermission({ mode: "readwrite" }) !== "granted")
+      throw new Error("No permission to write");
+    const w = await node.handle.createWritable();
+    await w.write(text);
+    await w.close();
+    node.file = null;                  /* stale — reread on the next preview */
+    node.meta = null;
+  },
 };

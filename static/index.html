@@ -422,6 +422,21 @@ body {
   margin: 0 0 18px; padding: 12px 14px; border-radius: 8px;
   background: var(--hover); max-height: 46vh; overflow: auto;
 }
+/* edit mode — a textarea in the same footprint as .pv-text */
+#pv-edit, .pv-edit-bar button {
+  font: inherit; font-size: var(--fs-meta); color: var(--ink-2);
+  padding: 3px 12px; border: 1px solid var(--hairline); border-radius: 6px;
+  background: none; cursor: pointer;
+}
+#pv-edit:hover, .pv-edit-bar button:hover { background: var(--hover); }
+#pv-edit { margin-left: auto; }
+#pv-editor {
+  box-sizing: border-box; width: 100%; min-height: 46vh; resize: vertical;
+  font-family: var(--mono); font-size: 11.5px; line-height: 1.55;
+  color: var(--ink-2); background: var(--hover);
+  border: 1px solid var(--hairline); border-radius: 8px; padding: 12px 14px;
+}
+.pv-edit-bar { display: flex; gap: 8px; align-items: center; margin: 10px 0 18px; }
 .pv-img {
   max-width: 100%; max-height: 46vh; border-radius: 8px; margin-bottom: 18px;
   box-shadow: 0 1px 6px rgba(0,0,0,.14); background: var(--hover);
@@ -692,6 +707,9 @@ document.body.insertAdjacentHTML("afterbegin", `
      ensureLoaded(node) → Promise   fills node.kids (idempotent, debounced)
      loadMeta(node)     → Promise   fills node.meta  (may be a no-op if the
                                     listing already carried the metadata)
+     write(node, text)  → Promise   optional; overwrite the file with `text`.
+                                    A port without it is read-only — the
+                                    preview pane then offers no Edit action.
 
    loadMeta is called once per selected file, and once per *row* when the user
    sorts a column by size or by modification time — see core/sort.js. A port
@@ -1223,6 +1241,7 @@ function renderPreview() {
         ${iconHTML(n)}
         <div><h2>${esc(stem)}<span style="color:var(--ink-3)">${esc(ext)}</span></h2>
              <div class="sub" id="pv-sub">reading…</div></div>
+        <button id="pv-edit" hidden>Edit</button>
       </div>
       <div id="pv-content"></div>
     </div>`;
@@ -1261,7 +1280,53 @@ async function fillPreview(n) {
   const host = document.getElementById("pv-content");
   if (!host) return;
   host.innerHTML = html ?? `<p>No inline preview for this file type.</p>`;
+  const btn = document.getElementById("pv-edit");
+  if (btn && canEdit(n)) { btn.hidden = false; btn.onclick = () => openEditor(n); }
   paintTrail();
+}
+
+/* ── Edit mode ──────────────────────────────────────────────────────────────
+   A plain textarea over FS.write — see ports.js. The gate mirrors the text
+   preview in adapters/preview-local.js (same extensions, same cap), but it is
+   core's own copy: a build picks its preview provider freely, and Edit has to
+   work with any of them. Keep the two lists in step. */
+const EDIT_RE = /\.(txt|md|markdown|log|json|jsonc|ya?ml|toml|ini|cfg|conf|csv|tsv|xml|svg|css|scss|less|js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|gitignore|env)$/i;
+const EDIT_MAX = 512 * 1024;
+
+const canEdit = n => !!(FS.write && !n.dir && !n.vpath &&
+                        EDIT_RE.test(n.name) && (n.meta?.size ?? 0) <= EDIT_MAX);
+
+async function openEditor(n) {
+  const token = pvToken;
+  const blob = await FS.blob(n);
+  if (token !== pvToken || !blob) return;
+  /* the full text — the preview itself is clipped, so it is no source */
+  const text = await blob.text();
+  const host = document.getElementById("pv-content");
+  if (token !== pvToken || !host) return;
+  document.getElementById("pv-edit").hidden = true;
+  host.innerHTML = `
+    <textarea id="pv-editor" spellcheck="false" aria-label="Edit ${esc(n.name)}"></textarea>
+    <div class="pv-edit-bar">
+      <button id="pv-save">Save</button>
+      <button id="pv-cancel">Cancel</button>
+      <span class="pv-err" id="pv-edit-err"></span>
+    </div>`;
+  const ta = document.getElementById("pv-editor");
+  ta.value = text;
+  ta.focus();
+  document.getElementById("pv-cancel").onclick = () => fillPreview(n);
+  document.getElementById("pv-save").onclick = async () => {
+    try {
+      await FS.write(n, ta.value);
+    } catch (err) {
+      const box = document.getElementById("pv-edit-err");
+      if (box) box.textContent = String(err.message || err);
+      return;
+    }
+    /* the pane may have moved on while the write was in flight */
+    if (ta.isConnected) fillPreview(n);
+  };
 }
 </script>
 <script>
@@ -1816,6 +1881,10 @@ function stepInto(node) {
 }
 
 document.addEventListener("keydown", e => {
+  /* a keystroke inside a form field (the preview editor) is typing, not
+     navigation — leave it alone */
+  if (e.target.matches?.("input, textarea, select") || e.target.isContentEditable)
+    return;
   if (!welcome.hidden) return;
   /* the cached column knows its rows — never re-query them, a directory can
      hold tens of thousands and this runs on every keystroke */
@@ -2101,6 +2170,19 @@ const FSA = {
   async blob(node) {
     await FSA.loadMeta(node);
     return node.file || null;
+  },
+
+  /* Optional — see ports.js. A picked folder can be written back through its
+     handles; the permission prompt is the browser's own. */
+  async write(node, text) {
+    if (node.handle.requestPermission &&
+        await node.handle.requestPermission({ mode: "readwrite" }) !== "granted")
+      throw new Error("No permission to write");
+    const w = await node.handle.createWritable();
+    await w.write(text);
+    await w.close();
+    node.file = null;                  /* stale — reread on the next preview */
+    node.meta = null;
   },
 };
 </script>
