@@ -7,6 +7,7 @@ three small ports; this module fills the two that need a server:
     GET  /api/raw?p=<rel>      → the bytes, with a detected media type
     GET  /api/preview?p=<rel>  → an HTML fragment from ``preview.render_preview``
     POST /api/render           → the same, for bytes the server cannot read
+    POST /api/save?p=<rel>     → overwrite the file with the request body
 
 ``p`` is always **relative to ROOT** — that is the whole point of the new URL
 contract, and it is also what makes the API safe to state: there is no request
@@ -32,8 +33,9 @@ from starlette.responses import FileResponse, HTMLResponse, JSONResponse, Respon
 
 from filemill.vfs import REGISTRY
 
-# Largest upload /api/render will render. Generous for text, small enough that a
-# stray multi-gigabyte file cannot be turned into a memory exhaustion bug.
+# Largest body /api/render will render and /api/save will write. Generous for
+# text, small enough that a stray multi-gigabyte file cannot be turned into a
+# memory exhaustion bug.
 RENDER_MAX = 8 * 1024 * 1024
 
 
@@ -182,6 +184,24 @@ def raw_response(target: Path) -> Response:
         return HTMLResponse("Not found", status_code=404)
     media, _ = mimetypes.guess_type(target.name)
     return FileResponse(str(target), media_type=media or "application/octet-stream")
+
+
+def save_file(target: Path, data: bytes) -> Response:
+    """Overwrite an existing file with the posted bytes.
+
+    Only a file that already exists is writable: edit mode edits what it
+    previews, so there is no create, no mkdir, and no new name to validate.
+    """
+    if not target.is_file():
+        return JSONResponse({"error": "Not found"}, status_code=404)
+    if len(data) > RENDER_MAX:
+        return JSONResponse({"error": "Too large"}, status_code=413)
+    try:
+        target.write_bytes(data)
+    except OSError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+    st = target.stat()
+    return JSONResponse({"size": st.st_size, "mod": int(st.st_mtime * 1000)})
 
 
 def preview_fragment(target: Path, render) -> Response:
