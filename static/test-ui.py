@@ -37,7 +37,12 @@ window.__mk = (nbig) => {
   const F = (name, text, mod) => { let f = null; return {kind:'file', name,
     getFile: async () => { window.__gets++;
       return f ||= new File([text ?? 'x'], name,
-                            {lastModified: Date.parse(mod || '2026-08-01')}); }}; };
+                            {lastModified: Date.parse(mod || '2026-08-01')}); },
+    /* the write half of the seam — just enough for Edit → Save */
+    createWritable: async () => { let buf = '';
+      return {write: async d => { buf += d; },
+              close: async () => { f = new File([buf], name,
+                                                {lastModified: Date.now()}); }}; }}; };
   /* A file the port cannot stat: the permission case, which still has to sort
      somewhere and must never be dropped from the listing. */
   const FX = (name) => ({kind:'file', name,
@@ -409,6 +414,42 @@ async def main():
         await pg.wait_for_timeout(250)
         check("Selecting a folder clears the preview",
               await pg.is_visible(".pv-empty"))
+
+        print("\n── Edit mode ────────────────────────────────────────────────")
+        await pg.click('.col[data-i="1"] .row:has-text("note.md")')
+        await pg.wait_for_timeout(400)
+        check("Text preview offers an Edit button",
+              await pg.is_visible("#pv-edit"))
+        await pg.click("#pv-edit")
+        await pg.wait_for_timeout(200)
+        check("Edit opens a textarea with the full text",
+              await pg.input_value("#pv-editor") == "# note")
+        st = await pg.evaluate("__state()")
+        await pg.type("#pv-editor", "x")
+        await pg.keyboard.press("ArrowDown")
+        check("Typing in the editor does not move the columns",
+              await pg.evaluate("__state()") == st)
+        await pg.click("#pv-cancel")
+        await pg.wait_for_timeout(300)
+        check("Cancel returns the unchanged read-only preview",
+              (await pg.inner_text(".pv-text")).strip() == "# note")
+        await pg.click("#pv-edit")
+        await pg.wait_for_timeout(200)
+        await pg.fill("#pv-editor", "# edited")
+        await pg.click("#pv-save")
+        await pg.wait_for_timeout(400)
+        check("Save writes the file and returns to the preview",
+              (await pg.inner_text(".pv-text")).strip() == "# edited")
+        await pg.click('.col[data-i="1"] .row:has-text("data.json")')
+        await pg.wait_for_timeout(300)
+        await pg.click('.col[data-i="1"] .row:has-text("note.md")')
+        await pg.wait_for_timeout(400)
+        check("The change survives re-opening the file",
+              (await pg.inner_text(".pv-text")).strip() == "# edited")
+        await pg.click('.col[data-i="1"] .row:has-text("page.html")')
+        await pg.wait_for_timeout(400)
+        check("A non-text preview offers no Edit button",
+              await pg.is_hidden("#pv-edit"))
 
         print("\n── Auto-preview ─────────────────────────────────────────────")
         await pg.click('.col[data-i="1"] .row:has-text("docs")')
