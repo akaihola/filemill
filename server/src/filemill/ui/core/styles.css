@@ -415,6 +415,28 @@ body {
   margin: 0 0 18px; padding: 12px 14px; border-radius: 8px;
   background: var(--hover); max-height: 46vh; overflow: auto;
 }
+
+/* Syntax highlighting — the spans core/syntax.js emits. Four classes is the
+   whole vocabulary, so the palette is four variables and a theme moves one of
+   them without touching the rules. Both sets are checked against the surface
+   they land on (--hover over --surface-2), because a preview that is only
+   legible in one theme is a preview that is broken in the other. */
+:root {
+  --hl-com: #6e7781;
+  --hl-str: #0a3069;
+  --hl-num: #0550ae;
+  --hl-kw:  #cf222e;
+}
+:root[data-theme="dark"] {
+  --hl-com: #8b949e;
+  --hl-str: #a5d6ff;
+  --hl-num: #79c0ff;
+  --hl-kw:  #ff7b72;
+}
+.hl-com { color: var(--hl-com); }
+.hl-str { color: var(--hl-str); }
+.hl-num { color: var(--hl-num); }
+.hl-kw  { color: var(--hl-kw); }
 /* edit mode — a textarea in the same footprint as .pv-text */
 #pv-edit, .pv-edit-bar button {
   font: inherit; font-size: var(--fs-meta); color: var(--ink-2);
