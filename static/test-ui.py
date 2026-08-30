@@ -89,6 +89,9 @@ window.__mk = (nbig) => {
                 D('site', [F('README.md','# site'), F('index.html','<h1>s</h1>')]),
                 D('web',  [F('index.html','<h1>w</h1>')]),
                 F('note.md','# note'), F('data.json','{}'),
+                // Taller than any preview pane, so the pane has to say where a
+                // long text scrolls: the column itself, not a box inside it.
+                F('long.txt', 'a line of plain text\n'.repeat(400)),
                 F('page.html','<h1>Hi</h1>')]),
     D('empty', []),
     DENIED('locked'),
@@ -398,6 +401,20 @@ async def main():
               (await pg.inner_text(".pv-text")).strip() == "# note")
         check("Preview shows real size and mtime",
               "B ·" in await pg.inner_text("#pv-sub"), await pg.inner_text("#pv-sub"))
+        await pg.click('.col[data-i="1"] .row:has-text("long.txt")')
+        await pg.wait_for_timeout(400)
+        # A text box that stopped at part-height left the rest of the column
+        # empty and scrolled on its own, so the column never used its height.
+        fit = await pg.evaluate("""() => {
+          const t = document.querySelector('.pv-text');
+          const b = document.querySelector('#preview .pv-body');
+          return {inner:  t.scrollHeight > t.clientHeight + 1,
+                  column: b.scrollHeight > b.clientHeight + 1};
+        }""")
+        check("A long text preview grows no scrollbar of its own",
+              not fit["inner"], json.dumps(fit))
+        check("…the whole preview column scrolls instead",
+              fit["column"], json.dumps(fit))
         await pg.click('.col[data-i="1"] .row:has-text("page.html")')
         await pg.wait_for_timeout(400)
         check("HTML file previews in an iframe",
