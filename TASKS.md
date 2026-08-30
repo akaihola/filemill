@@ -11,11 +11,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - Plaintext preview doesn't use all vertical space in preview column.
   The whole column should scroll, not just the preview area. [*]
-- Syntax highlighting missing in preview pane. Use client side highlighting to maximize
-  shared code between ui/ and server/. [*]
 
 ## Completed
 
+- Syntax highlighting missing in preview pane. Use client side highlighting to maximize
+  shared code between ui/ and server/. [*]
 - Edit mode for text files in the preview pane [*]
 - Remove `dl.meta` section (Where/Size/Modified) from preview pane [*]
 - In the cogwheel menu, there's an empty `PREVIEWS` section [*]
