@@ -76,9 +76,11 @@ window.__mk = (nbig) => {
   window.__live = [D('sub',[F('deep.txt','d'), D('twig',[F('tip.txt','t')])]),
                    F('one.txt','1'), F('two.txt','2')];
   window.__race = [F('alpha.txt','a'), F('bravo.txt','b')];
+  // one of every token class core/syntax.js knows, for the preview checks
+  const PY_SRC = 'def f():\n    # doc\n    return "s" + 42\n';
   return D('workspace', [
     D('deep',  [D('alpha',[D('beta',[D('gamma',[F('leaf.md','# leaf')])])])]),
-    D('mixed', [D('sub',[F('a.py','print(1)')]), F('.dotfile','h'),
+    D('mixed', [D('sub',[F('a.py', PY_SRC)]), F('.dotfile','h'),
                 // Auto-preview rungs: README beats README.* beats index.html.
                 // Each folder also holds the losing names, so only the
                 // priority order can explain what gets selected.
@@ -414,6 +416,36 @@ async def main():
         await pg.wait_for_timeout(250)
         check("Selecting a folder clears the preview",
               await pg.is_visible(".pv-empty"))
+
+        # ── Syntax highlighting — core/syntax.js, the same file the server
+        # build loads. Rich previews are off in this suite, so what runs here
+        # is the offline path every build falls back to.
+        await pg.click('.col[data-i="2"] .row:has-text("a.py")')
+        await pg.wait_for_timeout(400)
+        check("Source previews with every token class coloured",
+              await pg.eval_on_selector_all(
+                  ".pv-text span",
+                  "e=>[...new Set(e.map(x=>x.className))].sort().join()")
+              == "hl-com,hl-kw,hl-num,hl-str")
+        check("…and the file still reads exactly as written",
+              (await pg.text_content(".pv-text"))
+              == 'def f():\n    # doc\n    return "s" + 42\n')
+        check("…and a coloured file is still editable",
+              await pg.is_visible("#pv-edit"))
+        # Both palettes are declared; that they are legible is a screenshot's
+        # job, but a theme that never reaches the tokens is a bug this catches.
+        colour = "e=>getComputedStyle(e).color"
+        was = await pg.evaluate("root.dataset.theme")
+        light = await pg.eval_on_selector(".pv-text .hl-kw", colour)
+        await pg.evaluate("root.dataset.theme = 'dark'")
+        dark = await pg.eval_on_selector(".pv-text .hl-kw", colour)
+        check("Each theme colours the tokens its own way",
+              light != dark, f"{light} vs {dark}")
+        await pg.evaluate(f"root.dataset.theme = {was!r}")
+        await pg.click('.col[data-i="1"] .row:has-text("note.md")')
+        await pg.wait_for_timeout(300)
+        check("A file with no language it knows stays plain",
+              await pg.eval_on_selector_all(".pv-text span", "e=>e.length") == 0)
 
         print("\n── Edit mode ────────────────────────────────────────────────")
         await pg.click('.col[data-i="1"] .row:has-text("note.md")')

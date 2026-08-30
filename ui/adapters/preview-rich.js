@@ -1,10 +1,16 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Preview provider — rich rendering, fetched on demand.
 
-   Markdown, syntax highlighting and .docx, to match what filemill's Python
-   renderers produce. The libraries are an order of magnitude larger than this
-   app, so they are not in the bundle: they are imported from a CDN the first
-   time a file that needs one is previewed, and cached for the session.
+   Markdown and .docx, to match what filemill's Python renderers produce. The
+   libraries are an order of magnitude larger than this app, so they are not in
+   the bundle: they are imported from a CDN the first time a file that needs one
+   is previewed, and cached for the session.
+
+   Source files are not on that list. They are coloured by core/syntax.js, in
+   the page, with no download and no switch to find — highlighting that only
+   arrived over the network would be missing from exactly the offline build the
+   app is built to be, and the stylesheet that comes with the CDN highlighter is
+   light-theme only. What is left here is what genuinely needs a library.
 
    Which means this is the one thing in filemill that talks to the network, and
    the app's whole pitch is that your folder does not. So:
@@ -72,7 +78,6 @@ offerRichToggle(richEnabled, setRich);
 
 const MD_RE   = /\.(md|markdown)$/i;
 const DOCX_RE = /\.docx$/i;
-const CODE_RE = /\.(js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|json|jsonc|ya?ml|toml|ini|cfg|conf|xml|css|scss|less)$/i;
 
 const NOTE = `<p class="pv-note">Offline — showing the source. Rich rendering ` +
              `needs a one-time download.</p>`;
@@ -126,9 +131,8 @@ const PreviewRich = {
   async render(node) {
     if (!richEnabled()) return PreviewLocal.render(node);
 
-    const rich = MD_RE.test(node.name) || DOCX_RE.test(node.name)
-              || CODE_RE.test(node.name);
-    if (!rich) return PreviewLocal.render(node);
+    if (!MD_RE.test(node.name) && !DOCX_RE.test(node.name))
+      return PreviewLocal.render(node);
 
     const blob = await FS.blob(node);
     if (!blob) return PreviewLocal.render(node);
@@ -144,16 +148,7 @@ const PreviewRich = {
       if (blob.size > 512 * 1024) return PreviewLocal.render(node);
       const text = await blob.text();
 
-      if (MD_RE.test(node.name))
-        return `<div class="pv-rich">${await markdown(text)}</div>`;
-
-      const hljs = await load("highlight.js");
-      addHljsCSS();
-      const ext = node.name.split(".").pop().toLowerCase();
-      const r = hljs.getLanguage(ext)
-        ? hljs.highlight(text, { language: ext })
-        : hljs.highlightAuto(text);
-      return `<div class="pv-rich"><pre class="hljs"><code>${r.value}</code></pre></div>`;
+      return `<div class="pv-rich">${await markdown(text)}</div>`;
     } catch (err) {
       /* Offline, blocked, or the CDN moved. The file is still readable. */
       const fallback = await PreviewLocal.render(node);
