@@ -33,6 +33,7 @@ WANTED = {
         "shell.js",
         "ports.js",
         "icons.js",
+        "syntax.js",
         "state.js",
         "sort.js",
         "render.js",

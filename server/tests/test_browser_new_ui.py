@@ -39,6 +39,13 @@ def _free_port() -> int:
         return s.getsockname()[1]
 
 
+# The one file both builds are checked against. static/test-ui.py previews the
+# same text through the same core/syntax.js and expects the same four classes,
+# which is what "highlighted in both builds" is asserted to mean.
+SOURCE = 'def f():\n    # doc\n    return "s" + 42\n'
+TOKEN_CLASSES = "e=>[...new Set(e.map(x=>x.className))].sort().join()"
+
+
 @pytest.fixture()
 def ui_root(tmp_path: Path) -> Path:
     """A tree with enough shape to exercise columns, previews and deep links."""
@@ -47,7 +54,7 @@ def ui_root(tmp_path: Path) -> Path:
     (tmp_path / "notes" / "deep" / "leaf.md").write_text("# Leaf\n**bold** text\n")
     (tmp_path / "notes" / "plain.txt").write_text("hello")
     (tmp_path / "code").mkdir()
-    (tmp_path / "code" / "sample.py").write_text("def f():\n    return 1\n")
+    (tmp_path / "code" / "sample.py").write_text(SOURCE)
     (tmp_path / "empty").mkdir()
     (tmp_path / "README.md").write_text("# Readme\n")
     (tmp_path / ".hidden").write_text("h")
@@ -193,10 +200,17 @@ def test_the_preview_comes_from_the_python_renderer(page):
     assert "Readme" in page.inner_text("#preview .pv-rich h1")
 
 
-def test_source_is_highlighted_by_pygments(page):
+def test_source_is_highlighted_in_the_browser(page):
+    """core/syntax.js, not Pygments: the shared UI colours source itself so the
+    static build and this one run one implementation. The server still renders
+    what it is better at — see the markdown test above."""
     page.open("code/sample.py")
-    page.wait_for_selector("#preview .pv-rich .preview-code", timeout=15000)
-    assert page.locator("#preview .pv-rich .highlight").count() >= 1
+    page.wait_for_selector("#preview .pv-text .hl-kw", timeout=15000)
+    assert (
+        page.eval_on_selector_all("#preview .pv-text span", TOKEN_CLASSES)
+        == "hl-com,hl-kw,hl-num,hl-str"
+    )
+    assert page.text_content("#preview .pv-text") == SOURCE
 
 
 def test_metadata_rides_along_with_the_listing(page):
@@ -307,7 +321,7 @@ window.__local = () => {
     entries: async function*(){ for (const k of kids) yield [k.name, k]; }});
   return D('my-laptop-folder', [
     F('local.md', '# Local heading\n\n**bold** from a folder the server cannot see\n'),
-    F('local.py', 'def f():\n    return 1\n'),
+    F('local.py', 'def f():\n    # doc\n    return "s" + 42\n'),
   ]);
 };
 """
@@ -397,12 +411,23 @@ def test_local_files_are_still_rendered_by_python(page):
     assert page.locator("#preview .pv-rich strong").count() >= 1
 
 
-def test_local_source_is_still_highlighted_by_pygments(page):
+def test_local_source_is_highlighted_without_asking_the_server(page):
+    """The gain from moving highlighting into the page: a folder the server has
+    no path to is coloured with no round-trip at all, so POST /api/render is
+    not reached for it the way local.md still reaches it."""
     page.open()
     page.evaluate(FAKE_HANDLE)
     page.evaluate("mount(__local())")
     page.wait_for_timeout(300)
-    _click_local(page, "local.py", "#preview .pv-rich .preview-code")
+    posts: list[str] = []
+    page.on("request", lambda r: posts.append(r.url) if r.method == "POST" else None)
+    page.click('.col[data-i="0"] .row:has-text("local.py")')
+    page.wait_for_selector("#preview .pv-text .hl-kw", timeout=15000)
+    assert (
+        page.eval_on_selector_all("#preview .pv-text span", TOKEN_CLASSES)
+        == "hl-com,hl-kw,hl-num,hl-str"
+    )
+    assert [u for u in posts if u.endswith("/api/render")] == []
 
 
 def test_local_mode_stops_writing_the_url(page):
@@ -442,7 +467,9 @@ def test_nothing_is_fetched_from_a_cdn(page):
     Both halves matter, and this test used to check only the first. The served
     half goes through preview-http.js and `/api/preview`; the local-folder half
     goes through preview-upload.js and `POST /api/render`, which is the path the
-    docstring is actually about. `ui/adapters/preview-rich.js` does lazy-load a
+    docstring is actually about. Source files now go through neither — they are
+    coloured in the page by core/syntax.js — so they are the easiest half to
+    keep honest and are checked here too. `ui/adapters/preview-rich.js` does lazy-load a
     renderer from a CDN, and it is the one adapter `tools/sync-ui.py` does not
     vendor into the server edition. Vendoring it would break this test, which
     is the point of the test.
@@ -462,8 +489,11 @@ def test_nothing_is_fetched_from_a_cdn(page):
     page.evaluate(FAKE_HANDLE)
     page.evaluate("mount(__local())")
     page.wait_for_timeout(300)
-    for name in ("local.md", "local.py"):
-        _click_local(page, name, "#preview .pv-rich")
+    _click_local(page, "local.md", "#preview .pv-rich")
+    # local.py takes neither path: core/syntax.js colours it in the page, so
+    # there is no response to wait for — only the absence of a request.
+    page.click('.col[data-i="0"] .row:has-text("local.py")')
+    page.wait_for_selector("#preview .pv-text .hl-kw", timeout=15000)
     assert external == []
 
 
