@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """filemill rich-preview suite — the one feature that touches the network.
 
-Rich rendering (Markdown, syntax highlighting, .docx) is fetched from a CDN on
-first use rather than bundled: the libraries are an order of magnitude larger
-than the app. That buys parity with filemill's Python renderers at no cost to
-the 140 KB single file, and it costs the promise that nothing leaves the
-browser — so the behaviour that matters is what happens when the download does
-not arrive, and whether the switch that turns it off is honoured.
+Rich rendering (Markdown, .docx) is fetched from a CDN on first use rather than
+bundled: the libraries are an order of magnitude larger than the app. That buys
+parity with filemill's Python renderers at no cost to the single file, and it
+costs the promise that nothing leaves the browser — so the behaviour that
+matters is what happens when the download does not arrive, and whether the
+switch that turns it off is honoured. Syntax highlighting is no longer on that
+list: core/syntax.js colours source in the page, so it is checked here only to
+the extent that it needs no download at all.
 
 Both are tested here for real: this sandbox has no network, so the offline path
 is not simulated. The *loaded* path is exercised against stub modules served
@@ -188,9 +190,13 @@ async def main():
               "<h1>Heading</h1>" in html and "pv-note" not in html, html[:90])
         check("…into the shared rich-preview container", "pv-rich" in html)
 
+        requests.clear()
         html = await preview(pg, "code.py")
-        check("Source is highlighted rather than escaped",
-              "hljs-stub" in html and "pv-note" not in html, html[:90])
+        check("Source is coloured in the page, not by a downloaded renderer",
+              "hl-kw" in html and "pv-note" not in html, html[:90])
+        check("…so previewing source asks for no module at all",
+              not [u for u in requests if "__stub" in u],
+              "; ".join(u for u in requests if "__stub" in u))
 
         html = await preview(pg, "plain.txt")
         check("A plain .txt still takes the cheap path",
@@ -213,9 +219,10 @@ async def main():
         await pg.click("#gear")
         await pg.click("#s-rich")
         await pg.wait_for_timeout(200)
-        html = await preview(pg, "code.py")
+        await preview(pg, "code.py")          # move the selection off note.md
+        html = await preview(pg, "note.md")
         check("Turning it back on takes effect without a reload",
-              "hljs-stub" in html, html[:90])
+              "<h1>Heading</h1>" in html, html[:90])
 
         await b.close()
 

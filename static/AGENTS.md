@@ -36,6 +36,7 @@ the user makes to your behaviour — capture it here so it survives a context re
 │   │   ├── shell.js        ← the chrome, so both builds emit the same DOM
 │   │   ├── ports.js        ← the FS / PREVIEW / ROUTER seams
 │   │   ├── icons.js        ← Seti lookup, folder glyph, esc()
+│   │   ├── syntax.js       ← comment/string/number/keyword spans, per language
 │   │   ├── state.js        ← globals, visibleKids, measure, fmt*
 │   │   ├── sort.js         ← name/size/mtime order + the getFile() sweep
 │   │   ├── render.js       ← buildCol, columnFor, render, preview
@@ -48,8 +49,8 @@ the user makes to your behaviour — capture it here so it survives a context re
 │   ├── adapters/           ← everything source-specific
 │   │   ├── fsa.js          ← FS: File System Access API      (filemill)
 │   │   ├── http.js         ← FS: GET /api/dir                (filemill)
-│   │   ├── preview-local.js  ← PREVIEW: text, image, PDF, .desktop
-│   │   ├── preview-rich.js   ← PREVIEW: markdown-it/highlight.js/mammoth, on demand
+│   │   ├── preview-local.js  ← PREVIEW: coloured text, image, PDF, .desktop
+│   │   ├── preview-rich.js   ← PREVIEW: markdown-it/mammoth, on demand
 │   │   ├── preview-http.js   ← PREVIEW: GET /api/preview — the Python renderers
 │   │   ├── preview-upload.js ← PREVIEW: local bytes → POST /api/render
 │   │   ├── router-hash.js  ← ROUTER: #r=root&p=a/b.md        (filemill)
@@ -288,8 +289,9 @@ folders are restored from IndexedDB — reloading is cheap.
 | `content-visibility: auto` on `.row` | Rows have a fixed height, so off-screen ones are skipped: forced layouts (`scrollIntoView`) stop being O(entries) |
 | Click handler on `.col`, not just rows | A folded column hides its rows, so "click a spine to unfold" must be handled by the column (the design study advertised this but never wired it) |
 | Read-only (`mode: "read"`) | Nothing in the app writes, so never ask for write permission |
-| Rich renderers lazy-loaded from a CDN, not bundled | markdown-it + plugins + highlight.js + mammoth are ~1 MB against the app's 140 KB. Fetching them on first use keeps the single file portable and gives it filemill's rendering |
+| Rich renderers lazy-loaded from a CDN, not bundled | markdown-it + plugins + mammoth are ~1 MB against the app's 140 KB. Fetching them on first use keeps the single file portable and gives it filemill's rendering |
 | …but behind a remembered switch, defaulting on | It is the only thing here that talks to the network, and the pitch is that your folder does not. Consent that resets every reload is not consent. Nothing about the file is ever *sent* — the request is for the library |
+| Syntax highlighting in the page (`core/syntax.js`), not from Pygments or a CDN | One implementation colours source in both builds, offline, in either theme — a server-rendered version would have to be written twice, and the CDN highlighter's stylesheet is light-theme only |
 | Every renderer failure falls back to `PreviewLocal` | Offline must be a loss of fidelity, not a broken pane: raw `<pre>` with a one-line note, or nothing for a binary |
 | Version pins on every CDN URL | `@latest` means a preview that renders differently next week, and a dependency that can change under you |
 | `core/` + `adapters/`, three ports | The same UI runs over the File System Access API and over a server. filemill browses with `core/` untouched, which is the only way two apps stay identical — a copied UI diverges one bug fix at a time |

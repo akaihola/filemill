@@ -54,12 +54,21 @@ file under the server's root and a granted folder is not under it.
 ## Rich rendering in the static build
 
 `preview-rich.js` is a *different provider*, not a bigger `preview-local.js`. It
-imports markdown-it, highlight.js and mammoth from a CDN the first time a file
-needs one, because bundling them would make the portable file eight times
-bigger. It sits behind a remembered switch — the app's pitch is that your folder
+imports markdown-it and mammoth from a CDN the first time a file needs one,
+because bundling them would make the portable file eight times bigger. It sits behind a remembered switch — the app's pitch is that your folder
 does not leave the browser, and this is the one thing that talks to the network
 at all — and every failure falls back to `preview-local.js`, so offline costs
 fidelity rather than the pane.
 
 The server edition does not load it: its previews come from Python, including for a
 local folder (`preview-upload.js`), which is strictly better.
+
+## Syntax highlighting is neither of those
+
+Source files are the one thing both builds colour the same way, and they do it
+in `core/syntax.js` — no download, no switch, no Python. Every provider reaches
+it: `preview-local.js` colours the text it was already escaping, and
+`app-http.js` wraps whichever server-side provider is in use so that a file with
+a language we know is read through `FS.blob` and highlighted here instead. The
+server keeps everything it renders better — Markdown, `.docx`, database rows —
+and a virtual path is never diverted, because only the server can read one.

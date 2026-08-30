@@ -8,11 +8,12 @@
      PDF      → object URL in an <iframe>; Chromium renders it natively, so a
                 PDF viewer is not something this has to carry
      .desktop → the same link card the server build shows, parsed in 20 lines
-     text     → escaped <pre>, clipped
+     text     → escaped <pre>, clipped, and coloured by core/syntax.js when
+                the extension names a language it knows
 
-   Rich rendering (Markdown, syntax highlighting, docx, pptx) is a *different
-   provider*, not a bigger version of this one: see preview-http.js for the
-   server-rendered variant, and the "full" build profile for a bundled one.
+   Rich rendering (Markdown, docx, pptx) is a *different provider*, not a
+   bigger version of this one: see preview-http.js for the server-rendered
+   variant, and preview-rich.js for the downloaded one.
    ═══════════════════════════════════════════════════════════════════════════ */
 const TEXT_RE = /\.(txt|md|markdown|log|json|jsonc|ya?ml|toml|ini|cfg|conf|csv|tsv|xml|svg|css|scss|less|js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|gitignore|env)$/i;
 const IMG_RE  = /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
@@ -65,7 +66,12 @@ const PreviewLocal = {
     if (TEXT_RE.test(node.name) && blob.size <= TEXT_MAX) {
       const text = await blob.slice(0, TEXT_MAX).text();
       const clipped = text.length > TEXT_CHARS;
-      return `<pre class="pv-text">${esc(text.slice(0, TEXT_CHARS))}${clipped ? "\n…" : ""}</pre>`;
+      const shown = text.slice(0, TEXT_CHARS);
+      /* core/syntax.js colours what it has a language for and escapes the rest;
+         a plain .txt or an unknown extension takes the same path it always did. */
+      const lang = hlLang(node.name);
+      const body = lang ? hlHTML(shown, lang) : esc(shown);
+      return `<pre class="pv-text">${body}${clipped ? "\n…" : ""}</pre>`;
     }
     return null;
   },
