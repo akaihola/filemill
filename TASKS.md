@@ -9,11 +9,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
-- Plaintext preview doesn't use all vertical space in preview column.
-  The whole column should scroll, not just the preview area. [*]
 
 ## Completed
 
+- Plaintext preview doesn't use all vertical space in preview column.
+  The whole column should scroll, not just the preview area. [*]
 - Syntax highlighting missing in preview pane. Use client side highlighting to maximize
   shared code between ui/ and server/. [*]
 - Edit mode for text files in the preview pane [*]
