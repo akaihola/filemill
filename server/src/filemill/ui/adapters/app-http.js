@@ -17,9 +17,20 @@ const ROOT_NAME = document.documentElement.dataset.root || "/";
    Pretending otherwise would produce links that resolve to the wrong file —
    hence useRouter(null) below, and the badge that says which side you are on. */
 
+/* Source files are coloured in the browser by core/syntax.js, not by Pygments
+   on the way out — see that file for why. The server still renders everything
+   else it is better at (Markdown, .docx, database rows), so this wraps the
+   provider rather than replacing it: a file with a language we know is read
+   through FS.blob and highlighted here, and anything else goes on as before.
+   A virtual path is never diverted, because only the server can read one. */
+const withHighlighting = provider => ({
+  revoke() { provider.revoke?.(); PreviewLocal.revoke(); },
+  render: n => (!n.vpath && hlLang(n.name) ? PreviewLocal : provider).render(n),
+});
+
 async function mountServer() {
   useFilesystem(HTTP);
-  usePreview(PreviewHTTP);
+  usePreview(withHighlighting(PreviewHTTP));
   useRouter(RouterPath);
 
   /* Read the link *before* the first render. render() syncs the URL, and the
@@ -45,7 +56,7 @@ async function mountServer() {
    only the URL goes quiet. */
 async function mount(handle) {
   useFilesystem(FSA);
-  usePreview(PreviewUpload);
+  usePreview(withHighlighting(PreviewUpload));
   useRouter(null);
   const node = FSA.node(handle.name, handle);
   colCache.clear();
