@@ -4,8 +4,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- Syntax highlighting missing in preview pane. Use client side highlighting to maximize
-  shared code between ui/ and server/.
 - Get rid of duplicate vendored code. Simply use the same source files for ui/ and
   server/.
 
@@ -13,6 +11,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - Plaintext preview doesn't use all vertical space in preview column.
   The whole column should scroll, not just the preview area. [*]
+- Syntax highlighting missing in preview pane. Use client side highlighting to maximize
+  shared code between ui/ and server/. [*]
 
 ## Completed
 
