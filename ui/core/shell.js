@@ -44,6 +44,12 @@ document.body.insertAdjacentHTML("afterbegin", `
       <hr id="s-rich-hr" hidden>
       <div class="grp">Appearance</div>
       <button id="s-theme"   role="menuitemcheckbox" aria-checked="false"><span class="tick">✓</span>Dark theme</button>
+      <hr>
+      <!-- The hash rides in as data-commit on <html> — the server sets it when
+           its checkout has one; the static build has no repository, so the
+           version stands alone. -->
+      <div class="grp">About</div>
+      <div class="ver">Filemill 0.1.0${document.documentElement.dataset.commit ? ` · ${document.documentElement.dataset.commit}` : ""}</div>
     </div>
   </div>
 

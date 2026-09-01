@@ -808,3 +808,17 @@ def test_restore_json_file_shows_json_preview(tmp_path, monkeypatch):
     assert "preview-unsupported" not in resp.text
     # JSON content must appear in the preview
     assert "heartbeat" in resp.text or "preview-code" in resp.text
+
+
+# ── settings-menu version ─────────────────────────────────────────────────────
+
+
+def test_settings_version_matches_pyproject():
+    """The version constant in shell.js tracks pyproject.toml."""
+    import tomllib
+    from pathlib import Path
+
+    pkg = Path(app_module.__file__).parent
+    pyproject = pkg.parent.parent / "pyproject.toml"
+    version = tomllib.loads(pyproject.read_text())["project"]["version"]
+    assert f"Filemill {version}" in (pkg / "ui" / "core" / "shell.js").read_text()

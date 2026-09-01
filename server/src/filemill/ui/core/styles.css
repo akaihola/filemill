@@ -146,6 +146,7 @@ body {
 #settings hr { border: 0; border-top: 1px solid var(--hairline); margin: 5px 4px; }
 #settings hr[hidden], #settings button[hidden] { display: none; }
 #settings .hint { margin-left: auto; padding-left: 12px; color: var(--ink-3); font-size: 10px; }
+#settings .ver { padding: 2px 9px 5px; color: var(--ink-3); font-size: var(--fs-head); }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Horizontal scroll = condensing control.

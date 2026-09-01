@@ -2,6 +2,7 @@ import configparser
 import html as html_lib
 import json
 import os
+import subprocess
 from pathlib import Path
 from textwrap import dedent
 from urllib.parse import quote as urlquote
@@ -757,6 +758,21 @@ def ui_asset(path: str):
     return FileResponse(str(target), media_type=media)
 
 
+# The commit the settings menu shows beside the version. Asked of the package
+# directory's repository once at import: a development checkout has one, an
+# installed wheel does not — then the attribute is omitted and the menu shows
+# the version alone, exactly like the static build.
+try:
+    _COMMIT = subprocess.run(
+        ["git", "-C", str(Path(__file__).parent), "rev-parse", "--short", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
+except OSError:
+    _COMMIT = ""
+
+
 def _ui_shell(state, base: str):
     """The app shell for the shared UI. Deliberately almost empty.
 
@@ -792,6 +808,7 @@ def _ui_shell(state, base: str):
         data_root=ROOT.name or "/",
         data_filemill=state.view,
         data_layout=state.layout,
+        **({"data_commit": _COMMIT} if _COMMIT else {}),
     )
 
 
