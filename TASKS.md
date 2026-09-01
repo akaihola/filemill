@@ -4,8 +4,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- Get rid of duplicate vendored code. Simply use the same source files for ui/ and
-  server/.
+- Get rid of duplicate vendored code. Simply use the same source files for ui/
+  and server/.
+- Use one shared client side implementation for rendering Markdown fenced code
+  blocks.
+- Full file highlighting: don't clip at 8000 chars. Beyond what size should we
+  really avoid highlighting in one go, and do it in slices on scroll instead?
 
 ## In progress
 
