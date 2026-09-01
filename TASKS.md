@@ -6,6 +6,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - Show version and Git commit hash (if available) via an option in the settings
   menu.
+- Fix all test failures. Split into multiple tasks if necessary.
 - Full file highlighting: don't clip at 8000 chars. Beyond what size should we
   really avoid highlighting in one go, and do it in slices on scroll instead?
 - Get rid of duplicate vendored code. Simply use the same source files for ui/
@@ -30,7 +31,7 @@ Rules for TASKS.md usage are at the bottom of the file.
   `~/.bun/install/cache/@agegr/pi-web/0.8.8@@@1/README.md` and return back
   column by column using the left arrow key, the `.bun` column doesn't expand
   when I reach it. It does expand if I navigate to it using the mouse instead.
-- `cd static && python -m http.server 8790` gives me the 
+- make PDF previews full frame just like HTML and Markdown rendered previews
 
 ## In progress
 
