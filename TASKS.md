@@ -4,8 +4,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- Show version and Git commit hash (if available) via an option in the settings
-  menu.
 - Fix all test failures. Split into multiple tasks if necessary.
 - Full file highlighting: don't clip at 8000 chars. Beyond what size should we
   really avoid highlighting in one go, and do it in slices on scroll instead?
@@ -35,6 +33,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
+- Show version and Git commit hash (if available) via an option in the settings
+  menu. [1]
+
 
 ## Completed
 
@@ -47,6 +48,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 - In the cogwheel menu, there's an empty `PREVIEWS` section [*]
 - Verify and refine TASKS.md rules [*]
 
+[1]: docs/tasks/1-show-version-and-git.md
 [*]: TASKS.md
 
 ---
