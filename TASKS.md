@@ -33,12 +33,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
-- Show version and Git commit hash (if available) via an option in the settings
-  menu. [1]
-
 
 ## Completed
 
+- Show version and Git commit hash (if available) via an option in the settings
+  menu. [1]
 - Plaintext preview doesn't use all vertical space in preview column.
   The whole column should scroll, not just the preview area. [*]
 - Syntax highlighting missing in preview pane. Use client side highlighting to maximize
