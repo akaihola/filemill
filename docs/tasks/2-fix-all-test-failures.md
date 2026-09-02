@@ -29,22 +29,34 @@ task.
   `hidden` from the raw request query at the `_ui_shell` call sites and passes
   it through as `data_hidden`. No ui/ change.
 
-### Split into their own task
+### Split into their own task (done: ported to the shared UI)
 
 19 × `tests/test_browser_keyboard.py`: `test_arrow_left_keeps_browser_url_in_sync`,
 `test_nested_column_navigation_keeps_root_mount_in_url`,
 `test_parent_column_survives_preview_after_arrowleft_arrowright_cycle`, and
-all 16 `test_mobile_*` tests.
+16 of the 24 `test_mobile_*` tests.
 
-These drive the legacy htmx column UI at `/` and wait for `window.htmx`. `/`
+These drove the legacy htmx column UI at `/` and waited for `window.htmx`. `/`
 now serves the shared-UI shell (`index()` → `resource()` → `_ui_shell`); no
-page they load references htmx, so `_wait_for_htmx` times out (30 s each)
-regardless of network. This is structural, not the environmental 407-proxy
+page they loaded references htmx, so `_wait_for_htmx` timed out (30 s each)
+regardless of network. This was structural, not the environmental 407-proxy
 case the file's docstring describes: the CDN is reachable (direct Chromium
-fetch of unpkg htmx → 200) and the failures reproduce identically with and
+fetch of unpkg htmx → 200) and the failures reproduced identically with and
 without a proxy. They looked green before only because `live_server` skips
-the whole file when `PLAYWRIGHT_BROWSERS_PATH` is unset. They need migration
-to the shared UI, not repair — too large for this change.
+the whole file when `PLAYWRIGHT_BROWSERS_PATH` is unset.
+
+The migration subtask ported each test's intent to the shared UI, following
+`tests/test_browser_new_ui.py`. The URLs lost their `/f/<mount>` prefix (on
+`/` the path *is* the root-relative file path), ← moves focus without closing
+columns, and the mobile "scroll to reveal" intent maps onto the fold dial:
+`scrollLeft` condenses left columns to spines (`ui/core/layout.js`), so "the
+scroll fired" became "the dial engaged", "minimal scroll" became layout()'s
+least-folding target, and taps unfold a folded column first — the gesture the
+UI itself advertises. The 8 `test_mobile_*restore*` tests, plus
+`test_legacy_query_url_canonicalizes_after_nested_navigation` and
+`test_rendered_relative_markdown_link_uses_root_relative_url`, keep driving
+the htmx shell at `/f/`, which still serves it — so the htmx/proxy plumbing
+in the file stays until `/f/` goes away.
 
 ### Out of scope
 
@@ -58,5 +70,5 @@ passes.
 - Re-runs should pin order with `-p no:randomly` (the suite uses
   pytest-randomly); never run two Playwright pytest runs in parallel on one
   host.
-- No test is disabled or deselected; the suite stays red on the 19 keyboard
-  tests until the migration task lands.
+- No test is disabled or deselected; with the 19 keyboard tests ported the
+  whole suite is green (`cd server && uv run pytest -p no:randomly`).
