@@ -231,7 +231,10 @@ async function openEditor(n) {
   const token = pvToken;
   const blob = await FS.blob(n);
   if (token !== pvToken || !blob) return;
-  /* the full text — the preview itself is clipped, so it is no source */
+  /* Read again rather than lifting the text out of the pane: the preview is
+     HTML by then, coloured and escaped, and un-escaping it back into source
+     is a round trip that can only lose. Same bytes either way — EDIT_MAX and
+     the provider's TEXT_MAX are the same 512 KB. */
   const text = await blob.text();
   const host = document.getElementById("pv-content");
   if (token !== pvToken || !host) return;

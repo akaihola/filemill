@@ -22,6 +22,10 @@ from playwright.async_api import async_playwright
 ROOT = Path(__file__).parent
 TARGET = ROOT / ("index-dev.html" if "--dev" in sys.argv else "index.html")
 
+# The fixture's source file as Python sees it: __mk builds a.py from this
+# string and long.py from 300 copies of it.
+PY_SRC = 'def f():\n    # doc\n    return "s" + 42\n'
+
 # A fake FileSystemDirectoryHandle tree: async-iterable entries(), getFile().
 FAKE = r"""
 window.__mk = (nbig) => {
@@ -80,7 +84,11 @@ window.__mk = (nbig) => {
   const PY_SRC = 'def f():\n    # doc\n    return "s" + 42\n';
   return D('workspace', [
     D('deep',  [D('alpha',[D('beta',[D('gamma',[F('leaf.md','# leaf')])])])]),
-    D('mixed', [D('sub',[F('a.py', PY_SRC)]), F('.dotfile','h'),
+    D('mixed', [D('sub',[F('a.py', PY_SRC),
+                         // 11 700 chars, so the preview is asked for far
+                         // more than the 8 000 it used to clip at.
+                         F('long.py', PY_SRC.repeat(300))]),
+                F('.dotfile','h'),
                 // Auto-preview rungs: README beats README.* beats index.html.
                 // Each folder also holds the losing names, so only the
                 // priority order can explain what gets selected.
@@ -569,8 +577,7 @@ async def main():
                   "e=>[...new Set(e.map(x=>x.className))].sort().join()")
               == "hl-com,hl-kw,hl-num,hl-str")
         check("…and the file still reads exactly as written",
-              (await pg.text_content(".pv-text"))
-              == 'def f():\n    # doc\n    return "s" + 42\n')
+              (await pg.text_content(".pv-text")) == PY_SRC)
         check("…and a coloured file is still editable",
               await pg.is_visible("#pv-edit"))
         # Both palettes are declared; that they are legible is a screenshot's
@@ -583,6 +590,19 @@ async def main():
         check("Each theme colours the tokens its own way",
               light != dark, f"{light} vs {dark}")
         await pg.evaluate(f"root.dataset.theme = {was!r}")
+        # Past the 8 000 characters the preview used to stop at. The text check
+        # alone would pass on a build that coloured the head and escaped the
+        # tail, so the span count is what proves colour reaches the last line:
+        # def + return is two keywords per copy, 600 across the 300.
+        await pg.click('.col[data-i="2"] .row:has-text("long.py")')
+        await pg.wait_for_timeout(500)
+        whole = await pg.text_content(".pv-text")
+        kw = await pg.eval_on_selector_all(".pv-text .hl-kw", "e=>e.length")
+        check("A source file past the old 8 000-character clip previews whole",
+              whole == PY_SRC * 300,
+              f"{len(whole)} chars, expected {len(PY_SRC) * 300}")
+        check("…and is coloured to its last line, not just the first 8 000 chars",
+              kw == 600, f"{kw} hl-kw spans, expected 600")
         await pg.click('.col[data-i="1"] .row:has-text("note.md")')
         await pg.wait_for_timeout(300)
         check("A file with no language it knows stays plain",
