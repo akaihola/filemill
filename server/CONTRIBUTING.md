@@ -82,9 +82,16 @@ Three adapters there belong to the static edition alone — `app-fsa.js`,
 Because it is one repository and one set of files, a UI change lands in both
 projects in one commit. `ui/adapters/README.md` documents the three ports.
 
-The shared UI is mounted at `UI_BASE = "/n/"` while the HTMX UI at `/f/` is
-still the default. Cutting over means pointing `UI_BASE` at `/`, after which the URL
-path *is* the file path relative to ROOT, with no prefix.
+The shared UI is mounted at `UI_BASE = "/n/"`, and the resource route serves
+it too. `index()` hands `/` to `resource()`, and a directory under a column
+layout — `/` itself included — comes back as `_ui_shell(state, "/")`, where
+the URL path *is* the file path relative to ROOT, with no prefix. A bare
+file path is still its own bytes, because `raw` is the default view and
+that branch returns before the column one; it takes `filemill=render` or
+`highlight` to get the shell around a file. `layout=no-columns` renders
+through `_page_html()`, and the HTMX UI still answers at `/f/`, so the
+cutover is not finished: it ends by pointing `UI_BASE` itself at `/` and
+retiring `/f/`.
 
 ### Key invariants
 
@@ -137,8 +144,8 @@ path *is* the file path relative to ROOT, with no prefix.
 uv sync
 timeout 1800 uv run pytest     # everything, browser tests included
 
-# Just the 56 real-browser tests. Needs PLAYWRIGHT_BROWSERS_PATH. The 29 in
-# test_browser_keyboard.py alone took 342 s on a 4-core host, so budget minutes.
+# Just the 65 real-browser tests. Needs PLAYWRIGHT_BROWSERS_PATH. The 31 in
+# test_browser_keyboard.py alone took 130 s on a 4-core host, so budget minutes.
 timeout 1800 uv run pytest tests/test_browser_keyboard.py tests/test_browser_new_ui.py
 ```
 
@@ -178,18 +185,39 @@ uv lock --upgrade-package "$(grep -E '^playwright[=<>~!]' "$UV_CONSTRAINT")"
 
 ### The `/f/` Browser Tests Need Outbound Network
 
-`tests/test_browser_keyboard.py` drives the HTMX finder shell, which loads htmx
-from `unpkg.com` and mermaid from `cdn.jsdelivr.net`. With no route to those two
-hosts the page draws `#col-0` and then ignores every click, so the tests fail on
-their navigation assertions and look like a routing regression. Behind an
-authenticated proxy the tell is `407 Proxy Authentication Required` in the
-*browser* console, which pytest never prints. `_proxy_from_env()` in that file
-reads `$HTTPS_PROXY` and passes the credentials to Chromium, which reads the
-variable but drops the credentials in it.
+Most of `tests/test_browser_keyboard.py` now drives the shared UI at `/`, which
+fetches nothing; this section is about the tests still driving the HTMX finder
+shell at `/f/`. That shell loads htmx from `unpkg.com` and mermaid from
+`cdn.jsdelivr.net`. With no route to those two hosts the page draws `#col-0`
+and then ignores every click, so a test that clicks fails on its navigation
+assertions and looks like a routing regression.
+
+Three of the `/f/` tests actually need those hosts and seven do not. Measured
+by pointing `$HTTPS_PROXY` at a dead port with `$NO_PROXY` bypassing
+localhost, so only the CDN requests fail: 3 failed, 7 passed.
+
+- `test_legacy_query_url_canonicalizes_after_nested_navigation` clicks through
+  htmx, being the only caller of `_click_item()`.
+- `test_mobile_file_restore_scroll_position_is_not_zero` and
+  `test_mobile_restore_behavior_preview_assertions` are the only `/f/` tests
+  calling `_wait_for_finder_scroll()`, which waits for `#finder.scrollLeft` to
+  pass 0. The deep-link restore in `styles.py` calls `htmx.process()` before
+  `scrollFinderToReveal()` inside a promise chain that ends in an empty
+  `.catch`, so an undefined `htmx` throws, the error is swallowed, the finder
+  never scrolls, and the wait times out after 20 s.
+
+The other seven only read what the server already rendered, so htmx never has
+to run for them.
+
+Behind an authenticated proxy the tell is `407 Proxy Authentication
+Required` in the *browser* console, which pytest never prints.
+`_proxy_from_env()` in that file reads `$HTTPS_PROXY` and passes the
+credentials to Chromium, which reads the variable but drops the credentials
+in it.
 
 `tests/test_browser_new_ui.py` drives the `/n/` shared UI, which serves every
-asset itself, so those 27 tests pass with no network at all. Measured on a host
-with no proxy credentials given to Chromium: 27 passed in 115 s.
+asset itself, so those 34 tests pass with no network at all. Measured on a host
+with no proxy credentials given to Chromium: 34 passed in 95 s.
 
 ### Two Measurements of the Local-Folder Tests Disagree
 
