@@ -7,10 +7,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Migrate the 19 legacy htmx browser tests in server/tests/test_browser_keyboard.py
   to the shared UI. They drive an htmx page `/` no longer serves, so they fail
   structurally; causes and test list in docs/tasks/2-fix-all-test-failures.md. [*]
-- On mobile, opening a folder causes the opened folder in the next column to
-  fold (when vertical) or the parent folder to fold (when horizontal). Touching
-  folders should never cause folding of the touched column or columns to the
-  right. Only columns to the left of the touched column may fold.
 - Full file highlighting: don't clip at 8000 chars. Beyond what size should we
   really avoid highlighting in one go, and do it in slices on scroll instead?
 - Get rid of duplicate vendored code. Simply use the same source files for ui/
@@ -39,6 +35,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
+- On mobile, opening a folder causes the opened folder in the next column to
+  fold (when vertical) or the parent folder to fold (when horizontal). Touching
+  folders should never cause folding of the touched column or columns to the
+  right. Only columns to the left of the touched column may fold. [*]
 
 ## Completed
 
