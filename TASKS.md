@@ -7,8 +7,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Migrate the 19 legacy htmx browser tests in server/tests/test_browser_keyboard.py
   to the shared UI. They drive an htmx page `/` no longer serves, so they fail
   structurally; causes and test list in docs/tasks/2-fix-all-test-failures.md. [*]
-- The static/test-ui.py check "Scrolling right folds columns into spines"
-  (expects 5 spines) fails or flakes, likely an animation-timing race. [*]
 - On mobile, opening a folder causes the opened folder in the next column to
   fold (when vertical) or the parent folder to fold (when horizontal). Touching
   folders should never cause folding of the touched column or columns to the
@@ -41,6 +39,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
+- The static/test-ui.py check "Scrolling right folds columns into spines"
+  (expects 5 spines) fails or flakes, likely an animation-timing race. [*]
 
 ## Completed
 
