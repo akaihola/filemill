@@ -61,21 +61,50 @@ function applyScroll() {
   /* how far into folding the next column is — 0 = full width, 1 = a spine */
   const t = Math.min(1, Math.max(0, raw - folded));
 
+  /* the strip lays out left to right from the stage's edge, so walking it with
+     the widths this pass is about to write is where the focused column's own
+     box comes from — arithmetic, not a rect read on every scroll event */
+  const g = GUTTER();
+  let x = g, focusLeft = 0, focusRight = 0;
   [...strip.querySelectorAll(".col")].forEach((col, i) => {
     col.classList.toggle("spine", i < folded);
     col.classList.toggle("folding", i === folded && folded < n);
+    const w = i < folded ? SPINE()
+            : i === folded ? Math.round(widths[i] + (SPINE() - widths[i]) * t)
+            : widths[i];
+    if (i === focusCol) { focusLeft = x; focusRight = x + w; }
+    x += w + g;
     if (i < folded) { set(col.style, "width", ""); return; }
     set(col.dataset, "fold", String(i === folded ? t : 0));
     setVar(col, "--fold", col.dataset.fold);   /* custom props need setProperty */
-    set(col.style, "width", (i === folded
-      ? Math.round(widths[i] + (SPINE() - widths[i]) * t)
-      : widths[i]) + "px");
+    set(col.style, "width", w + "px");
   });
+
+  /* The cap in layout() keeps the column under the finger out of the spines. It
+     cannot keep it on screen: every folded ancestor still costs a spine and a
+     gutter, and the column itself can be as wide as measure() allows. Measured
+     at 390 px on a tree of long names, tapping two levels down left 292 px of a
+     376 px column inside the viewport and clipped the rest — the row the finger
+     had just hit, cut off at the right edge, which is the whole bug. Folding
+     further is the one answer the cap forbids, so the strip slides left instead:
+     by exactly the overflow, and never past focus's own left edge. A column
+     wider than the whole stage therefore gets its left edge, which is all a
+     stage that narrow has to give.
+
+     `reach` is what keeps this the tap's answer rather than a second dial. It
+     is 0 until the dial has folded everything left of focus — the resting place
+     layout() targets after a tap — so scrolling back left unfolds the strip
+     where it stands instead of dragging it after a focus five columns along.
+     Between the two it fades in with the fold it belongs to, so the slide is
+     part of that motion and not a jump at the end of it. */
+  const reach = Math.min(1, Math.max(0, raw - focusCol + 1));
+  const pan = reach * Math.min(Math.max(0, focusRight - finder.clientWidth),
+                               Math.max(0, focusLeft - g));
 
   /* last 1%: slide the spine strip itself off the left edge. Widening the strip
      by the same amount keeps the preview's flex-grow filling to the right edge. */
   const tail  = p > 0.99 ? (p - 0.99) / 0.01 : 0;
-  const shift = tail * n * (SPINE() + GUTTER());
+  const shift = tail * n * (SPINE() + GUTTER()) + pan;
   set(strip.style, "minWidth", (finder.clientWidth + shift) + "px");
   set(strip.style, "transform", `translateX(${-shift}px)`);
 

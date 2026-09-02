@@ -13,11 +13,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   isn't currently defined as a static number of characters. So at browser zooms
   above 100%, lines are wrapped. Ensure the minimum preview width is 88 characters.
 
-- In mobile, tapping a folder still longer hides what I tapped when there's wide
-  content in the tapped column or the revealed column. The previous fix only
-  prevented collapsing the column under my finger and the column that tap had
-  just opened into vertical spines when column contents are rather narrow. See task e85ba857-7a48-4273-b7bc-86358f77d295 and branch `feature/mobile-fold-cap`.
-
 - Pretty-printed and foldable JSON preview, common client side implementation
   for both `server/` and `ui/`.
 
@@ -58,6 +53,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Full file highlighting: don't clip at 8000 chars. Answered: no slicing — a
   text preview is whole or absent, bounded by the 512 KB read gate that was
   always there. Rationale in static/AGENTS.md.
+- [*] On mobile, tapping a folder still hid the tapped row when the column held
+  wide content. The fold cap kept that column unfolded but not on screen: each
+  folded ancestor costs a spine and a gutter, so at 390 px two levels in left
+  292 px of a 376 px column inside the viewport. applyScroll now pans the strip
+  left by exactly the overflow, and render clamps a column to the stage width.
 - [*] On mobile, opening a folder causes the opened folder in the next column to
   fold (when vertical) or the parent folder to fold (when horizontal). Touching
   folders should never cause folding of the touched column or columns to the

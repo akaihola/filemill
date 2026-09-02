@@ -22,6 +22,13 @@ const state = { dotfiles: root.dataset.hidden === "show",
 const GUTTER = () => parseInt(getComputedStyle(root).getPropertyValue("--gutter"));
 const SPINE  = () => parseInt(getComputedStyle(root).getPropertyValue("--spine-w"));
 
+/* what a column's content-driven width is allowed to be. COL_MAX is 380 not
+   268: a vault of 80-character page titles needs the room, and the dial makes
+   wide columns affordable — fold what you are not reading. render() narrows
+   the ceiling again against the stage, which on a phone is the smaller of
+   the two. */
+const COL_MIN = 148, COL_MAX = 380;
+
 /* One filtered copy per call, ordered by core/sort.js. Every column build, every
    width measurement and every path walk comes through here, which is what keeps
    the rows, the cursor indices and a restored chain agreeing on what row 4 is. */
@@ -62,7 +69,5 @@ function measure(node) {
   for (const k of visibleKids(node)) w = Math.max(w, c.measureText(k.name).width);
   c.font = `600 ${cs.getPropertyValue("--fs-head").trim()} ${cs.getPropertyValue("--font")}`;
   w = Math.max(w, c.measureText(node.name).width + 34);
-  /* 380 not 268: a vault of 80-character page titles needs the room, and the
-     dial makes wide columns affordable — fold what you are not reading. */
-  return Math.min(380, Math.max(148, Math.ceil(w) + 58));
+  return Math.min(COL_MAX, Math.max(COL_MIN, Math.ceil(w) + 58));
 }
