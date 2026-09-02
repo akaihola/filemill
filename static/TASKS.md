@@ -75,9 +75,9 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       because it is the only thing here that touches the network; every failure
       falls back to the raw source with a one-line note. Wikilinks resolve
       inside the browsed folder
-- [x] **One repo with the server edition** — done; `ui/` is shared, and
-      `server/tools/sync-ui.py --check` now guards a *packaging* copy rather
-      than two repositories
+- [x] **One repo with the server edition** — done; `ui/` is shared. It is now
+      a symlink into the server package, so there is no packaging copy left and
+      no `--check` gate needed to guard one
 
 - [x] **Refresh a directory** — ⟳ in the focused column's header, or F5.
 

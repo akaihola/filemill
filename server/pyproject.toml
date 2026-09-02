@@ -22,6 +22,20 @@ filemill = "filemill.cli:entry_point"
 requires = ["uv_build>=0.6.6,<0.7"]
 build-backend = "uv_build"
 
+# ../ui is a symlink to src/filemill/ui: the shared frontend lives inside the
+# package because a wheel cannot reach outside itself at runtime. Three of its
+# adapters belong to the static edition alone and the server shell never loads
+# them, so they stay out of the wheel. preview-rich.js is the one that matters —
+# it lazy-loads a renderer from a CDN, and its absence is what
+# tests/test_browser_new_ui.py::test_nothing_is_fetched_from_a_cdn rests on.
+# They remain in the sdist, which is the whole source tree.
+[tool.uv.build-backend]
+wheel-exclude = [
+    "ui/adapters/app-fsa.js",
+    "ui/adapters/preview-rich.js",
+    "ui/adapters/router-hash.js",
+]
+
 [dependency-groups]
 dev = [
     "pytest>=8",

@@ -7,8 +7,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Migrate the 19 legacy htmx browser tests in server/tests/test_browser_keyboard.py
   to the shared UI. They drive an htmx page `/` no longer serves, so they fail
   structurally; causes and test list in docs/tasks/2-fix-all-test-failures.md. [*]
-- Get rid of duplicate vendored code. Simply use the same source files for ui/
-  and server/.
 - Use one shared client side implementation for rendering Markdown fenced code
   blocks. Make sure the implementation flows line-wrapped paragraphs correctly,
   i.e. doesn't insert line feeds in the rendered HTML at each newline in the
@@ -43,6 +41,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Completed
 
+- Get rid of duplicate vendored code. Simply use the same source files for ui/
+  and server/. [3]
 - Full file highlighting: don't clip at 8000 chars. Answered: no slicing —
   a text preview is whole or absent, bounded by the 512 KB read gate that
   was always there. Rationale in static/AGENTS.md. [*]
@@ -66,6 +66,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 [1]: docs/tasks/1-show-version-and-git.md
 [2]: docs/tasks/2-fix-all-test-failures.md
+[3]: docs/tasks/3-remove-duplicate-ui-source.md
 [*]: TASKS.md
 
 ---

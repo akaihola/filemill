@@ -57,10 +57,11 @@ _Items without an issue number are not yet tracked in ISSUES.md._
       `test_browser_keyboard.py` hands Chromium the credentials from
       `$HTTPS_PROXY`. All 56 browser tests pass; PLAN-19 records what they
       confirmed about the URL contract.
-- [x] **Shared frontend with the static edition** — `src/filemill/ui/` is a
-      packaging copy of the repository's `../ui/` (`tools/sync-ui.py`); `/api/dir|raw|preview`
-      back it, `POST /api/render` renders local-folder bytes through the Python
-      pipeline, and "Open local folder…" switches adapters at runtime.
+- [x] **Shared frontend with the static edition** — `src/filemill/ui/` is the
+      shared frontend itself, which the repository's `../ui/` symlinks to;
+      `/api/dir|raw|preview` back it, `POST /api/render` renders local-folder
+      bytes through the Python pipeline, and "Open local folder…" switches
+      adapters at runtime.
       SQLite/JSON/CSV browse through the same adapter via a `vpath`.
       68 new tests (`test_api.py`, `test_browser_new_ui.py`)
 - [x] #42 Mobile preview pane fills 90 vw with `scroll-snap` column peek on narrow viewports

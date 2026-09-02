@@ -1,10 +1,10 @@
 """Browser tests for keyboard navigation, URL sync and the mobile layout.
 
-Two shells are under test. `/` serves the shared Miller-columns UI (ui/,
-vendored into server/src/filemill/ui); the tests that drive it fetch nothing
-from a CDN and run offline. The legacy htmx shell still serves `/f/`, and the
-tests that drive it load htmx from unpkg.com — that is what the proxy plumbing
-below exists for.
+Two shells are under test. `/` serves the shared Miller-columns UI
+(server/src/filemill/ui, which the repo-root ui/ symlinks to); the tests that
+drive it fetch nothing from a CDN and run offline. The legacy htmx shell still
+serves `/f/`, and the tests that drive it load htmx from unpkg.com — that is
+what the proxy plumbing below exists for.
 """
 
 from __future__ import annotations
