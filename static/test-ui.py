@@ -264,6 +264,24 @@ async def mount(pg, n=0):
     await pg.wait_for_timeout(150)
 
 
+async def scroll_settled(pg, tries=40, step=100):
+    """Wait until #finder has stopped moving, rather than guessing a duration.
+
+    The dial is a CSS smooth scroll (styles.css: `scroll-behavior`), so a
+    scrollLeft write glides for 400-500 ms instead of jumping — a fixed wait
+    samples the animation rather than its result. Returns False if it never
+    settles, so a check can say so instead of failing with no explanation.
+    """
+    prev = None
+    for _ in range(tries):                       # 40 x 100 ms — a 4 s ceiling
+        cur = await pg.evaluate("finder.scrollLeft")
+        if cur == prev:
+            return True
+        prev = cur
+        await pg.wait_for_timeout(step)
+    return False
+
+
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch()
@@ -382,12 +400,16 @@ async def main():
               await pg.evaluate("focusCol") == 4)
 
         print("\n── Folding dial ─────────────────────────────────────────────")
+        # Both moves glide: the dial is a CSS smooth scroll either way round, so
+        # wait for it to stop rather than for a clock. A flat 300 ms read the
+        # fold mid-flight and counted 4 of the 5 spines.
         await pg.evaluate("finder.scrollLeft = finder.scrollWidth")
-        await pg.wait_for_timeout(300)
+        settled = await scroll_settled(pg)
         spines = await pg.eval_on_selector_all(".col.spine", "e=>e.length")
-        check("Scrolling right folds columns into spines", spines == 5, f"{spines} spines")
+        check("Scrolling right folds columns into spines", spines == 5,
+              f"{spines} spines" + ("" if settled else ", scroll never settled"))
         await pg.evaluate("document.querySelector('.col.spine').click()")
-        await pg.wait_for_timeout(700)
+        await scroll_settled(pg)
         check("Clicking a spine unfolds it",
               await pg.eval_on_selector_all(".col.spine", "e=>e.length") == 0)
 
