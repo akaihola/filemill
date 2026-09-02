@@ -72,3 +72,8 @@ passes.
   host.
 - No test is disabled or deselected; with the 19 keyboard tests ported the
   whole suite is green (`cd server && uv run pytest -p no:randomly`).
+- Re-verified on `main` @ 85ffe6d (2026-09-02), with
+  `PLAYWRIGHT_BROWSERS_PATH` set so no browser test was skipped:
+  **870 passed in 270 s** for the suite, and **31 passed in 130 s** for
+  `tests/test_browser_keyboard.py` alone — 21 of those 31 now drive the
+  shared UI at `/`, the other 10 the `/f/` shell that is still served.
