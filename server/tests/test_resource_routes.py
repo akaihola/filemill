@@ -411,10 +411,18 @@ def test_markdown_link_keeps_a_no_columns_reader_in_no_columns(site, client):
 
 
 def test_markdown_link_drops_hidden(site, client):
+    """Rewritten links keep the layout but never carry ``hidden``.
+
+    ``layout=no-columns`` picks the embedded page, the only response with
+    server-rewritten links — the column layouts return the app shell and
+    render Markdown client-side.
+    """
     (site / "note.md").write_text("[link](other.md)\n")
     (site / "other.md").write_text("# Other\n")
-    resp = client.get("/note.md?filemill=render&hidden=show")
-    assert 'href="/other.md?filemill=render"' in resp.text
+    resp = client.get("/note.md?filemill=render&layout=no-columns&hidden=show")
+    assert (
+        'href="/other.md?filemill=render&amp;layout=no-columns"' in resp.text
+    )
 
 
 def test_markdown_image_src_is_left_relative_and_now_resolves(site, client):
