@@ -55,6 +55,10 @@ def ui_root(tmp_path: Path) -> Path:
     (tmp_path / "notes" / "plain.txt").write_text("hello")
     (tmp_path / "code").mkdir()
     (tmp_path / "code" / "sample.py").write_text(SOURCE)
+    # 11 700 chars: more than the 8 000 the preview used to clip at.
+    (tmp_path / "code" / "long.py").write_text(SOURCE * 300)
+    # One byte over the preview's 512 KB ceiling.
+    (tmp_path / "code" / "huge.py").write_text("x" * (512 * 1024 + 1))
     (tmp_path / "empty").mkdir()
     (tmp_path / "README.md").write_text("# Readme\n")
     (tmp_path / ".hidden").write_text("h")
@@ -211,6 +215,39 @@ def test_source_is_highlighted_in_the_browser(page):
         == "hl-com,hl-kw,hl-num,hl-str"
     )
     assert page.text_content("#preview .pv-text") == SOURCE
+
+
+def test_a_long_source_file_is_highlighted_whole(page):
+    """The served half of "no 8 000-character clip".
+
+    app-http.js sends anything with a language core/syntax.js knows through
+    PreviewLocal, so this file is fetched over /api/raw and coloured in the
+    page — the same branch static/test-ui.py drives against a fake handle.
+    Asserting the text alone would pass on a build that coloured the head and
+    escaped the tail, so the keyword count is the half that matters: def and
+    return is two per copy, 600 across the 300.
+    """
+    page.open("code/long.py")
+    page.wait_for_selector("#preview .pv-text .hl-kw", timeout=15000)
+    assert page.text_content("#preview .pv-text") == SOURCE * 300
+    assert page.eval_on_selector_all("#preview .pv-text .hl-kw", "e=>e.length") == 600
+
+
+def test_an_oversized_text_file_is_declined_without_fetching_it(page):
+    """The gate is before FS.blob, and this is the only way to see that.
+
+    Both with and without it the pane says the same thing, because the size
+    test used to happen after the bytes had arrived. What changes is whether
+    they arrive at all: HTTP.blob does `await r.blob()`, so a 50 MB .sql was
+    downloaded in full and then declined. Asserting the message would pass
+    either way — asserting that /api/raw is never requested is what pins it.
+    """
+    seen: list[str] = []
+    page.on("request", lambda r: seen.append(r.url))
+    page.open("code/huge.py")
+    page.wait_for_selector("#preview #pv-content p", timeout=15000)
+    assert "No inline preview" in page.inner_text("#preview #pv-content")
+    assert [u for u in seen if "/api/raw" in u] == []
 
 
 def test_metadata_rides_along_with_the_listing(page):
