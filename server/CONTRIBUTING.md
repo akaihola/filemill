@@ -144,8 +144,8 @@ retiring `/f/`.
 uv sync
 timeout 1800 uv run pytest     # everything, browser tests included
 
-# Just the 65 real-browser tests. Needs PLAYWRIGHT_BROWSERS_PATH. The 31 in
-# test_browser_keyboard.py alone took 130 s on a 4-core host, so budget minutes.
+# Just the 67 real-browser tests. Needs PLAYWRIGHT_BROWSERS_PATH. The two files
+# together took 246 s on a 4-core host, so budget minutes.
 timeout 1800 uv run pytest tests/test_browser_keyboard.py tests/test_browser_new_ui.py
 ```
 
