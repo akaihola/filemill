@@ -5,6 +5,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## Ordered backlog
 
 - Fix all test failures. Split into multiple tasks if necessary.
+- On mobile, opening a folder causes the opened folder in the next column to
+  fold (when vertical) or the parent folder to fold (when horizontal). Touching
+  folders should never cause folding of the touched column or columns to the
+  right. Only columns to the left of the touched column may fold.
 - Full file highlighting: don't clip at 8000 chars. Beyond what size should we
   really avoid highlighting in one go, and do it in slices on scroll instead?
 - Get rid of duplicate vendored code. Simply use the same source files for ui/
