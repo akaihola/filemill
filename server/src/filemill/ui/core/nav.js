@@ -237,7 +237,7 @@ function enterColumn(i) {
   if (ri == null) ri = c.kids.findIndex(k => k.name === path[i].lastSel);
   cursor[i] = ri = Math.max(0, Math.min(c.rows.length - 1, ri < 0 ? 0 : ri));
   c.rows[ri].click();
-  c.rows[ri].scrollIntoView({ block: "nearest" });
+  revealRow(c.rows[ri]);
 }
 
 /* Stepping right into a column that has no rows would move focus with nothing
@@ -289,13 +289,13 @@ document.addEventListener("keydown", e => {
     if (sel[focusCol] !== undefined)
       ci = Math.max(0, Math.min(rows.length - 1, ci + (e.key === "ArrowDown" ? 1 : -1)));
     rows[ci].click();
-    rows[ci].scrollIntoView({ block: "nearest" });
+    revealRow(rows[ci]);
   } else if (e.key === "Home" || e.key === "End") {
     e.preventDefault();
     if (!rows.length) return;
     const ri = e.key === "Home" ? 0 : rows.length - 1;
     rows[ri].click();
-    rows[ri].scrollIntoView({ block: "nearest" });
+    revealRow(rows[ri]);
   } else if (e.key === "ArrowRight" || e.key === "Enter") {
     e.preventDefault();
     const next = path[focusCol + 1];

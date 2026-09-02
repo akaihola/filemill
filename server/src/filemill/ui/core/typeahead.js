@@ -147,7 +147,7 @@ function taType(key, c) {
   const name = c.kids[i].name;
   taUnmark();          /* before the click, so the row it re-selects is clean */
   c.rows[i].click();   /* the ordinary selection path: preview, trail, URL */
-  c.rows[i].scrollIntoView({ block: "nearest" });
+  revealRow(c.rows[i]);
   /* toLowerCase can change a string's length ("İ" → two characters), and then
      the hit positions no longer index the original name. Skip the marks rather
      than paint them one character off. */
