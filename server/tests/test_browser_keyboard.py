@@ -1,9 +1,19 @@
+"""Browser tests for keyboard navigation, URL sync and the mobile layout.
+
+Two shells are under test. `/` serves the shared Miller-columns UI (ui/,
+vendored into server/src/filemill/ui); the tests that drive it fetch nothing
+from a CDN and run offline. The legacy htmx shell still serves `/f/`, and the
+tests that drive it load htmx from unpkg.com — that is what the proxy plumbing
+below exists for.
+"""
+
 from __future__ import annotations
 
 import os
 import socket
 import subprocess
 import time
+from contextlib import contextmanager
 from pathlib import Path
 from textwrap import dedent
 from urllib.parse import urlsplit
@@ -24,13 +34,13 @@ def _free_port() -> int:
 def _proxy_from_env() -> dict[str, str] | None:
     """Return Playwright's proxy settings from ``$HTTPS_PROXY``, or None.
 
-    The finder shell loads htmx from unpkg.com and mermaid from cdn.jsdelivr.net.
-    Chromium reads ``$HTTPS_PROXY`` but drops the credentials in it, so behind an
-    authenticated proxy both scripts come back "407 Proxy Authentication
-    Required", ``window.htmx`` stays undefined, and every click is ignored. The
-    tests then fail on their navigation assertions, which reads like a routing
-    regression and is not one. Passing the credentials here is what makes these
-    tests run in a sandbox at all.
+    The htmx finder shell at /f/ loads htmx from unpkg.com and mermaid from
+    cdn.jsdelivr.net. Chromium reads ``$HTTPS_PROXY`` but drops the credentials
+    in it, so behind an authenticated proxy both scripts come back "407 Proxy
+    Authentication Required", ``window.htmx`` stays undefined, and every click
+    is ignored. The tests then fail on their navigation assertions, which reads
+    like a routing regression and is not one. Passing the credentials here is
+    what makes the /f/ tests run in a sandbox at all.
     """
     url = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
     if not url:
@@ -177,34 +187,6 @@ def _click_item(page, col_id: str, text: str) -> None:
     page.evaluate(f"() => {{ ({finder})().click(); }}")
 
 
-def _first_entry_text(page, col_id: str) -> str:
-    """Text of the first entry in column *col_id*, once the column has one.
-
-    Every caller asserts on content, so an empty column always means the read
-    came too early. Waiting turns that into a TimeoutError naming the selector.
-    """
-    page.wait_for_selector(f"#{col_id} li a", timeout=20000)
-    return page.evaluate(
-        f"""() => {{
-            const col = document.getElementById({col_id!r});
-            const first = col && col.querySelector('li a');
-            return first ? first.textContent.trim() : '';
-        }}"""
-    )
-
-
-def _selected_text(page, col_id: str) -> str:
-    """Text of the selected entry in column *col_id*, once one is selected."""
-    page.wait_for_selector(f"#{col_id} li.selected a", timeout=20000)
-    return page.evaluate(
-        f"""() => {{
-            const col = document.getElementById({col_id!r});
-            const selected = col && col.querySelector('li.selected a');
-            return selected ? selected.textContent.trim() : '';
-        }}"""
-    )
-
-
 def _expect_column(page, col_id: str) -> None:
     """Assert column *col_id* is present, waiting for it instead of guessing.
 
@@ -238,12 +220,13 @@ def _expect_url_ending(page, suffix: str) -> None:
 def _wait_for_finder_scroll(page) -> None:
     """Wait until #finder exists, has scrolled right, and has stopped moving.
 
-    `scrollFinderToReveal()` in styles.py calls `scrollTo` with behaviour
-    'smooth', so the reveal starts late and then takes time. The tests below bet
-    a fixed 900 ms or 1100 ms on both, and the bet loses under load: one run of
-    the 29 read `document.getElementById('finder')` as null 1100 ms after `goto`
-    and failed on `assert scroll_left is not None`. Waiting for a settled
-    position leaves every assertion that follows exactly as it was.
+    Both shells move #finder.scrollLeft smoothly — `scrollFinderToReveal()` in
+    styles.py for the htmx one, `scroll-behavior: smooth` plus layout() for the
+    shared one — so the movement starts late and then takes time. A fixed sleep
+    is a bet on how loaded the machine is, and one run of 29 lost it: it read
+    `document.getElementById('finder')` as null 1100 ms after `goto` and failed
+    on `assert scroll_left is not None`. Waiting for a settled position leaves
+    every assertion that follows exactly as it was.
     """
     page.wait_for_function(
         "() => { const f = document.getElementById('finder');"
@@ -260,57 +243,160 @@ def _wait_for_finder_scroll(page) -> None:
     raise AssertionError("#finder never stopped scrolling")
 
 
-@pytest.mark.integration
-def test_arrow_left_keeps_browser_url_in_sync(live_server: str, browser_root: Path):
-    with sync_playwright() as p:
-        browser = _launch(p)
-        page = browser.new_page(viewport={"width": 1400, "height": 900})
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
+# ── The shared UI at / ───────────────────────────────────────────────────────
+#
+# `/` used to serve the htmx shell the helpers above drive; it now serves the
+# shared Miller-columns UI (index() → resource() → _ui_shell), so the tests
+# that drive `/` do it the way tests/test_browser_new_ui.py does: the UI's own
+# selectors and globals, and no htmx.
+#
+# The mobile intent survives a model change. The htmx shell translated #finder
+# horizontally and the tests measured that the newest column was scrolled into
+# view, minimally. The shared UI condenses instead of panning: scrollLeft is a
+# 0–100% dial that folds left columns to spines (ui/core/layout.js), so "the
+# scroll fired" becomes "the dial engaged" (scrollLeft > 0), "minimal scroll"
+# becomes layout()'s own least-folding target, and "nothing is flushed
+# off-screen" becomes "every column, spine or not, sits inside the finder
+# viewport".
 
-        _click_item(page, "col-0", "my-knowledge")
-        _expect_url_ending(page, "/f/" + browser_root.name + "/my-knowledge")
+MOBILE_VIEWPORT = {"width": 390, "height": 844}
+
+
+@contextmanager
+def _ui_page(base_url: str, mobile: bool = False):
+    """A page on the shared UI at `/`, mounted and painted.
+
+    No proxy is handed to Chromium: the shared UI fetches nothing from a CDN
+    (test_browser_new_ui.py pins that), and launching without one keeps these
+    tests honest about it.
+    """
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        if mobile:
+            context = browser.new_context(
+                viewport=MOBILE_VIEWPORT, is_mobile=True, has_touch=True
+            )
+            page = context.new_page()
+        else:
+            page = browser.new_page(viewport={"width": 1400, "height": 900})
+        page.goto(base_url)
+        page.wait_for_function("typeof path !== 'undefined' && path.length >= 1")
+        page.wait_for_timeout(400)
+        try:
+            yield page
+        finally:
+            browser.close()
+
+
+def _dial_settled(page) -> None:
+    """Wait until #finder's smooth scroll has stopped moving, at any position."""
+    previous = None
+    for _ in range(40):  # 40 x 100 ms — a 4 s ceiling
+        current = page.evaluate("document.getElementById('finder').scrollLeft")
+        if current == previous:
+            return
+        previous = current
+        page.wait_for_timeout(100)
+    raise AssertionError("#finder never stopped scrolling")
+
+
+def _ui_tap(page, col: int, name: str) -> None:
+    """Tap the entry *name* in column *col*, unfolding the column first.
+
+    On a 390 px viewport layout() folds every column the preview pushes out,
+    including the one just tapped — TASKS.md's first backlog item wants that
+    changed. A folded column hides its rows and advertises "click to unfold",
+    so the gesture a phone user actually makes is spine first, row second, and
+    this helper makes the same one. On an unfolded column the spine step is a
+    no-op.
+    """
+    _dial_settled(page)
+    sel = f'.col[data-i="{col}"]'
+    if page.locator(sel + ".spine").count():
+        page.click(sel + ".spine")
+        page.wait_for_selector(sel + ":not(.spine)", timeout=20000)
+    page.click(f'{sel} .row:has-text("{name}")')
+    page.wait_for_timeout(600)
+
+
+def _expect_ui_column(page, col: int) -> None:
+    """Assert column *col* of the shared UI exists, waiting for it."""
+    page.wait_for_selector(f'.col[data-i="{col}"]', timeout=20000)
+
+
+# layout()'s contract, evaluated in the page: the dial should rest at the least
+# k where the k-folded strip plus the preview's target width fits the stage,
+# and nothing — spine or unfolded column — may sit outside the finder viewport.
+_REVEAL_METRICS = """() => {
+    const fr = finder.getBoundingClientRect();
+    let k = 0;
+    while (k < path.length && stripSpan(k) + previewTarget() > finder.clientWidth) k++;
+    const expected = Math.round(k * foldUnit() * range());
+    const cols = [...document.querySelectorAll('.col')]
+        .map(c => c.getBoundingClientRect());
+    const pv = document.getElementById('preview');
+    const pr = pv && pv.getBoundingClientRect();
+    return {
+        scrollLeft: finder.scrollLeft,
+        expected: expected,
+        delta: Math.abs(finder.scrollLeft - expected),
+        colsWithin: cols.every(r => r.left >= fr.left - 2 && r.right <= fr.right + 2),
+        firstColVisible: cols.length > 0 && cols[0].right > fr.left,
+        previewStartVisible: Boolean(pr) && pr.left >= fr.left - 2
+            && pr.left <= fr.right - 2,
+    };
+}"""
+
+
+@pytest.mark.integration
+def test_arrow_left_keeps_browser_url_in_sync(live_server: str):
+    """The URL names the selection chain, root-relative, through keyboard moves.
+
+    In the shared UI ← moves *focus* out without closing anything, so it leaves
+    the URL alone; re-committing a row in the parent column (↑ here) is the
+    navigation that rewrites the URL back up the tree.
+    """
+    with _ui_page(live_server) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _expect_url_ending(page, "/my-knowledge")
         folder_url = page.url
 
-        _click_item(page, "col-1", "AGENTS.md")
-        _expect_url_ending(page, "/f/" + browser_root.name + "/my-knowledge/AGENTS.md")
-
-        page.keyboard.press("ArrowLeft")
-        page.wait_for_timeout(400)
-        assert page.url == folder_url
+        _ui_tap(page, 1, "AGENTS.md")
+        _expect_url_ending(page, "/my-knowledge/AGENTS.md")
+        file_url = page.url
 
         page.keyboard.press("ArrowLeft")
         page.wait_for_timeout(300)
-        assert page.url.rstrip("/") == live_server.rstrip("/") + "/f"
+        assert page.evaluate("focusCol") == 0
+        assert page.url == file_url  # focus is not navigation
 
-        browser.close()
+        page.keyboard.press("ArrowUp")  # re-commits the my-knowledge row
+        _expect_url_ending(page, "/my-knowledge")
+        assert page.url == folder_url
 
 
 @pytest.mark.integration
-def test_nested_column_navigation_keeps_root_mount_in_url(
-    live_server: str, browser_root: Path
-):
-    with sync_playwright() as p:
-        browser = _launch(p)
-        page = browser.new_page(viewport={"width": 1400, "height": 900})
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
+def test_nested_column_navigation_keeps_root_mount_in_url(live_server: str):
+    """Nested navigation keeps the whole path in the URL.
 
-        _click_item(page, "col-0", "my-knowledge")
-        page.wait_for_timeout(700)
-        _expect_url_ending(page, f"/f/{browser_root.name}/my-knowledge")
+    The mount prefix this test once asserted is gone by design: on `/` the URL
+    path *is* the file path relative to the served root (router-path.js), so
+    "the root mount stays in the URL" now means "no segment is ever dropped".
+    """
+    with _ui_page(live_server) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _expect_url_ending(page, "/my-knowledge")
 
-        _click_item(page, "col-1", "docs")
-        page.wait_for_timeout(700)
-        _expect_url_ending(page, f"/f/{browser_root.name}/my-knowledge/docs")
+        _ui_tap(page, 1, "docs")
+        _expect_url_ending(page, "/my-knowledge/docs")
 
-        file_name = _first_entry_text(page, "col-2")
-        assert file_name == "📁subdir"
-        _click_item(page, "col-2", "topic.md")
-        page.wait_for_timeout(700)
-        _expect_url_ending(page, f"/f/{browser_root.name}/my-knowledge/docs/topic.md")
+        labels = page.eval_on_selector_all(
+            '.col[data-i="2"] .row .label', "els => els.map(e => e.textContent)"
+        )
+        assert labels[0] == "subdir"  # directories still sort before files
 
-        browser.close()
+        _ui_tap(page, 2, "topic.md")
+        _expect_url_ending(page, "/my-knowledge/docs/topic.md")
 
 
 @pytest.mark.integration
@@ -382,230 +468,93 @@ def test_rendered_relative_markdown_link_uses_root_relative_url(
 def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
     live_server: str,
 ):
-    with sync_playwright() as p:
-        browser = _launch(p)
-        page = browser.new_page(viewport={"width": 1400, "height": 900})
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
+    """A ←/→ cycle around a file preview never loses the parent column.
 
-        # Root column starts with no selection; ArrowDown selects the first visible item.
-        # In our temp tree that's my-knowledge/ because dirs sort before files.
-        page.keyboard.press("ArrowDown")
-        page.wait_for_timeout(250)
-        assert "my-knowledge" in _selected_text(page, "col-0")
-
-        # ArrowRight enters the folder and should auto-highlight the first item.
-        page.keyboard.press("ArrowRight")
-        page.wait_for_timeout(700)
-        _expect_column(page, "col-1")
-        assert _selected_text(page, "col-1")
-
-        # ArrowDown moves from docs/ to AGENTS.md in the reopened folder listing.
-        page.keyboard.press("ArrowDown")
-        page.wait_for_timeout(250)
-        assert "AGENTS.md" in _selected_text(page, "col-1")
-
-        # ArrowRight previews the file while keeping the parent column alive.
-        page.keyboard.press("ArrowRight")
-        page.wait_for_timeout(700)
-        _expect_column(page, "col-1")
-        _expect_preview(page)
-
-        # ArrowLeft exits back to the root column and closes col-1.
-        page.keyboard.press("ArrowLeft")
+    The shared UI cannot lose it the way the htmx shell once did (a stale
+    sentinel deleted the column on the second preview), because ← moves focus
+    without closing anything — which is exactly what this asserts.
+    """
+    with _ui_page(live_server) as page:
+        page.keyboard.press("ArrowDown")  # commit the first row: my-knowledge
         page.wait_for_timeout(400)
-        assert page.locator("#col-1.column").count() == 0
-        assert "my-knowledge" in _selected_text(page, "col-0")
+        assert page.evaluate("sel[0]") == "my-knowledge"
+        _expect_ui_column(page, 1)
 
-        # Re-enter via keyboard and verify the new column gets a restored selection.
-        page.keyboard.press("ArrowRight")
-        page.wait_for_timeout(700)
-        _expect_column(page, "col-1")
-        reopened_selected = _selected_text(page, "col-1")
-        assert reopened_selected
+        page.keyboard.press("ArrowRight")  # step in; the remembered row commits
+        page.wait_for_timeout(500)
+        assert page.evaluate("focusCol") == 1
+        assert page.evaluate("sel[1]") == "docs"
 
-        # Move to the file again and preview it. The regression was that this second
-        # preview deleted the parent folder column due to stale sentinel DOM order.
-        if "AGENTS.md" not in reopened_selected:
-            page.keyboard.press("ArrowDown")
-            page.wait_for_timeout(250)
-        assert "AGENTS.md" in _selected_text(page, "col-1")
-
-        page.keyboard.press("ArrowRight")
-        page.wait_for_timeout(700)
-        _expect_column(page, "col-1")
+        page.keyboard.press("ArrowDown")  # docs → AGENTS.md, previewed as a file
+        page.wait_for_timeout(400)
+        assert page.evaluate("sel[1]") == "AGENTS.md"
+        _expect_ui_column(page, 1)
         _expect_preview(page)
 
-        col1_class = page.locator("#col-1").get_attribute("class") or ""
-        assert "column" in col1_class
+        page.keyboard.press("ArrowLeft")  # focus out — the column must survive
+        page.wait_for_timeout(300)
+        assert page.evaluate("focusCol") == 0
+        _expect_ui_column(page, 1)
 
-        browser.close()
+        page.keyboard.press("ArrowRight")  # re-enter: the cursor row re-commits
+        page.wait_for_timeout(500)
+        assert page.evaluate("focusCol") == 1
+        assert page.evaluate("sel[1]") == "AGENTS.md"
+        _expect_ui_column(page, 1)
+        _expect_preview(page)
 
 
 @pytest.mark.integration
 def test_mobile_folder_click_reveals_new_column_without_flushing_left(
     live_server: str,
 ):
-    """Navigate two levels deep so three columns (3×160 = 480px) overflow the
-    390px mobile viewport, triggering the minimal-scroll logic.
-
-    Before the fix the afterSettle handler checked classList.contains('column')
-    on the detached sentinel (always false after outerHTML swap), so the scroll
-    never fired and the CSS snap locked the new column flush-left.
+    """Navigate two levels deep so three columns plus the preview pane cannot
+    fit 390 px. The dial must engage, rest at layout()'s own least-folding
+    target, and keep every column — spine or not — inside the viewport.
     """
-    with sync_playwright() as p:
-        browser = _launch(p)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
-
-        # Level 1: root → my-knowledge (col-0 + col-1, total ≤390px, no scroll yet)
-        _click_item(page, "col-0", "my-knowledge")
-        page.wait_for_timeout(900)
-
-        # Level 2: my-knowledge → docs (col-0 + col-1 + col-2, total >390px, scroll needed)
-        _click_item(page, "col-1", "docs")
-        page.wait_for_timeout(900)
+    with _ui_page(live_server, mobile=True) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _ui_tap(page, 1, "docs")
+        _expect_ui_column(page, 2)
 
         _wait_for_finder_scroll(page)
-        metrics = page.evaluate(
-            """() => {
-                const finder = document.getElementById('finder');
-                const prevCol = document.getElementById('col-1');
-                const newCol  = document.getElementById('col-2');
-                if (!finder || !prevCol || !newCol) return null;
-                const finderRect = finder.getBoundingClientRect();
-                const prevRect   = prevCol.getBoundingClientRect();
-                const newRect    = newCol.getBoundingClientRect();
-                // Expected scroll: min(offsetLeft + offsetWidth - clientWidth, offsetLeft)
-                const expectedScroll = Math.min(
-                    newCol.offsetLeft + newCol.offsetWidth - finder.clientWidth,
-                    newCol.offsetLeft
-                );
-                return {
-                    scrollLeft:      finder.scrollLeft,
-                    maxScrollLeft:   Math.max(0, finder.scrollWidth - finder.clientWidth),
-                    finderLeft:      finderRect.left,
-                    finderRight:     finderRect.right,
-                    prevLeft:        prevRect.left,
-                    prevRight:       prevRect.right,
-                    newLeft:         newRect.left,
-                    newRight:        newRect.right,
-                    overflowRight:   newRect.right - finderRect.right,
-                    expectedScroll:  expectedScroll,
-                    scrollDelta:     Math.abs(finder.scrollLeft - Math.max(0, expectedScroll)),
-                };
-            }"""
+        metrics = page.evaluate(_REVEAL_METRICS)
+        assert metrics["scrollLeft"] > 0, "the dial never engaged"
+        assert metrics["delta"] <= 2, (
+            f"dial at {metrics['scrollLeft']:.0f}px, layout()'s minimum is "
+            f"{metrics['expected']:.0f}px"
         )
-
-        assert metrics is not None, "col-2 not found after two folder clicks"
-        # The new column must be fully within the finder viewport (not clipped right)
-        assert metrics["overflowRight"] <= 1, (
-            f"col-2 right edge overflows finder by {metrics['overflowRight']:.1f}px"
-        )
-        assert metrics["newRight"] <= metrics["finderRight"] + 1
-        # The scroll must have moved to reveal it (it was past the right edge before scroll)
-        assert metrics["scrollLeft"] > 0, (
-            "finder did not scroll — outerHTML-swap re-query fix may be missing"
-        )
-        # Scroll matches the minimal-reveal formula (within 1px rounding)
-        assert metrics["scrollDelta"] <= 1, (
-            f"scroll {metrics['scrollLeft']:.0f} deviates from expected "
-            f"{metrics['expectedScroll']:.0f} by {metrics['scrollDelta']:.1f}px"
-        )
-        # Previous column is still partially visible (not flushed off-screen)
-        assert metrics["prevRight"] > metrics["finderLeft"], (
-            "previous column completely hidden — over-scrolled"
-        )
-        assert metrics["scrollLeft"] < metrics["maxScrollLeft"]
-
-        context.close()
-        browser.close()
+        assert metrics["colsWithin"], "a column is clipped outside the viewport"
+        assert metrics["firstColVisible"], "the root column was flushed off-screen"
 
 
 @pytest.mark.integration
 def test_mobile_file_click_reveals_preview_without_flushing_left(
     live_server: str,
 ):
-    """Click a file after entering a folder so the preview pane appears.
+    """Tap a file after entering a folder: the preview pane must fill with
+    text and start inside the viewport, with the dial at its minimum.
 
-    The preview uses hx-swap="innerHTML" so e.detail.target stays in the DOM
-    and scroll fires correctly.  This test verifies the minimal-scroll formula
-    positions the preview right edge flush with the viewport right edge (not
-    scrolled all the way to the end).
+    The pane's own right edge may overflow: previewTarget() floors the reading
+    width at 420 px and #preview cannot flex-shrink below it, so on a 390 px
+    phone the dial shows the pane's left edge and the delta check stays the
+    authoritative one — the same rule the htmx version of this test spelled
+    out for its oversized previews.
     """
-    with sync_playwright() as p:
-        browser = _launch(p)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
-
-        _click_item(page, "col-0", "my-knowledge")
-        page.wait_for_timeout(900)
-        _click_item(page, "col-1", "AGENTS.md")
-        page.wait_for_timeout(900)
+    with _ui_page(live_server, mobile=True) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _ui_tap(page, 1, "AGENTS.md")
+        _expect_preview(page)
 
         _wait_for_finder_scroll(page)
-        metrics = page.evaluate(
-            """() => {
-                const finder  = document.getElementById('finder');
-                const col     = document.getElementById('col-1');
-                const preview = document.getElementById('preview');
-                if (!finder || !col || !preview) return null;
-                const finderRect  = finder.getBoundingClientRect();
-                const colRect     = col.getBoundingClientRect();
-                const previewRect = preview.getBoundingClientRect();
-                const expectedScroll = Math.min(
-                    preview.offsetLeft + preview.offsetWidth - finder.clientWidth,
-                    preview.offsetLeft
-                );
-                return {
-                    scrollLeft:       finder.scrollLeft,
-                    maxScrollLeft:    Math.max(0, finder.scrollWidth - finder.clientWidth),
-                    finderLeft:       finderRect.left,
-                    finderRight:      finderRect.right,
-                    colLeft:          colRect.left,
-                    colRight:         colRect.right,
-                    previewLeft:      previewRect.left,
-                    previewRight:     previewRect.right,
-                    previewTextLen:   (preview.innerText || '').trim().length,
-                    overflowRight:    previewRect.right - finderRect.right,
-                    expectedScroll:   expectedScroll,
-                    scrollDelta:      Math.abs(finder.scrollLeft - Math.max(0, expectedScroll)),
-                };
-            }"""
+        metrics = page.evaluate(_REVEAL_METRICS)
+        assert metrics["scrollLeft"] > 0, "the dial never engaged"
+        assert metrics["delta"] <= 2, (
+            f"dial at {metrics['scrollLeft']:.0f}px, layout()'s minimum is "
+            f"{metrics['expected']:.0f}px"
         )
-
-        assert metrics is not None
-        assert metrics["previewTextLen"] > 0, "preview has no text content"
-        # Scroll must have fired to reveal the preview
-        assert metrics["scrollLeft"] > 0, "finder did not scroll to reveal preview"
-        # Minimal-reveal formula was applied (scrollDelta ≤ 1px rounding)
-        # Note: if preview.offsetWidth > finder.clientWidth (preview wider than viewport),
-        # Math.min caps the scroll at preview.offsetLeft (show left edge), so overflowRight
-        # may be non-zero but scrollDelta is still 0.  scrollDelta is the authoritative check.
-        assert metrics["scrollDelta"] <= 1, (
-            f"scroll {metrics['scrollLeft']:.0f} deviates from expected "
-            f"{metrics['expectedScroll']:.0f} by {metrics['scrollDelta']:.1f}px — "
-            "scroll-snap or wrong formula may have overridden scrollFinderToReveal"
-        )
-        # Preview left edge must be visible (formula caps at offsetLeft for oversized previews)
-        assert metrics["previewLeft"] >= -1, (
-            f"preview left edge at {metrics['previewLeft']:.0f}px — scrolled past preview"
-        )
-
-        context.close()
-        browser.close()
+        assert metrics["previewStartVisible"], "the preview starts off-screen"
+        assert metrics["colsWithin"], "a column is clipped outside the viewport"
 
 
 @pytest.mark.integration
@@ -662,71 +611,34 @@ def test_mobile_file_restore_runtime_scroll_position_is_stable(
 def test_mobile_folder_navigation_reveals_target_column_completely_at_runtime(
     live_server: str,
 ):
-    with sync_playwright() as p:
-        browser = _launch(p)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
+    with _ui_page(live_server, mobile=True) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _expect_ui_column(page, 1)
 
-        _click_item(page, "col-0", "my-knowledge")
-        page.wait_for_timeout(900)
-
-        _expect_column(page, "col-1")
+        _dial_settled(page)
         fully_visible = page.evaluate(
             """() => {
-                const finder = document.getElementById('finder');
-                const newCol = document.getElementById('col-1');
-                if (!finder || !newCol) return null;
-                const finderRect = finder.getBoundingClientRect();
-                const colRect = newCol.getBoundingClientRect();
-                return colRect.left >= finderRect.left - 1 && colRect.right <= finderRect.right + 1;
+                const fr = finder.getBoundingClientRect();
+                const col = document.querySelector('.col[data-i="1"]');
+                if (!col) return null;
+                const r = col.getBoundingClientRect();
+                return r.left >= fr.left - 2 && r.right <= fr.right + 2;
             }"""
         )
-
         assert fully_visible is True
-
-        context.close()
-        browser.close()
 
 
 @pytest.mark.integration
 def test_mobile_preview_scroll_position_is_not_zero_after_navigation(
     live_server: str,
 ):
-    with sync_playwright() as p:
-        browser = _launch(p)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
-
-        _click_item(page, "col-0", "my-knowledge")
-        page.wait_for_timeout(900)
-        _click_item(page, "col-1", "AGENTS.md")
-        page.wait_for_timeout(900)
+    with _ui_page(live_server, mobile=True) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _ui_tap(page, 1, "AGENTS.md")
+        _expect_preview(page)
 
         _wait_for_finder_scroll(page)
-        scroll_left = page.evaluate(
-            """() => {
-                const finder = document.getElementById('finder');
-                return finder ? finder.scrollLeft : null;
-            }"""
-        )
-
-        assert scroll_left is not None
-        assert scroll_left > 0
-
-        context.close()
-        browser.close()
+        assert page.evaluate("finder.scrollLeft") > 0
 
 
 @pytest.mark.integration
@@ -767,48 +679,19 @@ def test_mobile_file_restore_scroll_position_is_not_zero(
 def test_mobile_navigation_runtime_scroll_regression_is_covered(
     live_server: str,
 ):
-    with sync_playwright() as p:
-        browser = _launch(p)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
-
-        _click_item(page, "col-0", "my-knowledge")
-        page.wait_for_timeout(900)
-        _expect_column(page, "col-1")
-
-        context.close()
-        browser.close()
+    with _ui_page(live_server, mobile=True) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _expect_ui_column(page, 1)
 
 
 @pytest.mark.integration
 def test_mobile_preview_runtime_scroll_regression_is_covered(
     live_server: str,
 ):
-    with sync_playwright() as p:
-        browser = _launch(p)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
-
-        _click_item(page, "col-0", "my-knowledge")
-        page.wait_for_timeout(900)
-        _click_item(page, "col-1", "AGENTS.md")
-        page.wait_for_timeout(900)
+    with _ui_page(live_server, mobile=True) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _ui_tap(page, 1, "AGENTS.md")
         _expect_preview(page)
-
-        context.close()
-        browser.close()
 
 
 @pytest.mark.integration
@@ -861,121 +744,47 @@ def test_mobile_restore_preview_runtime_scroll_regression_is_covered(
 
 @pytest.mark.integration
 def test_mobile_minimal_scroll_runtime_behavior_smoke(live_server: str):
-    with sync_playwright() as p:
-        browser = _launch(p)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
+    with _ui_page(live_server, mobile=True) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _ui_tap(page, 1, "AGENTS.md")
 
-        _click_item(page, "col-0", "my-knowledge")
-        page.wait_for_timeout(900)
-        _click_item(page, "col-1", "AGENTS.md")
-        page.wait_for_timeout(900)
-
-        _expect_column(page, "col-1")
+        _expect_ui_column(page, 1)
         _expect_preview(page)
-
-        context.close()
-        browser.close()
 
 
 @pytest.mark.integration
 def test_mobile_column_reveal_and_preview_reveal_both_work(live_server: str):
-    with sync_playwright() as p:
-        browser = _launch(p)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
+    with _ui_page(live_server, mobile=True) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _expect_ui_column(page, 1)
 
-        _click_item(page, "col-0", "my-knowledge")
-        page.wait_for_timeout(900)
-        _expect_column(page, "col-1")
-
-        _click_item(page, "col-1", "AGENTS.md")
-        page.wait_for_timeout(900)
+        _ui_tap(page, 1, "AGENTS.md")
         _expect_preview(page)
-
-        context.close()
-        browser.close()
 
 
 @pytest.mark.integration
 def test_mobile_scroll_regression_end_to_end(live_server: str):
-    with sync_playwright() as p:
-        browser = _launch(p)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
+    with _ui_page(live_server, mobile=True) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _ui_tap(page, 1, "AGENTS.md")
 
-        _click_item(page, "col-0", "my-knowledge")
-        page.wait_for_timeout(900)
-        _click_item(page, "col-1", "AGENTS.md")
-        page.wait_for_timeout(900)
-
-        _expect_column(page, "col-1")
+        _expect_ui_column(page, 1)
         _expect_preview(page)
-
-        context.close()
-        browser.close()
 
 
 @pytest.mark.integration
 def test_mobile_scroll_regression_directory_only(live_server: str):
-    with sync_playwright() as p:
-        browser = _launch(p)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
-
-        _click_item(page, "col-0", "my-knowledge")
-        page.wait_for_timeout(900)
-        _expect_column(page, "col-1")
-
-        context.close()
-        browser.close()
+    with _ui_page(live_server, mobile=True) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _expect_ui_column(page, 1)
 
 
 @pytest.mark.integration
 def test_mobile_scroll_regression_preview_only(live_server: str):
-    with sync_playwright() as p:
-        browser = _launch(p)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
-
-        _click_item(page, "col-0", "my-knowledge")
-        page.wait_for_timeout(900)
-        _click_item(page, "col-1", "AGENTS.md")
-        page.wait_for_timeout(900)
+    with _ui_page(live_server, mobile=True) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _ui_tap(page, 1, "AGENTS.md")
         _expect_preview(page)
-
-        context.close()
-        browser.close()
 
 
 @pytest.mark.integration
@@ -1028,27 +837,12 @@ def test_mobile_restore_regression_preview_only(
 
 @pytest.mark.integration
 def test_mobile_scroll_behavior_runtime_assertions(live_server: str):
-    with sync_playwright() as p:
-        browser = _launch(p)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
-
-        _click_item(page, "col-0", "my-knowledge")
-        page.wait_for_timeout(900)
-        _click_item(page, "col-1", "AGENTS.md")
-        page.wait_for_timeout(900)
+    with _ui_page(live_server, mobile=True) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _ui_tap(page, 1, "AGENTS.md")
 
         _wait_for_finder_scroll(page)
-        assert page.evaluate("() => document.getElementById('finder').scrollLeft") > 0
-
-        context.close()
-        browser.close()
+        assert page.evaluate("finder.scrollLeft") > 0
 
 
 @pytest.mark.integration
@@ -1079,102 +873,36 @@ def test_mobile_restore_behavior_preview_assertions(
 
 @pytest.mark.integration
 def test_mobile_scroll_behavior_preview_assertions(live_server: str):
-    with sync_playwright() as p:
-        browser = _launch(p)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
-
-        _click_item(page, "col-0", "my-knowledge")
-        page.wait_for_timeout(900)
-        _click_item(page, "col-1", "AGENTS.md")
-        page.wait_for_timeout(900)
+    with _ui_page(live_server, mobile=True) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _ui_tap(page, 1, "AGENTS.md")
 
         _wait_for_finder_scroll(page)
-        assert page.evaluate("() => document.getElementById('finder').scrollLeft") > 0
-
-        context.close()
-        browser.close()
+        assert page.evaluate("finder.scrollLeft") > 0
 
 
 @pytest.mark.integration
 def test_mobile_scroll_regression_user_case_is_covered(live_server: str):
-    with sync_playwright() as p:
-        browser = _launch(p)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
-
-        _click_item(page, "col-0", "my-knowledge")
-        page.wait_for_timeout(900)
-        _expect_column(page, "col-1")
-
-        context.close()
-        browser.close()
+    with _ui_page(live_server, mobile=True) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _expect_ui_column(page, 1)
 
 
 @pytest.mark.integration
 def test_mobile_scroll_regression_user_case_preview_is_covered(live_server: str):
-    with sync_playwright() as p:
-        browser = _launch(p)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
-
-        _click_item(page, "col-0", "my-knowledge")
-        page.wait_for_timeout(900)
-        _click_item(page, "col-1", "AGENTS.md")
-        page.wait_for_timeout(900)
+    with _ui_page(live_server, mobile=True) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _ui_tap(page, 1, "AGENTS.md")
         _expect_preview(page)
-
-        context.close()
-        browser.close()
 
 
 @pytest.mark.integration
 def test_mobile_scroll_runtime_minimal_reveal_assertion(live_server: str):
-    with sync_playwright() as p:
-        browser = _launch(p)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(live_server, wait_until="networkidle")
-        page.wait_for_timeout(800)
+    with _ui_page(live_server, mobile=True) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _expect_ui_column(page, 1)
 
-        _click_item(page, "col-0", "my-knowledge")
-        page.wait_for_timeout(900)
-
-        assert page.evaluate(
-            """() => {
-                const finder = document.getElementById('finder');
-                const rootCol = document.getElementById('col-0');
-                const newCol = document.getElementById('col-1');
-                if (!finder || !rootCol || !newCol) return false;
-                const finderRect = finder.getBoundingClientRect();
-                const rootRect = rootCol.getBoundingClientRect();
-                const newRect = newCol.getBoundingClientRect();
-                return newRect.right <= finderRect.right + 1 && rootRect.right > finderRect.left;
-            }"""
-        )
-
-        context.close()
-        browser.close()
-
+        _dial_settled(page)
+        metrics = page.evaluate(_REVEAL_METRICS)
+        assert metrics["colsWithin"], "a column is clipped outside the viewport"
+        assert metrics["firstColVisible"], "the root column was flushed off-screen"
