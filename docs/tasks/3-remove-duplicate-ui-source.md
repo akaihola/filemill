@@ -47,14 +47,27 @@ not touched — they reference `../ui/`, which still resolves.
 
 ## Verification
 
-- Wheel built from the new layout carries the same 30 `filemill/ui/` entries as
-  one built before the change; the sdist still contains all three excluded
+Measured on the rebased branch, against a wheel built from `main` at the same
+commit so the comparison isolates this change:
+
+- The wheel carries the same 26 `filemill/ui/` files as one built from `main`,
+  byte for byte, with one deliberate exception: `adapters/README.md`, whose
+  wording this change updates. The sdist still contains all three excluded
   adapters, so the source distribution is not lossy.
-- `static/build-index.py --check` green — the committed bundle is unchanged,
-  because no UI file content changed.
-- `cd server && uv run pytest`: 867 passed, matching the pre-change baseline.
-- Static suites in both bundle and `--dev` mode green; the `--dev` runs are what
-  exercise the symlink, since they load `../ui/` directly.
+- Installing that wheel into a clean venv serves the UI: `/ui/core/ports.js`,
+  `/ui/core/styles.css`, `/ui/adapters/app-http.js` and `/ui/vendor/seti.woff`
+  all return 200, the three excluded adapters return 404, and the `/n/` shell
+  renders referencing `/ui/core/shell.js`. `ui/` is a real directory there, not
+  a symlink — the link exists only in the repository.
+- `static/build-index.py --check` green at 211,523 bytes, the same size `main`
+  produces: the symlink is transparent to the bundler.
+- `cd server && uv run pytest`: 870 passed, 0 failed.
+- `static/test-ui.py` 137 passed in both bundle and `--dev` mode, `test-url.py
+  --dev` 15 passed. The `--dev` runs are what exercise the symlink, since they
+  load `../ui/` directly, and they match the bundle exactly.
+- `static/test-rich.py --dev` is 13 passed, 2 failed. Both are the offline
+  fallback checks, pre-existing and unrelated — see the `test-rich` item in
+  `TASKS.md`.
 
 ## Note for whoever reads TASKS.md next
 
