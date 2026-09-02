@@ -46,6 +46,14 @@ const PreviewLocal = {
   revoke() { if (pvURL) { URL.revokeObjectURL(pvURL); pvURL = null; } },
 
   async render(node) {
+    /* Decline an oversized text file before it is fetched, not after. The FSA
+       port hands back a lazy File, so blob.size below costs nothing there — but
+       HTTP.blob (adapters/http.js) does `await r.blob()`, which buffers the
+       whole response, and by then a 400 MB .sql is already in memory. node.meta
+       is filled by fillPreview before any provider runs, the same thing canEdit
+       leans on. The blob.size test below stays: this one is only as good as the
+       listing's size, and the limit should not depend on that being right. */
+    if (TEXT_RE.test(node.name) && (node.meta?.size ?? 0) > TEXT_MAX) return null;
     const blob = await FS.blob(node);
     if (!blob) return null;
 
