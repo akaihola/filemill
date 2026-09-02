@@ -413,6 +413,34 @@ async def main():
         check("Clicking a spine unfolds it",
               await pg.eval_on_selector_all(".col.spine", "e=>e.length") == 0)
 
+        # Opening a folder is the user pointing at a column. The dial may fold
+        # what they have walked past, never the column under the finger nor the
+        # one that tap just opened — at 390 px the old arithmetic folded all of
+        # it, preview first. Driving it here is what proves the *bundle* carries
+        # the fold rule, not only the modular sources.
+        await pg.set_viewport_size({"width": 390, "height": 700})
+        await scroll_settled(pg)
+        if await pg.eval_on_selector_all('.col[data-i="0"].spine', "e=>e.length"):
+            await pg.click('.col[data-i="0"].spine')     # rows of a spine are hidden
+            await scroll_settled(pg)
+        await pg.click('.col[data-i="0"] .row:has-text("deep")')
+        await scroll_settled(pg)
+        fold = await pg.evaluate("""(() => {
+          let uncapped = 0;
+          while (uncapped < path.length &&
+                 stripSpan(uncapped) + previewTarget() > finder.clientWidth) uncapped++;
+          return {folded, focusCol, uncapped,
+                  atOrRight: [...document.querySelectorAll('.col.spine')]
+                      .map(c => +c.dataset.i).filter(i => i >= focusCol)};
+        })()""")
+        check("Opening a folder folds no column at or right of the touched one",
+              fold["folded"] <= fold["focusCol"] and not fold["atOrRight"],
+              json.dumps(fold))
+        check("(the dial would have folded past it, so the check has teeth)",
+              fold["uncapped"] > fold["focusCol"], json.dumps(fold))
+        await pg.set_viewport_size({"width": 1500, "height": 900})
+        await pg.wait_for_timeout(200)
+
         print("\n── Preview ──────────────────────────────────────────────────")
         await mount(pg)
         await pg.click('.col[data-i="0"] .row:has-text("mixed")')
