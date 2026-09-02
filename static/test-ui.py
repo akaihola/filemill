@@ -54,6 +54,8 @@ window.__mk = (nbig) => {
       throw Object.assign(new Error('no'), {name:'NotAllowedError'}); }});
   const D = (name, kids) => ({kind:'directory', name,
     entries: async function*(){ for (const k of kids) yield [k.name, k]; }});
+  /* long enough that measure() returns its 380 px ceiling for the column */
+  const LONG = i => `level-${i}-` + 'w'.repeat(36);
   const DENIED = (name) => ({kind:'directory', name,
     entries: async function*(){ throw Object.assign(new Error('no'), {name:'NotAllowedError'}); }});
   const SLOW = (name, kids) => ({kind:'directory', name,
@@ -108,7 +110,12 @@ window.__mk = (nbig) => {
     DENIED('locked'),
     SLOW('slow', [F('one.txt','1'), F('two.txt','2')]),
     D('big', big),
-    D('wide', [F('a-quite-long-file-name-1.txt'), F('a-quite-long-file-name-2.txt')]),
+    // The chain inside holds names at measure()'s width ceiling, which is the
+    // case the fold cap cannot answer alone: on a phone the column under the
+    // finger is then wider than the stage has left once its ancestors have
+    // folded to spines, and #stage clips what runs past the right edge.
+    D('wide', [F('a-quite-long-file-name-1.txt'), F('a-quite-long-file-name-2.txt'),
+               D(LONG(0), [D(LONG(1), [D(LONG(2), [F('leaf.md', '# leaf')])])])]),
     // Names chosen so each type-ahead rung is the *only* one that can explain
     // the answer. Sorted: Alpha Report.txt, beta-notes.md, changelog.md,
     // notes.txt, readme.md, release-notes.md.
@@ -450,13 +457,114 @@ async def main():
         check("(the dial would have folded past it, so the check has teeth)",
               fold["uncapped"] > fold["focusCol"], json.dumps(fold))
 
+        # Not folding the touched column is not the same as showing it. Each
+        # ancestor the dial folds still costs a spine and a gutter, so with
+        # names at the width ceiling the column under the finger ran off the
+        # right edge and #stage clipped it — the row just tapped, cut in half.
+        # Folding further is what the cap forbids, so the strip slides left by
+        # exactly the overflow instead, and the ancestors leave from the left.
+        await mount(pg)
+        await pg.set_viewport_size({"width": 390, "height": 700})
+        await scroll_settled(pg)
+        await pg.click('.col[data-i="0"] .row:has-text("wide")')
+        await pg.wait_for_timeout(250)
+        for i in range(3):
+            await pg.click(f'.col[data-i="{i + 1}"] .row:has-text("level-{i}-")')
+            await pg.wait_for_timeout(250)
+        await scroll_settled(pg)
+        touched = await pg.evaluate("""(() => {
+          const fr = finder.getBoundingClientRect();
+          const col = document.querySelector(`.col[data-i="${focusCol}"]`);
+          const r = col.getBoundingClientRect();
+          const row = col.querySelector('.row.sel').getBoundingClientRect();
+          const tf = getComputedStyle(strip).transform;
+          const pan = tf && tf !== 'none' ? -new DOMMatrix(tf).m41 : 0;
+          return {focusCol, pan: Math.round(pan), stage: stage.scrollLeft,
+                  spine: col.classList.contains('spine'),
+                  clipped: Math.round(r.right - fr.right),
+                  rowClipped: Math.round(row.right - fr.right),
+                  wouldClip: Math.round(r.right + pan - fr.right)};
+        })()""")
+        check("A tapped column too wide for what is left of the stage is slid "
+              "into view, not clipped",
+              touched["clipped"] <= 2 and touched["rowClipped"] <= 2
+              and not touched["spine"] and touched["stage"] == 0,
+              json.dumps(touched))
+        check("(it really would have run past the edge, so the check has teeth)",
+              touched["wouldClip"] > 0, json.dumps(touched))
+
+        # Turning the phone is the case where the width clamp can lie. #stage's
+        # width is --stage-w, which layout() writes *after* render() has chosen
+        # the widths, so clamping against the stage measured the viewport the
+        # user just rotated away from: 380 px columns on a 375 px screen, where
+        # the pan can only choose which edge to lose. Measured before the fix,
+        # from 568 px landscape to 375 px portrait: the tapped row sat 10 px
+        # past the right edge until the next render healed it. #finder is the
+        # live number and the one layout() reads.
+        await mount(pg)
+        await pg.set_viewport_size({"width": 568, "height": 320})
+        await scroll_settled(pg)
+        await pg.click('.col[data-i="0"] .row:has-text("wide")')
+        await pg.wait_for_timeout(250)
+        for i in range(3):
+            await pg.click(f'.col[data-i="{i + 1}"] .row:has-text("level-{i}-")')
+            await pg.wait_for_timeout(250)
+        await scroll_settled(pg)
+        await pg.set_viewport_size({"width": 375, "height": 812})   # rotate
+        await pg.wait_for_timeout(400)
+        await scroll_settled(pg)
+        rotated = await pg.evaluate("""(() => {
+          const fr = finder.getBoundingClientRect();
+          const col = document.querySelector(`.col[data-i="${focusCol}"]`);
+          const r = col.getBoundingClientRect();
+          const row = col.querySelector('.row.sel').getBoundingClientRect();
+          const g = parseInt(getComputedStyle(document.documentElement)
+              .getPropertyValue('--gutter'));
+          return {focusCol, widths: widths.map(Math.round),
+                  cap: finder.clientWidth - 2 * g,
+                  clipped: Math.round(r.right - fr.right),
+                  rowClipped: Math.round(row.right - fr.right)};
+        })()""")
+        check("Rotating to a narrower screen re-clamps the columns to it, so the "
+              "tapped row is not left clipped",
+              rotated["clipped"] <= 2 and rotated["rowClipped"] <= 2
+              and max(rotated["widths"]) <= rotated["cap"], json.dumps(rotated))
+
+        # Desktop is the other half of the contract: at a width where the strip
+        # up to focus fits, nothing pans and nothing is clamped, so the dial
+        # behaves exactly as it did before any of this.
+        await mount(pg)
+        await pg.set_viewport_size({"width": 1500, "height": 900})
+        await scroll_settled(pg)
+        await pg.click('.col[data-i="0"] .row:has-text("wide")')
+        await pg.wait_for_timeout(250)
+        for i in range(3):
+            await pg.click(f'.col[data-i="{i + 1}"] .row:has-text("level-{i}-")')
+            await pg.wait_for_timeout(250)
+        await scroll_settled(pg)
+        desktop = await pg.evaluate("""(() => {
+          const fr = finder.getBoundingClientRect();
+          const col = document.querySelector(`.col[data-i="${focusCol}"]`);
+          const r = col.getBoundingClientRect();
+          const tf = getComputedStyle(strip).transform;
+          const pan = tf && tf !== 'none' ? -new DOMMatrix(tf).m41 : 0;
+          return {focusCol, pan: Math.round(pan), widths: widths.map(Math.round),
+                  natural: Math.max(...widths.map(Math.round)),
+                  whole: r.left >= fr.left - 2 && r.right <= fr.right + 2};
+        })()""")
+        check("On a desktop-width screen the strip never pans and the columns "
+              "keep their natural width",
+              desktop["pan"] == 0 and desktop["whole"]
+              and desktop["natural"] == 380, json.dumps(desktop))
+
         # Walking in on a narrow screen leaves the focused column reaching past
-        # the right edge — 4 spines and a 148 px column need 334 of 320. The
-        # row the keyboard commits is therefore partly off-screen, and
-        # scrollIntoView() would scroll #stage to show it, dragging every
-        # column out through the left edge for good: the dial writes #finder,
-        # so nothing ever scrolls #stage back. revealRow() scrolls the column
-        # body instead, which is the only axis a row needs.
+        # the right edge — 4 spines and a 148 px column need 334 of 320 — so
+        # applyScroll slides the strip left by that difference and the column
+        # the keyboard is in stays whole. That pan is the *only* thing allowed
+        # to move the strip: scrollIntoView() would scroll #stage instead,
+        # dragging every column out through the left edge for good, because the
+        # dial writes #finder and nothing ever scrolls #stage back. revealRow()
+        # scrolls the column body, which is the only axis a row needs.
         await mount(pg)
         await pg.set_viewport_size({"width": 320, "height": 700})
         await scroll_settled(pg)
@@ -470,16 +578,24 @@ async def main():
           const fr = finder.getBoundingClientRect();
           const focused = document.querySelector(`.col[data-i="${focusCol}"]`)
               .getBoundingClientRect();
-          return {stage: stage.scrollLeft, focusCol,
-                  overflows: Math.round(focused.right - fr.right),
+          const tf = getComputedStyle(strip).transform;
+          const pan = tf && tf !== 'none' ? -new DOMMatrix(tf).m41 : 0;
+          return {stage: stage.scrollLeft, focusCol, pan: Math.round(pan),
+                  clipped: Math.round(focused.right - fr.right),
+                  wouldClip: Math.round(focused.right + pan - fr.right),
                   leftmost: Math.round(Math.min(...[...document.querySelectorAll('.col')]
                       .map(c => c.getBoundingClientRect().left)))};
         })()""")
+        # The strip may sit left of the gutter by the pan and by nothing else:
+        # a scrollIntoView() regression moved it 114 px further and scrolled
+        # #stage to do it, which is the pair this check is watching for.
         check("Reaching a row never scrolls the strip out of the finder",
-              strip_pos["stage"] == 0 and strip_pos["leftmost"] >= -2,
+              strip_pos["stage"] == 0
+              and strip_pos["leftmost"] >= -strip_pos["pan"] - 2,
               json.dumps(strip_pos))
-        check("(the focused column really does reach past the edge, so it has teeth)",
-              strip_pos["overflows"] > 0, json.dumps(strip_pos))
+        check("(the focused column really would reach past the edge, so it has teeth)",
+              strip_pos["wouldClip"] > 0 and strip_pos["clipped"] <= 2,
+              json.dumps(strip_pos))
 
         # The other half of revealRow: it replaced a browser primitive, so the
         # axis a row *does* need still has to work. A short viewport makes a
