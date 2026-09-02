@@ -39,11 +39,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
-- The static/test-ui.py check "Scrolling right folds columns into spines"
-  (expects 5 spines) fails or flakes, likely an animation-timing race. [*]
 
 ## Completed
 
+- The static/test-ui.py check "Scrolling right folds columns into spines"
+  (expects 5 spines) fails or flakes, likely an animation-timing race. [*]
 - Fix all test failures. Split into multiple tasks if necessary. [2]
 - Show version and Git commit hash (if available) via an option in the settings
   menu. [1]
