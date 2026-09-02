@@ -101,7 +101,7 @@ function scrollCursorIntoView() {
   for (let i = 0; i < path.length; i++) {
     const c = colCache.get(path[i]);
     const ri = cursor[i];
-    if (c && ri != null && c.rows[ri]) c.rows[ri].scrollIntoView({ block: "nearest" });
+    if (c && ri != null && c.rows[ri]) revealRow(c.rows[ri]);
   }
 }
 

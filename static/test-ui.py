@@ -438,6 +438,80 @@ async def main():
               json.dumps(fold))
         check("(the dial would have folded past it, so the check has teeth)",
               fold["uncapped"] > fold["focusCol"], json.dumps(fold))
+
+        # Walking in on a narrow screen leaves the focused column reaching past
+        # the right edge — 4 spines and a 148 px column need 334 of 320. The
+        # row the keyboard commits is therefore partly off-screen, and
+        # scrollIntoView() would scroll #stage to show it, dragging every
+        # column out through the left edge for good: the dial writes #finder,
+        # so nothing ever scrolls #stage back. revealRow() scrolls the column
+        # body instead, which is the only axis a row needs.
+        await mount(pg)
+        await pg.set_viewport_size({"width": 320, "height": 700})
+        await scroll_settled(pg)
+        await pg.click('.col[data-i="0"] .row:has-text("deep")')
+        await pg.wait_for_timeout(250)
+        for _ in range(4):                           # in to the leaf column
+            await pg.keyboard.press("ArrowRight")
+            await pg.wait_for_timeout(300)
+        await scroll_settled(pg)
+        strip_pos = await pg.evaluate("""(() => {
+          const fr = finder.getBoundingClientRect();
+          const focused = document.querySelector(`.col[data-i="${focusCol}"]`)
+              .getBoundingClientRect();
+          return {stage: stage.scrollLeft, focusCol,
+                  overflows: Math.round(focused.right - fr.right),
+                  leftmost: Math.round(Math.min(...[...document.querySelectorAll('.col')]
+                      .map(c => c.getBoundingClientRect().left)))};
+        })()""")
+        check("Reaching a row never scrolls the strip out of the finder",
+              strip_pos["stage"] == 0 and strip_pos["leftmost"] >= -2,
+              json.dumps(strip_pos))
+        check("(the focused column really does reach past the edge, so it has teeth)",
+              strip_pos["overflows"] > 0, json.dumps(strip_pos))
+
+        # The other half of revealRow: it replaced a browser primitive, so the
+        # axis a row *does* need still has to work. A short viewport makes a
+        # nine-row column overflow, and End has to bring the last row back.
+        await mount(pg)
+        await pg.set_viewport_size({"width": 320, "height": 260})
+        await pg.click('.col[data-i="0"] .row:has-text("mixed")')
+        await pg.wait_for_timeout(250)
+        await pg.keyboard.press("ArrowRight")
+        await pg.wait_for_timeout(250)
+        await pg.keyboard.press("End")
+        await pg.wait_for_timeout(250)
+        seen = await pg.evaluate("""(() => {
+          const row = document.querySelector('.col.focus .row.cursor');
+          if (!row) return null;
+          const body = row.closest('.col-body');
+          const r = row.getBoundingClientRect(), b = body.getBoundingClientRect();
+          return {above: Math.round(r.top - b.top),
+                  below: Math.round(b.bottom - r.bottom),
+                  scrolled: Math.round(body.scrollTop)};
+        })()""")
+        check("End scrolls the cursor row into view inside its own column",
+              seen and seen["above"] >= -1 and seen["below"] >= -1, json.dumps(seen))
+        check("(the column really had to scroll for it, so the check has teeth)",
+              seen and seen["scrolled"] > 0, json.dumps(seen))
+        end_scroll = seen["scrolled"]
+        await pg.keyboard.press("Home")
+        await pg.wait_for_timeout(250)
+        seen = await pg.evaluate("""(() => {
+          const row = document.querySelector('.col.focus .row.cursor');
+          const body = row.closest('.col-body');
+          const r = row.getBoundingClientRect(), b = body.getBoundingClientRect();
+          return {above: Math.round(r.top - b.top),
+                  below: Math.round(b.bottom - r.bottom),
+                  scrolled: Math.round(body.scrollTop)};
+        })()""")
+        # Not scrollTop 0: `block: "nearest"` aligns the row with the scrollport,
+        # which scrolls the body's own top padding away. Measured identical
+        # against the scrollIntoView() this replaced — the point of the check is
+        # that the arithmetic is the primitive's, not that it improves on it.
+        check("Home brings it back the other way",
+              seen["above"] >= -1 and seen["below"] >= -1
+              and seen["scrolled"] < end_scroll, json.dumps(seen))
         await pg.set_viewport_size({"width": 1500, "height": 900})
         await pg.wait_for_timeout(200)
 

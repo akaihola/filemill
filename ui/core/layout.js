@@ -42,12 +42,14 @@ function layout(keepScroll) {
 
 function applyScroll() {
   if (!path.length) return;
-  /* The dial is the only thing that may move the strip. #stage is overflow
-     hidden, which stops a finger but not scrollIntoView(): now that the strip
-     may be wider than the stage — a column right of focus peeks past the edge
-     rather than folding — an arrow key, the type-ahead, or a click landing on
-     a half-visible row scrolls the stage itself, dragging every column out
-     through the left edge with nothing to put them back. */
+  /* The dial is the only thing that may move the strip, and #stage is where
+     that gets decided: overflow hidden stops a finger, not a programmatic
+     scroll. Now that the strip may be wider than the stage — a column right of
+     focus peeks past the edge instead of folding — anything that scrolls an
+     element into view drags every column out through the left edge, and the
+     dial writes #finder, so nothing would put them back. revealRow keeps the
+     app's own row reveals from doing it; this undoes whatever else did, at the
+     next repaint. */
   if (stage.scrollLeft) stage.scrollLeft = 0;
   const max = Math.max(1, rail.clientWidth - finder.clientWidth);
   const p = Math.min(1, finder.scrollLeft / max);
@@ -80,6 +82,24 @@ function applyScroll() {
   document.getElementById("st-fold").textContent =
     folded ? `${folded}/${n} folded` : "";
   paintTrail();
+}
+
+/* Keep a row visible without letting it move the strip.
+
+   scrollIntoView() is the obvious call and the wrong one here: it scrolls
+   whichever ancestor brings the row into view, and now that a column can reach
+   past the viewport that ancestor is #stage. Measured at 390 px on a chain
+   seven deep: one keystroke moved it 28 px, and a walk in left it at 141 with
+   the first three columns dragged off the left edge — for good, because the
+   dial writes #finder and nothing writes #stage back. A row only ever needs
+   its own column to scroll, and that is vertical. The arithmetic below is
+   `block: "nearest"`: nothing if the row is already inside, otherwise the
+   shorter of the two edges — the same numbers scrollIntoView produced. */
+function revealRow(row) {
+  const body = row.parentElement;                      /* .col-body scrolls */
+  const r = row.getBoundingClientRect(), b = body.getBoundingClientRect();
+  if (r.top < b.top) body.scrollTop += r.top - b.top;
+  else if (r.bottom > b.bottom) body.scrollTop += r.bottom - b.bottom;
 }
 
 finder.addEventListener("scroll", applyScroll, { passive: true });
