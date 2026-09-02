@@ -5,9 +5,10 @@ model, the preview pane, deep links. It knows about **nodes**, and nothing about
 where a node comes from. Everything source-specific lives here, behind the three
 ports declared in [`../core/ports.js`](../core/ports.js).
 
-Both projects in this repository load these files from here — `filemill/` inlines
-them into its single-file bundle, `filemill/` copies them into its package for
-distribution. Neither has its own version to drift.
+Both projects in this repository load these files from here — `static/` inlines
+them into its single-file bundle, and `server/` serves them straight out of its
+package, which is where this directory lives; the repository root's `ui/` is a
+symlink to it. Neither has its own version to drift.
 
 Pick a different set of adapters and the same UI browses something else. That is
 the whole mechanism — there is no framework under it.

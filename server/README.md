@@ -106,15 +106,15 @@ src/filemill/
 ├── vfs.py          # Virtual-filesystem registry + provider protocol
 ├── providers/      # VFS backends: SQLite, JSON, CSV
 ├── static/         # Bundled PWA assets: manifest.json, sw.js, icons/
-└── ui/             # Packaging copy of ../../../ui — do not edit
+└── ui/             # The shared frontend; the repo root's ui/ symlinks here
 ```
 
 Two user interfaces are served side by side during the migration: the HTMX one
 at `/f/` (the default) and the shared Miller-columns one at `/n/`. Only the
-adapters differ between `/n/` and filemill — the source of both is
-[`../ui/`](../ui) in this repository, so there is no version of it to drift.
-`src/filemill/ui/` is a packaging copy refreshed by `tools/sync-ui.py`; see
-[CONTRIBUTING.md](CONTRIBUTING.md).
+adapters differ between `/n/` and the static edition — the source of both is
+`src/filemill/ui/`, which the repository root's [`../ui/`](../ui) symlinks to.
+There is one set of files and no packaging copy, so there is no version of it
+to drift; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 > Renamed from **pykofinder**. `PYKOFINDER_ROOT`, `PYKOFINDER_BIND` and
 > `PYKOFINDER_LIVE` are still honoured, so an existing setup keeps running.

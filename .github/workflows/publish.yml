@@ -34,17 +34,13 @@ jobs:
         with:
           python-version: "3.12"
 
-      # Both copies of ui/ are generated: the static edition inlines it into
-      # index.html, the server edition carries it inside its package so a wheel
-      # is self-contained. Either can go stale without anything else noticing,
-      # and index.html is committed, so a stale one would be published.
+      # index.html is generated from ui/ and committed, so it can go stale
+      # without anything else noticing — and a stale one would be published.
+      # The server edition needs no matching check: ui/ is a symlink into its
+      # package, so there is no second copy that could drift.
       - name: The committed bundle matches ui/
         run: ./build-index.py --check
         working-directory: static
-
-      - name: The packaged copy matches ui/
-        run: ./tools/sync-ui.py --check
-        working-directory: server
 
       - name: Install Playwright
         run: |

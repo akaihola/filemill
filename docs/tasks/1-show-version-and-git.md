@@ -20,5 +20,5 @@ available.
   attribute omitted). `shell.js` reads `document.documentElement.dataset.commit`
   and appends the hash when present.
 - **Static build**: no `data-commit` on `<html>` → version alone. No hash is
-  baked into generated artifacts, so `build-index.py --check` and
-  `sync-ui.py --check` don't churn per commit.
+  baked into generated artifacts, so `build-index.py --check` doesn't churn
+  per commit.
