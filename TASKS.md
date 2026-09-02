@@ -30,6 +30,13 @@ Rules for TASKS.md usage are at the bottom of the file.
   column by column using the left arrow key, the `.bun` column doesn't expand
   when I reach it. It does expand if I navigate to it using the mouse instead.
 - make PDF previews full frame just like HTML and Markdown rendered previews
+- static/test-rich.py's two offline checks fail on this machine, in both
+  bundle and --dev mode: "Offline, a Markdown file still shows its source"
+  and "…and says why it is not rendered". Confirmed pre-existing at b96d84e,
+  so it is not a regression from any recent change — the sandbox has no
+  network, so the esm.sh import should throw and fall back to pv-note plus
+  PreviewLocal, and something about that path no longer lands in time. The
+  other 13 checks pass, including the stubbed-CDN ones. [*]
 
 ## In progress
 
