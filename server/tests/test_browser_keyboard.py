@@ -78,8 +78,31 @@ def browser_root(tmp_path: Path) -> Path:
     return tmp_path
 
 
+# Long enough that measure() returns its 380 px ceiling for every column, which
+# is the content browser_root deliberately does not have: its 271, 176 and 148 px
+# columns are what makes the peek in
+# test_mobile_folder_tap_keeps_the_touched_column_whole_and_peeks_the_new_one
+# reachable at all, and widening them would delete a contract that is still
+# right. Wide content therefore gets a fixture of its own. Six levels because
+# landscape needs the depth: at 568 px the strip only reaches past the touched
+# column once five ancestors have folded to spines.
+_WIDE_NAMES = [f"level-{i}-" + "w" * 36 for i in range(6)]
+
+
 @pytest.fixture()
-def live_server(browser_root: Path):
+def wide_root(tmp_path: Path) -> Path:
+    """A chain of long-named folders, one file beside each."""
+    current = tmp_path
+    for name in _WIDE_NAMES:
+        current = current / name
+        current.mkdir()
+        (current / f"note-{name}.md").write_text(f"# {name}\n")
+    return tmp_path
+
+
+@contextmanager
+def _serve(root: Path):
+    """Run `filemill <root>` on a free port for the duration of the block."""
     if not os.environ.get("PLAYWRIGHT_BROWSERS_PATH"):
         pytest.skip("PLAYWRIGHT_BROWSERS_PATH is not set")
 
@@ -90,7 +113,7 @@ def live_server(browser_root: Path):
         "uv",
         "run",
         "filemill",
-        str(browser_root),
+        str(root),
         "--bind",
         "127.0.0.1",
         "--port",
@@ -144,6 +167,18 @@ def live_server(browser_root: Path):
         except subprocess.TimeoutExpired:
             proc.kill()
             proc.wait(timeout=5)
+
+
+@pytest.fixture()
+def live_server(browser_root: Path):
+    with _serve(browser_root) as base_url:
+        yield base_url
+
+
+@pytest.fixture()
+def wide_live_server(wide_root: Path):
+    with _serve(wide_root) as base_url:
+        yield base_url
 
 
 _FIND_LINK = """() => {
@@ -379,6 +414,34 @@ _FOLD_METRICS = """() => {
             && c.classList.contains('spine')).map(c => +c.dataset.i),
         touchedWidth: Math.round(touched.getBoundingClientRect().width),
         naturalWidth: widths[focusCol],
+    };
+}"""
+
+# The second half of the same rule, and the half the cap cannot deliver: the
+# touched column has to be *on screen*, not merely unfolded. Each folded
+# ancestor still costs a spine and a gutter, so with long names the column under
+# the finger ran off the right edge and #stage clipped it — the row that had
+# just been tapped, cut in half. applyScroll answers by sliding the strip left,
+# and `unpannedOverflow` is where that column would sit without the slide, so a
+# fixture whose columns happen to fit can never make these checks vacuous.
+_TOUCHED_METRICS = """() => {
+    const fr = finder.getBoundingClientRect();
+    const col = document.querySelector(`.col[data-i="${focusCol}"]`);
+    const r = col.getBoundingClientRect();
+    const row = col.querySelector('.row.sel');
+    const rr = row && row.getBoundingClientRect();
+    const tf = getComputedStyle(strip).transform;
+    const pan = tf && tf !== 'none' ? -new DOMMatrix(tf).m41 : 0;
+    return {
+        focusCol: focusCol,
+        folded: folded,
+        pan: Math.round(pan),
+        spinesAtOrRight: [...document.querySelectorAll('.col.spine')]
+            .map(c => +c.dataset.i).filter(i => i >= focusCol),
+        touchedWhole: r.left >= fr.left - 2 && r.right <= fr.right + 2,
+        rowWhole: Boolean(rr) && rr.left >= fr.left - 2 && rr.right <= fr.right + 2,
+        unpannedOverflow: Math.round(r.right + pan - fr.right),
+        stageScroll: stage.scrollLeft,
     };
 }"""
 
@@ -664,6 +727,79 @@ def test_mobile_landscape_folder_tap_never_folds_touched_column(live_server: str
         assert m["touchedWidth"] >= m["naturalWidth"] - 2, (
             f"touched column painted {m['touchedWidth']} of {m['naturalWidth']} px"
         )
+
+
+def _tap_wide_chain(page, levels: int) -> None:
+    """Walk `levels` folders down the long-named chain, tapping each in turn."""
+    for col, name in enumerate(_WIDE_NAMES[:levels]):
+        _ui_tap(page, col, name)
+    _expect_ui_column(page, levels)
+    _dial_settled(page)
+
+
+@pytest.mark.integration
+def test_mobile_portrait_wide_folder_tap_keeps_the_touched_row_on_screen(
+    wide_live_server: str,
+):
+    """Long names, phone upright: the tapped row must still be readable.
+
+    The fold cap kept the touched column out of the spines and stopped there,
+    which is not the same as keeping it visible. Measured at 390 px before the
+    pan: two levels in, 292 px of a 376 px column sat inside the viewport and
+    #stage clipped the rest — the right-hand side of the row the finger had just
+    hit. Every further level cost another 44 px to the ancestor it folded, down
+    to 116 px of the column at six.
+    """
+    with _ui_page(wide_live_server, mobile=True) as page:
+        _tap_wide_chain(page, 3)
+
+        m = page.evaluate(_TOUCHED_METRICS)
+        assert m["focusCol"] == 2
+        assert m["unpannedOverflow"] > 0, (
+            "the touched column fits here unaided — the check is vacuous "
+            f"(overflow {m['unpannedOverflow']}px, pan {m['pan']}px)"
+        )
+        assert m["spinesAtOrRight"] == [], (
+            f"columns {m['spinesAtOrRight']} folded at or right of the touched one"
+        )
+        assert m["touchedWhole"], (
+            f"the touched column is clipped despite a {m['pan']}px pan"
+        )
+        assert m["rowWhole"], "the tapped row is cut off at the viewport edge"
+        # The pan is the strip's own transform, never a scroll of #stage: that
+        # one has no way back, which is what the pin in applyScroll is for.
+        assert m["stageScroll"] == 0, "the pan scrolled #stage instead of moving the strip"
+
+
+@pytest.mark.integration
+def test_mobile_landscape_wide_folder_tap_keeps_the_touched_row_on_screen(
+    wide_live_server: str,
+):
+    """The same rule with the phone turned sideways.
+
+    568 px buys four more levels than 390 does before the strip reaches past the
+    touched column, so this walks the chain to its end rather than stopping at
+    three — the depth is what makes the case, not the orientation.
+    """
+    with _ui_page(
+        wide_live_server, mobile=True, viewport=MOBILE_LANDSCAPE
+    ) as page:
+        _tap_wide_chain(page, len(_WIDE_NAMES))
+
+        m = page.evaluate(_TOUCHED_METRICS)
+        assert m["focusCol"] == len(_WIDE_NAMES) - 1
+        assert m["unpannedOverflow"] > 0, (
+            "the touched column fits here unaided — the check is vacuous "
+            f"(overflow {m['unpannedOverflow']}px, pan {m['pan']}px)"
+        )
+        assert m["spinesAtOrRight"] == [], (
+            f"columns {m['spinesAtOrRight']} folded at or right of the touched one"
+        )
+        assert m["touchedWhole"], (
+            f"the touched column is clipped despite a {m['pan']}px pan"
+        )
+        assert m["rowWhole"], "the tapped row is cut off at the viewport edge"
+        assert m["stageScroll"] == 0, "the pan scrolled #stage instead of moving the strip"
 
 
 @pytest.mark.integration

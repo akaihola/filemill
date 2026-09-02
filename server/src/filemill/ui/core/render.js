@@ -115,7 +115,15 @@ function render(keepScroll) {
       const ri = c.kids.findIndex(k => k.name === sel[i]);
       if (ri >= 0) cursor[i] = ri;
     }
-    widths.push(c.width);
+    /* No column may be wider than the stage it sits on. The fold cap keeps the
+       touched column unfolded and applyScroll's pan slides it into view, but
+       neither can show 380 px of names in the 355 a 375 px phone has to offer —
+       the row would still lose its right edge. Clamped here rather than in
+       measure() because columnFor caches the built column: a width measured
+       against the old viewport would survive a rotation, while `widths` is
+       rebuilt by every render, including the one `resize` fires. */
+    const w = Math.max(COL_MIN, Math.min(c.width, stage.clientWidth - 2 * GUTTER()));
+    widths.push(w);
 
     /* `sorting` goes in the class string rather than on classList, because this
        write replaces the whole attribute and would drop it a frame later. */
@@ -124,7 +132,7 @@ function render(keepScroll) {
       (node.metaLoading ? " sorting" : ""));
     set(c.el.dataset, "depth", String(Math.min(5, Math.max(0, focusCol - i))));
     set(c.el.dataset, "i", String(i));
-    set(c.el.style, "width", c.width + "px");
+    set(c.el.style, "width", w + "px");
 
     if (c.dotFor !== sel[i]) {                 /* spine icon of the chosen child */
       const chosen = c.kids.find(k => k.name === sel[i]);
