@@ -507,9 +507,10 @@ def test_nothing_is_fetched_from_a_cdn(page):
     docstring is actually about. Source files now go through neither — they are
     coloured in the page by core/syntax.js — so they are the easiest half to
     keep honest and are checked here too. `ui/adapters/preview-rich.js` does lazy-load a
-    renderer from a CDN, and it is the one adapter `tools/sync-ui.py` does not
-    vendor into the server edition. Vendoring it would break this test, which
-    is the point of the test.
+    renderer from a CDN, and it is the one adapter the server edition never
+    loads: `_UI_ADAPTERS` omits it, and `wheel-exclude` in `pyproject.toml`
+    keeps it out of the wheel. Loading it would break this test, which is the
+    point of the test.
     """
     external = []
     page.on(
