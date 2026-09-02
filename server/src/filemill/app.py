@@ -773,7 +773,7 @@ except OSError:
     _COMMIT = ""
 
 
-def _ui_shell(state, base: str):
+def _ui_shell(state, base: str, hidden: bool = False):
     """The app shell for the shared UI. Deliberately almost empty.
 
     The chrome is built by ui/core/shell.js so that this page and filemill's
@@ -809,6 +809,7 @@ def _ui_shell(state, base: str):
         data_filemill=state.view,
         data_layout=state.layout,
         **({"data_commit": _COMMIT} if _COMMIT else {}),
+        **({"data_hidden": "show"} if hidden else {}),
     )
 
 
@@ -1080,7 +1081,7 @@ def resource(request, path: str = ""):
         # layout still applies: no-columns gives the one pane, and the column
         # layouts give the finder opened at that directory.
         if state.wants_columns:
-            return _ui_shell(state, "/")
+            return _ui_shell(state, "/", request.query_params.get("hidden") == "show")
         return _page_html([list_column(target, ROOT, col_index=0)], state)
 
     if vpath:
@@ -1100,7 +1101,7 @@ def resource(request, path: str = ""):
         # The columns are the shared UI's, not the HTMX shell's. The client
         # walks to this path and asks /api/preview for the representation, so
         # the document is not rendered twice.
-        return _ui_shell(state, "/")
+        return _ui_shell(state, "/", request.query_params.get("hidden") == "show")
     return _document_page(rel, state, _representation_html(target, rel, state, vpath))
 
 
