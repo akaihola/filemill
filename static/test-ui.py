@@ -87,7 +87,10 @@ window.__mk = (nbig) => {
     D('mixed', [D('sub',[F('a.py', PY_SRC),
                          // 11 700 chars, so the preview is asked for far
                          // more than the 8 000 it used to clip at.
-                         F('long.py', PY_SRC.repeat(300))]),
+                         F('long.py', PY_SRC.repeat(300)),
+                         // One byte over TEXT_MAX: the ceiling that replaced
+                         // the 8 000-char clip, so it needs a check of its own.
+                         F('huge.py', 'x'.repeat(512 * 1024 + 1))]),
                 F('.dotfile','h'),
                 // Auto-preview rungs: README beats README.* beats index.html.
                 // Each folder also holds the losing names, so only the
@@ -603,6 +606,16 @@ async def main():
               f"{len(whole)} chars, expected {len(PY_SRC) * 300}")
         check("…and is coloured to its last line, not just the first 8 000 chars",
               kw == 600, f"{kw} hl-kw spans, expected 600")
+        # …and the ceiling that replaced the clip. Removing the 8 000-char cut
+        # only made the 512 KB gate load-bearing, so one byte over it must still
+        # decline rather than render — otherwise "whole or absent" has no second
+        # half and a 50 MB .sql renders whole.
+        await pg.click('.col[data-i="2"] .row:has-text("huge.py")')
+        await pg.wait_for_timeout(500)
+        body = await pg.inner_text("#pv-content")
+        check("One byte over TEXT_MAX is declined, not rendered",
+              not await pg.is_visible(".pv-text")
+              and "No inline preview" in body, body[:80])
         await pg.click('.col[data-i="1"] .row:has-text("note.md")')
         await pg.wait_for_timeout(300)
         check("A file with no language it knows stays plain",
