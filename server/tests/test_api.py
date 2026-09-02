@@ -247,6 +247,30 @@ def test_the_vendored_ui_is_whole(client, tmp_root: Path):
         assert client.get(f"/ui/adapters/{name}").status_code == 200, name
 
 
+def test_the_wheel_excludes_only_what_the_shell_never_loads():
+    """`wheel-exclude` is the only thing standing between the shell and a broken
+    wheel, now that `ui/` is the package's own directory rather than a copy of
+    it. The test above cannot see this: it runs against the source tree, where
+    an over-excluded file is present either way — the omission would only show
+    up in an installed wheel, as a blank page.
+    """
+    import tomllib
+
+    pkg = Path(app_module.__file__).parent
+    cfg = tomllib.loads((pkg.parent.parent / "pyproject.toml").read_text())
+    excluded = set(cfg["tool"]["uv"]["build-backend"]["wheel-exclude"])
+
+    # Everything _ui_shell() asks the browser for, plus the font styles.css names.
+    loaded = {f"ui/core/{n}" for n in app_module._UI_CORE}
+    loaded |= {f"ui/adapters/{n}" for n in app_module._UI_ADAPTERS}
+    loaded |= {"ui/core/styles.css", "ui/vendor/seti-map.js", "ui/vendor/seti.woff"}
+    assert not excluded & loaded, f"the wheel would omit: {sorted(excluded & loaded)}"
+
+    # A typo would exclude nothing and pass the check above in silence.
+    for rel in excluded:
+        assert (pkg / rel).is_file(), rel
+
+
 # ── the old UI is untouched ──────────────────────────────────────────────────
 
 
