@@ -493,6 +493,70 @@ async def main():
         check("(it really would have run past the edge, so the check has teeth)",
               touched["wouldClip"] > 0, json.dumps(touched))
 
+        # Turning the phone is the case where the width clamp can lie. #stage's
+        # width is --stage-w, which layout() writes *after* render() has chosen
+        # the widths, so clamping against the stage measured the viewport the
+        # user just rotated away from: 380 px columns on a 375 px screen, where
+        # the pan can only choose which edge to lose. Measured before the fix,
+        # from 568 px landscape to 375 px portrait: the tapped row sat 10 px
+        # past the right edge until the next render healed it. #finder is the
+        # live number and the one layout() reads.
+        await mount(pg)
+        await pg.set_viewport_size({"width": 568, "height": 320})
+        await scroll_settled(pg)
+        await pg.click('.col[data-i="0"] .row:has-text("wide")')
+        await pg.wait_for_timeout(250)
+        for i in range(3):
+            await pg.click(f'.col[data-i="{i + 1}"] .row:has-text("level-{i}-")')
+            await pg.wait_for_timeout(250)
+        await scroll_settled(pg)
+        await pg.set_viewport_size({"width": 375, "height": 812})   # rotate
+        await pg.wait_for_timeout(400)
+        await scroll_settled(pg)
+        rotated = await pg.evaluate("""(() => {
+          const fr = finder.getBoundingClientRect();
+          const col = document.querySelector(`.col[data-i="${focusCol}"]`);
+          const r = col.getBoundingClientRect();
+          const row = col.querySelector('.row.sel').getBoundingClientRect();
+          const g = parseInt(getComputedStyle(document.documentElement)
+              .getPropertyValue('--gutter'));
+          return {focusCol, widths: widths.map(Math.round),
+                  cap: finder.clientWidth - 2 * g,
+                  clipped: Math.round(r.right - fr.right),
+                  rowClipped: Math.round(row.right - fr.right)};
+        })()""")
+        check("Rotating to a narrower screen re-clamps the columns to it, so the "
+              "tapped row is not left clipped",
+              rotated["clipped"] <= 2 and rotated["rowClipped"] <= 2
+              and max(rotated["widths"]) <= rotated["cap"], json.dumps(rotated))
+
+        # Desktop is the other half of the contract: at a width where the strip
+        # up to focus fits, nothing pans and nothing is clamped, so the dial
+        # behaves exactly as it did before any of this.
+        await mount(pg)
+        await pg.set_viewport_size({"width": 1500, "height": 900})
+        await scroll_settled(pg)
+        await pg.click('.col[data-i="0"] .row:has-text("wide")')
+        await pg.wait_for_timeout(250)
+        for i in range(3):
+            await pg.click(f'.col[data-i="{i + 1}"] .row:has-text("level-{i}-")')
+            await pg.wait_for_timeout(250)
+        await scroll_settled(pg)
+        desktop = await pg.evaluate("""(() => {
+          const fr = finder.getBoundingClientRect();
+          const col = document.querySelector(`.col[data-i="${focusCol}"]`);
+          const r = col.getBoundingClientRect();
+          const tf = getComputedStyle(strip).transform;
+          const pan = tf && tf !== 'none' ? -new DOMMatrix(tf).m41 : 0;
+          return {focusCol, pan: Math.round(pan), widths: widths.map(Math.round),
+                  natural: Math.max(...widths.map(Math.round)),
+                  whole: r.left >= fr.left - 2 && r.right <= fr.right + 2};
+        })()""")
+        check("On a desktop-width screen the strip never pans and the columns "
+              "keep their natural width",
+              desktop["pan"] == 0 and desktop["whole"]
+              and desktop["natural"] == 380, json.dumps(desktop))
+
         # Walking in on a narrow screen leaves the focused column reaching past
         # the right edge — 4 spines and a 148 px column need 334 of 320 — so
         # applyScroll slides the strip left by that difference and the column

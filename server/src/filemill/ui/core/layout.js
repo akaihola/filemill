@@ -64,13 +64,13 @@ function applyScroll() {
   /* the strip lays out left to right from the stage's edge, so walking it with
      the widths this pass is about to write is where the focused column's own
      box comes from — arithmetic, not a rect read on every scroll event */
-  const g = GUTTER();
+  const g = GUTTER(), sp = SPINE();   /* both read a computed style — once, not per column */
   let x = g, focusLeft = 0, focusRight = 0;
   [...strip.querySelectorAll(".col")].forEach((col, i) => {
     col.classList.toggle("spine", i < folded);
     col.classList.toggle("folding", i === folded && folded < n);
-    const w = i < folded ? SPINE()
-            : i === folded ? Math.round(widths[i] + (SPINE() - widths[i]) * t)
+    const w = i < folded ? sp
+            : i === folded ? Math.round(widths[i] + (sp - widths[i]) * t)
             : widths[i];
     if (i === focusCol) { focusLeft = x; focusRight = x + w; }
     x += w + g;
@@ -104,7 +104,7 @@ function applyScroll() {
   /* last 1%: slide the spine strip itself off the left edge. Widening the strip
      by the same amount keeps the preview's flex-grow filling to the right edge. */
   const tail  = p > 0.99 ? (p - 0.99) / 0.01 : 0;
-  const shift = tail * n * (SPINE() + GUTTER()) + pan;
+  const shift = tail * n * (sp + g) + pan;
   set(strip.style, "minWidth", (finder.clientWidth + shift) + "px");
   set(strip.style, "transform", `translateX(${-shift}px)`);
 

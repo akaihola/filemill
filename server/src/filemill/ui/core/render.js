@@ -121,8 +121,17 @@ function render(keepScroll) {
        the row would still lose its right edge. Clamped here rather than in
        measure() because columnFor caches the built column: a width measured
        against the old viewport would survive a rotation, while `widths` is
-       rebuilt by every render, including the one `resize` fires. */
-    const w = Math.max(COL_MIN, Math.min(c.width, stage.clientWidth - 2 * GUTTER()));
+       rebuilt by every render, including the one `resize` fires.
+
+       Measured against #finder, not #stage, because the stage is one render
+       behind: its width is `--stage-w`, which layout() writes *after* this
+       loop has already chosen the widths. Turning a phone from 568 px to 375
+       therefore clamped this render against 568 — 380 px columns on a 375 px
+       screen, and the pan can only choose which edge to lose, so the tapped
+       row sat 10 px past the right one until the next render healed it.
+       #finder is `flex: 1` in the viewport, so it is the live number, and it
+       is the one layout() reads to set --stage-w in the first place. */
+    const w = Math.max(COL_MIN, Math.min(c.width, finder.clientWidth - 2 * GUTTER()));
     widths.push(w);
 
     /* `sorting` goes in the class string rather than on classList, because this
