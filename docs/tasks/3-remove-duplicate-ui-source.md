@@ -69,16 +69,6 @@ commit so the comparison isolates this change:
   fallback checks, pre-existing and unrelated — see the `test-rich` item in
   `TASKS.md`.
 
-## Note for whoever reads TASKS.md next
-
-The first backlog item — "Migrate the 19 legacy htmx browser tests in
-`server/tests/test_browser_keyboard.py` … they fail structurally" — appears to
-be stale. A full `uv run pytest` on `main` @ b96d84e during this task returned
-**867 passed, 0 failed** in under four minutes, with no failures in that file.
-`docs/tasks/2-fix-all-test-failures.md` says as much in its closing note. Left
-in place rather than moved, since verifying and retiring it belongs to whoever
-owns that item.
-
 ## Caveat
 
 A checkout needs symlink support. That is the default everywhere except Windows

@@ -4,11 +4,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [*] Migrate the 19 legacy htmx browser tests in
-  server/tests/test_browser_keyboard.py to the shared UI. They drive an htmx
-  page `/` no longer serves, so they fail structurally; causes and test list in
-  docs/tasks/2-fix-all-test-failures.md.
-
 - Use one shared client side implementation for rendering Markdown fenced code
   blocks. Make sure the implementation flows line-wrapped paragraphs correctly,
   i.e. doesn't insert line feeds in the rendered HTML at each newline in the
@@ -54,6 +49,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Completed
 
+- [*] Migrate the 19 legacy htmx browser tests in
+  server/tests/test_browser_keyboard.py to the shared UI. Ported in e89f974;
+  the file's 31 tests all pass. Details in
+  docs/tasks/2-fix-all-test-failures.md.
 - [3] Get rid of duplicate vendored code. Simply use the same source files for
   ui/ and server/.
 - [*] Full file highlighting: don't clip at 8000 chars. Answered: no slicing — a
