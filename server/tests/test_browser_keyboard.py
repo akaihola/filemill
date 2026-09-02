@@ -256,14 +256,19 @@ def _wait_for_finder_scroll(page) -> None:
 # 0–100% dial that folds left columns to spines (ui/core/layout.js), so "the
 # scroll fired" becomes "the dial engaged" (scrollLeft > 0), "minimal scroll"
 # becomes layout()'s own least-folding target, and "nothing is flushed
-# off-screen" becomes "every column, spine or not, sits inside the finder
-# viewport".
+# off-screen" becomes "every column starts inside the finder viewport, and the
+# ones up to the focused column sit wholly inside it".
 
 MOBILE_VIEWPORT = {"width": 390, "height": 844}
+# Not the same device rotated (844x390): this fixture's columns are 271, 176
+# and 148 px wide, so at 844 the strip never overflows past the focused column
+# and a fold-cap check there would assert nothing. 568x320 is a small phone in
+# landscape — where the fold actually reaches the column under the finger.
+MOBILE_LANDSCAPE = {"width": 568, "height": 320}
 
 
 @contextmanager
-def _ui_page(base_url: str, mobile: bool = False):
+def _ui_page(base_url: str, mobile: bool = False, viewport: dict | None = None):
     """A page on the shared UI at `/`, mounted and painted.
 
     No proxy is handed to Chromium: the shared UI fetches nothing from a CDN
@@ -274,7 +279,7 @@ def _ui_page(base_url: str, mobile: bool = False):
         browser = p.chromium.launch(headless=True)
         if mobile:
             context = browser.new_context(
-                viewport=MOBILE_VIEWPORT, is_mobile=True, has_touch=True
+                viewport=viewport or MOBILE_VIEWPORT, is_mobile=True, has_touch=True
             )
             page = context.new_page()
         else:
@@ -303,12 +308,11 @@ def _dial_settled(page) -> None:
 def _ui_tap(page, col: int, name: str) -> None:
     """Tap the entry *name* in column *col*, unfolding the column first.
 
-    On a 390 px viewport layout() folds every column the preview pushes out,
-    including the one just tapped — TASKS.md's first backlog item wants that
-    changed. A folded column hides its rows and advertises "click to unfold",
-    so the gesture a phone user actually makes is spine first, row second, and
-    this helper makes the same one. On an unfolded column the spine step is a
-    no-op.
+    Since layout() stopped folding past the focused column, nothing a test taps
+    arrives folded — not even the root at first paint. The spine step stays
+    because a folded column hides its rows and advertises "click to unfold", so
+    it is the gesture a phone user makes after scrolling the dial by hand, and
+    on an unfolded column it costs one `count()` and does nothing.
     """
     _dial_settled(page)
     sel = f'.col[data-i="{col}"]'
@@ -324,26 +328,57 @@ def _expect_ui_column(page, col: int) -> None:
     page.wait_for_selector(f'.col[data-i="{col}"]', timeout=20000)
 
 
-# layout()'s contract, evaluated in the page: the dial should rest at the least
-# k where the k-folded strip plus the preview's target width fits the stage,
-# and nothing — spine or unfolded column — may sit outside the finder viewport.
+# layout()'s contract, evaluated in the page: the dial rests at the least k
+# where the k-folded strip plus the preview's target width fits the stage —
+# but never past the focused column, so `expected` carries the same cap.
+#
+# Containment splits along that cap. Everything up to the focused column is
+# what the layout still promises to fit, so it must sit wholly inside the
+# finder; a column to the right of focus may run off the edge once the touched
+# one holds its full width, and what it owes the reader is a left edge inside
+# the viewport — the peek that says the strip scrolls.
 _REVEAL_METRICS = """() => {
     const fr = finder.getBoundingClientRect();
     let k = 0;
     while (k < path.length && stripSpan(k) + previewTarget() > finder.clientWidth) k++;
-    const expected = Math.round(k * foldUnit() * range());
-    const cols = [...document.querySelectorAll('.col')]
-        .map(c => c.getBoundingClientRect());
+    const expected = Math.round(Math.min(focusCol, k) * foldUnit() * range());
+    const cols = [...document.querySelectorAll('.col')];
+    const boxes = cols.map(c => c.getBoundingClientRect());
     const pv = document.getElementById('preview');
     const pr = pv && pv.getBoundingClientRect();
     return {
         scrollLeft: finder.scrollLeft,
         expected: expected,
         delta: Math.abs(finder.scrollLeft - expected),
-        colsWithin: cols.every(r => r.left >= fr.left - 2 && r.right <= fr.right + 2),
-        firstColVisible: cols.length > 0 && cols[0].right > fr.left,
+        withinUpToFocus: cols.every((c, i) => +c.dataset.i > focusCol
+            || (boxes[i].left >= fr.left - 2 && boxes[i].right <= fr.right + 2)),
+        everyColStartsInside: boxes.every(r => r.left >= fr.left - 2
+            && r.left <= fr.right - 2),
+        firstColVisible: boxes.length > 0 && boxes[0].right > fr.left,
         previewStartVisible: Boolean(pr) && pr.left >= fr.left - 2
             && pr.left <= fr.right - 2,
+    };
+}"""
+
+
+# The rule a tap has to obey: the dial may fold what the user has walked past,
+# never the column under their finger nor the one that tap just opened.
+# `uncapped` re-runs layout()'s raw while-loop, so a check can assert the case
+# still has teeth — that the dial would have folded past focus if left alone.
+_FOLD_METRICS = """() => {
+    let uncapped = 0;
+    while (uncapped < path.length &&
+           stripSpan(uncapped) + previewTarget() > finder.clientWidth) uncapped++;
+    const cols = [...document.querySelectorAll('.col')];
+    const touched = cols.find(c => +c.dataset.i === focusCol);
+    return {
+        folded: folded,
+        focusCol: focusCol,
+        uncapped: uncapped,
+        spinesAtOrRight: cols.filter(c => +c.dataset.i >= focusCol
+            && c.classList.contains('spine')).map(c => +c.dataset.i),
+        touchedWidth: Math.round(touched.getBoundingClientRect().width),
+        naturalWidth: widths[focusCol],
     };
 }"""
 
@@ -524,7 +559,10 @@ def test_mobile_folder_click_reveals_new_column_without_flushing_left(
             f"dial at {metrics['scrollLeft']:.0f}px, layout()'s minimum is "
             f"{metrics['expected']:.0f}px"
         )
-        assert metrics["colsWithin"], "a column is clipped outside the viewport"
+        assert metrics["withinUpToFocus"], (
+            "a column up to the touched one is clipped outside the viewport"
+        )
+        assert metrics["everyColStartsInside"], "a column starts past the right edge"
         assert metrics["firstColVisible"], "the root column was flushed off-screen"
 
 
@@ -554,7 +592,78 @@ def test_mobile_file_click_reveals_preview_without_flushing_left(
             f"{metrics['expected']:.0f}px"
         )
         assert metrics["previewStartVisible"], "the preview starts off-screen"
-        assert metrics["colsWithin"], "a column is clipped outside the viewport"
+        assert metrics["withinUpToFocus"], (
+            "a column up to the touched one is clipped outside the viewport"
+        )
+
+
+@pytest.mark.integration
+def test_mobile_portrait_folder_tap_never_folds_touched_or_right_columns(
+    live_server: str,
+):
+    """Tapping a folder condenses only what is left of it — phone upright.
+
+    layout() grew its fold count until the strip plus the preview fit, bounded
+    by nothing but path.length, so on a 390 px screen this chain folded all
+    three columns: the one under the finger, and the one that very tap had just
+    opened. A tap is the user pointing at a column; answering it by hiding the
+    column, or its result, is the bug.
+    """
+    with _ui_page(live_server, mobile=True) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _ui_tap(page, 1, "docs")
+        _expect_ui_column(page, 2)
+        _dial_settled(page)
+
+        m = page.evaluate(_FOLD_METRICS)
+        assert m["focusCol"] == 1
+        assert m["uncapped"] > m["focusCol"], (
+            "the dial had no reason to fold past focus here — the check is "
+            f"vacuous (uncapped {m['uncapped']}, focus {m['focusCol']})"
+        )
+        assert m["folded"] <= m["focusCol"], (
+            f"{m['folded']} columns folded with focus on {m['focusCol']}"
+        )
+        assert m["spinesAtOrRight"] == [], (
+            f"columns {m['spinesAtOrRight']} folded at or right of the touched one"
+        )
+        # not ==: at rest the focused column is the one mid-fold, at t ~ 0.002,
+        # so sub-pixel scroll rounding can paint it a pixel under its natural
+        # width. A spine would be 34 px, which no tolerance hides.
+        assert m["touchedWidth"] >= m["naturalWidth"] - 2, (
+            f"touched column painted {m['touchedWidth']} of {m['naturalWidth']} px"
+        )
+
+
+@pytest.mark.integration
+def test_mobile_landscape_folder_tap_never_folds_touched_column(live_server: str):
+    """The same rule with the phone turned sideways.
+
+    Here the fold reached the *parent* — the column holding the row that was
+    tapped — rather than the one it opened, which is the second half of the
+    same report. One tap is enough to show it: at 568 px the root column plus
+    the preview already overflow.
+    """
+    with _ui_page(live_server, mobile=True, viewport=MOBILE_LANDSCAPE) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _expect_ui_column(page, 1)
+        _dial_settled(page)
+
+        m = page.evaluate(_FOLD_METRICS)
+        assert m["focusCol"] == 0
+        assert m["uncapped"] > m["focusCol"], (
+            "the dial had no reason to fold past focus here — the check is "
+            f"vacuous (uncapped {m['uncapped']}, focus {m['focusCol']})"
+        )
+        assert m["folded"] == 0, (
+            f"{m['folded']} columns folded with the root column touched"
+        )
+        assert m["spinesAtOrRight"] == [], (
+            f"columns {m['spinesAtOrRight']} folded at or right of the touched one"
+        )
+        assert m["touchedWidth"] >= m["naturalWidth"] - 2, (
+            f"touched column painted {m['touchedWidth']} of {m['naturalWidth']} px"
+        )
 
 
 @pytest.mark.integration
@@ -608,24 +717,50 @@ def test_mobile_file_restore_runtime_scroll_position_is_stable(
 
 
 @pytest.mark.integration
-def test_mobile_folder_navigation_reveals_target_column_completely_at_runtime(
+def test_mobile_folder_tap_keeps_the_touched_column_whole_and_peeks_the_new_one(
     live_server: str,
 ):
+    """What a tap owes the reader on a phone, now that focus cannot fold.
+
+    This asserted the *opened* column was wholly visible, which the htmx shell
+    delivered by panning. It is unreachable once the touched column keeps its
+    full width: 271 px of root plus 176 of `my-knowledge` and their gutters
+    come to 467 on a 390 px screen. Something has to overflow, and the choice
+    the fold cap makes is that it will not be the column under the finger. What
+    the new column gets instead is a left edge inside the viewport — the peek
+    that says the strip scrolls, and the affordance ISSUES.md #43 asks for.
+    """
     with _ui_page(live_server, mobile=True) as page:
         _ui_tap(page, 0, "my-knowledge")
         _expect_ui_column(page, 1)
 
         _dial_settled(page)
-        fully_visible = page.evaluate(
+        geometry = page.evaluate(
             """() => {
                 const fr = finder.getBoundingClientRect();
-                const col = document.querySelector('.col[data-i="1"]');
-                if (!col) return null;
-                const r = col.getBoundingClientRect();
-                return r.left >= fr.left - 2 && r.right <= fr.right + 2;
+                const box = i => {
+                    const c = document.querySelector(`.col[data-i="${i}"]`);
+                    return c && c.getBoundingClientRect();
+                };
+                const touched = box(focusCol), opened = box(focusCol + 1);
+                if (!touched || !opened) return null;
+                return {
+                    touchedWhole: touched.left >= fr.left - 2
+                        && touched.right <= fr.right + 2,
+                    touchedFolded: document
+                        .querySelector(`.col[data-i="${focusCol}"]`)
+                        .classList.contains('spine'),
+                    openedStartsInside: opened.left >= fr.left - 2
+                        && opened.left <= fr.right - 2,
+                };
             }"""
         )
-        assert fully_visible is True
+        assert geometry is not None
+        assert not geometry["touchedFolded"], "the touched column folded"
+        assert geometry["touchedWhole"], "the touched column is clipped"
+        assert geometry["openedStartsInside"], (
+            "the opened column starts past the right edge — no peek to scroll to"
+        )
 
 
 @pytest.mark.integration
@@ -904,5 +1039,8 @@ def test_mobile_scroll_runtime_minimal_reveal_assertion(live_server: str):
 
         _dial_settled(page)
         metrics = page.evaluate(_REVEAL_METRICS)
-        assert metrics["colsWithin"], "a column is clipped outside the viewport"
+        assert metrics["withinUpToFocus"], (
+            "a column up to the touched one is clipped outside the viewport"
+        )
+        assert metrics["everyColStartsInside"], "a column starts past the right edge"
         assert metrics["firstColVisible"], "the root column was flushed off-screen"
