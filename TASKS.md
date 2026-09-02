@@ -4,9 +4,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- Migrate the 19 legacy htmx browser tests in server/tests/test_browser_keyboard.py
-  to the shared UI. They drive an htmx page `/` no longer serves, so they fail
-  structurally; causes and test list in docs/tasks/2-fix-all-test-failures.md. [*]
+- [*] Migrate the 19 legacy htmx browser tests in
+  server/tests/test_browser_keyboard.py to the shared UI. They drive an htmx
+  page `/` no longer serves, so they fail structurally; causes and test list in
+  docs/tasks/2-fix-all-test-failures.md.
 - Use one shared client side implementation for rendering Markdown fenced code
   blocks. Make sure the implementation flows line-wrapped paragraphs correctly,
   i.e. doesn't insert line feeds in the rendered HTML at each newline in the
@@ -28,41 +29,41 @@ Rules for TASKS.md usage are at the bottom of the file.
   column by column using the left arrow key, the `.bun` column doesn't expand
   when I reach it. It does expand if I navigate to it using the mouse instead.
 - make PDF previews full frame just like HTML and Markdown rendered previews
-- static/test-rich.py's two offline checks fail on this machine, in both
-  bundle and --dev mode: "Offline, a Markdown file still shows its source"
-  and "…and says why it is not rendered". Confirmed pre-existing at b96d84e,
-  so it is not a regression from any recent change — the sandbox has no
-  network, so the esm.sh import should throw and fall back to pv-note plus
-  PreviewLocal, and something about that path no longer lands in time. The
-  other 13 checks pass, including the stubbed-CDN ones. [*]
+- [*] static/test-rich.py's two offline checks fail on this machine, in both
+  bundle and --dev mode: "Offline, a Markdown file still shows its source" and
+  "…and says why it is not rendered". Confirmed pre-existing at b96d84e, so it
+  is not a regression from any recent change — the sandbox has no network, so
+  the esm.sh import should throw and fall back to pv-note plus PreviewLocal, and
+  something about that path no longer lands in time. The other 13 checks pass,
+  including the stubbed-CDN ones.
 
 ## In progress
 
 
 ## Completed
 
-- Get rid of duplicate vendored code. Simply use the same source files for ui/
-  and server/. [3]
-- Full file highlighting: don't clip at 8000 chars. Answered: no slicing —
-  a text preview is whole or absent, bounded by the 512 KB read gate that
-  was always there. Rationale in static/AGENTS.md. [*]
-- On mobile, opening a folder causes the opened folder in the next column to
+- [3] Get rid of duplicate vendored code. Simply use the same source files for
+  ui/ and server/.
+- [*] Full file highlighting: don't clip at 8000 chars. Answered: no slicing — a
+  text preview is whole or absent, bounded by the 512 KB read gate that was
+  always there. Rationale in static/AGENTS.md.
+- [*] On mobile, opening a folder causes the opened folder in the next column to
   fold (when vertical) or the parent folder to fold (when horizontal). Touching
   folders should never cause folding of the touched column or columns to the
-  right. Only columns to the left of the touched column may fold. [*]
-- The static/test-ui.py check "Scrolling right folds columns into spines"
-  (expects 5 spines) fails or flakes, likely an animation-timing race. [*]
-- Fix all test failures. Split into multiple tasks if necessary. [2]
-- Show version and Git commit hash (if available) via an option in the settings
-  menu. [1]
-- Plaintext preview doesn't use all vertical space in preview column.
-  The whole column should scroll, not just the preview area. [*]
-- Syntax highlighting missing in preview pane. Use client side highlighting to maximize
-  shared code between ui/ and server/. [*]
-- Edit mode for text files in the preview pane [*]
-- Remove `dl.meta` section (Where/Size/Modified) from preview pane [*]
-- In the cogwheel menu, there's an empty `PREVIEWS` section [*]
-- Verify and refine TASKS.md rules [*]
+  right. Only columns to the left of the touched column may fold.
+- [*] The static/test-ui.py check "Scrolling right folds columns into spines"
+  (expects 5 spines) fails or flakes, likely an animation-timing race.
+- [2] Fix all test failures. Split into multiple tasks if necessary.
+- [1] Show version and Git commit hash (if available) via an option in the
+  settings menu.
+- [*] Plaintext preview doesn't use all vertical space in preview column. The
+  whole column should scroll, not just the preview area.
+- [*] Syntax highlighting missing in preview pane. Use client side highlighting
+  to maximize shared code between ui/ and server/.
+- [*] Edit mode for text files in the preview pane
+- [*] Remove `dl.meta` section (Where/Size/Modified) from preview pane
+- [*] In the cogwheel menu, there's an empty `PREVIEWS` section
+- [*] Verify and refine TASKS.md rules
 
 [1]: docs/tasks/1-show-version-and-git.md
 [2]: docs/tasks/2-fix-all-test-failures.md
