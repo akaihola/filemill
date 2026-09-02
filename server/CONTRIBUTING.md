@@ -21,7 +21,7 @@ src/filemill/
 ├── vfs.py          # Virtual-filesystem registry + provider protocol
 ├── providers/      # VFS backends (SQLite, JSON, CSV)
 ├── static/         # Bundled PWA assets (manifest.json, sw.js, icons/)
-└── ui/             # VENDORED — filemill's frontend; see "The shared UI" below
+└── ui/             # The shared frontend; the repo root's ui/ symlinks here
 
 tests/
 ├── conftest.py               # Shared fixtures (tmp dirs, test client)
@@ -42,7 +42,8 @@ tests/
 
 ### The shared UI
 
-The frontend lives at **`../ui/`**, the repository root's shared directory. The
+The frontend lives at **`src/filemill/ui/`**, which the repository root's
+`../ui/` symlinks to — one directory, reachable by either path. The
 static edition builds its single-file bundle from it and this package serves it,
 so the two are the same application — not two that resemble each other. The only
 difference is which adapters the shared `core/` is handed:
@@ -69,18 +70,17 @@ be rewritten in JavaScript, and why `POST /api/render` exists: when the browser
 opens a *local* folder the server cannot read it, so the bytes are posted and
 come back through the same markdown-it-py/Pygments/mammoth pipeline.
 
-**Never edit anything under `src/filemill/ui/`.** That is a copy of `../ui/`,
-made so a wheel is self-contained — a package cannot reach outside itself at
-runtime. Edit `../ui/`, then:
+**`src/filemill/ui/` is the shared frontend itself, not a copy.** It lives
+inside the package because a wheel cannot reach outside itself at runtime, and
+the repository root's `../ui/` is a symlink to it. Edit it through either path;
+there is no copy to refresh and nothing that can go stale.
 
-```bash
-tools/sync-ui.py            # refresh the packaged copy from ../ui
-tools/sync-ui.py --check    # exits 1 if it is stale; CI runs this
-```
+Three adapters there belong to the static edition alone — `app-fsa.js`,
+`preview-rich.js` and `router-hash.js`. The server shell never loads them, and
+`wheel-exclude` in `pyproject.toml` keeps them out of the wheel.
 
-Because it is one repository, a UI change lands in both projects in one commit;
-the copy is a packaging step, not a synchronisation problem.
-`../ui/adapters/README.md` documents the three ports.
+Because it is one repository and one set of files, a UI change lands in both
+projects in one commit. `ui/adapters/README.md` documents the three ports.
 
 The shared UI is mounted at `UI_BASE = "/n/"` while the HTMX UI at `/f/` is
 still the default. Cutting over means pointing `UI_BASE` at `/`, after which the URL
@@ -239,10 +239,11 @@ now watches both halves. The served half goes through `preview-http.js` and
 its own docstring is about unchecked.
 
 The adapter that would break this is `ui/adapters/preview-rich.js`, which
-lazy-loads a renderer from a CDN. `tools/sync-ui.py` does not vendor it into
-`src/filemill/ui/adapters/`, and that omission is load-bearing. If a future
-sync ships it, `test_nothing_is_fetched_from_a_cdn` fails with the fetched URL in
-the assertion, which is the failure you want.
+lazy-loads a renderer from a CDN. The server shell never loads it —
+`_UI_ADAPTERS` omits it — and `wheel-exclude` in `pyproject.toml` keeps it out
+of the wheel, so an installed package cannot serve it at all. Both are
+load-bearing: add it to `_UI_ADAPTERS` and `test_nothing_is_fetched_from_a_cdn`
+fails with the fetched URL in the assertion, which is the failure you want.
 
 ### Wait for an Element, Never for a Duration
 

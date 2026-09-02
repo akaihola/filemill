@@ -30,7 +30,8 @@ the user makes to your behaviour — capture it here so it survives a context re
 <repo>/
 ├── README.md               ← what the two projects are, and why one repo
 ├── .github/workflows/      ← test both, publish filemill to Pages
-├── ui/                     ← THE SHARED FRONTEND — see ui/adapters/README.md
+├── ui/                     ← THE SHARED FRONTEND — a symlink to
+│                             server/src/filemill/ui; see ui/adapters/README.md
 │   ├── core/               ← source-agnostic: columns, keyboard, preview, links
 │   │   ├── styles.css      ← every design token + rule
 │   │   ├── shell.js        ← the chrome, so both builds emit the same DOM
@@ -77,7 +78,17 @@ the user makes to your behaviour — capture it here so it survives a context re
 
 **Edit `../ui/`, never `index.html`.** The UI is shared with `server/` in
 the same repository — a change here is a change there, which is the entire
-reason the two live together. Two ways to run what you edited:
+reason the two live together.
+
+`../ui/` is a **symlink** to `../server/src/filemill/ui/`, where the files
+actually live. A wheel cannot reach outside its own package, so the shared
+frontend sits inside the server package and the repository root points at it.
+There is exactly one copy, which is what makes "a change here is a change
+there" literal rather than a promise some sync script has to keep. A checkout
+therefore needs symlink support — the default everywhere except Windows
+without developer mode.
+
+Two ways to run what you edited:
 
 ```bash
 python3 -m http.server 8000 -d ..    # serve the repo root, not static/

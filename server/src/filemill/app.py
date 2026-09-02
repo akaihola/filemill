@@ -713,12 +713,13 @@ def finder_view(path: str = "", vpath: str = ""):
 
 # ── The shared Miller-columns UI ─────────────────────────────────────────────
 #
-# ui/ is a copy of the repository's shared frontend at ../../../ui, made by
-# tools/sync-ui.py so a wheel carries what it needs at runtime — see
-# ui/adapters/README.md. filemill builds its single file from that same
-# directory, which is what makes these the same app rather than two that
-# resemble each other. Its core/ is source-agnostic; the adapters loaded below
-# point it at this server. Nothing under ui/ is edited here, ever.
+# ui/ is the repository's shared frontend itself: the repo-root ../../../ui is
+# a symlink to this directory, so there is one set of files and no copy to keep
+# in step. It lives inside the package because a wheel cannot reach outside
+# itself at runtime — see ui/adapters/README.md. The static edition builds its
+# single file from these same sources, which is what makes these the same app
+# rather than two that resemble each other. Its core/ is source-agnostic; the
+# adapters loaded below point it at this server.
 #
 # Mounted under /n/ during the migration, so the HTMX UI at /f/ keeps working.
 # Cutting over is changing UI_BASE to "/" and letting the catch-all serve the

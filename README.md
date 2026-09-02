@@ -76,14 +76,19 @@ See [`server/CONTRIBUTING.md`](server/CONTRIBUTING.md).
 
 ## Working on the shared UI
 
-Edit `ui/`. Never edit `server/src/filemill/ui/` — that is a copy made by
-`server/tools/sync-ui.py` so a wheel carries what it needs at runtime, and
-`--check` fails when it is stale.
+Edit `ui/`. It is a symlink to `server/src/filemill/ui/`, where the files
+actually live: a wheel cannot reach outside its own package, so the shared
+frontend sits inside the server package and the repository root points at it.
+One set of files, so a change reaches both editions at once and there is
+nothing to keep in sync.
 
 ```bash
 (cd static && ./build-index.py)      # rebuild the bundle
-(cd server && ./tools/sync-ui.py)    # refresh the packaged copy
 ```
+
+The bundle is generated *and* committed, so it is the one thing that can go
+stale; CI runs `./build-index.py --check`. A checkout needs symlink support —
+the default everywhere except Windows without developer mode.
 
 ## Tests
 
