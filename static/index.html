@@ -1565,10 +1565,13 @@ function layout(keepScroll) {
        the dial at 99% and the one thing the HTMX shell could never do. */
     let k = 0;
     while (k < path.length && stripSpan(k) + previewTarget() > stageW) k++;
-    /* fold more when the new contents need it, but never unfold on its own.
-       The cap keeps the focused column out of the spines — the cursor has to
-       stay visible. Unfolding further is a user action: scroll, spine, ← */
-    k = Math.max(k, Math.min(folded, focusCol));
+    /* Fold more when the new contents need it, but never past the focused
+       column: that is the one under the user's finger, and the column to its
+       right is what opening it just produced — answering a tap by hiding
+       either is not condensing, it is discarding the answer. What is left of
+       focus has been walked past and may condense; folding further than this
+       is a user action: scroll, spine, ←. */
+    k = Math.min(focusCol, Math.max(k, folded));
     if (root.dataset.layout === "compressed-columns") k = path.length;
     finder.scrollLeft = Math.round(k * foldUnit() * range());
   }
@@ -1577,6 +1580,13 @@ function layout(keepScroll) {
 
 function applyScroll() {
   if (!path.length) return;
+  /* The dial is the only thing that may move the strip. #stage is overflow
+     hidden, which stops a finger but not scrollIntoView(): now that the strip
+     may be wider than the stage — a column right of focus peeks past the edge
+     rather than folding — an arrow key, the type-ahead, or a click landing on
+     a half-visible row scrolls the stage itself, dragging every column out
+     through the left edge with nothing to put them back. */
+  if (stage.scrollLeft) stage.scrollLeft = 0;
   const max = Math.max(1, rail.clientWidth - finder.clientWidth);
   const p = Math.min(1, finder.scrollLeft / max);
   const n = path.length;
