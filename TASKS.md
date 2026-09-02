@@ -8,15 +8,24 @@ Rules for TASKS.md usage are at the bottom of the file.
   server/tests/test_browser_keyboard.py to the shared UI. They drive an htmx
   page `/` no longer serves, so they fail structurally; causes and test list in
   docs/tasks/2-fix-all-test-failures.md.
+
 - Use one shared client side implementation for rendering Markdown fenced code
   blocks. Make sure the implementation flows line-wrapped paragraphs correctly,
   i.e. doesn't insert line feeds in the rendered HTML at each newline in the
   source.
+
 - For highlighted text files (e.g. `.py`, `.js`), the minimum preview width
   isn't currently defined as a static number of characters. So at browser zooms
-  >100%, lines are wrapped. Ensure the minimum preview width is 88 characters.
+  above 100%, lines are wrapped. Ensure the minimum preview width is 88 characters.
+
+- In mobile, tapping a folder still longer hides what I tapped when there's wide
+  content in the tapped column or the revealed column. The previous fix only
+  prevented collapsing the column under my finger and the column that tap had
+  just opened into vertical spines when column contents are rather narrow. See task e85ba857-7a48-4273-b7bc-86358f77d295 and branch `feature/mobile-fold-cap`.
+
 - Pretty-printed and foldable JSON preview, common client side implementation
   for both `server/` and `ui/`.
+
 - Hierarchical view for `.jsonl` files: first level column is a listing showing
   for each line the value of a key which is unique across all lines, preferring
   short or moderate width text values (e.g. `title`, `description`) but using
@@ -24,11 +33,14 @@ Rules for TASKS.md usage are at the bottom of the file.
   column is a two-column table view of `(key, value)` pairs for each line. Do
   this entirely on the client side, but following the example of how `.sqlite`
   files are rendered.
+
 - If I navigate deep into
   `~/.bun/install/cache/@agegr/pi-web/0.8.8@@@1/README.md` and return back
   column by column using the left arrow key, the `.bun` column doesn't expand
   when I reach it. It does expand if I navigate to it using the mouse instead.
+
 - make PDF previews full frame just like HTML and Markdown rendered previews
+
 - [*] static/test-rich.py's two offline checks fail on this machine, in both
   bundle and --dev mode: "Offline, a Markdown file still shows its source" and
   "…and says why it is not rendered". Confirmed pre-existing at b96d84e, so it
