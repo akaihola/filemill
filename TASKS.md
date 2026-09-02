@@ -35,13 +35,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
+
+## Completed
+
 - On mobile, opening a folder causes the opened folder in the next column to
   fold (when vertical) or the parent folder to fold (when horizontal). Touching
   folders should never cause folding of the touched column or columns to the
   right. Only columns to the left of the touched column may fold. [*]
-
-## Completed
-
 - The static/test-ui.py check "Scrolling right folds columns into spines"
   (expects 5 spines) fails or flakes, likely an animation-timing race. [*]
 - Fix all test failures. Split into multiple tasks if necessary. [2]
