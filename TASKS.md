@@ -4,7 +4,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- Fix all test failures. Split into multiple tasks if necessary.
 - On mobile, opening a folder causes the opened folder in the next column to
   fold (when vertical) or the parent folder to fold (when horizontal). Touching
   folders should never cause folding of the touched column or columns to the
@@ -37,6 +36,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
+- Fix all test failures. Split into multiple tasks if necessary. [2]
 
 ## Completed
 
@@ -52,6 +52,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Verify and refine TASKS.md rules [*]
 
 [1]: docs/tasks/1-show-version-and-git.md
+[2]: docs/tasks/2-fix-all-test-failures.md
 [*]: TASKS.md
 
 ---
