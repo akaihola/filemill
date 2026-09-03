@@ -55,9 +55,18 @@ const previewNode = () => {
   return (n && !n.dir) ? n : null;
 };
 
+/* 88 columns of .pv-text plus its and .pv-body's horizontal padding, measured
+   from the real monospace font so it agrees with the CSS `min-width: 88ch` */
+const codeMin = () => codeMin._w ||= (() => {
+  const c = document.createElement("canvas").getContext("2d");
+  const cs = getComputedStyle(root);
+  c.font = `11.5px ${cs.getPropertyValue("--mono")}`;
+  return Math.ceil(c.measureText("0").width * 88) + 80;
+})();
+
 /* target reading width for the preview — the thing scrolling tries to protect */
 const previewTarget = () => previewNode()
-  ? Math.min(760, Math.max(420, Math.round(stage.clientWidth * 0.45)))
+  ? Math.min(760, Math.max(codeMin(), Math.round(stage.clientWidth * 0.45)))
   : 300;
 
 function measure(node) {

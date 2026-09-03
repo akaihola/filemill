@@ -69,7 +69,7 @@ the user makes to your behaviour — capture it here so it survives a context re
     ├── index-dev.html          ← dev entry point: <script src="../ui/…">
     ├── build-index.py          ← index-dev.html + ../ui → index.html
     ├── hotreload.py            ← optional CDP live-patcher for dev mode
-    ├── test-ui.py              ← headless suite, fake handle (137 checks)
+    ├── test-ui.py              ← headless suite, fake handle (146 checks)
     ├── test-url.py             ← needs a real origin: deep links, and a real
     │                             filesystem through OPFS (15 checks)
     ├── test-rich.py            ← CDN renderers: offline/switch/loaded (18)
