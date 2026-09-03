@@ -732,6 +732,27 @@ async def main():
               w["code"] >= w["ch88"] - 0.5, json.dumps(w))
         check("…and the 88-column line still stays on one line",
               w["lines"] == 4, json.dumps(w))
+        # A phone cannot show 88 columns. With the dial at 100 % the pane is
+        # alone and must fit the stage — what runs past the right edge is
+        # clipped, not scrollable — and the code pans inside .pv-body instead.
+        await pg.set_viewport_size({"width": 390, "height": 700})
+        await pg.wait_for_timeout(300)
+        await pg.evaluate("finder.scrollLeft = finder.scrollWidth")
+        await pg.wait_for_timeout(400)
+        w = await pg.evaluate(WIDTH)
+        fits = await pg.evaluate("""(() => {
+          const p = document.getElementById('preview').getBoundingClientRect();
+          const s = stage.getBoundingClientRect();
+          return {ok: p.left >= s.left - 1 && p.right <= s.right + 1,
+                  preview: [Math.round(p.left), Math.round(p.right)],
+                  stage: [Math.round(s.left), Math.round(s.right)],
+                  target: previewTarget(), scroll: finder.scrollLeft,
+                  max: finder.scrollWidth - finder.clientWidth};
+        })()""")
+        check("On a phone the preview pane fits the stage",
+              fits["ok"] and w["code"] >= w["ch88"] - 0.5, json.dumps(w) + json.dumps(fits))
+        check("…and the 88 columns pan inside the pane instead of clipping",
+              w["sideways"] and w["lines"] == 4, json.dumps(w))
         await pg.set_viewport_size({"width": 1500, "height": 900})
         await pg.wait_for_timeout(300)
         # Both palettes are declared; that they are legible is a screenshot's

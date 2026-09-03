@@ -420,9 +420,11 @@ body {
 .pv-text {
   font-family: var(--mono); font-size: 11.5px; line-height: 1.55;
   color: var(--ink-2); white-space: pre-wrap; word-break: break-word;
-  /* never wrap before column 88: a zoomed-in pane scrolls .pv-body sideways
-     instead, and previewTarget() asks for the same width in px */
-  min-width: 88ch;
+  /* never wrap before column 88 (border-box, so add the 14 px paddings and
+     2 px so an integer-rounded box cannot fall short): a zoomed-in pane
+     scrolls .pv-body sideways instead, and previewTarget() asks for the
+     same width in px */
+  min-width: calc(88ch + 30px);
   margin: 0 0 18px; padding: 12px 14px; border-radius: 8px;
   background: var(--hover);
 }
@@ -1042,18 +1044,22 @@ const previewNode = () => {
   return (n && !n.dir) ? n : null;
 };
 
-/* 88 columns of .pv-text plus its and .pv-body's horizontal padding, measured
-   from the real monospace font so it agrees with the CSS `min-width: 88ch` */
+/* 88 columns of .pv-text plus its and .pv-body's horizontal padding (30 + 52),
+   measured from the real monospace font so it agrees with the CSS min-width */
 const codeMin = () => codeMin._w ||= (() => {
   const c = document.createElement("canvas").getContext("2d");
   const cs = getComputedStyle(root);
   c.font = `11.5px ${cs.getPropertyValue("--mono")}`;
-  return Math.ceil(c.measureText("0").width * 88) + 80;
+  return Math.ceil(c.measureText("0").width * 88) + 82;
 })();
 
-/* target reading width for the preview — the thing scrolling tries to protect */
+/* target reading width for the preview — the thing scrolling tries to protect.
+   Never wider than the stage itself: a phone cannot show 88 columns, and a
+   pane that runs past the right edge is clipped, not scrollable — so there
+   the pane fits and .pv-body pans over the code instead. */
 const previewTarget = () => previewNode()
-  ? Math.min(760, Math.max(codeMin(), Math.round(stage.clientWidth * 0.45)))
+  ? Math.min(760, stage.clientWidth - 2 * GUTTER(),
+             Math.max(codeMin(), Math.round(stage.clientWidth * 0.45)))
   : 300;
 
 function measure(node) {
