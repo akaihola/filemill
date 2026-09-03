@@ -443,6 +443,15 @@ body {
 .hl-str { color: var(--hl-str); }
 .hl-num { color: var(--hl-num); }
 .hl-kw  { color: var(--hl-kw); }
+/* Foldable JSON — the <details> tree core/syntax.js emits for a parsed file.
+   The marker hangs in the <pre>'s own padding so folded and unfolded lines
+   keep the same indent; a closed node says what it hides. */
+.pv-json summary { cursor: pointer; list-style: none; position: relative; }
+.pv-json summary::-webkit-details-marker { display: none; }
+.pv-json summary::before { content: "▾"; position: absolute; left: -1.1em; color: var(--ink-3); }
+.pv-json details:not([open]) > summary::before { content: "▸"; }
+.pv-json details:not([open]) > summary::after {
+  content: " … " attr(data-n) " " attr(data-close); color: var(--ink-3); }
 /* edit mode — a textarea in the same footprint as .pv-text */
 #pv-edit, .pv-edit-bar button {
   font: inherit; font-size: var(--fs-meta); color: var(--ink-2);
