@@ -31,6 +31,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   something about that path no longer lands in time. The other 13 checks pass,
   including the stubbed-CDN ones.
 
+- The maximum column width must be 2/3 of available space. This ensures that the
+  left edge of inner folders and previewed files is always visible.
+
 ## In progress
 
 
