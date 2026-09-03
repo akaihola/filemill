@@ -45,6 +45,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - JSONL hierarchical view must be in original file order, not sorted by key.
 
+- Page Up and Page Down keys should move the selection to the topmost/bottommost
+  visible item in the focused column, or if already selected, scroll up/down as
+  many lines as fit in the column, and then move to the topmost/bottommost
+  visible item.
+
 ## In progress
 
 
