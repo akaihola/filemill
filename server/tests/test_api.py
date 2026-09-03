@@ -345,6 +345,9 @@ def test_split_vfs_separates_the_real_path_from_the_virtual_one(db_root: Path):
     resolve = app_module._resolve_safe
     assert split_vfs("sample.db/users/1", db_root, resolve) == ("sample.db", "users/1")
     assert split_vfs("sample.db", db_root, resolve) == ("sample.db", "")
+    # browsed on the client, so the server only has to let the row URL through
+    (db_root / "log.jsonl").write_text('{"id": 1}\n')
+    assert split_vfs("log.jsonl/x", db_root, resolve) == ("log.jsonl", "x")
     assert split_vfs("subdir", db_root, resolve) == ("subdir", "")
     assert split_vfs("", db_root, resolve) == ("", "")
 

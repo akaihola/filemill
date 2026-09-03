@@ -16,14 +16,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Pretty-printed and foldable JSON preview, common client side implementation
   for both `server/` and `ui/`.
 
-- Hierarchical view for `.jsonl` files: first level column is a listing showing
-  for each line the value of a key which is unique across all lines, preferring
-  short or moderate width text values (e.g. `title`, `description`) but using
-  scalar values (e.g. `timestamp`, `id`) if none are available. The second
-  column is a two-column table view of `(key, value)` pairs for each line. Do
-  this entirely on the client side, but following the example of how `.sqlite`
-  files are rendered.
-
 - If I navigate deep into
   `~/.bun/install/cache/@agegr/pi-web/0.8.8@@@1/README.md` and return back
   column by column using the left arrow key, the `.bun` column doesn't expand
@@ -40,6 +32,14 @@ Rules for TASKS.md usage are at the bottom of the file.
   including the stubbed-CDN ones.
 
 ## In progress
+
+- [*] Hierarchical view for `.jsonl` files: first level column is a listing showing
+  for each line the value of a key which is unique across all lines, preferring
+  short or moderate width text values (e.g. `title`, `description`) but using
+  scalar values (e.g. `timestamp`, `id`) if none are available. The second
+  column is a two-column table view of `(key, value)` pairs for each line. Do
+  this entirely on the client side, but following the example of how `.sqlite`
+  files are rendered.
 
 
 ## Completed
