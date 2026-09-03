@@ -43,6 +43,8 @@ Rules for TASKS.md usage are at the bottom of the file.
   the up arrow. I haven't been able to understand what's special about the
   folders that cause this behavior.
 
+- JSONL hierarchical view must be in original file order, not sorted by key.
+
 ## In progress
 
 
