@@ -450,6 +450,15 @@ body {
 .hl-str { color: var(--hl-str); }
 .hl-num { color: var(--hl-num); }
 .hl-kw  { color: var(--hl-kw); }
+/* Foldable JSON — the <details> tree core/syntax.js emits for a parsed file.
+   The marker hangs in the <pre>'s own padding so folded and unfolded lines
+   keep the same indent; a closed node says what it hides. */
+.pv-json summary { cursor: pointer; list-style: none; position: relative; }
+.pv-json summary::-webkit-details-marker { display: none; }
+.pv-json summary::before { content: "▾"; position: absolute; left: -1.1em; color: var(--ink-3); }
+.pv-json details:not([open]) > summary::before { content: "▸"; }
+.pv-json details:not([open]) > summary::after {
+  content: " … " attr(data-n) " " attr(data-close); color: var(--ink-3); }
 /* edit mode — a textarea in the same footprint as .pv-text */
 #pv-edit, .pv-edit-bar button {
   font: inherit; font-size: var(--fs-meta); color: var(--ink-2);
@@ -971,6 +980,36 @@ function hlHTML(text, key) {
     last = re.lastIndex;
   }
   return out + esc(text.slice(last));
+}
+
+/* Pretty-printed, foldable HTML for a JSON document, or null when `text` is
+   not JSON — the caller then colours it as source instead. Objects and arrays
+   become <details open>, so folding is the browser's: no handlers, and nothing
+   for either build to wire. Inside a pre-wrap <pre> a newline that precedes a
+   block is swallowed and one that follows it draws a blank line, so every text
+   line ends in "\n" and no run of text begins with one. */
+function jsonHTML(text) {
+  let doc;
+  try { doc = JSON.parse(text); } catch { return null; }
+  const scalar = v =>
+    v === null || typeof v === "boolean" ? `<span class="hl-kw">${v}</span>` :
+    typeof v === "number" ? `<span class="hl-num">${v}</span>` :
+    `<span class="hl-str">${esc(JSON.stringify(v))}</span>`;
+  const node = (v, pad, head, tail) => {
+    if (typeof v !== "object" || v === null) return `${pad}${head}${scalar(v)}${tail}\n`;
+    const arr = Array.isArray(v);
+    const keys = arr ? v.map((_, i) => i) : Object.keys(v);
+    const [open, close] = arr ? ["[", "]"] : ["{", "}"];
+    if (!keys.length) return `${pad}${head}${open}${close}${tail}\n`;
+    let out = `<details open><summary data-n="${keys.length}" data-close="${close}${tail}">` +
+              `${pad}${head}${open}</summary>`;
+    keys.forEach((k, i) => {
+      out += node(v[k], pad + "  ", arr ? "" : `${esc(JSON.stringify(k))}: `,
+                  i < keys.length - 1 ? "," : "");
+    });
+    return out + `${pad}${close}${tail}</details>`;
+  };
+  return node(doc, "", "", "");
 }
 
 /* Colour the fenced code inside a rendered Markdown fragment. Both markdown-it
@@ -2712,8 +2751,11 @@ const PreviewLocal = {
          triple-quoted string spanning the cut mis-tokenises, and syntax.js
          promises every character exactly once. */
       const lang = hlLang(node.name);
-      const body = lang ? hlHTML(text, lang) : esc(text);
-      return `<pre class="pv-text">${body}</pre>`;
+      /* A .json that parses is shown pretty-printed and foldable; one that does
+         not (or a .jsonc with comments) is coloured as source like any other. */
+      const json = lang === "json" ? jsonHTML(text) : null;
+      const body = json ?? (lang ? hlHTML(text, lang) : esc(text));
+      return `<pre class="pv-text${json ? " pv-json" : ""}">${body}</pre>`;
     }
     return null;
   },
