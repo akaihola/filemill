@@ -413,9 +413,11 @@ body {
 .pv-text {
   font-family: var(--mono); font-size: 11.5px; line-height: 1.55;
   color: var(--ink-2); white-space: pre-wrap; word-break: break-word;
-  /* never wrap before column 88: a zoomed-in pane scrolls .pv-body sideways
-     instead, and previewTarget() asks for the same width in px */
-  min-width: 88ch;
+  /* never wrap before column 88 (border-box, so add the 14 px paddings and
+     2 px so an integer-rounded box cannot fall short): a zoomed-in pane
+     scrolls .pv-body sideways instead, and previewTarget() asks for the
+     same width in px */
+  min-width: calc(88ch + 30px);
   margin: 0 0 18px; padding: 12px 14px; border-radius: 8px;
   background: var(--hover);
 }
