@@ -60,7 +60,9 @@ def ui_root(tmp_path: Path) -> Path:
     # One byte over the preview's 512 KB ceiling.
     (tmp_path / "code" / "huge.py").write_text("x" * (512 * 1024 + 1))
     (tmp_path / "empty").mkdir()
-    (tmp_path / "README.md").write_text("# Readme\n")
+    (tmp_path / "README.md").write_text(
+        "# Readme\n\nline one\nline two\n\n```python\n" + SOURCE + "```\n"
+    )
     (tmp_path / ".hidden").write_text("h")
     con = sqlite3.connect(str(tmp_path / "sample.db"))
     con.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
@@ -202,6 +204,22 @@ def test_the_preview_comes_from_the_python_renderer(page):
     page.open("README.md")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     assert "Readme" in page.inner_text("#preview .pv-rich h1")
+
+
+def test_fenced_code_is_highlighted_in_the_browser(page):
+    """The fence arrives as <pre><code class="language-python"> from Python and
+    core/syntax.js colours it — the same classes as a source file, in both
+    builds (static/test-rich.py checks the other one). Paragraphs are left as
+    the renderer made them: a source newline is whitespace, not a <br>."""
+    page.open("README.md")
+    page.wait_for_selector("#preview .pv-rich pre code .hl-kw", timeout=15000)
+    assert (
+        page.eval_on_selector_all("#preview .pv-rich pre code span", TOKEN_CLASSES)
+        == "hl-com,hl-kw,hl-num,hl-str"
+    )
+    assert page.text_content("#preview .pv-rich pre code") == SOURCE
+    para = page.eval_on_selector("#preview .pv-rich p", "e=>e.innerHTML")
+    assert para == "line one\nline two"
 
 
 def test_source_is_highlighted_in_the_browser(page):

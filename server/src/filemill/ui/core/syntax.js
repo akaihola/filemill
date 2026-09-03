@@ -129,6 +129,8 @@ const HL_ALIAS = {
   mjs: "js", cjs: "js", jsx: "js", tsx: "ts", h: "c", hpp: "cpp", cc: "cpp", cxx: "cpp",
   bash: "sh", zsh: "sh", fish: "sh", yml: "yaml", jsonc: "json", cfg: "ini", conf: "ini",
   scss: "css", less: "css", gitignore: "sh", env: "sh",
+  /* what a Markdown fence calls the language, when that is not an extension */
+  python: "py", javascript: "js", typescript: "ts", shell: "sh", rust: "rs", ruby: "rb",
 };
 
 /* Comment, then string, then number, then keyword. The order only settles ties
@@ -172,4 +174,17 @@ function hlHTML(text, key) {
     last = re.lastIndex;
   }
   return out + esc(text.slice(last));
+}
+
+/* Colour the fenced code inside a rendered Markdown fragment. Both markdown-it
+   and markdown-it-py emit <pre><code class="language-x"> with no highlighter
+   configured, so this one function is what makes "fenced code is coloured" true
+   in both builds. Only code nodes are touched: paragraphs and their soft line
+   breaks stay exactly as the renderer left them. */
+function hlFences(host) {
+  for (const code of host.querySelectorAll('pre > code[class*="language-"]')) {
+    const m = /(?:^|\s)language-(\S+)/.exec(code.className);
+    const key = m && hlLang("x." + m[1]);
+    if (key) code.innerHTML = hlHTML(code.textContent, key);
+  }
 }

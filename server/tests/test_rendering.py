@@ -1,34 +1,11 @@
 from pathlib import Path
-from unittest.mock import patch
 
 from filemill.rendering import (
     _find_file_for_href,
     _find_git_root,
     _href_for_file,
-    highlighter,
     md,
 )
-
-
-def test_highlighter_known_lang():
-    """lang is truthy → get_lexer_by_name path; Pygments wraps tokens in <span>."""
-    result = highlighter("x = 1", "python", "")
-    assert "<span" in result
-
-
-def test_highlighter_empty_lang_guesses():
-    """Empty lang → guess_lexer path; returns non-empty string."""
-    result = highlighter("print('hi')", "", "")
-    assert isinstance(result, str) and len(result) > 0
-
-
-def test_highlighter_bad_lang_falls_back_to_text():
-    """get_lexer_by_name raises → TextLexer fallback; still returns a string."""
-    with patch(
-        "filemill.rendering.get_lexer_by_name", side_effect=Exception("no lexer")
-    ):
-        result = highlighter("some code", "nonexistent_lang_xyz", "")
-    assert isinstance(result, str) and len(result) > 0
 
 
 def test_md_renders_bold():
@@ -105,12 +82,22 @@ def test_mermaid_div_contains_diagram_source():
     assert "Alice" in rendered
 
 
-def test_non_mermaid_fence_still_highlighted():
-    """Non-mermaid fences still get Pygments highlighting, not a mermaid div."""
-    src = "```python\nprint('hi')\n```"
+def test_non_mermaid_fence_is_plain_for_the_browser_to_colour():
+    """A fence is <pre><code class="language-x"> with the source escaped and no
+    server-side spans: ui/core/syntax.js colours it, in both builds."""
+    src = "```python\nprint('<hi>')\n```"
     rendered = md.render(src)
     assert '<div class="mermaid">' not in rendered
-    assert "print" in rendered
+    assert '<pre><code class="language-python">' in rendered
+    assert "&lt;hi&gt;" in rendered
+    assert "<span" not in rendered
+
+
+def test_paragraph_newlines_are_not_line_breaks():
+    """A soft line break inside a paragraph stays whitespace, never a <br>."""
+    rendered = md.render("line one\nline two\n")
+    assert "<p>line one\nline two</p>" in rendered
+    assert "<br" not in rendered
 
 
 # ── #19 git-root finding ──────────────────────────────────────────────────────

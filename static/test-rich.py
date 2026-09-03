@@ -39,6 +39,7 @@ window.__mk = () => {
     entries: async function*(){ for (const k of kids) yield [k.name, k]; }});
   return D('vault', [
     F('note.md', '# Heading\n\nSome **bold** text and a [[Other Note]] link.\n'),
+    F('fence.md', '# Code\n\nline one\nline two\n\n```python\ndef f():\n    return 1\n```\n'),
     F('Other Note.md', '# Other\n'),
     F('code.py', 'def f():\n    return 1\n'),
     F('plain.txt', 'just text'),
@@ -56,21 +57,17 @@ export default class MarkdownIt {
   use() { return this; }
   render(src) {
     const first = src.split('\\n')[0].replace(/^#\\s*/, '');
-    const body = src.replace(/\\[\\[([^\\]]+)\\]\\]/g,
+    const [prose, code] = src.split(/```python\\n|```\\n?$/);
+    const body = prose.replace(/\\[\\[([^\\]]+)\\]\\]/g,
       (_, t) => `<a class="wikilink" href="#" data-wiki="${t.trim()}">${t.trim()}</a>`);
-    return `<h1>${first}</h1><p>${body.split('\\n').slice(2).join(' ')}</p>`;
+    /* the real renderer's shapes: a paragraph keeps its newline, a fence is
+       <pre><code class="language-x"> with the source escaped */
+    return `<h1>${first}</h1><p>${body.split('\\n').slice(2).join('\\n').trim()}</p>` +
+      (code ? `<pre><code class="language-python">${code.replace(/</g, '&lt;')}</code></pre>` : '');
   }
 }
 """,
     "plugin.js": "export default function noop() {}\n",
-    "highlight.js": """
-export default {
-  getLanguage: (l) => l === 'py' || l === 'python',
-  highlight: (t) => ({ value: '<span class="hljs-stub">' + t + '</span>' }),
-  highlightAuto: (t) => ({ value: '<span class="hljs-auto">' + t + '</span>' }),
-};
-""",
-    "hljs.css": ".hljs-stub { color: rebeccapurple }\n",
 }
 
 passed, failed = [], []
@@ -116,8 +113,6 @@ window.FILEMILL_CDN = {
   "markdown-it-deflist":    "%(b)s/__stub/plugin.js",
   "markdown-it-task-lists": "%(b)s/__stub/plugin.js",
   "markdown-it-anchor":     "%(b)s/__stub/plugin.js",
-  "highlight.js":           "%(b)s/__stub/highlight.js",
-  "hljs-css":               "%(b)s/__stub/hljs.css",
 };
 """
 
@@ -189,6 +184,16 @@ async def main():
         check("With the renderer available, Markdown renders",
               "<h1>Heading</h1>" in html and "pv-note" not in html, html[:90])
         check("…into the shared rich-preview container", "pv-rich" in html)
+
+        requests.clear()
+        html = await preview(pg, "fence.md")
+        check("A fenced block is coloured by core/syntax.js, not a download",
+              'class="language-python"' in html and "hl-kw" in html, html[:200])
+        check("…and no highlighter module is requested for it",
+              not [u for u in requests if "highlight" in u],
+              "; ".join(u for u in requests if "highlight" in u))
+        check("A paragraph's source newline is not a rendered line break",
+              "<br" not in html and "line one\nline two" in html, html[:200])
 
         requests.clear()
         html = await preview(pg, "code.py")
