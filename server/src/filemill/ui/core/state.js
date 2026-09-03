@@ -55,9 +55,22 @@ const previewNode = () => {
   return (n && !n.dir) ? n : null;
 };
 
-/* target reading width for the preview — the thing scrolling tries to protect */
+/* 88 columns of .pv-text plus its and .pv-body's horizontal padding (30 + 52),
+   measured from the real monospace font so it agrees with the CSS min-width */
+const codeMin = () => codeMin._w ||= (() => {
+  const c = document.createElement("canvas").getContext("2d");
+  const cs = getComputedStyle(root);
+  c.font = `11.5px ${cs.getPropertyValue("--mono")}`;
+  return Math.ceil(c.measureText("0").width * 88) + 82;
+})();
+
+/* target reading width for the preview — the thing scrolling tries to protect.
+   Never wider than the stage itself: a phone cannot show 88 columns, and a
+   pane that runs past the right edge is clipped, not scrollable — so there
+   the pane fits and .pv-body pans over the code instead. */
 const previewTarget = () => previewNode()
-  ? Math.min(760, Math.max(420, Math.round(stage.clientWidth * 0.45)))
+  ? Math.min(760, stage.clientWidth - 2 * GUTTER(),
+             Math.max(codeMin(), Math.round(stage.clientWidth * 0.45)))
   : 300;
 
 function measure(node) {
