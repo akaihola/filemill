@@ -38,6 +38,11 @@ Rules for TASKS.md usage are at the bottom of the file.
   - the first line is indented about 0.7 character widths
   - text has a slightly darker background color than the gray surrounding box
 
+- In keyboard navigation, parent folder columns currently unfold when selecting
+  the next item using the down arrow. Strangely, this doesn't happen when using
+  the up arrow. I haven't been able to understand what's special about the
+  folders that cause this behavior.
+
 ## In progress
 
 
