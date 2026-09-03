@@ -203,7 +203,9 @@ function jsonHTML(text) {
     });
     return out + `${pad}${close}${tail}</details>`;
   };
-  return node(doc, "", "", "");
+  /* Nesting deep enough to exhaust the stack is still valid JSON; it is shown
+     as source, the same as anything else this cannot fold. */
+  try { return node(doc, "", "", ""); } catch { return null; }
 }
 
 /* Colour the fenced code inside a rendered Markdown fragment. Both markdown-it
