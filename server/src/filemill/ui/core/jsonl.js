@@ -1,0 +1,116 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   JSONL — a file of one JSON object per line, browsed as a column of rows.
+
+   The client-side counterpart of the server's SQLite provider: a `.jsonl`
+   file opens as a column, one row per line, and a row previews as its
+   key/value pairs. Both builds get it by wrapping their FS and PREVIEW ports
+   here — see adapters/app-fsa.js and adapters/app-http.js — so core/ still
+   sees nothing but nodes.
+
+   The row label is one key chosen once per file: unique across every record,
+   preferring short text (title, name, description…) over other scalars
+   (timestamp, id…), and falling back to the line number. Unique because the
+   selection, the URL and applyPath all name a row by it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const JSONL_MAX = 512 * 1024;                 /* the same ceiling as TEXT_MAX */
+const JSONL_LABEL = 60;                       /* as the server's MAX_LABEL_LEN */
+const JSONL_TEXT = ["title", "name", "description", "summary", "label"];
+const JSONL_SCALAR = ["timestamp", "time", "ts", "id", "uuid", "key"];
+
+const isJsonl = n => /\.jsonl$/i.test(n.name);
+const jsonlLabel = v =>
+  (s => s.length > JSONL_LABEL ? s.slice(0, JSONL_LABEL - 1) + "…" : s)(String(v));
+
+/* The labels a key would give, or null when it cannot name every row. */
+function jsonlLabels(records, key) {
+  const seen = new Set();
+  const out = [];
+  for (const r of records) {
+    const v = r[key];
+    if (v === undefined || v === null || typeof v === "object") return null;
+    const s = jsonlLabel(v);
+    if (!s || s.startsWith(".") || seen.has(s)) return null;   /* dotfile filter */
+    seen.add(s);
+    out.push(s);
+  }
+  return out;
+}
+
+function jsonlKey(records) {
+  const keys = Object.keys(records[0] || {});
+  const first = pref => [...pref.filter(k => keys.includes(k)),
+                         ...keys.filter(k => !pref.includes(k))];
+  const short = k => records.every(r => typeof r[k] === "string" &&
+                                        r[k].length <= JSONL_LABEL);
+  for (const k of first(JSONL_TEXT))   if (short(k) && jsonlLabels(records, k)) return k;
+  for (const k of first(JSONL_SCALAR)) if (jsonlLabels(records, k)) return k;
+  return null;
+}
+
+function jsonlRows(node, records) {
+  const key = jsonlKey(records);
+  const labels = key ? jsonlLabels(records, key) : records.map((_, i) => `line ${i + 1}`);
+  return records.map((record, i) => ({
+    name: labels[i], dir: false, vpath: String(i + 1), icon: "📋",
+    rel: node.rel, meta: { virtual: true }, record,
+  }));
+}
+
+function jsonlParse(text) {
+  const records = [];
+  const lines = text.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    let v;
+    try { v = JSON.parse(lines[i]); } catch { v = null; }
+    if (!v || typeof v !== "object" || Array.isArray(v))
+      throw new Error(`Not valid JSONL: line ${i + 1}`);
+    records.push(v);
+  }
+  return records;
+}
+
+const withJsonl = fs => ({
+  ...fs,
+  async ensureLoaded(node) {
+    if (!node.jsonl) {
+      await fs.ensureLoaded(node);
+      for (const k of node.kids || [])
+        if (!k.dir && isJsonl(k)) Object.assign(k, { dir: true, kids: null, jsonl: true });
+      return;
+    }
+    if (node.kids !== null) return;
+    if (node.loading) return node.loading;
+    node.loading = (async () => {
+      try {
+        /* Decline before fetching where the listing carried a size: HTTP.blob
+           buffers the whole response. The blob.size test stays for the port
+           whose listing does not. */
+        const big = "Too large to browse (over 512 KB)";
+        if ((node.meta?.size ?? 0) > JSONL_MAX) throw new Error(big);
+        /* The node is a directory to core; the port still reads it as the
+           file it is (FSA.loadMeta skips directories). */
+        const blob = await fs.blob({ ...node, dir: false });
+        if (!blob) throw new Error("Cannot read file");
+        if (blob.size > JSONL_MAX) throw new Error(big);
+        node.kids = jsonlRows(node, jsonlParse(await blob.text()));
+      } catch (err) {
+        node.denied = String(err.message || err);
+        node.kids = [];
+      }
+      node.loading = null;
+    })();
+    return node.loading;
+  },
+});
+
+const withJsonlPreview = provider => ({
+  revoke() { provider.revoke?.(); },
+  render(n) {
+    if (!n.record) return provider.render(n);
+    const cell = v => typeof v === "object" ? JSON.stringify(v) : String(v);
+    const rows = Object.entries(n.record)
+      .map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(cell(v))}</td></tr>`).join("");
+    return Promise.resolve(`<div class="pv-rich"><table class="pv-kv">${rows}</table></div>`);
+  },
+});

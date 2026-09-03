@@ -142,6 +142,17 @@ window.__mk = (nbig) => {
                   F('small.txt', 'x'.repeat(10),  '2026-02-04'),
                   F('medium.md', 'x'.repeat(100), '2026-01-03'),
                   FX('locked.txt')]),
+    // JSONL rows: a unique short `title` beats the unique `id`; when titles
+    // repeat the id has to carry the column; a bad line or an oversized file
+    // must land on the denied note, not a broken column.
+    D('tables', [
+      F('log.jsonl', '{"id":1,"title":"First","ts":"2026-01-01","tags":["a"]}\n'
+                   + '{"id":2,"title":"Second","ts":"2026-01-02","tags":[]}\n\n'
+                   + '{"id":3,"title":"Third","ts":"2026-01-03","tags":null}\n'),
+      F('dup.jsonl', '{"id":10,"title":"Same"}\n{"id":11,"title":"Same"}\n'),
+      F('bad.jsonl', '{"a":1}\nnope\n'),
+      F('huge.jsonl', 'x'.repeat(512 * 1024 + 1)),
+    ]),
     F('README.md','# hi\n'),
   ]);
 };
@@ -792,6 +803,48 @@ async def main():
         await pg.wait_for_timeout(300)
         check("A file with no language it knows stays plain",
               await pg.eval_on_selector_all(".pv-text span", "e=>e.length") == 0)
+
+        print("\n── JSONL rows ───────────────────────────────────────────────")
+        await mount(pg)
+        await pg.click('.col[data-i="0"] .row:has-text("tables")')
+        await pg.wait_for_timeout(300)
+        await pg.click('.col[data-i="1"] .row:has-text("log.jsonl")')
+        await pg.wait_for_timeout(400)
+        check("A .jsonl file opens as a column of rows named by the unique short text key",
+              await pg.evaluate("__rows(2)") == ["First", "Second", "Third"],
+              str(await pg.evaluate("__rows(2)")))
+        await pg.click('.col[data-i="2"] .row:has-text("Second")')
+        await pg.wait_for_timeout(400)
+        kv = await pg.evaluate(
+            "[...document.querySelectorAll('#pv-content .pv-kv tr')]"
+            ".map(r => [r.children[0].textContent, r.children[1].textContent])")
+        check("A row previews as a two-column key/value table",
+              kv == [["id", "2"], ["title", "Second"], ["ts", "2026-01-02"], ["tags", "[]"]],
+              str(kv))
+        check("…with no invented size or date",
+              await pg.inner_text("#pv-sub") == "")
+        await pg.evaluate("applyPath(['tables', 'log.jsonl', 'Third'])")
+        await pg.wait_for_timeout(400)
+        check("A deep link names a row and restores it",
+              (await pg.evaluate("sel"))[-1] == "Third"
+              and "2026-01-03" in await pg.inner_text("#pv-content"))
+        await pg.click('.col[data-i="1"] .row:has-text("dup.jsonl")')
+        await pg.wait_for_timeout(400)
+        check("Repeated titles fall back to the unique scalar key",
+              await pg.evaluate("__rows(2)") == ["10", "11"], str(await pg.evaluate("__rows(2)")))
+        await pg.click('.col[data-i="1"] .row:has-text("bad.jsonl")')
+        await pg.wait_for_timeout(400)
+        note = await pg.inner_text('.col[data-i="2"]')
+        check("A malformed line lands on the denied note, not a column",
+              "Not valid JSONL: line 2" in note and await pg.evaluate("__rows(2)") == [], note)
+        await pg.click('.col[data-i="1"] .row:has-text("huge.jsonl")')
+        await pg.wait_for_timeout(400)
+        note = await pg.inner_text('.col[data-i="2"]')
+        check("One byte over the ceiling is declined the same way",
+              "Too large" in note and await pg.evaluate("__rows(2)") == [], note)
+        # back where the sections below expect to find note.md
+        await pg.click('.col[data-i="0"] .row:has-text("mixed")')
+        await pg.wait_for_timeout(300)
 
         print("\n── Edit mode ────────────────────────────────────────────────")
         await pg.click('.col[data-i="1"] .row:has-text("note.md")')
