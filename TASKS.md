@@ -34,6 +34,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - The maximum column width must be 2/3 of available space. This ensures that the
   left edge of inner folders and previewed files is always visible.
 
+- Rendering of fenced blocks in Markdown has two unwanted artifacts:
+  - the first line is indented about 0.7 character widths
+  - text has a slightly darker background color than the gray surrounding box
+
 ## In progress
 
 
