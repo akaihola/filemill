@@ -6,11 +6,11 @@
    the bundle: they are imported from a CDN the first time a file that needs one
    is previewed, and cached for the session.
 
-   Source files are not on that list. They are coloured by core/syntax.js, in
-   the page, with no download and no switch to find — highlighting that only
-   arrived over the network would be missing from exactly the offline build the
-   app is built to be, and the stylesheet that comes with the CDN highlighter is
-   light-theme only. What is left here is what genuinely needs a library.
+   Source files and fenced code are not on that list. They are coloured by
+   core/syntax.js, in the page, with no download and no switch to find —
+   highlighting that only arrived over the network would be missing from
+   exactly the offline build the app is built to be. What is left here is what
+   genuinely needs a library.
 
    Which means this is the one thing in filemill that talks to the network, and
    the app's whole pitch is that your folder does not. So:
@@ -31,9 +31,7 @@ const CDN = {
   "markdown-it-deflist":    "https://esm.sh/markdown-it-deflist@3.0.0",
   "markdown-it-task-lists": "https://esm.sh/markdown-it-task-lists@2.1.1",
   "markdown-it-anchor":     "https://esm.sh/markdown-it-anchor@9.2.0",
-  "highlight.js":           "https://esm.sh/highlight.js@11.10.0",
   "mammoth":                "https://esm.sh/mammoth@1.8.0",
-  "hljs-css":               "https://esm.sh/highlight.js@11.10.0/styles/github.css",
 };
 
 /* Tests point this at local stubs — there is no other way to exercise the
@@ -61,19 +59,6 @@ function load(name) {
   return p;
 }
 
-/* The highlighter needs its stylesheet, and a <link> cannot be awaited usefully
-   — a moment of unstyled code is not worth blocking the preview for. */
-let cssAdded = false;
-function addHljsCSS() {
-  if (cssAdded) return;
-  cssAdded = true;
-  const l = document.createElement("link");
-  l.rel = "stylesheet";
-  l.href = cdn("hljs-css");
-  l.onerror = () => { cssAdded = false; l.remove(); };
-  document.head.appendChild(l);
-}
-
 offerRichToggle(richEnabled, setRich);
 
 const MD_RE   = /\.(md|markdown)$/i;
@@ -87,21 +72,14 @@ let mdInstance = null;
 
 async function markdown(text) {
   if (!mdInstance) {
-    const [MarkdownIt, footnote, deflist, tasklists, anchor, hljs] = await Promise.all([
+    const [MarkdownIt, footnote, deflist, tasklists, anchor] = await Promise.all([
       load("markdown-it"), load("markdown-it-footnote"), load("markdown-it-deflist"),
-      load("markdown-it-task-lists"), load("markdown-it-anchor"), load("highlight.js"),
+      load("markdown-it-task-lists"), load("markdown-it-anchor"),
     ]);
-    addHljsCSS();
-    mdInstance = new MarkdownIt({
-      linkify: true, typographer: false, html: false,
-      highlight: (code, lang) => {
-        try {
-          return lang && hljs.getLanguage(lang)
-            ? `<pre class="hljs"><code>${hljs.highlight(code, { language: lang }).value}</code></pre>`
-            : `<pre class="hljs"><code>${hljs.highlightAuto(code).value}</code></pre>`;
-        } catch { return ""; }
-      },
-    }).use(footnote).use(deflist).use(tasklists).use(anchor);
+    /* No highlight option: fences come out as <pre><code class="language-x">,
+       and core/syntax.js colours them after they land — see hlFences. */
+    mdInstance = new MarkdownIt({ linkify: true, typographer: false, html: false })
+      .use(footnote).use(deflist).use(tasklists).use(anchor);
 
     /* filemill renders [[PageName]]; markdown-it has no such plugin, and the
        rule is small enough that matching it is cheaper than finding one. The

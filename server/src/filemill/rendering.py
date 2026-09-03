@@ -1,4 +1,8 @@
-"""Markdown rendering, syntax highlighting, and link/wikilink resolution."""
+"""Markdown rendering and link/wikilink resolution.
+
+Fenced code is emitted as ``<pre><code class="language-x">`` and coloured in the
+browser by ``ui/core/syntax.js`` — one implementation for both builds.
+"""
 
 import html as html_lib
 from pathlib import Path
@@ -6,20 +10,8 @@ from urllib.parse import quote as urlquote
 
 from markdown_it import MarkdownIt
 from markdown_it.rules_inline import StateInline
-from pygments import highlight
-from pygments.lexers import get_lexer_by_name, guess_lexer
-from pygments.lexers.special import TextLexer
 
 from filemill import urls
-from filemill.styles import PYGMENTS_FORMATTER
-
-
-def highlighter(code: str, lang: str, _attrs: str) -> str:
-    try:
-        lexer = get_lexer_by_name(lang) if lang else guess_lexer(code)
-    except Exception:
-        lexer = TextLexer()
-    return highlight(code, lexer, PYGMENTS_FORMATTER)
 
 
 # ── Git-root and file-resolution helpers ──────────────────────────────────────
@@ -126,7 +118,7 @@ def _href_for_file(abs_path: Path, state=None) -> str:
 
 # ── MarkdownIt instance ────────────────────────────────────────────────────────
 
-md = MarkdownIt("commonmark", {"highlight": highlighter, "linkify": True}).enable(
+md = MarkdownIt("commonmark", {"linkify": True}).enable(
     ["table", "strikethrough", "linkify"]
 )
 

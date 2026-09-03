@@ -72,7 +72,7 @@ the user makes to your behaviour — capture it here so it survives a context re
     ├── test-ui.py              ← headless suite, fake handle (137 checks)
     ├── test-url.py             ← needs a real origin: deep links, and a real
     │                             filesystem through OPFS (15 checks)
-    ├── test-rich.py            ← CDN renderers: offline/switch/loaded (14)
+    ├── test-rich.py            ← CDN renderers: offline/switch/loaded (18)
     └── test-e2e.py             ← headed suite, real folder + real picker
 ```
 
