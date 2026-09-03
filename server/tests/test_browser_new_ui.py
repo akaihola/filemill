@@ -64,6 +64,10 @@ def ui_root(tmp_path: Path) -> Path:
         "# Readme\n\nline one\nline two\n\n```python\n" + SOURCE + "```\n"
     )
     (tmp_path / ".hidden").write_text("h")
+    (tmp_path / "log.jsonl").write_text(
+        '{"id": 1, "title": "First", "ts": "2026-01-01"}\n'
+        '{"id": 2, "title": "Second", "ts": "2026-01-02"}\n'
+    )
     con = sqlite3.connect(str(tmp_path / "sample.db"))
     con.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
     for i in range(1, 4):
@@ -678,3 +682,28 @@ def test_a_deep_link_into_a_database_restores_the_columns(page):
     assert page.evaluate("sel")[-1] == "1"
     page.wait_for_selector("#preview .pv-rich", timeout=15000)
     assert "User1" in page.inner_text("#preview .pv-rich")
+
+
+def test_a_jsonl_file_opens_as_a_column_of_rows(page):
+    page.open("")
+    page.click('.col[data-i="0"] .row:has-text("log.jsonl")')
+    page.wait_for_selector('.col[data-i="1"] .row', timeout=15000)
+    names = page.eval_on_selector_all(
+        '.col[data-i="1"] .row', "els => els.map(e => e.title)"
+    )
+    assert names == ["First", "Second"]
+
+
+def test_a_jsonl_row_previews_in_the_browser_without_asking_the_server(page):
+    seen: list[str] = []
+    page.on("request", lambda r: seen.append(r.url))
+    page.open("log.jsonl/Second")
+    assert page.evaluate("sel")[-1] == "Second"
+    page.wait_for_selector("#preview .pv-kv", timeout=15000)
+    cells = page.eval_on_selector_all(
+        "#preview .pv-kv tr",
+        "rs => rs.map(r => [r.children[0].textContent, r.children[1].textContent])",
+    )
+    assert cells == [["id", "2"], ["title", "Second"], ["ts", "2026-01-02"]]
+    assert page.inner_text("#pv-sub") == ""
+    assert [u for u in seen if "/api/preview" in u] == []
