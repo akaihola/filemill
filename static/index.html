@@ -420,6 +420,9 @@ body {
 .pv-text {
   font-family: var(--mono); font-size: 11.5px; line-height: 1.55;
   color: var(--ink-2); white-space: pre-wrap; word-break: break-word;
+  /* never wrap before column 88: a zoomed-in pane scrolls .pv-body sideways
+     instead, and previewTarget() asks for the same width in px */
+  min-width: 88ch;
   margin: 0 0 18px; padding: 12px 14px; border-radius: 8px;
   background: var(--hover);
 }
@@ -1039,9 +1042,18 @@ const previewNode = () => {
   return (n && !n.dir) ? n : null;
 };
 
+/* 88 columns of .pv-text plus its and .pv-body's horizontal padding, measured
+   from the real monospace font so it agrees with the CSS `min-width: 88ch` */
+const codeMin = () => codeMin._w ||= (() => {
+  const c = document.createElement("canvas").getContext("2d");
+  const cs = getComputedStyle(root);
+  c.font = `11.5px ${cs.getPropertyValue("--mono")}`;
+  return Math.ceil(c.measureText("0").width * 88) + 80;
+})();
+
 /* target reading width for the preview — the thing scrolling tries to protect */
 const previewTarget = () => previewNode()
-  ? Math.min(760, Math.max(420, Math.round(stage.clientWidth * 0.45)))
+  ? Math.min(760, Math.max(codeMin(), Math.round(stage.clientWidth * 0.45)))
   : 300;
 
 function measure(node) {

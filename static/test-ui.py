@@ -24,7 +24,7 @@ TARGET = ROOT / ("index-dev.html" if "--dev" in sys.argv else "index.html")
 
 # The fixture's source file as Python sees it: __mk builds a.py from this
 # string and long.py from 300 copies of it.
-PY_SRC = 'def f():\n    # doc\n    return "s" + 42\n'
+PY_SRC = 'def f():\n    # doc\n    return "s" + 42\n    # ' + 'x' * 82 + '\n'
 
 # A fake FileSystemDirectoryHandle tree: async-iterable entries(), getFile().
 FAKE = r"""
@@ -83,7 +83,8 @@ window.__mk = (nbig) => {
                    F('one.txt','1'), F('two.txt','2')];
   window.__race = [F('alpha.txt','a'), F('bravo.txt','b')];
   // one of every token class core/syntax.js knows, for the preview checks
-  const PY_SRC = 'def f():\n    # doc\n    return "s" + 42\n';
+  // …and an 88-column comment, for the "never wrap before column 88" checks
+  const PY_SRC = 'def f():\n    # doc\n    return "s" + 42\n    # ' + 'x'.repeat(82) + '\n';
   return D('workspace', [
     D('deep',  [D('alpha',[D('beta',[D('gamma',[F('leaf.md','# leaf')])])])]),
     D('mixed', [D('sub',[F('a.py', PY_SRC),
@@ -699,6 +700,40 @@ async def main():
               (await pg.text_content(".pv-text")) == PY_SRC)
         check("…and a coloured file is still editable",
               await pg.is_visible("#pv-edit"))
+        # Column 88: the box never narrows below 88ch, and on a normal screen
+        # the pane is wide enough that nothing scrolls sideways.
+        WIDTH = """() => {
+          const t = document.querySelector('.pv-text'), cs = getComputedStyle(t);
+          const b = document.querySelector('#preview .pv-body');
+          const probe = document.createElement('span');
+          probe.textContent = '0'.repeat(88); probe.style.font = cs.font;
+          probe.style.whiteSpace = 'pre'; probe.style.position = 'absolute';
+          t.append(probe); const ch88 = probe.getBoundingClientRect().width; probe.remove();
+          const lh = parseFloat(cs.lineHeight);
+          return {code: t.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight),
+                  ch88, lines: Math.round((t.clientHeight - parseFloat(cs.paddingTop)
+                                           - parseFloat(cs.paddingBottom)) / lh),
+                  sideways: b.scrollWidth > b.clientWidth + 1};
+        }"""
+        w = await pg.evaluate(WIDTH)
+        check("A source preview is at least 88 columns wide",
+              w["code"] >= w["ch88"] - 0.5, json.dumps(w))
+        check("…without a sideways scrollbar on a normal screen",
+              not w["sideways"], json.dumps(w))
+        check("…and an 88-column line stays on one line",
+              w["lines"] == 4, json.dumps(w))
+        # Zoomed to ~170 %, the CSS viewport is 900 px wide. The pane must keep
+        # its 88 columns rather than wrap the line; longer lines still wrap at
+        # column 88 or later, and a pane narrower than that scrolls .pv-body.
+        await pg.set_viewport_size({"width": 900, "height": 700})
+        await pg.wait_for_timeout(300)
+        w = await pg.evaluate(WIDTH)
+        check("Zoomed in, the source preview still holds 88 columns",
+              w["code"] >= w["ch88"] - 0.5, json.dumps(w))
+        check("…and the 88-column line still stays on one line",
+              w["lines"] == 4, json.dumps(w))
+        await pg.set_viewport_size({"width": 1500, "height": 900})
+        await pg.wait_for_timeout(300)
         # Both palettes are declared; that they are legible is a screenshot's
         # job, but a theme that never reaches the tokens is a bug this catches.
         colour = "e=>getComputedStyle(e).color"
@@ -803,6 +838,10 @@ async def main():
               await pg.is_visible("iframe.pv-html"))
 
         print("\n── Settings ─────────────────────────────────────────────────")
+        # An 88-column preview folds the walked-past root column here; open
+        # its spine first, as a user would, before clicking a row in it.
+        await pg.evaluate("document.querySelector('.col.spine')?.click()")
+        await pg.wait_for_timeout(300)
         await pg.click('.col[data-i="0"] .row:has-text("mixed")')
         await pg.wait_for_timeout(200)
         before = await pg.eval_on_selector_all('.col[data-i="1"] .row', "e=>e.length")
