@@ -33,6 +33,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
+
+## Completed
+
 - [*] Hierarchical view for `.jsonl` files: first level column is a listing showing
   for each line the value of a key which is unique across all lines, preferring
   short or moderate width text values (e.g. `title`, `description`) but using
@@ -40,9 +43,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   column is a two-column table view of `(key, value)` pairs for each line. Do
   this entirely on the client side, but following the example of how `.sqlite`
   files are rendered.
-
-
-## Completed
 
 - [*] Migrate the 19 legacy htmx browser tests in
   server/tests/test_browser_keyboard.py to the shared UI. Ported in e89f974;
