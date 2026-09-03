@@ -66,10 +66,13 @@ local folder (`preview-upload.js`), which is strictly better.
 
 ## Syntax highlighting is neither of those
 
-Source files are the one thing both builds colour the same way, and they do it
-in `core/syntax.js` — no download, no switch, no Python. Every provider reaches
-it: `preview-local.js` colours the text it was already escaping, and
-`app-http.js` wraps whichever server-side provider is in use so that a file with
-a language we know is read through `FS.blob` and highlighted here instead. The
-server keeps everything it renders better — Markdown, `.docx`, database rows —
-and a virtual path is never diverted, because only the server can read one.
+Source files and fenced code are the things both builds colour the same way,
+and they do it in `core/syntax.js` — no download, no switch, no Python. Every
+provider reaches it: `preview-local.js` colours the text it was already
+escaping, `app-http.js` wraps whichever server-side provider is in use so that a
+file with a language we know is read through `FS.blob` and highlighted here
+instead, and `hlFences` colours the `<pre><code class="language-x">` blocks
+every Markdown renderer emits once `fillPreview` has put them in the pane. The
+server keeps everything else it renders better — Markdown, `.docx`, database
+rows — and a virtual path is never diverted, because only the server can read
+one.
