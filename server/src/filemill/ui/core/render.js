@@ -228,6 +228,7 @@ async function fillPreview(n) {
   const host = document.getElementById("pv-content");
   if (!host) return;
   host.innerHTML = html ?? `<p>No inline preview for this file type.</p>`;
+  hlFences(host);
   const btn = document.getElementById("pv-edit");
   if (btn && canEdit(n)) { btn.hidden = false; btn.onclick = () => openEditor(n); }
   paintTrail();

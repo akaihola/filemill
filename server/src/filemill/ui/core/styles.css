@@ -483,7 +483,6 @@ body {
   font-size: var(--fs-meta); color: var(--ink-3); background: var(--hover);
 }
 .pv-rich .wikilink { color: var(--accent); cursor: pointer; }
-.pv-rich .hljs { background: var(--hover) !important; }
 
 /* Server-rendered preview bodies (filemill): markdown, Pygments, docx, pptx.
    The provider supplies the markup; these are the containers it lands in. */
