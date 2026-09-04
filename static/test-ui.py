@@ -857,6 +857,11 @@ async def main():
         check("One byte over TEXT_MAX is declined, not rendered",
               not await pg.is_visible(".pv-text")
               and "No inline preview" in body, body[:80])
+        # The phone pass above folded two columns, and a fold outlives the
+        # resize back: unfolding is a user action, so make it one.
+        if await pg.eval_on_selector_all('.col[data-i="1"].spine', "e=>e.length"):
+            await pg.click('.col[data-i="1"].spine')
+            await scroll_settled(pg)
         await pg.click('.col[data-i="1"] .row:has-text("note.md")')
         await pg.wait_for_timeout(300)
         check("A file with no language it knows stays plain",
@@ -1240,6 +1245,7 @@ async def main():
             await pg.wait_for_timeout(350)
         await pg.mouse.move(759, 699)
         painted = []
+        landed = []
         for _ in range(4):                              # and back out again
             st = await pg.evaluate(
                 "(() => { const el = document.querySelector('.col.focus');"
@@ -1249,9 +1255,22 @@ async def main():
             painted.append((st["cls"], st["w"]))
             await pg.keyboard.press("ArrowLeft")
             await pg.wait_for_timeout(350)
+            await scroll_settled(pg)
+            landed.append(await pg.evaluate(
+                "(() => { const el = document.querySelector('.col.focus');"
+                " return {f: focusCol, d: folded, sp: SPINE(),"
+                "         w: Math.round(el.getBoundingClientRect().width)}; })()"))
         check("Every column ← lands on shows ⟳, folding or not",
               all(w > 0 for _, w in painted),
               "; ".join(f"{c}→{w}" for c, w in painted))
+        # The dial lands on round(k·unit·range), up to half a pixel short of the
+        # boundary. Read with too small a slack that is one column *fewer*
+        # folded, t ≈ 1: the column just reached paints as a spine, and since
+        # folded === focusCol the next ← has nothing left to unfold. Measured
+        # here, in this fixture at 760 px, on the second ← before the fix.
+        check("← unfolds the column it lands on, at every depth",
+              all(s["d"] == s["f"] and s["w"] > s["sp"] for s in landed),
+              "; ".join(f"focus {s['f']} folded {s['d']} {s['w']}px" for s in landed))
         await pg.set_viewport_size({"width": 1500, "height": 900})
         await pg.wait_for_timeout(200)
 
