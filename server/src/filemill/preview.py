@@ -7,7 +7,31 @@ IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
 
 # Largest file Pygments is asked to colour, and largest one shown as plain <pre>.
 SYNTAX_SIZE_LIMIT = 512 * 1024  # 512 KB
-RAW_SIZE_LIMIT = 256 * 1024  # 256 KB
+RAW_SIZE_LIMIT = SYNTAX_SIZE_LIMIT
+MAX_LINE_LENGTH = 10_000
+
+
+def valid_text(data: bytes, reject_wide: bool = True) -> str | None:
+    """Decode bounded UTF-8 text, rejecting binary and wide lines."""
+    try:
+        if len(data) > SYNTAX_SIZE_LIMIT:
+            return None
+        text = data.decode("utf-8")
+        if "\x00" in text:
+            return None
+        if reject_wide and max((len(line) for line in text.splitlines()), default=0) > MAX_LINE_LENGTH:
+            return None
+        return text
+    except UnicodeDecodeError:
+        return None
+
+
+def read_text(path: Path, reject_wide: bool = True) -> str | None:
+    """Read a bounded UTF-8 text file, rejecting binary and wide lines."""
+    try:
+        return valid_text(path.read_bytes(), reject_wide)
+    except OSError:
+        return None
 
 
 def render_preview(path: Path, state=None) -> str:
@@ -96,10 +120,7 @@ def _highlight_source(path: Path, ext: str) -> str | None:
         )
 
         if path.stat().st_size <= SYNTAX_SIZE_LIMIT:
-            try:
-                content = path.read_text(encoding="utf-8")
-            except UnicodeDecodeError:
-                content = None
+            content = read_text(path, reject_wide=False)
             if content is not None:
                 lexer = None
                 try:
@@ -123,9 +144,10 @@ def _raw_text(path: Path) -> str | None:
     """Return a small-enough UTF-8 file as an escaped ``<pre>``, else None."""
     try:
         if path.stat().st_size <= RAW_SIZE_LIMIT:
-            content = path.read_text(encoding="utf-8")
-            return f'<pre class="preview-raw">{html_lib.escape(content)}</pre>'
-    except (UnicodeDecodeError, OSError):
+            content = read_text(path, reject_wide=False)
+            if content is not None:
+                return f'<pre class="preview-raw">{html_lib.escape(content)}</pre>'
+    except OSError:
         pass
     return None
 
