@@ -4,6 +4,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- The server browser suites show 11 failures on the branch, but a run against a
+  clean main checkout produced exactly the same 11: two legacy-htmx tests that
+  main deliberately disabled, and nine mobile restore-scroll tests.
+
 - [*] static/test-rich.py's two offline checks fail on this machine, in both
   bundle and --dev mode: "Offline, a Markdown file still shows its source" and
   "…and says why it is not rendered". Confirmed pre-existing at b96d84e, so it
@@ -47,6 +51,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Remove legacy HTMX code/tests/docs.
 
 ## Scheduled
+
+- [5] Hierarchical nested view for JSON
+- [*] Text file editing shows the original version of the file after saving changes.
+  Force reloading the page doesn't change that.
 
 ## In progress
 
