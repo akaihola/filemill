@@ -103,6 +103,9 @@ window.__mk = (nbig) => {
                 D('site', [F('README.md','# site'), F('index.html','<h1>s</h1>')]),
                 D('web',  [F('index.html','<h1>w</h1>')]),
                 F('note.md','# note'), F('data.json','{}'),
+                F('nested.json', '{"name":"x","tags":["a","b"],"meta":{"n":1,"ok":true,"none":null}}'),
+                F('bad.json', '{oops'),
+                F('deep.json', '['.repeat(200000) + ']'.repeat(200000)),
                 // Taller than any preview pane, so the pane has to say where a
                 // long text scrolls: the column itself, not a box inside it.
                 F('long.txt', 'a line of plain text\n'.repeat(400)),
@@ -881,6 +884,31 @@ async def main():
         await pg.wait_for_timeout(400)
         check("A non-text preview offers no Edit button",
               await pg.is_hidden("#pv-edit"))
+
+        print("\n── JSON preview ─────────────────────────────────────────────")
+        await pg.click('.col[data-i="1"] .row:has-text("nested.json")')
+        await pg.wait_for_selector(".pv-json details")
+        check("Valid JSON is pretty-printed, one member per line",
+              [l for l in (await pg.inner_text(".pv-json")).split("\n") if l][:3] ==
+              ['{', '  "name": "x",', '  "tags": ['])
+        check("Nested objects and arrays are foldable nodes",
+              await pg.eval_on_selector_all(".pv-json details", "e=>e.length") == 3)
+        await pg.click('.pv-json details details:has(summary:has-text("tags")) > summary')
+        await pg.wait_for_timeout(100)
+        check("Clicking a node folds it",
+              await pg.eval_on_selector_all(".pv-json details:not([open])", "e=>e.length") == 1)
+        await pg.click('.pv-json details details:has(summary:has-text("tags")) > summary')
+        await pg.wait_for_timeout(100)
+        check("…and clicking again unfolds it",
+              await pg.eval_on_selector_all(".pv-json details:not([open])", "e=>e.length") == 0)
+        await pg.click('.col[data-i="1"] .row:has-text("bad.json")')
+        await pg.wait_for_selector(".pv-text:not(.pv-json)")
+        check("Invalid JSON keeps the coloured-source fallback",
+              (await pg.inner_text(".pv-text")) == "{oops")
+        await pg.click('.col[data-i="1"] .row:has-text("deep.json")')
+        await pg.wait_for_selector(".pv-text:not(.pv-json)")
+        check("JSON nested past the stack is shown as source, not an error",
+              (await pg.inner_text(".pv-text")).startswith("[[[["))
 
         print("\n── Auto-preview ─────────────────────────────────────────────")
         await pg.click('.col[data-i="1"] .row:has-text("docs")')
