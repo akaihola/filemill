@@ -38,36 +38,54 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Each row of a JSONL file must be presented exactly like a hierarchical
   nested view of a JSON file. Depends on [5].
 
+- Text file editing shows the original version of the file after saving changes.
+  Force reloading the page doesn't change that.
+
+- Text file editing always starts at the bottom of the file. It should start with the
+  cursor at the top of the file instead.
+
+- Remove legacy HTMX code/tests/docs.
+
 ## Scheduled
 
 ## In progress
 
 ## Completed
 
-- [*] Get completely rid of the old HTMX based implementation. We now have enough
-  feature parity in the stand-alone client side UI and the server-based
-  implementation which shares the same client side implementation.
-- [*] Allow editing any plaintext file, e.g. `.gitconfig`. Detect editable files by
-  file extension **and** contents. If it's plain ASCII or UTF-8 text, it's
+- [*] Get rid of HTMX based routes. We now have enough feature parity in the
+  stand-alone client side UI and the server-based implementation which shares
+  the same client side implementation so we can start removing the legacy
+  implementation.
+
+- [*] Allow editing any plaintext file, e.g. `.gitconfig`. Detect editable files
+  by file extension **and** contents. If it's plain ASCII or UTF-8 text, it's
   editable, unless it's single line and insanely wide.
+
 - [*] For highlighted text files (e.g. `.py`, `.js`), the minimum preview width
   isn't currently defined as a static number of characters. So at browser zooms
-  above 100%, lines are wrapped. Ensure the minimum preview width is 88 characters.
+  above 100%, lines are wrapped. Ensure the minimum preview width is 88
+  characters.
+
 - [*] If I navigate deep into
   `~/.bun/install/cache/@agegr/pi-web/0.8.8@@@1/README.md` and return back
   column by column using the left arrow key, the `.bun` column doesn't expand
   when I reach it. It does expand if I navigate to it using the mouse instead.
+
 - [*] make PDF previews full frame just like HTML and Markdown rendered previews
-- [*] The maximum column width must be 2/3 of available space. This ensures that the
-  left edge of inner folders and previewed files is always visible.
+
+- [*] The maximum column width must be 2/3 of available space. This ensures that
+  the left edge of inner folders and previewed files is always visible.
+
 - [*] Rendering of fenced blocks in Markdown has two unwanted artifacts:
   - the first line is indented about 0.7 character widths
   - text has a slightly darker background color than the gray surrounding box
+
 - [*] JSONL hierarchical view must be in original file order, not sorted by key.
-- [*] Page Up and Page Down keys should move the selection to the topmost/bottommost
-  visible item in the focused column, or if already selected, scroll up/down as
-  many lines as fit in the column, and then move to the topmost/bottommost
-  visible item.
+
+- [*] Page Up and Page Down keys should move the selection to the
+  topmost/bottommost visible item in the focused column, or if already selected,
+  scroll up/down as many lines as fit in the column, and then move to the
+  topmost/bottommost visible item.
 
 - [4] Use one shared client side implementation for rendering Markdown fenced
   code blocks. Make sure the implementation flows line-wrapped paragraphs
@@ -86,38 +104,52 @@ Rules for TASKS.md usage are at the bottom of the file.
   server/tests/test_browser_keyboard.py to the shared UI. Ported in e89f974;
   the file's 31 tests all pass. Details in
   docs/tasks/2-fix-all-test-failures.md.
+
 - [3] Get rid of duplicate vendored code. Simply use the same source files for
   ui/ and server/.
+
 - [*] Full file highlighting: don't clip at 8000 chars. Answered: no slicing — a
   text preview is whole or absent, bounded by the 512 KB read gate that was
   always there. Rationale in static/AGENTS.md.
+
 - [*] On mobile, tapping a folder still hid the tapped row when the column held
   wide content. The fold cap kept that column unfolded but not on screen: each
   folded ancestor costs a spine and a gutter, so at 390 px two levels in left
   292 px of a 376 px column inside the viewport. applyScroll now pans the strip
   left by exactly the overflow, and render clamps a column to the stage width.
+
 - [*] On mobile, opening a folder causes the opened folder in the next column to
   fold (when vertical) or the parent folder to fold (when horizontal). Touching
   folders should never cause folding of the touched column or columns to the
   right. Only columns to the left of the touched column may fold.
+
 - [*] The static/test-ui.py check "Scrolling right folds columns into spines"
   (expects 5 spines) fails or flakes, likely an animation-timing race.
+
 - [2] Fix all test failures. Split into multiple tasks if necessary.
+
 - [1] Show version and Git commit hash (if available) via an option in the
   settings menu.
+
 - [*] Plaintext preview doesn't use all vertical space in preview column. The
   whole column should scroll, not just the preview area.
+
 - [*] Syntax highlighting missing in preview pane. Use client side highlighting
   to maximize shared code between ui/ and server/.
+
 - [*] Edit mode for text files in the preview pane
+
 - [*] Remove `dl.meta` section (Where/Size/Modified) from preview pane
+
 - [*] In the cogwheel menu, there's an empty `PREVIEWS` section
+
 - [*] Verify and refine TASKS.md rules
 
 [1]: docs/tasks/1-show-version-and-git.md
 [2]: docs/tasks/2-fix-all-test-failures.md
 [3]: docs/tasks/3-remove-duplicate-ui-source.md
 [4]: docs/tasks/4-share-markdown-code.md
+[5]: docs/tasks/5-hierarchical-json-view.md
 [*]: TASKS.md
 
 ---
