@@ -240,6 +240,26 @@ def test_source_is_highlighted_in_the_browser(page):
     assert page.text_content("#preview .pv-text") == SOURCE
 
 
+def test_saved_plaintext_preview_survives_reopen_and_reload(page):
+    page.open("notes/plain.txt")
+    page.wait_for_selector("#pv-edit")
+    assert page.inner_text("#pv-content").strip() == "hello"
+    page.click("#pv-edit")
+    page.fill("#pv-editor", "saved")
+    page.click("#pv-save")
+    page.wait_for_function(
+        "document.querySelector('#pv-content')?.innerText.trim() === 'saved'"
+    )
+    assert page.inner_text("#pv-content").strip() == "saved"
+    page.open("notes")
+    page.click('.col[data-i="1"] .row:has-text("plain.txt")')
+    page.wait_for_selector("#pv-edit")
+    assert page.inner_text("#pv-content").strip() == "saved"
+    page.reload()
+    page.wait_for_selector("#pv-edit")
+    assert page.inner_text("#pv-content").strip() == "saved"
+
+
 def test_a_long_source_file_is_highlighted_whole(page):
     """The served half of "no 8 000-character clip".
 

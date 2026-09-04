@@ -86,6 +86,7 @@ def test_raw_serves_bytes_with_a_media_type(client, tmp_root: Path):
     assert r.status_code == 200
     assert r.content == b"# Hello\n**world**\n"
     assert "markdown" in r.headers["content-type"]
+    assert r.headers["cache-control"] == "no-store"
 
 
 def test_raw_on_a_directory_is_404(client, tmp_root: Path):
@@ -97,9 +98,11 @@ def test_raw_on_a_directory_is_404(client, tmp_root: Path):
 
 def test_preview_uses_the_python_markdown_pipeline(client, tmp_root: Path):
     """The whole reason the renderers were not ported to JavaScript."""
-    html = client.get("/api/preview?p=readme.md").text
+    r = client.get("/api/preview?p=readme.md")
+    html = r.text
     assert "<h1" in html
     assert "<strong>world</strong>" in html
+    assert r.headers["cache-control"] == "no-store"
 
 
 def test_preview_highlights_source_with_pygments(client, tmp_root: Path):
