@@ -39,12 +39,10 @@ from filemill.columns import (
 )
 from filemill.env import env
 from filemill.preview import render_preview, render_source
-from filemill.styles import APP_CSS, COLUMN_JS, LIVE_RELOAD_JS
+from filemill.styles import APP_CSS, LIVE_RELOAD_JS
 from filemill.vfs import REGISTRY
 
 # CDN URL for mermaid.js (UMD build – sets window.mermaid on load)
-_MERMAID_CDN = "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"
-
 # Static files bundled with the package (PWA manifest, service worker, icons)
 _STATIC_DIR: Path = Path(__file__).parent / "static"
 
@@ -64,10 +62,7 @@ ROOT: Path = Path(env("ROOT", str(Path.home())))
 LIVE_MODE: bool = env("LIVE").lower() in ("1", "true", "yes")
 
 app, rt = fast_app(
-    hdrs=(
-        Style(APP_CSS),
-        Script(COLUMN_JS),
-    ),
+    hdrs=(),
     pico=False,
     live=False,
 )
@@ -134,9 +129,6 @@ def _head_tags(*extra_head_scripts):
         Link(rel="manifest", href="/manifest.json"),
         Link(rel="apple-touch-icon", href="/icons/icon-192.png"),
         Style(APP_CSS),
-        Script(src="https://unpkg.com/htmx.org@1.9.12"),
-        Script(src=_MERMAID_CDN),
-        Script(COLUMN_JS),
         Script(_SW_REGISTER_JS),
         *extra_scripts,
         *extra_head_scripts,
@@ -238,7 +230,6 @@ def _build_prune_js(col: int) -> str:
         </script>""")
 
 
-@rt("/click")
 def click(path: str, col: int, vpath: str = "", fmt: str = "", leaf: bool = False):
     """Handle click on a directory, file, or VFS entry."""
     p = _resolve_safe(path)
@@ -361,7 +352,6 @@ def click(path: str, col: int, vpath: str = "", fmt: str = "", leaf: bool = Fals
     return NotStr(preview_html + prune_js + bc_oob)
 
 
-@rt("/vpage")
 def vpage(path: str, vpath: str, page: int = 1, limit: int = 1000):
     """Return a paginated spreadsheet fragment for the given VFS table (target: #preview)."""
     p = _resolve_safe(path)
@@ -406,7 +396,6 @@ def _parse_desktop_url(path: Path) -> str | None:
     return None
 
 
-@rt("/restore")
 def restore(path: str, vpath: str = ""):
     """Return a full app-shell HTML for the given path (deep-link restoration)."""
     p = _resolve_safe(path)
@@ -666,7 +655,6 @@ def web_static(path: str):
     return FileResponse(str(p))
 
 
-@rt("/f/")
 def finder_root(path: str = "", vpath: str = ""):
     """Serve the finder root or redirect legacy ``/f/?path=...`` deep-links."""
     if path:
@@ -684,7 +672,6 @@ def finder_root(path: str = "", vpath: str = ""):
     return _shell_html()
 
 
-@rt("/f/{path:path}")
 def finder_view(path: str = "", vpath: str = ""):
     """Serve the finder shell at an optional canonical mount-relative path.
 
@@ -1185,8 +1172,6 @@ def _reorder_routes() -> None:
     routes = app.router.routes
     _prefixes = {
         "/w/{path:path}",
-        "/f/",
-        "/f/{path:path}",
         "/manifest.json",
         "/sw.js",
         "/icons/{name}",

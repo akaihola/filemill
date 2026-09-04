@@ -2,7 +2,7 @@
   "name": "Filemill",
   "short_name": "Filemill",
   "description": "A column-view file browser and previewer",
-  "start_url": "/f/",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f0f0f0",
