@@ -55,6 +55,7 @@ def ui_root(tmp_path: Path) -> Path:
     (tmp_path / "notes" / "plain.txt").write_text("hello")
     (tmp_path / "code").mkdir()
     (tmp_path / "code" / "sample.py").write_text(SOURCE)
+    (tmp_path / "code" / "nested.json").write_text('{"tags":["a","b"],"n":1}')
     # 11 700 chars: more than the 8 000 the preview used to clip at.
     (tmp_path / "code" / "long.py").write_text(SOURCE * 300)
     # One byte over the preview's 512 KB ceiling.
@@ -253,6 +254,25 @@ def test_a_long_source_file_is_highlighted_whole(page):
     page.wait_for_selector("#preview .pv-text .hl-kw", timeout=15000)
     assert page.text_content("#preview .pv-text") == SOURCE * 300
     assert page.eval_on_selector_all("#preview .pv-text .hl-kw", "e=>e.length") == 600
+
+
+def test_json_is_pretty_printed_and_foldable(page):
+    """The server build takes the same jsonHTML path as the static one."""
+    page.open("code/nested.json")
+    page.wait_for_selector("#preview .pv-json details", timeout=15000)
+    lines = [l for l in page.inner_text("#preview .pv-json").split("\n") if l]
+    assert lines[:3] == ["{", '  "tags": [', '    "a",']
+    page.click("#preview .pv-json details details > summary")
+    assert page.eval_on_selector_all("#preview .pv-json details:not([open])", "e=>e.length") == 1
+
+
+def test_json_is_foldable_in_the_highlight_view(page):
+    """?filemill=highlight serves the shared shell, so the same jsonHTML runs."""
+    page.open_resource("code/nested.json?filemill=highlight")
+    page.wait_for_selector("#preview .pv-json details", timeout=15000)
+    assert page.evaluate("document.documentElement.dataset.filemill") == "highlight"
+    page.click("#preview .pv-json details details > summary")
+    assert page.eval_on_selector_all("#preview .pv-json details:not([open])", "e=>e.length") == 1
 
 
 def test_an_oversized_text_file_is_declined_without_fetching_it(page):

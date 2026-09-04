@@ -82,8 +82,15 @@ const PreviewLocal = {
          triple-quoted string spanning the cut mis-tokenises, and syntax.js
          promises every character exactly once. */
       const lang = hlLang(node.name);
-      const body = lang ? hlHTML(text, lang) : esc(text);
-      return `<pre class="pv-text">${body}</pre>`;
+      /* A .json that parses is shown pretty-printed and foldable; one that does
+         not (or a .jsonc with comments) is coloured as source like any other.
+         This is the whole-file preview only. Browsing a .json as columns, the
+         way core/jsonl.js does for .jsonl, wraps the FS and PREVIEW ports
+         outside this provider and answers for its own virtual nodes before
+         they get here — jsonHTML is a plain function it can call on a subtree. */
+      const json = lang === "json" ? jsonHTML(text) : null;
+      const body = json ?? (lang ? hlHTML(text, lang) : esc(text));
+      return `<pre class="pv-text${json ? " pv-json" : ""}">${body}</pre>`;
     }
     return null;
   },

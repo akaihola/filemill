@@ -13,9 +13,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   isn't currently defined as a static number of characters. So at browser zooms
   above 100%, lines are wrapped. Ensure the minimum preview width is 88 characters.
 
-- Pretty-printed and foldable JSON preview, common client side implementation
-  for both `server/` and `ui/`.
-
 - If I navigate deep into
   `~/.bun/install/cache/@agegr/pi-web/0.8.8@@@1/README.md` and return back
   column by column using the left arrow key, the `.bun` column doesn't expand
