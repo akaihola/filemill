@@ -56,9 +56,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
-- [5] Hierarchical nested view for JSON
-
 ## Completed
+
+- [5] Hierarchical nested view for JSON — shared client-side hierarchical JSON view with nested navigation and scalar previews.
 
 - [*] Get rid of HTMX based routes. We now have enough feature parity in the
   stand-alone client side UI and the server-based implementation which shares
