@@ -1,16 +1,16 @@
 /* filemill service worker
  *
  * Strategy:
- *   - App shell (/f/) and static assets (icons, manifest) → cache-first,
+ *   - App shell (/) and static assets (icons, manifest) → cache-first,
  *     updated in background (stale-while-revalidate).
- *   - Dynamic API and HTMX responses → network-only; never cached.
+ *   - Dynamic API responses → network-only; never cached.
  *   - Everything else → network-first with shell fallback.
  */
 
 const CACHE = "filemill-v1";
 
 const PRECACHE = [
-  "/f/",
+  "/",
   "/manifest.json",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -20,10 +20,6 @@ const PRECACHE = [
 /* Paths whose responses must never be served from cache. */
 const NETWORK_ONLY_PREFIXES = [
   "/api/",
-  "/click",
-  "/restore",
-  "/raw",
-  "/vpage",
   "/sse/",
   "/open-link",
 ];

@@ -26,7 +26,7 @@ def test_manifest_valid_json(client):
 def test_manifest_required_fields(client):
     data = client.get("/manifest.json").json()
     assert data["name"] == "Filemill"   # the product, not the command
-    assert data["start_url"] == "/f/"
+    assert data["start_url"] == "/"
     assert data["display"] == "standalone"
     assert isinstance(data["icons"], list)
     assert len(data["icons"]) >= 1
