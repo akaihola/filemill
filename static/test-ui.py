@@ -149,8 +149,8 @@ window.__mk = (nbig) => {
     // repeat the id has to carry the column; a bad line or an oversized file
     // must land on the denied note, not a broken column.
     D('tables', [
-      F('log.jsonl', '{"id":1,"title":"First","ts":"2026-01-01","tags":["a"]}\n'
-                   + '{"id":2,"title":"Second","ts":"2026-01-02","tags":[]}\n\n'
+      F('log.jsonl', '{"id":2,"title":"Second","ts":"2026-01-02","tags":[]}\n'
+                   + '{"id":1,"title":"First","ts":"2026-01-01","tags":["a"]}\n'
                    + '{"id":3,"title":"Third","ts":"2026-01-03","tags":null}\n'),
       F('dup.jsonl', '{"id":10,"title":"Same"}\n{"id":11,"title":"Same"}\n'),
       F('bad.jsonl', '{"a":1}\nnope\n'),
@@ -869,7 +869,7 @@ async def main():
         await pg.click('.col[data-i="1"] .row:has-text("log.jsonl")')
         await pg.wait_for_timeout(400)
         check("A .jsonl file opens as a column of rows named by the unique short text key",
-              await pg.evaluate("__rows(2)") == ["First", "Second", "Third"],
+              await pg.evaluate("__rows(2)") == ["Second", "First", "Third"],
               str(await pg.evaluate("__rows(2)")))
         await pg.click('.col[data-i="2"] .row:has-text("Second")')
         await pg.wait_for_timeout(400)
