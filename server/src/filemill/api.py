@@ -31,6 +31,7 @@ from pathlib import Path
 
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
+from filemill.preview import read_text, valid_text
 from filemill.vfs import REGISTRY
 
 # Largest body /api/render will render and /api/save will write. Generous for
@@ -198,6 +199,8 @@ def save_file(target: Path, data: bytes) -> Response:
         return JSONResponse({"error": "Not found"}, status_code=404)
     if len(data) > RENDER_MAX:
         return JSONResponse({"error": "Too large"}, status_code=413)
+    if read_text(target) is None or valid_text(data) is None:
+        return JSONResponse({"error": "Not editable"}, status_code=415)
     try:
         target.write_bytes(data)
     except OSError as exc:

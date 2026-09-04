@@ -16,7 +16,6 @@
    bigger version of this one: see preview-http.js for the server-rendered
    variant, and preview-rich.js for the downloaded one.
    ═══════════════════════════════════════════════════════════════════════════ */
-const TEXT_RE = /\.(txt|md|markdown|log|json|jsonc|ya?ml|toml|ini|cfg|conf|csv|tsv|xml|svg|css|scss|less|js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|gitignore|env)$/i;
 const IMG_RE  = /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
 const TEXT_MAX = 512 * 1024;
 
@@ -53,7 +52,7 @@ const PreviewLocal = {
        is filled by fillPreview before any provider runs, the same thing canEdit
        leans on. The blob.size test below stays: this one is only as good as the
        listing's size, and the limit should not depend on that being right. */
-    if (TEXT_RE.test(node.name) && (node.meta?.size ?? 0) > TEXT_MAX) return null;
+    if ((node.meta?.size ?? 0) > TEXT_MAX) return null;
     const blob = await FS.blob(node);
     if (!blob) return null;
 
@@ -72,8 +71,12 @@ const PreviewLocal = {
     if (/\.desktop$/i.test(node.name) && blob.size <= TEXT_MAX)
       return desktopCard(await blob.text()) ?? null;
 
-    if (TEXT_RE.test(node.name) && blob.size <= TEXT_MAX) {
-      const text = await blob.text();
+    if (blob.size <= TEXT_MAX) {
+      let text;
+      try {
+        text = new TextDecoder("utf-8", {fatal: true}).decode(await blob.arrayBuffer());
+      } catch (_) { return null; }
+      if (text.includes("\0")) return null;
       /* core/syntax.js colours what it has a language for and escapes the rest;
          a plain .txt or an unknown extension takes the same path it always did.
          Colouring the whole file costs 22 ms of regex and 273 ms of DOM at the
