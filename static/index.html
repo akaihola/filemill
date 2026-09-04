@@ -2662,6 +2662,16 @@ const jsonValue = (parent, name, value, vpath) => {
 };
 
 function jsonKids(node, value) {
+  if (Array.isArray(value) && value.length && value.every(v =>
+      v && typeof v === "object" && !Array.isArray(v))) {
+    const key = jsonlKey(value);
+    const labels = key && jsonlLabels(value, key);
+    return value.map((record, i) => ({
+      name: labels?.[i] || `item ${i + 1}`, dir: false,
+      vpath: node.vpath ? `${node.vpath}/${i}` : String(i), icon: "📋",
+      rel: node.rel, meta: { virtual: true }, record,
+    }));
+  }
   const entries = Array.isArray(value) ? value.map((v, i) => [String(i), v])
     : Object.entries(value);
   return entries.map(([name, value], i) => jsonValue(node, name, value,
@@ -2706,6 +2716,12 @@ const withJson = fs => ({
 const withJsonPreview = provider => ({
   revoke() { provider.revoke?.(); },
   render(n) {
+    if (n.record) {
+      const cell = v => v !== null && typeof v === "object" ? JSON.stringify(v) : String(v);
+      const rows = Object.entries(n.record)
+        .map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(cell(v))}</td></tr>`).join("");
+      return Promise.resolve(`<div class="pv-rich"><table class="pv-kv">${rows}</table></div>`);
+    }
     if (!n.json || n.value === undefined) return provider.render(n);
     const value = n.value;
     if (value !== null && typeof value === "object") return Promise.resolve(null);
