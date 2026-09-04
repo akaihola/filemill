@@ -256,23 +256,23 @@ def test_a_long_source_file_is_highlighted_whole(page):
     assert page.eval_on_selector_all("#preview .pv-text .hl-kw", "e=>e.length") == 600
 
 
-def test_json_is_pretty_printed_and_foldable(page):
-    """The server build takes the same jsonHTML path as the static one."""
+def test_json_opens_as_a_hierarchical_view(page):
+    """The server build exposes JSON containers as shared virtual columns."""
     page.open("code/nested.json")
-    page.wait_for_selector("#preview .pv-json details", timeout=15000)
-    lines = [l for l in page.inner_text("#preview .pv-json").split("\n") if l]
-    assert lines[:3] == ["{", '  "tags": [', '    "a",']
-    page.click("#preview .pv-json details details > summary")
-    assert page.eval_on_selector_all("#preview .pv-json details:not([open])", "e=>e.length") == 1
+    page.wait_for_selector('.col[data-i="2"] .row:has-text("tags")', timeout=15000)
+    page.click('.col[data-i="2"] .row:has-text("tags")')
+    page.wait_for_selector('.col[data-i="3"] .row:has-text("0")', timeout=15000)
+    page.click('.col[data-i="3"] .row:has-text("0")')
+    assert page.inner_text("#pv-content").strip() == "a"
 
 
-def test_json_is_foldable_in_the_highlight_view(page):
-    """?filemill=highlight serves the shared shell, so the same jsonHTML runs."""
+def test_json_hierarchy_works_in_the_highlight_view(page):
+    """?filemill=highlight keeps the shared JSON hierarchy."""
     page.open_resource("code/nested.json?filemill=highlight")
-    page.wait_for_selector("#preview .pv-json details", timeout=15000)
+    page.wait_for_selector('.col[data-i="2"] .row:has-text("tags")', timeout=15000)
     assert page.evaluate("document.documentElement.dataset.filemill") == "highlight"
-    page.click("#preview .pv-json details details > summary")
-    assert page.eval_on_selector_all("#preview .pv-json details:not([open])", "e=>e.length") == 1
+    page.click('.col[data-i="2"] .row:has-text("tags")')
+    page.wait_for_selector('.col[data-i="3"] .row:has-text("1")', timeout=15000)
 
 
 def test_an_oversized_text_file_is_declined_without_fetching_it(page):

@@ -45,6 +45,7 @@ async function choose(colIdx, node, rowIdx) {
     render();
     await Promise.race([reading, new Promise(r => setTimeout(r, OPEN_GRACE))]);
     if (seq !== navSeq) return;       /* selection moved on while it was read */
+    if (!node.dir) return void render(); /* a virtual wrapper declined the file */
   }
   path.push(node);
   autoPreview(node);                  /* kids already in memory (revisit, fast read) */

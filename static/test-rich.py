@@ -44,6 +44,7 @@ window.__mk = () => {
     F('Other Note.md', '# Other\n'),
     F('code.py', 'def f():\n    return 1\n'),
     F('plain.txt', 'just text'),
+    F('data.json', '{"items":["json value"],"count":2}'),
   ]);
 };
 """
@@ -155,6 +156,14 @@ async def main():
 
         # ── offline: the real CDN, no network ────────────────────────────
         await boot(pg, base, rich=True)
+        await pg.click('.col[data-i="0"] .row:has-text("data.json")')
+        await pg.wait_for_selector('.col[data-i="1"] .row:has-text("items")')
+        await pg.click('.col[data-i="1"] .row:has-text("items")')
+        await pg.wait_for_selector('.col[data-i="2"] .row:has-text("0")')
+        await pg.click('.col[data-i="2"] .row:has-text("0")')
+        check("Rich mode keeps JSON hierarchy client-side",
+              "json value" in await pg.inner_text("#pv-content")
+              and not [u for u in requests if "esm.sh" in u])
         html = await preview(pg, "note.md")
         check("Offline, a Markdown file still shows its source",
               "Heading" in html and "pv-text" in html)
