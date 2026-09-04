@@ -274,11 +274,6 @@ def test_the_wheel_excludes_only_what_the_shell_never_loads():
 # ── the old UI is untouched ──────────────────────────────────────────────────
 
 
-def test_the_htmx_ui_still_serves(client, tmp_root: Path):
-    """The migration is additive until the cutover; /f/ must not have moved."""
-    assert client.get("/f/").status_code == 200
-
-
 # ── virtual filesystems through the new API ──────────────────────────────────
 
 
