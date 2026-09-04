@@ -109,7 +109,7 @@ window.__mk = (nbig) => {
                 // Taller than any preview pane, so the pane has to say where a
                 // long text scrolls: the column itself, not a box inside it.
                 F('long.txt', 'a line of plain text\n'.repeat(400)),
-                F('page.html','<h1>Hi</h1>')]),
+                F('page.html','<h1>Hi</h1>'), F('doc.pdf','%PDF-1.4')]),
     D('empty', []),
     DENIED('locked'),
     SLOW('slow', [F('one.txt','1'), F('two.txt','2')]),
@@ -689,6 +689,19 @@ async def main():
         # whatever width the fold dial has left the pane.
         fit = await pg.evaluate("""(() => {
           const f = document.querySelector('iframe.pv-html').getBoundingClientRect();
+          const b = document.querySelector('.pv-body'), cs = getComputedStyle(b);
+          return [f.width  - (b.clientWidth  - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)),
+                  f.height - (b.clientHeight - parseFloat(cs.paddingTop)  - parseFloat(cs.paddingBottom))];
+        })()""")
+        check("…sized to one visible screen of the pane",
+              all(abs(d) < 2 for d in fit), str(fit))
+        await pg.click('.col[data-i="1"] .row:has-text("doc.pdf")')
+        await pg.wait_for_timeout(400)
+        check("PDF file previews in an iframe",
+              await pg.is_visible("iframe.pv-pdf"))
+        # The same rule as .pv-html: no half-height box inside the pane.
+        fit = await pg.evaluate("""(() => {
+          const f = document.querySelector('iframe.pv-pdf').getBoundingClientRect();
           const b = document.querySelector('.pv-body'), cs = getComputedStyle(b);
           return [f.width  - (b.clientWidth  - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)),
                   f.height - (b.clientHeight - parseFloat(cs.paddingTop)  - parseFloat(cs.paddingBottom))];
