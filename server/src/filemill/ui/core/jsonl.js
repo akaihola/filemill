@@ -16,8 +16,10 @@ const JSONL_MAX = 512 * 1024;                 /* the same ceiling as TEXT_MAX */
 const JSONL_LABEL = 60;                       /* as the server's MAX_LABEL_LEN */
 const JSONL_TEXT = ["title", "name", "description", "summary", "label"];
 const JSONL_SCALAR = ["timestamp", "time", "ts", "id", "uuid", "key"];
+const JSON_MAX = 512 * 1024;
 
 const isJsonl = n => /\.jsonl$/i.test(n.name);
+const isJson = n => /\.jsonc?$/i.test(n.name);
 const jsonlLabel = v =>
   (s => s.length > JSONL_LABEL ? s.slice(0, JSONL_LABEL - 1) + "…" : s)(String(v));
 
@@ -112,5 +114,84 @@ const withJsonlPreview = provider => ({
     const rows = Object.entries(n.record)
       .map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(cell(v))}</td></tr>`).join("");
     return Promise.resolve(`<div class="pv-rich"><table class="pv-kv">${rows}</table></div>`);
+  },
+});
+
+/* JSON documents use the same virtual-node contract as JSONL and SQLite. The
+   value stays on each node so the preview can answer locally; vpath is only a
+   stable address for the shared router and server-shaped nodes. */
+const jsonValue = (parent, name, value, vpath) => {
+  const container = value !== null && typeof value === "object";
+  return { name, dir: container, kids: container ? null : undefined,
+    vpath, icon: container ? "📁" : "◻", json: true, value,
+    rel: parent.rel, meta: { virtual: true } };
+};
+
+function jsonKids(node, value) {
+  if (Array.isArray(value) && value.length && value.every(v =>
+      v && typeof v === "object" && !Array.isArray(v))) {
+    const key = jsonlKey(value);
+    const labels = key && jsonlLabels(value, key);
+    return value.map((record, i) => ({
+      name: labels?.[i] || `item ${i + 1}`, dir: false,
+      vpath: node.vpath ? `${node.vpath}/${i}` : String(i), icon: "📋",
+      rel: node.rel, meta: { virtual: true }, record,
+    }));
+  }
+  const entries = Array.isArray(value) ? value.map((v, i) => [String(i), v])
+    : Object.entries(value);
+  return entries.map(([name, value], i) => jsonValue(node, name, value,
+    node.vpath ? `${node.vpath}/${i}` : String(i)));
+}
+
+const withJson = fs => ({
+  ...fs,
+  async ensureLoaded(node) {
+    if (!node.json) {
+      await fs.ensureLoaded(node);
+      for (const k of node.kids || [])
+        if (!k.dir && isJson(k)) Object.assign(k, { dir: true, kids: null, json: true });
+      return;
+    }
+    if (node.value !== undefined) {
+      if (node.kids === null) node.kids = jsonKids(node, node.value);
+      return;
+    }
+    if (node.loading) return node.loading;
+    node.loading = (async () => {
+      try {
+        const blob = await fs.blob({ ...node, dir: false, vpath: "" });
+        if (!blob) throw new Error("Cannot read file");
+        if (blob.size > JSON_MAX) throw new Error("Too large to browse (over 512 KB)");
+        const value = JSON.parse(await blob.text());
+        if (value === null || typeof value !== "object") {
+          node.dir = false; node.value = value; node.kids = undefined;
+        } else {
+          node.value = value; node.kids = jsonKids(node, value);
+        }
+      } catch (err) {
+        node.jsonError = String(err.message || err);
+        node.dir = false; node.kids = undefined;
+      }
+      node.loading = null;
+    })();
+    return node.loading;
+  },
+});
+
+const withJsonPreview = provider => ({
+  revoke() { provider.revoke?.(); },
+  render(n) {
+    if (n.record) {
+      const cell = v => v !== null && typeof v === "object" ? JSON.stringify(v) : String(v);
+      const rows = Object.entries(n.record)
+        .map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(cell(v))}</td></tr>`).join("");
+      return Promise.resolve(`<div class="pv-rich"><table class="pv-kv">${rows}</table></div>`);
+    }
+    if (!n.json || n.value === undefined) return provider.render(n);
+    const value = n.value;
+    if (value !== null && typeof value === "object") return Promise.resolve(null);
+    const text = typeof value === "string" ? value : JSON.stringify(value);
+    return Promise.resolve(`<pre class="pv-text pv-json-value">${esc(text)}</pre>`);
   },
 });

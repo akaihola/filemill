@@ -947,20 +947,21 @@ async def main():
 
         print("\n── JSON preview ─────────────────────────────────────────────")
         await pg.click('.col[data-i="1"] .row:has-text("nested.json")')
-        await pg.wait_for_selector(".pv-json details")
-        check("Valid JSON is pretty-printed, one member per line",
-              [l for l in (await pg.inner_text(".pv-json")).split("\n") if l][:3] ==
-              ['{', '  "name": "x",', '  "tags": ['])
-        check("Nested objects and arrays are foldable nodes",
-              await pg.eval_on_selector_all(".pv-json details", "e=>e.length") == 3)
-        await pg.click('.pv-json details details:has(summary:has-text("tags")) > summary')
-        await pg.wait_for_timeout(100)
-        check("Clicking a node folds it",
-              await pg.eval_on_selector_all(".pv-json details:not([open])", "e=>e.length") == 1)
-        await pg.click('.pv-json details details:has(summary:has-text("tags")) > summary')
-        await pg.wait_for_timeout(100)
-        check("…and clicking again unfolds it",
-              await pg.eval_on_selector_all(".pv-json details:not([open])", "e=>e.length") == 0)
+        await pg.wait_for_timeout(400)
+        check("Valid JSON opens as an ordered key column",
+              await pg.evaluate("__rows(2)") == ["name", "tags", "meta"])
+        await pg.click('.col[data-i="2"] .row:has-text("tags")')
+        await pg.wait_for_timeout(300)
+        check("Nested arrays open as ordered index rows",
+              await pg.evaluate("__rows(3)") == ["0", "1"])
+        await pg.click('.col[data-i="3"] .row:has-text("0")')
+        await pg.wait_for_timeout(300)
+        check("Scalar JSON values preview in the pane",
+              (await pg.inner_text(".pv-content")).strip() == "a")
+        await pg.click('.col[data-i="2"] .row:has-text("meta")')
+        await pg.wait_for_timeout(300)
+        check("Nested objects remain navigable",
+              await pg.evaluate("__rows(3)") == ["n", "ok", "none"])
         await pg.click('.col[data-i="1"] .row:has-text("bad.json")')
         await pg.wait_for_selector(".pv-text:not(.pv-json)")
         check("Invalid JSON keeps the coloured-source fallback",
