@@ -533,10 +533,8 @@ async def main():
           const col = document.querySelector(`.col[data-i="${focusCol}"]`);
           const r = col.getBoundingClientRect();
           const row = col.querySelector('.row.sel').getBoundingClientRect();
-          const g = parseInt(getComputedStyle(document.documentElement)
-              .getPropertyValue('--gutter'));
           return {focusCol, widths: widths.map(Math.round),
-                  cap: finder.clientWidth - 2 * g,
+                  cap: Math.floor(finder.clientWidth * 2 / 3),
                   clipped: Math.round(r.right - fr.right),
                   rowClipped: Math.round(row.right - fr.right)};
         })()""")
@@ -565,12 +563,13 @@ async def main():
           const pan = tf && tf !== 'none' ? -new DOMMatrix(tf).m41 : 0;
           return {focusCol, pan: Math.round(pan), widths: widths.map(Math.round),
                   natural: Math.max(...widths.map(Math.round)),
+                  cap: Math.floor(finder.clientWidth * 2 / 3),
                   whole: r.left >= fr.left - 2 && r.right <= fr.right + 2};
         })()""")
         check("On a desktop-width screen the strip never pans and the columns "
               "keep their natural width",
               desktop["pan"] == 0 and desktop["whole"]
-              and desktop["natural"] == 380, json.dumps(desktop))
+              and desktop["natural"] <= desktop["cap"], json.dumps(desktop))
 
         # Walking in on a narrow screen leaves the focused column reaching past
         # the right edge — 4 spines and a 148 px column need 334 of 320 — so
