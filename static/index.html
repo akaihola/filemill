@@ -1708,8 +1708,12 @@ function applyScroll() {
   const p = Math.min(1, finder.scrollLeft / max);
   const n = path.length;
 
-  /* the epsilon absorbs sub-pixel scrollLeft rounding at the fold boundaries */
-  const raw = p / foldUnit() + 0.002;
+  /* Half a pixel of slack, in pixels: layout() and unfoldTo() write
+     round(k·unit·range), which can fall up to 0.5 px short of the boundary. A
+     fixed 0.002 units was only 0.3 px once seven columns made a unit 160 px
+     wide, and a landing read one column short paints the column ← just
+     reached as a spine, with folded === focusCol so the next ← never scrolls. */
+  const raw = Math.min(1, (finder.scrollLeft + 0.5) / max) / foldUnit();
   folded = Math.min(n, Math.floor(raw));
   /* how far into folding the next column is — 0 = full width, 1 = a spine */
   const t = Math.min(1, Math.max(0, raw - folded));
