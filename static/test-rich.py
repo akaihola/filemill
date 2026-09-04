@@ -10,9 +10,10 @@ switch that turns it off is honoured. Syntax highlighting is no longer on that
 list: core/syntax.js colours source in the page, so it is checked here only to
 the extent that it needs no download at all.
 
-Both are tested here for real: this sandbox has no network, so the offline path
-is not simulated. The *loaded* path is exercised against stub modules served
-from the same loopback server, which is the only way to reach it offline.
+The offline path is forced here by a Playwright route that aborts `esm.sh`
+requests, so it is tested the same way on networked and networkless hosts. The
+*loaded* path is exercised against stub modules served from the same loopback
+server, which is the only way to reach it without the real CDN.
 
     uv run --with "playwright==1.61.0" python3 test-rich.py [--bundle|--dev]
 """
@@ -145,6 +146,8 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch()
         pg = await b.new_page(viewport={"width": 1500, "height": 900})
+        # Block the real CDN so the offline path is tested on every host.
+        await pg.route("https://esm.sh/**", lambda r: r.abort())
         requests = []
         pg.on("request", lambda r: requests.append(r.url))
 
