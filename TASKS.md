@@ -4,6 +4,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- Get completely rid of the old HTMX based implementation. We now have enough
+  feature parity in the stand-alone client side UI and the server-based
+  implementation which shares the same client side implementation.
+
 - Allow editing any plaintext file, e.g. `.gitconfig`. Detect editable files by
   file extension **and** contents. If it's plain ASCII or UTF-8 text, it's
   editable, unless it's single line and insanely wide.
