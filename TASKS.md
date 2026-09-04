@@ -50,7 +50,7 @@ Rules for TASKS.md usage are at the bottom of the file.
   many lines as fit in the column, and then move to the topmost/bottommost
   visible item.
 
-- Hierarchical nested view for `.json` files and variants like `.jsonc` quite similarly to SQLite and JSONL files. Lists of objects are actually rendered identically to a JSONL file. Lists of long or multi-line strings are similar to folders of files/folders, truncating long strings. The preview of a string is a highlighted render of the string according to a "file type" detected based on the string content. Lists of mixed types are rendered as truncated values with previewing available. If there are no long/multiline strings or objects in the list, just a 1-column table preview is shown. Objects are rendered as a column of keys with previewing of values in the preview area, except when no long/multiline strings nor objects exist as values, a 2-column table is shown in the preview area.
+- [5] Hierarchical nested view for JSON
 
 - Navigating with the right arrow key to the preview area must fold all folder
   columns to maximize the preview area width. A left arrow should return to the
@@ -60,6 +60,16 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Task 04ce9574-92c8-4a4c-8148-32d2e827c13d didn't fix the erratic
   folding/unfolding of the parent column. Hard rule: Up/down navigation must
   never change folding state of ancestor folder columns.
+
+- Truncate too wide file names in the middle just before the file extension
+  instead of truncating at the end.
+
+- Keyboard navigation using arrows still doesn't animate
+  folding/unfolding/resizing of columns. Do systematic debugging to identify the
+  cause, and fix it.
+
+- [*] Each row of a JSONL file must be presented exactly like a hierarchical
+  nested view of a JSON file. Depends on [5].
 
 ## Scheduled
 
