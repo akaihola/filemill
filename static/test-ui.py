@@ -654,6 +654,49 @@ async def main():
         check("Home brings it back the other way",
               seen["above"] >= -1 and seen["below"] >= -1
               and seen["scrolled"] < end_scroll, json.dumps(seen))
+
+        await pg.keyboard.press("PageDown")
+        await pg.wait_for_timeout(250)
+        first_page = await pg.evaluate("""(() => {
+          const col = document.querySelector('.col.focus');
+          const body = col.querySelector('.col-body'), b = body.getBoundingClientRect();
+          const rows = [...col.querySelectorAll('.row')].filter(r => {
+            const x = r.getBoundingClientRect();
+            return x.bottom > b.top && x.top < b.bottom;
+          });
+          return {selected: col.querySelector('.row.cursor')?.textContent,
+                  edge: rows.at(-1)?.textContent, scroll: body.scrollTop};
+        })()""")
+        check("PageDown first moves to the visible bottom row",
+              first_page and first_page["selected"] == first_page["edge"],
+              json.dumps(first_page))
+        await pg.keyboard.press("PageDown")
+        await pg.wait_for_timeout(250)
+        second_page = await pg.evaluate("""(() => {
+          const col = document.querySelector('.col.focus');
+          const body = col.querySelector('.col-body');
+          return {selected: col.querySelector('.row.cursor')?.textContent,
+                  scroll: body.scrollTop, max: body.scrollHeight - body.clientHeight};
+        })()""")
+        check("PageDown at the edge scrolls by a fitted page",
+              second_page and second_page["scroll"] > first_page["scroll"]
+              and second_page["scroll"] <= second_page["max"] + 1,
+              json.dumps(second_page))
+        await pg.keyboard.press("PageUp")
+        await pg.wait_for_timeout(250)
+        third_page = await pg.evaluate("""(() => {
+          const col = document.querySelector('.col.focus');
+          const body = col.querySelector('.col-body'), b = body.getBoundingClientRect();
+          const rows = [...col.querySelectorAll('.row')].filter(r => {
+            const x = r.getBoundingClientRect();
+            return x.bottom > b.top && x.top < b.bottom;
+          });
+          return {selected: col.querySelector('.row.cursor')?.textContent,
+                  edge: rows[0]?.textContent, scroll: body.scrollTop};
+        })()""")
+        check("PageUp returns to the visible top row",
+              third_page and third_page["selected"] == third_page["edge"],
+              json.dumps(third_page))
         await pg.set_viewport_size({"width": 1500, "height": 900})
         await pg.wait_for_timeout(200)
 
