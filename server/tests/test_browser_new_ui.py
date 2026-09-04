@@ -66,8 +66,8 @@ def ui_root(tmp_path: Path) -> Path:
     )
     (tmp_path / ".hidden").write_text("h")
     (tmp_path / "log.jsonl").write_text(
-        '{"id": 1, "title": "First", "ts": "2026-01-01"}\n'
         '{"id": 2, "title": "Second", "ts": "2026-01-02"}\n'
+        '{"id": 1, "title": "First", "ts": "2026-01-01"}\n'
     )
     con = sqlite3.connect(str(tmp_path / "sample.db"))
     con.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
@@ -710,7 +710,7 @@ def test_a_jsonl_file_opens_as_a_column_of_rows(page):
     names = page.eval_on_selector_all(
         '.col[data-i="1"] .row', "els => els.map(e => e.title)"
     )
-    assert names == ["First", "Second"]
+    assert names == ["Second", "First"]
 
 
 def test_a_jsonl_row_previews_in_the_browser_without_asking_the_server(page):
