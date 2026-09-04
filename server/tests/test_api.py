@@ -377,6 +377,19 @@ def test_save_overwrites_and_returns_a_fresh_stat(client, tmp_root: Path):
     assert j["mod"] > 0
 
 
+def test_save_allows_unknown_extension_utf8_and_rejects_binary(client, tmp_root: Path):
+    (tmp_root / ".gitconfig").write_text("name = old\n")
+    assert client.post("/api/save?p=.gitconfig", content="name = Åsa\n".encode()).status_code == 200
+    (tmp_root / "binary").write_bytes(b"x\0y")
+    assert client.post("/api/save?p=binary", content=b"z").status_code == 415
+    assert client.post("/api/save?p=.gitconfig", content=b"x\0y").status_code == 415
+
+
+def test_save_rejects_insanely_wide_text(client, tmp_root: Path):
+    (tmp_root / "wide").write_text("x" * 10_001)
+    assert client.post("/api/save?p=wide", content=b"short").status_code == 415
+
+
 def test_save_refuses_paths_outside_root(client, tmp_root: Path):
     (tmp_root.parent / "outside.txt").write_text("secret")
     assert client.post("/api/save?p=../outside.txt", content=b"x").status_code == 404

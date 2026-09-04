@@ -230,7 +230,13 @@ async function fillPreview(n) {
   host.innerHTML = html ?? `<p>No inline preview for this file type.</p>`;
   hlFences(host);
   const btn = document.getElementById("pv-edit");
-  if (btn && canEdit(n)) { btn.hidden = false; btn.onclick = () => openEditor(n); }
+  if (btn) {
+    btn.hidden = true;
+    if (await editableText(n) !== null) {
+      btn.hidden = false;
+      btn.onclick = () => openEditor(n);
+    }
+  }
   paintTrail();
 }
 
@@ -239,11 +245,22 @@ async function fillPreview(n) {
    preview in adapters/preview-local.js (same extensions, same cap), but it is
    core's own copy: a build picks its preview provider freely, and Edit has to
    work with any of them. Keep the two lists in step. */
-const EDIT_RE = /\.(txt|md|markdown|log|json|jsonc|ya?ml|toml|ini|cfg|conf|csv|tsv|xml|svg|css|scss|less|js|mjs|cjs|jsx|ts|tsx|py|rb|rs|go|java|kt|c|h|cpp|hpp|cs|sh|bash|zsh|fish|sql|nix|lua|php|pl|swift|r|tex|gitignore|env)$/i;
 const EDIT_MAX = 512 * 1024;
+const EDIT_MAX_LINE = 10_000;
+const NON_EDIT_RE = /\.(desktop|docx|pptx|pdf|html?|png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
 
-const canEdit = n => !!(FS.write && !n.dir && !n.vpath &&
-                        EDIT_RE.test(n.name) && (n.meta?.size ?? 0) <= EDIT_MAX);
+async function editableText(n) {
+  if (!FS.write || n.dir || n.vpath || NON_EDIT_RE.test(n.name) ||
+      (n.meta?.size ?? 0) > EDIT_MAX) return null;
+  const blob = await FS.blob(n);
+  if (!blob || blob.size > EDIT_MAX) return null;
+  try {
+    const text = new TextDecoder("utf-8", {fatal: true}).decode(await blob.arrayBuffer());
+    return !text.includes("\0") &&
+      Math.max(...text.split(/\r?\n/).map(line => line.length), 0) <= EDIT_MAX_LINE
+      ? text : null;
+  } catch (_) { return null; }
+}
 
 async function openEditor(n) {
   const token = pvToken;
