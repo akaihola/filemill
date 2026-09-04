@@ -4,25 +4,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- Get completely rid of the old HTMX based implementation. We now have enough
-  feature parity in the stand-alone client side UI and the server-based
-  implementation which shares the same client side implementation.
-
-- Allow editing any plaintext file, e.g. `.gitconfig`. Detect editable files by
-  file extension **and** contents. If it's plain ASCII or UTF-8 text, it's
-  editable, unless it's single line and insanely wide.
-
-- For highlighted text files (e.g. `.py`, `.js`), the minimum preview width
-  isn't currently defined as a static number of characters. So at browser zooms
-  above 100%, lines are wrapped. Ensure the minimum preview width is 88 characters.
-
-- If I navigate deep into
-  `~/.bun/install/cache/@agegr/pi-web/0.8.8@@@1/README.md` and return back
-  column by column using the left arrow key, the `.bun` column doesn't expand
-  when I reach it. It does expand if I navigate to it using the mouse instead.
-
-- make PDF previews full frame just like HTML and Markdown rendered previews
-
 - [*] static/test-rich.py's two offline checks fail on this machine, in both
   bundle and --dev mode: "Offline, a Markdown file still shows its source" and
   "…and says why it is not rendered". Confirmed pre-existing at b96d84e, so it
@@ -31,24 +12,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   something about that path no longer lands in time. The other 13 checks pass,
   including the stubbed-CDN ones.
 
-- The maximum column width must be 2/3 of available space. This ensures that the
-  left edge of inner folders and previewed files is always visible.
-
-- Rendering of fenced blocks in Markdown has two unwanted artifacts:
-  - the first line is indented about 0.7 character widths
-  - text has a slightly darker background color than the gray surrounding box
-
 - In keyboard navigation, parent folder columns currently unfold when selecting
   the next item using the down arrow. Strangely, this doesn't happen when using
   the up arrow. I haven't been able to understand what's special about the
   folders that cause this behavior.
-
-- JSONL hierarchical view must be in original file order, not sorted by key.
-
-- Page Up and Page Down keys should move the selection to the topmost/bottommost
-  visible item in the focused column, or if already selected, scroll up/down as
-  many lines as fit in the column, and then move to the topmost/bottommost
-  visible item.
 
 - [5] Hierarchical nested view for JSON
 
@@ -76,6 +43,31 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## In progress
 
 ## Completed
+
+- [*] Get completely rid of the old HTMX based implementation. We now have enough
+  feature parity in the stand-alone client side UI and the server-based
+  implementation which shares the same client side implementation.
+- [*] Allow editing any plaintext file, e.g. `.gitconfig`. Detect editable files by
+  file extension **and** contents. If it's plain ASCII or UTF-8 text, it's
+  editable, unless it's single line and insanely wide.
+- [*] For highlighted text files (e.g. `.py`, `.js`), the minimum preview width
+  isn't currently defined as a static number of characters. So at browser zooms
+  above 100%, lines are wrapped. Ensure the minimum preview width is 88 characters.
+- [*] If I navigate deep into
+  `~/.bun/install/cache/@agegr/pi-web/0.8.8@@@1/README.md` and return back
+  column by column using the left arrow key, the `.bun` column doesn't expand
+  when I reach it. It does expand if I navigate to it using the mouse instead.
+- [*] make PDF previews full frame just like HTML and Markdown rendered previews
+- [*] The maximum column width must be 2/3 of available space. This ensures that the
+  left edge of inner folders and previewed files is always visible.
+- [*] Rendering of fenced blocks in Markdown has two unwanted artifacts:
+  - the first line is indented about 0.7 character widths
+  - text has a slightly darker background color than the gray surrounding box
+- [*] JSONL hierarchical view must be in original file order, not sorted by key.
+- [*] Page Up and Page Down keys should move the selection to the topmost/bottommost
+  visible item in the focused column, or if already selected, scroll up/down as
+  many lines as fit in the column, and then move to the topmost/bottommost
+  visible item.
 
 - [4] Use one shared client side implementation for rendering Markdown fenced
   code blocks. Make sure the implementation flows line-wrapped paragraphs
