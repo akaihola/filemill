@@ -251,6 +251,29 @@ function stepInto(node) {
   enterColumn(i);
 }
 
+function pageMove(c, dir, ci) {
+  const body = c.rows[0]?.parentElement;
+  if (!body || !c.rows.length) return;
+  const edge = () => {
+    const b = body.getBoundingClientRect();
+    const visible = c.rows.filter(row => {
+      const r = row.getBoundingClientRect();
+      return r.bottom > b.top && r.top < b.bottom;
+    });
+    return dir < 0 ? visible[0] : visible.at(-1);
+  };
+  let row = edge();
+  if (!row) return;
+  if (c.rows[ci] === row) {
+    const h = row.offsetHeight;
+    const lines = h ? Math.max(1, Math.floor(body.clientHeight / h)) : 1;
+    body.scrollTop += dir * lines * h;
+    row = edge();
+  }
+  row?.click();
+  if (row) revealRow(row);
+}
+
 document.addEventListener("keydown", e => {
   /* a keystroke inside a form field (the preview editor) is typing, not
      navigation — leave it alone */
@@ -296,6 +319,9 @@ document.addEventListener("keydown", e => {
     const ri = e.key === "Home" ? 0 : rows.length - 1;
     rows[ri].click();
     revealRow(rows[ri]);
+  } else if (e.key === "PageUp" || e.key === "PageDown") {
+    e.preventDefault();
+    pageMove(c, e.key === "PageUp" ? -1 : 1, ci);
   } else if (e.key === "ArrowRight" || e.key === "Enter") {
     e.preventDefault();
     const next = path[focusCol + 1];
