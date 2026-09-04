@@ -115,9 +115,9 @@ function render(keepScroll) {
       const ri = c.kids.findIndex(k => k.name === sel[i]);
       if (ri >= 0) cursor[i] = ri;
     }
-    /* No column may be wider than the stage it sits on. The fold cap keeps the
+    /* No column may be wider than two-thirds of the live finder. The fold cap keeps the
        touched column unfolded and applyScroll's pan slides it into view, but
-       neither can show 380 px of names in the 355 a 375 px phone has to offer —
+       neither can show a full-width column on a narrow phone —
        the row would still lose its right edge. Clamped here rather than in
        measure() because columnFor caches the built column: a width measured
        against the old viewport would survive a rotation, while `widths` is
@@ -126,12 +126,12 @@ function render(keepScroll) {
        Measured against #finder, not #stage, because the stage is one render
        behind: its width is `--stage-w`, which layout() writes *after* this
        loop has already chosen the widths. Turning a phone from 568 px to 375
-       therefore clamped this render against 568 — 380 px columns on a 375 px
+       therefore clamped this render against 568 — oversized columns on a 375 px
        screen, and the pan can only choose which edge to lose, so the tapped
        row sat 10 px past the right one until the next render healed it.
        #finder is `flex: 1` in the viewport, so it is the live number, and it
        is the one layout() reads to set --stage-w in the first place. */
-    const w = Math.max(COL_MIN, Math.min(c.width, finder.clientWidth - 2 * GUTTER()));
+    const w = Math.min(c.width, Math.floor(finder.clientWidth * 2 / 3));
     widths.push(w);
 
     /* `sorting` goes in the class string rather than on classList, because this
