@@ -62,6 +62,21 @@ def test_dispatch_md(tmp_path):
     assert "preview-md" in render_preview(f)
 
 
+def test_unknown_extension_utf8_is_plain_text(tmp_path):
+    f = tmp_path / ".gitconfig"
+    f.write_text("[user]\nname = Åsa\n")
+    assert "preview-" in render_preview(f)
+
+
+def test_binary_and_insanely_wide_text_are_unsupported(tmp_path):
+    binary = tmp_path / "notes"
+    binary.write_bytes(b"ok\0bad")
+    wide = tmp_path / "wide"
+    wide.write_text("x" * 10_001)
+    assert "preview-unsupported" in render_preview(binary)
+    assert "preview-raw" in render_preview(wide)
+
+
 def test_dispatch_docx(tmp_path, monkeypatch):
     f = tmp_path / "doc.docx"
     f.write_bytes(b"fake")
