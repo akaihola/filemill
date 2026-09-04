@@ -356,9 +356,8 @@ def test_arrow_navigation_folds_but_never_unfolds(page, ui_root):
     must keep them folded. layout() may only raise the fold count on its own —
     unfolding is a user action (a scroll, a spine click, or ←).
 
-    The widths are deterministic: measure() clamps a column to [148, 380] px,
-    so the long file name pins its column to the 380 cap, the short names pin
-    theirs to the 148 floor, and the 1290 px viewport sits between "the wide
+    The widths are deterministic: the content width is capped at two-thirds of
+    the live finder width, and the 1290 px viewport sits between "the wide
     chain overflows" and "the narrow chain fits"."""
     inner = ui_root / "w" / "inner"
     (inner / "a-wide").mkdir(parents=True)
