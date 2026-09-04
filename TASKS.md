@@ -8,11 +8,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   file extension **and** contents. If it's plain ASCII or UTF-8 text, it's
   editable, unless it's single line and insanely wide.
 
-- Use one shared client side implementation for rendering Markdown fenced code
-  blocks. Make sure the implementation flows line-wrapped paragraphs correctly,
-  i.e. doesn't insert line feeds in the rendered HTML at each newline in the
-  source.
-
 - For highlighted text files (e.g. `.py`, `.js`), the minimum preview width
   isn't currently defined as a static number of characters. So at browser zooms
   above 100%, lines are wrapped. Ensure the minimum preview width is 88 characters.
@@ -58,6 +53,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Completed
 
+- [4] Use one shared client side implementation for rendering Markdown fenced
+  code blocks. Make sure the implementation flows line-wrapped paragraphs
+  correctly, i.e. doesn't insert line feeds in the rendered HTML at each newline
+  in the source.
+
 - [*] Hierarchical view for `.jsonl` files: first level column is a listing showing
   for each line the value of a key which is unique across all lines, preferring
   short or moderate width text values (e.g. `title`, `description`) but using
@@ -101,6 +101,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 [1]: docs/tasks/1-show-version-and-git.md
 [2]: docs/tasks/2-fix-all-test-failures.md
 [3]: docs/tasks/3-remove-duplicate-ui-source.md
+[4]: docs/tasks/4-share-markdown-code.md
 [*]: TASKS.md
 
 ---
