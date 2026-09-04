@@ -266,6 +266,15 @@ def test_json_is_pretty_printed_and_foldable(page):
     assert page.eval_on_selector_all("#preview .pv-json details:not([open])", "e=>e.length") == 1
 
 
+def test_json_is_foldable_in_the_highlight_view(page):
+    """?filemill=highlight serves the shared shell, so the same jsonHTML runs."""
+    page.open_resource("code/nested.json?filemill=highlight")
+    page.wait_for_selector("#preview .pv-json details", timeout=15000)
+    assert page.evaluate("document.documentElement.dataset.filemill") == "highlight"
+    page.click("#preview .pv-json details details > summary")
+    assert page.eval_on_selector_all("#preview .pv-json details:not([open])", "e=>e.length") == 1
+
+
 def test_an_oversized_text_file_is_declined_without_fetching_it(page):
     """The gate is before FS.blob, and this is the only way to see that.
 
