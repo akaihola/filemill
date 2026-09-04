@@ -134,14 +134,20 @@ Here are the rules for TASKS.md usage:
 
 ### Workflow for new issue completion
 
+1. Choose issue and schedule work (typically by a heartbeat)
 - Pick the first backlog issue with no dependency to any uncompleted issue.
-- Move it to `In progress` in `main` branch.
+- Move it under `## Scheduled` in `TASKS.md` in the `main` branch and commit.
+
+2. Work on the issue (typically by a task workflow)
+- Move the issue under `## In progress` in `TASKS.md` in the worktree branch and commit.
 - Create or update, review and refine a plan in
   docs/tasks/<N-issue-description>.md in `main` (skip for `[*]` items).
 - Commit description file (if any) and TASKS.md in `main`.
 - From now on, ensure worktree feature branch is always rebased on `main`.
 - Implement the plan, and lint, test, review and refine the implementation in
   the worktree feature branch.
+
+3. Merge and deploy (typically by last steps of a task workflow)
 - Merge the rebased branch on `main`, and remove the worktree and branch.
 - Move the issue to `Completed` in TASKS.md and commit.
 - Do any deployment steps if defined in the general development worklow.
