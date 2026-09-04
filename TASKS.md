@@ -21,8 +21,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   the up arrow. I haven't been able to understand what's special about the
   folders that cause this behavior.
 
-- [5] Hierarchical nested view for JSON
-
 - Navigating with the right arrow key to the preview area must fold all folder
   columns to maximize the preview area width. A left arrow should return to the
   parent folder of the reviewed document and unfold that folder column (but no
@@ -59,6 +57,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## In progress
 
 ## Completed
+
+- [5] Hierarchical nested view for JSON — shared client-side hierarchical JSON view with nested navigation and scalar previews.
 
 - [*] Get rid of HTMX based routes. We now have enough feature parity in the
   stand-alone client side UI and the server-based implementation which shares
