@@ -177,8 +177,8 @@ uv run --with "playwright==1.61.0" python3 test-e2e.py         # real folder
 ```
 
 `test-rich.py` covers the only feature that touches the network. It needs no
-network itself: the offline path is the sandbox's natural state, and the loaded
-path runs against stub modules served from the same loopback port via
+network itself: the test aborts `esm.sh` requests to force the offline path, and
+the loaded path runs against stub modules served from the same loopback port via
 `window.FILEMILL_CDN`. `test-ui.py` and `test-url.py` switch rich previews off,
 because a failed CDN import logs console errors that would drown their own
 assertions.
