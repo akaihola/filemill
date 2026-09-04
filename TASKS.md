@@ -4,6 +4,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- Allow editing any plaintext file, e.g. `.gitconfig`. Detect editable files by
+  file extension **and** contents. If it's plain ASCII or UTF-8 text, it's
+  editable, unless it's single line and insanely wide.
+
 - Use one shared client side implementation for rendering Markdown fenced code
   blocks. Make sure the implementation flows line-wrapped paragraphs correctly,
   i.e. doesn't insert line feeds in the rendered HTML at each newline in the
