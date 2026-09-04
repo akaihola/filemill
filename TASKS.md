@@ -58,6 +58,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
+- [~] Text file editing shows the original version of the file after saving changes.
+  Force reloading the page doesn't change that.
+
 ## Completed
 
 - [*] Get rid of HTMX based routes. We now have enough feature parity in the
