@@ -52,8 +52,18 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - Hierarchical nested view for `.json` files and variants like `.jsonc` quite similarly to SQLite and JSONL files. Lists of objects are actually rendered identically to a JSONL file. Lists of long or multi-line strings are similar to folders of files/folders, truncating long strings. The preview of a string is a highlighted render of the string according to a "file type" detected based on the string content. Lists of mixed types are rendered as truncated values with previewing available. If there are no long/multiline strings or objects in the list, just a 1-column table preview is shown. Objects are rendered as a column of keys with previewing of values in the preview area, except when no long/multiline strings nor objects exist as values, a 2-column table is shown in the preview area.
 
-## In progress
+- Navigating with the right arrow key to the preview area must fold all folder
+  columns to maximize the preview area width. A left arrow should return to the
+  parent folder of the reviewed document and unfold that folder column (but no
+  ancestor folder columns).
 
+- Task 04ce9574-92c8-4a4c-8148-32d2e827c13d didn't fix the erratic
+  folding/unfolding of the parent column. Hard rule: Up/down navigation must
+  never change folding state of ancestor folder columns.
+
+## Scheduled
+
+## In progress
 
 ## Completed
 
