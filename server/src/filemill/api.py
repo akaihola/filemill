@@ -145,12 +145,12 @@ def vfs_preview(target: Path, vpath: str, fmt: str = "") -> Response:
         return HTMLResponse(
             provider.render_preview(
                 target, vpath, fmt or provider.default_fmt(vpath), page=1, limit=1000
-            )
+            ), headers={"Cache-Control": "no-store"}
         )
     except Exception as exc:
         return HTMLResponse(
             f'<div class="preview-error">Preview error: '
-            f"{html_lib.escape(str(exc))}</div>"
+            f"{html_lib.escape(str(exc))}</div>", headers={"Cache-Control": "no-store"}
         )
 
 
@@ -186,7 +186,10 @@ def raw_response(target: Path) -> Response:
     if not target.is_file():
         return HTMLResponse("Not found", status_code=404)
     media, _ = mimetypes.guess_type(target.name)
-    return FileResponse(str(target), media_type=media or "application/octet-stream")
+    return FileResponse(
+        str(target), media_type=media or "application/octet-stream",
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 def save_file(target: Path, data: bytes) -> Response:
@@ -214,12 +217,12 @@ def preview_fragment(target: Path, render) -> Response:
     if not target.is_file():
         return HTMLResponse("", status_code=404)
     try:
-        return HTMLResponse(render(target))
+        return HTMLResponse(render(target), headers={"Cache-Control": "no-store"})
     # One bad file must not 500 a route that was only listing a directory.
     except Exception as exc:
         return HTMLResponse(
             f'<div class="preview-error">Preview error: '
-            f"{html_lib.escape(str(exc))}</div>"
+            f"{html_lib.escape(str(exc))}</div>", headers={"Cache-Control": "no-store"}
         )
 
 
