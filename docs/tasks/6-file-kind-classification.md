@@ -2,28 +2,37 @@
 status: unverified
 ---
 
-# File-kind classification
+# Decide the file kind once
 
-## Review proposal
+## Proposal
 
-Decide each node's kind once at the filesystem seam: `folder`, `link`, `vfs`,
-or `file`, with a preview hint. Producers in the Python columns/API paths and
-the FSA adapter set the contract; preview, icon, and edit consumers read it.
+When Filemill reads a file system entry, it should decide its kind one time.
+The kind must be one of `folder`, `link`, `vfs`, or `file`. The entry should
+also say how the UI can preview it.
+
+The code that reads entries, including the Python API and the File System
+Access adapter, should set these values. Code that shows an icon, opens a
+preview, or enables editing should use these values.
 
 ## Evidence
 
-Kind is re-derived by `columns.py:list_column`/`entry_icon`,
-`api.py:_opens_as_folder`/`split_vfs`, `preview.py:render_preview`, and
-`ui/core/render.js:NON_EDIT_RE`. The CSV provider can therefore diverge between
-an empty virtual listing and a previewable file. `.jsonl` and `.desktop` link
-handling must remain explicit.
+Several parts of the code decide the kind again. These include
+`columns.py:list_column` and `entry_icon`, `api.py:_opens_as_folder` and
+`split_vfs`, `preview.py:render_preview`, and
+`ui/core/render.js:NON_EDIT_RE`.
 
-## Acceptance questions
+These decisions can disagree. For example, the CSV provider can return no
+virtual entries. One code path then treats the CSV file as an empty folder,
+while another treats it as a file that can be previewed. Keep `.jsonl` and
+`.desktop` handling in the new design.
 
-- What exact node JSON shape carries `kind` and the preview hint?
-- Does the shared table cover folders, links, VFS files, ordinary files,
-  `.jsonl`, and empty-provider files?
-- Do server HTML, `/api/*`, FSA, icons, previews, and edit gating agree?
+## Questions to answer
+
+- What exact fields carry the kind and preview information?
+- Does the rule cover folders, links, VFS files, normal files, `.jsonl`, and
+  files whose provider returns no entries?
+- Do the server HTML, `/api/*`, File System Access, icons, previews, and edit
+  controls all give the same result?
 
 ## Scope
 
