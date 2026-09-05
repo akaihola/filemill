@@ -65,6 +65,7 @@ def ui_root(tmp_path: Path) -> Path:
         "# Readme\n\nline one\nline two\n\n```python\n" + SOURCE + "```\n"
     )
     (tmp_path / ".hidden").write_text("h")
+    (tmp_path / "this-is-a-very-long-file-name-that-must-stay-identifiable.txt").write_text("x")
     (tmp_path / "log.jsonl").write_text(
         '{"id": 2, "title": "Second", "ts": "2026-01-02"}\n'
         '{"id": 1, "title": "First", "ts": "2026-01-01"}\n'
@@ -170,6 +171,14 @@ def test_the_root_column_lists_the_served_directory(page):
     )
     assert {"notes", "code", "empty", "README.md", "sample.db"} <= set(names)
     assert ".hidden" not in names  # dotfiles off by default, as in filemill
+
+
+def test_long_names_truncate_before_the_extension(page):
+    page.open()
+    row = page.locator('.row[title="this-is-a-very-long-file-name-that-must-stay-identifiable.txt"]')
+    assert row.inner_text().endswith(".txt")
+    assert "identifiable" in row.inner_text()
+    assert row.get_attribute("aria-label") == row.get_attribute("title")
 
 
 def test_clicking_a_folder_opens_its_column(page):
