@@ -910,6 +910,40 @@ async def main():
         await pg.wait_for_timeout(300)
 
         print("\n── Edit mode ────────────────────────────────────────────────")
+        await pg.click('.col[data-i="1"] .row:has-text("long.txt")')
+        await pg.wait_for_timeout(400)
+        await pg.click("#pv-edit")
+        await pg.wait_for_timeout(200)
+        top = await pg.evaluate("""() => {
+          const ta = document.querySelector('#pv-editor');
+          return {start: ta.selectionStart, end: ta.selectionEnd,
+                  scroll: ta.scrollTop, value: ta.value};
+        }""")
+        check("Plaintext edit starts at the top",
+              top["start"] == top["end"] == top["scroll"] == 0
+              and top["value"] == "a line of plain text\n" * 400,
+              json.dumps({**top, "value": f"{len(top['value'])} chars"}))
+        await pg.click("#pv-cancel")
+        await pg.wait_for_timeout(300)
+        await pg.click('.col[data-i="1"] .row:has-text("sub")')
+        await pg.wait_for_timeout(300)
+        await pg.click('.col[data-i="2"] .row:has-text("long.py")')
+        await pg.wait_for_timeout(400)
+        await pg.click("#pv-edit")
+        await pg.wait_for_timeout(200)
+        top = await pg.evaluate("""() => {
+          const ta = document.querySelector('#pv-editor');
+          return {start: ta.selectionStart, end: ta.selectionEnd,
+                  scroll: ta.scrollTop, value: ta.value};
+        }""")
+        check("Highlighted edit starts at the top",
+              top["start"] == top["end"] == top["scroll"] == 0
+              and top["value"] == PY_SRC * 300,
+              json.dumps({**top, "value": f"{len(top['value'])} chars"}))
+        await pg.click("#pv-cancel")
+        await pg.wait_for_timeout(300)
+        await pg.click('.col[data-i="0"] .row:has-text("mixed")')
+        await pg.wait_for_timeout(300)
         await pg.click('.col[data-i="1"] .row:has-text("note.md")')
         await pg.wait_for_timeout(400)
         check("Text preview offers an Edit button",
