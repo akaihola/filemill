@@ -4,17 +4,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find
+  out what it means.
+
 - The server browser suites show 11 failures on the branch, but a run against a
   clean main checkout produced exactly the same 11: two legacy-htmx tests that
   main deliberately disabled, and nine mobile restore-scroll tests.
-
-- [*] static/test-rich.py's two offline checks fail on this machine, in both
-  bundle and --dev mode: "Offline, a Markdown file still shows its source" and
-  "…and says why it is not rendered". Confirmed pre-existing at b96d84e, so it
-  is not a regression from any recent change — the sandbox has no network, so
-  the esm.sh import should throw and fall back to pv-note plus PreviewLocal, and
-  something about that path no longer lands in time. The other 13 checks pass,
-  including the stubbed-CDN ones.
 
 - In keyboard navigation, parent folder columns currently unfold when selecting
   the next item using the down arrow. Strangely, this doesn't happen when using
@@ -39,22 +34,41 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - Remove legacy HTMX code/tests/docs.
 
+- For hierarchical nested view of JSON, don't use the folder icon. Use the JSON
+  icon for the whole file, and `{}` and `[]` icons for objects and arrays.
+
+- When an object or list is selected in a hierarchical nested view of JSON, show
+  the child nodes in the column to the right, and a foldable highlighted and
+  pretty-printed JSON preview of the selected item in the second column to the
+  right.
+
+- Add preview for .mp4 files
+
+- Add preview for reStructuredText (.rst) files. Is this possible to do on the
+  client side? Without running Python on the browser? If not, running Python in
+  the browser is also an interesting option for some other file types.
+
 ## Scheduled
 
-- [5] Hierarchical nested view for JSON
-- [*] Text file editing should start with the cursor at the top of the file
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
 
-- [~] Back-navigation still often fails to unfold the newly focused column.
-  For example, if I navigate using the keyboard to https://filemill.vempai.men/filemill/server/src/filemill/providers/__pycache__/__init__.cpython-313.pyc and then back left, the `server` column doesn't unfold.
-- [*] Truncate too wide file names in the middle just before the file extension
+## Completed
+
 - [~] Text file editing shows the original version of the file after saving changes.
   Force reloading the page doesn't change that.
-- [*] Make the static/test-rich.py offline checks deterministic
 
-## Completed
+- [*] Truncate too wide file names in the middle just before the file extension
+
+- [*] Text file editing should start with the cursor at the top of the file
+
+- [5] Hierarchical nested view for JSON
+
+- [~] Back-navigation still often fails to unfold the newly focused column.
+  For example, if I navigate using the keyboard to https://filemill.vempai.men/filemill/server/src/filemill/providers/__pycache__/__init__.cpython-313.pyc and then back left, the `server` column doesn't unfold.
+
+- [*] Make the static/test-rich.py offline checks deterministic
 
 - [5] Hierarchical nested view for JSON — shared client-side hierarchical JSON view with nested navigation and scalar previews.
 
@@ -166,7 +180,7 @@ Here are the rules for TASKS.md usage:
 
 ### TASKS.md maintenance sessions
 
-- Each backlog item must have either
+- Each backlog item must be prefixed with either
   - a numbered reference-style link (e.g. `[1]`) to a description file, or
   - `[*]` to indicate no description file is needed for a simple task.
 - Link references are listed between `## Completed` and `## Rules`.
@@ -193,7 +207,9 @@ Here are the rules for TASKS.md usage:
 - Move the issue under `## In progress` in `TASKS.md` in the worktree branch,
   ensure it's not in `## Ordered backlog`, and commit.
 - Create or update, review and refine a plan in
-  docs/tasks/<N-issue-description>.md in `main` (skip for `[*]` items).
+  docs/tasks/<N-issue-description>.md in `main` if more description is needed
+  than nicely fits in a bullet point. If you created a plan document, link to it
+  using a new `[N]` reference-style link.
 - Commit description file (if any) and TASKS.md in `main`.
 - From now on, ensure worktree feature branch is always rebased on `main`.
 - Implement the plan, and lint, test, review and refine the implementation in
@@ -201,5 +217,5 @@ Here are the rules for TASKS.md usage:
 
 3. Merge and deploy (typically by last steps of a task workflow)
 - Merge the rebased branch on `main`, and remove the worktree and branch.
-- Move the issue to `Completed` in TASKS.md and commit.
+- Move the issue from `## In progress` to `## Completed` in TASKS.md and commit.
 - Do any deployment steps if defined in the general development worklow.
