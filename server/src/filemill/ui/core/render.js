@@ -60,8 +60,9 @@ function buildCol(node) {
     const row = document.createElement("div");
     row.className = "row" + (k.name.startsWith(".") ? " dotfile" : "");
     row.title = k.name;   /* the full name is always one hover away */
+    row.setAttribute("aria-label", k.name);
     row.innerHTML = iconHTML(k)
-      + `<span class="label">${esc(stem)}<span class="dim">${esc(ext)}</span></span>`
+      + `<span class="label"><span class="stem">${esc(stem)}</span><span class="dim">${esc(ext)}</span></span>`
       + (k.dir ? `<span class="chev">›</span>` : "");
     /* read the index off the element: the same node keeps its DOM across
        re-renders, and its column position is only known at render time */

@@ -94,7 +94,8 @@ window.__mk = (nbig) => {
                          // One byte over TEXT_MAX: the ceiling that replaced
                          // the 8 000-char clip, so it needs a check of its own.
                          F('huge.py', 'x'.repeat(512 * 1024 + 1))]),
-                F('.dotfile','h'),
+                F('.dotfile','h'), F('README','r'), F('short.txt','s'),
+                F('this-is-a-very-long-file-name-that-must-stay-identifiable.txt'),
                 // Auto-preview rungs: README beats README.* beats index.html.
                 // Each folder also holds the losing names, so only the
                 // priority order can explain what gets selected.
@@ -341,6 +342,23 @@ async def main():
         await mount(pg)
         check("Root folder mounts", await pg.evaluate("path[0].name") == "workspace")
         check("Welcome screen hidden after mount", await pg.evaluate("welcome.hidden"))
+
+        await pg.click('.col[data-i="0"] .row:has-text("mixed")')
+        await pg.wait_for_timeout(250)
+        long = '.col[data-i="1"] .row[title^="this-is-a-very"]'
+        visual = await pg.inner_text(long)
+        check("Long names keep their extension", visual.endswith(".txt") and
+              "identifiable" in visual)
+        check("Long names keep their full accessible name",
+              await pg.get_attribute(long, "aria-label") ==
+              "this-is-a-very-long-file-name-that-must-stay-identifiable.txt")
+        short = '.col[data-i="1"] .row[title="short.txt"]'
+        check("Short names keep the existing label styling",
+              await pg.eval_on_selector(short + " .label", "e=>e.textContent") == "short.txt" and
+              await pg.query_selector(short + " .dim") is not None)
+        no_ext = '.col[data-i="1"] .row[title="README"]'
+        check("Names without extensions stay intact",
+              await pg.eval_on_selector(no_ext + " .label", "e=>e.textContent") == "README")
 
         print("\n── Directory states ─────────────────────────────────────────")
         for row, expect in (("empty", "Empty"), ("locked", "No permission")):
