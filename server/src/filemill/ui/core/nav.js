@@ -333,7 +333,7 @@ document.addEventListener("keydown", e => {
     else stepInto(next);
   } else if (e.key === "ArrowLeft") {
     e.preventDefault();
-    if (focusCol > 0) { focusCol--; if (folded > focusCol) unfoldTo(focusCol); render(true); }
+    if (focusCol > 0) { focusCol--; unfoldTo(focusCol); render(true); }
   } else if (e.key === "F5" && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
     /* Every desktop file manager reads F5 as "re-read this folder", and here a
        page reload is a far worse trade: it drops the mounted root, the whole
