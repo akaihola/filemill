@@ -126,6 +126,7 @@ def vfs_dir_json(target: Path, vpath: str) -> JSONResponse:
                     "dir": e.is_folder,
                     "vpath": e.vpath,
                     "icon": e.icon,
+                    "ordered": e.ordered,
                     "size": 0,
                     "mod": 0,
                 }

@@ -54,7 +54,7 @@ function jsonlRows(node, records) {
   const labels = key ? jsonlLabels(records, key) : records.map((_, i) => `line ${i + 1}`);
   return records.map((record, i) => ({
     name: labels[i], dir: false, vpath: String(i + 1), icon: "📋",
-    rel: node.rel, meta: { virtual: true }, record,
+    rel: node.rel, ordered: true, meta: { virtual: true }, record,
   }));
 }
 
@@ -78,7 +78,9 @@ const withJsonl = fs => ({
     if (!node.jsonl) {
       await fs.ensureLoaded(node);
       for (const k of node.kids || [])
-        if (!k.dir && isJsonl(k)) Object.assign(k, { dir: true, kids: null, jsonl: true });
+        if (!k.dir && isJsonl(k)) Object.assign(k, {
+          dir: true, kids: null, jsonl: true, ordered: true,
+        });
       return;
     }
     if (node.kids !== null) return;
@@ -124,7 +126,7 @@ const jsonValue = (parent, name, value, vpath) => {
   const container = value !== null && typeof value === "object";
   return { name, dir: container, kids: container ? null : undefined,
     vpath, icon: container ? "📁" : "◻", json: true, value,
-    rel: parent.rel, meta: { virtual: true } };
+    rel: parent.rel, ordered: true, meta: { virtual: true } };
 };
 
 function jsonKids(node, value) {
@@ -135,7 +137,7 @@ function jsonKids(node, value) {
     return value.map((record, i) => ({
       name: labels?.[i] || `item ${i + 1}`, dir: false,
       vpath: node.vpath ? `${node.vpath}/${i}` : String(i), icon: "📋",
-      rel: node.rel, meta: { virtual: true }, record,
+      rel: node.rel, ordered: true, meta: { virtual: true }, record,
     }));
   }
   const entries = Array.isArray(value) ? value.map((v, i) => [String(i), v])
@@ -150,7 +152,9 @@ const withJson = fs => ({
     if (!node.json) {
       await fs.ensureLoaded(node);
       for (const k of node.kids || [])
-        if (!k.dir && isJson(k)) Object.assign(k, { dir: true, kids: null, json: true });
+        if (!k.dir && isJson(k)) Object.assign(k, {
+          dir: true, kids: null, json: true, ordered: true,
+        });
       return;
     }
     if (node.value !== undefined) {
