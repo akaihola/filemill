@@ -1,6 +1,6 @@
 ---
 status: unverified
-depends_on: 6
+depends-on: [6]
 ---
 
 # Adapter-owned entry order
