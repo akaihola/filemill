@@ -46,6 +46,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [5] Hierarchical nested view for JSON
 - [*] Text file editing should start with the cursor at the top of the file
+- Back-navigation still often fails to unfold the newly focused column.
+- [*] Make the static/test-rich.py offline checks deterministic
 
 ## In progress
 
