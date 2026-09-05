@@ -322,11 +322,16 @@ deep modules and seams is sound. It said clearly that candidate 3 needed a
 decision, not a report.
 
 **What it missed.** It was scoped to hot spots from commit history and said
-so. Inside that scope it did not see six things. They are the absence of a
-module system (finding 4), the preview rebuild on every render (finding 6),
-the absent lint gate (finding 14), the volume and staleness of documents
-(finding 15), the security notes (finding 12), and the two test harnesses
-(finding 13). It did not run the static suite.
+so. Inside that scope it did not see six things:
+
+- the absence of a module system (finding 4),
+- the preview rebuild on every render (finding 6),
+- the absent lint gate (finding 14),
+- the volume and staleness of documents (finding 15),
+- the security notes (finding 12),
+- the two test harnesses (finding 13).
+
+It did not run the static suite.
 
 **What went wrong after it.** The report ends with "Which of these would you
 like to explore?". The next commit answered by disabling routes. No ADR, no
