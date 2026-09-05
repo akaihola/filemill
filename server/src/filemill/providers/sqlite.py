@@ -95,6 +95,7 @@ class SQLiteProvider:
                         vpath=s,
                         is_folder=True,
                         icon=SCHEMA_ICON,
+                        ordered=True,
                     )
                     for s in schemas
                 ]
@@ -138,6 +139,7 @@ class SQLiteProvider:
                 vpath=f"{prefix}{row['name']}",
                 is_folder=True,
                 icon=TABLE_ICON,
+                ordered=True,
             )
             for row in rows
         ]
@@ -166,6 +168,7 @@ class SQLiteProvider:
                     vpath=f"{parent_vpath}/{key_str}",
                     is_folder=False,
                     icon=ROW_ICON,
+                    ordered=True,
                 )
             )
         if len(rows) == MAX_ROW_ENTRIES:
@@ -175,6 +178,7 @@ class SQLiteProvider:
                     vpath="",
                     is_folder=False,
                     icon="ℹ️",
+                    ordered=True,
                 )
             )
         return entries
