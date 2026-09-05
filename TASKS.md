@@ -8,9 +8,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   clean main checkout produced exactly the same 11: two legacy-htmx tests that
   main deliberately disabled, and nine mobile restore-scroll tests.
 
-- Back-navigation still often fails to unfold the newly focused column.
-  For example, if I navigate using the keyboard to https://filemill.vempai.men/filemill/server/src/filemill/providers/__pycache__/__init__.cpython-313.pyc and then back left, the `server` column doesn't unfold.
-
 - [*] static/test-rich.py's two offline checks fail on this machine, in both
   bundle and --dev mode: "Offline, a Markdown file still shows its source" and
   "…and says why it is not rendered". Confirmed pre-existing at b96d84e, so it
@@ -50,6 +47,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
+- [~] Back-navigation still often fails to unfold the newly focused column.
+  For example, if I navigate using the keyboard to https://filemill.vempai.men/filemill/server/src/filemill/providers/__pycache__/__init__.cpython-313.pyc and then back left, the `server` column doesn't unfold.
 - [*] Truncate too wide file names in the middle just before the file extension
 - [~] Text file editing shows the original version of the file after saving changes.
   Force reloading the page doesn't change that.
