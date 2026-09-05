@@ -351,6 +351,22 @@ def test_a_deep_link_restores_the_whole_column_chain(page):
     assert "Leaf" in page.inner_text("#preview .pv-rich h1")
 
 
+def test_arrow_left_unfolds_each_focused_ancestor(page):
+    page.set_viewport_size({"width": 760, "height": 700})
+    page.open("notes/deep/leaf.md")
+    url = page.url
+    selected = page.evaluate("sel.slice()")
+
+    assert page.evaluate("focusCol") == 2
+    for expected in (1, 0):
+        page.keyboard.press("ArrowLeft")
+        _scroll_settled(page)
+        state = page.evaluate("({focusCol, folded, spine: document.querySelector('.col.focus').classList.contains('spine')})")
+        assert state == {"focusCol": expected, "folded": expected, "spine": False}
+        assert page.url == url
+        assert page.evaluate("sel") == selected
+
+
 def test_back_steps_out_of_the_folder_it_entered(page):
     page.open()
     page.click('.col[data-i="0"] .row:has-text("notes")')
