@@ -69,6 +69,11 @@ def test_list_entries_tables_are_folders(single_schema_db, provider):
     assert all(e.is_folder for e in entries)
 
 
+def test_list_entries_preserve_provider_order(single_schema_db, provider):
+    assert all(e.ordered for e in provider.list_entries(single_schema_db, ""))
+    assert all(e.ordered for e in provider.list_entries(single_schema_db, "users"))
+
+
 def test_list_entries_table_icon(single_schema_db, provider):
     entries = provider.list_entries(single_schema_db, "")
     assert all(e.icon == TABLE_ICON for e in entries)

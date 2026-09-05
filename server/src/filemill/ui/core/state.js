@@ -33,7 +33,7 @@ const COL_MIN = 148, COL_MAX = 380;
    width measurement and every path walk comes through here, which is what keeps
    the rows, the cursor indices and a restored chain agreeing on what row 4 is. */
 const visibleKids = node =>
-  ((kids) => node.jsonl ? kids : sortKids(kids))
+  ((kids) => node.ordered ? kids : sortKids(kids))
     ((node.kids || []).filter(k => state.dotfiles || !k.name.startsWith(".")));
 
 const fmtSize = b =>

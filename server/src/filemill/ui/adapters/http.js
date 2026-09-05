@@ -21,8 +21,9 @@ const relOf = (parentRel, name) => (parentRel ? parentRel + "/" + name : name);
    the same one — and descends virtually instead. The server tells them apart by
    putting a `vpath` on the entries it returns; there is nothing to detect here,
    and core/ never learns that virtual nodes exist at all. */
-const httpNode = (name, rel, dir, meta, vpath, icon) => ({
+const httpNode = (name, rel, dir, meta, vpath, icon, ordered = false) => ({
   name, rel, dir,
+  ordered,
   vpath: vpath || "",
   icon: icon || undefined,
   kids: dir ? null : undefined,
@@ -48,7 +49,7 @@ const HTTP = {
         node.denied = j.denied || undefined;
         node.kids = (j.entries || []).map(e => e.vpath !== undefined
           /* virtual: same file, deeper key */
-          ? httpNode(e.name, node.rel, e.dir, { virtual: true }, e.vpath, e.icon)
+          ? httpNode(e.name, node.rel, e.dir, { virtual: true }, e.vpath, e.icon, e.ordered)
           : httpNode(e.name, relOf(node.rel, e.name), e.dir,
                      e.dir ? undefined : { size: e.size, mod: e.mod }));
       } catch (err) {

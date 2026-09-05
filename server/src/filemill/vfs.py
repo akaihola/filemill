@@ -27,6 +27,7 @@ class VFSEntry:
     vpath: str  # full virtual path key, e.g. "users" or "users/42"
     is_folder: bool  # True → opens a new column on click; False → updates preview
     icon: str  # emoji
+    ordered: bool = False  # provider order must be preserved by the UI
 
 
 @runtime_checkable
