@@ -2,6 +2,19 @@
 
 Rules for TASKS.md usage are at the bottom of the file.
 
+## Unverified proposals
+
+- [6] Centralize file-kind classification across filesystem producers and
+  preview/edit consumers. This is an unverified architecture proposal.
+- [7] Make entry ordering an adapter-owned contract. This is an unverified
+  architecture proposal.
+  - Depends on: [6]
+- [8] Explore consolidating the HTMX and JavaScript finder stacks. This is an
+  unverified architecture proposal pending an offline/no-JavaScript decision.
+- [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an
+  unverified architecture proposal, conditional on a fourth provider or a
+  pagination bug.
+
 ## Ordered backlog
 
 - Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find
@@ -170,6 +183,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 [3]: docs/tasks/3-remove-duplicate-ui-source.md
 [4]: docs/tasks/4-share-markdown-code.md
 [5]: docs/tasks/5-hierarchical-json-view.md
+[6]: docs/tasks/6-file-kind-classification.md
+[7]: docs/tasks/7-adapter-owned-entry-order.md
+[8]: docs/tasks/8-consolidate-finder-stacks.md
+[9]: docs/tasks/9-vfs-viewspec.md
 [*]: TASKS.md
 
 ---
