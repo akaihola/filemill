@@ -284,6 +284,7 @@ async function openEditor(n) {
   const ta = document.getElementById("pv-editor");
   ta.value = text;
   ta.focus();
+  ta.setSelectionRange(0, 0);
   document.getElementById("pv-cancel").onclick = () => fillPreview(n);
   document.getElementById("pv-save").onclick = async () => {
     try {
