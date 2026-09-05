@@ -12,9 +12,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [*] Rebuild the static bundle: run `cd static && ./build-index.py` and commit
-  `static/index.html`. Roadmap phase 0, step 0.
-
 - [11] Delete the HTMX finder from the server: its Python code, its CSS, its JavaScript
   and its tests. Roadmap phase 0, step 1.
 
@@ -269,6 +266,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## In progress
 
 ## Completed
+
+- [*] Rebuild the static bundle: run `cd static && ./build-index.py` and commit
+  `static/index.html`. Roadmap phase 0, step 0.
 
 - [~] Text file editing shows the original version of the file after saving changes.
   Force reloading the page doesn't change that.
