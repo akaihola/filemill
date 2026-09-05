@@ -133,10 +133,11 @@ async def boot(pg, base, *, rich=True, stubs=False):
     await pg.wait_for_timeout(250)
 
 
-async def preview(pg, name, timeout=4000):
+async def preview(pg, name, timeout=4000, ready=None):
     await pg.click(f'.col[data-i="0"] .row:has-text("{name}")')
     await pg.wait_for_selector("#pv-content > *", timeout=timeout)
-    await pg.wait_for_timeout(250)
+    if ready:
+        await pg.wait_for_selector(ready, timeout=timeout)
     return await pg.inner_html("#pv-content")
 
 
@@ -164,7 +165,7 @@ async def main():
         check("Rich mode keeps JSON hierarchy client-side",
               "json value" in await pg.inner_text("#pv-content")
               and not [u for u in requests if "esm.sh" in u])
-        html = await preview(pg, "note.md")
+        html = await preview(pg, "note.md", ready=".pv-note")
         check("Offline, a Markdown file still shows its source",
               "Heading" in html and "pv-text" in html)
         check("…and says why it is not rendered", "pv-note" in html)
