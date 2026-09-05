@@ -102,6 +102,18 @@ uv run --with "playwright==1.61.0" python3 test-rich.py   # CDN renderers
 cd server && uv run pytest
 ```
 
+## Goals, review and roadmap
+
+- [`docs/GOALS.md`](docs/GOALS.md) — what Filemill must become, and the
+  goals the code already shows.
+- [`docs/ARCHITECTURE-REVIEW.md`](docs/ARCHITECTURE-REVIEW.md) — how far
+  the code is from those goals, with file and line for each finding.
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — the order in which we close the
+  gap.
+
+These three live in `docs/` and not in `docs/tasks/`, because they are not
+tasks. `TASKS.md` links the roadmap as one backlog item.
+
 ## License
 
 MIT
