@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Filemill — Architecture Review (2026-09-04)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script>
+      mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+    </script>
+    <style>
+      .badge-strong {
+        background: #166534;
+        color: #fff;
+      }
+      .badge-worth {
+        background: #92400e;
+        color: #fff;
+      }
+      .badge-spec {
+        background: #4c1d95;
+        color: #fff;
+      }
+      .before-box {
+        border: 2px dashed #b91c1c;
+        background: #fef2f2;
+      }
+      .after-box {
+        border: 2px solid #166534;
+        background: #f0fdf4;
+      }
+      .node {
+        border-radius: 0.5rem;
+        padding: 0.35rem 0.7rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-block;
+        margin: 0.15rem;
+      }
+      .n-kind {
+        background: #fde68a;
+        border: 1px solid #b45309;
+      }
+      .n-consumer {
+        background: #e0e7ff;
+        border: 1px solid #4338ca;
+      }
+      .n-deep {
+        background: #bbf7d0;
+        border: 1px solid #166534;
+      }
+      .n-seam {
+        background: #f3f4f6;
+        border: 2px solid #111827;
+      }
+      .arrow {
+        color: #9ca3af;
+        font-weight: 700;
+      }
+      code.loc {
+        background: #f3f4f6;
+        padding: 0.1rem 0.35rem;
+        border-radius: 0.25rem;
+        font-size: 0.78rem;
+      }
+    </style>
+  </head>
+  <body class="bg-stone-100 text-stone-900">
+    <div class="max-w-5xl mx-auto px-6 py-10">
+      <header class="mb-10">
+        <p class="text-sm uppercase tracking-widest text-stone-500">
+          Filemill · architecture review · 2026-09-04
+        </p>
+        <h1 class="text-4xl font-black mt-2">Deepening opportunities</h1>
+        <p class="mt-3 text-stone-600 max-w-3xl">
+          Scope: hot spots from commit history (<code class="loc">app.py</code>
+          1218 lines, <code class="loc">render.js</code>,
+          <code class="loc">nav.js</code>, <code class="loc">layout.js</code>,
+          <code class="loc">sort.js</code>,
+          <code class="loc">styles.py</code> 1040 lines; repeated churn in
+          folding / layout / preview). No
+          <code class="loc">CONTEXT.md</code> and no
+          <code class="loc">docs/adr/</code> exist, so domain terms below are
+          inferred from file names. Vocabulary:
+          <strong
+            >module · interface · seam · adapter · depth · leverage ·
+            locality</strong
+          >.
+        </p>
+        <div
+          class="mt-4 p-4 bg-emerald-50 border-l-4 border-emerald-600 text-sm"
+        >
+          <strong>What is already healthy (not re-litigated):</strong> the three
+          ports in <code class="loc">ui/core/ports.js</code> (FS / PREVIEW /
+          ROUTER) are <em>real</em> seams — two adapters per port on each side
+          (FSA vs HTTP, PreviewLocal vs PreviewHTTP, hash vs path router), and
+          <code class="loc">deeplink.js</code> is shared verbatim. The VFS
+          provider protocol (<code class="loc">vfs.py</code> + three providers)
+          is likewise a real seam. Candidates below deepen <em>behind</em> these
+          seams, not across them.
+        </div>
+      </header>
+
+      <!-- ═══════════ Candidate 1 ═══════════ -->
+      <section class="bg-white rounded-2xl shadow p-7 mb-8">
+        <div class="flex items-center gap-3 flex-wrap">
+          <h2 class="text-2xl font-bold">
+            1. “What kind of thing is this file?” is answered five times
+          </h2>
+          <span class="badge-strong text-xs font-bold px-3 py-1 rounded-full"
+            >STRONG</span
+          >
+        </div>
+        <p class="text-sm text-stone-500 mt-1">
+          <strong>Files:</strong>
+          <code class="loc">server/src/filemill/columns.py:94–171</code> ·
+          <code class="loc">server/src/filemill/api.py:90–104,177</code> ·
+          <code class="loc">server/src/filemill/preview.py:13–51</code> ·
+          <code class="loc">ui/core/render.js</code> (EDIT_RE) ·
+          <code class="loc">ui/core/jsonl.js</code> + adapters
+        </p>
+        <h3 class="font-bold mt-4">Problem</h3>
+        <p class="text-sm mt-1">
+          The file-<em>kind</em> decision — folder vs link vs virtual-filesystem
+          vs previewable vs editable — is re-derived from the filename at every
+          seam crossing, in two languages, and the copies already
+          <strong>disagree</strong>.
+          <code class="loc">columns.py:list_column</code> trusts the registry
+          (<code class="loc">is_vfs_file</code>) to decide “opens a column”,
+          while <code class="loc">api.py:_opens_as_folder</code> asks the
+          provider for real entries — so an empty-provider file (e.g. the CSV
+          stub) is a <em>folder</em> in the server-rendered page and a
+          <em>file with preview</em> over <code class="loc">/api/dir</code>.
+          <code class="loc">preview.py:render_preview</code> runs a third suffix
+          dispatch, <code class="loc">columns.py:entry_icon</code> a fourth
+          (icon table), and <code class="loc">render.js</code>’s EDIT_RE
+          edit-gate a fifth. Deletion test: deleting any one copy removes no
+          complexity — each survivor re-derives kind from scratch. These are
+          five shallow modules where one deep module belongs.
+        </p>
+        <h3 class="font-bold mt-4">Solution</h3>
+        <p class="text-sm mt-1">
+          Decide kind <strong>once, at the FS seam</strong>: every node carries
+          <code class="loc">kind ∈ {folder, link, vfs, file}</code> plus a
+          preview hint, set by the three producers (<code class="loc"
+            >columns.py</code
+          >, <code class="loc">api.dir_json</code>, FSA adapter). Consumers —
+          <code class="loc">render_preview</code>,
+          <code class="loc">entry_icon</code>, EDIT_RE — read the tag instead of
+          switching on the suffix. One Python helper + one JS predicate, pinned
+          by the same test table.
+        </p>
+        <h3 class="font-bold mt-4">Benefits</h3>
+        <p class="text-sm mt-1">
+          <strong>Locality:</strong> adding
+          <code class="loc">.xlsx</code> touches one table, not five switches.
+          <strong>Leverage:</strong> server HTML,
+          <code class="loc">/api/*</code>, and both builds agree by construction
+          — the CSV-stub divergence disappears. <strong>Tests:</strong> the
+          interface <em>is</em> the test surface: a kind-table test (suffix →
+          kind) covers all five call sites at once.
+        </p>
+        <div class="grid md:grid-cols-2 gap-4 mt-4">
+          <div class="before-box rounded-xl p-4">
+            <p class="font-bold text-red-800 text-sm mb-2">
+              BEFORE — five shallow deciders
+            </p>
+            <pre class="mermaid text-xs">
+flowchart LR
+          F["photo.csv"] --> C["columns.py\nis_vfs_file → folder"]
+          F --> A["api.py\n_opens_as_folder → file"]
+          F --> P["preview.py\ndispatch → ?"]
+          F --> R["render.js\nEDIT_RE → ?"]
+          C -.->|disagree| A
+        </pre
+            >
+          </div>
+          <div class="after-box rounded-xl p-4">
+            <p class="font-bold text-emerald-800 text-sm mb-2">
+              AFTER — one deep kind module
+            </p>
+            <div class="text-center text-sm">
+              <span class="node n-consumer">columns.py</span>
+              <span class="node n-consumer">api.py</span>
+              <span class="node n-consumer">FSA adapter</span><br />
+              <span class="arrow">▼ set once ▼</span><br />
+              <span class="node n-seam"
+                >node.kind : folder · link · vfs · file</span
+              ><br />
+              <span class="arrow">▼ read everywhere ▼</span><br />
+              <span class="node n-deep">render_preview</span>
+              <span class="node n-deep">entry_icon</span>
+              <span class="node n-deep">EDIT_RE</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════ Candidate 2 ═══════════ -->
+      <section class="bg-white rounded-2xl shadow p-7 mb-8">
+        <div class="flex items-center gap-3 flex-wrap">
+          <h2 class="text-2xl font-bold">
+            2. Column order is decided twice, with different rules
+          </h2>
+          <span class="badge-strong text-xs font-bold px-3 py-1 rounded-full"
+            >STRONG</span
+          >
+        </div>
+        <p class="text-sm text-stone-500 mt-1">
+          <strong>Files:</strong>
+          <code class="loc">server/src/filemill/columns.py:94</code> ·
+          <code class="loc">server/src/filemill/api.py:58–87</code> ·
+          <code class="loc">ui/core/sort.js</code>
+        </p>
+        <h3 class="font-bold mt-4">Problem</h3>
+        <p class="text-sm mt-1">
+          The server-rendered column sorts inline —
+          <code class="loc"
+            >sorted(iterdir(), key=(not is_dir, name.lower))</code
+          >
+          — while <code class="loc">api.py:dir_json</code> returns raw
+          <code class="loc">iterdir()</code> order and leaves ordering to the
+          client’s <code class="loc">sort.js</code> metadata sweep. Same folder,
+          two orders, depending on which serving path rendered it. The ordering
+          invariant leaks across the FS seam: understanding “why is this row
+          here” requires holding both rules in your head, and changing one
+          visibly reorders half the app.
+        </p>
+        <h3 class="font-bold mt-4">Solution</h3>
+        <p class="text-sm mt-1">
+          Make ordering a property of the <strong>adapter</strong>, not of each
+          caller: the HTTP adapter serves entries pre-sorted (one shared Python
+          helper used by <em>both</em> <code class="loc">list_column</code> and
+          <code class="loc">dir_json</code>), and the client trusts server order
+          for HTTP nodes; <code class="loc">sort.js</code> remains the sorter
+          for FSA nodes only. One documented rule (“dirs first, casefold”) with
+          a pinned test table per language.
+        </p>
+        <h3 class="font-bold mt-4">Benefits</h3>
+        <p class="text-sm mt-1">
+          <strong>Locality:</strong> the rule lives in one helper per language
+          instead of one inline lambda plus one metadata sweep.
+          <strong>Leverage:</strong> every column in both builds obeys the same
+          order without each call site learning it. <strong>Tests:</strong> a
+          fixed filename fixture asserts identical order from
+          <code class="loc">list_column</code>,
+          <code class="loc">/api/dir</code>, and the FSA path.
+        </p>
+        <div class="grid md:grid-cols-2 gap-4 mt-4">
+          <div class="before-box rounded-xl p-4 text-sm text-center">
+            <p class="font-bold text-red-800 mb-2">BEFORE — two rules</p>
+            <span class="node n-kind">columns.py: dirs-first, lower()</span
+            ><br />
+            <span class="node n-kind">api.py: iterdir() order (unsorted)</span
+            ><br />
+            <span class="node n-kind">sort.js: metadata sweep</span>
+          </div>
+          <div class="after-box rounded-xl p-4 text-sm text-center">
+            <p class="font-bold text-emerald-800 mb-2">
+              AFTER — one rule, owned per side
+            </p>
+            <span class="node n-deep">order_entries() (Python, shared)</span
+            ><br />
+            <span class="arrow">▼</span><br />
+            <span class="node n-consumer">list_column</span>
+            <span class="node n-consumer">dir_json</span>
+            <span class="node n-consumer">sort.js (FSA only)</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════ Candidate 3 ═══════════ -->
+      <section class="bg-white rounded-2xl shadow p-7 mb-8">
+        <div class="flex items-center gap-3 flex-wrap">
+          <h2 class="text-2xl font-bold">
+            3. Two full client stacks behind one server
+          </h2>
+          <span class="badge-worth text-xs font-bold px-3 py-1 rounded-full"
+            >WORTH EXPLORING</span
+          >
+        </div>
+        <p class="text-sm text-stone-500 mt-1">
+          <strong>Files:</strong>
+          <code class="loc">server/src/filemill/app.py</code> (44 handlers:
+          <code class="loc">/click</code>, <code class="loc">/api/*</code>,
+          resource routes) · <code class="loc">columns.py</code> (htmx columns +
+          inline prune script) · <code class="loc">ui/</code> (JS app +
+          <code class="loc">shell.js</code>,
+          <code class="loc">nav.js</code> crumbs)
+        </p>
+        <h3 class="font-bold mt-4">Problem</h3>
+        <p class="text-sm mt-1">
+          <code class="loc">app.py</code> serves two clients that implement the
+          same finder: the htmx stack (<code class="loc">/click</code> +
+          <code class="loc">columns.py</code>, with its own breadcrumb renderer
+          and an inline column-pruning script) and the JS app (<code class="loc"
+            >/api/*</code
+          >
+          + <code class="loc">ui/</code>, with
+          <code class="loc">shell.js</code> chrome and
+          <code class="loc">nav.js</code> crumbs). Breadcrumb, column pruning,
+          and “folder vs preview” branching exist on both sides — candidates 1–2
+          are instances of this split. Every behaviour change must be made
+          twice, in two languages, and tested twice.
+        </p>
+        <h3 class="font-bold mt-4">Solution</h3>
+        <p class="text-sm mt-1">
+          Choose the seam that survives: keep <code class="loc">/api/*</code> +
+          the JS UI as the one interactive stack, and shrink the htmx stack to
+          first-paint / no-JS document pages (<code class="loc"
+            >_document_page</code
+          >, <code class="loc">_representation_html</code>), deleting
+          <code class="loc">list_column</code>’s interactive branches. Or the
+          reverse — but not both.
+        </p>
+        <h3 class="font-bold mt-4">Benefits</h3>
+        <p class="text-sm mt-1">
+          <strong>Locality:</strong> one place where “clicking a row” is
+          decided. <strong>Leverage:</strong> candidates 1–2 dissolve rather
+          than being synchronised. This is flagged <em>Worth exploring</em> —
+          not Strong — because it re-litigates a load-bearing choice
+          (offline/embedded pages?) that needs the grilling loop, not a report.
+        </p>
+        <div class="grid md:grid-cols-2 gap-4 mt-4">
+          <div class="before-box rounded-xl p-4 text-sm text-center">
+            <p class="font-bold text-red-800 mb-2">BEFORE — two finders</p>
+            <span class="node n-kind">htmx: /click + columns.py</span><br />
+            <span class="node n-kind">JS app: /api/* + ui/</span><br />
+            <span class="arrow">same finder, twice, two languages</span>
+          </div>
+          <div class="after-box rounded-xl p-4 text-sm text-center">
+            <p class="font-bold text-emerald-800 mb-2">
+              AFTER — one finder + documents
+            </p>
+            <span class="node n-deep">/api/* + ui/ (the finder)</span><br />
+            <span class="node n-consumer"
+              >document pages (first paint / no-JS)</span
+            >
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════ Candidate 4 ═══════════ -->
+      <section class="bg-white rounded-2xl shadow p-7 mb-8">
+        <div class="flex items-center gap-3 flex-wrap">
+          <h2 class="text-2xl font-bold">
+            4. The VFS provider interface is six parameters wide
+          </h2>
+          <span class="badge-spec text-xs font-bold px-3 py-1 rounded-full"
+            >SPECULATIVE</span
+          >
+        </div>
+        <p class="text-sm text-stone-500 mt-1">
+          <strong>Files:</strong>
+          <code class="loc">server/src/filemill/vfs.py:40–48</code> ·
+          <code class="loc">server/src/filemill/columns.py:204–232</code>
+          (fmt-bar)
+        </p>
+        <h3 class="font-bold mt-4">Problem</h3>
+        <p class="text-sm mt-1">
+          <code class="loc"
+            >VFSProvider.render_preview(path, vpath, fmt, page, limit,
+            col)</code
+          >
+          asks every provider — and every caller — to understand view mechanics
+          (format toggle, pagination, column index) alongside data access. The
+          interface is nearly as complex as some implementations (csv/json
+          stubs), which is the textbook shallow-module smell: adding a fourth
+          provider means learning six parameters to use two.
+        </p>
+        <h3 class="font-bold mt-4">Solution</h3>
+        <p class="text-sm mt-1">
+          Bundle the view mechanics into one
+          <code class="loc">ViewSpec(fmt, page, limit)</code>
+          value object constructed at the route layer: providers take
+          <code class="loc">(path, vpath, view)</code>. Only pursue alongside
+          real provider pain (a fourth provider, or pagination bugs) — one
+          adapter per future need is hypothetical-seam territory.
+        </p>
+        <h3 class="font-bold mt-4">Benefits</h3>
+        <p class="text-sm mt-1">
+          <strong>Depth:</strong> smaller interface over the same behaviour.
+          <strong>Tests:</strong> providers testable with a default-constructed
+          view instead of six-arg scaffolding.
+        </p>
+        <div class="grid md:grid-cols-2 gap-4 mt-4">
+          <div class="before-box rounded-xl p-4 text-sm text-center">
+            <p class="font-bold text-red-800 mb-2">BEFORE</p>
+            <code class="loc"
+              >render_preview(path, vpath, fmt, page, limit, col)</code
+            >
+          </div>
+          <div class="after-box rounded-xl p-4 text-sm text-center">
+            <p class="font-bold text-emerald-800 mb-2">AFTER</p>
+            <code class="loc">render_preview(path, vpath, view: ViewSpec)</code>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════ Top recommendation ═══════════ -->
+      <section class="bg-stone-900 text-stone-100 rounded-2xl shadow p-7">
+        <h2 class="text-2xl font-bold">Top recommendation</h2>
+        <p class="text-sm mt-3 leading-relaxed">
+          <strong>Tackle candidate 1 (file-kind) first.</strong> It has a
+          <em>demonstrated</em> divergence today (CSV-stub folder-vs-file), not
+          a hypothetical one; it is small (one helper per language + a shared
+          test table); and it is the prerequisite that makes candidate 2
+          trivially statable (order <em>within</em> a known kind) and candidate
+          3 decidable (the “folder vs preview” branch is currently the
+          load-bearing overlap between the two stacks). Sequence: 1 → 2 → grill
+          on 3; 4 only with a fourth provider or a pagination bug.
+        </p>
+      </section>
+
+      <footer class="text-center text-xs text-stone-400 mt-8">
+        Which of these would you like to explore?
+      </footer>
+    </div>
+  </body>
+</html>
