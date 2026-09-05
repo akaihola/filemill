@@ -12,9 +12,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [*] Rebuild the static bundle: run `cd static && ./build-index.py` and commit
-  `static/index.html`. Roadmap phase 0, step 0.
-
 - [11] Delete the HTMX finder from the server: its Python code, its CSS, its JavaScript
   and its tests. Roadmap phase 0, step 1.
 
@@ -267,6 +264,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [*] Rebuild the static bundle: run `cd static && ./build-index.py` and commit
+  `static/index.html`. Roadmap phase 0, step 0.
 
 ## Completed
 
