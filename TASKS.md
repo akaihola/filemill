@@ -17,6 +17,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- [10] Execute the technical roadmap in docs/ROADMAP.md, phase by phase.
+
 - Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find
   out what it means.
 
@@ -187,6 +189,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 [7]: docs/tasks/7-adapter-owned-entry-order.md
 [8]: docs/tasks/8-consolidate-finder-stacks.md
 [9]: docs/tasks/9-vfs-viewspec.md
+[10]: docs/ROADMAP.md
 [*]: TASKS.md
 
 ---
