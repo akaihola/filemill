@@ -113,7 +113,7 @@ def test_document_views_serve_the_shared_shell(client, view):
 # ── Layout selects the chrome, not the content ───────────────────────────────
 
 
-def test_no_columns_layout_omits_the_column_rail(client):
+def test_no_columns_layout_serves_the_shared_shell(client):
     resp = client.get("/docs/readme.md?filemill=render&layout=no-columns")
     assert resp.status_code == 200
     assert "/ui/core/shell.js" in resp.text
