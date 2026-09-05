@@ -4,11 +4,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Unverified proposals
 
-- [6] Centralize file-kind classification across filesystem producers and
-  preview/edit consumers. This is an unverified architecture proposal.
-- [7] Make entry ordering an adapter-owned contract. This is an unverified
-  architecture proposal.
-  - Depends on: [6]
 - [8] Explore consolidating the HTMX and JavaScript finder stacks. This is an
   unverified architecture proposal pending an offline/no-JavaScript decision.
 - [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an
@@ -17,7 +12,219 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [10] Execute the technical roadmap in docs/ROADMAP.md, phase by phase.
+- [*] Rebuild the static bundle: run `cd static && ./build-index.py` and commit
+  `static/index.html`. Roadmap phase 0, step 0.
+
+- [11] Delete the HTMX finder from the server: its Python code, its CSS, its JavaScript
+  and its tests. Roadmap phase 0, step 1.
+
+- [*] Delete `_document_page` in `server/src/filemill/app.py` (the `layout=no-columns`
+  page). Return the shared shell instead. Decision: one finder, no no-JavaScript page.
+
+- [*] Write `docs/adr/0001-one-finder.md` (context, decision, measurement, consequence).
+  The shared UI owns all interaction. The server renders documents. Then close [8].
+
+- [*] In `ui/core/state.js`, replace `node.jsonl ? kids : sortKids(kids)` with a
+  `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
+
+- [12] Make `static/test-ui.py` run to its end, then fix the three checks that fail:
+  the `.pv-content` timeout and the two "edit starts at the top" checks.
+
+- [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
+  `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root `TASKS.md`.
+
+- [*] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT.
+  Use the current year and "Antti Kaihola" as the copyright holder.
+
+- [*] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
+  `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in `server/src/filemill/styles.py`.
+
+- [*] Add `ruff` and `mypy` to the `dev` group in `server/pyproject.toml`. Add
+  `[tool.ruff]` with `line-length = 88`. Fix all findings. Run `ruff format`.
+
+- [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
+  identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
+
+- [*] Add `deno fmt` and `deno lint` for `ui/` (one pinned binary, no Node project).
+  Format `ui/` one time and commit the result as its own commit.
+
+- [*] Add `.pre-commit-config.yaml` with ruff, ruff-format, mypy, deno fmt, deno lint
+  and `static/build-index.py --check`. Run `pre-commit run --all-files` until it passes.
+
+- [*] Add a `lint` job to `.github/workflows/publish.yml` that runs
+  `pre-commit run --all-files`. Make the `test` job need the `lint` job.
+
+- [*] Remove the `--cov*` options from `addopts` in `server/pyproject.toml`. Pass them
+  on the `pytest` command line in the CI `test` job. A single-test run must be fast.
+
+- [14] Merge `server/TASKS.md`, `server/ISSUES.md` and `static/TASKS.md` into root
+  `TASKS.md` and `docs/tasks/`. Keep open items. Delete closed items and the files.
+
+- [*] Delete `server/PLAN-18.md`, `PLAN-19.md`, `PLAN-20-shared-frontend.md` and
+  `server/lmt/`. Move a paragraph only if it is still true and is not elsewhere.
+
+- [*] Delete `server/.pi/settings.json`, `server/mobile-narrow-preview.png`,
+  `server/.claude/commands/` and `architecture-review-20260904.html`.
+
+- [*] Make root `README.md` the one explanation of the two editions and their ports.
+  `server/README.md` and `static/AGENTS.md` link to it and keep edition-specific text.
+
+- [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
+  decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
+
+- [*] Add root `CONTRIBUTING.md` (setup, tests, commit style, STE rule), `SECURITY.md`
+  (threat model, how to report) and `CHANGELOG.md` (Keep a Changelog format).
+
+- [16] Rewrite all remaining Markdown files in Simplified Technical English. Done when
+  the Markdown line count is below the line count of `*.py`, `*.js` and `*.css`.
+
+- [17] Convert `ui/core/` and `ui/adapters/` to ES modules with one entry module per
+  edition. Make `static/build-index.py` inline the module graph.
+
+- [18] Break the import cycles in `ui/core/`: `render.js` gets its callbacks as one
+  `actions` object at boot; `layout.js` gets `set` and `setVar` from a new `dom.js`.
+  - Depends on: [17]
+
+- [19] Move adapter code out of `ui/core/`: `jsonl.js`, the welcome screen, the local
+  badge and `offerRichToggle` go to `ui/adapters/`.
+  - Depends on: [17]
+
+- [*] Document the full port contract in `ui/core/ports.js`: `FS.node`, `FS.blob`,
+  `ROUTER.write(state, replace)`, `RouterPath.base` and every node field.
+
+- [20] Create `ui/core/limits.js` with one `TEXT_MAX` and one image extension list.
+  Create one `mountRoot()` and one `currentPath()`. Delete the copies and `pathParts`.
+  - Depends on: [17]
+
+- [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into `withVirtual`,
+  and `withJsonlPreview` and `withJsonPreview` into `withVirtualPreview`.
+  - Depends on: [19]
+
+- [21] Cache the preview element keyed on the previewed node and its `meta`, the same
+  way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
+
+- [22] Replace `cursor[i]`, `sel[i]` and `node.lastSel` with one selection model:
+  `sel[i]` is the selected name. Derive the row index when needed.
+
+- [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
+  `panFocus` and `slideTail`. Each function is under 25 lines.
+
+- [*] Give each magic number in `ui/core/state.js`, `layout.js`, `nav.js`, `render.js`
+  a name and a one-line comment that says why the value is what it is.
+
+- [23] Write the narrow-screen layout model as an ADR: what folds, what pans, what stays
+  on screen. Add one test each for phone portrait, phone landscape, tablet and desktop.
+
+- [6] Centralize file-kind classification across filesystem producers and
+  preview/edit consumers. Add one test table per language that both sides share.
+  - Depends on: [19]
+
+- [7] Make entry ordering an adapter-owned contract.
+  - Depends on: [6]
+
+- [32] Render Markdown and `.docx` in the browser in the server edition too. Serve the
+  pinned renderer modules from `ui/vendor/`. Then delete `rendering.py` and its deps.
+  - Depends on: [19]
+
+- [33] Keep the URL contract, drop the server-side representations: the server sends
+  bytes for `?filemill=raw` and the shell for all else. The client renders the view.
+  - Depends on: [32]
+
+- [34] Make the SQLite provider return JSON only. The client renders tables and rows
+  with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close [9].
+  - Depends on: [19]
+
+- [*] Delete `/api/render` in `app.py`, `render_upload` in `api.py` and
+  `ui/adapters/preview-upload.js`. Local folders in the server edition use PreviewRich.
+  - Depends on: [32], [34]
+
+- [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
+  and the `watchfiles` dependency. Delete their tests.
+
+- [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
+  `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
+
+- [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
+  registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
+
+- [*] Delete `server/src/filemill/styles.py`. The shell links `/ui/core/styles.css`,
+  and no other server route emits HTML. Delete the tests that pin `APP_CSS`.
+  - Depends on: [33], [34]
+
+- [35] Decide the fate of the `/w/` named mounts and their CORS middleware: delete
+  them, or make CORS opt-in and document it in `SECURITY.md`.
+  - Depends on: [32]
+
+- [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=` URLs
+  for images, PDF and HTML. Done when `grep -r raw?path server/src` prints nothing.
+  - Depends on: [33]
+
+- [24] Reduce `app.py` to routing: move `_resolve_safe` and the symlink map to
+  `paths.py` and the PWA routes to `pwa.py`. No imports inside functions.
+  - Depends on: [33], [34]
+
+- [*] Compute the symlink zone map one time per request in `paths.py`. Delete the
+  three other walks of the root that build the same map.
+  - Depends on: [24]
+
+- [*] Default `--bind` in `server/src/filemill/cli.py` to `127.0.0.1`. Document it in
+  `SECURITY.md`.
+
+- [*] Replace `python-fasthtml` with `starlette` and `uvicorn`. The shell becomes one
+  string template. Done when `dependencies` has starlette, uvicorn, typer, python-pptx.
+  - Depends on: [24]
+
+- [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
+  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
+
+- [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
+  `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
+
+- [*] Run the static and server browser tests through one root `conftest.py` and one
+  Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.
+  - Depends on: [25]
+
+- [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
+  `static/FSA-TEST-CHECKLIST.md`.
+
+- [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done when
+  `uv run pytest -n auto` passes at the repository root.
+
+- [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both editions
+  fill it from the same core list plus their own adapters.
+  - Depends on: [19]
+
+- [*] Implement CSV as a browser virtual filesystem in `ui/adapters/vfs-csv.js`, like
+  JSONL: one entry per row, a key/value preview per row. No Python. Closes issue #49.
+  - Depends on: [26]
+
+- [*] Render `.pptx` in the browser: unzip the file and show the slide text, as one
+  registry entry. Then delete `_preview_pptx`, `python-pptx` and `/api/preview`.
+  - Depends on: [26]
+
+- [*] Add a preview for `.mp4` files with a `<video controls>` element, as one registry
+  entry plus one test.
+  - Depends on: [26]
+
+- [27] Try reStructuredText rendering in the browser with Pyodide or a WASM tool, behind
+  the rich renderer consent switch. Record size and first-load time in an ADR.
+  - Depends on: [26]
+
+- [28] Grow the editor behind the `FS.write` port: undo, find, a line gutter and a
+  "modified" mark. Each addition is one file in `ui/editor/`.
+  - Depends on: [17]
+
+- [29] Make `ui/core/` a model package with no DOM: nodes, selection, folding
+  arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
+  - Depends on: [18], [21]
+
+- [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
+  the three ports natively. Choose the smallest binary that passes `test-ui.py`.
+  - Depends on: [29]
+
+- [31] Evaluate AppKit, GTK and WinUI against the WebView prototype. Record the
+  comparison in an ADR. Do not start a native toolkit before the ADR exists.
+  - Depends on: [30]
 
 - Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find
   out what it means.
@@ -47,8 +254,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Each row of a JSONL file must be presented exactly like a hierarchical
   nested view of a JSON file. Depends on [5].
 
-- Remove legacy HTMX code/tests/docs.
-
 - For hierarchical nested view of JSON, don't use the folder icon. Use the JSON
   icon for the whole file, and `{}` and `[]` icons for objects and arrays.
 
@@ -56,12 +261,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   the child nodes in the column to the right, and a foldable highlighted and
   pretty-printed JSON preview of the selected item in the second column to the
   right.
-
-- Add preview for .mp4 files
-
-- Add preview for reStructuredText (.rst) files. Is this possible to do on the
-  client side? Without running Python on the browser? If not, running Python in
-  the browser is also an interesting option for some other file types.
 
 ## Scheduled
 
@@ -189,7 +388,31 @@ Rules for TASKS.md usage are at the bottom of the file.
 [7]: docs/tasks/7-adapter-owned-entry-order.md
 [8]: docs/tasks/8-consolidate-finder-stacks.md
 [9]: docs/tasks/9-vfs-viewspec.md
-[10]: docs/ROADMAP.md
+[11]: docs/tasks/11-delete-htmx-finder.md
+[12]: docs/tasks/12-test-ui-runs-to-end.md
+[13]: docs/tasks/13-correct-stale-documents.md
+[14]: docs/tasks/14-merge-issue-trackers.md
+[15]: docs/tasks/15-split-decisions-into-adrs.md
+[16]: docs/tasks/16-rewrite-docs-in-ste.md
+[17]: docs/tasks/17-es-modules.md
+[18]: docs/tasks/18-break-import-cycles.md
+[19]: docs/tasks/19-adapter-code-out-of-core.md
+[20]: docs/tasks/20-one-limits-one-path.md
+[21]: docs/tasks/21-cache-preview-element.md
+[22]: docs/tasks/22-one-selection-model.md
+[23]: docs/tasks/23-narrow-screen-model.md
+[24]: docs/tasks/24-split-app-py.md
+[25]: docs/tasks/25-static-tests-under-pytest.md
+[26]: docs/tasks/26-renderer-registry.md
+[27]: docs/tasks/27-rst-in-browser.md
+[28]: docs/tasks/28-editor-features.md
+[29]: docs/tasks/29-core-without-dom.md
+[30]: docs/tasks/30-webview-shell.md
+[31]: docs/tasks/31-native-toolkit-evaluation.md
+[32]: docs/tasks/32-browser-markdown-in-server-edition.md
+[33]: docs/tasks/33-shell-for-every-representation.md
+[34]: docs/tasks/34-sqlite-json-only.md
+[35]: docs/tasks/35-decide-web-mounts.md
 [*]: TASKS.md
 
 ---
