@@ -122,20 +122,57 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [7] Make entry ordering an adapter-owned contract.
   - Depends on: [6]
 
-- [24] Split `server/src/filemill/app.py` into `paths.py`, `routes_api.py`,
-  `routes_pages.py` and `pwa.py`. `app.py` keeps routing only. No imports in functions.
+- [32] Render Markdown and `.docx` in the browser in the server edition too. Serve the
+  pinned renderer modules from `ui/vendor/`. Then delete `rendering.py` and its deps.
+  - Depends on: [19]
 
-- [*] Add one `preview_error(exc)` helper in `server/src/filemill/preview.py`. Use it in
-  place of the nine hand-built error fragments and their doubled `try/except` blocks.
+- [33] Keep the URL contract, drop the server-side representations: the server sends
+  bytes for `?filemill=raw` and the shell for all else. The client renders the view.
+  - Depends on: [32]
 
-- [*] Make the image, PDF and HTML fragments use root-relative `?filemill=raw` URLs.
-  Delete the `/raw?path=` route. Done when `grep -r raw?path server/src` finds nothing.
+- [34] Make the SQLite provider return JSON only. The client renders tables and rows
+  with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close [9].
+  - Depends on: [19]
 
-- [*] Compute the symlink zone map one time per request in `app.py`. Delete the three
-  other walks of the root that build the same map.
+- [*] Delete `/api/render` in `app.py`, `render_upload` in `api.py` and
+  `ui/adapters/preview-upload.js`. Local folders in the server edition use PreviewRich.
+  - Depends on: [32], [34]
 
-- [*] Default `--bind` in `server/src/filemill/cli.py` to `127.0.0.1`. Make `/w/` CORS
-  opt-in with a flag. Document both in `SECURITY.md`.
+- [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
+  and the `watchfiles` dependency. Delete their tests.
+
+- [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
+  `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
+
+- [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
+  registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
+
+- [*] Delete `server/src/filemill/styles.py`. The shell links `/ui/core/styles.css`,
+  and no other server route emits HTML. Delete the tests that pin `APP_CSS`.
+  - Depends on: [33], [34]
+
+- [35] Decide the fate of the `/w/` named mounts and their CORS middleware: delete
+  them, or make CORS opt-in and document it in `SECURITY.md`.
+  - Depends on: [32]
+
+- [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=` URLs
+  for images, PDF and HTML. Done when `grep -r raw?path server/src` prints nothing.
+  - Depends on: [33]
+
+- [24] Reduce `app.py` to routing: move `_resolve_safe` and the symlink map to
+  `paths.py` and the PWA routes to `pwa.py`. No imports inside functions.
+  - Depends on: [33], [34]
+
+- [*] Compute the symlink zone map one time per request in `paths.py`. Delete the
+  three other walks of the root that build the same map.
+  - Depends on: [24]
+
+- [*] Default `--bind` in `server/src/filemill/cli.py` to `127.0.0.1`. Document it in
+  `SECURITY.md`.
+
+- [*] Replace `python-fasthtml` with `starlette` and `uvicorn`. The shell becomes one
+  string template. Done when `dependencies` has starlette, uvicorn, typer, python-pptx.
+  - Depends on: [24]
 
 - [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
   fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
@@ -157,8 +194,12 @@ Rules for TASKS.md usage are at the bottom of the file.
   fill it from the same core list plus their own adapters.
   - Depends on: [19]
 
-- [*] Implement the CSV provider (issue #49 in `server/ISSUES.md`) as one registry entry
-  plus one test.
+- [*] Implement CSV as a browser virtual filesystem in `ui/adapters/vfs-csv.js`, like
+  JSONL: one entry per row, a key/value preview per row. No Python. Closes issue #49.
+  - Depends on: [26]
+
+- [*] Render `.pptx` in the browser: unzip the file and show the slide text, as one
+  registry entry. Then delete `_preview_pptx`, `python-pptx` and `/api/preview`.
   - Depends on: [26]
 
 - [*] Add a preview for `.mp4` files with a `<video controls>` element, as one registry
@@ -368,6 +409,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 [29]: docs/tasks/29-core-without-dom.md
 [30]: docs/tasks/30-webview-shell.md
 [31]: docs/tasks/31-native-toolkit-evaluation.md
+[32]: docs/tasks/32-browser-markdown-in-server-edition.md
+[33]: docs/tasks/33-shell-for-every-representation.md
+[34]: docs/tasks/34-sqlite-json-only.md
+[35]: docs/tasks/35-decide-web-mounts.md
 [*]: TASKS.md
 
 ---
