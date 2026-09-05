@@ -954,75 +954,6 @@ def _resource_target(rel: str) -> tuple[Path, str, str] | None:
     return target, real_rel, vpath
 
 
-def _view_switch_html(rel: str, state) -> str:
-    """Return the reciprocal representation controls (PLAN-19 §5).
-
-    Every view links to every other view of the same path, so the controls are
-    reciprocal by construction rather than by three hand-written bars. The stable
-    hooks are the ``filemill-view-switch`` class and the ``data-filemill``
-    attribute; the visible labels are not part of the contract.
-
-    ``url_for_state`` carries the reader's layout and dotfile choices across the
-    switch and HTML-escaping happens here, at the output boundary.
-    """
-    links = []
-    for view, label in urls.VIEW_LABELS:
-        href = html_lib.escape(urls.url_for_state(rel, state, view=view))
-        active = " active" if view == state.view else ""
-        current = ' aria-current="page"' if view == state.view else ""
-        links.append(
-            f'<a class="filemill-view-link{active}"'
-            f' data-filemill="{view}" href="{href}"{current}>{label}</a>'
-        )
-    return (
-        '<div class="preview-webmode-bar filemill-view-switch">'
-        f"{''.join(links)}</div>"
-    )
-
-
-def _representation_html(target: Path, rel: str, state, vpath: str) -> str:
-    """Render one representation of *target*, with the switch controls above it.
-
-    Both branches reuse the existing pipelines rather than duplicating them:
-    ``render_preview`` is the same function ``/click`` and ``/restore`` call, and
-    ``render_source`` shares its Pygments and ``<pre>`` fallbacks.
-    """
-    if vpath:
-        provider = REGISTRY.get(target)
-        if provider is None:
-            return '<div class="preview-error">Not a virtual filesystem</div>'
-        try:
-            body = provider.render_preview(
-                target, vpath, provider.default_fmt(vpath), page=1, limit=1000
-            )
-        except Exception as exc:
-            body = f'<div class="preview-error">{html_lib.escape(str(exc))}</div>'
-        return _view_switch_html(rel, state) + body
-
-    try:
-        if state.view == urls.VIEW_HIGHLIGHT:
-            body = render_source(target)
-        else:
-            # The state reaches the Markdown renderer so links inside the
-            # document keep the reader's layout and dotfile choices.
-            body = render_preview(target, state)
-    except Exception as exc:
-        body = f'<div class="preview-error">{html_lib.escape(str(exc))}</div>'
-    return _view_switch_html(rel, state) + body
-
-
-def _document_page(rel: str, state, body_html: str):
-    """Return the ``layout=no-columns`` page: the representation and nothing else.
-
-    This is what the gogo dashboard embeds. It carries no breadcrumb and no
-    column rail, because the dashboard supplies its own chrome and two sets of
-    navigation in one pane help nobody.
-    """
-    return _page_html(
-        [Div(NotStr(body_html), id="preview", cls="preview-standalone")], state
-    )
-
-
 @rt(_RESOURCE_ROUTE, methods=["GET"])
 def resource(request, path: str = ""):
     """Serve any representation of the file at ``ROOT / path``.
@@ -1044,7 +975,7 @@ def resource(request, path: str = ""):
         # One 404 for "outside ROOT", "denied", and "missing" alike, so a probe
         # cannot learn from the status code whether an outside file exists.
         return HTMLResponse("Not found", status_code=404)
-    target, rel, vpath = found
+    target, _rel, vpath = found
     vpath = vpath or state.vpath
 
     if (
@@ -1065,9 +996,7 @@ def resource(request, path: str = ""):
         index_file = target / "index.html"
         if not request.query_params and index_file.is_file():
             return FileResponse(str(index_file), media_type="text/html")
-        # A directory has no bytes, so every view value renders its listing. The
-        # layout still applies: no-columns gives the one pane, and the column
-        # layouts give the finder opened at that directory.
+        # A directory has no bytes, so every view value renders its listing.
         if state.wants_columns:
             return _ui_shell(state, "/", request.query_params.get("hidden") == "show")
         return _page_html([list_column(target, ROOT, col_index=0)], state)
@@ -1086,11 +1015,10 @@ def resource(request, path: str = ""):
         return api.raw_response(target)
 
     if state.wants_columns:
-        # The columns are the shared UI's, not the HTMX shell's. The client
-        # walks to this path and asks /api/preview for the representation, so
-        # the document is not rendered twice.
+        # The client walks to this path and asks /api/preview for the
+        # representation, so the document is not rendered twice.
         return _ui_shell(state, "/", request.query_params.get("hidden") == "show")
-    return _document_page(rel, state, _representation_html(target, rel, state, vpath))
+    return _ui_shell(state, "/", request.query_params.get("hidden") == "show")
 
 
 # ── PWA static files ─────────────────────────────────────────────────────────
