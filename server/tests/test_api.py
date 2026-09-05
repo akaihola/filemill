@@ -303,6 +303,7 @@ def test_dir_inside_a_database_lists_its_tables(db_client, db_root: Path):
     assert users["dir"] is True
     assert users["vpath"] == "users"
     assert users["icon"]
+    assert users["ordered"] is True
 
 
 def test_dir_inside_a_table_lists_its_rows(db_client, db_root: Path):
@@ -311,6 +312,7 @@ def test_dir_inside_a_table_lists_its_rows(db_client, db_root: Path):
     row = j["entries"][0]
     assert row["dir"] is False
     assert row["vpath"].startswith("users/")
+    assert row["ordered"] is True
 
 
 def test_a_virtual_entry_carries_a_vpath_and_a_real_one_does_not(client, tmp_root):
