@@ -100,9 +100,9 @@ These are choices, not omissions. Do not add them without a recorded decision.
   deliverable.
 - No telemetry.
 - No network use without consent.
-- No feature in one edition that the other edition cannot have. The virtual
-  filesystem for SQLite is the one exception today, because only Python can
-  read it. It is a gap to close, not a design.
+- No feature in one edition that the other edition cannot have. Two
+  exceptions exist today: the SQLite virtual filesystem and PPTX preview,
+  because only Python can read them. They are gaps to close, not a design.
 
 ## Related documents
 
