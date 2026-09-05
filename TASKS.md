@@ -51,6 +51,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## Scheduled
 
 - [5] Hierarchical nested view for JSON
+- [*] Truncate too wide file names in the middle just before the file extension
+- [*] Text file editing should start with the cursor at the top of the file
 
 ## In progress
 
