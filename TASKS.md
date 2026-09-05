@@ -19,8 +19,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [11] Delete the HTMX finder from the server: its Python code, its CSS, its JavaScript
   and its tests. Roadmap phase 0, step 1.
 
-- [*] Delete `_document_page` in `server/src/filemill/app.py` (the `layout=no-columns`
-  page). Return the shared shell instead. Decision: one finder, no no-JavaScript page.
+- [x] Delete `_document_page` — document representations, including
+  `layout=no-columns`, now return the shared client shell.
 
 - [*] Write `docs/adr/0001-one-finder.md` (context, decision, measurement, consequence).
   The shared UI owns all interaction. The server renders documents. Then close [8].
