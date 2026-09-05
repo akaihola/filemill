@@ -113,7 +113,7 @@ Real cycles exist. `render.js:49-69` calls `unfoldTo`, `refreshColumn` and
 `setVar` from `render.js`, and `render()` calls `layout()`. `state.js:36`
 calls `sortKids` from a file that loads after it.
 
-Core knows adapter facts. `render.js:255` tests `n.vpath`, a server concept.
+Core knows adapter facts. `render.js:254` tests `n.vpath`, a server concept.
 `shell.js:24-26,83-93` builds the welcome screen, the "Open Folder" button
 and the local badge, which belong to one adapter. `settings.js:38-43` exists
 for `preview-rich.js` alone. `core/jsonl.js` wraps ports and reads file
@@ -155,7 +155,7 @@ render. Not verified by a run.
 call sites of `render()`. A resize, a font load, a sort sweep or a settings
 change therefore builds a new preview element. Each one calls
 `PREVIEW.revoke()`, then `FS.loadMeta` again, then `PREVIEW.render` again. On the server
-edition that is a new `GET /api/preview`. `editableText` (`render.js:244-260`)
+edition that is a new `GET /api/preview`. `editableText` (`render.js:253-264`)
 runs on the same path and re-reads and re-decodes the whole file each time.
 Columns are cached with care (`render.js:4-9`); the preview is not.
 
@@ -194,7 +194,7 @@ each provider. There is no table. Providers are stacked as decorators at boot
 (`app-fsa.js:14`, `app-http.js:33`), four levels deep, each with an `if`
 ladder. Adding one kind means editing a ladder.
 
-Editing exists and works: `render.js:244-301` gates on `FS.write`, file kind,
+Editing exists and works: `render.js:253-301` gates on `FS.write`, file kind,
 size, UTF-8 and line length, and both adapters implement `write`. It is one
 text area with Save and Cancel. The goal says "world-class editing". The
 distance is large and should be planned, not patched.
@@ -249,7 +249,7 @@ listed because a world-class project writes them down.
 
 ### 13. Tests (Strong)
 
-- Server: 626 tests in 17 files. About 500 lines of `test_rendering.py` and
+- Server: 629 tests in 17 files. About 500 lines of `test_rendering.py` and
   much of `test_app.py:280-800` assert that a string contains a string, for
   example `"'PageUp'" in COLUMN_JS`. They pin dead JavaScript.
 - Static: four standalone scripts and no runner. `test-ui.py` is one function
