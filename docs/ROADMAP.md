@@ -219,31 +219,52 @@ that both sides share by value.
 
 **Done when.** The acceptance criteria in those two files hold.
 
-## Phase 6: server shape
+## Phase 6: a minimal server
 
-**Goal.** `app.py` is routing only. No module imports another inside a
-function. No fragment carries an absolute path.
+**Goal.** The Python server does only what a browser cannot: list a
+directory, serve bytes, save a file, read SQLite and serve the shell. Every
+renderer that has a browser implementation runs in the browser, in both
+editions. `app.py` is routing only.
+
+**Why now.** Most of the Python dates from the HTMX finder, when the server
+built every fragment. The shared UI already renders text, source, images,
+PDF, HTML, JSON and JSONL itself, and renders Markdown and `.docx` in the
+static edition. Two render paths for one document drift apart.
 
 **Steps.**
 
-1. Split `app.py`: `paths.py` (`_resolve_safe`, the symlink mount map, URL
-   helpers), `routes_api.py`, `routes_pages.py`, `pwa.py`. `rendering.py`
-   and the former `columns.py` callers import `paths`, not `app`.
-2. Add one `preview_error(exc)` helper in `preview.py`. Replace the nine
-   hand-built fragments and their doubled `try/except`.
-3. Make image, PDF and HTML fragments use root-relative `?filemill=raw`
-   URLs. Retire `/raw?path=`.
-4. Compute the symlink zone map once per request. Delete the three other
-   root walks.
-5. Default `--bind` to `127.0.0.1`. Document `/w/` CORS in `SECURITY.md`
-   and make it opt-in.
-6. Apply `docs/tasks/9-vfs-viewspec.md` only if its trigger occurs.
+1. Serve the pinned Markdown and `.docx` renderer modules from `ui/vendor/`
+   so the server edition needs no CDN and no consent. Port the wikilink and
+   relative-link rules and their tests from `rendering.py`. Delete
+   `rendering.py`, `_preview_md`, `_preview_docx` and the `markdown-it-py`,
+   `mdit-py-plugins`, `linkify-it-py`, `pygments` and `mammoth` dependencies.
+2. Keep the URL contract in `urls.py` (`?filemill=`, `?layout=`). The server
+   answers `raw` with bytes and everything else with the shell. The client
+   reads `data-filemill` and `data-layout` and shows the source view or the
+   preview-only layout. Delete `_view_switch_html`, `_representation_html`,
+   `_document_page` and `render_source`.
+3. Make the SQLite provider return JSON only. The client shows tables and
+   rows with the JSON hierarchical view. Delete `render_preview` and the two
+   HTML renderers in `providers/sqlite.py`. This closes proposal [9].
+4. Delete what the browser already does: `/api/render` and
+   `preview-upload.js`, `/open-link`, `/sse/reload` and live reload,
+   `providers/json_provider.py`, `providers/csv_provider.py`, `styles.py`
+   and `/raw?path=`. Decide `/w/` and its CORS middleware with its consumer.
+5. Reduce `app.py` to routing. Move `_resolve_safe` and the symlink map to
+   `paths.py` and the PWA routes to `pwa.py`. Compute the symlink zone map
+   once per request. Default `--bind` to `127.0.0.1`.
+6. Replace `python-fasthtml` with `starlette` and `uvicorn`. The shell is one
+   string template.
+7. Apply `docs/tasks/9-vfs-viewspec.md` only if step 3 has not made it moot.
 
-**Done when.** No function-local imports in `server/src/filemill/`.
-`grep -r "raw?path" server/src` finds nothing. Coverage of every module is
-above 90 %.
+**Done when.** `dependencies` in `server/pyproject.toml` lists `starlette`,
+`uvicorn`, `typer` and `python-pptx` only. The line count of
+`server/src/filemill/**/*.py` is under 1 500. No function-local imports.
+`grep -rn "raw?path\|open-link\|sse/reload" server/src` finds nothing. The
+same Markdown file shows the same HTML in both editions.
 
 **Model.** Redis: one file per subsystem, and the entry point is short.
+`python -m http.server`: a server that serves files can be very small.
 
 ## Phase 7: one test harness
 
@@ -279,7 +300,9 @@ same in both editions.
 
 1. Create one renderer registry: a list of `{kind, render, fallback}`. Both
    editions fill it from the same core list plus their own adapters.
-2. Implement the CSV provider (issue #49) and `.mp4` preview.
+2. Implement CSV as a browser virtual filesystem (issue #49), `.mp4`
+   preview, and a browser `.pptx` renderer. When `.pptx` renders in the
+   browser, delete `python-pptx` and `/api/preview`.
 3. Try reStructuredText in the browser with a small Pyodide or WASM
    experiment behind the existing consent switch. Record the size and the
    first-load time in an ADR before deciding.
@@ -312,5 +335,6 @@ port.
 - Every decision that changes a port or a behaviour gets an ADR the same day.
 - Documents and comments use Simplified Technical English.
 - Delete what you replace, in the same change.
+- A renderer lives in `ui/`, not in Python, unless the browser cannot do it.
 - No `# noqa` and no skipped test without a link to an issue.
 - A red suite blocks every merge. No exceptions.
