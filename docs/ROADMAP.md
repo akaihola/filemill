@@ -60,8 +60,9 @@ depends on being able to trust a green run.
 and bundle mode. CI on `main` is green. `grep -r htmx server/src` finds
 nothing.
 
-**Model.** htmx itself: when it replaces a feature, the old code leaves in the
-same release. SQLite: the suite is never red on trunk.
+**Model.** SQLite: trunk is never left red, and every fix lands with its
+test. Zig, before 1.0: when a design is replaced, the old code leaves in the
+same change, so two implementations never live side by side.
 
 ## Phase 1: gates
 
@@ -91,8 +92,8 @@ removes style from review and leaves only substance.
 **Done when.** `pre-commit run --all-files` passes. The CI `lint` job passes.
 No `# noqa` exists without a link to an issue.
 
-**Model.** Ruff and uv: one fast tool, pinned, in CI. Go: `gofmt` ended the
-formatting discussion in 2009. We want the same silence.
+**Model.** Ruff and uv: one fast tool, pinned, in CI. Go: `gofmt` made
+formatting a non-discussion from the first release. We want the same silence.
 
 ## Phase 2: one source of truth for documents
 
