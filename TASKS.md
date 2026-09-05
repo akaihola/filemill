@@ -6,8 +6,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [6] Centralize file-kind classification across filesystem producers and
   preview/edit consumers. This is an unverified architecture proposal.
-- [7] Make entry ordering an adapter-owned contract. Depends on [6]; this is
-  an unverified architecture proposal.
+- [7] Make entry ordering an adapter-owned contract. This is an unverified
+  architecture proposal.
+  - Depends on: [6]
 - [8] Explore consolidating the HTMX and JavaScript finder stacks. This is an
   unverified architecture proposal pending an offline/no-JavaScript decision.
 - [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an
