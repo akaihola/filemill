@@ -18,7 +18,8 @@ use the same table. Roadmap phase 8, step 1.
 2. Move the current `if`/`else` chain in the preview code into entries of
    that list. Start with text, image, PDF, Markdown, JSON.
 3. Each adapter appends its own entries to the list at boot. `preview-rich.js`
-   adds the CDN renderers. The server adapter adds the server-rendered kinds.
+   adds Markdown and `.docx`. The server adapter adds only the kinds the
+   browser cannot read: virtual paths inside SQLite files, and `.pptx`.
 4. Write one function `renderNode(node, blob)` that finds the first matching
    entry, calls it, and follows `fallback` on error.
 5. Add one test per entry in `static/test-ui.py`.
