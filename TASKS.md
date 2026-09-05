@@ -21,9 +21,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Write `docs/adr/0001-one-finder.md` (context, decision, measurement, consequence).
   The shared UI owns all interaction. The server renders documents. Then close [8].
 
-- [*] In `ui/core/state.js`, replace `node.jsonl ? kids : sortKids(kids)` with a
-  `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
-
 - [12] Make `static/test-ui.py` run to its end, then fix the three checks that fail:
   the `.pv-content` timeout and the two "edit starts at the top" checks.
 
@@ -264,6 +261,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [*] In `ui/core/state.js`, replace `node.jsonl ? kids : sortKids(kids)` with a
+  `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
 
