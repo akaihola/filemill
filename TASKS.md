@@ -33,21 +33,12 @@ Rules for TASKS.md usage are at the bottom of the file.
   folding/unfolding of the parent column. Hard rule: Up/down navigation must
   never change folding state of ancestor folder columns.
 
-- Truncate too wide file names in the middle just before the file extension
-  instead of truncating at the end.
-
 - Keyboard navigation using arrows still doesn't animate
   folding/unfolding/resizing of columns. Do systematic debugging to identify the
   cause, and fix it.
 
 - [*] Each row of a JSONL file must be presented exactly like a hierarchical
   nested view of a JSON file. Depends on [5].
-
-- Text file editing shows the original version of the file after saving changes.
-  Force reloading the page doesn't change that.
-
-- Text file editing always starts at the bottom of the file. It should start with the
-  cursor at the top of the file instead.
 
 - Remove legacy HTMX code/tests/docs.
 
@@ -194,10 +185,12 @@ Here are the rules for TASKS.md usage:
 
 1. Choose issue and schedule work (typically by a heartbeat)
 - Pick the first backlog issue with no dependency to any uncompleted issue.
-- Move it under `## Scheduled` in `TASKS.md` in the `main` branch and commit.
+- Move it under `## Scheduled` in `TASKS.md` and remove it from `## Ordered
+  backlog` in the `main` branch and commit.
 
 2. Work on the issue (typically by a task workflow)
-- Move the issue under `## In progress` in `TASKS.md` in the worktree branch and commit.
+- Move the issue under `## In progress` in `TASKS.md` in the worktree branch,
+  ensure it's not in `## Ordered backlog`, and commit.
 - Create or update, review and refine a plan in
   docs/tasks/<N-issue-description>.md in `main` (skip for `[*]` items).
 - Commit description file (if any) and TASKS.md in `main`.
