@@ -541,8 +541,8 @@ async def api_save(request, p: str = ""):
 # ── The root-relative resource route (PLAN-19) ───────────────────────────────
 #
 # Every route above this line is addressed by a prefix that names a *mechanism*:
-# /click is an HTMX fragment, /w/ is a static mount, /api/ is JSON, /n/ is the
-# shared UI. Those names are reserved and they win, so a directory in ROOT
+# /w/ is a static mount, /api/ is JSON, /n/ is the shared UI. Those names are
+# reserved and they win, so a directory in ROOT
 # actually called "api" is not reachable under its own name. That is the one
 # cost of putting files at the top level, and it is why the reserved set is
 # written down here rather than discovered by a user hitting it.
@@ -722,15 +722,15 @@ app.add_middleware(_WebStaticCORSMiddleware)
 # ── Route priority fix ────────────────────────────────────────────────────────
 # FastHTML registers a catch-all /{fname:path}.{ext:static} at index 0 that
 # intercepts any path with a known static extension (including .html, .txt, …)
-# and serves it from the *working directory*. Move /w/ and /f/ in front of it so
-# they are matched first.
+# and serves it from the *working directory*. Move /w/ in front of it so
+# it is matched first.
 #
 # The root-relative resource route is a catch-all too, so ordering decides the
 # whole contract and is stated in one place rather than left to registration
 # order. Four bands, most specific first:
 #
-#   1. the named prefixes below            /w/, /f/, /api/, /n/, PWA files
-#   2. every other explicitly named route  /click, /raw, /restore, /, …
+#   1. the named prefixes below            /w/, /api/, /n/, PWA files
+#   2. every other explicitly named route  /raw, /open-link, /, …
 #   3. /{path:path}                        the file's own path under ROOT
 #   4. FastHTML's /{fname:path}.{ext:static}
 #
