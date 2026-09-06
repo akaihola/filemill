@@ -322,6 +322,15 @@ def _mounted_path_parts(p: Path) -> tuple[str, Path] | None:
     return None
 
 
+def _web_url(p: Path) -> str | None:
+    """Return a canonical ``/w/`` URL for *p*, or ``None`` if it is unreachable."""
+    mounted = _mounted_path_parts(p)
+    if mounted is None:
+        return None
+    mount_name, rel = mounted
+    return f"/w/{mount_name}/{rel}"
+
+
 @rt("/w/{path:path}")
 def web_static(path: str):
     """Serve a named-mount ``/w/<mount>/...`` file with the correct Content-Type."""
