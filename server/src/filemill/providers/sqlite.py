@@ -12,7 +12,6 @@ import html as html_lib
 import sqlite3
 from pathlib import Path
 from textwrap import dedent
-from urllib.parse import quote as urlquote
 
 from filemill.vfs import REGISTRY, VFSEntry, _truncate
 
@@ -378,50 +377,12 @@ class SQLiteProvider:
                 </table>""")
             body = f'<div class="db-table-wrap">{table_html}</div>'
 
-        # Pagination controls
-        encoded_path = urlquote(str(path))
-        encoded_vpath = urlquote(vpath)
-        prev_link = ""
-        next_link = ""
-        if page > 1:
-            prev_link = (
-                f'<a hx-get="/vpage?path={encoded_path}&vpath={encoded_vpath}'
-                f'&page={page - 1}&limit={limit}" '
-                f'hx-target="#preview" hx-swap="innerHTML">← Prev</a>'
-            )
         page_info = f"Page {page} of {total_pages} ({total} rows)"
-        if page < total_pages:
-            next_link = (
-                f'<a hx-get="/vpage?path={encoded_path}&vpath={encoded_vpath}'
-                f'&page={page + 1}&limit={limit}" '
-                f'hx-target="#preview" hx-swap="innerHTML">Next →</a>'
-            )
-        pagination_html = (
-            f'<div class="db-pagination">{prev_link}'
-            f"<span>{page_info}</span>{next_link}</div>"
-        )
-
-        # Format-toggle bar (in the preview header area)
-        encoded_path_esc = html_lib.escape(str(path))
-        encoded_vpath_esc = html_lib.escape(vpath)
-        rows_btn = (
-            f'<button class="fmt-btn"'
-            f' data-fmt="folders"'
-            f' data-fpath="{encoded_path_esc}"'
-            f' data-vpath="{encoded_vpath_esc}"'
-            f' data-ext=".db"'
-            f' hx-get="/click?path={encoded_path}&vpath={encoded_vpath}'
-            f'&col={col}&fmt=folders"'
-            f' hx-target="#col-{col}" hx-swap="outerHTML">📋 Rows</button>'
-        )
-        spreadsheet_btn = '<button class="fmt-btn active">📊 Spreadsheet</button>'
-        fmt_bar = f'<div class="fmt-bar">{rows_btn}{spreadsheet_btn}</div>'
 
         return dedent(f"""\
             <div class="preview-db-spreadsheet">
-              {fmt_bar}
               {body}
-              {pagination_html}
+              <p class="db-page-info">{page_info}</p>
             </div>""")
 
     # ── KV row-detail renderer ────────────────────────────────────────────────
