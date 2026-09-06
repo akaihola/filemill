@@ -16,9 +16,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   handle line breaks and consider a multi-line Markdown paragraph as a single
   line.
 
-- [11] Delete the HTMX finder from the server: its Python code, its CSS, its JavaScript
-  and its tests. Roadmap phase 0, step 1.
-
 - [x] Delete `_document_page` — document representations, including
   `layout=no-columns`, now return the shared client shell.
 
@@ -265,6 +262,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [11] Delete the HTMX finder from the server: its Python code, its CSS, its JavaScript
+  and its tests. Roadmap phase 0, step 1.
 
 - [*] In `ui/core/state.js`, replace `node.jsonl ? kids : sortKids(kids)` with a
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
