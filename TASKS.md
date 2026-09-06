@@ -263,13 +263,17 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
-- [11] Delete the HTMX finder from the server: its Python code, its CSS, its JavaScript
-  and its tests. Roadmap phase 0, step 1.
-
 - [*] In `ui/core/state.js`, replace `node.jsonl ? kids : sortKids(kids)` with a
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [11] Delete the HTMX finder from the server: its Python code, its CSS, its JavaScript
+  and its tests. Roadmap phase 0, step 1. Done: the `/click`, `/vpage`, `/restore`,
+  `/f/` route handlers and `columns.py` were already unregistered dead code; deleted
+  them plus `COLUMN_JS`, the HTMX-only `APP_CSS` rules, the sqlite pagination/format
+  HTML, and every test that pinned that stack. The `layout=no-columns` directory
+  listing (the one live `columns.py` caller) now uses a small non-HTMX helper.
 
 - [*] Rebuild the static bundle: run `cd static && ./build-index.py` and commit
   `static/index.html`. Roadmap phase 0, step 0.
