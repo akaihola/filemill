@@ -260,7 +260,7 @@ def test_post_is_not_allowed(client):
 
 @pytest.mark.parametrize(
     "url",
-    ["/f/", "/manifest.json", "/sw.js"],
+    ["/manifest.json", "/sw.js"],
 )
 def test_reserved_routes_are_not_shadowed_by_the_catch_all(client, url):
     resp = client.get(url)
@@ -278,15 +278,6 @@ def test_named_route_wins_over_a_directory_of_the_same_name(site, client):
     resp = client.get("/api/dir?p=")
     assert resp.status_code == 200
     assert "shadowed" not in resp.text
-
-
-def test_click_route_still_answers_its_own_path(client, site):
-    from urllib.parse import quote
-
-    target = site / "docs" / "readme.md"
-    resp = client.get(f"/click?path={quote(str(target))}&col=1")
-    assert resp.status_code == 200
-    assert "preview-md" in resp.text
 
 
 # ── Internal links keep the reader's state (PLAN-19 §1) ──────────────────────

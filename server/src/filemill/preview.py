@@ -43,8 +43,9 @@ def render_preview(path: Path, state=None) -> str:
 
     *state* is the request's ``ViewState`` when the caller has one. It only
     reaches the Markdown renderer, where it decides whether links keep the
-    reader's layout and dotfile choices. ``/click`` and ``/restore`` pass nothing
-    and get the documented defaults, which is why the signature stays optional.
+    reader's layout and dotfile choices. Callers with no request state pass
+    nothing and get the documented defaults, which is why the signature
+    stays optional.
     """
     ext = path.suffix.lower()
 
