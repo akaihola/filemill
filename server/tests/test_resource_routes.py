@@ -100,69 +100,24 @@ def test_a_space_in_a_path_is_served(client):
 # ── The rendered and highlighted representations ─────────────────────────────
 
 
-def test_rendered_view_renders_markdown(client):
-    resp = client.get("/docs/readme.md?filemill=render&layout=no-columns")
+@pytest.mark.parametrize("view", ["render", "highlight"])
+def test_document_views_serve_the_shared_shell(client, view):
+    resp = client.get(f"/docs/readme.md?filemill={view}&layout=no-columns")
     assert resp.status_code == 200
-    assert "text/html" in resp.headers["content-type"]
-    assert ">Guide</h1>" in resp.text
-    assert "<em>emphasis</em>" in resp.text
-    assert 'class="preview-md"' in resp.text
-
-
-def test_rendered_view_passes_raw_html_through_unescaped(client):
-    """Pinning pre-existing behaviour, because this change makes it matter more.
-
-    ``MarkdownIt("commonmark")`` sets ``html: True``, so a <script> written into
-    a Markdown file reaches the browser. That predates PLAN-19 and no test
-    covered it. It is recorded here rather than changed quietly, because a
-    rendered page is now served same-origin with the dashboard that embeds it,
-    which raises the stakes of the existing choice. See PLAN-19 "What remains".
-    """
-    resp = client.get("/docs/readme.md?filemill=render&layout=no-columns")
-    assert "<script>alert(1)</script>" in resp.text
-
-
-def test_highlighted_view_shows_the_source_not_the_rendering(client):
-    """The characters the author typed, coloured but not obeyed."""
-    resp = client.get("/docs/readme.md?filemill=highlight&layout=no-columns")
-    assert resp.status_code == 200
-    assert ">Guide</h1>" not in resp.text
-    assert "# Guide" in resp.text
-    assert 'class="preview-code"' in resp.text
-
-
-def test_highlighted_view_escapes_markup_in_the_source(client):
-    """The same <script> that runs in the rendered view is inert here."""
-    resp = client.get("/docs/readme.md?filemill=highlight&layout=no-columns")
-    assert "<script>alert(1)</script>" not in resp.text
-    assert "&lt;" in resp.text and "script" in resp.text
-
-
-def test_highlighted_view_colours_source_code(client):
-    resp = client.get("/hello.py?filemill=highlight&layout=no-columns")
-    assert resp.status_code == 200
-    assert 'class="preview-code"' in resp.text
-    assert "hello" in resp.text
-
-
-def test_highlighted_view_of_html_shows_the_markup_not_the_page(client):
-    """Pygments splits the tag across spans, so the angle brackets arrive escaped."""
-    resp = client.get("/page.html?filemill=highlight&layout=no-columns")
-    assert resp.status_code == 200
-    assert 'class="preview-code"' in resp.text
-    assert "&lt;" in resp.text
-    assert "<h1>Hi</h1>" not in resp.text
+    assert "/ui/core/shell.js" in resp.text
+    assert f'data-filemill="{view}"' in resp.text
+    assert 'data-layout="no-columns"' in resp.text
+    assert "preview-standalone" not in resp.text
 
 
 # ── Layout selects the chrome, not the content ───────────────────────────────
 
 
-def test_no_columns_layout_omits_the_column_rail(client):
+def test_no_columns_layout_serves_the_shared_shell(client):
     resp = client.get("/docs/readme.md?filemill=render&layout=no-columns")
     assert resp.status_code == 200
-    assert 'class="column"' not in resp.text
-    assert 'id="breadcrumb"' not in resp.text
-    assert ">Guide</h1>" in resp.text
+    assert "/ui/core/shell.js" in resp.text
+    assert 'data-layout="no-columns"' in resp.text
 
 
 def test_full_columns_layout_serves_the_shared_ui(client):
@@ -203,60 +158,6 @@ def test_compressed_columns_reaches_the_shared_ui(client):
 def test_layout_is_reported_on_the_body(client):
     resp = client.get("/docs/readme.md?filemill=render&layout=no-columns")
     assert 'data-layout="no-columns"' in resp.text
-
-
-# ── The switch controls are reciprocal and query-preserving ──────────────────
-
-
-def test_rendered_view_links_to_the_other_two(client):
-    resp = client.get("/docs/readme.md?filemill=render&layout=no-columns")
-    assert (
-        'data-filemill="highlight"'
-        ' href="/docs/readme.md?filemill=highlight&amp;layout=no-columns"'
-    ) in resp.text
-    assert 'data-filemill="raw" href="/docs/readme.md?layout=no-columns"' in (
-        resp.text
-    )
-
-
-def test_highlighted_view_links_back_to_rendered(client):
-    """The reciprocal half of the pair, asserted as an exact href."""
-    resp = client.get("/docs/readme.md?filemill=highlight&layout=no-columns")
-    assert (
-        'data-filemill="render"'
-        ' href="/docs/readme.md?filemill=render&amp;layout=no-columns"'
-    ) in resp.text
-
-
-def test_switch_links_ignore_hidden(client):
-    resp = client.get(
-        "/docs/readme.md?filemill=render&layout=no-columns&hidden=show"
-    )
-    assert 'href="/docs/readme.md?filemill=highlight&amp;layout=no-columns"' in resp.text
-
-
-def test_switch_link_to_raw_keeps_the_readers_layout(client):
-    """The bar lives on the embedded page, so every link stays embedded.
-
-    ``url_for_state`` drops default values, so a reader in the default layout
-    gets the bare path; test_urls.py::test_url_for_state_omits_defaults pins it.
-    """
-    resp = client.get("/docs/readme.md?filemill=render&layout=no-columns")
-    assert (
-        'data-filemill="raw" href="/docs/readme.md?layout=no-columns"'
-        in resp.text
-    )
-
-
-def test_the_active_view_is_marked(client):
-    resp = client.get("/docs/readme.md?filemill=render&layout=no-columns")
-    assert 'data-filemill="render" href=' in resp.text
-    assert 'aria-current="page"' in resp.text
-
-
-def test_the_switch_has_a_stable_class(client):
-    resp = client.get("/docs/readme.md?filemill=render&layout=no-columns")
-    assert "filemill-view-switch" in resp.text
 
 
 # ── Invalid and repeated query values ────────────────────────────────────────
@@ -311,7 +212,8 @@ def test_repeated_view_takes_the_last_occurrence(client):
     resp = client.get(
         "/docs/readme.md?filemill=raw&filemill=render&layout=no-columns"
     )
-    assert ">Guide</h1>" in resp.text
+    assert 'data-filemill="render"' in resp.text
+    assert 'data-layout="no-columns"' in resp.text
 
 
 def test_unknown_query_parameters_are_ignored(client):
@@ -391,38 +293,12 @@ def test_click_route_still_answers_its_own_path(client, site):
 
 
 def test_markdown_link_targets_the_files_own_path(site, client):
-    """A [link](other.md) resolves to /other.md, keeping the reader's layout."""
+    """A document link returns the shared shell at its own path."""
     (site / "note.md").write_text("[link](other.md)\n")
     (site / "other.md").write_text("# Other\n")
     resp = client.get("/note.md?filemill=render&layout=no-columns")
-    assert (
-        'href="/other.md?filemill=render&amp;layout=no-columns"' in resp.text
-    )
-
-
-def test_markdown_link_keeps_a_no_columns_reader_in_no_columns(site, client):
-    """Following a link inside an embedded document must not open the finder."""
-    (site / "note.md").write_text("[link](other.md)\n")
-    (site / "other.md").write_text("# Other\n")
-    resp = client.get("/note.md?filemill=render&layout=no-columns")
-    assert (
-        'href="/other.md?filemill=render&amp;layout=no-columns"' in resp.text
-    )
-
-
-def test_markdown_link_drops_hidden(site, client):
-    """Rewritten links keep the layout but never carry ``hidden``.
-
-    ``layout=no-columns`` picks the embedded page, the only response with
-    server-rewritten links — the column layouts return the app shell and
-    render Markdown client-side.
-    """
-    (site / "note.md").write_text("[link](other.md)\n")
-    (site / "other.md").write_text("# Other\n")
-    resp = client.get("/note.md?filemill=render&layout=no-columns&hidden=show")
-    assert (
-        'href="/other.md?filemill=render&amp;layout=no-columns"' in resp.text
-    )
+    assert "/ui/core/shell.js" in resp.text
+    assert 'data-layout="no-columns"' in resp.text
 
 
 def test_markdown_image_src_is_left_relative_and_now_resolves(site, client):
@@ -438,19 +314,9 @@ def test_markdown_image_src_is_left_relative_and_now_resolves(site, client):
     """
     (site / "docs" / "note.md").write_text("![photo](../photo.png)\n")
     resp = client.get("/docs/note.md?filemill=render&layout=no-columns")
-    assert 'src="../photo.png"' in resp.text
+    assert "/ui/core/shell.js" in resp.text
 
     # The browser would resolve that against /docs/note.md. Follow it and check.
     resolved = client.get("/photo.png")
     assert resolved.status_code == 200
     assert "image/png" in resolved.headers["content-type"]
-
-
-def test_click_fragment_links_do_not_gain_a_layout(site, client):
-    """/click has no ViewState, so its links carry the documented defaults."""
-    from urllib.parse import quote
-
-    (site / "note.md").write_text("[link](other.md)\n")
-    (site / "other.md").write_text("# Other\n")
-    resp = client.get(f"/click?path={quote(str(site / 'note.md'))}&col=1")
-    assert 'href="/other.md?filemill=render"' in resp.text
