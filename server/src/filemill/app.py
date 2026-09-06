@@ -1,24 +1,21 @@
 import configparser
-import html as html_lib
-import json
 import os
 import subprocess
 from pathlib import Path
 from textwrap import dedent
-from urllib.parse import quote as urlquote
 from urllib.parse import unquote as urlunquote
 
 from fasthtml.common import (
     Body,
-    Div,
     Head,
     Html,
+    Li,
     Link,
     Meta,
-    NotStr,
     Script,
     Style,
     Title,
+    Ul,
     fast_app,
 )
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -31,16 +28,9 @@ from starlette.responses import (
 )
 
 from filemill import api, urls
-from filemill.columns import (
-    initial_columns,
-    list_column,
-    list_vfs_column,
-    render_breadcrumb,
-)
 from filemill.env import env
 from filemill.preview import render_preview, render_source
 from filemill.styles import APP_CSS, LIVE_RELOAD_JS
-from filemill.vfs import REGISTRY
 
 # CDN URL for mermaid.js (UMD build – sets window.mermaid on load)
 # Static files bundled with the package (PWA manifest, service worker, icons)
@@ -135,9 +125,18 @@ def _head_tags(*extra_head_scripts):
     )
 
 
-def _shell_html(*extra_head_scripts):
-    """Return the full app-shell HTML page."""
-    return Html(_head_tags(*extra_head_scripts), Body(initial_columns(ROOT)))
+def _plain_listing(path: Path) -> object:
+    """Return a plain ``<ul>`` of one directory's entries, no interaction.
+
+    ``layout=no-columns`` asks for the representation alone, so this list
+    carries no click handlers or scripts — the shared UI is where navigation
+    lives.
+    """
+    try:
+        entries = sorted(path.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower()))
+    except PermissionError:
+        entries = []
+    return Ul(*[Li(p.name + ("/" if p.is_dir() else "")) for p in entries])
 
 
 def _page_html(body_children, state, *extra_head_scripts):
@@ -204,174 +203,6 @@ async def sse_reload():
     )
 
 
-def _make_bc_oob(path: Path, vpath: str = "") -> str:
-    """Return breadcrumb HTML string with hx-swap-oob="true" set."""
-    return render_breadcrumb(path, ROOT, vpath).replace(
-        '<nav id="breadcrumb">', '<nav id="breadcrumb" hx-swap-oob="true">'
-    )
-
-
-def _build_prune_js(col: int) -> str:
-    """Return a <script> that prunes sibling columns ≥ col and restores sentinel."""
-    return dedent(f"""\
-        <script>
-        (function(){{
-            var el = document.getElementById('col-{col}');
-            while (el && el.id !== 'preview') {{
-                var next = el.nextElementSibling;
-                el.remove();
-                el = next;
-            }}
-            var sentinel = document.createElement('div');
-            sentinel.id = 'col-{col}';
-            var preview = document.getElementById('preview');
-            if (preview) preview.parentNode.insertBefore(sentinel, preview);
-        }})();
-        </script>""")
-
-
-def click(path: str, col: int, vpath: str = "", fmt: str = "", leaf: bool = False):
-    """Handle click on a directory, file, or VFS entry."""
-    p = _resolve_safe(path)
-    if p is None:
-        return Div(
-            "Access denied.",
-            id=f"col-{col}",
-            cls="column",
-            style="color:#c00; padding:1rem;",
-        )
-
-    # ── VFS dispatch ──────────────────────────────────────────────────────────
-    provider = REGISTRY.get(p)
-    if provider is not None:
-        resolved_fmt = fmt or provider.default_fmt(vpath)
-        entries = provider.list_entries(p, vpath)
-
-        if resolved_fmt == "spreadsheet":
-            # Spreadsheet mode: collapse column to sentinel, OOB-update preview
-            try:
-                preview_html = provider.render_preview(
-                    p, vpath, "spreadsheet", page=1, limit=1000, col=col
-                )
-            except Exception as exc:
-                preview_html = (
-                    f'<div class="preview-error">'
-                    f"Preview error: {html_lib.escape(str(exc))}</div>"
-                )
-            sentinel = Div(id=f"col-{col}")
-            preview_oob = NotStr(
-                f'<div id="preview" hx-swap-oob="true">{preview_html}</div>'
-            )
-            bc_oob = NotStr(_make_bc_oob(p, vpath))
-            return sentinel, preview_oob, bc_oob
-
-        elif not entries:
-            # No children at this vpath – either a true leaf (row detail) or an empty
-            # folder (e.g. an empty table).  The two cases differ in the HTMX target:
-            #   leaf=True  → request targets #preview with innerHTML
-            #   leaf=False → request targets #col-{col} with outerHTML
-            # leaf=1 is added to the hx-get URL of non-folder VFS entries in
-            # list_vfs_column so the server can tell them apart.
-            try:
-                preview_html = provider.render_preview(
-                    p, vpath, resolved_fmt, page=1, limit=1000, col=col
-                )
-            except Exception as exc:
-                preview_html = (
-                    f'<div class="preview-error">'
-                    f"Preview error: {html_lib.escape(str(exc))}</div>"
-                )
-            bc_oob = NotStr(_make_bc_oob(p, vpath))
-            if leaf:
-                # True leaf: the response goes directly into #preview via innerHTML.
-                # Include prune_js to clean up any stale right-hand columns.
-                prune_js = _build_prune_js(col)
-                return NotStr(preview_html + prune_js + _make_bc_oob(p, vpath))
-            else:
-                # Empty folder (e.g. empty table): request targeted #col-{col} via
-                # outerHTML.  Return a sentinel for that slot and push the preview
-                # content out-of-band into #preview.
-                sentinel = NotStr(
-                    f'<div id="col-{col}"></div>' + _build_prune_js(col + 1)
-                )
-                preview_oob = NotStr(
-                    f'<div id="preview" hx-swap-oob="true">{preview_html}</div>'
-                )
-                return sentinel, preview_oob, bc_oob
-
-        else:
-            # Column mode: show entries as a column (tables or row listing)
-            show_fmt_bar = any(e.icon == "📋" for e in entries)
-            encoded_path = urlquote(str(p))
-            new_col = list_vfs_column(
-                entries=entries,
-                fs_path_encoded=encoded_path,
-                fs_path_raw=str(p),
-                vpath=vpath,
-                col_index=col,
-                show_fmt_bar=show_fmt_bar,
-                active_fmt=resolved_fmt,
-                ext=p.suffix.lower(),
-            )
-            preview_clear = Div(id="preview", hx_swap_oob="true")
-            bc_oob = NotStr(_make_bc_oob(p, vpath))
-            return new_col, preview_clear, bc_oob
-
-    # ── Real directory ────────────────────────────────────────────────────────
-    if p.is_dir():
-        # Return new column as main swap target; preview and breadcrumb cleared via OOB
-        bc_oob = render_breadcrumb(p, ROOT).replace(
-            '<nav id="breadcrumb">', '<nav id="breadcrumb" hx-swap-oob="true">'
-        )
-        new_col = list_column(p, ROOT, col_index=col)
-        preview_clear = Div(id="preview", hx_swap_oob="true")
-        return new_col, preview_clear, NotStr(bc_oob)
-
-    # ── Regular file preview ──────────────────────────────────────────────────
-    try:
-        preview_html = render_preview(p)
-    except Exception as e:
-        preview_html = (
-            f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'
-        )
-    # For HTML files prepend a "View as web page" button
-    if p.suffix.lower() in _HTML_EXTS:
-        web_url = _web_url(p)
-        if web_url:
-            preview_html = (
-                f'<div class="preview-webmode-bar">'
-                f'<a href="{html_lib.escape(web_url)}" target="_blank"'
-                f' rel="noopener noreferrer">🌐 View as web page</a></div>'
-            ) + preview_html
-    # Prune columns col-{col} and beyond (left over from prior directory navigation),
-    # then recreate the col-{col} sentinel.
-    prune_js = _build_prune_js(col)
-    bc_oob = render_breadcrumb(p, ROOT).replace(
-        '<nav id="breadcrumb">', '<nav id="breadcrumb" hx-swap-oob="true">'
-    )
-    return NotStr(preview_html + prune_js + bc_oob)
-
-
-def vpage(path: str, vpath: str, page: int = 1, limit: int = 1000):
-    """Return a paginated spreadsheet fragment for the given VFS table (target: #preview)."""
-    p = _resolve_safe(path)
-    if p is None or not p.is_file():
-        return HTMLResponse("Not found", status_code=404)
-    provider = REGISTRY.get(p)
-    if provider is None:
-        return HTMLResponse("Not found", status_code=404)
-    try:
-        html = provider.render_preview(
-            p, vpath, fmt="spreadsheet", page=page, limit=limit, col=0
-        )
-    except Exception as exc:
-        html = (
-            f'<div class="preview-error">'
-            f"Preview error: {html_lib.escape(str(exc))}</div>"
-        )
-    return NotStr(html)
-
-
 @rt("/raw")
 def raw(path: str):
     """Serve raw file bytes (used by PDF iframe)."""
@@ -394,140 +225,6 @@ def _parse_desktop_url(path: Path) -> str | None:
     except Exception:  # noqa: S110 — a malformed .desktop file simply has no URL
         pass
     return None
-
-
-def restore(path: str, vpath: str = ""):
-    """Return a full app-shell HTML for the given path (deep-link restoration)."""
-    p = _resolve_safe(path)
-    if p is None:
-        # Fall back to root view
-        shell = initial_columns(ROOT)
-        return HTMLResponse(repr(shell))
-    return HTMLResponse(_finder_fragment(p, vpath))
-
-
-def _finder_fragment(
-    p: Path, vpath: str = "", preview_override: str | None = None
-) -> str:
-    """Return the ``#app-shell`` fragment: columns down to *p*, plus its preview.
-
-    Three callers share this one builder — the ``/restore`` deep link, the
-    root-relative finder page, and the same page embedded in the dashboard — so a
-    column that appears in one of them appears in all three. That is the whole
-    reason it was lifted out of ``restore()``.
-
-    *preview_override* replaces what fills the preview pane. It is how
-    ``?filemill=`` picks a representation without a second shell template:
-    the columns are the same, only the pane differs.
-    """
-    # Build ancestor chain: ROOT plus each directory step down to p
-    try:
-        rel = p.relative_to(ROOT)
-        parts = list(rel.parts)
-    except ValueError:
-        # Zone-2 path: p lives inside the resolved target of a direct symlink
-        # child of ROOT.  Build parts as [symlink_name, *sub_path_parts] so
-        # that all intermediate columns (ROOT → bookmark → … → p) are rendered.
-        parts = None
-        for child in ROOT.iterdir():
-            if child.is_symlink():
-                target = child.resolve()
-                try:
-                    rel_in_target = p.relative_to(target)
-                    parts = [child.name] + list(rel_in_target.parts)
-                    break
-                except ValueError:
-                    continue
-        if parts is None:
-            parts = [p.name]  # fallback: p is exactly the symlink target
-
-    dirs: list[Path] = []
-    cur = ROOT
-    for part in parts:
-        dirs.append(cur)
-        cur = cur / part
-    if cur.is_dir():
-        dirs.append(cur)
-
-    cols_html = ""
-    for i, d in enumerate(dirs):
-        if d.is_dir():  # pragma: no branch – dirs only ever contains directories
-            sel = parts[i] if i < len(parts) else None
-            col_obj = list_column(d, ROOT, col_index=i, selected_name=sel)
-            cols_html += repr(col_obj)
-
-    sentinel_idx = len([d for d in dirs if d.is_dir()])
-    sentinel_html = f'<div id="col-{sentinel_idx}"></div>'
-
-    preview_html = ""
-    if p.is_file():
-        provider = REGISTRY.get(p)
-        if provider is not None:
-            # VFS-backed file (e.g. SQLite .db): walk vpath segments, rendering
-            # one column per level, then show a preview at the leaf.
-            encoded_path = urlquote(str(p))
-            vpath_parts = [seg for seg in vpath.split("/") if seg]
-            for i in range(len(vpath_parts) + 1):
-                current_vpath = "/".join(vpath_parts[:i])
-                selected_vpath = (
-                    "/".join(vpath_parts[: i + 1]) if i < len(vpath_parts) else None
-                )
-                entries = provider.list_entries(p, current_vpath)
-                if not entries:
-                    # Leaf or empty node: render preview regardless of vpath depth
-                    # (e.g. JSON files have no navigable children even at root vpath).
-                    if preview_override is not None:
-                        preview_html = preview_override
-                        break
-                    try:
-                        preview_html = provider.render_preview(
-                            p, current_vpath, "folders", 1, 1000, col=sentinel_idx
-                        )
-                    except Exception as exc:
-                        preview_html = f'<div class="preview-error">{html_lib.escape(str(exc))}</div>'
-                    break
-                show_fmt_bar = any(e.icon == "📋" for e in entries)
-                vfs_col = list_vfs_column(
-                    entries=entries,
-                    fs_path_encoded=encoded_path,
-                    fs_path_raw=str(p),
-                    vpath=current_vpath,
-                    col_index=sentinel_idx,
-                    show_fmt_bar=show_fmt_bar,
-                    active_fmt=provider.default_fmt(current_vpath),
-                    ext=p.suffix.lower(),
-                    selected_vpath=selected_vpath,
-                )
-                cols_html += repr(vfs_col)
-                sentinel_idx += 1
-            sentinel_html = f'<div id="col-{sentinel_idx}"></div>'
-        elif preview_override is not None:
-            preview_html = preview_override
-        else:
-            try:
-                preview_html = render_preview(p)
-            except Exception as e:
-                preview_html = (
-                    f'<div class="preview-error">{html_lib.escape(str(e))}</div>'
-                )
-            # For HTML files prepend a "View as web page" button (mirrors /click)
-            if p.suffix.lower() in _HTML_EXTS:
-                web_url = _web_url(p)
-                if web_url:
-                    preview_html = (
-                        f'<div class="preview-webmode-bar">'
-                        f'<a href="{html_lib.escape(web_url)}" target="_blank"'
-                        f' rel="noopener noreferrer">🌐 View as web page</a></div>'
-                    ) + preview_html
-
-    preview_cls = "" if preview_html else "preview-empty"
-    preview_div = f'<div id="preview" class="{preview_cls}">{preview_html}</div>'
-    bc_html = render_breadcrumb(p, ROOT)
-
-    return (
-        f'<div id="app-shell">{bc_html}'
-        f'<div id="finder">{cols_html}{sentinel_html}{preview_div}</div></div>'
-    )
 
 
 @rt("/open-link")
@@ -625,27 +322,6 @@ def _mounted_path_parts(p: Path) -> tuple[str, Path] | None:
     return None
 
 
-def _finder_url(p: Path, vpath: str = "") -> str | None:
-    """Return a canonical ``/f/`` URL for *p*, optionally preserving *vpath*."""
-    mounted = _mounted_path_parts(p)
-    if mounted is None:
-        return None
-    mount_name, rel = mounted
-    url = f"/f/{mount_name}/{rel}"
-    if vpath:
-        url += f"?vpath={urlquote(vpath)}"
-    return url
-
-
-def _web_url(p: Path) -> str | None:
-    """Return a canonical ``/w/`` URL for *p*, or ``None`` if it is unreachable."""
-    mounted = _mounted_path_parts(p)
-    if mounted is None:
-        return None
-    mount_name, rel = mounted
-    return f"/w/{mount_name}/{rel}"
-
-
 @rt("/w/{path:path}")
 def web_static(path: str):
     """Serve a named-mount ``/w/<mount>/...`` file with the correct Content-Type."""
@@ -653,49 +329,6 @@ def web_static(path: str):
     if p is None or not p.is_file():
         return HTMLResponse("Not found", status_code=404)
     return FileResponse(str(p))
-
-
-def finder_root(path: str = "", vpath: str = ""):
-    """Serve the finder root or redirect legacy ``/f/?path=...`` deep-links."""
-    if path:
-        p = _resolve_safe(path)
-        if p is None or not p.exists():
-            return HTMLResponse("Not found", status_code=404)
-        canonical = _finder_url(p, vpath)
-        if canonical is not None:
-            return RedirectResponse(canonical, status_code=302)
-        nav_js = (
-            f"document.addEventListener('DOMContentLoaded',"
-            f"function(){{_deepNavigate({json.dumps(str(p))}, {json.dumps(vpath or None)})}});"
-        )
-        return _shell_html(Script(nav_js))
-    return _shell_html()
-
-
-def finder_view(path: str = "", vpath: str = ""):
-    """Serve the finder shell at an optional canonical mount-relative path.
-
-    ``/f/`` renders the root view.
-    ``/f/<mount>/<relative>`` renders the shell and deep-links to that file.
-    """
-    if not path:
-        return _shell_html()
-
-    mount_name, _, remainder = path.lstrip("/").partition("/")
-    target_root = _mount_targets().get(mount_name)
-    if target_root is None:
-        return HTMLResponse("Not found", status_code=404)
-
-    candidate = target_root / remainder if remainder else target_root
-    p = _resolve_safe(str(candidate))
-    if p is None or not p.exists():
-        return HTMLResponse("Not found", status_code=404)
-
-    nav_js = (
-        f"document.addEventListener('DOMContentLoaded',"
-        f"function(){{_deepNavigate({json.dumps(str(p))}, {json.dumps(vpath or None)})}});"
-    )
-    return _shell_html(Script(nav_js))
 
 
 # ── The shared Miller-columns UI ─────────────────────────────────────────────
@@ -708,10 +341,9 @@ def finder_view(path: str = "", vpath: str = ""):
 # rather than two that resemble each other. Its core/ is source-agnostic; the
 # adapters loaded below point it at this server.
 #
-# Mounted under /n/ during the migration, so the HTMX UI at /f/ keeps working.
-# Cutting over is changing UI_BASE to "/" and letting the catch-all serve the
-# shell — at which point the URL path *is* the file path relative to ROOT, with
-# no prefix at all.
+# Mounted under /n/ during the migration. Cutting over is changing UI_BASE to
+# "/" and letting the catch-all serve the shell — at which point the URL path
+# *is* the file path relative to ROOT, with no prefix at all.
 
 UI_BASE = "/n/"
 _UI_DIR: Path = Path(__file__).parent / "ui"
@@ -999,7 +631,7 @@ def resource(request, path: str = ""):
         # A directory has no bytes, so every view value renders its listing.
         if state.wants_columns:
             return _ui_shell(state, "/", request.query_params.get("hidden") == "show")
-        return _page_html([list_column(target, ROOT, col_index=0)], state)
+        return _page_html([_plain_listing(target)], state)
 
     if vpath:
         # A node inside a virtual filesystem has no bytes of its own, so `raw`
