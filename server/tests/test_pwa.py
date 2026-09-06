@@ -115,28 +115,28 @@ def test_icon_traversal_blocked():
 
 
 def test_shell_has_manifest_link(client):
-    html = client.get("/f/").text
+    html = client.get("/").text
     assert 'rel="manifest"' in html
     assert "/manifest.json" in html
 
 
 def test_shell_has_theme_color(client):
-    html = client.get("/f/").text
+    html = client.get("/").text
     assert 'name="theme-color"' in html
 
 
 def test_shell_has_viewport_meta(client):
-    html = client.get("/f/").text
+    html = client.get("/").text
     assert 'name="viewport"' in html
 
 
 def test_shell_has_apple_touch_icon(client):
-    html = client.get("/f/").text
+    html = client.get("/").text
     assert 'rel="apple-touch-icon"' in html
 
 
 def test_shell_registers_sw(client):
-    html = client.get("/f/").text
+    html = client.get("/").text
     assert "serviceWorker" in html
     assert "/sw.js" in html
 
