@@ -12,6 +12,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- Markdown preview now preserves line breaks. It should instead let the browser
+  handle line breaks and consider a multi-line Markdown paragraph as a single
+  line.
+
 - [11] Delete the HTMX finder from the server: its Python code, its CSS, its JavaScript
   and its tests. Roadmap phase 0, step 1.
 
