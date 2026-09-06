@@ -234,69 +234,11 @@ def test_render_preview_spreadsheet_has_data(single_schema_db, provider):
     assert "Bob" in html
 
 
-def test_render_preview_spreadsheet_has_fmt_bar(single_schema_db, provider):
-    html = provider.render_preview(single_schema_db, "users", "spreadsheet", 1, 1000, 0)
-    assert "fmt-bar" in html
-
-
-def test_render_preview_spreadsheet_active_button_is_spreadsheet(
-    single_schema_db, provider
-):
-    html = provider.render_preview(single_schema_db, "users", "spreadsheet", 1, 1000, 0)
-    assert "📊 Spreadsheet" in html
-    assert "fmt-btn active" in html or 'class="fmt-btn active"' in html
-
-
-def test_render_preview_spreadsheet_rows_button_has_correct_col(
-    single_schema_db, provider
-):
-    html = provider.render_preview(
-        single_schema_db, "users", "spreadsheet", 1, 1000, col=3
-    )
-    assert "#col-3" in html
-
-
 def test_render_preview_spreadsheet_single_page_no_pagination_links(
     single_schema_db, provider
 ):
     html = provider.render_preview(single_schema_db, "users", "spreadsheet", 1, 1000, 0)
     assert "← Prev" not in html
-    assert "Next →" not in html
-
-
-def test_render_preview_spreadsheet_page1_has_next_link(tmp_path, provider):
-    db = tmp_path / "p.db"
-    con = sqlite3.connect(str(db))
-    con.execute("CREATE TABLE t (id INTEGER PRIMARY KEY)")
-    con.executemany("INSERT INTO t VALUES (?)", [(i,) for i in range(5)])
-    con.commit()
-    con.close()
-    html = provider.render_preview(db, "t", "spreadsheet", 1, 2, 0)
-    assert "Next →" in html
-    assert "← Prev" not in html
-
-
-def test_render_preview_spreadsheet_page2_has_both_links(tmp_path, provider):
-    db = tmp_path / "p2.db"
-    con = sqlite3.connect(str(db))
-    con.execute("CREATE TABLE t (id INTEGER PRIMARY KEY)")
-    con.executemany("INSERT INTO t VALUES (?)", [(i,) for i in range(5)])
-    con.commit()
-    con.close()
-    html = provider.render_preview(db, "t", "spreadsheet", 2, 2, 0)
-    assert "← Prev" in html
-    assert "Next →" in html
-
-
-def test_render_preview_spreadsheet_last_page_has_no_next(tmp_path, provider):
-    db = tmp_path / "p3.db"
-    con = sqlite3.connect(str(db))
-    con.execute("CREATE TABLE t (id INTEGER PRIMARY KEY)")
-    con.executemany("INSERT INTO t VALUES (?)", [(i,) for i in range(4)])
-    con.commit()
-    con.close()
-    html = provider.render_preview(db, "t", "spreadsheet", 2, 2, 0)
-    assert "← Prev" in html
     assert "Next →" not in html
 
 
@@ -360,17 +302,6 @@ def test_render_preview_long_string_full_in_kv(tmp_path, provider):
     con.close()
     html = provider.render_preview(db, "t/1", "folders", 1, 1000, 0)
     assert "x" * 300 in html
-
-
-def test_render_preview_pagination_links_have_vpage_href(tmp_path, provider):
-    db = tmp_path / "pg.db"
-    con = sqlite3.connect(str(db))
-    con.execute("CREATE TABLE t (id INTEGER PRIMARY KEY)")
-    con.executemany("INSERT INTO t VALUES (?)", [(i,) for i in range(3)])
-    con.commit()
-    con.close()
-    html = provider.render_preview(db, "t", "spreadsheet", 1, 1, 0)
-    assert "/vpage" in html
 
 
 def test_render_preview_unknown_vpath_returns_error_or_message(tmp_path, provider):

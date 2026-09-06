@@ -16,9 +16,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   handle line breaks and consider a multi-line Markdown paragraph as a single
   line.
 
-- [11] Delete the HTMX finder from the server: its Python code, its CSS, its JavaScript
-  and its tests. Roadmap phase 0, step 1.
-
 - [x] Delete `_document_page` — document representations, including
   `layout=no-columns`, now return the shared client shell.
 
@@ -270,6 +267,13 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [11] Delete the HTMX finder from the server: its Python code, its CSS, its JavaScript
+  and its tests. Roadmap phase 0, step 1. Done: the `/click`, `/vpage`, `/restore`,
+  `/f/` route handlers and `columns.py` were already unregistered dead code; deleted
+  them plus `COLUMN_JS`, the HTMX-only `APP_CSS` rules, the sqlite pagination/format
+  HTML, and every test that pinned that stack. The `layout=no-columns` directory
+  listing (the one live `columns.py` caller) now uses a small non-HTMX helper.
 
 - [*] Rebuild the static bundle: run `cd static && ./build-index.py` and commit
   `static/index.html`. Roadmap phase 0, step 0.
