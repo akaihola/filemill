@@ -20,7 +20,7 @@ Rules for TASKS.md usage are at the bottom of the file.
   `layout=no-columns`, now return the shared client shell.
 
 - [x] Write `docs/adr/0001-one-finder.md` (context, decision, measurement, consequence).
-  The shared UI owns all interaction. The server renders documents. Then close [8].
+  The shared UI owns all interaction. The server renders documents. Proposal [8] is closed.
 
 - [12] Make `static/test-ui.py` run to its end, then fix the three checks that fail:
   the `.pv-content` timeout and the two "edit starts at the top" checks.
