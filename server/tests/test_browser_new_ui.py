@@ -64,6 +64,9 @@ def ui_root(tmp_path: Path) -> Path:
     (tmp_path / "README.md").write_text(
         "# Readme\n\nline one\nline two\n\n```python\n" + SOURCE + "```\n"
     )
+    (tmp_path / "soft-breaks.md").write_text(
+        "one\ntwo\n\nthree  \nfour\n"
+    )
     (tmp_path / ".hidden").write_text("h")
     (tmp_path / "this-is-a-very-long-file-name-that-must-stay-identifiable.txt").write_text("x")
     (tmp_path / "log.jsonl").write_text(
@@ -232,8 +235,17 @@ def test_fenced_code_is_highlighted_in_the_browser(page):
         == "hl-com,hl-kw,hl-num,hl-str"
     )
     assert page.text_content("#preview .pv-rich pre code") == SOURCE
-    para = page.eval_on_selector("#preview .pv-rich p", "e=>e.innerHTML")
-    assert para == "line one\nline two"
+
+
+def test_markdown_soft_breaks_wrap_and_hard_breaks_remain(page):
+    page.open("soft-breaks.md")
+    page.wait_for_selector("#preview .pv-rich p", timeout=15000)
+    assert page.locator("#preview .pv-rich p").count() == 2
+    assert page.eval_on_selector("#preview .pv-rich p", "e=>getComputedStyle(e).whiteSpace") == "normal"
+    assert page.eval_on_selector_all("#preview .pv-rich p", "es=>es.map(e=>e.innerHTML)") == [
+        "one\ntwo",
+        "three<br>\nfour",
+    ]
 
 
 def test_source_is_highlighted_in_the_browser(page):
