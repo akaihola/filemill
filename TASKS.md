@@ -10,8 +10,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   unverified architecture proposal, conditional on a fourth provider or a
   pagination bug.
 
-## Ordered backlog
-
 ## In progress
 
 - Markdown preview now preserves line breaks. It should instead let the browser
