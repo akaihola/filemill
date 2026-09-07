@@ -4,8 +4,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Unverified proposals
 
-- [8] Explore consolidating the HTMX and JavaScript finder stacks. This is an
-  unverified architecture proposal pending an offline/no-JavaScript decision.
 - [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an
   unverified architecture proposal, conditional on a fourth provider or a
   pagination bug.
@@ -21,7 +19,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] Delete `_document_page` — document representations, including
   `layout=no-columns`, now return the shared client shell.
 
-- [*] Write `docs/adr/0001-one-finder.md` (context, decision, measurement, consequence).
+- [x] Write `docs/adr/0001-one-finder.md` (context, decision, measurement, consequence).
   The shared UI owns all interaction. The server renders documents. Then close [8].
 
 - [12] Make `static/test-ui.py` run to its end, then fix the three checks that fail:
@@ -269,6 +267,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [8] One shared JavaScript finder owns interaction. The server supplies API
+  data and document previews. Decision recorded in `docs/adr/0001-one-finder.md`.
 
 - [11] Delete the HTMX finder from the server: its Python code, its CSS, its JavaScript
   and its tests. Roadmap phase 0, step 1. Done: the `/click`, `/vpage`, `/restore`,
