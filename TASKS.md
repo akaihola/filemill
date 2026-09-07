@@ -12,9 +12,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+## In progress
+
 - Markdown preview now preserves line breaks. It should instead let the browser
   handle line breaks and consider a multi-line Markdown paragraph as a single
   line.
+
+## Ordered backlog
 
 - [x] Delete `_document_page` — document representations, including
   `layout=no-columns`, now return the shared client shell.
