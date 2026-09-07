@@ -85,6 +85,13 @@ def test_paragraph_newlines_are_not_line_breaks():
     assert "<br" not in rendered
 
 
+def test_markdown_paragraph_boundaries_and_hard_breaks():
+    rendered = md.render("one\ntwo\n\nthree  \nfour")
+    assert rendered.count("<p>") == 2
+    assert "<p>one\ntwo</p>" in rendered
+    assert "<p>three<br />\nfour</p>" in rendered
+
+
 # ── #19 git-root finding ──────────────────────────────────────────────────────
 
 
@@ -394,4 +401,3 @@ def test_find_file_for_href_step2_fails_step3_succeeds(tmp_path):
     found = _find_file_for_href("x/target.md", src)
     # rglob by basename "target.md" finds it
     assert found == target.resolve()
-
