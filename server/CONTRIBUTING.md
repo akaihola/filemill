@@ -17,7 +17,7 @@ src/filemill/
 ├── columns.py      # Column HTML generation + breadcrumb + pruning JS  (old UI)
 ├── preview.py      # Preview dispatcher (md / docx / pptx / pdf / img / code / raw)
 ├── rendering.py    # markdown-it-py instance with plugins
-├── styles.py       # CSS + Pygments theme + HTMX + keyboard + live-reload JS
+├── styles.py       # Legacy /f/ CSS and scripts
 ├── vfs.py          # Virtual-filesystem registry + provider protocol
 ├── providers/      # VFS backends (SQLite, JSON, CSV)
 ├── static/         # Bundled PWA assets (manifest.json, sw.js, icons/)
@@ -89,9 +89,8 @@ the URL path *is* the file path relative to ROOT, with no prefix. A bare
 file path is still its own bytes, because `raw` is the default view and
 that branch returns before the column one; it takes `filemill=render` or
 `highlight` to get the shell around a file. `layout=no-columns` renders
-through `_page_html()`, and the HTMX UI still answers at `/f/`, so the
-cutover is not finished: it ends by pointing `UI_BASE` itself at `/` and
-retiring `/f/`.
+through `_page_html()`. The shared UI is mounted at `/n/`; the legacy HTMX UI
+remains at `/f/` for compatibility.
 
 ### Key invariants
 
@@ -102,8 +101,9 @@ retiring `/f/`.
   `/w/<symlink-name>/...`.
 - Column pruning is done client-side via a small `<script>` injected into each
   click response – no server round-trip needed.
-- HTMX drives all dynamic updates in the `/f/` UI; there is no JavaScript build
-  step in either UI.
+- The shared UI at `/n/` drives navigation in the server edition; the legacy
+  HTMX UI remains available at `/f/` for compatibility. There is no JavaScript
+  build step in either UI.
 - Every path in the `/api/*` and `/n/` routes is **relative to ROOT**; absolute
   paths are refused outright (`api.rel_to_abs`), because `ROOT / "/etc/passwd"`
   is `/etc/passwd`. Containment is still checked afterwards by `_resolve_safe()`.
@@ -183,10 +183,10 @@ provides, so do not run it. Re-pin from the constraint file instead:
 uv lock --upgrade-package "$(grep -E '^playwright[=<>~!]' "$UV_CONSTRAINT")"
 ```
 
-### The `/f/` Browser Tests Need Outbound Network
+### The Legacy `/f/` Browser Tests Need Outbound Network
 
 Most of `tests/test_browser_keyboard.py` now drives the shared UI at `/`, which
-fetches nothing; this section is about the tests still driving the HTMX finder
+fetches nothing; this section is about the tests still driving the compatibility
 shell at `/f/`. That shell loads htmx from `unpkg.com` and mermaid from
 `cdn.jsdelivr.net`. With no route to those two hosts the page draws `#col-0`
 and then ignores every click, so a test that clicks fails on its navigation
