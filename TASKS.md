@@ -25,7 +25,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] Write `docs/adr/0001-one-finder.md` (context, decision, measurement, consequence).
   The shared UI owns all interaction. The server renders documents. Proposal [8] is closed.
 
-- [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
+- [x] [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
   `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root `TASKS.md`.
 
 - [*] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT.
