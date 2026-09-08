@@ -21,11 +21,9 @@
 
 ## In progress
 
-- [~] **New UI migration** — the shared Miller-columns frontend now runs at `/n/`
-      beside the HTMX UI at `/f/`, including VFS navigation and deep links.
-      Remaining before cutover: mobile/touch behaviour (the fold dial has none),
-      `.desktop`/`/w/` affordances, zoom, live reload, then point `UI_BASE` at
-      `/`. See `PLAN-20-shared-frontend.md`.
+- [x] **New UI migration** — the shared Miller-columns frontend runs at `/n/`,
+      including VFS navigation and deep links. The legacy HTMX UI remains at
+      `/f/` for compatibility.
 - [x] #45 Mobile: column bottom clipped + directory nav scrolls to preview
 
 ---
@@ -44,8 +42,8 @@ _Items without an issue number are not yet tracked in ISSUES.md._
 - [ ] #51 PWA: start the Filemill HTTP service alongside the installed app
 - [ ] Pagination for large directories (> 500 entries)
 - [ ] PPTX slide image rendering via LibreOffice (better fidelity than text extraction)
-- [ ] #46 Markdown raw source view toggle (Rendered / Raw button bar, `MarkdownProvider`)
-- [ ] #47 VTT subtitle file preview (Transcript / Raw toggle, `VTTProvider`)
+- [ ] #52 Markdown raw source view toggle (Rendered / Raw button bar, `MarkdownProvider`)
+- [ ] #53 VTT subtitle file preview (Transcript / Raw toggle, `VTTProvider`)
 
 ---
 
@@ -55,7 +53,7 @@ _Items without an issue number are not yet tracked in ISSUES.md._
       `playwright~=1.61.0` instead of flooring at `>=1.57.0`, `README.md` and
       `CONTRIBUTING.md` drop the `--with "playwright==1.57.0"` that broke it, and
       `test_browser_keyboard.py` hands Chromium the credentials from
-      `$HTTPS_PROXY`. All 56 browser tests pass; PLAN-19 records what they
+      `$HTTPS_PROXY`. The 56 browser tests passed; PLAN-19 records what they
       confirmed about the URL contract.
 - [x] **Shared frontend with the static edition** — `src/filemill/ui/` is the
       shared frontend itself, which the repository's `../ui/` symlinks to;
