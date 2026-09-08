@@ -36,9 +36,9 @@ task.
 `test_parent_column_survives_preview_after_arrowleft_arrowright_cycle`, and
 16 of the 24 `test_mobile_*` tests.
 
-These drove the legacy htmx column UI at `/` and waited for `window.htmx`. `/`
-now serves the shared-UI shell (`index()` → `resource()` → `_ui_shell`); no
-page they loaded references htmx, so `_wait_for_htmx` timed out (30 s each)
+These drove the legacy htmx column UI at `/f/` and waited for `window.htmx`. The
+shared-UI shell is served at `/` and `/n/`; no page in the migrated group
+references htmx, so `_wait_for_htmx` timed out (30 s each)
 regardless of network. This was structural, not the environmental 407-proxy
 case the file's docstring describes: the CDN is reachable (direct Chromium
 fetch of unpkg htmx → 200) and the failures reproduced identically with and
