@@ -16,9 +16,9 @@ at all.
 - **Markdown extras** – wikilinks (`[[PageName]]`), Mermaid diagrams, plain-URL linkification, relative-link normalisation
 - **Virtual filesystem** – SQLite databases are browsable as navigable table → row columns; additional VFS providers for JSON and CSV files
 - **Static web server** – `/w/<mount>/<path>` serves any file under a named mount with the correct Content-Type (useful for HTML files); the root directory itself is mounted as `/w/<ROOT.name>/...`, and each direct symlink child of ROOT is mounted under its own name
-- **Canonical finder URLs** – workspace-local navigation uses `/f/<mount>/<path>` in the address bar; legacy `/f/?path=<absolute>` remains accepted for compatibility fallbacks
+- **Canonical finder URLs** – workspace-local navigation uses `/n/<path>` in the shared UI; legacy `/f/<mount>/<path>` and `/f/?path=<absolute>` remain accepted for compatibility fallbacks
 - **Breadcrumb trail** – `~ / dir / subdir / file` navigation bar; includes a `.*` dotfile toggle that persists across sessions
-- **URL sync** – browser URL stays in sync with the selected path using canonical `/f/<mount>/<path>` URLs for workspace-local files; deep-link any location directly
+- **URL sync** – browser URL stays in sync with the selected path using `/n/<path>` URLs in the shared UI; deep-link any location directly
 - **Keyboard navigation** – `↑↓` move within a column; `→`/`Enter` open; `←` go back while keeping the URL in sync with the visible parent/root state; `Home`/`End`/`PgUp`/`PgDn` scroll; column focus states visually indicated
 - **Live reload** – `--live` flag restarts the server on code changes and refreshes the browser on content changes via SSE
 - **Zoom** – expand preview pane to full viewport width
@@ -66,8 +66,8 @@ Quick start:
 uv sync
 timeout 1800 uv run pytest         # everything, browser tests included
 
-# Just the 56 real-browser tests. Needs PLAYWRIGHT_BROWSERS_PATH. The 29 in
-# test_browser_keyboard.py alone took 342 s on a 4-core host, so budget minutes.
+# Just the 76 real-browser tests. Needs PLAYWRIGHT_BROWSERS_PATH. The browser
+# suite takes minutes on a 4-core host, so budget accordingly.
 timeout 1800 uv run pytest tests/test_browser_keyboard.py tests/test_browser_new_ui.py
 ```
 
@@ -84,8 +84,9 @@ The message ends by telling you to run `playwright install`. Do not. Nix already
 ships the browsers, one revision per bundle, and `pyproject.toml` pins the
 Playwright that matches them.
 
-The 29 tests in `tests/test_browser_keyboard.py` need outbound network: the `/f/`
-finder shell loads htmx from `unpkg.com` and mermaid from `cdn.jsdelivr.net`.
+The legacy `/f/` tests in `tests/test_browser_keyboard.py` need outbound network:
+that compatibility shell loads htmx from `unpkg.com` and mermaid from
+`cdn.jsdelivr.net`.
 They read `$HTTPS_PROXY` and hand Chromium its credentials, because Chromium
 reads that variable but drops the username and password in it. Without a route
 to those two hosts the page still draws its first column and then ignores every
@@ -99,19 +100,19 @@ src/filemill/
 ├── app.py          # FastHTML app, routes, _resolve_safe()
 ├── api.py          # /api/dir, /api/raw, /api/preview, /api/render
 ├── cli.py          # Typer CLI entry point
-├── columns.py      # Column HTML generation + breadcrumb + pruning JS  (/f/ UI)
+├── columns.py      # Legacy /f/ column HTML generation
 ├── preview.py      # Preview dispatcher (md / docx / pptx / pdf / img / code / raw)
 ├── rendering.py    # markdown-it-py instance with plugins
-├── styles.py       # CSS + Pygments theme + HTMX + keyboard + live-reload JS
+├── styles.py       # Legacy /f/ CSS and scripts
 ├── vfs.py          # Virtual-filesystem registry + provider protocol
 ├── providers/      # VFS backends: SQLite, JSON, CSV
 ├── static/         # Bundled PWA assets: manifest.json, sw.js, icons/
 └── ui/             # The shared frontend; the repo root's ui/ symlinks here
 ```
 
-Two user interfaces are served side by side during the migration: the HTMX one
-at `/f/` (the default) and the shared Miller-columns one at `/n/`. Only the
-adapters differ between `/n/` and the static edition — the source of both is
+The shared Miller-columns UI is served at `/n/`. The legacy HTMX UI remains at
+`/f/` for compatibility. Only the adapters differ between `/n/` and the static
+edition — the source of both is
 `src/filemill/ui/`, which the repository root's [`../ui/`](../ui) symlinks to.
 There is one set of files and no packaging copy, so there is no version of it
 to drift; see [CONTRIBUTING.md](CONTRIBUTING.md).
