@@ -192,7 +192,7 @@ function renderPreview() {
              <div class="sub" id="pv-sub">reading…</div></div>
         <button id="pv-edit" hidden>Edit</button>
       </div>
-      <div id="pv-content"></div>
+      <div id="pv-content" class="pv-content"></div>
     </div>`;
   fillPreview(n);
   return pv;
@@ -286,6 +286,7 @@ async function openEditor(n) {
   ta.value = text;
   ta.focus();
   ta.setSelectionRange(0, 0);
+  ta.scrollTop = 0;
   document.getElementById("pv-cancel").onclick = () => fillPreview(n);
   document.getElementById("pv-save").onclick = async () => {
     try {

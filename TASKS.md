@@ -10,6 +10,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
+- [12] Make `static/test-ui.py` run to its end, then fix the three checks that fail:
+  the `.pv-content` timeout and the two "edit starts at the top" checks.
+
 - Markdown preview now preserves line breaks. It should instead let the browser
   handle line breaks and consider a multi-line Markdown paragraph as a single
   line.
@@ -21,9 +24,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [x] Write `docs/adr/0001-one-finder.md` (context, decision, measurement, consequence).
   The shared UI owns all interaction. The server renders documents. Proposal [8] is closed.
-
-- [12] Make `static/test-ui.py` run to its end, then fix the three checks that fail:
-  the `.pv-content` timeout and the two "edit starts at the top" checks.
 
 - [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
   `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root `TASKS.md`.
