@@ -8,16 +8,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   unverified architecture proposal, conditional on a fourth provider or a
   pagination bug.
 
-## In progress
-
-- [12] Make `static/test-ui.py` run to its end, then fix the three checks that fail:
-  the `.pv-content` timeout and the two "edit starts at the top" checks.
-
-- Markdown preview now preserves line breaks. It should instead let the browser
-  handle line breaks and consider a multi-line Markdown paragraph as a single
-  line.
-
 ## Ordered backlog
+
+- [*] Use `/path/to/file.html` instead of `/raw?path=/path/to/file.html` for
+  HTML previews.
 
 - [x] Delete `_document_page` — document representations, including
   `layout=no-columns`, now return the shared client shell.
@@ -262,6 +256,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [12] Make `static/test-ui.py` run to its end, then fix the three checks that fail:
+  the `.pv-content` timeout and the two "edit starts at the top" checks.
+
+- Markdown preview now preserves line breaks. It should instead let the browser
+  handle line breaks and consider a multi-line Markdown paragraph as a single
+  line.
 
 - [*] In `ui/core/state.js`, replace `node.jsonl ? kids : sortKids(kids)` with a
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
