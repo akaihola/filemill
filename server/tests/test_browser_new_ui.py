@@ -206,6 +206,7 @@ def test_theme_follows_os_colour_scheme_and_keeps_manual_control(server):
 
 
 def test_long_names_truncate_before_the_extension(page):
+    page.set_viewport_size({"width": 390, "height": 700})
     page.open()
     row = page.locator(
         '.row[title="this-is-a-very-long-file-name-that-must-stay-identifiable.txt"]'
@@ -214,7 +215,10 @@ def test_long_names_truncate_before_the_extension(page):
     assert "identifiable" in row.inner_text()
     assert row.get_attribute("aria-label") == row.get_attribute("title")
     assert row.evaluate(
-        "row => row.querySelector('.label').getBoundingClientRect().right <= row.getBoundingClientRect().right"
+        "row => { const label = row.querySelector('.label'); "
+        "const stem = label.querySelector('.stem'); "
+        "return stem.scrollWidth > stem.clientWidth && "
+        "label.getBoundingClientRect().right <= row.getBoundingClientRect().right; }"
     )
 
 
