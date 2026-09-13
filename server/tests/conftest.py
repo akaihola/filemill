@@ -1,7 +1,7 @@
 import sqlite3
+from pathlib import Path
 
 import pytest
-from pathlib import Path
 from starlette.testclient import TestClient
 
 import filemill.app as app_module
