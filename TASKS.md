@@ -20,9 +20,6 @@ Rules for TASKS.md usage are at the bottom of the file.
       `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
       `TASKS.md`.
 
-- [*] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
-  `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in `server/src/filemill/styles.py`.
-
 - [*] Add `ruff` and `mypy` to the `dev` group in `server/pyproject.toml`. Add
   `[tool.ruff]` with `line-length = 88`. Fix all findings. Run `ruff format`.
 
@@ -247,6 +244,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   JavaScript console either.
 
 ## Scheduled
+
+- [*] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
+  `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in `server/src/filemill/styles.py`.
 
 - Back-navigation still often fails to unfold the newly focused column.
 
