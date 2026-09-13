@@ -116,6 +116,66 @@ body {
   min-width: 0;
   overflow: hidden;
 }
+#search-form {
+  position: relative;
+  margin-left: 8px;
+}
+#search-bar {
+  width: min(240px, 28vw);
+  height: 25px;
+  padding: 3px 8px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  font: inherit;
+}
+#search-results {
+  position: absolute;
+  top: 31px;
+  left: 0;
+  z-index: 50;
+  width: min(420px, 80vw);
+  padding: 5px;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 7px;
+  box-shadow: 0 5px 18px #0002;
+}
+.search-list {
+  display: grid;
+  gap: 2px;
+}
+.search-result {
+  display: grid;
+  gap: 2px;
+  padding: 5px 7px;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  font: inherit;
+  cursor: pointer;
+}
+.search-result:hover, .search-result:focus {
+  background: var(--hover);
+}
+.search-path {
+  color: var(--accent);
+}
+.search-context {
+  overflow: hidden;
+  color: var(--ink-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 620px) {
+  #search-bar {
+    width: 125px;
+  }
+}
 .crumb {
   padding: 3px 7px;
   border-radius: 5px;
