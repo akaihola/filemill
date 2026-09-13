@@ -1,8 +1,6 @@
 from pygments.formatters import HtmlFormatter
 
-PYGMENTS_FORMATTER = HtmlFormatter(nowrap=True)
 HIGHLIGHT_CSS = HtmlFormatter(style="friendly").get_style_defs(".highlight")
-FRIENDLY_CSS = HtmlFormatter(style="friendly").get_style_defs(".highlight")
 
 APP_CSS = (
     """
@@ -188,8 +186,6 @@ body {
     border-radius: 5px;
     overflow-x: auto;
 }}
-
-{FRIENDLY_CSS}
 
 /* DB spreadsheet preview */
 .preview-db-spreadsheet {{
