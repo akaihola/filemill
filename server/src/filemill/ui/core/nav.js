@@ -10,7 +10,7 @@
    an instant response. */
 const OPEN_GRACE = 50;
 
-let navSeq = 0;   /* a read that outlives its selection must not repaint */
+let navSeq = 0; /* a read that outlives its selection must not repaint */
 
 /* When a folder opens with nothing chosen inside it, dash-select its README
    (exact name first, then README.*, then index.html) so the preview shows it.
@@ -18,21 +18,21 @@ let navSeq = 0;   /* a read that outlives its selection must not repaint */
 function autoPreview(node) {
   const i = path.length - 1;
   if (path[i] !== node || sel[i] !== undefined) return;
-  const files = visibleKids(node).filter(k => !k.dir);
-  const pick = files.find(k => k.name === "README")
-            || files.find(k => k.name.startsWith("README."))
-            || files.find(k => k.name === "index.html");
+  const files = visibleKids(node).filter((k) => !k.dir);
+  const pick = files.find((k) => k.name === "README") ||
+    files.find((k) => k.name.startsWith("README.")) ||
+    files.find((k) => k.name === "index.html");
   if (pick) sel[i] = pick.name;
 }
 
 async function choose(colIdx, node, rowIdx) {
   const seq = ++navSeq;
   path = path.slice(0, colIdx + 1);
-  sel  = sel.slice(0, colIdx);
+  sel = sel.slice(0, colIdx);
   sel[colIdx] = node.name;
   cursor = { [colIdx]: rowIdx };
   focusCol = colIdx;
-  path[colIdx].lastSel = node.name;   /* → returns to where you were last time */
+  path[colIdx].lastSel = node.name; /* → returns to where you were last time */
   if (!node.dir) return void render();
 
   const reading = node.kids === null ? FS.ensureLoaded(node) : null;
@@ -43,17 +43,22 @@ async function choose(colIdx, node, rowIdx) {
        frame later. Most directories arrive well inside the grace; a slower one
        opens on the spinner, which is honest about the wait. */
     render();
-    await Promise.race([reading, new Promise(r => setTimeout(r, OPEN_GRACE))]);
-    if (seq !== navSeq) return;       /* selection moved on while it was read */
-    if (!node.dir) return void render(); /* a virtual wrapper declined the file */
+    await Promise.race([
+      reading,
+      new Promise((r) => setTimeout(r, OPEN_GRACE)),
+    ]);
+    if (seq !== navSeq) return; /* selection moved on while it was read */
+    if (!node.dir) {
+      return void render(); /* a virtual wrapper declined the file */
+    }
   }
   path.push(node);
-  autoPreview(node);                  /* kids already in memory (revisit, fast read) */
+  autoPreview(node); /* kids already in memory (revisit, fast read) */
   render();
   if (reading) {
     await reading;
-    if (seq !== navSeq || !path.includes(node)) return;    /* still up? repaint */
-    autoPreview(node);                /* kids landed after the grace period */
+    if (seq !== navSeq || !path.includes(node)) return; /* still up? repaint */
+    autoPreview(node); /* kids landed after the grace period */
     render();
   }
 }
@@ -90,7 +95,7 @@ async function refreshColumn(i) {
   const node = path[i];
   if (!node || !node.dir || !FS) return;
 
-  const seq = ++navSeq;              /* a click, a key or a second ⟳ overtakes */
+  const seq = ++navSeq; /* a click, a key or a second ⟳ overtakes */
   const names = currentPath();
   const keepFocus = focusCol, keepCursor = { ...cursor };
   /* the ⟳ spins on the column that is on screen now; the re-render replaces
@@ -106,7 +111,7 @@ async function refreshColumn(i) {
     if (node.loading) await node.loading;
     if (seq !== navSeq) return;
 
-    const before = new Set(visibleKids(node).map(k => k.name));
+    const before = new Set(visibleKids(node).map((k) => k.name));
     node.kids = null;
     node.denied = undefined;
     /* The entries are about to be different objects, so what was swept is about
@@ -131,14 +136,18 @@ async function refreshColumn(i) {
     if (seq !== navSeq) return;
 
     if (complete) {
-      saySt("st-refresh", added || gone ? `⟳ ${added} new, ${gone} gone` : "⟳ no change",
-            true);
+      saySt(
+        "st-refresh",
+        added || gone ? `⟳ ${added} new, ${gone} gone` : "⟳ no change",
+        true,
+      );
       return;
     }
-    const stop = path.length - 1;              /* where the walk ran out */
+    const stop = path.length - 1; /* where the walk ran out */
     const col = colCache.get(path[stop]);
-    if (col && col.rows.length && keepCursor[stop] != null)
+    if (col && col.rows.length && keepCursor[stop] != null) {
       cursor[stop] = Math.min(keepCursor[stop], col.rows.length - 1);
+    }
     render(true);
     scrollCursorIntoView();
     saySt("st-refresh", `⟳ ${names[stop]} is gone`, false);
@@ -149,14 +158,17 @@ async function refreshColumn(i) {
 
 /* clicking a spine scrolls back just far enough to unfold it */
 function unfoldTo(i) {
-  finder.scrollTo({ left: Math.round(i * foldUnit() * range()), behavior: "smooth" });
+  finder.scrollTo({
+    left: Math.round(i * foldUnit() * range()),
+    behavior: "smooth",
+  });
 }
 
 /* Where you are, from the root down to the selected row. The first element is a
    folder *name*, not an absolute path: the File System Access API never hands
    one out, so this is everything the app knows about the location. */
 function pathParts() {
-  const parts = path.map(p => p.name);
+  const parts = path.map((p) => p.name);
   const leaf = sel[path.length - 1];
   if (leaf) parts.push(leaf);
   return parts;
@@ -166,11 +178,18 @@ function renderCrumbs() {
   const el = document.getElementById("crumbs");
   el.textContent = "";
   path.forEach((p, i) => {
-    if (i) el.insertAdjacentHTML("beforeend", `<span class="crumb-sep">›</span>`);
+    if (i) {
+      el.insertAdjacentHTML("beforeend", `<span class="crumb-sep">›</span>`);
+    }
     const b = document.createElement("span");
     b.className = "crumb" + (i === path.length - 1 ? " here" : "");
     b.textContent = p.name;
-    b.onclick = () => { path = path.slice(0, i+1); sel = sel.slice(0, i); focusCol = i; render(); };
+    b.onclick = () => {
+      path = path.slice(0, i + 1);
+      sel = sel.slice(0, i);
+      focusCol = i;
+      render();
+    };
     el.appendChild(b);
   });
   /* "/" rather than the " / " this strip used to show: clicking it copies the
@@ -198,8 +217,10 @@ function saySt(id, msg, ok) {
   el.textContent = msg;
   el.classList.toggle("bad", !ok);
   clearTimeout((saySt.t ||= {})[id]);
-  saySt.t[id] = setTimeout(() => { el.textContent = ""; el.classList.remove("bad"); },
-                           ok ? 1600 : 8000);
+  saySt.t[id] = setTimeout(() => {
+    el.textContent = "";
+    el.classList.remove("bad");
+  }, ok ? 1600 : 8000);
 }
 
 const sayCopy = (msg, ok) => saySt("st-copy", msg, ok);
@@ -220,11 +241,16 @@ async function copyPath() {
     sayCopy("copied", true);
   } catch (err) {
     selectPath();
-    sayCopy(`clipboard refused (${err.name || "error"}) — press ${COPY_KEY} again`, false);
+    sayCopy(
+      `clipboard refused (${err.name || "error"}) — press ${COPY_KEY} again`,
+      false,
+    );
   }
 }
 
-const MAC = /Mac|iP(hone|ad)/.test(navigator.userAgentData?.platform || navigator.platform || "");
+const MAC = /Mac|iP(hone|ad)/.test(
+  navigator.userAgentData?.platform || navigator.platform || "",
+);
 const COPY_KEY = MAC ? "⌘C" : "Ctrl+C";
 document.getElementById("kbd-copy").textContent = COPY_KEY;
 document.getElementById("st-path").onclick = copyPath;
@@ -235,7 +261,7 @@ function enterColumn(i) {
   const c = colCache.get(path[i]);
   if (!c || !c.rows.length) return;
   let ri = cursor[i];
-  if (ri == null) ri = c.kids.findIndex(k => k.name === path[i].lastSel);
+  if (ri == null) ri = c.kids.findIndex((k) => k.name === path[i].lastSel);
   cursor[i] = ri = Math.max(0, Math.min(c.rows.length - 1, ri < 0 ? 0 : ri));
   c.rows[ri].click();
   revealRow(c.rows[ri]);
@@ -246,7 +272,7 @@ function enterColumn(i) {
    columnFor rebuilds the column if it finished reading since the last render. */
 function stepInto(node) {
   const i = path.indexOf(node);
-  if (i < 0) return;                    /* moved on while it was still reading */
+  if (i < 0) return; /* moved on while it was still reading */
   if (!columnFor(node).rows.length) return;
   focusCol = i;
   enterColumn(i);
@@ -257,7 +283,7 @@ function pageMove(c, dir, ci) {
   if (!body || !c.rows.length) return;
   const edge = () => {
     const b = body.getBoundingClientRect();
-    const visible = c.rows.filter(row => {
+    const visible = c.rows.filter((row) => {
       const r = row.getBoundingClientRect();
       return r.bottom > b.top && r.top < b.bottom;
     });
@@ -275,18 +301,22 @@ function pageMove(c, dir, ci) {
   if (row) revealRow(row);
 }
 
-document.addEventListener("keydown", e => {
+document.addEventListener("keydown", (e) => {
   /* a keystroke inside a form field (the preview editor) is typing, not
      navigation — leave it alone */
-  if (e.target.matches?.("input, textarea, select") || e.target.isContentEditable)
+  if (
+    e.target.matches?.("input, textarea, select") || e.target.isContentEditable
+  ) {
     return;
+  }
   if (!welcome.hidden) return;
   /* the cached column knows its rows — never re-query them, a directory can
      hold tens of thousands and this runs on every keystroke */
   const c = colCache.get(path[focusCol]);
   if (!c) return;
   const rows = c.rows;
-  let ci = cursor[focusCol] ?? c.kids.findIndex(k => k.name === sel[focusCol]);
+  let ci = cursor[focusCol] ??
+    c.kids.findIndex((k) => k.name === sel[focusCol]);
   if (ci < 0) ci = 0;
 
   /* ⌘C / Ctrl+C. A live text selection wins: the user highlighted something and
@@ -310,8 +340,12 @@ document.addEventListener("keydown", e => {
     if (!rows.length) return;
     /* a freshly entered column has a cursor but no selection yet — the first
        press should commit that row, not skip past it */
-    if (sel[focusCol] !== undefined)
-      ci = Math.max(0, Math.min(rows.length - 1, ci + (e.key === "ArrowDown" ? 1 : -1)));
+    if (sel[focusCol] !== undefined) {
+      ci = Math.max(
+        0,
+        Math.min(rows.length - 1, ci + (e.key === "ArrowDown" ? 1 : -1)),
+      );
+    }
     rows[ci].click();
     revealRow(rows[ci]);
   } else if (e.key === "Home" || e.key === "End") {
@@ -329,11 +363,19 @@ document.addEventListener("keydown", e => {
     /* nothing open to the right: commit the cursor row, which opens it when it
        is a directory — a second → then steps into that column */
     if (!next) return void rows[ci]?.click();
-    if (next.kids === null) FS.ensureLoaded(next).then(() => { render(); stepInto(next); });
-    else stepInto(next);
+    if (next.kids === null) {
+      FS.ensureLoaded(next).then(() => {
+        render();
+        stepInto(next);
+      });
+    } else stepInto(next);
   } else if (e.key === "ArrowLeft") {
     e.preventDefault();
-    if (focusCol > 0) { focusCol--; unfoldTo(focusCol); render(true); }
+    if (focusCol > 0) {
+      focusCol--;
+      unfoldTo(focusCol);
+      render(true);
+    }
   } else if (e.key === "F5" && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
     /* Every desktop file manager reads F5 as "re-read this folder", and here a
        page reload is a far worse trade: it drops the mounted root, the whole
@@ -346,6 +388,7 @@ document.addEventListener("keydown", e => {
     /* one Escape does one thing: abandon the search if there is one, otherwise
        close the popover. Both at once would make it impossible to tell which
        one the key just did. */
-    if (taLive()) taCancel(); else closeSettings();
+    if (taLive()) taCancel();
+    else closeSettings();
   }
 });
