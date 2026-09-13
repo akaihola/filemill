@@ -66,6 +66,8 @@ def ui_root(tmp_path: Path) -> Path:
         "# Readme\n\nline one\nline two\n\n```python\n" + SOURCE + "```\n"
     )
     (tmp_path / "soft-breaks.md").write_text("one\ntwo\n\nthree  \nfour\n")
+    (tmp_path / "short.txt").write_text("short")
+    (tmp_path / "README").write_text("readme")
     (tmp_path / ".hidden").write_text("h")
     (
         tmp_path / "this-is-a-very-long-file-name-that-must-stay-identifiable.txt"
@@ -211,6 +213,17 @@ def test_long_names_truncate_before_the_extension(page):
     assert row.inner_text().endswith(".txt")
     assert "identifiable" in row.inner_text()
     assert row.get_attribute("aria-label") == row.get_attribute("title")
+    assert row.evaluate(
+        "row => row.querySelector('.label').getBoundingClientRect().right <= row.getBoundingClientRect().right"
+    )
+
+
+def test_short_and_extensionless_names_remain_readable(page):
+    page.open()
+    for name in ("short.txt", "README"):
+        row = page.locator(f'.row[title="{name}"]')
+        assert row.locator(".label").text_content() == name
+        assert row.get_attribute("aria-label") == name
 
 
 def test_clicking_a_folder_opens_its_column(page):
