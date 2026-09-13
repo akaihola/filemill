@@ -11,7 +11,9 @@
    part of the contract core/ relies on — state.js takes its element handles the
    moment it loads, which is why this script comes first.
    ═══════════════════════════════════════════════════════════════════════════ */
-document.body.insertAdjacentHTML("afterbegin", `
+document.body.insertAdjacentHTML(
+  "afterbegin",
+  `
 <div id="shell">
   <div id="bar">
     <div id="crumbs"></div>
@@ -49,7 +51,11 @@ document.body.insertAdjacentHTML("afterbegin", `
            its checkout has one; the static build has no repository, so the
            version stands alone. -->
       <div class="grp">About</div>
-      <div class="ver">Filemill 0.1.0${document.documentElement.dataset.commit ? ` · ${document.documentElement.dataset.commit}` : ""}</div>
+      <div class="ver">Filemill 0.1.0${
+    document.documentElement.dataset.commit
+      ? ` · ${document.documentElement.dataset.commit}`
+      : ""
+  }</div>
     </div>
   </div>
 
@@ -91,4 +97,5 @@ document.body.insertAdjacentHTML("afterbegin", `
     <div class="rec-list"></div>
   </div>
   <p class="note">Needs a Chromium-based desktop browser (File System Access API).</p>
-</div>`);
+</div>`,
+);

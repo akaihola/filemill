@@ -18,13 +18,18 @@
 const UPLOAD_MAX = 4 * 1024 * 1024;
 
 const PreviewUpload = {
-  revoke() { PreviewLocal.revoke(); },
+  revoke() {
+    PreviewLocal.revoke();
+  },
 
   async render(node) {
     /* object-URL cases, and the ones too big to be worth sending */
-    if (/\.(png|jpe?g|gif|webp|avif|bmp|ico|svg|pdf)$/i.test(node.name)
-        || (node.meta?.size ?? 0) > UPLOAD_MAX)
+    if (
+      /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg|pdf)$/i.test(node.name) ||
+      (node.meta?.size ?? 0) > UPLOAD_MAX
+    ) {
       return PreviewLocal.render(node);
+    }
 
     const blob = await FS.blob(node);
     if (!blob) return null;
@@ -34,7 +39,7 @@ const PreviewUpload = {
     try {
       r = await fetch(`${API}/render`, { method: "POST", body });
     } catch (err) {
-      return PreviewLocal.render(node);     /* server gone — better than nothing */
+      return PreviewLocal.render(node); /* server gone — better than nothing */
     }
     if (!r.ok) return PreviewLocal.render(node);
     const html = await r.text();

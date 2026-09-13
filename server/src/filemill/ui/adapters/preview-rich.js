@@ -26,23 +26,24 @@
    differently next week, and a supply chain that can change under you.
    ═══════════════════════════════════════════════════════════════════════════ */
 const CDN = {
-  "markdown-it":            "https://esm.sh/markdown-it@14.1.0",
-  "markdown-it-footnote":   "https://esm.sh/markdown-it-footnote@4.0.0",
-  "markdown-it-deflist":    "https://esm.sh/markdown-it-deflist@3.0.0",
+  "markdown-it": "https://esm.sh/markdown-it@14.1.0",
+  "markdown-it-footnote": "https://esm.sh/markdown-it-footnote@4.0.0",
+  "markdown-it-deflist": "https://esm.sh/markdown-it-deflist@3.0.0",
   "markdown-it-task-lists": "https://esm.sh/markdown-it-task-lists@2.1.1",
-  "markdown-it-anchor":     "https://esm.sh/markdown-it-anchor@9.2.0",
-  "mammoth":                "https://esm.sh/mammoth@1.8.0",
+  "markdown-it-anchor": "https://esm.sh/markdown-it-anchor@9.2.0",
+  "mammoth": "https://esm.sh/mammoth@1.8.0",
 };
 
 /* Tests point this at local stubs — there is no other way to exercise the
    loaded path without a network. */
-const cdn = name => (globalThis.FILEMILL_CDN && globalThis.FILEMILL_CDN[name]) || CDN[name];
+const cdn = (name) =>
+  (globalThis.FILEMILL_CDN && globalThis.FILEMILL_CDN[name]) || CDN[name];
 
 const RICH_KEY = "filemill.rich";
 const richEnabled = () => localStorage.getItem(RICH_KEY) !== "off";
-const setRich = on => {
+const setRich = (on) => {
   localStorage.setItem(RICH_KEY, on ? "on" : "off");
-  loaded.clear();                       /* re-attempt after being switched on */
+  loaded.clear(); /* re-attempt after being switched on */
 };
 
 /* Cache the promise, not the module: two previews opened in the same tick must
@@ -53,48 +54,64 @@ const loaded = new Map();
 function load(name) {
   if (loaded.has(name)) return loaded.get(name);
   const p = import(cdn(name))
-    .then(m => m.default || m)
-    .catch(err => { loaded.delete(name); throw err; });
+    .then((m) => m.default || m)
+    .catch((err) => {
+      loaded.delete(name);
+      throw err;
+    });
   loaded.set(name, p);
   return p;
 }
 
 offerRichToggle(richEnabled, setRich);
 
-const MD_RE   = /\.(md|markdown)$/i;
+const MD_RE = /\.(md|markdown)$/i;
 const DOCX_RE = /\.docx$/i;
 
-const NOTE = `<p class="pv-note">Offline — showing the source. Rich rendering ` +
-             `needs a one-time download.</p>`;
+const NOTE =
+  `<p class="pv-note">Offline — showing the source. Rich rendering ` +
+  `needs a one-time download.</p>`;
 
 /* ── Markdown ────────────────────────────────────────────────────────────── */
 let mdInstance = null;
 
 async function markdown(text) {
   if (!mdInstance) {
-    const [MarkdownIt, footnote, deflist, tasklists, anchor] = await Promise.all([
-      load("markdown-it"), load("markdown-it-footnote"), load("markdown-it-deflist"),
-      load("markdown-it-task-lists"), load("markdown-it-anchor"),
-    ]);
+    const [MarkdownIt, footnote, deflist, tasklists, anchor] = await Promise
+      .all([
+        load("markdown-it"),
+        load("markdown-it-footnote"),
+        load("markdown-it-deflist"),
+        load("markdown-it-task-lists"),
+        load("markdown-it-anchor"),
+      ]);
     /* No highlight option: fences come out as <pre><code class="language-x">,
        and core/syntax.js colours them after they land — see hlFences. */
-    mdInstance = new MarkdownIt({ linkify: true, typographer: false, html: false })
+    mdInstance = new MarkdownIt({
+      linkify: true,
+      typographer: false,
+      html: false,
+    })
       .use(footnote).use(deflist).use(tasklists).use(anchor);
 
     /* filemill renders [[PageName]]; markdown-it has no such plugin, and the
        rule is small enough that matching it is cheaper than finding one. The
        target is resolved by the shared navigator, not by the browser, so the
        link stays inside the app. */
-    mdInstance.core.ruler.push("wikilink", state => {
+    mdInstance.core.ruler.push("wikilink", (state) => {
       for (const tok of state.tokens) {
         if (tok.type !== "inline") continue;
         for (const child of tok.children) {
           if (child.type !== "text" || !child.content.includes("[[")) continue;
           child.type = "html_inline";
-          child.content = child.content.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,
+          child.content = child.content.replace(
+            /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,
             (_, target, label) =>
-              `<a class="wikilink" href="#" data-wiki="${esc(target.trim())}">` +
-              `${esc((label || target).trim())}</a>`);
+              `<a class="wikilink" href="#" data-wiki="${
+                esc(target.trim())
+              }">` +
+              `${esc((label || target).trim())}</a>`,
+          );
         }
       }
     });
@@ -104,13 +121,16 @@ async function markdown(text) {
 
 /* ── The provider ────────────────────────────────────────────────────────── */
 const PreviewRich = {
-  revoke() { PreviewLocal.revoke(); },
+  revoke() {
+    PreviewLocal.revoke();
+  },
 
   async render(node) {
     if (!richEnabled()) return PreviewLocal.render(node);
 
-    if (!MD_RE.test(node.name) && !DOCX_RE.test(node.name))
+    if (!MD_RE.test(node.name) && !DOCX_RE.test(node.name)) {
       return PreviewLocal.render(node);
+    }
 
     const blob = await FS.blob(node);
     if (!blob) return PreviewLocal.render(node);
@@ -119,7 +139,8 @@ const PreviewRich = {
       if (DOCX_RE.test(node.name)) {
         const mammoth = await load("mammoth");
         const { value } = await mammoth.convertToHtml(
-          { arrayBuffer: await blob.arrayBuffer() });
+          { arrayBuffer: await blob.arrayBuffer() },
+        );
         return `<div class="pv-rich">${value}</div>`;
       }
 
@@ -143,14 +164,15 @@ function openWikilink(target) {
   const col = path.length - 1;
   const kids = visibleKids(path[col]);
   const want = target.toLowerCase();
-  const ri = kids.findIndex(k => {
+  const ri = kids.findIndex((k) => {
     const n = k.name.toLowerCase();
-    return n === want || n === want + ".md" || splitName(k.name)[0].toLowerCase() === want;
+    return n === want || n === want + ".md" ||
+      splitName(k.name)[0].toLowerCase() === want;
   });
   if (ri >= 0) choose(col, kids[ri], ri);
 }
 
-document.addEventListener("click", e => {
+document.addEventListener("click", (e) => {
   const a = e.target.closest && e.target.closest("a.wikilink");
   if (!a) return;
   e.preventDefault();

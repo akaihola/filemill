@@ -16,7 +16,7 @@
    directories on your disk. Folder *names* are what is matched, so two
    different folders with the same basename resolve to the more recent one.
    ═══════════════════════════════════════════════════════════════════════════ */
-const encSeg = s => encodeURIComponent(s).replace(/%2F/gi, "%2F");
+const encSeg = (s) => encodeURIComponent(s).replace(/%2F/gi, "%2F");
 
 /* A file:// page has an opaque origin and pushState throws SecurityError on it.
    That page cannot open a folder either (see showBlocked), so there is nothing
@@ -38,13 +38,17 @@ const RouterHash = {
 
   write({ root, path }, replace) {
     if (dead) return;
-    const q = "#r=" + encSeg(root) + (path.length ? "&p=" + path.map(encSeg).join("/") : "");
+    const q = "#r=" + encSeg(root) +
+      (path.length ? "&p=" + path.map(encSeg).join("/") : "");
     if (q === location.hash) return;
     /* history.*State, not an assignment to location.hash: assigning always
        pushes, and it fires hashchange, which would loop straight back in
        through onNavigate. */
-    try { history[replace ? "replaceState" : "pushState"](null, "", q); }
-    catch (err) { dead = true; }
+    try {
+      history[replace ? "replaceState" : "pushState"](null, "", q);
+    } catch (err) {
+      dead = true;
+    }
   },
 
   onNavigate(cb) {

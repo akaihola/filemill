@@ -20,7 +20,7 @@
 let applying = false;
 
 function currentPath() {
-  const names = path.slice(1).map(p => p.name);
+  const names = path.slice(1).map((p) => p.name);
   const leaf = sel[path.length - 1];
   if (leaf !== undefined) names.push(leaf);
   return names;
@@ -37,7 +37,7 @@ let lastKey = null;
 
 function syncURL() {
   if (applying || !ROUTER || !path.length) return;
-  const key = path.slice(0, focusCol + 1).map(p => p.name).join("/");
+  const key = path.slice(0, focusCol + 1).map((p) => p.name).join("/");
   ROUTER.write({ root: path[0].name, path: currentPath() }, lastKey === key);
   lastKey = key;
 }
@@ -56,7 +56,7 @@ async function applyPath(names, wantFocus) {
 
   /* a link to a dotfile has to reveal dotfiles, or visibleKids would hide the
      very thing the URL asked for */
-  if (!state.dotfiles && names.some(n => n.startsWith("."))) {
+  if (!state.dotfiles && names.some((n) => n.startsWith("."))) {
     state.dotfiles = true;
     const b = document.getElementById("s-dot");
     if (b) b.setAttribute("aria-checked", "true");
@@ -65,20 +65,26 @@ async function applyPath(names, wantFocus) {
   applying = true;
   try {
     const rootNode = path[0];
-    path = [rootNode]; sel = []; cursor = { 0: 0 }; focusCol = 0;
+    path = [rootNode];
+    sel = [];
+    cursor = { 0: 0 };
+    focusCol = 0;
     await FS.ensureLoaded(rootNode);
     let complete = true;
 
     for (let i = 0; i < names.length; i++) {
       const parent = path[i];
       const kids = visibleKids(parent);
-      const ri = kids.findIndex(k => k.name === names[i]);
-      if (ri < 0) { complete = false; break; }
+      const ri = kids.findIndex((k) => k.name === names[i]);
+      if (ri < 0) {
+        complete = false;
+        break;
+      }
 
       const node = kids[ri];
       sel[i] = node.name;
       cursor[i] = ri;
-      focusCol = i;                  /* focus stays on the column holding it */
+      focusCol = i; /* focus stays on the column holding it */
       parent.lastSel = node.name;
       if (!node.dir) break;
       await FS.ensureLoaded(node);
@@ -89,7 +95,9 @@ async function applyPath(names, wantFocus) {
     applying = false;
     /* clamped: the chain may have come back shorter than the column that had
        focus, and focusing a column that is no longer open kills ↑/↓ */
-    if (wantFocus != null) focusCol = Math.max(0, Math.min(wantFocus, path.length - 1));
+    if (wantFocus != null) {
+      focusCol = Math.max(0, Math.min(wantFocus, path.length - 1));
+    }
     render();
     scrollCursorIntoView();
   }
@@ -112,7 +120,7 @@ let routing = false;
 function startRouting() {
   if (routing || !ROUTER) return;
   routing = true;
-  ROUTER.onNavigate(loc => {
+  ROUTER.onNavigate((loc) => {
     /* Only the path is honoured: a Back that lands on a different root cannot
        remount it without a user gesture, so it would silently walk the wrong
        tree. Leaving the columns where they are is the honest outcome. */
