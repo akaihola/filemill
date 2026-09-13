@@ -9,9 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [*] Use `/path/to/file.html` instead of `/raw?path=/path/to/file.html` for HTML
-  previews.
-
 - [*] In the preview pane top bar, add buttons for viewing the raw file
   (`/path/to/file.ext` without query parameters), toggling highlighted source vs
   rendered preview (for file types in which applicable), and toggling fullscreen mode
@@ -256,6 +253,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   JSON preview of the selected item in the second column to the right.
 
 ## Scheduled
+
+- [*] Use `/path/to/file.html` instead of `/raw?path=/path/to/file.html` for HTML
+  previews.
 
 - Back-navigation still often fails to unfold the newly focused column.
 
