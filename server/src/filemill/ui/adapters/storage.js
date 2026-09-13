@@ -21,20 +21,23 @@ const RECENT_MAX = 8;
 /* Databases written before the chain existed hold a bare handle. Normalising on
    read is what keeps those folders in the list instead of dropping eight of
    them the first time a user loads a newer build. */
-const asRoot = r => (r && r.kind === "directory") ? { handle: r, path: [] } : r;
+const asRoot = (r) =>
+  (r && r.kind === "directory") ? { handle: r, path: [] } : r;
 
-const idb = () => new Promise((res, rej) => {
-  const r = indexedDB.open("filemill", 1);
-  r.onupgradeneeded = e => e.target.result.createObjectStore("kv");
-  r.onsuccess = e => res(e.target.result);
-  r.onerror   = e => rej(e.target.error);
-});
+const idb = () =>
+  new Promise((res, rej) => {
+    const r = indexedDB.open("filemill", 1);
+    r.onupgradeneeded = (e) => e.target.result.createObjectStore("kv");
+    r.onsuccess = (e) => res(e.target.result);
+    r.onerror = (e) => rej(e.target.error);
+  });
 
-const kvGet = (db, key) => new Promise((res, rej) => {
-  const r = db.transaction("kv", "readonly").objectStore("kv").get(key);
-  r.onsuccess = () => res(r.result);
-  r.onerror   = () => rej(r.error);
-});
+const kvGet = (db, key) =>
+  new Promise((res, rej) => {
+    const r = db.transaction("kv", "readonly").objectStore("kv").get(key);
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
 
 const kvPut = (db, key, value) =>
   db.transaction("kv", "readwrite").objectStore("kv").put(value, key);
@@ -47,27 +50,39 @@ async function rememberRoot(handle, path) {
     const db = await idb();
     const kept = [];
     let had = null;
-    for (const r of ((await kvGet(db, "recent")) || []).map(asRoot))
-      if (await r.handle.isSameEntry(handle)) had = r;    /* same folder, one entry */
-      else kept.push(r);
-    kvPut(db, "recent", [{ handle, path: path ?? had?.path ?? [] }, ...kept]
-      .slice(0, RECENT_MAX));
-  } catch (err) { console.warn("could not remember folder:", err); }
+    for (const r of ((await kvGet(db, "recent")) || []).map(asRoot)) {
+      if (await r.handle.isSameEntry(handle)) {
+        had = r; /* same folder, one entry */
+      } else kept.push(r);
+    }
+    kvPut(
+      db,
+      "recent",
+      [{ handle, path: path ?? had?.path ?? [] }, ...kept]
+        .slice(0, RECENT_MAX),
+    );
+  } catch (err) {
+    console.warn("could not remember folder:", err);
+  }
 }
 
 async function recallRoots() {
   try {
     const db = await idb();
     return ((await kvGet(db, "recent")) || []).map(asRoot);
-  } catch (err) { return []; }         /* private mode, file://, … — just ask */
+  } catch (err) {
+    return [];
+  } /* private mode, file://, … — just ask */
 }
 
 /* The chain stored for one folder, in the shape applyPath already speaks. Null
    when the folder is new, or was last left sitting on its own root — there is
    nothing to restore then, and mounting plainly is the honest result. */
 async function recallView(handle) {
-  for (const r of await recallRoots())
-    if (await r.handle.isSameEntry(handle))
+  for (const r of await recallRoots()) {
+    if (await r.handle.isSameEntry(handle)) {
       return r.path.length ? { root: handle.name, path: r.path } : null;
+    }
+  }
   return null;
 }

@@ -22,10 +22,10 @@
    is gone before you touch the keyboard again. */
 const TA_IDLE = 1200;
 
-let taBuf   = "";     /* what has been typed since the last pause */
+let taBuf = ""; /* what has been typed since the last pause */
 let taTimer = null;
-let taRow   = null;   /* the row wearing <mark> right now, so it can be undone */
-let taName  = "";     /* its plain name, to rebuild the label from */
+let taRow = null; /* the row wearing <mark> right now, so it can be undone */
+let taName = ""; /* its plain name, to rebuild the label from */
 
 const taLive = () => taBuf !== "";
 
@@ -34,7 +34,7 @@ const taLive = () => taBuf !== "";
    of bug you notice only when reload stops working. Shift does not disqualify:
    capital letters are part of file names. Backspace counts only while a search
    is live, so it stays free for anything else to claim later. */
-const taWants = e =>
+const taWants = (e) =>
   !e.ctrlKey && !e.metaKey && !e.altKey &&
   (e.key.length === 1 || (e.key === "Backspace" && taLive()));
 
@@ -51,9 +51,9 @@ const taFuzzy = (n, q) => {
    row 2 800 still beats a substring match on row 3, which is the point of
    separate passes rather than one scan that scores. */
 function taSearch(lower, q) {
-  let i = lower.findIndex(n => n.startsWith(q));
-  if (i < 0) i = lower.findIndex(n => n.includes(q));
-  if (i < 0) i = lower.findIndex(n => taFuzzy(n, q));
+  let i = lower.findIndex((n) => n.startsWith(q));
+  if (i < 0) i = lower.findIndex((n) => n.includes(q));
+  if (i < 0) i = lower.findIndex((n) => taFuzzy(n, q));
   return i;
 }
 
@@ -67,8 +67,12 @@ function taHits(lower, q) {
     return hit;
   }
   let qi = 0;
-  for (let i = 0; i < lower.length && qi < q.length; i++)
-    if (lower[i] === q[qi]) { hit[i] = true; qi++; }
+  for (let i = 0; i < lower.length && qi < q.length; i++) {
+    if (lower[i] === q[qi]) {
+      hit[i] = true;
+      qi++;
+    }
+  }
   return qi === q.length ? hit : null;
 }
 
@@ -78,7 +82,10 @@ const taRuns = (text, hit, off) => {
   let out = "", open = false;
   for (let i = 0; i < text.length; i++) {
     const on = !!hit[off + i];
-    if (on !== open) { out += on ? "<mark>" : "</mark>"; open = on; }
+    if (on !== open) {
+      out += on ? "<mark>" : "</mark>";
+      open = on;
+    }
     out += esc(text[i]);
   }
   return out + (open ? "</mark>" : "");
@@ -88,11 +95,14 @@ const taRuns = (text, hit, off) => {
 const taLabel = (name, hit) => {
   const [stem, ext] = splitName(name);
   return hit
-    ? taRuns(stem, hit, 0) + `<span class="dim">${taRuns(ext, hit, stem.length)}</span>`
+    ? taRuns(stem, hit, 0) +
+      `<span class="dim">${taRuns(ext, hit, stem.length)}</span>`
     : `${esc(stem)}<span class="dim">${esc(ext)}</span>`;
 };
 
-const taSay = msg => { document.getElementById("st-find").textContent = msg; };
+const taSay = (msg) => {
+  document.getElementById("st-find").textContent = msg;
+};
 
 function taUnmark() {
   if (taRow) taRow.querySelector(".label").innerHTML = taLabel(taName, null);
@@ -138,23 +148,29 @@ function taType(key, c) {
      die together. Lower-casing 3 000 names costs ~1.4 ms; paying it once per
      column instead of once per keystroke is what keeps a search inside the
      budget the arrow keys set. */
-  const lower = (c.lower ||= c.kids.map(k => k.name.toLowerCase()));
+  const lower = (c.lower ||= c.kids.map((k) => k.name.toLowerCase()));
   const q = taBuf.toLowerCase();
   const i = taSearch(lower, q);
   taSay(i < 0 ? `⌕ ${taBuf} — no match` : `⌕ ${taBuf}`);
-  if (i < 0) return;   /* keep the buffer: Backspace should undo the typo */
+  if (i < 0) return; /* keep the buffer: Backspace should undo the typo */
 
   const name = c.kids[i].name;
-  taUnmark();          /* before the click, so the row it re-selects is clean */
-  c.rows[i].click();   /* the ordinary selection path: preview, trail, URL */
+  taUnmark(); /* before the click, so the row it re-selects is clean */
+  c.rows[i].click(); /* the ordinary selection path: preview, trail, URL */
   revealRow(c.rows[i]);
   /* toLowerCase can change a string's length ("İ" → two characters), and then
      the hit positions no longer index the original name. Skip the marks rather
      than paint them one character off. */
-  taMark(c.rows[i], name, lower[i].length === name.length ? taHits(lower[i], q) : null);
+  taMark(
+    c.rows[i],
+    name,
+    lower[i].length === name.length ? taHits(lower[i], q) : null,
+  );
 }
 
 /* A real click means you went somewhere by hand, so the search is over. The
    click taType fires is untrusted, which is exactly the distinction needed —
    no flag to set and unset around it. */
-document.addEventListener("click", e => { if (e.isTrusted) taCancel(); });
+document.addEventListener("click", (e) => {
+  if (e.isTrusted) taCancel();
+});

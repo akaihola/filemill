@@ -45,6 +45,12 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 let FS = null, PREVIEW = null, ROUTER = null;
 
-const useFilesystem = a => { FS = a; };
-const usePreview    = p => { PREVIEW = p; };
-const useRouter     = r => { ROUTER = r; };
+const useFilesystem = (a) => {
+  FS = a;
+};
+const usePreview = (p) => {
+  PREVIEW = p;
+};
+const useRouter = (r) => {
+  ROUTER = r;
+};

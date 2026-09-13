@@ -5,7 +5,8 @@
    from; nothing else in the app ever touches it.
    ═══════════════════════════════════════════════════════════════════════════ */
 const fsaNode = (name, handle) => ({
-  name, handle,
+  name,
+  handle,
   dir: handle.kind === "directory",
   kids: handle.kind === "directory" ? null : undefined,
 });
@@ -15,13 +16,17 @@ const FSA = {
 
   async ensureLoaded(node) {
     if (!node.dir || node.kids !== null) return;
-    if (node.loading) return node.loading;        /* debounce concurrent calls */
+    if (node.loading) return node.loading; /* debounce concurrent calls */
     node.loading = (async () => {
       const kids = [];
       try {
-        for await (const [name, handle] of node.handle.entries()) kids.push(fsaNode(name, handle));
+        for await (const [name, handle] of node.handle.entries()) {
+          kids.push(fsaNode(name, handle));
+        }
       } catch (err) {
-        node.denied = err.name === "NotAllowedError" ? "No permission to read" : String(err.message || err);
+        node.denied = err.name === "NotAllowedError"
+          ? "No permission to read"
+          : String(err.message || err);
       }
       node.kids = kids;
       node.loading = null;
@@ -51,13 +56,16 @@ const FSA = {
   /* Optional — see ports.js. A picked folder can be written back through its
      handles; the permission prompt is the browser's own. */
   async write(node, text) {
-    if (node.handle.requestPermission &&
-        await node.handle.requestPermission({ mode: "readwrite" }) !== "granted")
+    if (
+      node.handle.requestPermission &&
+      await node.handle.requestPermission({ mode: "readwrite" }) !== "granted"
+    ) {
       throw new Error("No permission to write");
+    }
     const w = await node.handle.createWritable();
     await w.write(text);
     await w.close();
-    node.file = null;                  /* stale — reread on the next preview */
+    node.file = null; /* stale — reread on the next preview */
     node.meta = null;
   },
 };

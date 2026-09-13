@@ -16,7 +16,7 @@
    bigger version of this one: see preview-http.js for the server-rendered
    variant, and preview-rich.js for the downloaded one.
    ═══════════════════════════════════════════════════════════════════════════ */
-const IMG_RE  = /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
+const IMG_RE = /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
 const TEXT_MAX = 512 * 1024;
 
 let pvURL = null;
@@ -27,7 +27,10 @@ function desktopCard(text) {
   let inEntry = false;
   for (const line of text.split(/\r?\n/)) {
     const s = line.trim();
-    if (s.startsWith("[")) { inEntry = s === "[Desktop Entry]"; continue; }
+    if (s.startsWith("[")) {
+      inEntry = s === "[Desktop Entry]";
+      continue;
+    }
     if (!inEntry || !s || s.startsWith("#")) continue;
     const i = s.indexOf("=");
     if (i > 0) e[s.slice(0, i).trim()] = s.slice(i + 1).trim();
@@ -42,7 +45,12 @@ function desktopCard(text) {
 }
 
 const PreviewLocal = {
-  revoke() { if (pvURL) { URL.revokeObjectURL(pvURL); pvURL = null; } },
+  revoke() {
+    if (pvURL) {
+      URL.revokeObjectURL(pvURL);
+      pvURL = null;
+    }
+  },
 
   async render(node) {
     /* Decline an oversized text file before it is fetched, not after. The FSA
@@ -62,20 +70,29 @@ const PreviewLocal = {
     }
     if (/\.pdf$/i.test(node.name)) {
       pvURL = URL.createObjectURL(blob.slice(0, blob.size, "application/pdf"));
-      return `<iframe class="pv-pdf" src="${pvURL}" title="${esc(node.name)}"></iframe>`;
+      return `<iframe class="pv-pdf" src="${pvURL}" title="${
+        esc(node.name)
+      }"></iframe>`;
     }
     if (/\.html?$/i.test(node.name)) {
       pvURL = URL.createObjectURL(blob.slice(0, blob.size, "text/html"));
-      return `<iframe class="pv-html" src="${pvURL}" title="${esc(node.name)}"></iframe>`;
+      return `<iframe class="pv-html" src="${pvURL}" title="${
+        esc(node.name)
+      }"></iframe>`;
     }
-    if (/\.desktop$/i.test(node.name) && blob.size <= TEXT_MAX)
+    if (/\.desktop$/i.test(node.name) && blob.size <= TEXT_MAX) {
       return desktopCard(await blob.text()) ?? null;
+    }
 
     if (blob.size <= TEXT_MAX) {
       let text;
       try {
-        text = new TextDecoder("utf-8", {fatal: true}).decode(await blob.arrayBuffer());
-      } catch (_) { return null; }
+        text = new TextDecoder("utf-8", { fatal: true }).decode(
+          await blob.arrayBuffer(),
+        );
+      } catch (_) {
+        return null;
+      }
       if (text.includes("\0")) return null;
       /* core/syntax.js colours what it has a language for and escapes the rest;
          a plain .txt or an unknown extension takes the same path it always did.
