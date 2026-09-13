@@ -128,7 +128,7 @@ class SQLiteProvider:
         self, con: sqlite3.Connection, schema: str, prefix: str
     ) -> list[VFSEntry]:
         rows = con.execute(
-            f"SELECT name FROM [{schema}].sqlite_master "  # noqa: S608
+            f"SELECT name FROM [{schema}].sqlite_master "
             "WHERE type='table' AND name NOT LIKE 'sqlite_%' "
             "ORDER BY name"
         ).fetchall()
@@ -155,7 +155,7 @@ class SQLiteProvider:
         rows = con.execute(
             # Use _rowid_ alias to avoid collision when INTEGER PRIMARY KEY
             # aliases the rowid (which makes 'rowid' vanish from column names).
-            f"SELECT rowid AS _rowid_, * FROM [{schema}].[{table}] "  # noqa: S608
+            f"SELECT rowid AS _rowid_, * FROM [{schema}].[{table}] "
             f"LIMIT {MAX_ROW_ENTRIES}"
         ).fetchall()
         entries: list[VFSEntry] = []
@@ -193,9 +193,7 @@ class SQLiteProvider:
         idx: int,
     ) -> str:
         """Derive a display key (priority: single-PK → composite-PK → unique-first-col → rowid)."""
-        info = con.execute(
-            f"PRAGMA [{schema}].table_info([{table}])"  # noqa: S608
-        ).fetchall()
+        info = con.execute(f"PRAGMA [{schema}].table_info([{table}])").fetchall()
 
         pk_cols = sorted([col for col in info if col["pk"] > 0], key=lambda c: c["pk"])
 
@@ -229,11 +227,11 @@ class SQLiteProvider:
             try:
                 fetch_limit = MAX_ROW_ENTRIES
                 total = con.execute(
-                    f"SELECT COUNT(*) FROM (SELECT [{first_col}] "  # noqa: S608
+                    f"SELECT COUNT(*) FROM (SELECT [{first_col}] "
                     f"FROM [{schema}].[{table}] LIMIT {fetch_limit})"
                 ).fetchone()[0]
                 distinct = con.execute(
-                    f"SELECT COUNT(DISTINCT [{first_col}]) FROM "  # noqa: S608
+                    f"SELECT COUNT(DISTINCT [{first_col}]) FROM "
                     f"(SELECT [{first_col}] FROM [{schema}].[{table}] LIMIT {fetch_limit})"
                 ).fetchone()[0]
                 if total == distinct and distinct > 0:
@@ -241,7 +239,7 @@ class SQLiteProvider:
                         return _truncate(_val(row[first_col]))
                     except (IndexError, KeyError):
                         pass
-            except Exception:
+            except Exception:  # noqa: S110 — display-key probing is best effort
                 pass
 
         # Fallback: use _rowid_ alias (set by callers via SELECT rowid AS _rowid_, *)
@@ -333,11 +331,11 @@ class SQLiteProvider:
     ) -> str:
         try:
             rows = con.execute(
-                f"SELECT * FROM [{schema}].[{table}] LIMIT ? OFFSET ?",  # noqa: S608
+                f"SELECT * FROM [{schema}].[{table}] LIMIT ? OFFSET ?",
                 (limit, (page - 1) * limit),
             ).fetchall()
             total = con.execute(
-                f"SELECT COUNT(*) FROM [{schema}].[{table}]"  # noqa: S608
+                f"SELECT COUNT(*) FROM [{schema}].[{table}]"
             ).fetchone()[0]
         except Exception as exc:
             return (
@@ -352,7 +350,7 @@ class SQLiteProvider:
             col_names = [
                 desc[0]
                 for desc in con.execute(
-                    f"SELECT * FROM [{schema}].[{table}] LIMIT 0"  # noqa: S608
+                    f"SELECT * FROM [{schema}].[{table}] LIMIT 0"
                 ).description
                 or []
             ]
@@ -400,10 +398,10 @@ class SQLiteProvider:
             try:
                 rowid = int(row_key[4:])
                 row = con.execute(
-                    f"SELECT * FROM [{schema}].[{table}] WHERE rowid = ?",  # noqa: S608
+                    f"SELECT * FROM [{schema}].[{table}] WHERE rowid = ?",
                     (rowid,),
                 ).fetchone()
-            except (ValueError, Exception):
+            except Exception:  # noqa: S110 — rowid probing is best effort
                 pass
 
         if row is None:
@@ -411,7 +409,7 @@ class SQLiteProvider:
             # Use _rowid_ alias to avoid column-name collision with INTEGER PRIMARY KEY.
             try:
                 all_rows = con.execute(
-                    f"SELECT rowid AS _rowid_, * FROM [{schema}].[{table}] "  # noqa: S608
+                    f"SELECT rowid AS _rowid_, * FROM [{schema}].[{table}] "
                     f"LIMIT {MAX_ROW_ENTRIES}"
                 ).fetchall()
                 for idx, r in enumerate(all_rows):
@@ -419,11 +417,11 @@ class SQLiteProvider:
                     if candidate == row_key or _truncate(candidate) == row_key:
                         rowid = r["_rowid_"]
                         row = con.execute(
-                            f"SELECT * FROM [{schema}].[{table}] WHERE rowid = ?",  # noqa: S608
+                            f"SELECT * FROM [{schema}].[{table}] WHERE rowid = ?",
                             (rowid,),
                         ).fetchone()
                         break
-            except Exception:
+            except Exception:  # noqa: S110 — row lookup is best effort
                 pass
 
         if row is None:

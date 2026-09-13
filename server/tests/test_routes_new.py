@@ -166,4 +166,3 @@ def test_root_with_short_view_uses_the_resource_route(tmp_path, monkeypatch):
     resp = _client(tmp_path).get("/?f&layout=no-columns")
     assert resp.status_code == 200
     assert resp.text != "site index"
-

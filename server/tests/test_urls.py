@@ -179,9 +179,7 @@ def test_url_for_state_keeps_non_default_layout_when_switching_view():
     choices they already made ride along.
     """
     state = ViewState(view=VIEW_RENDER, layout=LAYOUT_NONE)
-    assert url_for_state("a.md", state, view=VIEW_RAW) == (
-        "/a.md?layout=no-columns"
-    )
+    assert url_for_state("a.md", state, view=VIEW_RAW) == ("/a.md?layout=no-columns")
 
 
 def test_build_url_can_still_pin_the_raw_view_explicitly():

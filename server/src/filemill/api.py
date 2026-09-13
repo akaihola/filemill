@@ -146,12 +146,14 @@ def vfs_preview(target: Path, vpath: str, fmt: str = "") -> Response:
         return HTMLResponse(
             provider.render_preview(
                 target, vpath, fmt or provider.default_fmt(vpath), page=1, limit=1000
-            ), headers={"Cache-Control": "no-store"}
+            ),
+            headers={"Cache-Control": "no-store"},
         )
     except Exception as exc:
         return HTMLResponse(
             f'<div class="preview-error">Preview error: '
-            f"{html_lib.escape(str(exc))}</div>", headers={"Cache-Control": "no-store"}
+            f"{html_lib.escape(str(exc))}</div>",
+            headers={"Cache-Control": "no-store"},
         )
 
 
@@ -188,7 +190,8 @@ def raw_response(target: Path) -> Response:
         return HTMLResponse("Not found", status_code=404)
     media, _ = mimetypes.guess_type(target.name)
     return FileResponse(
-        str(target), media_type=media or "application/octet-stream",
+        str(target),
+        media_type=media or "application/octet-stream",
         headers={"Cache-Control": "no-store"},
     )
 
@@ -223,7 +226,8 @@ def preview_fragment(target: Path, render) -> Response:
     except Exception as exc:
         return HTMLResponse(
             f'<div class="preview-error">Preview error: '
-            f"{html_lib.escape(str(exc))}</div>", headers={"Cache-Control": "no-store"}
+            f"{html_lib.escape(str(exc))}</div>",
+            headers={"Cache-Control": "no-store"},
         )
 
 

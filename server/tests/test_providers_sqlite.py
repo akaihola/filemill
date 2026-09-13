@@ -9,7 +9,6 @@ import pytest
 
 from filemill.providers.sqlite import (
     ROW_ICON,
-    SCHEMA_ICON,
     TABLE_ICON,
     SQLiteProvider,
 )
