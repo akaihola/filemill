@@ -9,9 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] Add `ruff` and `mypy` to the `dev` group in `server/pyproject.toml`. Add
-  `[tool.ruff]` with `line-length = 88`. Fix all findings. Run `ruff format`.
-
 - [*] Add `deno fmt` and `deno lint` for `ui/` (one pinned binary, no Node project).
   Format `ui/` one time and commit the result as its own commit.
 
