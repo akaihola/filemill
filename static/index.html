@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light" data-density="compact">
+<html lang="en" data-density="compact">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4176,6 +4176,10 @@ gear.onclick = (e) => {
 document.addEventListener("click", (e) => {
   if (!panel.contains(e.target)) closeSettings();
 });
+
+root.dataset.theme = matchMedia("(prefers-color-scheme: dark)").matches
+  ? "dark"
+  : "light";
 
 const toggle = (id, get, set) => {
   const b = document.getElementById(id);

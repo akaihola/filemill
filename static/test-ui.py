@@ -319,6 +319,27 @@ async def scroll_settled(pg, tries=40, step=100):
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch()
+        for scheme, expected in (("dark", "dark"), ("light", "light")):
+            ctx = await b.new_context(color_scheme=scheme)
+            themed = await ctx.new_page()
+            await themed.goto(TARGET.as_uri())
+            check(f"OS {scheme} scheme selects {expected} theme",
+                  await themed.evaluate("root.dataset.theme") == expected)
+            check(f"OS {scheme} scheme updates theme accessibility state",
+                  await themed.get_attribute("#s-theme", "aria-checked") ==
+                  str(expected == "dark").lower())
+            check(f"OS {scheme} scheme selects the matching palette",
+                  await themed.evaluate(
+                      "getComputedStyle(document.documentElement).getPropertyValue('--chrome').trim()"
+                  ) == ("#1b1d21" if expected == "dark" else "#e7e7ec"))
+            await themed.click("#gear")
+            await themed.click("#s-theme")
+            check(f"Manual toggle overrides {scheme} scheme",
+                  await themed.evaluate("root.dataset.theme") != expected)
+            check("Manual toggle updates theme accessibility state",
+                  await themed.get_attribute("#s-theme", "aria-checked") ==
+                  str(expected != "dark").lower())
+            await ctx.close()
         pg = await b.new_page(viewport={"width": 1500, "height": 900})
         errs = []
         def on_console(m):

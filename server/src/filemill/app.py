@@ -450,7 +450,6 @@ def _ui_shell(state, base: str, hidden: bool = False):
             ],
         ),
         lang="en",
-        data_theme="light",
         data_density="compact",
         data_root=ROOT.name or "/",
         data_filemill=state.view,
