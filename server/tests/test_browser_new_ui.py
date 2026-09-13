@@ -17,6 +17,7 @@ CONTRIBUTING.md, "Do Not Pass `--with playwright==…`".
 
 from __future__ import annotations
 
+import shutil
 import socket
 import sqlite3
 import subprocess
@@ -89,6 +90,7 @@ def server(ui_root: Path, tmp_path_factory):
     # Keep stderr: when this does not come up, its traceback is the only thing
     # that says why, and discarding it turns every cause into "did not start".
     log = tmp_path_factory.mktemp("server") / "stderr.log"
+    rg_dir = str(Path(shutil.which("rg") or "/usr/bin/rg").parent)
     with log.open("wb") as fh:
         proc = subprocess.Popen(
             [
@@ -100,7 +102,7 @@ def server(ui_root: Path, tmp_path_factory):
                     "log_level='error')"
                 ),
             ],
-            env={"FILEMILL_ROOT": str(ui_root), "PATH": "/usr/bin:/bin"},
+            env={"FILEMILL_ROOT": str(ui_root), "PATH": f"{rg_dir}:/usr/bin:/bin"},
             stdout=subprocess.DEVNULL,
             stderr=fh,
         )
@@ -223,6 +225,16 @@ def test_the_preview_comes_from_the_python_renderer(page):
     page.open("README.md")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     assert "Readme" in page.inner_text("#preview .pv-rich h1")
+
+
+def test_content_search_opens_a_matching_file(page):
+    page.open()
+    page.fill("#search-bar", "Leaf")
+    page.wait_for_selector('.search-result[data-path="notes/deep/leaf.md"]')
+    assert "# Leaf" in page.inner_text(".search-result")
+    page.click('.search-result[data-path="notes/deep/leaf.md"]')
+    page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
+    assert "Leaf" in page.inner_text("#preview .pv-rich h1")
 
 
 def test_fenced_code_is_highlighted_in_the_browser(page):

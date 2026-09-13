@@ -15,8 +15,14 @@ document.body.insertAdjacentHTML(
   "afterbegin",
   `
 <div id="shell">
-  <div id="bar">
+  <nav id="bar" aria-label="File navigation">
     <div id="crumbs"></div>
+    <form id="search-form" role="search">
+      <label class="sr-only" for="search-bar">Search file contents</label>
+      <input id="search-bar" type="search" placeholder="Search files…"
+             autocomplete="off" aria-controls="search-results">
+      <div id="search-results" role="status" aria-live="polite" hidden></div>
+    </form>
     <div class="spacer"></div>
     <span id="local-badge" hidden>
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/></svg>
@@ -57,7 +63,7 @@ document.body.insertAdjacentHTML(
       : ""
   }</div>
     </div>
-  </div>
+  </nav>
 
   <div id="finder">
     <div id="rail">
