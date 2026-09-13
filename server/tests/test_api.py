@@ -47,6 +47,27 @@ def test_dir_on_a_missing_path_is_404(client, tmp_root: Path):
     assert client.get("/api/dir?p=nope/nope").status_code == 404
 
 
+def test_search_returns_relative_matches_and_context(client, tmp_root: Path):
+    (tmp_root / "subdir" / "needle.txt").write_text("before\nneedle here\nafter\n")
+    r = client.get("/api/search?q=needle")
+    assert r.status_code == 200
+    assert r.json()["matches"] == [
+        {"path": "subdir/needle.txt", "line": 2, "column": 1, "context": "needle here"}
+    ]
+
+
+def test_search_reports_empty_and_invalid_queries(client, tmp_root: Path):
+    assert client.get("/api/search?q=missing").json() == {"matches": []}
+    assert client.get("/api/search?q=").status_code == 400
+    assert client.get("/api/search?q=" + "x" * 201).status_code == 400
+
+
+def test_search_query_cannot_become_a_path_or_option(client, tmp_root: Path):
+    r = client.get("/api/search?q=--glob=*")
+    assert r.status_code == 200
+    assert all(not e["path"].startswith("/") for e in r.json()["matches"])
+
+
 # ── the path contract ────────────────────────────────────────────────────────
 
 

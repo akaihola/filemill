@@ -123,6 +123,66 @@ body {
   min-width: 0;
   overflow: hidden;
 }
+#search-form {
+  position: relative;
+  margin-left: 8px;
+}
+#search-bar {
+  width: min(240px, 28vw);
+  height: 25px;
+  padding: 3px 8px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  font: inherit;
+}
+#search-results {
+  position: absolute;
+  top: 31px;
+  left: 0;
+  z-index: 50;
+  width: min(420px, 80vw);
+  padding: 5px;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 7px;
+  box-shadow: 0 5px 18px #0002;
+}
+.search-list {
+  display: grid;
+  gap: 2px;
+}
+.search-result {
+  display: grid;
+  gap: 2px;
+  padding: 5px 7px;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  font: inherit;
+  cursor: pointer;
+}
+.search-result:hover, .search-result:focus {
+  background: var(--hover);
+}
+.search-path {
+  color: var(--accent);
+}
+.search-context {
+  overflow: hidden;
+  color: var(--ink-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 620px) {
+  #search-bar {
+    width: 125px;
+  }
+}
 .crumb {
   padding: 3px 7px;
   border-radius: 5px;
@@ -796,6 +856,11 @@ body {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+}
+@media (max-width: 600px) {
+  #preview {
+    margin-left: calc(-1 * var(--gutter));
+  }
 }
 #preview .pv-body {
   flex: 1;
@@ -1852,8 +1917,14 @@ document.body.insertAdjacentHTML(
   "afterbegin",
   `
 <div id="shell">
-  <div id="bar">
+  <nav id="bar" aria-label="File navigation">
     <div id="crumbs"></div>
+    <form id="search-form" role="search">
+      <label class="sr-only" for="search-bar">Search file contents</label>
+      <input id="search-bar" type="search" placeholder="Search files…"
+             autocomplete="off" aria-controls="search-results">
+      <div id="search-results" role="status" aria-live="polite" hidden></div>
+    </form>
     <div class="spacer"></div>
     <span id="local-badge" hidden>
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/></svg>
@@ -1894,7 +1965,7 @@ document.body.insertAdjacentHTML(
       : ""
   }</div>
     </div>
-  </div>
+  </nav>
 
   <div id="finder">
     <div id="rail">
@@ -2456,7 +2527,7 @@ const previewTarget = () =>
   previewNode()
     ? Math.min(
       760,
-      stage.clientWidth - 2 * GUTTER(),
+      stage.clientWidth,
       Math.max(codeMin(), Math.round(stage.clientWidth * 0.45)),
     )
     : 300;
@@ -4426,6 +4497,77 @@ const withJsonPreview = (provider) => ({
     );
   },
 });
+</script>
+<script>
+/* Server-only content search. The control stays hidden in local FSA mode. */
+const searchForm = document.getElementById("search-form");
+const searchInput = document.getElementById("search-bar");
+const searchResults = document.getElementById("search-results");
+let searchTimer;
+let searchController;
+
+const searchEsc = (value) => {
+  const el = document.createElement("span");
+  el.textContent = value;
+  return el.innerHTML;
+};
+
+function showSearch(message, results = false) {
+  searchResults.hidden = !message;
+  searchResults.classList.toggle("search-list", results);
+  searchResults.innerHTML = message;
+}
+
+async function runSearch() {
+  const q = searchInput.value.trim();
+  searchController?.abort();
+  if (!q) return showSearch("");
+  searchController = new AbortController();
+  showSearch("Searching…");
+  try {
+    const r = await fetch(`/api/search?q=${encodeURIComponent(q)}`, {
+      signal: searchController.signal,
+      headers: { Accept: "application/json" },
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || `${r.status} ${r.statusText}`);
+    if (!data.matches.length) return showSearch("No matches");
+    showSearch(
+      data.matches.map((m) =>
+        `<button type="button" class="search-result" data-path="${
+          searchEsc(m.path)
+        }">` +
+        `<span class="search-path">${searchEsc(m.path)}:${m.line}</span>` +
+        `<span class="search-context">${searchEsc(m.context)}</span></button>`
+      ).join(""),
+      true,
+    );
+    searchResults.querySelectorAll(".search-result").forEach((button) => {
+      button.onclick = () => {
+        location.href = `/n/${
+          button.dataset.path.split("/").map(encodeURIComponent).join("/")
+        }`;
+      };
+    });
+  } catch (err) {
+    if (err.name !== "AbortError") {
+      showSearch(`Search error: ${searchEsc(err.message)}`);
+    }
+  }
+}
+
+if (searchForm && document.documentElement.dataset.root) {
+  searchForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    runSearch();
+  });
+  searchInput.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(runSearch, 250);
+  });
+} else {
+  searchForm?.remove();
+}
 </script>
 
 <script>
