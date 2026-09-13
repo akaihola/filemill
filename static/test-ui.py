@@ -725,6 +725,25 @@ async def main():
         await pg.wait_for_timeout(400)
         check("Text file previews its contents",
               (await pg.inner_text(".pv-text")).strip() == "# note")
+        check("Preview offers fullscreen control",
+              await pg.get_attribute("#pv-fullscreen", "aria-pressed") == "false")
+        await pg.focus("#pv-fullscreen")
+        await pg.keyboard.press("Enter")
+        full = await pg.evaluate("""() => {
+          const pv = document.querySelector('#preview').getBoundingClientRect();
+          const cs = getComputedStyle(document.querySelector('#preview .pv-body'));
+          return {bar: getComputedStyle(document.querySelector('#bar')).display,
+                  status: getComputedStyle(document.querySelector('#status')).display,
+                  padding: cs.padding,
+                  preview: [Math.round(pv.left), Math.round(pv.top),
+                            Math.round(pv.width), Math.round(pv.height)]};
+        }""")
+        check("Fullscreen hides chrome and removes preview padding",
+              full["bar"] == full["status"] == "none" and full["padding"] == "0px",
+              json.dumps(full))
+        await pg.keyboard.press("Enter")
+        check("Fullscreen control exits with keyboard",
+              await pg.get_attribute("#pv-fullscreen", "aria-pressed") == "false")
         check("Preview shows real size and mtime",
               "B ·" in await pg.inner_text("#pv-sub"), await pg.inner_text("#pv-sub"))
         await pg.click('.col[data-i="1"] .row:has-text("long.txt")')
