@@ -243,6 +243,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   child nodes in the column to the right, and a foldable highlighted and pretty-printed
   JSON preview of the selected item in the second column to the right.
 
+- The `Fullscreen` button in the preview pane doesn't do anything. No errors seen on the
+  JavaScript console either.
+
 ## Scheduled
 
 - Back-navigation still often fails to unfold the newly focused column.
