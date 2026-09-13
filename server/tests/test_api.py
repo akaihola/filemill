@@ -393,7 +393,12 @@ def test_save_overwrites_and_returns_a_fresh_stat(client, tmp_root: Path):
 
 def test_save_allows_unknown_extension_utf8_and_rejects_binary(client, tmp_root: Path):
     (tmp_root / ".gitconfig").write_text("name = old\n")
-    assert client.post("/api/save?p=.gitconfig", content="name = Åsa\n".encode()).status_code == 200
+    assert (
+        client.post(
+            "/api/save?p=.gitconfig", content="name = Åsa\n".encode()
+        ).status_code
+        == 200
+    )
     (tmp_root / "binary").write_bytes(b"x\0y")
     assert client.post("/api/save?p=binary", content=b"z").status_code == 415
     assert client.post("/api/save?p=.gitconfig", content=b"x\0y").status_code == 415
@@ -422,7 +427,9 @@ def test_save_caps_the_body_size(client, tmp_root: Path):
     from filemill.api import RENDER_MAX
 
     assert (
-        client.post("/api/save?p=readme.md", content=b"x" * (RENDER_MAX + 1)).status_code
+        client.post(
+            "/api/save?p=readme.md", content=b"x" * (RENDER_MAX + 1)
+        ).status_code
         == 413
     )
     assert (tmp_root / "readme.md").read_text() == "# Hello\n**world**\n"

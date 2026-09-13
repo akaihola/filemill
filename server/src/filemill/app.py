@@ -358,17 +358,34 @@ UI_BASE = "/n/"
 _UI_DIR: Path = Path(__file__).parent / "ui"
 
 _UI_CORE = [
-    "shell.js", "ports.js", "icons.js", "syntax.js", "state.js", "sort.js",
-    "render.js", "layout.js", "trail.js", "typeahead.js", "nav.js",
-    "deeplink.js", "settings.js", "jsonl.js",
+    "shell.js",
+    "ports.js",
+    "icons.js",
+    "syntax.js",
+    "state.js",
+    "sort.js",
+    "render.js",
+    "layout.js",
+    "trail.js",
+    "typeahead.js",
+    "nav.js",
+    "deeplink.js",
+    "settings.js",
+    "jsonl.js",
 ]
 
 # Load order is dependency order. Both filesystem adapters are present because
 # "Open local folder…" switches between them at runtime; app-http.js is what
 # selects, so the order of the adapter files themselves does not matter.
 _UI_ADAPTERS = [
-    "http.js", "preview-http.js", "preview-local.js", "preview-upload.js",
-    "router-path.js", "fsa.js", "storage.js", "app-http.js",
+    "http.js",
+    "preview-http.js",
+    "preview-local.js",
+    "preview-upload.js",
+    "router-path.js",
+    "fsa.js",
+    "storage.js",
+    "app-http.js",
 ]
 
 
