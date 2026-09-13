@@ -547,16 +547,13 @@ def test_rendered_relative_markdown_link_uses_root_relative_url(
         page.wait_for_timeout(900)
 
         preview_link = page.locator(
-            '#preview a[href="/my-knowledge/docs/subdir/next.md'
-            '?filemill=render"]'
+            '#preview a[href="/my-knowledge/docs/subdir/next.md?filemill=render"]'
         ).first
         assert preview_link.count() == 1
         preview_link.click()
         page.wait_for_timeout(900)
 
-        _expect_url_ending(
-            page, "/my-knowledge/docs/subdir/next.md?filemill=render"
-        )
+        _expect_url_ending(page, "/my-knowledge/docs/subdir/next.md?filemill=render")
         assert "Next" in page.locator("#preview").inner_text()
 
         browser.close()
@@ -768,7 +765,9 @@ def test_mobile_portrait_wide_folder_tap_keeps_the_touched_row_on_screen(
         assert m["rowWhole"], "the tapped row is cut off at the viewport edge"
         # The pan is the strip's own transform, never a scroll of #stage: that
         # one has no way back, which is what the pin in applyScroll is for.
-        assert m["stageScroll"] == 0, "the pan scrolled #stage instead of moving the strip"
+        assert m["stageScroll"] == 0, (
+            "the pan scrolled #stage instead of moving the strip"
+        )
 
 
 @pytest.mark.integration
@@ -781,9 +780,7 @@ def test_mobile_landscape_wide_folder_tap_keeps_the_touched_row_on_screen(
     touched column, so this walks the chain to its end rather than stopping at
     three — the depth is what makes the case, not the orientation.
     """
-    with _ui_page(
-        wide_live_server, mobile=True, viewport=MOBILE_LANDSCAPE
-    ) as page:
+    with _ui_page(wide_live_server, mobile=True, viewport=MOBILE_LANDSCAPE) as page:
         _tap_wide_chain(page, len(_WIDE_NAMES))
 
         m = page.evaluate(_TOUCHED_METRICS)
@@ -799,7 +796,9 @@ def test_mobile_landscape_wide_folder_tap_keeps_the_touched_row_on_screen(
             f"the touched column is clipped despite a {m['pan']}px pan"
         )
         assert m["rowWhole"], "the tapped row is cut off at the viewport edge"
-        assert m["stageScroll"] == 0, "the pan scrolled #stage instead of moving the strip"
+        assert m["stageScroll"] == 0, (
+            "the pan scrolled #stage instead of moving the strip"
+        )
 
 
 @pytest.mark.integration

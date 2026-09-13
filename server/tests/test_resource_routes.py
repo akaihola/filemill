@@ -136,9 +136,7 @@ def test_full_columns_layout_serves_the_shared_ui(client):
 def test_default_layout_is_full_columns(client):
     """Omitting layout gives the same page as asking for full-columns."""
     default = client.get("/docs/readme.md?filemill=render")
-    explicit = client.get(
-        "/docs/readme.md?filemill=render&layout=full-columns"
-    )
+    explicit = client.get("/docs/readme.md?filemill=render&layout=full-columns")
     assert default.text == explicit.text
 
 
@@ -148,9 +146,7 @@ def test_compressed_columns_reaches_the_shared_ui(client):
     The HTMX shell could only hide the columns, which is why PLAN-19 called the
     name an over-promise. The shared UI has the dial the name describes.
     """
-    resp = client.get(
-        "/docs/readme.md?filemill=render&layout=compressed-columns"
-    )
+    resp = client.get("/docs/readme.md?filemill=render&layout=compressed-columns")
     assert 'data-layout="compressed-columns"' in resp.text
     assert "/ui/core/layout.js" in resp.text
 
@@ -182,9 +178,7 @@ def test_invalid_query_values_serve_the_default_representation(client, query):
 @pytest.mark.parametrize("query", ["?filemill", "?filemill=", "?f", "?f="])
 def test_render_shortcuts_serve_the_rendered_representation(client, query):
     shorthand = client.get(f"/docs/readme.md{query}&layout=no-columns")
-    explicit = client.get(
-        "/docs/readme.md?filemill=render&layout=no-columns"
-    )
+    explicit = client.get("/docs/readme.md?filemill=render&layout=no-columns")
     assert shorthand.text == explicit.text
 
 
@@ -195,9 +189,7 @@ def test_trailing_slash_redirects_a_file_to_the_rendered_view(client):
 
 
 def test_trailing_slash_preserves_other_query_parameters(client):
-    resp = client.get(
-        "/docs/readme.md/?layout=no-columns", follow_redirects=False
-    )
+    resp = client.get("/docs/readme.md/?layout=no-columns", follow_redirects=False)
     assert resp.headers["location"] == (
         "/docs/readme.md?filemill=render&layout=no-columns"
     )
@@ -209,9 +201,7 @@ def test_explicit_raw_view_overrides_trailing_slash(client):
 
 
 def test_repeated_view_takes_the_last_occurrence(client):
-    resp = client.get(
-        "/docs/readme.md?filemill=raw&filemill=render&layout=no-columns"
-    )
+    resp = client.get("/docs/readme.md?filemill=raw&filemill=render&layout=no-columns")
     assert 'data-filemill="render"' in resp.text
     assert 'data-layout="no-columns"' in resp.text
 

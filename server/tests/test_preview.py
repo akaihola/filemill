@@ -1,20 +1,20 @@
 import sys
-import pytest
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
+
 from filemill.preview import (
+    _preview_desktop,
+    _preview_docx,
+    _preview_html,
+    _preview_image,
+    _preview_md,
+    _preview_pdf,
+    _preview_pptx,
     render_preview,
     render_source,
-    _preview_html,
-    _preview_md,
-    _preview_docx,
-    _preview_pptx,
-    _preview_pdf,
-    _preview_image,
-    _preview_desktop,
 )
-
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -196,6 +196,7 @@ def test_preview_pptx_exception(tmp_path):
 def test_preview_pptx_shape_without_text_frame_is_skipped(tmp_path):
     """A picture shape (has_text_frame=False) must not crash – it is skipped."""
     import io
+
     from pptx import Presentation
     from pptx.util import Inches
 

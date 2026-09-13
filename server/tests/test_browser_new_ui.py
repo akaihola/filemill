@@ -64,11 +64,11 @@ def ui_root(tmp_path: Path) -> Path:
     (tmp_path / "README.md").write_text(
         "# Readme\n\nline one\nline two\n\n```python\n" + SOURCE + "```\n"
     )
-    (tmp_path / "soft-breaks.md").write_text(
-        "one\ntwo\n\nthree  \nfour\n"
-    )
+    (tmp_path / "soft-breaks.md").write_text("one\ntwo\n\nthree  \nfour\n")
     (tmp_path / ".hidden").write_text("h")
-    (tmp_path / "this-is-a-very-long-file-name-that-must-stay-identifiable.txt").write_text("x")
+    (
+        tmp_path / "this-is-a-very-long-file-name-that-must-stay-identifiable.txt"
+    ).write_text("x")
     (tmp_path / "log.jsonl").write_text(
         '{"id": 2, "title": "Second", "ts": "2026-01-02"}\n'
         '{"id": 1, "title": "First", "ts": "2026-01-01"}\n'
@@ -178,7 +178,9 @@ def test_the_root_column_lists_the_served_directory(page):
 
 def test_long_names_truncate_before_the_extension(page):
     page.open()
-    row = page.locator('.row[title="this-is-a-very-long-file-name-that-must-stay-identifiable.txt"]')
+    row = page.locator(
+        '.row[title="this-is-a-very-long-file-name-that-must-stay-identifiable.txt"]'
+    )
     assert row.inner_text().endswith(".txt")
     assert "identifiable" in row.inner_text()
     assert row.get_attribute("aria-label") == row.get_attribute("title")
@@ -241,8 +243,15 @@ def test_markdown_soft_breaks_wrap_and_hard_breaks_remain(page):
     page.open("soft-breaks.md")
     page.wait_for_selector("#preview .pv-rich p", timeout=15000)
     assert page.locator("#preview .pv-rich p").count() == 2
-    assert page.eval_on_selector("#preview .pv-rich p", "e=>getComputedStyle(e).whiteSpace") == "normal"
-    assert page.eval_on_selector_all("#preview .pv-rich p", "es=>es.map(e=>e.innerHTML)") == [
+    assert (
+        page.eval_on_selector(
+            "#preview .pv-rich p", "e=>getComputedStyle(e).whiteSpace"
+        )
+        == "normal"
+    )
+    assert page.eval_on_selector_all(
+        "#preview .pv-rich p", "es=>es.map(e=>e.innerHTML)"
+    ) == [
         "one\ntwo",
         "three<br>\nfour",
     ]
@@ -373,7 +382,9 @@ def test_arrow_left_unfolds_each_focused_ancestor(page):
     for expected in (1, 0):
         page.keyboard.press("ArrowLeft")
         _scroll_settled(page)
-        state = page.evaluate("({focusCol, folded, spine: document.querySelector('.col.focus').classList.contains('spine')})")
+        state = page.evaluate(
+            "({focusCol, folded, spine: document.querySelector('.col.focus').classList.contains('spine')})"
+        )
         assert state == {"focusCol": expected, "folded": expected, "spine": False}
         assert page.url == url
         assert page.evaluate("sel") == selected
@@ -418,8 +429,9 @@ def test_arrow_navigation_folds_but_never_unfolds(page, ui_root):
     chain overflows" and "the narrow chain fits"."""
     inner = ui_root / "w" / "inner"
     (inner / "a-wide").mkdir(parents=True)
-    (inner / "a-wide" / ("a-name-long-enough-to-hit-the-column-cap" * 2 + ".txt")
-     ).write_text("wide")
+    (
+        inner / "a-wide" / ("a-name-long-enough-to-hit-the-column-cap" * 2 + ".txt")
+    ).write_text("wide")
     (inner / "z-narrow").mkdir()
     (inner / "z-narrow" / "a.txt").write_text("narrow")
 
