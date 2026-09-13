@@ -248,7 +248,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] Use `/path/to/file.html` instead of `/raw?path=/path/to/file.html` for HTML
+- [~] Use `/path/to/file.html` instead of `/raw?path=/path/to/file.html` for HTML
   previews.
 
 - [*] In the preview pane top bar, add buttons for viewing the raw file
