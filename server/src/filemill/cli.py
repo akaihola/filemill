@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import Optional
 
 import typer
 
@@ -11,9 +10,11 @@ cli = typer.Typer(help="Filemill – a column-view file browser and previewer")
 
 @cli.command()
 def main(
-    root: Optional[Path] = typer.Argument(None, help="Root directory to browse"),
+    root: Path | None = typer.Argument(  # noqa: B008
+        None, help="Root directory to browse"
+    ),
     port: int = typer.Option(8000, help="Port to listen on"),
-    live: bool = typer.Option(False, help="Enable live reload"),  # noqa: FBT001
+    live: bool = typer.Option(False, help="Enable live reload"),
     bind: str = typer.Option(
         env("BIND", "0.0.0.0"),
         "-b",

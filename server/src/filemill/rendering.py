@@ -13,7 +13,6 @@ from markdown_it.rules_inline import StateInline
 
 from filemill import urls
 
-
 # ── Git-root and file-resolution helpers ──────────────────────────────────────
 
 

@@ -19,7 +19,11 @@ def valid_text(data: bytes, reject_wide: bool = True) -> str | None:
         text = data.decode("utf-8")
         if "\x00" in text:
             return None
-        if reject_wide and max((len(line) for line in text.splitlines()), default=0) > MAX_LINE_LENGTH:
+        if (
+            reject_wide
+            and max((len(line) for line in text.splitlines()), default=0)
+            > MAX_LINE_LENGTH
+        ):
             return None
         return text
     except UnicodeDecodeError:

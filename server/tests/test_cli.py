@@ -1,8 +1,9 @@
 import os
 from unittest.mock import MagicMock
-from typer.testing import CliRunner
 
 import uvicorn
+from typer.testing import CliRunner
+
 import filemill.app as app_module
 import filemill.cli as cli_module
 from filemill.cli import cli, entry_point
@@ -60,6 +61,7 @@ def test_main_default_root_uses_cwd(tmp_path, monkeypatch):
 
 def test_serve_has_bind_option():
     from typer.testing import CliRunner
+
     from filemill.cli import cli
 
     runner = CliRunner()
