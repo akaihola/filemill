@@ -26,12 +26,11 @@
       `/f/` for compatibility.
 - [x] #45 Mobile: column bottom clipped + directory nav scrolls to preview
 - [~] #43 Mobile preview fills 100 % width; rightmost column peek needed as scroll hint
+- [~] #44 ripgrep-based full-text search bar in `<nav>`
 
 ---
 
 ## Scheduled
-
-- [ ] #44 ripgrep-based full-text search bar in `<nav>`
 
 ## Open
 
