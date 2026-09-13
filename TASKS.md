@@ -20,9 +20,6 @@ Rules for TASKS.md usage are at the bottom of the file.
       `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
       `TASKS.md`.
 
-- [*] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT. Use
-  the current year and "Antti Kaihola" as the copyright holder.
-
 - [*] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
   `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in `server/src/filemill/styles.py`.
 
@@ -247,6 +244,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   JSON preview of the selected item in the second column to the right.
 
 ## Scheduled
+
+- [*] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT. Use
+  the current year and "Antti Kaihola" as the copyright holder.
 
 - Back-navigation still often fails to unfold the newly focused column.
 
