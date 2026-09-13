@@ -930,12 +930,11 @@ def test_mobile_preview_fills_stage_and_leaves_scroll_hint(
                 const previewBox = document.getElementById('preview')
                     .getBoundingClientRect();
                 return {
-                        stageWidth: stageBox.width,
-                        finderWidth: finderBox.width,
-                        finderLeft: finderBox.left,
+                    stageWidth: stageBox.width,
+                    finderLeft: finderBox.left,
                     previewWidth: previewBox.width,
                     previewLeft: previewBox.left,
-                        previewStartVisible: previewBox.left >= finderBox.left - 2
+                    previewStartVisible: previewBox.left >= finderBox.left - 2
                         && previewBox.left <= finderBox.right + 2,
                 };
             }"""
