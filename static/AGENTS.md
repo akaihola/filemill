@@ -68,7 +68,6 @@ the user makes to your behaviour — capture it here so it survives a context re
     ├── index.html              ← GENERATED bundle (do not hand-edit)
     ├── index-dev.html          ← dev entry point: <script src="../ui/…">
     ├── build-index.py          ← index-dev.html + ../ui → index.html
-    ├── hotreload.py            ← optional CDP live-patcher for dev mode
     ├── test-ui.py              ← headless suite, fake handle (148 checks)
     ├── test-url.py             ← needs a real origin: deep links, and a real
     │                             filesystem through OPFS (15 checks)
@@ -264,10 +263,6 @@ re-render), which swamps anything type-ahead does; the suite therefore measures
 an arrow key in that same column for comparison and times `taSearch` separately.
 Isolated at 3 000 entries: matching 1.1–1.8 ms, mark plus un-mark 0.07 ms, the
 status-strip write 0.01 ms, a whole no-match keystroke 2.3–3.3 ms.
-
-`hotreload.py` patches `src/*.js` into a live page over CDP without reloading,
-for when a permission re-grant would interrupt you. Mostly unnecessary now that
-folders are restored from IndexedDB — reloading is cheap.
 
 ---
 
