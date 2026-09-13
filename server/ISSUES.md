@@ -104,7 +104,7 @@ Two related mobile UX regressions on narrow viewports:
 ## #46 – Automatic dark mode following OS colour-scheme preference
 
 **Type:** feature
-**Status:** open
+**Status:** in-progress
 
 The UI is hardcoded to a light theme (`background: #f0f0f0`, white columns, dark text).
 Users whose OS is set to dark mode see a jarring white page. Filemill should
