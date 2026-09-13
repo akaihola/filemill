@@ -372,6 +372,7 @@ _UI_CORE = [
     "deeplink.js",
     "settings.js",
     "jsonl.js",
+    "search.js",
 ]
 
 # Load order is dependency order. Both filesystem adapters are present because
@@ -512,6 +513,16 @@ def api_dir(p: str = "", v: str = ""):
     if not target.is_dir():
         return JSONResponse({"entries": [], "denied": "Not found"}, status_code=404)
     return api.dir_json(target)
+
+
+@rt("/api/search")
+def api_search(q: str = ""):
+    """Search file contents below ROOT with the bounded ripgrep operation."""
+    try:
+        return JSONResponse({"matches": api.search_root(ROOT, q)})
+    except api.SearchError as exc:
+        status = 400 if "query" in str(exc).lower() else 503
+        return JSONResponse({"error": str(exc)}, status_code=status)
 
 
 @rt("/api/raw")
