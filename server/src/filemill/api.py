@@ -24,8 +24,10 @@ Pygments and mammoth pipeline as everything else.
 from __future__ import annotations
 
 import html as html_lib
+import json
 import mimetypes
 import os
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -38,6 +40,55 @@ from filemill.vfs import REGISTRY
 # text, small enough that a stray multi-gigabyte file cannot be turned into a
 # memory exhaustion bug.
 RENDER_MAX = 8 * 1024 * 1024
+SEARCH_QUERY_MAX = 200
+SEARCH_MATCH_MAX = 100
+SEARCH_OUTPUT_MAX = 256 * 1024
+SEARCH_TIMEOUT = 2
+
+
+class SearchError(Exception):
+    """A search could not be completed by the server."""
+
+
+def search_root(root: Path, query: str) -> list[dict]:
+    """Find bounded fixed-string matches below *root* with ripgrep."""
+    query = query.strip()
+    if not query:
+        raise SearchError("Search query is empty")
+    if len(query) > SEARCH_QUERY_MAX:
+        raise SearchError(f"Search query is limited to {SEARCH_QUERY_MAX} characters")
+    try:
+        result = subprocess.run(
+            ["rg", "--json", "--fixed-strings", "--line-number", "--column",
+             "--max-count", str(SEARCH_MATCH_MAX), "--max-columns", "240",
+             "--max-columns-preview", "--glob", "!.git", "--", query, "."],
+            cwd=root, capture_output=True, text=True, timeout=SEARCH_TIMEOUT, check=False,
+        )
+    except FileNotFoundError as exc:
+        raise SearchError("Search is unavailable: ripgrep is not installed") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise SearchError("Search timed out") from exc
+    if len(result.stdout.encode()) > SEARCH_OUTPUT_MAX:
+        raise SearchError("Search results are too large")
+    if result.returncode not in (0, 1):
+        raise SearchError("Search failed")
+    matches = []
+    for line in result.stdout.splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if event.get("type") != "match":
+            continue
+        data = event["data"]
+        path = data["path"]["text"]
+        matches.append({
+            "path": path.removeprefix("./"),
+            "line": data["line_number"],
+            "column": data["submatches"][0]["start"] + 1,
+            "context": data["lines"]["text"].rstrip("\n"),
+        })
+    return matches
 
 
 def rel_to_abs(rel: str, root: Path) -> Path | None:
