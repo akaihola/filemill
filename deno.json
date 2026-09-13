@@ -1,0 +1,21 @@
+{
+  "tasks": {
+    "fmt": "deno fmt ui/",
+    "lint": "deno lint ui/",
+    "check": "deno fmt --check ui/ && deno lint ui/"
+  },
+  "fmt": {
+    "include": ["ui/"]
+  },
+  "lint": {
+    "include": ["ui/"],
+    "rules": {
+      "exclude": [
+        "no-unused-vars",
+        "no-window",
+        "prefer-const",
+        "require-await"
+      ]
+    }
+  }
+}
