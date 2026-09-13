@@ -912,6 +912,39 @@ def test_mobile_preview_scroll_position_is_not_zero_after_navigation(
 
 
 @pytest.mark.integration
+@pytest.mark.parametrize("viewport", [MOBILE_VIEWPORT, MOBILE_LANDSCAPE])
+def test_mobile_preview_fills_stage_and_leaves_scroll_hint(
+    live_server: str,
+    viewport: dict,
+):
+    with _ui_page(live_server, mobile=True, viewport=viewport) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _ui_tap(page, 1, "AGENTS.md")
+        _expect_preview(page)
+        _dial_settled(page)
+
+        geometry = page.evaluate(
+            """() => {
+                const stageBox = stage.getBoundingClientRect();
+                const finderBox = finder.getBoundingClientRect();
+                const previewBox = document.getElementById('preview')
+                    .getBoundingClientRect();
+                return {
+                    stageWidth: stageBox.width,
+                    finderLeft: finderBox.left,
+                    previewWidth: previewBox.width,
+                    previewLeft: previewBox.left,
+                    previewStartVisible: previewBox.left >= finderBox.left - 2
+                        && previewBox.left <= finderBox.right + 2,
+                };
+            }"""
+        )
+        assert geometry["previewWidth"] >= geometry["stageWidth"] - 2
+        assert geometry["previewLeft"] >= geometry["finderLeft"] - 2
+        assert geometry["previewStartVisible"]
+
+
+@pytest.mark.integration
 def test_mobile_file_restore_scroll_position_is_not_zero(
     live_server: str,
     browser_root: Path,
