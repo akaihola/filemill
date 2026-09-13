@@ -71,7 +71,3 @@ async function recallView(handle) {
       return r.path.length ? { root: handle.name, path: r.path } : null;
   return null;
 }
-
-async function forgetRoots() {
-  try { kvPut(await idb(), "recent", []); } catch (err) { /* nothing to forget */ }
-}
