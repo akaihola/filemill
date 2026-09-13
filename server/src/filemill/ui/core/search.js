@@ -43,7 +43,7 @@ async function runSearch() {
     );
     searchResults.querySelectorAll(".search-result").forEach((button) => {
       button.onclick = () => {
-        location.href = `/n/${
+        location.href = `${RouterPath.base}${
           button.dataset.path.split("/").map(encodeURIComponent).join("/")
         }`;
       };
