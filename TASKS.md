@@ -245,7 +245,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [~] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
+- [x] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
   `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in `server/src/filemill/styles.py`.
 
 - Back-navigation still often fails to unfold the newly focused column.
