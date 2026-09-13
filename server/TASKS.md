@@ -32,8 +32,6 @@
 
 ## Scheduled
 
-- [ ] #44 ripgrep-based full-text search bar in `<nav>`
-
 ## Open
 
 _Items without an issue number are not yet tracked in ISSUES.md._
