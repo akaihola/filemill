@@ -12,6 +12,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Add `ruff` and `mypy` to the `dev` group in `server/pyproject.toml`. Add
   `[tool.ruff]` with `line-length = 88`. Fix all findings. Run `ruff format`.
 
+- [*] Add `deno fmt` and `deno lint` for `ui/` (one pinned binary, no Node project).
+  Format `ui/` one time and commit the result as its own commit.
+
 ## Ordered backlog
 
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
@@ -27,9 +30,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
   identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
-
-- [*] Add `deno fmt` and `deno lint` for `ui/` (one pinned binary, no Node project).
-  Format `ui/` one time and commit the result as its own commit.
 
 - [*] Add `.pre-commit-config.yaml` with ruff, ruff-format, mypy, deno fmt, deno lint
   and `static/build-index.py --check`. Run `pre-commit run --all-files` until it passes.
