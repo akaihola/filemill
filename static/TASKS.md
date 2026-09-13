@@ -40,8 +40,6 @@ Legend: `[ ]` open · `[~]` in progress · `[x]` done
       folder, real picker, persistence, the real clipboard, and refresh, sorting
       and view-state restore against a throwaway folder it creates and deletes),
       `FSA-TEST-CHECKLIST.md` for the rest
-- [x] **`hotreload.py`** — retargeted at the dev entry point
-
 ---
 
 ## ✅ Done — shared with filemill
