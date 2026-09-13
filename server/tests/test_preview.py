@@ -259,7 +259,8 @@ def test_preview_html_contains_iframe(tmp_path):
     html = _preview_html(f)
     assert "preview-html" in html
     assert "<iframe" in html
-    assert "/raw?path=" in html
+    assert 'src="/page.htm"' in html
+    assert "/raw?path=" not in html
 
 
 def test_source_view_html_stays_source(tmp_path):
