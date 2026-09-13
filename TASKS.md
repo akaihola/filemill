@@ -245,12 +245,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT. Use
-  the current year and "Antti Kaihola" as the copyright holder.
-
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [x] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT. Use
+  the current year and "Antti Kaihola" as the copyright holder.
 
 - [*] In the preview pane top bar, add buttons for viewing the raw file
   (`/path/to/file.ext` without query parameters), toggling highlighted source vs
