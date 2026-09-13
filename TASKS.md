@@ -248,15 +248,15 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
+- Back-navigation still often fails to unfold the newly focused column.
+
+## In progress
+
 - [*] In the preview pane top bar, add buttons for viewing the raw file
   (`/path/to/file.ext` without query parameters), toggling highlighted source vs
   rendered preview (for file types in which applicable), and toggling fullscreen mode
   (hide `div#bar` and `div#status` and filling `div#strip` with only the `div#preview`
   without borders and padding).
-
-- Back-navigation still often fails to unfold the newly focused column.
-
-## In progress
 
 - [12] Make `static/test-ui.py` run to its end, then fix the three checks that fail: the
   `.pv-content` timeout and the two "edit starts at the top" checks.
@@ -268,9 +268,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
-
-- [x] Use `/path/to/file.html` instead of `/raw?path=/path/to/file.html` for HTML
-  previews. Server HTML iframes now use canonical root-relative file paths.
 
 - [8] One shared JavaScript finder owns interaction. The server supplies API data and
   document previews. Decision recorded in `docs/adr/0001-one-finder.md`.
