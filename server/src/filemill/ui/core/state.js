@@ -89,7 +89,7 @@ const previewTarget = () =>
   previewNode()
     ? Math.min(
       760,
-      stage.clientWidth - 2 * GUTTER(),
+      stage.clientWidth,
       Math.max(codeMin(), Math.round(stage.clientWidth * 0.45)),
     )
     : 300;
