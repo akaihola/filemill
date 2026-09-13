@@ -22,7 +22,9 @@ const relOf = (parentRel, name) => (parentRel ? parentRel + "/" + name : name);
    putting a `vpath` on the entries it returns; there is nothing to detect here,
    and core/ never learns that virtual nodes exist at all. */
 const httpNode = (name, rel, dir, meta, vpath, icon, ordered = false) => ({
-  name, rel, dir,
+  name,
+  rel,
+  dir,
   ordered,
   vpath: vpath || "",
   icon: icon || undefined,
@@ -42,16 +44,31 @@ const HTTP = {
     if (node.loading) return node.loading;
     node.loading = (async () => {
       try {
-        const r = await fetch(q(node.rel, node.vpath),
-                              { headers: { Accept: "application/json" } });
+        const r = await fetch(q(node.rel, node.vpath), {
+          headers: { Accept: "application/json" },
+        });
         if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
         const j = await r.json();
         node.denied = j.denied || undefined;
-        node.kids = (j.entries || []).map(e => e.vpath !== undefined
-          /* virtual: same file, deeper key */
-          ? httpNode(e.name, node.rel, e.dir, { virtual: true }, e.vpath, e.icon, e.ordered)
-          : httpNode(e.name, relOf(node.rel, e.name), e.dir,
-                     e.dir ? undefined : { size: e.size, mod: e.mod }));
+        node.kids = (j.entries || []).map((e) =>
+          e.vpath !== undefined
+            /* virtual: same file, deeper key */
+            ? httpNode(
+              e.name,
+              node.rel,
+              e.dir,
+              { virtual: true },
+              e.vpath,
+              e.icon,
+              e.ordered,
+            )
+            : httpNode(
+              e.name,
+              relOf(node.rel, e.name),
+              e.dir,
+              e.dir ? undefined : { size: e.size, mod: e.mod },
+            )
+        );
       } catch (err) {
         node.denied = String(err.message || err);
         node.kids = [];
@@ -75,8 +92,10 @@ const HTTP = {
   /* Optional — see ports.js. POST the whole new content; the reply carries the
      fresh {size, mod}, so the pane's sub-line stays truthful after a save. */
   async write(node, text) {
-    const r = await fetch(`${API}/save?p=${encodeURIComponent(node.rel)}`,
-                          { method: "POST", body: text });
+    const r = await fetch(`${API}/save?p=${encodeURIComponent(node.rel)}`, {
+      method: "POST",
+      body: text,
+    });
     if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
     node.meta = await r.json();
   },

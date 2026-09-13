@@ -7,13 +7,14 @@
      99%      every column folded; preview fills what is left
      99–100%  the spine strip itself slides away; at 100% the preview is alone
    ═══════════════════════════════════════════════════════════════════════════ */
-function stripSpan(k) {                     /* width of the column strip with k folded */
+function stripSpan(k) {
+  /* width of the column strip with k folded */
   const g = GUTTER(), n = path.length;
   const cols = widths.reduce((a, w, i) => a + (i < k ? SPINE() : w), 0);
-  return cols + g * (n + 1);                /* padding either side + inter-column gaps */
+  return cols + g * (n + 1); /* padding either side + inter-column gaps */
 }
 const foldUnit = () => 0.99 / path.length;
-const range    = () => Math.max(1, stripSpan(0) - GUTTER());
+const range = () => Math.max(1, stripSpan(0) - GUTTER());
 
 function layout(keepScroll) {
   const stageW = finder.clientWidth;
@@ -68,19 +69,28 @@ function applyScroll() {
   /* the strip lays out left to right from the stage's edge, so walking it with
      the widths this pass is about to write is where the focused column's own
      box comes from — arithmetic, not a rect read on every scroll event */
-  const g = GUTTER(), sp = SPINE();   /* both read a computed style — once, not per column */
+  const g = GUTTER(),
+    sp = SPINE(); /* both read a computed style — once, not per column */
   let x = g, focusLeft = 0, focusRight = 0;
   [...strip.querySelectorAll(".col")].forEach((col, i) => {
     col.classList.toggle("spine", i < folded);
     col.classList.toggle("folding", i === folded && folded < n);
-    const w = i < folded ? sp
-            : i === folded ? Math.round(widths[i] + (sp - widths[i]) * t)
-            : widths[i];
-    if (i === focusCol) { focusLeft = x; focusRight = x + w; }
+    const w = i < folded
+      ? sp
+      : i === folded
+      ? Math.round(widths[i] + (sp - widths[i]) * t)
+      : widths[i];
+    if (i === focusCol) {
+      focusLeft = x;
+      focusRight = x + w;
+    }
     x += w + g;
-    if (i < folded) { set(col.style, "width", ""); return; }
+    if (i < folded) {
+      set(col.style, "width", "");
+      return;
+    }
     set(col.dataset, "fold", String(i === folded ? t : 0));
-    setVar(col, "--fold", col.dataset.fold);   /* custom props need setProperty */
+    setVar(col, "--fold", col.dataset.fold); /* custom props need setProperty */
     set(col.style, "width", w + "px");
   });
 
@@ -102,18 +112,22 @@ function applyScroll() {
      Between the two it fades in with the fold it belongs to, so the slide is
      part of that motion and not a jump at the end of it. */
   const reach = Math.min(1, Math.max(0, raw - focusCol + 1));
-  const pan = reach * Math.min(Math.max(0, focusRight - finder.clientWidth),
-                               Math.max(0, focusLeft - g));
+  const pan = reach *
+    Math.min(
+      Math.max(0, focusRight - finder.clientWidth),
+      Math.max(0, focusLeft - g),
+    );
 
   /* last 1%: slide the spine strip itself off the left edge. Widening the strip
      by the same amount keeps the preview's flex-grow filling to the right edge. */
-  const tail  = p > 0.99 ? (p - 0.99) / 0.01 : 0;
+  const tail = p > 0.99 ? (p - 0.99) / 0.01 : 0;
   const shift = tail * n * (sp + g) + pan;
   set(strip.style, "minWidth", (finder.clientWidth + shift) + "px");
   set(strip.style, "transform", `translateX(${-shift}px)`);
 
-  document.getElementById("st-fold").textContent =
-    folded ? `${folded}/${n} folded` : "";
+  document.getElementById("st-fold").textContent = folded
+    ? `${folded}/${n} folded`
+    : "";
   paintTrail();
 }
 
@@ -129,7 +143,7 @@ function applyScroll() {
    `block: "nearest"`: nothing if the row is already inside, otherwise the
    shorter of the two edges — the same numbers scrollIntoView produced. */
 function revealRow(row) {
-  const body = row.parentElement;                      /* .col-body scrolls */
+  const body = row.parentElement; /* .col-body scrolls */
   const r = row.getBoundingClientRect(), b = body.getBoundingClientRect();
   if (r.top < b.top) body.scrollTop += r.top - b.top;
   else if (r.bottom > b.bottom) body.scrollTop += r.bottom - b.bottom;

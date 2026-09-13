@@ -20,15 +20,15 @@ const RouterPath = {
   read() {
     if (!location.pathname.startsWith(BASE)) return null;
     return {
-      root: null,        /* the server decides the root; a URL cannot pick one */
+      root: null, /* the server decides the root; a URL cannot pick one */
       path: location.pathname.slice(BASE.length).split("/")
-              .filter(Boolean).map(decodeURIComponent),
+        .filter(Boolean).map(decodeURIComponent),
     };
   },
 
   write({ path }, replace) {
-    const url = BASE + path.map(encodeURIComponent).join("/")
-              + location.search + location.hash;
+    const url = BASE + path.map(encodeURIComponent).join("/") +
+      location.search + location.hash;
     if (url === location.pathname + location.search + location.hash) return;
     history[replace ? "replaceState" : "pushState"](null, "", url);
   },

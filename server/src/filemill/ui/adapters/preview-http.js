@@ -17,17 +17,22 @@ const VIEW = document.documentElement.dataset.filemill || "";
 let inflight = null;
 
 const PreviewHTTP = {
-  revoke() { inflight?.abort(); inflight = null; },
+  revoke() {
+    inflight?.abort();
+    inflight = null;
+  },
 
   async render(node) {
     inflight?.abort();
     const ctl = (inflight = new AbortController());
     let r;
     try {
-      r = await fetch(`${API}/preview?p=${encodeURIComponent(node.rel)}` +
-                      (node.vpath ? `&v=${encodeURIComponent(node.vpath)}` : "") +
-                      (VIEW ? `&filemill=${encodeURIComponent(VIEW)}` : ""),
-                      { signal: ctl.signal });
+      r = await fetch(
+        `${API}/preview?p=${encodeURIComponent(node.rel)}` +
+          (node.vpath ? `&v=${encodeURIComponent(node.vpath)}` : "") +
+          (VIEW ? `&filemill=${encodeURIComponent(VIEW)}` : ""),
+        { signal: ctl.signal },
+      );
     } catch (err) {
       if (err.name === "AbortError") return null;
       throw err;
