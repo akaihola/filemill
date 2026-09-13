@@ -254,6 +254,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
+- [*] Add `ruff` and `mypy` to the `dev` group in `server/pyproject.toml`. Add
+  `[tool.ruff]` with `line-length = 88`. Fix all findings. Run `ruff format`.
+
 - [x] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT. Use
   the current year and "Antti Kaihola" as the copyright holder.
 
