@@ -29,11 +29,14 @@
 
 ---
 
+## Scheduled
+
+- [ ] #44 ripgrep-based full-text search bar in `<nav>`
+
 ## Open
 
 _Items without an issue number are not yet tracked in ISSUES.md._
 
-- [ ] #44 ripgrep-based full-text search bar in `<nav>`
 - [ ] #46 Automatic dark mode following OS colour-scheme preference
 - [ ] #47 Column width & scrolling UX: jumps, long-name stretch, no left-scroll
 - [ ] #48 Truncate filenames preserving the file extension
