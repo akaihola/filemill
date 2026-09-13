@@ -25,6 +25,7 @@
       including VFS navigation and deep links. The legacy HTMX UI remains at
       `/f/` for compatibility.
 - [x] #45 Mobile: column bottom clipped + directory nav scrolls to preview
+- [~] #43 Mobile preview fills 100 % width; rightmost column peek needed as scroll hint
 
 ---
 
