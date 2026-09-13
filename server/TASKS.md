@@ -21,6 +21,7 @@
 
 ## In progress
 
+- [~] #48 Truncate filenames preserving the file extension
 - [~] #46 Automatic dark mode following OS colour-scheme preference
 - [x] **New UI migration** — the shared Miller-columns frontend runs at `/n/`,
       including VFS navigation and deep links. The legacy HTMX UI remains at
@@ -30,10 +31,6 @@
 - [~] #44 ripgrep-based full-text search bar in `<nav>`
 
 ---
-
-## Scheduled
-
-- [ ] #48 Truncate filenames preserving the file extension
 
 ## Open
 
