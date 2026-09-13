@@ -21,6 +21,7 @@
 
 ## In progress
 
+- [~] #46 Automatic dark mode following OS colour-scheme preference
 - [x] **New UI migration** — the shared Miller-columns frontend runs at `/n/`,
       including VFS navigation and deep links. The legacy HTMX UI remains at
       `/f/` for compatibility.
@@ -31,8 +32,6 @@
 ---
 
 ## Scheduled
-
-- [ ] #46 Automatic dark mode following OS colour-scheme preference
 
 ## Open
 
