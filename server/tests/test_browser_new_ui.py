@@ -178,6 +178,31 @@ def test_the_root_column_lists_the_served_directory(page):
     assert ".hidden" not in names  # dotfiles off by default, as in filemill
 
 
+def test_theme_follows_os_colour_scheme_and_keeps_manual_control(server):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        for scheme, expected in (("dark", "dark"), ("light", "light")):
+            context = browser.new_context(color_scheme=scheme)
+            themed = Harness(context.new_page(), server)
+            themed.open()
+            assert themed.evaluate("root.dataset.theme") == expected
+            assert themed.locator("#s-theme").get_attribute("aria-checked") == str(
+                expected == "dark"
+            ).lower()
+            assert themed.evaluate(
+                "getComputedStyle(document.documentElement).getPropertyValue('--chrome').trim()"
+            ) == ("#1b1d21" if expected == "dark" else "#e7e7ec")
+            themed.click("#gear")
+            themed.click("#s-theme")
+            manual = "light" if expected == "dark" else "dark"
+            assert themed.evaluate("root.dataset.theme") == manual
+            assert themed.locator("#s-theme").get_attribute("aria-checked") == str(
+                manual == "dark"
+            ).lower()
+            context.close()
+        browser.close()
+
+
 def test_long_names_truncate_before_the_extension(page):
     page.open()
     row = page.locator(
