@@ -7,6 +7,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an unverified
   architecture proposal, conditional on a fourth provider or a pagination bug.
 
+## Scheduled
+
+- [*] Add `ruff` and `mypy` to the `dev` group in `server/pyproject.toml`. Add
+  `[tool.ruff]` with `line-length = 88`. Fix all findings. Run `ruff format`.
+
 ## Ordered backlog
 
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
@@ -19,9 +24,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
       `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
       `TASKS.md`.
-
-- [*] Add `ruff` and `mypy` to the `dev` group in `server/pyproject.toml`. Add
-  `[tool.ruff]` with `line-length = 88`. Fix all findings. Run `ruff format`.
 
 - [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
   identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
