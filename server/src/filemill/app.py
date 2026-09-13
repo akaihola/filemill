@@ -519,7 +519,10 @@ def api_preview(p: str = "", v: str = "", fmt: str = "", filemill: str = ""):
         return HTMLResponse("", status_code=404)
     if v:
         return api.vfs_preview(target, v, fmt)
-    render = render_source if filemill == urls.VIEW_HIGHLIGHT else render_preview
+    if filemill == urls.VIEW_HIGHLIGHT:
+        render = render_source
+    else:
+        render = lambda path: render_preview(path, preview_url=urls.build_url(p))
     return api.preview_fragment(target, render)
 
 
