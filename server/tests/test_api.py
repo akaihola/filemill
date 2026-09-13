@@ -105,6 +105,15 @@ def test_preview_uses_the_python_markdown_pipeline(client, tmp_root: Path):
     assert r.headers["cache-control"] == "no-store"
 
 
+def test_html_preview_iframe_uses_the_canonical_file_path(client, tmp_root: Path):
+    page = tmp_root / "docs" / "page.html"
+    page.parent.mkdir()
+    page.write_text("<h1>Hi</h1>")
+    html = client.get("/api/preview?p=docs/page.html").text
+    assert 'src="/docs/page.html"' in html
+    assert "/raw?path=" not in html
+
+
 def test_preview_highlights_source_with_pygments(client, tmp_root: Path):
     (tmp_root / "code.py").write_text("def f():\n    return 1\n")
     html = client.get("/api/preview?p=code.py").text
