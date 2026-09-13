@@ -25,8 +25,8 @@
    syscall per row.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const SORT_KEYS  = ["name", "size", "mtime"];
-const SORT_FIELD = { size: "size", mtime: "mod" };    /* node.meta field per key */
+const SORT_KEYS = ["name", "size", "mtime"];
+const SORT_FIELD = { size: "size", mtime: "mod" }; /* node.meta field per key */
 const SORT_LABEL = { name: "name", size: "size", mtime: "modified" };
 
 const sortNeedsMeta = () => state.sort.key !== "name";
@@ -73,7 +73,7 @@ function sortKids(kids) {
     if (field && !a.dir) {
       const av = sortValue(a, field), bv = sortValue(b, field);
       if (av === null || bv === null) {
-        if (av !== bv) return av === null ? 1 : -1;      /* unknown sinks */
+        if (av !== bv) return av === null ? 1 : -1; /* unknown sinks */
       } else if (av !== bv) {
         return (av < bv ? -1 : 1) * dir;
       }
@@ -92,12 +92,15 @@ function sortKids(kids) {
 function ensureMeta(node) {
   if (node.metaLoading) return node.metaLoading;
   const kids = node.kids;
-  const todo = kids.filter(k => !k.dir && !k.meta);
+  const todo = kids.filter((k) => !k.dir && !k.meta);
   /* Nothing to fetch: the listing carried it (the server build), or a preview
      already did. Settle it here, before columnFor runs, so a column with no
      sweep to run is built once in the right order rather than built and
      rebuilt. */
-  if (!todo.length) { node.metaDone = true; return null; }
+  if (!todo.length) {
+    node.metaDone = true;
+    return null;
+  }
 
   /* Files still to read in *this* column. The strip sums it across the columns
      sweeping at once, so the number it shows is the number of getFile() calls
@@ -105,19 +108,26 @@ function ensureMeta(node) {
   node.metaPending = todo.length;
   node.metaLoading = (async () => {
     const t0 = performance.now();
-    await Promise.all(todo.map(k => FS.loadMeta(k)
-      /* The port promises to *fill* node.meta, not that it never rejects. One
+    await Promise.all(todo.map((k) =>
+      FS.loadMeta(k)
+        /* The port promises to *fill* node.meta, not that it never rejects. One
          rejection escaping here would leave metaLoading set and metaDone false
          for good, and the column would spin at the user until the tab closed.
          Recording the error on the row puts it in the same bucket
          FSA.loadMeta already uses for a file it could not open, which is the
          bucket sortValue reads as "unknown". */
-      .catch(err => { k.meta = { error: String((err && err.message) || err) }; })
-      /* One status write per row would cost more than the sweep it reports.
+        .catch((err) => {
+          k.meta = { error: String((err && err.message) || err) };
+        })
+        /* One status write per row would cost more than the sweep it reports.
          Every 64th is an update per ~20 ms at the rates measured here, which is
          faster than anyone reads. */
-      .then(() => { if (--node.metaPending > 0 && node.metaPending % 64 === 0)
-                      sortSay(sortStatus()); })));
+        .then(() => {
+          if (--node.metaPending > 0 && node.metaPending % 64 === 0) {
+            sortSay(sortStatus());
+          }
+        })
+    ));
     node.metaSwept = { n: todo.length, ms: Math.round(performance.now() - t0) };
     /* A refresh replaces node.kids wholesale. A sweep that started on the old
        array has just filled objects nobody can see, and marking the *new* list
@@ -134,10 +144,13 @@ function ensureMeta(node) {
    expensive path is entered by the option that asked for it and by nothing
    else. */
 function sweepMeta(node) {
-  if (!FS || !node.dir || node.kids === null || node.metaDone || node.metaLoading
-      || !sortNeedsMeta()) return;
+  if (
+    !FS || !node.dir || node.kids === null || node.metaDone ||
+    node.metaLoading ||
+    !sortNeedsMeta()
+  ) return;
   const p = ensureMeta(node);
-  if (!p) return;                            /* answered without fetching */
+  if (!p) return; /* answered without fetching */
   p.then(() => {
     /* The second half of the guard choose() uses on its own reads: a sweep can
        outlive the column that started it, and re-rendering for a directory that
@@ -157,7 +170,7 @@ function sweepMeta(node) {
 /* ── What the strip says ────────────────────────────────────────────────────
    A sort that reads 3 000 files takes a visible moment, and a column that sits
    there in name order while it happens looks like a sort that did nothing. */
-const sortSay = msg => {
+const sortSay = (msg) => {
   const el = document.getElementById("st-sort");
   if (el) el.textContent = msg;
 };
@@ -176,16 +189,21 @@ function sortStatus() {
      microtask before the sweep resolves. Deciding on the count would let the
      strip report a finished sort while the column beside it still spins, and
      the two are describing the same thing. */
-  if (path.some(x => x.metaLoading)) {
-    const left = path.reduce((n, x) => n + (x.metaLoading ? x.metaPending : 0), 0);
+  if (path.some((x) => x.metaLoading)) {
+    const left = path.reduce(
+      (n, x) => n + (x.metaLoading ? x.metaPending : 0),
+      0,
+    );
     return `⇅ ${SORT_LABEL[key]} — reading ${Math.max(left, 1)} files…`;
   }
   if (key === "name" && !desc) return "";
-  const deepest = sortNeedsMeta()
-    && [...path].reverse().find(n => n.metaSwept && n.metaSwept.n);
-  return `⇅ ${SORT_LABEL[key]} ${desc ? "↓" : "↑"}`
-       + (deepest ? ` · ${deepest.name}: ${deepest.metaSwept.n} files read in `
-                    + `${deepest.metaSwept.ms} ms` : "");
+  const deepest = sortNeedsMeta() &&
+    [...path].reverse().find((n) => n.metaSwept && n.metaSwept.n);
+  return `⇅ ${SORT_LABEL[key]} ${desc ? "↓" : "↑"}` +
+    (deepest
+      ? ` · ${deepest.name}: ${deepest.metaSwept.n} files read in ` +
+        `${deepest.metaSwept.ms} ms`
+      : "");
 }
 
 /* ── Remembering it ─────────────────────────────────────────────────────────
@@ -204,15 +222,22 @@ const SORT_STORE = "filemill.sort";
 
 function loadSort() {
   try {
-    const [key, dir] = String(localStorage.getItem(SORT_STORE) || "").split(":");
+    const [key, dir] = String(localStorage.getItem(SORT_STORE) || "").split(
+      ":",
+    );
     if (SORT_KEYS.includes(key)) state.sort = { key, desc: dir === "desc" };
-  } catch (err) { /* private mode, or an opaque file:// origin — keep the default */ }
+  } catch (err) {
+    /* private mode, or an opaque file:// origin — keep the default */
+  }
 }
 
 function setSort(key, desc) {
   state.sort = { key, desc };
-  try { localStorage.setItem(SORT_STORE, `${key}:${desc ? "desc" : "asc"}`); }
-  catch (err) { /* the sort still applies; it just will not survive a reload */ }
+  try {
+    localStorage.setItem(SORT_STORE, `${key}:${desc ? "desc" : "asc"}`);
+  } catch (err) {
+    /* the sort still applies; it just will not survive a reload */
+  }
   syncSortMenu();
   /* cacheSig carries the sort, so this drops every cached column and rebuilds
      it in the new order — the same route the dotfile and density switches take

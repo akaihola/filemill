@@ -18,7 +18,10 @@ usePreview(withJsonPreview(withJsonlPreview(PreviewRich)));
    this build has remembered folders at all — the server build has none. */
 useRouter({
   ...RouterHash,
-  write(loc, replace) { RouterHash.write(loc, replace); keepView(loc); },
+  write(loc, replace) {
+    RouterHash.write(loc, replace);
+    keepView(loc);
+  },
 });
 
 /* A deep link read at startup, held until a root is mounted that can satisfy
@@ -56,14 +59,19 @@ function flushView() {
   pendingView = null;
   if (p) rememberRoot(p.handle, p.path);
 }
-document.addEventListener("visibilitychange",
-  () => { if (document.visibilityState === "hidden") flushView(); });
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") flushView();
+});
 
 async function mount(handle, loc) {
   const node = FS.node(handle.name, handle);
   colCache.clear();
-  path = [node]; sel = []; focusCol = 0; cursor = { 0: 0 };
-  mounted = null; keptAt = null;
+  path = [node];
+  sel = [];
+  focusCol = 0;
+  cursor = { 0: 0 };
+  mounted = null;
+  keptAt = null;
   welcome.hidden = true;
   document.title = handle.name + " — Filemill";
   render();
@@ -92,7 +100,10 @@ function takePending(rootName) {
 async function pickFolder() {
   if (!window.showDirectoryPicker) return showBlocked("unsupported");
   try {
-    const handle = await window.showDirectoryPicker({ mode: "read", id: "filemill" });
+    const handle = await window.showDirectoryPicker({
+      mode: "read",
+      id: "filemill",
+    });
     await rememberRoot(handle);
     await mount(handle);
   } catch (err) {
@@ -107,19 +118,23 @@ async function pickFolder() {
    needs requestPermission(), which is only allowed from this click. */
 async function openRemembered(root) {
   const perm = await root.handle.queryPermission({ mode: "read" });
-  if (perm === "granted" ||
-      await root.handle.requestPermission({ mode: "read" }) === "granted")
+  if (
+    perm === "granted" ||
+    await root.handle.requestPermission({ mode: "read" }) === "granted"
+  ) {
     return mount(root.handle);
+  }
 }
 
 function renderRecents(roots) {
   const box = document.getElementById("w-recent");
   const list = box.querySelector(".rec-list");
   list.textContent = "";
-  roots.forEach(r => {
+  roots.forEach((r) => {
     const b = document.createElement("button");
     b.className = "rec";
-    b.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true">${FOLDER_PATH}</svg>`;
+    b.innerHTML =
+      `<svg viewBox="0 0 16 16" aria-hidden="true">${FOLDER_PATH}</svg>`;
     b.appendChild(document.createTextNode(r.handle.name));
     /* Say where the click will land. The chain is the point of the button, and
        a folder that reopens three columns deep is a surprise worth spending
@@ -165,14 +180,16 @@ document.getElementById("w-pick").onclick = pickFolder;
   /* A link names its root, so prefer that folder over the most recent one —
      otherwise reopening a bookmark would silently browse the wrong tree. */
   const wanted = pendingLoc?.root
-    ? roots.find(r => r.handle.name === pendingLoc.root) : null;
+    ? roots.find((r) => r.handle.name === pendingLoc.root)
+    : null;
   const first = wanted || roots[0];
 
   /* queryPermission needs no gesture, so a folder still granted from an earlier
      visit opens with no dialog at all — and mount() puts the user back on the
      chain it stored, so the whole return trip costs no clicks */
-  if (await first.handle.queryPermission({ mode: "read" }) === "granted")
+  if (await first.handle.queryPermission({ mode: "read" }) === "granted") {
     return mount(first.handle);
+  }
   renderRecents(roots);
 })();
 

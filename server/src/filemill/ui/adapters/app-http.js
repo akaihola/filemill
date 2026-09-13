@@ -23,9 +23,13 @@ const ROOT_NAME = document.documentElement.dataset.root || "/";
    provider rather than replacing it: a file with a language we know is read
    through FS.blob and highlighted here, and anything else goes on as before.
    A virtual path is never diverted, because only the server can read one. */
-const withHighlighting = provider => ({
-  revoke() { provider.revoke?.(); PreviewLocal.revoke(); },
-  render: n => (!n.vpath && hlLang(n.name) ? PreviewLocal : provider).render(n),
+const withHighlighting = (provider) => ({
+  revoke() {
+    provider.revoke?.();
+    PreviewLocal.revoke();
+  },
+  render: (n) =>
+    (!n.vpath && hlLang(n.name) ? PreviewLocal : provider).render(n),
 });
 
 async function mountServer() {
@@ -40,7 +44,10 @@ async function mountServer() {
 
   const node = HTTP.node(ROOT_NAME, "");
   colCache.clear();
-  path = [node]; sel = []; focusCol = 0; cursor = { 0: 0 };
+  path = [node];
+  sel = [];
+  focusCol = 0;
+  cursor = { 0: 0 };
   if (welcome) welcome.hidden = true;
   document.title = ROOT_NAME;
   render();
@@ -56,11 +63,16 @@ async function mountServer() {
    only the URL goes quiet. */
 async function mount(handle) {
   useFilesystem(withJson(withJsonl(FSA)));
-  usePreview(withJsonPreview(withJsonlPreview(withHighlighting(PreviewUpload))));
+  usePreview(
+    withJsonPreview(withJsonlPreview(withHighlighting(PreviewUpload))),
+  );
   useRouter(null);
   const node = FSA.node(handle.name, handle);
   colCache.clear();
-  path = [node]; sel = []; focusCol = 0; cursor = { 0: 0 };
+  path = [node];
+  sel = [];
+  focusCol = 0;
+  cursor = { 0: 0 };
   if (welcome) welcome.hidden = true;
   document.title = handle.name;
   /* Back to the bare base, not one segment up: the URL was naming a file
@@ -74,12 +86,17 @@ async function mount(handle) {
 
 async function pickFolder() {
   if (!window.showDirectoryPicker) {
-    alert("This browser has no File System Access API. " +
-          "Local folders need Chrome, Edge or another Chromium-based desktop browser.");
+    alert(
+      "This browser has no File System Access API. " +
+        "Local folders need Chrome, Edge or another Chromium-based desktop browser.",
+    );
     return;
   }
   try {
-    const handle = await window.showDirectoryPicker({ mode: "read", id: "filemill" });
+    const handle = await window.showDirectoryPicker({
+      mode: "read",
+      id: "filemill",
+    });
     await rememberRoot(handle);
     await mount(handle);
   } catch (err) {

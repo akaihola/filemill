@@ -14,9 +14,13 @@ const CACHE_MAX = 24;
 /* Writing the value a property already holds still dirties it — and a width or
    custom-property write on a column relays out every row inside it. Guard the
    writes and a re-render of an unchanged column costs nothing. */
-const set = (obj, key, value) => { if (obj[key] !== value) obj[key] = value; };
+const set = (obj, key, value) => {
+  if (obj[key] !== value) obj[key] = value;
+};
 const setVar = (el, name, value) => {
-  if (el.style.getPropertyValue(name) !== value) el.style.setProperty(name, value);
+  if (el.style.getPropertyValue(name) !== value) {
+    el.style.setProperty(name, value);
+  }
 };
 
 function buildCol(node) {
@@ -38,7 +42,8 @@ function buildCol(node) {
 
   const body = el.querySelector(".col-body");
   if (node.kids === null) {
-    body.innerHTML = `<div class="col-note"><span class="spinner"></span>Reading…</div>`;
+    body.innerHTML =
+      `<div class="col-note"><span class="spinner"></span>Reading…</div>`;
   } else if (node.denied) {
     body.innerHTML = `<div class="col-note">⚠ ${esc(node.denied)}</div>`;
   } else if (!kids.length) {
@@ -46,11 +51,13 @@ function buildCol(node) {
   }
   /* a folded column hides its rows, so the click lands on the column itself —
      that is what makes the advertised "click a spine to unfold" work */
-  el.onclick = () => { if (el.classList.contains("spine")) unfoldTo(+el.dataset.i); };
+  el.onclick = () => {
+    if (el.classList.contains("spine")) unfoldTo(+el.dataset.i);
+  };
   /* Read the index off the element for the same reason a row does: the node
      keeps its DOM across re-renders, and only render time knows its column.
      stopPropagation, or a ⟳ on a folded spine would unfold it instead. */
-  el.querySelector(".rf").onclick = e => {
+  el.querySelector(".rf").onclick = (e) => {
     e.stopPropagation();
     refreshColumn(+el.dataset.i);
   };
@@ -59,11 +66,13 @@ function buildCol(node) {
     const [stem, ext] = splitName(k.name);
     const row = document.createElement("div");
     row.className = "row" + (k.name.startsWith(".") ? " dotfile" : "");
-    row.title = k.name;   /* the full name is always one hover away */
+    row.title = k.name; /* the full name is always one hover away */
     row.setAttribute("aria-label", k.name);
-    row.innerHTML = iconHTML(k)
-      + `<span class="label"><span class="stem">${esc(stem)}</span><span class="dim">${esc(ext)}</span></span>`
-      + (k.dir ? `<span class="chev">›</span>` : "");
+    row.innerHTML = iconHTML(k) +
+      `<span class="label"><span class="stem">${
+        esc(stem)
+      }</span><span class="dim">${esc(ext)}</span></span>` +
+      (k.dir ? `<span class="chev">›</span>` : "");
     /* read the index off the element: the same node keeps its DOM across
        re-renders, and its column position is only known at render time */
     row.onclick = () => choose(+el.dataset.i, k, ri);
@@ -72,8 +81,16 @@ function buildCol(node) {
   });
   body.onscroll = paintTrail;
 
-  return { el, body, kids, rows, kidsRef: node.kids, metaRef: !!node.metaDone,
-           dot: el.querySelector(".dot"), width: measure(node) };
+  return {
+    el,
+    body,
+    kids,
+    rows,
+    kidsRef: node.kids,
+    metaRef: !!node.metaDone,
+    dot: el.querySelector(".dot"),
+    width: measure(node),
+  };
 }
 
 function columnFor(node) {
@@ -83,7 +100,7 @@ function columnFor(node) {
      field along. */
   if (c && (c.kidsRef !== node.kids || c.metaRef !== !!node.metaDone)) c = null;
   if (!c) c = buildCol(node);
-  colCache.delete(node);                            /* re-insert = most recently used */
+  colCache.delete(node); /* re-insert = most recently used */
   colCache.set(node, c);
   for (const k of colCache.keys()) {
     if (colCache.size <= CACHE_MAX) break;
@@ -94,9 +111,13 @@ function columnFor(node) {
 
 function render(keepScroll) {
   if (!path.length) return;
-  const sig = `${state.dotfiles}|${root.dataset.density}|${root.dataset.theme}` +
-              `|${state.sort.key}|${state.sort.desc}`;
-  if (sig !== cacheSig) { colCache.clear(); cacheSig = sig; }
+  const sig =
+    `${state.dotfiles}|${root.dataset.density}|${root.dataset.theme}` +
+    `|${state.sort.key}|${state.sort.desc}`;
+  if (sig !== cacheSig) {
+    colCache.clear();
+    cacheSig = sig;
+  }
 
   widths = [];
   const cols = path.map((node, i) => {
@@ -113,7 +134,7 @@ function render(keepScroll) {
        which the build just produced, keeps this off the keystroke path — an
        unchanged column skips it entirely. */
     if (c !== had && sel[i] !== undefined) {
-      const ri = c.kids.findIndex(k => k.name === sel[i]);
+      const ri = c.kids.findIndex((k) => k.name === sel[i]);
       if (ri >= 0) cursor[i] = ri;
     }
     /* No column may be wider than two-thirds of the live finder. The fold cap keeps the
@@ -137,15 +158,20 @@ function render(keepScroll) {
 
     /* `sorting` goes in the class string rather than on classList, because this
        write replaces the whole attribute and would drop it a frame later. */
-    set(c.el, "className", "col " +
-      (i < focusCol ? "ancestor" : i > focusCol ? "descendant" : "focus") +
-      (node.metaLoading ? " sorting" : ""));
+    set(
+      c.el,
+      "className",
+      "col " +
+        (i < focusCol ? "ancestor" : i > focusCol ? "descendant" : "focus") +
+        (node.metaLoading ? " sorting" : ""),
+    );
     set(c.el.dataset, "depth", String(Math.min(5, Math.max(0, focusCol - i))));
     set(c.el.dataset, "i", String(i));
     set(c.el.style, "width", w + "px");
 
-    if (c.dotFor !== sel[i]) {                 /* spine icon of the chosen child */
-      const chosen = c.kids.find(k => k.name === sel[i]);
+    if (c.dotFor !== sel[i]) {
+      /* spine icon of the chosen child */
+      const chosen = c.kids.find((k) => k.name === sel[i]);
       c.dot.innerHTML = chosen ? iconHTML(chosen) : "";
       c.dotFor = sel[i];
     }
@@ -159,13 +185,19 @@ function render(keepScroll) {
   /* Reconcile instead of replaceChildren: re-inserting an element detaches it,
      which throws away the style and layout of every row underneath it. Columns
      that keep their slot must not be touched at all. */
-  const want = [...cols.map(c => c.el), renderPreview()];
+  const want = [...cols.map((c) => c.el), renderPreview()];
   want.forEach((el, i) => {
-    if (strip.childNodes[i] !== el) strip.insertBefore(el, strip.childNodes[i] || null);
+    if (strip.childNodes[i] !== el) {
+      strip.insertBefore(el, strip.childNodes[i] || null);
+    }
   });
   while (strip.childNodes.length > want.length) strip.lastChild.remove();
-  for (const c of cols)
-    c.el.classList.toggle("scrollable-down", c.body.scrollHeight > c.body.clientHeight + 4);
+  for (const c of cols) {
+    c.el.classList.toggle(
+      "scrollable-down",
+      c.body.scrollHeight > c.body.clientHeight + 4,
+    );
+  }
   renderCrumbs();
   sortSay(sortStatus());
   layout(keepScroll);
@@ -185,9 +217,15 @@ function renderPreview() {
   const [stem, ext] = splitName(n.name);
   const rawPath = "/" + currentPath().map(encodeURIComponent).join("/");
   pv.innerHTML = `
-    <div class="col-head pv-head"><span class="name"><span>${esc(n.name)}</span></span>
+    <div class="col-head pv-head"><span class="name"><span>${
+    esc(n.name)
+  }</span></span>
       <span class="pv-actions">
-        ${ROUTER ? `<a id="pv-raw" class="pv-action" href="${rawPath}" title="View raw file">Raw</a>` : ""}
+        ${
+    ROUTER
+      ? `<a id="pv-raw" class="pv-action" href="${rawPath}" title="View raw file">Raw</a>`
+      : ""
+  }
         <button id="pv-view" class="pv-action" hidden type="button"></button>
         <button id="pv-fullscreen" class="pv-action" type="button" aria-pressed="${pvFullscreen}"
                 title="Toggle fullscreen preview">Fullscreen</button>
@@ -196,7 +234,9 @@ function renderPreview() {
     <div class="pv-body">
       <div class="pv-hero">
         ${iconHTML(n)}
-        <div><h2>${esc(stem)}<span style="color:var(--ink-3)">${esc(ext)}</span></h2>
+        <div><h2>${esc(stem)}<span style="color:var(--ink-3)">${
+    esc(ext)
+  }</span></h2>
              <div class="sub" id="pv-sub">reading…</div></div>
         <button id="pv-edit" hidden>Edit</button>
       </div>
@@ -212,7 +252,11 @@ const RENDERED_RE = /\.(md|markdown|docx|pptx|html?|desktop)$/i;
 
 function previewView() {
   const view = document.documentElement.dataset.filemill || "raw";
-  return view === "highlight" ? "highlight" : view === "render" ? "render" : "raw";
+  return view === "highlight"
+    ? "highlight"
+    : view === "render"
+    ? "render"
+    : "raw";
 }
 
 function setPreviewView(view) {
@@ -229,9 +273,12 @@ function setupPreviewActions(n) {
   if (toggle) {
     toggle.hidden = !applicable;
     toggle.textContent = view === "render" ? "Source" : "Rendered";
-    toggle.title = view === "render" ? "View highlighted source" : "View rendered preview";
+    toggle.title = view === "render"
+      ? "View highlighted source"
+      : "View rendered preview";
     toggle.setAttribute("aria-label", toggle.title);
-    toggle.onclick = () => setPreviewView(view === "render" ? "highlight" : "render");
+    toggle.onclick = () =>
+      setPreviewView(view === "render" ? "highlight" : "render");
   }
   const full = document.getElementById("pv-fullscreen");
   if (full) {
@@ -255,9 +302,12 @@ async function fillPreview(n) {
   await FS.loadMeta(n);
   if (token !== pvToken) return;
   const m = n.meta || {};
-  const sub  = document.getElementById("pv-sub");
+  const sub = document.getElementById("pv-sub");
   if (!sub) return;
-  if (m.error) { sub.textContent = "unreadable"; return; }
+  if (m.error) {
+    sub.textContent = "unreadable";
+    return;
+  }
   /* Not everything a column can hold is a file. A row inside a database has no
      size and no mtime, and inventing them prints "0 B · 1 Jan 1970" — so leave
      the sub-line empty and go straight to the body. */
@@ -271,7 +321,9 @@ async function fillPreview(n) {
   try {
     html = await PREVIEW.render(n);
   } catch (err) {
-    html = `<p class="pv-err">Preview failed: ${esc(String(err.message || err))}</p>`;
+    html = `<p class="pv-err">Preview failed: ${
+      esc(String(err.message || err))
+    }</p>`;
   }
   if (token !== pvToken) return;
   const host = document.getElementById("pv-content");
@@ -296,19 +348,28 @@ async function fillPreview(n) {
    work with any of them. Keep the two lists in step. */
 const EDIT_MAX = 512 * 1024;
 const EDIT_MAX_LINE = 10_000;
-const NON_EDIT_RE = /\.(desktop|docx|pptx|pdf|html?|png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
+const NON_EDIT_RE =
+  /\.(desktop|docx|pptx|pdf|html?|png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
 
 async function editableText(n) {
-  if (!FS.write || n.dir || n.vpath || NON_EDIT_RE.test(n.name) ||
-      (n.meta?.size ?? 0) > EDIT_MAX) return null;
+  if (
+    !FS.write || n.dir || n.vpath || NON_EDIT_RE.test(n.name) ||
+    (n.meta?.size ?? 0) > EDIT_MAX
+  ) return null;
   const blob = await FS.blob(n);
   if (!blob || blob.size > EDIT_MAX) return null;
   try {
-    const text = new TextDecoder("utf-8", {fatal: true}).decode(await blob.arrayBuffer());
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(
+      await blob.arrayBuffer(),
+    );
     return !text.includes("\0") &&
-      Math.max(...text.split(/\r?\n/).map(line => line.length), 0) <= EDIT_MAX_LINE
-      ? text : null;
-  } catch (_) { return null; }
+        Math.max(...text.split(/\r?\n/).map((line) => line.length), 0) <=
+          EDIT_MAX_LINE
+      ? text
+      : null;
+  } catch (_) {
+    return null;
+  }
 }
 
 async function openEditor(n) {
@@ -324,7 +385,9 @@ async function openEditor(n) {
   if (token !== pvToken || !host) return;
   document.getElementById("pv-edit").hidden = true;
   host.innerHTML = `
-    <textarea id="pv-editor" spellcheck="false" aria-label="Edit ${esc(n.name)}"></textarea>
+    <textarea id="pv-editor" spellcheck="false" aria-label="Edit ${
+    esc(n.name)
+  }"></textarea>
     <div class="pv-edit-bar">
       <button id="pv-save">Save</button>
       <button id="pv-cancel">Cancel</button>
