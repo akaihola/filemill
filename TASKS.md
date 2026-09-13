@@ -243,6 +243,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   child nodes in the column to the right, and a foldable highlighted and pretty-printed
   JSON preview of the selected item in the second column to the right.
 
+## Scheduled
+
+- Back-navigation still often fails to unfold the newly focused column.
+
 ## In progress
 
 - [x] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT. Use
