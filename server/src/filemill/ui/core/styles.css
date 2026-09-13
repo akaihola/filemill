@@ -790,6 +790,11 @@ body {
   min-height: 0;
   overflow: hidden;
 }
+@media (max-width: 600px) {
+  #preview {
+    margin-left: calc(-1 * var(--gutter));
+  }
+}
 #preview .pv-body {
   flex: 1;
   min-height: 0;
