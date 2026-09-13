@@ -16,6 +16,10 @@ document.addEventListener("click", (e) => {
   if (!panel.contains(e.target)) closeSettings();
 });
 
+root.dataset.theme = matchMedia("(prefers-color-scheme: dark)").matches
+  ? "dark"
+  : "light";
+
 const toggle = (id, get, set) => {
   const b = document.getElementById(id);
   b.onclick = () => {
