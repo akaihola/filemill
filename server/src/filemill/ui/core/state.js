@@ -16,6 +16,7 @@ let cursor = {};                                         // col index -> row ind
 let widths = [];                                         // natural width per column
 let folded = 0;                                          // columns currently folded
 let pvToken = 0;                                         // guards async preview fills
+let pvFullscreen = false;
 const state = { dotfiles: root.dataset.hidden === "show",
                 sort: { key: "name", desc: false } };
 
