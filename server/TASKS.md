@@ -29,10 +29,6 @@
 
 ---
 
-## Scheduled
-
-- [ ] #43 Mobile preview fills 100 % width; rightmost column peek needed as scroll hint
-
 ## Open
 
 _Items without an issue number are not yet tracked in ISSUES.md._
