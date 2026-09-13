@@ -9,12 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [*] In the preview pane top bar, add buttons for viewing the raw file
-  (`/path/to/file.ext` without query parameters), toggling highlighted source vs
-  rendered preview (for file types in which applicable), and toggling fullscreen mode
-  (hide `div#bar` and `div#status` and filling `div#strip` with only the `div#preview`
-  without borders and padding).
-
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
       now return the shared client shell.
 
@@ -256,6 +250,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [*] Use `/path/to/file.html` instead of `/raw?path=/path/to/file.html` for HTML
   previews.
+
+- [*] In the preview pane top bar, add buttons for viewing the raw file
+  (`/path/to/file.ext` without query parameters), toggling highlighted source vs
+  rendered preview (for file types in which applicable), and toggling fullscreen mode
+  (hide `div#bar` and `div#status` and filling `div#strip` with only the `div#preview`
+  without borders and padding).
 
 - Back-navigation still often fails to unfold the newly focused column.
 
