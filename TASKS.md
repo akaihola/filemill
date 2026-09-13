@@ -269,6 +269,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Completed
 
+- [x] Use `/path/to/file.html` instead of `/raw?path=/path/to/file.html` for HTML
+  previews. Server HTML iframes now use canonical root-relative file paths.
+
 - [8] One shared JavaScript finder owns interaction. The server supplies API data and
   document previews. Decision recorded in `docs/adr/0001-one-finder.md`.
 

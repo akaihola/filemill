@@ -183,8 +183,16 @@ function renderPreview() {
     return pv;
   }
   const [stem, ext] = splitName(n.name);
+  const rawPath = "/" + currentPath().map(encodeURIComponent).join("/");
   pv.innerHTML = `
-    <div class="col-head"><span class="name"><span>${esc(n.name)}</span></span></div>
+    <div class="col-head pv-head"><span class="name"><span>${esc(n.name)}</span></span>
+      <span class="pv-actions">
+        ${ROUTER ? `<a id="pv-raw" class="pv-action" href="${rawPath}" title="View raw file">Raw</a>` : ""}
+        <button id="pv-view" class="pv-action" hidden type="button"></button>
+        <button id="pv-fullscreen" class="pv-action" type="button" aria-pressed="${pvFullscreen}"
+                title="Toggle fullscreen preview">Fullscreen</button>
+      </span>
+    </div>
     <div class="pv-body">
       <div class="pv-hero">
         ${iconHTML(n)}
@@ -195,7 +203,47 @@ function renderPreview() {
       <div id="pv-content" class="pv-content"></div>
     </div>`;
   fillPreview(n);
+  pv.classList.toggle("pv-is-fullscreen", pvFullscreen);
+  setupPreviewActions(n);
   return pv;
+}
+
+const RENDERED_RE = /\.(md|markdown|docx|pptx|html?|desktop)$/i;
+
+function previewView() {
+  const view = document.documentElement.dataset.filemill || "raw";
+  return view === "highlight" ? "highlight" : view === "render" ? "render" : "raw";
+}
+
+function setPreviewView(view) {
+  if (!ROUTER || !location.pathname) return;
+  const url = new URL(location.href);
+  url.searchParams.set("filemill", view);
+  location.href = url.pathname + url.search + url.hash;
+}
+
+function setupPreviewActions(n) {
+  const view = previewView();
+  const toggle = document.getElementById("pv-view");
+  const applicable = !!ROUTER && RENDERED_RE.test(n.name);
+  if (toggle) {
+    toggle.hidden = !applicable;
+    toggle.textContent = view === "render" ? "Source" : "Rendered";
+    toggle.title = view === "render" ? "View highlighted source" : "View rendered preview";
+    toggle.setAttribute("aria-label", toggle.title);
+    toggle.onclick = () => setPreviewView(view === "render" ? "highlight" : "render");
+  }
+  const full = document.getElementById("pv-fullscreen");
+  if (full) {
+    full.onclick = () => {
+      pvFullscreen = !pvFullscreen;
+      root.classList.toggle("pv-fullscreen", pvFullscreen);
+      full.setAttribute("aria-pressed", pvFullscreen);
+      full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
+      full.title = full.textContent;
+    };
+    full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
+  }
 }
 
 /* Metadata and contents arrive after the layout is already on screen; the token
