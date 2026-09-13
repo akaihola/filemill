@@ -233,9 +233,9 @@ provider. The CSV provider is a stub (issue #49). The proposal in
 The threat model is a local tool, so none of these is an emergency. They are
 listed because a world-class project writes them down.
 
-- `preview.py:216,225,231` embed `src="/raw?path=<absolute path>"` in
-  fragments sent to the browser. `api.py:12-16` says no request shape names
-  an absolute path. Both cannot be true.
+- `preview.py` must embed the canonical root-relative file URL in HTML preview
+  fragments sent to the browser. `api.py:12-16` says no request shape names an
+  absolute path, so preview fragments must not construct `/raw?path=` URLs.
 - `/w/` answers with `Access-Control-Allow-Origin: *` (`app.py:1131`) and the
   server binds to `0.0.0.0` by default (`cli.py:18`). Any page on the network
   can read any file under the root. No document says so.

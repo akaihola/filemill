@@ -34,7 +34,7 @@ def read_text(path: Path, reject_wide: bool = True) -> str | None:
         return None
 
 
-def render_preview(path: Path, state=None) -> str:
+def render_preview(path: Path, state=None, preview_url: str | None = None) -> str:
     """Return an HTML string (inner body fragment) for the given file path.
 
     This is the *rendered* representation: it dispatches on suffix, so Markdown
@@ -60,7 +60,7 @@ def render_preview(path: Path, state=None) -> str:
     elif ext == ".pdf":
         return _preview_pdf(path)
     elif ext in (".html", ".htm"):
-        return _preview_html(path)
+        return _preview_html(path, preview_url)
     elif ext in IMAGE_EXTS:
         return _preview_image(path)
     else:
@@ -222,8 +222,8 @@ def _preview_pdf(path: Path) -> str:
         )
 
 
-def _preview_html(path: Path) -> str:
-    src = f"/raw?path={urlquote(str(path))}"
+def _preview_html(path: Path, preview_url: str | None = None) -> str:
+    src = preview_url or f"/{urlquote(path.name)}"
     return f'<div class="preview-html"><iframe src="{src}"></iframe></div>'
 
 
