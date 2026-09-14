@@ -3017,7 +3017,7 @@ function buildCol(node) {
       (k.dir ? `<span class="chev">›</span>` : "");
     /* read the index off the element: the same node keeps its DOM across
        re-renders, and its column position is only known at render time */
-    row.onclick = () => choose(+el.dataset.i, k, ri);
+    row.onclick = () => choose(+el.dataset.i, k);
     body.appendChild(row);
     return row;
   });
@@ -3881,7 +3881,7 @@ function autoPreview(node) {
   if (pick) sel[i] = pick.name;
 }
 
-async function choose(colIdx, node, rowIdx) {
+async function choose(colIdx, node) {
   const seq = ++navSeq;
   path = path.slice(0, colIdx + 1);
   sel = sel.slice(0, colIdx);
@@ -5483,7 +5483,7 @@ function openWikilink(target) {
     return n === want || n === want + ".md" ||
       splitName(k.name)[0].toLowerCase() === want;
   });
-  if (ri >= 0) choose(col, kids[ri], ri);
+  if (ri >= 0) choose(col, kids[ri]);
 }
 
 document.addEventListener("click", (e) => {
