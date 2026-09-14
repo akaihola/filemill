@@ -244,6 +244,11 @@ const PreviewRich = {
       return `<div class="pv-rich">${await markdown(text)}</div>`;
     } catch (err) {
       /* Offline, blocked, or the CDN moved. The file is still readable. */
+      if (PPTX_RE.test(node.name)) {
+        return `<div class="preview-error">PowerPoint preview unavailable: ${
+          esc(String(err.message || err))
+        }</div>`;
+      }
       const fallback = await PreviewLocal.render(node);
       return fallback ? NOTE + fallback : null;
     }
