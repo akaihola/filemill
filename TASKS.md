@@ -9,13 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [*] Rendering if reStructuredText (`.rst`) isn't currently supported. Investigate how
-  to implement it on the client side. Prefer readily available 3rd party client-side
-  solutions, or pre-packaged Python solutions to run on the browser, and just implement
-  whatever best solution you find. If those solutions aren't available, plan a fallback
-  solution for how to run the Python code on the browser by ourselves, but write a plan
-  first without implementing it yet.
-
 - [*] Using the `Search file contents` input always causes the error
   `Search error: Search timed out` to display. JavaScript console:
   `XHR GET https://gogo.crane-boa.ts.net:8445/api/search?q=development [HTTP/2 503  2020ms]`.
@@ -290,6 +283,13 @@ Rules for TASKS.md usage are at the bottom of the file.
   JavaScript console either.
 
 ## Scheduled
+
+- [*] Rendering if reStructuredText (`.rst`) isn't currently supported. Investigate how
+  to implement it on the client side. Prefer readily available 3rd party client-side
+  solutions, or pre-packaged Python solutions to run on the browser, and just implement
+  whatever best solution you find. If those solutions aren't available, plan a fallback
+  solution for how to run the Python code on the browser by ourselves, but write a plan
+  first without implementing it yet.
 
 - [*] `.py.j2` are templates for Python files that are rendered by Jinja2. Does our
   highlighting library support syntax highlighting for such hybrid files? If so,
