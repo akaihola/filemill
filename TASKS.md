@@ -294,13 +294,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
-- [*] Rendering if reStructuredText (`.rst`) isn't currently supported. Investigate how
-  to implement it on the client side. Prefer readily available 3rd party client-side
-  solutions, or pre-packaged Python solutions to run on the browser, and just implement
-  whatever best solution you find. If those solutions aren't available, plan a fallback
-  solution for how to run the Python code on the browser by ourselves, but write a plan
-  first without implementing it yet.
-
 - [*] Using the `Search file contents` input always causes the error
   `Search error: Search timed out` to display. JavaScript console:
   `XHR GET https://gogo.crane-boa.ts.net:8445/api/search?q=development [HTTP/2 503  2020ms]`.
@@ -346,6 +339,13 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [*] Rendering if reStructuredText (`.rst`) isn't currently supported. Investigate how
+  to implement it on the client side. Prefer readily available 3rd party client-side
+  solutions, or pre-packaged Python solutions to run on the browser, and just implement
+  whatever best solution you find. If those solutions aren't available, plan a fallback
+  solution for how to run the Python code on the browser by ourselves, but write a plan
+  first without implementing it yet.
 
 - [x] Use `/path/to/file.html` instead of `/raw?path=/path/to/file.html` for HTML
       previews. Server HTML iframes now use canonical root-relative file paths.
