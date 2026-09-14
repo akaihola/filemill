@@ -57,9 +57,30 @@ async function mountServer() {
   render();
   await FS.ensureLoaded(node);
 
+  if (node.denied) {
+    showServerUnavailable();
+    return;
+  }
+
   if (loc && loc.path.length) await applyPath(loc.path);
   else render();
   startRouting();
+}
+
+function showServerUnavailable() {
+  welcome.hidden = false;
+  document.getElementById("w-title").textContent = "Filemill server unavailable";
+  document.getElementById("w-msg").innerHTML =
+    "Start Filemill locally with <code>uv run filemill</code>, then retry. " +
+    "The installed app can connect to the service but cannot start it.";
+  const button = document.getElementById("w-pick");
+  button.hidden = false;
+  button.textContent = "Retry connection";
+  button.onclick = () => {
+    button.disabled = true;
+    mountServer().finally(() => { button.disabled = false; });
+  };
+  document.getElementById("w-recent").hidden = true;
 }
 
 /* The local-folder mode of the server build. Previews still come from the

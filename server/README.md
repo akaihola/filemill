@@ -53,8 +53,22 @@ uv run filemill [OPTIONS] [ROOT]
 | --------------- | --------- | ------------------- | -------------------------------- |
 | `ROOT`          | `$PWD`    | `FILEMILL_ROOT`   | Root directory to browse         |
 | `--port`        | `8000`    | –                   | TCP port to listen on            |
-| `--bind` / `-b` | `0.0.0.0` | `FILEMILL_BIND`   | Network interface to bind to     |
+| `--bind` / `-b` | `127.0.0.1` | `FILEMILL_BIND` | Network interface to bind to |
 | `--live`        | off       | `FILEMILL_LIVE=1` | Enable auto-reload (development) |
+
+## Installed PWA
+
+The installed app connects to the Filemill server on its own origin. Start the
+local service first:
+
+```bash
+uv run filemill [ROOT]
+```
+
+The default listener is `127.0.0.1:8000`, so it is local to this machine. The
+PWA cannot start a native process; if the service is stopped, it shows the same
+command and a retry button. Use `--bind` only when deliberately exposing the
+server beyond loopback.
 
 ## Development
 
