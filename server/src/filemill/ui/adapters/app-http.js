@@ -56,7 +56,6 @@ async function mountServer() {
   path = [node];
   sel = [];
   focusCol = 0;
-  cursor = { 0: 0 };
   if (welcome) welcome.hidden = true;
   document.title = ROOT_NAME;
   render();
@@ -109,7 +108,6 @@ async function mount(handle) {
   path = [node];
   sel = [];
   focusCol = 0;
-  cursor = { 0: 0 };
   if (welcome) welcome.hidden = true;
   document.title = handle.name;
   /* Back to the bare base, not one segment up: the URL was naming a file

@@ -280,7 +280,7 @@ function openWikilink(target) {
     return n === want || n === want + ".md" ||
       splitName(k.name)[0].toLowerCase() === want;
   });
-  if (ri >= 0) choose(col, kids[ri], ri);
+  if (ri >= 0) choose(col, kids[ri]);
 }
 
 document.addEventListener("click", (e) => {

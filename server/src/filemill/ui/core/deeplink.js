@@ -74,7 +74,6 @@ async function applyPath(names, wantFocus) {
     const rootNode = path[0];
     path = [rootNode];
     sel = [];
-    cursor = { 0: 0 };
     focusCol = 0;
     await FS.ensureLoaded(rootNode);
     let complete = true;
@@ -90,9 +89,7 @@ async function applyPath(names, wantFocus) {
 
       const node = kids[ri];
       sel[i] = node.name;
-      cursor[i] = ri;
       focusCol = i; /* focus stays on the column holding it */
-      parent.lastSel = node.name;
       if (!node.dir) break;
       await FS.ensureLoaded(node);
       path.push(node);
@@ -115,7 +112,7 @@ async function applyPath(names, wantFocus) {
 function scrollCursorIntoView() {
   for (let i = 0; i < path.length; i++) {
     const c = colCache.get(path[i]);
-    const ri = cursor[i];
+    const ri = rowIndex(path[i], sel[i]);
     if (c && ri != null && c.rows[ri]) revealRow(c.rows[ri]);
   }
 }

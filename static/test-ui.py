@@ -1406,8 +1406,8 @@ async def main():
 
         # The entry you were on is gone. Selecting whatever slid into its place
         # would show a preview of a file nobody asked for, so nothing is
-        # selected — but the cursor stays, because ↑/↓ should resume where you
-        # were rather than at the top of a 3 000-row list.
+        # selected — and the unified name selection must not move to whatever
+        # row slid into its place.
         await in_refresh()
         for _ in range(2):
             await pg.keyboard.press("ArrowDown")
@@ -1418,16 +1418,14 @@ async def main():
         await pg.keyboard.press("F5")
         await pg.wait_for_timeout(600)
         snap = await pg.evaluate(
-            "({...__state(), cursor1: cursor[1],"
+            "({...__state(),"
             " say: document.getElementById('st-refresh').textContent})")
         check("A selected file that vanished leaves nothing selected, and says so",
               snap["sel"] == ["refresh"] and snap["focusCol"] == 1
               and "two.txt is gone" in snap["say"], json.dumps(snap))
-        check("…and the cursor stays on that row index, clamped to what is left",
-              snap["cursor1"] == 1, str(snap["cursor1"]))
         await pg.keyboard.press("ArrowDown")
         await pg.wait_for_timeout(250)
-        check("…so ↓ resumes next to the missing file, not at the top",
+        check("…so ↓ selects the first remaining row",
               await pg.evaluate("sel[1]") == "one.txt", await pg.evaluate("sel[1]"))
 
         # Refreshing a parent must not quietly throw away the columns to its
