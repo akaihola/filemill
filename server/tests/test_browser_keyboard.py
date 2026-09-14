@@ -601,7 +601,9 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
         page.wait_for_timeout(500)
         assert page.evaluate("focusCol") == 1
         assert page.evaluate("sel[1]") == "AGENTS.md"
-        assert page.locator('.col[data-i="1"] .row.sel .label').inner_text() == "AGENTS.md"
+        assert (
+            page.locator('.col[data-i="1"] .row.sel .label').inner_text() == "AGENTS.md"
+        )
         assert page.url == file_url
         _expect_preview(page)
 

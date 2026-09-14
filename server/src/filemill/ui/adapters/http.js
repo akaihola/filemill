@@ -34,10 +34,9 @@ const httpNode = (name, rel, dir, meta, vpath, icon, ordered = false) => ({
 
 const q = (rel, vpath) =>
   `${API}/dir?p=${encodeURIComponent(rel)}` +
-    (vpath ? `&v=${encodeURIComponent(vpath)}` : "");
+  (vpath ? `&v=${encodeURIComponent(vpath)}` : "");
 
-const pageQ = (rel, vpath, page) =>
-  `${q(rel, vpath)}&page=${page}`;
+const pageQ = (rel, vpath, page) => `${q(rel, vpath)}&page=${page}`;
 
 const HTTP = {
   node: (name, rel) => httpNode(name, rel || "", true),
@@ -100,17 +99,30 @@ const HTTP = {
       }
       node.kids = (j.entries || []).map((e) =>
         e.vpath !== undefined
-          ? httpNode(e.name, node.rel, e.dir, { virtual: true }, e.vpath,
-                     e.icon, e.ordered)
-          : httpNode(e.name, relOf(node.rel, e.name), e.dir,
-                     e.dir ? undefined : { size: e.size, mod: e.mod })
+          ? httpNode(
+            e.name,
+            node.rel,
+            e.dir,
+            { virtual: true },
+            e.vpath,
+            e.icon,
+            e.ordered,
+          )
+          : httpNode(
+            e.name,
+            relOf(node.rel, e.name),
+            e.dir,
+            e.dir ? undefined : { size: e.size, mod: e.mod },
+          )
       );
       node.page = j.page;
       node.pages = j.pages;
       node.total = j.total;
       node.loading = null;
     })();
-    try { await node.loading; } catch (err) {
+    try {
+      await node.loading;
+    } catch (err) {
       node.denied = String(err.message || err);
       node.loading = null;
     }
@@ -146,7 +158,9 @@ const HTTP = {
     });
     if (!r.ok) {
       let message = `${r.status} ${r.statusText}`;
-      try { message = (await r.json()).error || message; } catch (_) { /* text error */ }
+      try {
+        message = (await r.json()).error || message;
+      } catch (_) { /* text error */ }
       throw new Error(message);
     }
   },
