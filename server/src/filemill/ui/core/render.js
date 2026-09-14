@@ -205,6 +205,7 @@ function render(keepScroll) {
     }
   });
   while (strip.childNodes.length > want.length) strip.lastChild.remove();
+  if (previewNode()) setupPreviewActions(previewNode());
   for (const c of cols) {
     c.el.classList.toggle(
       "scrollable-down",
@@ -219,24 +220,22 @@ function render(keepScroll) {
 
 function renderPreview() {
   const n = previewNode();
-  const selected = selectedNode();
   const pv = document.createElement("div");
   pv.id = "preview";
   pv.tabIndex = 0;
   pv.setAttribute("aria-label", "File preview");
   PREVIEW.revoke?.();
-  if (!n && !selected) {
+  if (!n) {
     pv.innerHTML = `<div class="pv-empty"><div class="glyph">◫</div>
                     <div>Select a file to preview</div></div>`;
     return pv;
   }
-  const target = n || selected;
-  const [stem, ext] = splitName(target.name);
+  const [stem, ext] = splitName(n.name);
   const rawPath = "/" + currentPath().map(encodeURIComponent).join("/") +
     "?filemill=raw";
   pv.innerHTML = `
     <div class="col-head pv-head"><span class="name"><span>${
-    esc(target.name)
+    esc(n.name)
   }</span></span>
       <span class="pv-actions">
         ${
@@ -252,16 +251,14 @@ function renderPreview() {
           <button id="pv-vtt-transcript" class="pv-action" type="button">Transcript</button>
           <button id="pv-vtt-raw" class="pv-action" type="button">Raw</button>
         </span>
-        <button id="pv-view" class="pv-action" hidden type="button"></button>
-        <button id="pv-delete" class="pv-action" type="button"
-                title="Delete selected item">Delete</button>
+        <button id="pv-view" class="pv-action" type="button"></button>
         <button id="pv-fullscreen" class="pv-action" type="button" aria-pressed="${pvFullscreen}"
                 title="Toggle fullscreen preview">Fullscreen</button>
       </span>
     </div>
     <div class="pv-body">
       <div class="pv-hero">
-        ${iconHTML(target)}
+        ${iconHTML(n)}
         <div><h2>${esc(stem)}<span style="color:var(--ink-3)">${
     esc(ext)
   }</span></h2>
@@ -270,13 +267,12 @@ function renderPreview() {
       </div>
       <div id="pv-content" class="pv-content"></div>
     </div>`;
-  if (n) fillPreview(n);
+  fillPreview(n);
   pv.classList.toggle("pv-is-fullscreen", pvFullscreen);
-  setupPreviewActions(target);
   return pv;
 }
 
-const RENDERED_RE = /\.(md|markdown|docx|pptx|html?|desktop)$/i;
+const RENDERED_RE = /\.(md|markdown|rst|docx|pptx|html?|desktop)$/i;
 const MARKDOWN_RE = /\.(md|markdown)$/i;
 let markdownView = "rendered";
 let vttView = "transcript";
@@ -291,7 +287,8 @@ async function rawMarkdown(node) {
 }
 
 function previewView() {
-  const view = document.documentElement.dataset.filemill || "raw";
+  const view = new URL(location.href).searchParams.get("filemill") ||
+    document.documentElement.dataset.filemill || "raw";
   return view === "highlight"
     ? "highlight"
     : view === "render"
@@ -300,7 +297,7 @@ function previewView() {
 }
 
 function setPreviewView(view) {
-  if (!ROUTER || !location.pathname) return;
+  if (!location.pathname) return;
   const url = new URL(location.href);
   url.searchParams.set("filemill", view);
   location.href = url.pathname + url.search + url.hash;
@@ -311,9 +308,9 @@ function setupPreviewActions(n) {
   const toggle = document.getElementById("pv-view");
   const mdViews = document.getElementById("pv-md-views");
   const vttViews = document.getElementById("pv-vtt-views");
-  const markdown = MARKDOWN_RE.test(n.name);
+  const name = String(n.name || "");
+  const markdown = MARKDOWN_RE.test(name);
   const vtt = /\.vtt$/i.test(n.name);
-  const applicable = markdown || (!!ROUTER && RENDERED_RE.test(n.name));
   if (mdViews) {
     mdViews.hidden = !markdown;
     for (const [id, mode, label] of [
@@ -353,7 +350,7 @@ function setupPreviewActions(n) {
     }
   }
   if (toggle) {
-    toggle.hidden = markdown || !applicable;
+    toggle.hidden = false;
     toggle.textContent = view === "render" ? "Source" : "Rendered";
     toggle.title = view === "render"
       ? "View highlighted source"
@@ -373,21 +370,6 @@ function setupPreviewActions(n) {
       full.title = full.textContent;
     };
     full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
-  }
-  const del = document.getElementById("pv-delete");
-  if (del) {
-    del.hidden = !FS.remove || !!n.vpath;
-    del.onclick = async () => {
-      if (!window.confirm(`Delete “${n.name}”${n.dir ? " and its contents" : ""}?`)) return;
-      del.disabled = true;
-      try {
-        await FS.remove(n);
-        await refreshColumn(path.length - 1);
-      } catch (err) {
-        saySt("st-refresh", `Delete failed: ${String(err.message || err)}`, false);
-        del.disabled = false;
-      }
-    };
   }
 }
 

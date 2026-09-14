@@ -1164,18 +1164,6 @@ body {
   max-width: 100%;
   border-radius: 6px;
 }
-.pv-pptx {
-  min-height: 240px;
-  height: min(78vh, 720px);
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--hover);
-  padding: 8px;
-}
-.pv-pptx > :first-child {
-  margin-top: 0;
-}
 .pv-rich table {
   border-collapse: collapse;
   font-size: 12px;
@@ -1191,7 +1179,6 @@ body {
 /* ── Status strip ──────────────────────────────────────────────────────── */
 #status {
   flex: 0 0 auto;
-  min-width: 0;
   height: 24px;
   display: flex;
   align-items: center;
@@ -1201,21 +1188,6 @@ body {
   color: var(--ink-3);
   border-top: 1px solid var(--hairline);
   background: color-mix(in srgb, var(--chrome) 70%, var(--surface));
-  overflow: hidden;
-}
-.status-hints {
-  display: contents;
-}
-@media (max-width: 600px) and (orientation: portrait) {
-  #status {
-    gap: 8px;
-  }
-  #status .status-hints {
-    display: none;
-  }
-  #st-path {
-    max-width: 35%;
-  }
 }
 #status kbd {
   font-family: var(--mono);
@@ -2037,15 +2009,13 @@ document.body.insertAdjacentHTML(
     <span id="st-sort"></span>
     <span id="st-refresh"></span>
     <span id="st-fold"></span>
-    <span class="status-hints">
-      <span><kbd>↑</kbd><kbd>↓</kbd> move</span>
-      <span><kbd>→</kbd> open</span>
-      <span><kbd>←</kbd> back</span>
-      <span><kbd>a…z</kbd> find</span>
-      <span><kbd>F5</kbd> refresh</span>
-      <span><kbd id="kbd-copy">⌘C</kbd> copy path</span>
-    </span>
-    <span class="status-fold"><kbd>⇧</kbd>+wheel fold</span>
+    <span><kbd>↑</kbd><kbd>↓</kbd> move</span>
+    <span><kbd>→</kbd> open</span>
+    <span><kbd>←</kbd> back</span>
+    <span><kbd>a…z</kbd> find</span>
+    <span><kbd>F5</kbd> refresh</span>
+    <span><kbd id="kbd-copy">⌘C</kbd> copy path</span>
+    <span><kbd>⇧</kbd>+wheel fold</span>
   </div>
 </div>
 
@@ -2085,11 +2055,9 @@ document.body.insertAdjacentHTML(
      ensureLoaded(node) → Promise   fills node.kids (idempotent, debounced)
      loadMeta(node)     → Promise   fills node.meta  (may be a no-op if the
                                     listing already carried the metadata)
-   write(node, text)  → Promise   optional; overwrite the file with `text`.
+     write(node, text)  → Promise   optional; overwrite the file with `text`.
                                     A port without it is read-only — the
                                     preview pane then offers no Edit action.
-   remove(node)       → Promise   optional; delete a selected real file or
-                                    directory.
 
    loadMeta is called once per selected file, and once per *row* when the user
    sorts a column by size or by modification time — see core/sort.js. A port
@@ -2568,11 +2536,6 @@ const previewNode = () => {
   const last = path[path.length - 1], s = sel[path.length - 1];
   const n = s && (last.kids || []).find((k) => k.name === s);
   return (n && !n.dir) ? n : null;
-};
-
-const selectedNode = () => {
-  const last = path[path.length - 1], s = sel[path.length - 1];
-  return s && (last.kids || []).find((k) => k.name === s) || null;
 };
 
 /* 88 columns of .pv-text plus its and .pv-body's horizontal padding (30 + 52),
@@ -3084,6 +3047,7 @@ function render(keepScroll) {
     }
   });
   while (strip.childNodes.length > want.length) strip.lastChild.remove();
+  if (previewNode()) setupPreviewActions(previewNode());
   for (const c of cols) {
     c.el.classList.toggle(
       "scrollable-down",
@@ -3098,24 +3062,22 @@ function render(keepScroll) {
 
 function renderPreview() {
   const n = previewNode();
-  const selected = selectedNode();
   const pv = document.createElement("div");
   pv.id = "preview";
   pv.tabIndex = 0;
   pv.setAttribute("aria-label", "File preview");
   PREVIEW.revoke?.();
-  if (!n && !selected) {
+  if (!n) {
     pv.innerHTML = `<div class="pv-empty"><div class="glyph">◫</div>
                     <div>Select a file to preview</div></div>`;
     return pv;
   }
-  const target = n || selected;
-  const [stem, ext] = splitName(target.name);
+  const [stem, ext] = splitName(n.name);
   const rawPath = "/" + currentPath().map(encodeURIComponent).join("/") +
     "?filemill=raw";
   pv.innerHTML = `
     <div class="col-head pv-head"><span class="name"><span>${
-    esc(target.name)
+    esc(n.name)
   }</span></span>
       <span class="pv-actions">
         ${
@@ -3131,16 +3093,14 @@ function renderPreview() {
           <button id="pv-vtt-transcript" class="pv-action" type="button">Transcript</button>
           <button id="pv-vtt-raw" class="pv-action" type="button">Raw</button>
         </span>
-        <button id="pv-view" class="pv-action" hidden type="button"></button>
-        <button id="pv-delete" class="pv-action" type="button"
-                title="Delete selected item">Delete</button>
+        <button id="pv-view" class="pv-action" type="button"></button>
         <button id="pv-fullscreen" class="pv-action" type="button" aria-pressed="${pvFullscreen}"
                 title="Toggle fullscreen preview">Fullscreen</button>
       </span>
     </div>
     <div class="pv-body">
       <div class="pv-hero">
-        ${iconHTML(target)}
+        ${iconHTML(n)}
         <div><h2>${esc(stem)}<span style="color:var(--ink-3)">${
     esc(ext)
   }</span></h2>
@@ -3149,13 +3109,12 @@ function renderPreview() {
       </div>
       <div id="pv-content" class="pv-content"></div>
     </div>`;
-  if (n) fillPreview(n);
+  fillPreview(n);
   pv.classList.toggle("pv-is-fullscreen", pvFullscreen);
-  setupPreviewActions(target);
   return pv;
 }
 
-const RENDERED_RE = /\.(md|markdown|docx|pptx|html?|desktop)$/i;
+const RENDERED_RE = /\.(md|markdown|rst|docx|pptx|html?|desktop)$/i;
 const MARKDOWN_RE = /\.(md|markdown)$/i;
 let markdownView = "rendered";
 let vttView = "transcript";
@@ -3170,7 +3129,8 @@ async function rawMarkdown(node) {
 }
 
 function previewView() {
-  const view = document.documentElement.dataset.filemill || "raw";
+  const view = new URL(location.href).searchParams.get("filemill") ||
+    document.documentElement.dataset.filemill || "raw";
   return view === "highlight"
     ? "highlight"
     : view === "render"
@@ -3179,7 +3139,7 @@ function previewView() {
 }
 
 function setPreviewView(view) {
-  if (!ROUTER || !location.pathname) return;
+  if (!location.pathname) return;
   const url = new URL(location.href);
   url.searchParams.set("filemill", view);
   location.href = url.pathname + url.search + url.hash;
@@ -3190,9 +3150,9 @@ function setupPreviewActions(n) {
   const toggle = document.getElementById("pv-view");
   const mdViews = document.getElementById("pv-md-views");
   const vttViews = document.getElementById("pv-vtt-views");
-  const markdown = MARKDOWN_RE.test(n.name);
+  const name = String(n.name || "");
+  const markdown = MARKDOWN_RE.test(name);
   const vtt = /\.vtt$/i.test(n.name);
-  const applicable = markdown || (!!ROUTER && RENDERED_RE.test(n.name));
   if (mdViews) {
     mdViews.hidden = !markdown;
     for (const [id, mode, label] of [
@@ -3232,7 +3192,7 @@ function setupPreviewActions(n) {
     }
   }
   if (toggle) {
-    toggle.hidden = markdown || !applicable;
+    toggle.hidden = false;
     toggle.textContent = view === "render" ? "Source" : "Rendered";
     toggle.title = view === "render"
       ? "View highlighted source"
@@ -3252,21 +3212,6 @@ function setupPreviewActions(n) {
       full.title = full.textContent;
     };
     full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
-  }
-  const del = document.getElementById("pv-delete");
-  if (del) {
-    del.hidden = !FS.remove || !!n.vpath;
-    del.onclick = async () => {
-      if (!window.confirm(`Delete “${n.name}”${n.dir ? " and its contents" : ""}?`)) return;
-      del.disabled = true;
-      try {
-        await FS.remove(n);
-        await refreshColumn(path.length - 1);
-      } catch (err) {
-        saySt("st-refresh", `Delete failed: ${String(err.message || err)}`, false);
-        del.disabled = false;
-      }
-    };
   }
 }
 
@@ -4904,10 +4849,9 @@ if (searchForm && document.documentElement.dataset.root) {
    Fills the FS port (see core/ports.js). Nodes carry the handle they came
    from; nothing else in the app ever touches it.
    ═══════════════════════════════════════════════════════════════════════════ */
-const fsaNode = (name, handle, parent = null) => ({
+const fsaNode = (name, handle) => ({
   name,
   handle,
-  parent,
   dir: handle.kind === "directory",
   kids: handle.kind === "directory" ? null : undefined,
 });
@@ -4922,7 +4866,7 @@ const FSA = {
       const kids = [];
       try {
         for await (const [name, handle] of node.handle.entries()) {
-          kids.push(fsaNode(name, handle, node.handle));
+          kids.push(fsaNode(name, handle));
         }
       } catch (err) {
         node.denied = err.name === "NotAllowedError"
@@ -4968,15 +4912,6 @@ const FSA = {
     await w.close();
     node.file = null; /* stale — reread on the next preview */
     node.meta = null;
-  },
-
-  async remove(node) {
-    if (node.handle.requestPermission &&
-        await node.handle.requestPermission({ mode: "readwrite" }) !== "granted") {
-      throw new Error("No permission to delete");
-    }
-    if (!node.handle.parent) throw new Error("Cannot delete this entry");
-    await node.handle.parent.removeEntry(node.name, { recursive: node.dir });
   },
 };
 </script>
@@ -5170,8 +5105,6 @@ const CDN = {
   "markdown-it-task-lists": "https://esm.sh/markdown-it-task-lists@2.1.1",
   "markdown-it-anchor": "https://esm.sh/markdown-it-anchor@9.2.0",
   "mammoth": "https://esm.sh/mammoth@1.8.0",
-  "pptx-vanilla-viewer":
-    "https://cdn.jsdelivr.net/npm/pptx-vanilla-viewer@2.1.4/+esm",
   /* No JavaScript reStructuredText parser handles directives, tables or
      footnotes, and the one that exists emits unescaped HTML — so docutils runs
      as itself, on Pyodide. The runtime plus docutils is ~6 MB on the wire, 13 MB
@@ -5216,7 +5149,6 @@ offerRichToggle(richEnabled, setRich);
 const MD_RE = /\.(md|markdown)$/i;
 const DOCX_RE = /\.docx$/i;
 const RST_RE = /\.rst$/i;
-const PPTX_RE = /\.pptx$/i;
 
 const NOTE =
   `<p class="pv-note">Offline — showing the source. Rich rendering ` +
@@ -5329,7 +5261,7 @@ const PreviewRich = {
 
     if (
       !MD_RE.test(node.name) && !DOCX_RE.test(node.name) &&
-      !RST_RE.test(node.name) && !PPTX_RE.test(node.name)
+      !RST_RE.test(node.name)
     ) {
       return PreviewLocal.render(node);
     }
@@ -5338,32 +5270,6 @@ const PreviewRich = {
     if (!blob) return PreviewLocal.render(node);
 
     try {
-      if (PPTX_RE.test(node.name)) {
-        const { createPptxViewer } = await load("pptx-vanilla-viewer");
-        const id = `pptx-${crypto.randomUUID()}`;
-        queueMicrotask(async () => {
-          const host = document.getElementById(id);
-          if (!host) return;
-          host.textContent = "Loading PowerPoint preview…";
-          try {
-            const viewer = createPptxViewer(host, {
-              source: blob,
-              editable: false,
-              showToolbar: true,
-              showThumbnails: true,
-              onError: (message) => {
-                host.textContent = `PowerPoint preview failed: ${message}`;
-              },
-            });
-            host._pptxViewer = viewer;
-          } catch (err) {
-            host.textContent = `PowerPoint preview failed: ${
-              err.message || err
-            }`;
-          }
-        });
-        return `<div id="${id}" class="pv-pptx" aria-live="polite">Loading PowerPoint preview…</div>`;
-      }
       if (DOCX_RE.test(node.name)) {
         const mammoth = await load("mammoth");
         const { value } = await mammoth.convertToHtml(
@@ -5381,28 +5287,11 @@ const PreviewRich = {
       return `<div class="pv-rich">${await markdown(text)}</div>`;
     } catch (err) {
       /* Offline, blocked, or the CDN moved. The file is still readable. */
-      if (PPTX_RE.test(node.name)) {
-        return `<div class="preview-error">PowerPoint preview unavailable: ${
-          esc(String(err.message || err))
-        }</div>`;
-      }
       const fallback = await PreviewLocal.render(node);
       return fallback ? NOTE + fallback : null;
     }
   },
 };
-
-const withPptxPreview = (provider) => ({
-  revoke() {
-    provider.revoke?.();
-    PreviewRich.revoke();
-  },
-  render(node) {
-    return PPTX_RE.test(node.name)
-      ? PreviewRich.render(node)
-      : provider.render(node);
-  },
-});
 
 /* A wikilink resolves against the folder being browsed, not the web — so it
    selects a row in the column the file itself is in, exactly as clicking that
