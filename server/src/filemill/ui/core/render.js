@@ -49,6 +49,19 @@ function buildCol(node) {
   } else if (!kids.length) {
     body.innerHTML = `<div class="col-note">Empty</div>`;
   }
+  if (node.pages > 1) {
+    const pager = document.createElement("div");
+    pager.className = "pager";
+    pager.innerHTML = `<button type="button" aria-label="Previous page">‹</button>
+      <span>Page ${node.page} of ${node.pages}</span>
+      <button type="button" aria-label="Next page">›</button>`;
+    const [prev, next] = pager.querySelectorAll("button");
+    prev.disabled = node.page === 1;
+    next.disabled = node.page === node.pages;
+    prev.onclick = (e) => { e.stopPropagation(); FS.loadPage(node, node.page - 1); };
+    next.onclick = (e) => { e.stopPropagation(); FS.loadPage(node, node.page + 1); };
+    el.appendChild(pager);
+  }
   /* a folded column hides its rows, so the click lands on the column itself —
      that is what makes the advertised "click a spine to unfold" work */
   el.onclick = () => {

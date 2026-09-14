@@ -39,6 +39,37 @@ def test_dir_descends_a_relative_path(client, tmp_root: Path):
     assert [e["name"] for e in j["entries"]] == ["inner.txt"]
 
 
+def test_large_directory_is_paginated_in_stable_order(client, tmp_root: Path):
+    for i in range(501):
+        (tmp_root / f"item-{i:03d}").write_text(str(i))
+
+    first = client.get("/api/dir?p=&page=1").json()
+    second = client.get("/api/dir?p=&page=2").json()
+
+    assert len(first["entries"]) == 500
+    assert len(second["entries"]) == 7
+    assert first["total"] == 507
+    assert first["pages"] == second["pages"] == 2
+    assert first["page"] == 1
+    assert second["page"] == 2
+    assert first["entries"][-1]["name"] == "item-495"
+    assert second["entries"][0]["name"] == "item-496"
+
+
+def test_directory_at_page_limit_keeps_small_response(client, tmp_root: Path):
+    for i in range(494):
+        (tmp_root / f"item-{i:03d}").write_text(str(i))
+
+    data = client.get("/api/dir?p=&page=1").json()
+
+    assert len(data["entries"]) == 500
+    assert "pages" not in data
+
+
+def test_directory_rejects_invalid_page(client, tmp_root: Path):
+    assert client.get("/api/dir?p=&page=0").status_code == 400
+
+
 def test_dir_on_a_file_is_404(client, tmp_root: Path):
     assert client.get("/api/dir?p=readme.md").status_code == 404
 
