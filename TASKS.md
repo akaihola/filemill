@@ -228,9 +228,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] Delete `server/.pi/settings.json`, `server/mobile-narrow-preview.png`,
-  `server/.claude/commands/` and `architecture-review-20260904.html`.
-
 - [14] Merge `server/TASKS.md`, `server/ISSUES.md` and `static/TASKS.md` into root
   `TASKS.md` and `docs/tasks/`. Keep open items. Delete closed items and the files.
 
@@ -260,6 +257,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [*] Delete `server/.pi/settings.json`, `server/mobile-narrow-preview.png`,
+  `server/.claude/commands/` and `architecture-review-20260904.html`.
 
 - Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
   between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
