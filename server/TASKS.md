@@ -25,6 +25,8 @@
 
 - [~] #52 Markdown raw source view toggle (Rendered / Raw button bar, `MarkdownProvider`)
 
+- [~] #53 VTT subtitle file preview (Transcript / Raw toggle, `VTTProvider`)
+
 - [ ] #50 ArrowRight after ArrowLeft loses previously focused item
 
 - [~] #49 CSV preview shows "not yet implemented" stub
@@ -48,8 +50,6 @@
 ## Scheduled
 
 ## Scheduled
-
-- [ ] #53 VTT subtitle file preview (Transcript / Raw toggle, `VTTProvider`)
 
 ## Open
 
