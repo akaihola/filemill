@@ -286,13 +286,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   `XHR GET https://gogo.crane-boa.ts.net:8445/api/search?q=development [HTTP/2 503  2020ms]`.
   Originally implemented in task 456736f9-7242-40d0-894d-d5e1db50c0de.
 
-- [*] Rendering if reStructuredText (`.rst`) isn't currently supported. Investigate how
-  to implement it on the client side. Prefer readily available 3rd party client-side
-  solutions, or pre-packaged Python solutions to run on the browser, and just implement
-  whatever best solution you find. If those solutions aren't available, plan a fallback
-  solution for how to run the Python code on the browser by ourselves, but write a plan
-  first without implementing it yet.
-
 - [x] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
       `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in
       `server/src/filemill/styles.py`.
@@ -300,6 +293,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [*] Rendering if reStructuredText (`.rst`) isn't currently supported. Investigate how
+  to implement it on the client side. Prefer readily available 3rd party client-side
+  solutions, or pre-packaged Python solutions to run on the browser, and just implement
+  whatever best solution you find. If those solutions aren't available, plan a fallback
+  solution for how to run the Python code on the browser by ourselves, but write a plan
+  first without implementing it yet.
 
 - [*] Using the `Search file contents` input always causes the error
   `Search error: Search timed out` to display. JavaScript console:
