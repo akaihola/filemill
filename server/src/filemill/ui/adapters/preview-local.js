@@ -32,7 +32,10 @@ function vttHTML(source, mode = "transcript") {
     const lines = block.split(/\r?\n/);
     if (["NOTE", "STYLE", "REGION"].includes(lines[0]?.trim())) continue;
     const i = lines.findIndex(line => line.includes("-->"));
-    if (i < 0) continue;
+    if (i < 0) {
+      if (block.trim()) return '<div class="preview-error">Malformed WebVTT: cue is missing a timestamp.</div>';
+      continue;
+    }
     const m = lines[i].trim().match(/^(\d{2}:\d{2}(?::\d{2})?\.\d{3})\s+-->\s+(\d{2}:\d{2}(?::\d{2})?\.\d{3})(?:\s+.*)?$/);
     if (!m) return '<div class="preview-error">Malformed WebVTT: invalid cue timestamp.</div>';
     let cue = lines.slice(i + 1).join("\n").trim();

@@ -32,6 +32,11 @@ def test_vtt_empty_and_malformed_are_safe(tmp_path: Path):
     bad = tmp_path / "bad.vtt"
     bad.write_text("WEBVTT\n\n00:00:00.000 --> nope\ntext\n", newline="")
     assert "Malformed WebVTT" in VTTProvider().render_preview(bad, "", "transcript", 1, 1000)
+    bad_header = tmp_path / "bad-header.vtt"
+    bad_header.write_text("WEBVTTX\n", newline="")
+    assert "Malformed WebVTT" in VTTProvider().render_preview(
+        bad_header, "", "transcript", 1, 1000
+    )
 
 
 def test_vtt_provider_is_registered(tmp_path: Path):
