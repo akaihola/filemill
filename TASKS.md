@@ -53,6 +53,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   files. Current PPTX support was implemented in task
   38ab06e2-c607-4d4a-9978-67847e70d27d.
 
+- Bug: Task 511f90cc-2725-4ef1-a8d8-ed67c4eddb0f failed to fix the portrait mobile
+  scroll to the right problem. I suspect the extra space at the right side of the page
+  is caused by the `⇧+wheel fold` label flowing outside the right edge of the page.
+
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
       now return the shared client shell.
 
