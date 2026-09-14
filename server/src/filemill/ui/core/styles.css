@@ -1105,6 +1105,22 @@ body {
   color: var(--accent);
   cursor: pointer;
 }
+.preview-transcript {
+  max-width: 72ch;
+}
+.preview-cue {
+  margin: 0 0 14px;
+}
+.preview-cue-time {
+  display: block;
+  color: var(--ink-3);
+  font-size: var(--fs-meta);
+  margin-bottom: 3px;
+}
+.preview-cue-text {
+  display: block;
+  line-height: 1.55;
+}
 
 /* Server-rendered preview bodies (filemill): markdown, Pygments, docx, pptx.
    The provider supplies the markup; these are the containers it lands in. */

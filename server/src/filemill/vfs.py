@@ -82,4 +82,5 @@ def is_vfs_file(path: Path) -> bool:
 from filemill.providers import (
     json_provider,  # noqa: F401
     sqlite,  # noqa: F401
+    vtt_provider,  # noqa: F401
 )

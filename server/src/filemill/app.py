@@ -549,6 +549,8 @@ def api_preview(p: str = "", v: str = "", fmt: str = "", filemill: str = ""):
         return api.vfs_preview(target, v, fmt)
     if filemill == urls.VIEW_HIGHLIGHT:
         render = render_source
+    elif target.suffix.lower() == ".vtt":
+        return api.vfs_preview(target, "", fmt)
     else:
         render = lambda path: render_preview(path, preview_url=urls.build_url(p))
     return api.preview_fragment(target, render)

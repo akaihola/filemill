@@ -321,7 +321,7 @@ without leaving filemill.
 ## #53 – VTT subtitle file preview (Transcript / Raw toggle)
 
 **Type:** feature
-**Status:** open
+**Status:** in-progress
 
 `.vtt` (WebVTT) subtitle files fall through to the plain `<pre>` text fallback. Add a
 `VTTProvider` with a clean **Transcript** view (timestamps stripped, cues joined into
