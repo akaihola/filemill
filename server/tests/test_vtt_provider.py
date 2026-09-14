@@ -4,6 +4,15 @@ from pathlib import Path
 from filemill.providers.vtt_provider import VTTProvider
 
 VALID = """WEBVTT\n\n1\n00:00:01.000 --> 00:00:03.500 align:start\n<v Alice>Hello <c.green>world</c>\nsecond line\n\n00:00:04.000 --> 00:00:05.000\nBye\n"""
+YOUTUBE = """WEBVTT\nKind: captions\nLanguage: en\n\n00:00:00.000 --> 00:00:02.000\nHello from YouTube\n"""
+
+
+def test_youtube_vtt_header_metadata_is_ignored(tmp_path: Path):
+    path = tmp_path / "youtube.vtt"
+    path.write_text(YOUTUBE, newline="")
+    html = VTTProvider().render_preview(path, "", "transcript", 1, 1000)
+    assert "Hello from YouTube" in html
+    assert "missing a timestamp" not in html
 
 
 def test_vtt_transcript_has_timing_text_tags_and_voice(tmp_path: Path):
