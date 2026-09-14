@@ -27,6 +27,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [22] Replace `cursor[i]`, `sel[i]` and `node.lastSel` with one selection model:
   `sel[i]` is the selected name. Derive the row index when needed.
 
+- [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
+  `panFocus` and `slideTail`. Each function is under 25 lines.
+
 ## Ordered backlog
 
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
@@ -59,9 +62,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into `withVirtual`,
   and `withJsonlPreview` and `withJsonPreview` into `withVirtualPreview`.
     - Depends on: [19]
-
-- [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
-  `panFocus` and `slideTail`. Each function is under 25 lines.
 
 - [*] Give each magic number in `ui/core/state.js`, `layout.js`, `nav.js`, `render.js` a
   name and a one-line comment that says why the value is what it is.
