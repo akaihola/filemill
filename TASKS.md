@@ -9,8 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- Feature: ability to delete a file or a directory from the file manager.
-
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
   files. Current PPTX support was implemented in task
   38ab06e2-c607-4d4a-9978-67847e70d27d.
@@ -248,6 +246,8 @@ Rules for TASKS.md usage are at the bottom of the file.
   JavaScript console either.
 
 ## Scheduled
+
+- Feature: ability to delete a file or a directory from the file manager.
 
 - Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight` view.
 
