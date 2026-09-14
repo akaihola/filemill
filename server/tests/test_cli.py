@@ -93,18 +93,18 @@ def test_bind_option_passed_to_uvicorn_normal(tmp_path, monkeypatch):
     """--bind value is forwarded as host= in the non-live branch."""
     mock_run = MagicMock()
     monkeypatch.setattr(uvicorn, "run", mock_run)
-    result = runner.invoke(cli, [str(tmp_path), "--bind", "127.0.0.1"])
+    result = runner.invoke(cli, [str(tmp_path), "--bind", "0.0.0.0"])
     assert result.exit_code == 0
     _, kwargs = mock_run.call_args
-    assert kwargs.get("host") == "127.0.0.1"
+    assert kwargs.get("host") == "0.0.0.0"
 
 
 def test_bind_option_passed_to_uvicorn_live(tmp_path, monkeypatch):
     """--bind value is forwarded as host= in the live/reload branch."""
     mock_run = MagicMock()
     monkeypatch.setattr(uvicorn, "run", mock_run)
-    result = runner.invoke(cli, [str(tmp_path), "--live", "--bind", "127.0.0.1"])
+    result = runner.invoke(cli, [str(tmp_path), "--live", "--bind", "0.0.0.0"])
     assert result.exit_code == 0
     _, kwargs = mock_run.call_args
-    assert kwargs.get("host") == "127.0.0.1"
+    assert kwargs.get("host") == "0.0.0.0"
     assert kwargs.get("reload") is True
