@@ -4,10 +4,8 @@ A column-view file browser and previewer, served as a local web application.
 Navigate directories by clicking column entries; previews render inline for
 Markdown, DOCX, PPTX, PDF, images, plain text, and source code.
 
-This is one of two editions sharing a frontend — see the
-[repository README](../README.md). The other, [`../static`](../static), is a
-single HTML file that browses a folder on your own machine and needs no server
-at all.
+The two editions and their shared ports are described in the
+[repository README](../README.md). This document covers the Python edition.
 
 ## Features
 
@@ -125,11 +123,9 @@ src/filemill/
 ```
 
 The shared Miller-columns UI is served at `/n/`. The legacy HTMX UI remains at
-`/f/` for compatibility. Only the adapters differ between `/n/` and the static
-edition — the source of both is
+`/f/` for compatibility. The shared UI source is
 `src/filemill/ui/`, which the repository root's [`../ui/`](../ui) symlinks to.
-There is one set of files and no packaging copy, so there is no version of it
-to drift; see [CONTRIBUTING.md](CONTRIBUTING.md).
+There is one set of files and no packaging copy; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 > Renamed from **pykofinder**. `PYKOFINDER_ROOT`, `PYKOFINDER_BIND` and
 > `PYKOFINDER_LIVE` are still honoured, so an existing setup keeps running.
