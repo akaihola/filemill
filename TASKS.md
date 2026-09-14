@@ -277,7 +277,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] In an installed PWA, there is no way to get back from raw file view to the file
   manager view.
 
-- [*] Typing a right arrow when the rightmost column before the preview is focused
+- [~] Typing a right arrow when the rightmost column before the preview is focused
   should focus the preview and let the user scroll it up/down using the arrow and
   PgUp/PgDn keys.
 
