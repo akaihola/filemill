@@ -21,6 +21,8 @@
 
 ## In progress
 
+- [~] Pagination for large directories (> 500 entries)
+
 - [~] #51 PWA: start the Filemill HTTP service alongside the installed app
 
 - [~] #52 Markdown raw source view toggle (Rendered / Raw button bar, `MarkdownProvider`)
@@ -51,7 +53,6 @@
 
 ## Scheduled
 
-- [ ] Pagination for large directories (> 500 entries)
 
 ## Open
 
