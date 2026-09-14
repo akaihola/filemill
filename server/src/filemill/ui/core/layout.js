@@ -13,8 +13,13 @@ function stripSpan(k) {
   const cols = widths.reduce((a, w, i) => a + (i < k ? SPINE() : w), 0);
   return cols + g * (n + 1); /* padding either side + inter-column gaps */
 }
-const foldUnit = () => 0.99 / path.length;
-const range = () => Math.max(1, stripSpan(0) - GUTTER());
+const FOLD_RANGE = 0.99; // Reserve the final one percent for sliding the spine strip.
+const MIN_SCROLL_RANGE = 1; // Keep division and scroll arithmetic valid before layout settles.
+const BOUNDARY_SLACK = 0.5; // Absorb rounding that can otherwise land one column short.
+const FULL_FOLD_THRESHOLD = 0.99; // Treat the dial's first 99 percent as column folding.
+const TAIL_RANGE = 0.01; // The final one percent slides the folded strip away.
+const foldUnit = () => FOLD_RANGE / path.length;
+const range = () => Math.max(MIN_SCROLL_RANGE, stripSpan(0) - GUTTER());
 
 function layout(keepScroll) {
   const stageW = finder.clientWidth;
@@ -52,7 +57,7 @@ function applyScroll() {
      app's own row reveals from doing it; this undoes whatever else did, at the
      next repaint. */
   if (stage.scrollLeft) stage.scrollLeft = 0;
-  const max = Math.max(1, rail.clientWidth - finder.clientWidth);
+  const max = Math.max(MIN_SCROLL_RANGE, rail.clientWidth - finder.clientWidth);
   const p = Math.min(1, finder.scrollLeft / max);
   const n = path.length;
 
@@ -73,7 +78,8 @@ function foldFromScroll(max) {
      fixed 0.002 units was only 0.3 px once seven columns made a unit 160 px
      wide, and a landing read one column short paints the column ← just
      reached as a spine, with folded === focusCol so the next ← never scrolls. */
-  const raw = Math.min(1, (finder.scrollLeft + 0.5) / max) / foldUnit();
+  const raw = Math.min(1, (finder.scrollLeft + BOUNDARY_SLACK) / max) /
+    foldUnit();
   folded = Math.min(path.length, Math.floor(raw));
   /* how far into folding the next column is — 0 = full width, 1 = a spine */
   const t = Math.min(1, Math.max(0, raw - folded));
@@ -117,7 +123,9 @@ function panFocus(raw, focusLeft, focusRight) {
 
 function slideTail(p, pan, n) {
   const sp = SPINE(), g = GUTTER();
-  const tail = p > 0.99 ? (p - 0.99) / 0.01 : 0;
+  const tail = p > FULL_FOLD_THRESHOLD
+    ? (p - FULL_FOLD_THRESHOLD) / TAIL_RANGE
+    : 0;
   const shift = tail * n * (sp + g) + pan;
   set(strip.style, "minWidth", (finder.clientWidth + shift) + "px");
   set(strip.style, "transform", `translateX(${-shift}px)`);

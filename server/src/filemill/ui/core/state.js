@@ -26,12 +26,23 @@ const GUTTER = () =>
 const SPINE = () =>
   parseInt(getComputedStyle(root).getPropertyValue("--spine-w"));
 
-/* what a column's content-driven width is allowed to be. COL_MAX is 380 not
-   268: a vault of 80-character page titles needs the room, and the dial makes
-   wide columns affordable — fold what you are not reading. render() narrows
-   the ceiling again against the stage, which on a phone is the smaller of
-   the two. */
-const COL_MIN = 148, COL_MAX = 380;
+const COL_MIN = 148; // Keep columns wide enough for readable rows and controls.
+const COL_MAX = 380; // Fit long page titles while folding columns outside focus.
+const BYTE_BASE = 1024; // File sizes use binary units.
+const KB_DECIMAL_LIMIT = 10; // Small KB values keep one decimal place.
+const KB_DECIMAL_DIGITS = 1; // One decimal keeps small sizes readable.
+const KB_DIGITS = 0; // Larger KB values do not need fractional precision.
+const MB_DECIMAL_DIGITS = 1; // MB values retain one decimal for useful precision.
+const GB_DECIMAL_DIGITS = 2; // GB values retain two decimals for useful precision.
+const DATE_PART_DIGITS = "2-digit"; // Clock fields align consistently in the metadata line.
+const CODE_COLUMNS = 88; // Preview text targets an 88-character reading width.
+const CODE_HORIZONTAL_PADDING = 82; // Preview padding is 30px plus 52px.
+const PREVIEW_MAX_WIDTH = 760; // Keep the preview from becoming too wide to read.
+const PREVIEW_MIN_RATIO = 0.45; // Preserve nearly half the stage for preview content.
+const EMPTY_PREVIEW_WIDTH = 300; // Keep the empty preview stable before a file is selected.
+const HEADER_HORIZONTAL_PADDING = 34; // Reserve space for the column heading chrome.
+const COLUMN_HORIZONTAL_PADDING = 58; // Reserve space for row padding and scrollbar.
+const CODE_FONT_SIZE = 11.5; // Match the compact monospace preview typography.
 
 /* One filtered copy per call, ordered by core/sort.js. Every column build, every
    width measurement and every path walk comes through here, which is what keeps
@@ -45,21 +56,23 @@ const rowIndex = (node, name) =>
   visibleKids(node).findIndex((k) => k.name === name);
 
 const fmtSize = (b) =>
-  b < 1024
-    ? `${b} B`
-    : b < 1024 ** 2
-    ? `${(b / 1024).toFixed(b < 10240 ? 1 : 0)} KB`
-    : b < 1024 ** 3
-    ? `${(b / 1024 ** 2).toFixed(1)} MB`
-    : `${(b / 1024 ** 3).toFixed(2)} GB`;
+  b < BYTE_BASE ? `${b} B` : b < BYTE_BASE ** 2
+    ? `${
+      (b / BYTE_BASE).toFixed(
+        b < BYTE_BASE * KB_DECIMAL_LIMIT ? KB_DECIMAL_DIGITS : KB_DIGITS,
+      )
+    } KB`
+    : b < BYTE_BASE ** 3
+    ? `${(b / BYTE_BASE ** 2).toFixed(MB_DECIMAL_DIGITS)} MB`
+    : `${(b / BYTE_BASE ** 3).toFixed(GB_DECIMAL_DIGITS)} GB`;
 
 const fmtDate = (ms) =>
   new Date(ms).toLocaleString(undefined, {
     day: "numeric",
     month: "short",
     year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    hour: DATE_PART_DIGITS,
+    minute: DATE_PART_DIGITS,
   });
 
 const splitName = (name) => {
@@ -84,8 +97,9 @@ const codeMin = () =>
   codeMin._w ||= (() => {
     const c = document.createElement("canvas").getContext("2d");
     const cs = getComputedStyle(root);
-    c.font = `11.5px ${cs.getPropertyValue("--mono")}`;
-    return Math.ceil(c.measureText("0").width * 88) + 82;
+    c.font = `${CODE_FONT_SIZE}px ${cs.getPropertyValue("--mono")}`;
+    return Math.ceil(c.measureText("0").width * CODE_COLUMNS) +
+      CODE_HORIZONTAL_PADDING;
   })();
 
 /* target reading width for the preview — the thing scrolling tries to protect.
@@ -95,11 +109,11 @@ const codeMin = () =>
 const previewTarget = () =>
   previewNode()
     ? Math.min(
-      760,
+      PREVIEW_MAX_WIDTH,
       stage.clientWidth,
-      Math.max(codeMin(), Math.round(stage.clientWidth * 0.45)),
+      Math.max(codeMin(), Math.round(stage.clientWidth * PREVIEW_MIN_RATIO)),
     )
-    : 300;
+    : EMPTY_PREVIEW_WIDTH;
 
 function measure(node) {
   /* content-driven width, clamped — no manual resizing, no wasted space */
@@ -115,6 +129,9 @@ function measure(node) {
   c.font = `600 ${cs.getPropertyValue("--fs-head").trim()} ${
     cs.getPropertyValue("--font")
   }`;
-  w = Math.max(w, c.measureText(node.name).width + 34);
-  return Math.min(COL_MAX, Math.max(COL_MIN, Math.ceil(w) + 58));
+  w = Math.max(w, c.measureText(node.name).width + HEADER_HORIZONTAL_PADDING);
+  return Math.min(
+    COL_MAX,
+    Math.max(COL_MIN, Math.ceil(w) + COLUMN_HORIZONTAL_PADDING),
+  );
 }
