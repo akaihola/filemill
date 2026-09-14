@@ -51,9 +51,10 @@ GitHub Pages. That last part matters more than it sounds: `showDirectoryPicker()
 needs a secure context, so the same file opened from disk cannot open a folder
 at all. An `https://` link can.
 
-Rich previews (Markdown, syntax highlighting, .docx) are fetched from a CDN on
-first use rather than bundled, behind a switch in ⚙ — it is the only thing here
-that touches the network. Offline, previews fall back to the raw source.
+Rich previews (Markdown, .docx, reStructuredText) are fetched from a CDN on first
+use rather than bundled, behind a switch in ⚙ — it is the only thing here that
+touches the network. reStructuredText runs docutils on Pyodide, a 13 MB one-time
+download. Offline, previews fall back to the raw source.
 
 See [`static/AGENTS.md`](static/AGENTS.md).
 
