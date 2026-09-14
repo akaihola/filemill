@@ -24,9 +24,6 @@ Rules for TASKS.md usage are at the bottom of the file.
       `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
       `TASKS.md`.
 
-- [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
-  identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
-
 - [*] Add `.pre-commit-config.yaml` with ruff, ruff-format, mypy, deno fmt, deno lint
   and `static/build-index.py --check`. Run `pre-commit run --all-files` until it passes.
 
@@ -242,6 +239,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   JavaScript console either.
 
 ## Scheduled
+
+- [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
+  identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
 
 - Bug: Task 511f90cc-2725-4ef1-a8d8-ed67c4eddb0f failed to fix the portrait mobile
   scroll to the right problem. I suspect the extra space at the right side of the page
