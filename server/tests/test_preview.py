@@ -287,7 +287,6 @@ def test_preview_desktop_valid_link(tmp_path):
     html = _preview_desktop(f)
     assert "preview-desktop-link" in html
     assert "https://example.com" in html
-    assert "Open \u2192" in html  # "Open →"
 
 
 def test_preview_desktop_http_icon_rendered(tmp_path):

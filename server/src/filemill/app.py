@@ -1,4 +1,3 @@
-import configparser
 import os
 import subprocess
 from pathlib import Path
@@ -172,33 +171,6 @@ def raw(path: str):
     if p is None or not p.is_file():
         return HTMLResponse("Not found", status_code=404)
     return FileResponse(str(p))
-
-
-def _parse_desktop_url(path: Path) -> str | None:
-    """Parse a .desktop file and return URL if Type=Link, else None."""
-    try:
-        cp = configparser.ConfigParser(interpolation=None)
-        cp.read(str(path), encoding="utf-8")
-        if "Desktop Entry" in cp:
-            entry = cp["Desktop Entry"]
-            if entry.get("Type", "").strip() == "Link":
-                url = entry.get("URL", "").strip()
-                return url or None
-    except Exception:  # noqa: S110 — a malformed .desktop file simply has no URL
-        pass
-    return None
-
-
-@rt("/open-link")
-def open_link(path: str):
-    """Redirect the browser to the URL stored in a .desktop link file."""
-    p = _resolve_safe(path)
-    if p is None or not p.is_file():
-        return HTMLResponse("Not found", status_code=404)
-    url = _parse_desktop_url(p)
-    if not url:
-        return HTMLResponse("Not a .desktop link file", status_code=400)
-    return RedirectResponse(url, status_code=302)
 
 
 # ── #23 helpers + routes ──────────────────────────────────────────────────────
@@ -741,7 +713,7 @@ app.add_middleware(_WebStaticCORSMiddleware)
 # order. Four bands, most specific first:
 #
 #   1. the named prefixes below            /w/, /api/, /n/, PWA files
-#   2. every other explicitly named route  /raw, /open-link, /, …
+#   2. every other explicitly named route  /raw, /, …
 #   3. /{path:path}                        the file's own path under ROOT
 #   4. FastHTML's /{fname:path}.{ext:static}
 #
