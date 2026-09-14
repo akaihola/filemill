@@ -684,7 +684,9 @@ def resource(request, path: str = ""):
         # path serves bytes", and it diverges because there are no bytes.
         if state.view == urls.VIEW_RAW:
             state = state.with_view(urls.VIEW_RENDER)
-    elif state.view == urls.VIEW_RAW:
+    elif state.view == urls.VIEW_RAW and "text/html" not in request.headers.get(
+        "accept", ""
+    ):
         # Bytes, a detected media type, no HTML wrapper. This is what an <img
         # src> and a <link rel=stylesheet> need, and it is why raw is the
         # default: the bare path has to be the file itself.

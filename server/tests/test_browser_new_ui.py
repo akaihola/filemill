@@ -900,6 +900,17 @@ def test_the_resource_route_keeps_the_query_while_you_browse(page):
     assert page.url.endswith("/code?filemill=render")
 
 
+def test_raw_navigation_stays_in_the_file_manager(page):
+    page.open("notes/plain.txt")
+    page.click("#pv-raw")
+    page.wait_for_selector("#preview .pv-content", timeout=15000)
+    assert page.url.endswith("/notes/plain.txt?filemill=raw")
+    assert page.evaluate("sel")[-1] == "plain.txt"
+    page.click('.col[data-i="0"] .row:has-text("code")')
+    page.wait_for_function("location.pathname === '/code'")
+    assert page.url.endswith("/code?filemill=raw")
+
+
 def test_highlight_shows_the_source_in_the_columns(page):
     """The view reaches /api/preview through preview-http.js."""
     page.open_resource("notes/deep/leaf.md?filemill=highlight")
