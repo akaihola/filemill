@@ -25,7 +25,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v5
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: 2.6.8
+
+      - name: Run pre-commit
+        run: |
+          pip install pre-commit
+          pre-commit run --all-files
+
   test:
+    needs: lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
