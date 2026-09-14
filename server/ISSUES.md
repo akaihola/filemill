@@ -256,7 +256,7 @@ with no memory of the prior selection. The `afterSettle` handler then runs
 ## #51 – PWA: start the Filemill HTTP service alongside the installed app
 
 **Type:** feature / research
-**Status:** open
+**Status:** in-progress
 
 When filemill is installed as a PWA (Add to Home Screen), opening it navigates to
 `http://localhost:8334/f/` – but nothing ensures the server is actually running.
