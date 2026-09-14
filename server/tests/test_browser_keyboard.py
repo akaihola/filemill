@@ -964,6 +964,26 @@ def test_mobile_preview_fills_stage_and_leaves_scroll_hint(
 
 
 @pytest.mark.integration
+@pytest.mark.parametrize(
+    ("viewport", "touch_action"),
+    [(MOBILE_VIEWPORT, "pan-y"), (MOBILE_LANDSCAPE, "auto")],
+)
+def test_mobile_fullscreen_preview_touch_handling(
+    live_server: str, viewport: dict, touch_action: str
+):
+    with _ui_page(live_server, mobile=True, viewport=viewport) as page:
+        _ui_tap(page, 0, "my-knowledge")
+        _ui_tap(page, 1, "AGENTS.md")
+        page.click("#pv-fullscreen")
+        page.wait_for_function(
+            "getComputedStyle(document.getElementById('preview')).touchAction"
+            f" === '{touch_action}'"
+        )
+        assert page.evaluate("finder.scrollLeft") > 0
+        assert page.evaluate("stage.scrollLeft") == 0
+
+
+@pytest.mark.integration
 def test_mobile_file_restore_scroll_position_is_not_zero(
     live_server: str,
     browser_root: Path,

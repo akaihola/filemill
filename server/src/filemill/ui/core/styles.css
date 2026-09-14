@@ -856,6 +856,11 @@ body {
     margin-left: calc(-1 * var(--gutter));
   }
 }
+@media (max-width: 600px) and (orientation: portrait) {
+  .pv-fullscreen #preview {
+    touch-action: pan-y;
+  }
+}
 #preview .pv-body {
   flex: 1;
   min-height: 0;
