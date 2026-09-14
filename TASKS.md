@@ -308,6 +308,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
+- [*] On portrait mobile, a horizontal left swipe now eventually shows the preview which
+  fills the screen. Good. But an additional left swipe on the screen-filling preview
+  scrolls the entire page about 1/12th width and leaves an empty margin at the right
+  edge.
+
 - [~] Add `deno fmt` and `deno lint` for `ui/` (one pinned binary, no Node project).
   Format `ui/` one time and commit the result as its own commit.
 
