@@ -18,6 +18,13 @@ Rules for TASKS.md usage are at the bottom of the file.
   highlighting library support syntax highlighting for such hybrid files? If so,
   implement that. If not, consider alternatives and write a report.
 
+- [*] Rendering if reStructuredText (`.rst`) isn't currently supported. Investigate how
+  to implement it on the client side. Prefer readily available 3rd party client-side
+  solutions, or pre-packaged Python solutions to run on the browser, and just implement
+  whatever best solution you find. If those solutions aren't available, plan a fallback
+  solution for how to run the Python code on the browser by ourselves, but write a plan
+  first without implementing it yet.
+
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
       now return the shared client shell.
 
