@@ -52,6 +52,7 @@ window.__mk = () => {
   ]);
 };
 """
+HANDLE = FAKE
 
 # Enough of each library's shape to prove the plumbing: the loader, the plugin
 # chaining, the highlight hook, and where the output lands. Faithfulness to the
@@ -152,7 +153,7 @@ async def boot(pg, base, *, rich=True, stubs=False):
     )
     if stubs:
         await pg.evaluate(STUB_MAP % {"b": "/".join(base.split("/")[:3])})
-    await pg.evaluate(FAKE)
+    await pg.evaluate(HANDLE)
     await pg.evaluate("mount(__mk())")
     await pg.wait_for_timeout(250)
 
@@ -166,6 +167,8 @@ async def preview(pg, name, timeout=4000, ready=None):
 
 
 async def run_suite(bundle, fake_handle):
+    global HANDLE
+    HANDLE = fake_handle
     httpd, port = serve()
     base = f"http://127.0.0.1:{port}/static/{bundle.name}"
 

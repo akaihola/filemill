@@ -10,8 +10,8 @@ def bundle(request):
 
 
 @pytest.fixture
-def fake_handle():
-    return "__mk"
+def fake_handle(request):
+    return request.module.FAKE
 
 
 @pytest.fixture

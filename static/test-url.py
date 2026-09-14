@@ -48,6 +48,7 @@ window.__mk = () => {
 };
 window.__state = () => ({path: path.map(p=>p.name), sel, focusCol});
 """
+HANDLE = FAKE
 
 # A real directory, built inside the origin private file system. Sizes run
 # 1…13 bytes and disagree with the names, so an order by size cannot be the
@@ -112,7 +113,7 @@ async def open_at(pg, base, frag=""):
     # Rich previews reach for a CDN and log two console errors when it is not
     # reachable; both sides of that are test-rich.py's job, not this suite's.
     await pg.evaluate("localStorage.setItem('filemill.rich','off')")
-    await pg.evaluate(FAKE)
+    await pg.evaluate(HANDLE)
     await pg.evaluate("mount(__mk())")
     await pg.wait_for_timeout(250)
 
@@ -135,6 +136,8 @@ def serve():
 
 
 async def run_suite(bundle, fake_handle, opfs_root):
+    global HANDLE
+    HANDLE = fake_handle
     httpd, port = serve()
     base = f"http://127.0.0.1:{port}/static/{bundle.name}"
 
@@ -235,8 +238,10 @@ async def run_suite(bundle, fake_handle, opfs_root):
         print("\n── A real filesystem, through OPFS ──────────────────────────")
         N = 3000
         await open_at(pg, base)
-        built = await pg.evaluate(OPFS_BUILD, N)
-        r = await pg.evaluate(OPFS_SWEEP)
+        built = await pg.evaluate(OPFS_BUILD.replace(
+            "navigator.storage.getDirectory()", opfs_root), N)
+        r = await pg.evaluate(OPFS_SWEEP.replace(
+            "navigator.storage.getDirectory()", opfs_root))
         per = r["sweepMs"] / max(r["rows"], 1) * 1000
         check(f"{N:,} real files: entries() costs {r['listMs']} ms, the getFile() "
               f"sweep a size sort adds costs {r['sweepMs']} ms "
