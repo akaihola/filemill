@@ -247,7 +247,8 @@ static edition. Two render paths for one document drift apart.
    HTML renderers in `providers/sqlite.py`. This closes proposal [9].
 4. Delete what the browser already does: `/api/render` and
    `preview-upload.js`, `/sse/reload` and live reload,
-   `providers/json_provider.py`, `providers/csv_provider.py`
+   `preview-upload.js`, `/sse/reload` and live reload,
+   `styles.py`
    and `/raw?path=`. Decide `/w/` and its CORS middleware with its consumer.
 5. Reduce `app.py` to routing. Move `_resolve_safe` and the symlink map to
    `paths.py` and the PWA routes to `pwa.py`. Compute the symlink zone map
