@@ -17,7 +17,9 @@ def test_youtube_vtt_header_metadata_is_ignored(tmp_path: Path):
 
 def test_vtt_malformed_pre_cue_block_is_rejected(tmp_path: Path):
     path = tmp_path / "bad.vtt"
-    path.write_text("WEBVTT\n\nnot metadata\n\n00:00:00.000 --> 00:00:01.000\ntext\n", newline="")
+    path.write_text(
+        "WEBVTT\n\nnot metadata\n\n00:00:00.000 --> 00:00:01.000\ntext\n", newline=""
+    )
     assert "cue is missing a timestamp" in VTTProvider().render_preview(
         path, "", "transcript", 1, 1000
     )
@@ -48,7 +50,9 @@ def test_vtt_empty_and_malformed_are_safe(tmp_path: Path):
     assert "no cues" in VTTProvider().render_preview(empty, "", "transcript", 1, 1000)
     bad = tmp_path / "bad.vtt"
     bad.write_text("WEBVTT\n\n00:00:00.000 --> nope\ntext\n", newline="")
-    assert "Malformed WebVTT" in VTTProvider().render_preview(bad, "", "transcript", 1, 1000)
+    assert "Malformed WebVTT" in VTTProvider().render_preview(
+        bad, "", "transcript", 1, 1000
+    )
     bad_header = tmp_path / "bad-header.vtt"
     bad_header.write_text("WEBVTTX\n", newline="")
     assert "Malformed WebVTT" in VTTProvider().render_preview(
@@ -58,4 +62,5 @@ def test_vtt_empty_and_malformed_are_safe(tmp_path: Path):
 
 def test_vtt_provider_is_registered(tmp_path: Path):
     from filemill.vfs import REGISTRY
+
     assert REGISTRY.get(tmp_path / "captions.vtt") is not None

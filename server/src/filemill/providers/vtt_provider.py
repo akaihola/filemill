@@ -32,7 +32,7 @@ def _cue(block: str) -> tuple[str, str, str] | None:
     match = TIMESTAMP.match(lines[stamp].strip())
     if not match:
         raise ValueError("invalid cue timestamp")
-    text = "\n".join(lines[stamp + 1:]).strip()
+    text = "\n".join(lines[stamp + 1 :]).strip()
     voice = VOICE.match(text)
     speaker = voice.group(1).strip() if voice and voice.group(1) else ""
     if voice:
@@ -97,7 +97,7 @@ class VTTProvider:
             return '<div class="preview-empty">WebVTT file has no cues.</div>'
         rows = []
         for start, end, speaker, text in cues:
-            label = f'<strong>{html.escape(speaker)}:</strong> ' if speaker else ""
+            label = f"<strong>{html.escape(speaker)}:</strong> " if speaker else ""
             rows.append(
                 '<p class="preview-cue">'
                 f'<span class="preview-cue-time">{html.escape(start)} → {html.escape(end)}</span>'

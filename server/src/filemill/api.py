@@ -63,12 +63,36 @@ def search_root(root: Path, query: str) -> list[dict]:
         raise SearchError(f"Search query is limited to {SEARCH_QUERY_MAX} characters")
     try:
         result = subprocess.run(
-            ["rg", "--json", "--fixed-strings", "--line-number", "--column",
-             "--max-count", str(SEARCH_MATCH_MAX), "--max-columns", "240",
-             "--max-columns-preview", "--glob", "!.git/**", "--glob", "!node_modules/**",
-             "--glob", "!.venv/**", "--glob", "!__pycache__/**", "--glob", "!.cache/**",
-             "--", query, "."],
-            cwd=root, capture_output=True, text=True, timeout=SEARCH_TIMEOUT, check=False,
+            [
+                "rg",
+                "--json",
+                "--fixed-strings",
+                "--line-number",
+                "--column",
+                "--max-count",
+                str(SEARCH_MATCH_MAX),
+                "--max-columns",
+                "240",
+                "--max-columns-preview",
+                "--glob",
+                "!.git/**",
+                "--glob",
+                "!node_modules/**",
+                "--glob",
+                "!.venv/**",
+                "--glob",
+                "!__pycache__/**",
+                "--glob",
+                "!.cache/**",
+                "--",
+                query,
+                ".",
+            ],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=SEARCH_TIMEOUT,
+            check=False,
         )
     except FileNotFoundError as exc:
         raise SearchError("Search is unavailable: ripgrep is not installed") from exc
@@ -88,12 +112,14 @@ def search_root(root: Path, query: str) -> list[dict]:
             continue
         data = event["data"]
         path = data["path"]["text"]
-        matches.append({
-            "path": path.removeprefix("./"),
-            "line": data["line_number"],
-            "column": data["submatches"][0]["start"] + 1,
-            "context": data["lines"]["text"].rstrip("\n"),
-        })
+        matches.append(
+            {
+                "path": path.removeprefix("./"),
+                "line": data["line_number"],
+                "column": data["submatches"][0]["start"] + 1,
+                "context": data["lines"]["text"].rstrip("\n"),
+            }
+        )
     return matches
 
 
@@ -147,9 +173,16 @@ def dir_json(target: Path, page: int = 1) -> JSONResponse:
     if total > DIR_PAGE_SIZE:
         pages = math.ceil(total / DIR_PAGE_SIZE)
         page = min(page, pages)
-        entries = entries[(page - 1) * DIR_PAGE_SIZE:page * DIR_PAGE_SIZE]
-        return JSONResponse({"entries": entries, "denied": denied,
-                             "page": page, "pages": pages, "total": total})
+        entries = entries[(page - 1) * DIR_PAGE_SIZE : page * DIR_PAGE_SIZE]
+        return JSONResponse(
+            {
+                "entries": entries,
+                "denied": denied,
+                "page": page,
+                "pages": pages,
+                "total": total,
+            }
+        )
     return JSONResponse({"entries": entries, "denied": denied})
 
 
@@ -200,7 +233,7 @@ def vfs_dir_json(target: Path, vpath: str, page: int = 1) -> JSONResponse:
     if total > DIR_PAGE_SIZE:
         pages = math.ceil(total / DIR_PAGE_SIZE)
         page = min(page, pages)
-        entries = entries[(page - 1) * DIR_PAGE_SIZE:page * DIR_PAGE_SIZE]
+        entries = entries[(page - 1) * DIR_PAGE_SIZE : page * DIR_PAGE_SIZE]
         pagination = {"page": page, "pages": pages, "total": total}
     return JSONResponse(
         {
@@ -252,10 +285,7 @@ def split_vfs(rel: str, root: Path, resolve) -> tuple[str, str] | None:
             return "/".join(parts[:i]), ""
         # .jsonl is browsed on the client (ui/core/jsonl.js); its rows still
         # need a URL that reloads.
-        if (
-            REGISTRY.get(real) is not None
-            or real.suffix.lower() in {".jsonl", ".csv"}
-        ):
+        if REGISTRY.get(real) is not None or real.suffix.lower() in {".jsonl", ".csv"}:
             return "/".join(parts[:i]), "/".join(parts[i:])
         return None
     return ("", "") if not parts else None
