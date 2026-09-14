@@ -33,6 +33,8 @@ const CDN = {
   "markdown-it-task-lists": "https://esm.sh/markdown-it-task-lists@2.1.1",
   "markdown-it-anchor": "https://esm.sh/markdown-it-anchor@9.2.0",
   "mammoth": "https://esm.sh/mammoth@1.8.0",
+  "pptx-vanilla-viewer":
+    "https://cdn.jsdelivr.net/npm/pptx-vanilla-viewer@2.1.4/+esm",
   /* No JavaScript reStructuredText parser handles directives, tables or
      footnotes, and the one that exists emits unescaped HTML — so docutils runs
      as itself, on Pyodide. The runtime plus docutils is ~6 MB on the wire, 13 MB
@@ -77,6 +79,7 @@ offerRichToggle(richEnabled, setRich);
 const MD_RE = /\.(md|markdown)$/i;
 const DOCX_RE = /\.docx$/i;
 const RST_RE = /\.rst$/i;
+const PPTX_RE = /\.pptx$/i;
 
 const NOTE =
   `<p class="pv-note">Offline — showing the source. Rich rendering ` +
@@ -189,7 +192,7 @@ const PreviewRich = {
 
     if (
       !MD_RE.test(node.name) && !DOCX_RE.test(node.name) &&
-      !RST_RE.test(node.name)
+      !RST_RE.test(node.name) && !PPTX_RE.test(node.name)
     ) {
       return PreviewLocal.render(node);
     }
@@ -198,6 +201,32 @@ const PreviewRich = {
     if (!blob) return PreviewLocal.render(node);
 
     try {
+      if (PPTX_RE.test(node.name)) {
+        const { createPptxViewer } = await load("pptx-vanilla-viewer");
+        const id = `pptx-${crypto.randomUUID()}`;
+        queueMicrotask(async () => {
+          const host = document.getElementById(id);
+          if (!host) return;
+          host.textContent = "Loading PowerPoint preview…";
+          try {
+            const viewer = createPptxViewer(host, {
+              source: blob,
+              editable: false,
+              showToolbar: true,
+              showThumbnails: true,
+              onError: (message) => {
+                host.textContent = `PowerPoint preview failed: ${message}`;
+              },
+            });
+            host._pptxViewer = viewer;
+          } catch (err) {
+            host.textContent = `PowerPoint preview failed: ${
+              err.message || err
+            }`;
+          }
+        });
+        return `<div id="${id}" class="pv-pptx" aria-live="polite">Loading PowerPoint preview…</div>`;
+      }
       if (DOCX_RE.test(node.name)) {
         const mammoth = await load("mammoth");
         const { value } = await mammoth.convertToHtml(
@@ -220,6 +249,18 @@ const PreviewRich = {
     }
   },
 };
+
+const withPptxPreview = (provider) => ({
+  revoke() {
+    provider.revoke?.();
+    PreviewRich.revoke();
+  },
+  render(node) {
+    return PPTX_RE.test(node.name)
+      ? PreviewRich.render(node)
+      : provider.render(node);
+  },
+});
 
 /* A wikilink resolves against the folder being browsed, not the web — so it
    selects a row in the column the file itself is in, exactly as clicking that
