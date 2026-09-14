@@ -260,8 +260,9 @@ document.getElementById("st-path").onclick = copyPath;
 function enterColumn(i) {
   const c = colCache.get(path[i]);
   if (!c || !c.rows.length) return;
-  let ri = cursor[i];
-  if (ri == null) ri = c.kids.findIndex((k) => k.name === path[i].lastSel);
+  const remembered = sel[i] ?? path[i].lastSel;
+  let ri = c.kids.findIndex((k) => k.name === remembered);
+  if (ri < 0) ri = cursor[i] ?? 0;
   cursor[i] = ri = Math.max(0, Math.min(c.rows.length - 1, ri < 0 ? 0 : ri));
   c.rows[ri].click();
   revealRow(c.rows[ri]);
