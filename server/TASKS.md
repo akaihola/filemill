@@ -51,12 +51,13 @@
 
 ## Scheduled
 
+- [ ] Pagination for large directories (> 500 entries)
+
 ## Open
 
 _Items without an issue number are not yet tracked in ISSUES.md._
 
 - [ ] #47 Column width & scrolling UX: jumps, long-name stretch, no left-scroll
-- [ ] Pagination for large directories (> 500 entries)
 - [ ] PPTX slide image rendering via LibreOffice (better fidelity than text extraction)
 
 ---
