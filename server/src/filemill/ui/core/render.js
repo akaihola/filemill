@@ -95,7 +95,7 @@ function buildCol(node) {
       (k.dir ? `<span class="chev">›</span>` : "");
     /* read the index off the element: the same node keeps its DOM across
        re-renders, and its column position is only known at render time */
-    row.onclick = () => choose(+el.dataset.i, k, ri);
+    row.onclick = () => choose(+el.dataset.i, k);
     body.appendChild(row);
     return row;
   });

@@ -25,7 +25,7 @@ function autoPreview(node) {
   if (pick) sel[i] = pick.name;
 }
 
-async function choose(colIdx, node, rowIdx) {
+async function choose(colIdx, node) {
   const seq = ++navSeq;
   path = path.slice(0, colIdx + 1);
   sel = sel.slice(0, colIdx);
