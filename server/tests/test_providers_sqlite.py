@@ -85,6 +85,25 @@ def test_list_entries_table_vpath_is_table_name(single_schema_db, provider):
     assert "orders" in vpaths
 
 
+def test_quoted_table_and_column_names_are_supported(tmp_path, provider):
+    db = tmp_path / "quoted.db"
+    con = sqlite3.connect(str(db))
+    con.execute('CREATE TABLE "user""s" ("id""x" INTEGER PRIMARY KEY)')
+    con.execute('INSERT INTO "user""s" VALUES (1)')
+    con.commit()
+    con.close()
+
+    entries = provider.list_entries(db, 'user"s')
+    assert entries[0].vpath == 'user"s/1'
+    assert "1" in provider.render_preview(db, 'user"s', "spreadsheet", 1, 1000, 0)
+
+
+def test_injection_shaped_identifier_cannot_escape_quoting(single_schema_db, provider):
+    assert provider.list_entries(single_schema_db, 'users"; DROP TABLE users;--') == []
+    assert provider.list_entries(single_schema_db, 'users/1" OR 1=1--') == []
+    assert provider.list_entries(single_schema_db, "")
+
+
 def test_list_entries_skips_sqlite_internal_tables(tmp_path, provider):
     db = tmp_path / "x.db"
     con = sqlite3.connect(str(db))
