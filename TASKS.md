@@ -7,6 +7,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an unverified
   architecture proposal, conditional on a fourth provider or a pagination bug.
 
+## In progress
+
+- [21] Cache the preview element keyed on the previewed node and its `meta`, the same
+  way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
+
 ## Scheduled
 
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
@@ -17,9 +22,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [17] Convert `ui/core/` and `ui/adapters/` to ES modules with one entry module per
   edition. Make `static/build-index.py` inline the module graph.
-
-- [21] Cache the preview element keyed on the previewed node and its `meta`, the same
-  way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
 
 - [*] Give each magic number in `ui/core/state.js`, `layout.js`, `nav.js`, `render.js` a
   name and a one-line comment that says why the value is what it is.
