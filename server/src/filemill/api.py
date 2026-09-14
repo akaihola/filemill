@@ -298,10 +298,10 @@ def delete_file(target: Path) -> Response:
     if not target.exists():
         return JSONResponse({"error": "Not found"}, status_code=404)
     try:
-        if target.is_dir():
-            shutil.rmtree(target)
-        else:
+        if target.is_symlink() or not target.is_dir():
             target.unlink()
+        else:
+            shutil.rmtree(target)
     except OSError as exc:
         return JSONResponse({"error": str(exc)}, status_code=500)
     return JSONResponse({"deleted": True})

@@ -576,10 +576,12 @@ async def api_save(request, p: str = ""):
 @rt("/api/delete", methods=["DELETE"])
 def api_delete(p: str = ""):
     """Delete one real file or directory after the normal root check."""
-    target = _api_target(p)
-    if target is None or target == ROOT:
+    candidate = api.rel_to_abs(p, ROOT)
+    if candidate is None or _resolve_safe(str(candidate)) is None:
         return JSONResponse({"error": "Not found"}, status_code=404)
-    return api.delete_file(target)
+    if candidate.resolve() == ROOT.resolve():
+        return JSONResponse({"error": "Not found"}, status_code=404)
+    return api.delete_file(candidate)
 
 
 # ── The root-relative resource route (PLAN-19) ───────────────────────────────
