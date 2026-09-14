@@ -291,10 +291,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   solution for how to run the Python code on the browser by ourselves, but write a plan
   first without implementing it yet.
 
-- [*] `.py.j2` are templates for Python files that are rendered by Jinja2. Does our
-  highlighting library support syntax highlighting for such hybrid files? If so,
-  implement that. If not, consider alternatives and write a report.
-
 - [x] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
       `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in
       `server/src/filemill/styles.py`.
@@ -302,6 +298,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [*] `.py.j2` are templates for Python files that are rendered by Jinja2. Does our
+  highlighting library support syntax highlighting for such hybrid files? If so,
+  implement that. If not, consider alternatives and write a report.
 
 - [*] On portrait mobile, a horizontal left swipe now eventually shows the preview which
   fills the screen. Good. But an additional left swipe on the screen-filling preview
