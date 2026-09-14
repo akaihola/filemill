@@ -240,9 +240,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Add `.pre-commit-config.yaml` with ruff, ruff-format, mypy, deno fmt, deno lint
   and `static/build-index.py --check`. Run `pre-commit run --all-files` until it passes.
 
-- [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
-  identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
-
 - Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
   between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
   viewing the source with syntax highlighting.
@@ -339,6 +336,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
+  identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
 
 - [*] Rendering if reStructuredText (`.rst`) isn't currently supported. Investigate how
   to implement it on the client side. Prefer readily available 3rd party client-side
