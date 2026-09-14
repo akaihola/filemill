@@ -230,7 +230,8 @@ function renderPreview() {
     return pv;
   }
   const [stem, ext] = splitName(n.name);
-  const rawPath = "/" + currentPath().map(encodeURIComponent).join("/");
+  const rawPath = "/" + currentPath().map(encodeURIComponent).join("/") +
+    "?filemill=raw";
   pv.innerHTML = `
     <div class="col-head pv-head"><span class="name"><span>${
     esc(n.name)
