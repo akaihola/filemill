@@ -249,6 +249,13 @@ function renderPreview() {
 }
 
 const RENDERED_RE = /\.(md|markdown|docx|pptx|html?|desktop)$/i;
+const MARKDOWN_RE = /\.(md|markdown)$/i;
+let markdownView = "rendered";
+
+async function rawMarkdown(node) {
+  const blob = await FS.blob(node);
+  return blob ? `<pre class="pv-text">${esc(await blob.text())}</pre>` : null;
+}
 
 function previewView() {
   const view = document.documentElement.dataset.filemill || "raw";
@@ -269,16 +276,26 @@ function setPreviewView(view) {
 function setupPreviewActions(n) {
   const view = previewView();
   const toggle = document.getElementById("pv-view");
-  const applicable = !!ROUTER && RENDERED_RE.test(n.name);
+  const markdown = MARKDOWN_RE.test(n.name);
+  const applicable = markdown || (!!ROUTER && RENDERED_RE.test(n.name));
   if (toggle) {
     toggle.hidden = !applicable;
-    toggle.textContent = view === "render" ? "Source" : "Rendered";
-    toggle.title = view === "render"
-      ? "View highlighted source"
-      : "View rendered preview";
+    toggle.textContent = markdown
+      ? (markdownView === "rendered" ? "Raw" : "Rendered")
+      : (view === "render" ? "Source" : "Rendered");
+    toggle.title = markdown
+      ? (markdownView === "rendered" ? "View raw Markdown source" : "View rendered Markdown")
+      : (view === "render" ? "View highlighted source" : "View rendered preview");
     toggle.setAttribute("aria-label", toggle.title);
-    toggle.onclick = () =>
-      setPreviewView(view === "render" ? "highlight" : "render");
+    toggle.onclick = () => {
+      if (markdown) {
+        markdownView = markdownView === "rendered" ? "raw" : "rendered";
+        fillPreview(n);
+        setupPreviewActions(n);
+      } else {
+        setPreviewView(view === "render" ? "highlight" : "render");
+      }
+    };
   }
   const full = document.getElementById("pv-fullscreen");
   if (full) {
@@ -319,7 +336,9 @@ async function fillPreview(n) {
 
   let html = null;
   try {
-    html = await PREVIEW.render(n);
+    html = MARKDOWN_RE.test(n.name) && markdownView === "raw"
+      ? await rawMarkdown(n)
+      : await PREVIEW.render(n);
   } catch (err) {
     html = `<p class="pv-err">Preview failed: ${
       esc(String(err.message || err))
