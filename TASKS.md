@@ -14,6 +14,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   scrolls the entire page about 1/12th width and leaves an empty margin at the right
   edge.
 
+- [*] `.py.j2` are templates for Python files that are rendered by Jinja2. Does our
+  highlighting library support syntax highlighting for such hybrid files? If so,
+  implement that. If not, consider alternatives and write a report.
+
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
       now return the shared client shell.
 
