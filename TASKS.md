@@ -267,13 +267,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   content: `Malformed WebVTT: cue is missing a timestamp`. You may test using `.vtt`
   files found on the filesystem.
 
-- [*] Bug: Markdown preview doesn't fill and wrap paragraphs at the width of the
-  preview, but keeps linefeeds. Consecutive lines of text must be considered as a single
-  paragraph. If this can't be changed by configuring the Markdown renderer currently in
-  use, consider alternative renderers, check whether they support the other features
-  currently supported (e.g. checkboxes and wikilinks). Tradeoffs must be discussed with the
-  maintainer before implementing.
-
 - [~] Typing a right arrow when the rightmost column before the preview is focused
   should focus the preview and let the user scroll it up/down using the arrow and
   PgUp/PgDn keys.
@@ -339,6 +332,13 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [x] Bug: Markdown preview doesn't fill and wrap paragraphs at the width of the
+  preview, but keeps linefeeds. Consecutive lines of text must be considered as a single
+  paragraph. If this can't be changed by configuring the Markdown renderer currently in
+  use, consider alternative renderers, check whether they support the other features
+  currently supported (e.g. checkboxes and wikilinks). Tradeoffs must be discussed with the
+  maintainer before implementing.
 
 - [*] Rendering if reStructuredText (`.rst`) isn't currently supported. Investigate how
   to implement it on the client side. Prefer readily available 3rd party client-side

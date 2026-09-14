@@ -401,6 +401,16 @@ def test_markdown_soft_breaks_wrap_and_hard_breaks_remain(page):
         )
         == "normal"
     )
+    assert page.evaluate(
+        """() => {
+          const p = document.querySelector('#preview .pv-rich p');
+          const body = document.querySelector('#preview .pv-body');
+          const style = getComputedStyle(body);
+          return Math.round(p.getBoundingClientRect().width) === Math.round(
+            body.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+          );
+        }"""
+    )
     assert page.eval_on_selector_all(
         "#preview .pv-rich p", "es=>es.map(e=>e.innerHTML)"
     ) == [
