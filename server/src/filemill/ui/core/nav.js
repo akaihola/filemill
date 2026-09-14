@@ -5,10 +5,10 @@
    directory opens its column as a preview but keeps you where you are, so ↑/↓
    keep walking the current column. → is what moves you in, ← what moves out.
    ═══════════════════════════════════════════════════════════════════════════ */
-/* How long a column may stay unopened while its directory is read. Long enough
-   that a local read of any ordinary size lands first, short enough to pass for
-   an instant response. */
-const OPEN_GRACE = 50;
+const OPEN_GRACE = 50; // Let ordinary local reads land before showing the column.
+const STATUS_OK_MS = 1600; // Successful status messages need only a brief confirmation.
+const STATUS_ERROR_MS = 8000; // Error status messages stay visible long enough to act on.
+const PREVIEW_SCROLL_STEP = 40; // Arrow keys move the preview by a small readable increment.
 
 let navSeq = 0; /* a read that outlives its selection must not repaint */
 
@@ -214,7 +214,7 @@ function saySt(id, msg, ok) {
   saySt.t[id] = setTimeout(() => {
     el.textContent = "";
     el.classList.remove("bad");
-  }, ok ? 1600 : 8000);
+  }, ok ? STATUS_OK_MS : STATUS_ERROR_MS);
 }
 
 const sayCopy = (msg, ok) => saySt("st-copy", msg, ok);
@@ -310,9 +310,9 @@ document.addEventListener("keydown", (e) => {
       e.preventDefault();
       body?.scrollBy({
         top: e.key === "ArrowUp"
-          ? -40
+          ? -PREVIEW_SCROLL_STEP
           : e.key === "ArrowDown"
-          ? 40
+          ? PREVIEW_SCROLL_STEP
           : (e.key === "PageUp" ? -1 : 1) * body.clientHeight,
       });
     }
