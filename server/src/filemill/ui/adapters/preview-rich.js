@@ -145,6 +145,7 @@ publish_parts(src, writer_name="html5", settings_overrides={
     "file_insertion_enabled": False,
     "report_level": 5,
     "doctitle_xform": False,
+    "initial_header_level": 1,
     "syntax_highlight": "none",
     "embed_stylesheet": False,
 })["body"]
