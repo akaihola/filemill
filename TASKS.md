@@ -18,6 +18,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Add root `CONTRIBUTING.md` (setup, tests, commit style, STE rule), `SECURITY.md`
   (threat model, how to report) and `CHANGELOG.md` (Keep a Changelog format).
 
+- [16] Rewrite all remaining Markdown files in Simplified Technical English. Done when
+  the Markdown line count is below the line count of `*.py`, `*.js` and `*.css`.
+
 ## Ordered backlog
 
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
@@ -34,9 +37,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
       `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
       `TASKS.md`.
-
-- [16] Rewrite all remaining Markdown files in Simplified Technical English. Done when
-  the Markdown line count is below the line count of `*.py`, `*.js` and `*.css`.
 
 - [17] Convert `ui/core/` and `ui/adapters/` to ES modules with one entry module per
   edition. Make `static/build-index.py` inline the module graph.
