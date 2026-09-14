@@ -21,6 +21,8 @@
 
 ## In progress
 
+- [ ] #50 ArrowRight after ArrowLeft loses previously focused item
+
 - [~] #49 CSV preview shows "not yet implemented" stub
 - [~] #48 Truncate filenames preserving the file extension
 - [~] #46 Automatic dark mode following OS colour-scheme preference
@@ -36,8 +38,6 @@
 ## Scheduled
 
 ## Scheduled
-
-- [ ] #50 ArrowRight after ArrowLeft loses previously focused item
 
 ## Open
 
