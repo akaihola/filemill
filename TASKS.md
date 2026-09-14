@@ -9,12 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [*] In the CSV hierarchical preview, there are two problems. The first column is
-  always selected as the key. Instead, a unique column should be selected similar to how
-  it's done in JSON. Also, currently if the first column is not unique, all identical
-  values are selected together. This should be fixed for the case when no unique column
-  is available. Original implementation in task 8038a32c-570b-45ed-b3ca-5834b3b8dc18.
-
 - [*] Typing a right arrow when the rightmost column before the preview is focused
   should focus the preview and let the user scroll it up/down using the arrow and
   PgUp/PgDn keys.
@@ -52,6 +46,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
   files. Current PPTX support was implemented in task
   38ab06e2-c607-4d4a-9978-67847e70d27d.
+
+- Bug: Task 511f90cc-2725-4ef1-a8d8-ed67c4eddb0f failed to fix the portrait mobile
+  scroll to the right problem. I suspect the extra space at the right side of the page
+  is caused by the `⇧+wheel fold` label flowing outside the right edge of the page.
 
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
       now return the shared client shell.
@@ -282,6 +280,18 @@ Rules for TASKS.md usage are at the bottom of the file.
   JavaScript console either.
 
 ## Scheduled
+
+- [*] In the CSV hierarchical preview, there are two problems. The first column is
+  always selected as the key. Instead, a unique column should be selected similar to how
+  it's done in JSON. Also, currently if the first column is not unique, all identical
+  values are selected together. This should be fixed for the case when no unique column
+  is available. Original implementation in task 8038a32c-570b-45ed-b3ca-5834b3b8dc18.
+
+- [*] Using the `Search file contents` input always causes the error
+  `Search error: Search timed out` to display. JavaScript console:
+  `XHR GET https://gogo.crane-boa.ts.net:8445/api/search?q=development [HTTP/2 503  2020ms]`.
+  Originally implemented in task 456736f9-7242-40d0-894d-d5e1db50c0de.
+
 - [*] Rendering if reStructuredText (`.rst`) isn't currently supported. Investigate how
   to implement it on the client side. Prefer readily available 3rd party client-side
   solutions, or pre-packaged Python solutions to run on the browser, and just implement
@@ -296,11 +306,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
-
-- [*] Using the `Search file contents` input always causes the error
-  `Search error: Search timed out` to display. JavaScript console:
-  `XHR GET https://gogo.crane-boa.ts.net:8445/api/search?q=development [HTTP/2 503  2020ms]`.
-  Originally implemented in task 456736f9-7242-40d0-894d-d5e1db50c0de.
 
 - [*] `.py.j2` are templates for Python files that are rendered by Jinja2. Does our
   highlighting library support syntax highlighting for such hybrid files? If so,
