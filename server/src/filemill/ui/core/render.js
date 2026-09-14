@@ -311,6 +311,7 @@ function setupPreviewActions(n) {
   const name = String(n.name || "");
   const markdown = MARKDOWN_RE.test(name);
   const vtt = /\.vtt$/i.test(n.name);
+  const applicable = RENDERED_RE.test(name);
   if (mdViews) {
     mdViews.hidden = !markdown;
     for (const [id, mode, label] of [
@@ -350,7 +351,7 @@ function setupPreviewActions(n) {
     }
   }
   if (toggle) {
-    toggle.hidden = false;
+    toggle.hidden = !applicable;
     toggle.textContent = view === "render" ? "Source" : "Rendered";
     toggle.title = view === "render"
       ? "View highlighted source"
