@@ -8,6 +8,7 @@
    Anything that alters how a row *looks* (dotfile filter, density, theme icon
    colours) is part of the signature and drops the whole cache. */
 const colCache = new Map();
+let previewCache = null;
 let cacheSig = null;
 const CACHE_MAX = 24;
 
@@ -228,17 +229,24 @@ function render(keepScroll) {
 function renderPreview() {
   const n = previewNode();
   const selected = selectedNode();
+  const target = n || selected;
+  if (
+    previewCache &&
+    previewCache.node === target &&
+    previewCache.meta === target?.meta
+  ) return previewCache.el;
+
+  if (previewCache) PREVIEW.revoke?.();
   const pv = document.createElement("div");
   pv.id = "preview";
   pv.tabIndex = 0;
   pv.setAttribute("aria-label", "File preview");
-  PREVIEW.revoke?.();
-  if (!n && !selected) {
+  if (!target) {
     pv.innerHTML = `<div class="pv-empty"><div class="glyph">◫</div>
                     <div>Select a file to preview</div></div>`;
+    previewCache = { node: target, meta: undefined, el: pv };
     return pv;
   }
-  const target = n || selected;
   const [stem, ext] = splitName(target.name);
   const rawPath = "/" + currentPath().map(encodeURIComponent).join("/") +
     "?filemill=raw";
@@ -280,6 +288,7 @@ function renderPreview() {
     </div>`;
   if (n) fillPreview(n);
   pv.classList.toggle("pv-is-fullscreen", pvFullscreen);
+  previewCache = { node: target, meta: target.meta, el: pv };
   return pv;
 }
 
