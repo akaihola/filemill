@@ -53,7 +53,7 @@
 
 ## Scheduled
 
-- [ ] PPTX slide image rendering via LibreOffice (better fidelity than text extraction)
+- [x] PPTX slide image rendering via LibreOffice (better fidelity than text extraction)
 
 
 ## Open
