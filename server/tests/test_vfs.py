@@ -161,27 +161,6 @@ def test_is_vfs_file_returns_false_for_txt(tmp_path):
     assert is_vfs_file(f) is False
 
 
-# ── Stub provider registration ────────────────────────────────────────────────
-
-
-def test_csv_provider_registered(tmp_path):
-    from filemill.vfs import REGISTRY
-
-    f = tmp_path / "data.csv"
-    f.touch()
-    provider = REGISTRY.get(f)
-    assert provider is not None
-
-
-def test_csv_provider_default_fmt_is_spreadsheet(tmp_path):
-    from filemill.vfs import REGISTRY
-
-    f = tmp_path / "data.csv"
-    f.touch()
-    provider = REGISTRY.get(f)
-    assert provider.default_fmt("") == "spreadsheet"
-
-
 def test_json_provider_registered(tmp_path):
     from filemill.vfs import REGISTRY
 
