@@ -23,10 +23,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight` view.
 
-- Bug: For `.vtt` files from YouTube, this error is always displayed instead of the
-  content: `Malformed WebVTT: cue is missing a timestamp`. You may test using `.vtt`
-  files found on the filesystem.
-
 - Feature: ability to delete a file or a directory from the file manager.
 
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
@@ -266,6 +262,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   JavaScript console either.
 
 ## Scheduled
+
+- Bug: For `.vtt` files from YouTube, this error is always displayed instead of the
+  content: `Malformed WebVTT: cue is missing a timestamp`. You may test using `.vtt`
+  files found on the filesystem.
 
 - [*] Bug: Markdown preview doesn't fill and wrap paragraphs at the width of the
   preview, but keeps linefeeds. Consecutive lines of text must be considered as a single
