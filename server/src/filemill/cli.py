@@ -16,7 +16,7 @@ def main(
     port: int = typer.Option(8000, help="Port to listen on"),
     live: bool = typer.Option(False, help="Enable live reload"),
     bind: str = typer.Option(
-        env("BIND", "0.0.0.0"),
+        env("BIND", "127.0.0.1"),
         "-b",
         "--bind",
         help="Address to bind to (overridden by FILEMILL_BIND env var)",

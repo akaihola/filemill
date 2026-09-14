@@ -56,6 +56,16 @@ def test_main_default_root_uses_cwd(tmp_path, monkeypatch):
     assert app_module.ROOT == tmp_path
 
 
+def test_default_bind_is_loopback(tmp_path, monkeypatch):
+    mock_run = MagicMock()
+    monkeypatch.delenv("FILEMILL_BIND", raising=False)
+    monkeypatch.delenv("BIND", raising=False)
+    monkeypatch.setattr(uvicorn, "run", mock_run)
+    result = runner.invoke(cli, [str(tmp_path)])
+    assert result.exit_code == 0
+    assert mock_run.call_args.kwargs["host"] == "127.0.0.1"
+
+
 # ── #16 bind address option ───────────────────────────────────────────────────
 
 
