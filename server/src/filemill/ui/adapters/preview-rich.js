@@ -1,10 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Preview provider — rich rendering, fetched on demand.
 
-   Markdown and .docx, to match what filemill's Python renderers produce. The
-   libraries are an order of magnitude larger than this app, so they are not in
-   the bundle: they are imported from a CDN the first time a file that needs one
-   is previewed, and cached for the session.
+   Markdown and .docx, to match what filemill's Python renderers produce, and
+   reStructuredText, which only Python renders well. The libraries are an order
+   of magnitude larger than this app, so they are not in the bundle: they are
+   imported from a CDN the first time a file that needs one is previewed, and
+   cached for the session.
 
    Source files and fenced code are not on that list. They are coloured by
    core/syntax.js, in the page, with no download and no switch to find —
@@ -32,6 +33,13 @@ const CDN = {
   "markdown-it-task-lists": "https://esm.sh/markdown-it-task-lists@2.1.1",
   "markdown-it-anchor": "https://esm.sh/markdown-it-anchor@9.2.0",
   "mammoth": "https://esm.sh/mammoth@1.8.0",
+  /* No JavaScript reStructuredText parser handles directives, tables or
+     footnotes, and the one that exists emits unescaped HTML — so docutils runs
+     as itself, on Pyodide. The runtime plus docutils is ~6 MB on the wire, 13 MB
+     unpacked, once per session; docs/adr/0002-rst-in-browser.md has the
+     figures. The release directory on jsDelivr is immutable, and docutils'
+     version is fixed by that release's lock file, so one pin covers both. */
+  "pyodide": "https://cdn.jsdelivr.net/pyodide/v0.29.4/full/pyodide.mjs",
 };
 
 /* Tests point this at local stubs — there is no other way to exercise the
@@ -44,6 +52,7 @@ const richEnabled = () => localStorage.getItem(RICH_KEY) !== "off";
 const setRich = (on) => {
   localStorage.setItem(RICH_KEY, on ? "on" : "off");
   loaded.clear(); /* re-attempt after being switched on */
+  pyInstance = null;
 };
 
 /* Cache the promise, not the module: two previews opened in the same tick must
@@ -67,6 +76,7 @@ offerRichToggle(richEnabled, setRich);
 
 const MD_RE = /\.(md|markdown)$/i;
 const DOCX_RE = /\.docx$/i;
+const RST_RE = /\.rst$/i;
 
 const NOTE =
   `<p class="pv-note">Offline — showing the source. Rich rendering ` +
@@ -119,6 +129,54 @@ async function markdown(text) {
   return mdInstance.render(text);
 }
 
+/* ── reStructuredText ────────────────────────────────────────────────────── */
+let pyInstance = null;
+
+/* The interpreter is cached like mdInstance, as a promise so that two .rst
+   previews in one tick share a single download; a failed boot is dropped so
+   the next click retries. `raw` and file insertion are off: a document must
+   not be able to inject markup or read the visitor's files. Level 5 keeps
+   docutils' own error paragraphs out of the pane — the file still renders as
+   far as it parses, which is how the Markdown side behaves too. */
+const RST_PY = `
+from docutils.core import publish_parts
+publish_parts(src, writer_name="html5", settings_overrides={
+    "raw_enabled": False,
+    "file_insertion_enabled": False,
+    "report_level": 5,
+    "doctitle_xform": False,
+    "syntax_highlight": "none",
+    "embed_stylesheet": False,
+})["body"]
+`;
+
+async function rst(text) {
+  if (!pyInstance) {
+    pyInstance = load("pyodide")
+      .then(async (m) => {
+        const py = await m.loadPyodide({
+          indexURL: cdn("pyodide").replace(/[^/]*$/, ""),
+        });
+        await py.loadPackage("docutils");
+        return py;
+      })
+      .catch((err) => {
+        pyInstance = null;
+        throw err;
+      });
+  }
+  const py = await pyInstance;
+  py.globals.set("src", text);
+  const html = await py.runPythonAsync(RST_PY);
+  /* docutils writes `.. code-block:: x` as <pre class="code x literal-block">
+     <code>; hlFences looks for <pre><code class="language-x">, the shape the
+     Markdown renderers emit. Same colours for the same fence, either syntax. */
+  return html.replace(
+    /<pre class="code (\S+) literal-block"><code>/g,
+    '<pre><code class="language-$1">',
+  );
+}
+
 /* ── The provider ────────────────────────────────────────────────────────── */
 const PreviewRich = {
   revoke() {
@@ -128,7 +186,10 @@ const PreviewRich = {
   async render(node) {
     if (!richEnabled()) return PreviewLocal.render(node);
 
-    if (!MD_RE.test(node.name) && !DOCX_RE.test(node.name)) {
+    if (
+      !MD_RE.test(node.name) && !DOCX_RE.test(node.name) &&
+      !RST_RE.test(node.name)
+    ) {
       return PreviewLocal.render(node);
     }
 
@@ -147,6 +208,9 @@ const PreviewRich = {
       if (blob.size > 512 * 1024) return PreviewLocal.render(node);
       const text = await blob.text();
 
+      if (RST_RE.test(node.name)) {
+        return `<div class="pv-rich">${await rst(text)}</div>`;
+      }
       return `<div class="pv-rich">${await markdown(text)}</div>`;
     } catch (err) {
       /* Offline, blocked, or the CDN moved. The file is still readable. */
