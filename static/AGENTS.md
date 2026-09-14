@@ -51,7 +51,7 @@ the user makes to your behaviour — capture it here so it survives a context re
 │   │   ├── fsa.js          ← FS: File System Access API      (filemill)
 │   │   ├── http.js         ← FS: GET /api/dir                (filemill)
 │   │   ├── preview-local.js  ← PREVIEW: coloured text, image, PDF, .desktop
-│   │   ├── preview-rich.js   ← PREVIEW: markdown-it/mammoth, on demand
+│   │   ├── preview-rich.js   ← PREVIEW: markdown-it/mammoth/docutils, on demand
 │   │   ├── preview-http.js   ← PREVIEW: GET /api/preview — the Python renderers
 │   │   ├── preview-upload.js ← PREVIEW: local bytes → POST /api/render
 │   │   ├── router-hash.js  ← ROUTER: #r=root&p=a/b.md        (filemill)
@@ -71,7 +71,7 @@ the user makes to your behaviour — capture it here so it survives a context re
     ├── test-ui.py              ← headless suite, fake handle (148 checks)
     ├── test-url.py             ← needs a real origin: deep links, and a real
     │                             filesystem through OPFS (15 checks)
-    ├── test-rich.py            ← CDN renderers: offline/switch/loaded (18)
+    ├── test-rich.py            ← CDN renderers: offline/switch/loaded (22)
     └── test-e2e.py             ← headed suite, real folder + real picker
 ```
 
