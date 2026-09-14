@@ -82,13 +82,15 @@ document.body.insertAdjacentHTML(
     <span id="st-sort"></span>
     <span id="st-refresh"></span>
     <span id="st-fold"></span>
-    <span><kbd>↑</kbd><kbd>↓</kbd> move</span>
-    <span><kbd>→</kbd> open</span>
-    <span><kbd>←</kbd> back</span>
-    <span><kbd>a…z</kbd> find</span>
-    <span><kbd>F5</kbd> refresh</span>
-    <span><kbd id="kbd-copy">⌘C</kbd> copy path</span>
-    <span><kbd>⇧</kbd>+wheel fold</span>
+    <span class="status-hints">
+      <span><kbd>↑</kbd><kbd>↓</kbd> move</span>
+      <span><kbd>→</kbd> open</span>
+      <span><kbd>←</kbd> back</span>
+      <span><kbd>a…z</kbd> find</span>
+      <span><kbd>F5</kbd> refresh</span>
+      <span><kbd id="kbd-copy">⌘C</kbd> copy path</span>
+    </span>
+    <span class="status-fold"><kbd>⇧</kbd>+wheel fold</span>
   </div>
 </div>
 

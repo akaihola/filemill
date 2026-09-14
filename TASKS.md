@@ -9,6 +9,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
+  files. Current PPTX support was implemented in task
+  38ab06e2-c607-4d4a-9978-67847e70d27d.
+
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
       now return the shared client shell.
 
@@ -239,10 +243,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
   identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
 
-- Bug: Task 511f90cc-2725-4ef1-a8d8-ed67c4eddb0f failed to fix the portrait mobile
-  scroll to the right problem. I suspect the extra space at the right side of the page
-  is caused by the `⇧+wheel fold` label flowing outside the right edge of the page.
-
 - Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
   between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
   viewing the source with syntax highlighting.
@@ -271,9 +271,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
-- Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
-  files. Current PPTX support was implemented in task
-  38ab06e2-c607-4d4a-9978-67847e70d27d.
+- Bug: Task 511f90cc-2725-4ef1-a8d8-ed67c4eddb0f failed to fix the portrait mobile
+  scroll to the right problem. I suspect the extra space at the right side of the page
+  is caused by the `⇧+wheel fold` label flowing outside the right edge of the page.
 
 - Feature: ability to delete a file or a directory from the file manager.
 
