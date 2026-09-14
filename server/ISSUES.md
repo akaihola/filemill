@@ -292,7 +292,7 @@ issue for the chosen implementation.
 ## #52 – Markdown raw source view toggle
 
 **Type:** feature
-**Status:** open
+**Status:** in-progress
 
 Markdown files are always shown rendered. Add a **Rendered / Raw** toggle button bar —
 analogous to the JSON formatted/raw toggle — so the user can inspect the raw `.md` source

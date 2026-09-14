@@ -23,6 +23,8 @@
 
 - [~] #51 PWA: start the Filemill HTTP service alongside the installed app
 
+- [~] #52 Markdown raw source view toggle (Rendered / Raw button bar, `MarkdownProvider`)
+
 - [ ] #50 ArrowRight after ArrowLeft loses previously focused item
 
 - [~] #49 CSV preview shows "not yet implemented" stub
@@ -44,8 +46,6 @@
 ## Scheduled
 
 ## Scheduled
-
-- [ ] #52 Markdown raw source view toggle (Rendered / Raw button bar, `MarkdownProvider`)
 
 ## Open
 
