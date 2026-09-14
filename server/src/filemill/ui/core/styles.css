@@ -855,6 +855,9 @@ body {
   #preview {
     margin-left: calc(-1 * var(--gutter));
   }
+  .pv-fullscreen #preview {
+    touch-action: pan-y;
+  }
 }
 #preview .pv-body {
   flex: 1;
