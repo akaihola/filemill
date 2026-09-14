@@ -225,9 +225,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] Add a `lint` job to `.github/workflows/publish.yml` that runs
-  `pre-commit run --all-files`. Make the `test` job need the `lint` job.
-
 - [14] Merge `server/TASKS.md`, `server/ISSUES.md` and `static/TASKS.md` into root
   `TASKS.md` and `docs/tasks/`. Keep open items. Delete closed items and the files.
 
@@ -257,6 +254,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [*] Add a `lint` job to `.github/workflows/publish.yml` that runs
+  `pre-commit run --all-files`. Make the `test` job need the `lint` job.
 
 - [*] Delete `server/.pi/settings.json`, `server/mobile-narrow-preview.png`,
   `server/.claude/commands/` and `architecture-review-20260904.html`.
