@@ -218,9 +218,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [14] Merge `server/TASKS.md`, `server/ISSUES.md` and `static/TASKS.md` into root
-  `TASKS.md` and `docs/tasks/`. Keep open items. Delete closed items and the files.
-
 - [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
   identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
 
@@ -247,6 +244,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [14] Merge `server/TASKS.md`, `server/ISSUES.md` and `static/TASKS.md` into root
+  `TASKS.md` and `docs/tasks/`. Keep open items. Delete closed items and the files.
 
 - [*] Add root `CONTRIBUTING.md` (setup, tests, commit style, STE rule), `SECURITY.md`
   (threat model, how to report) and `CHANGELOG.md` (Keep a Changelog format).
