@@ -25,6 +25,21 @@ Rules for TASKS.md usage are at the bottom of the file.
   solution for how to run the Python code on the browser by ourselves, but write a plan
   first without implementing it yet.
 
+- [*] Using the `Search file contents` input always causes the error
+  `Search error: Search timed out` to display. JavaScript console:
+  `XHR GET https://gogo.crane-boa.ts.net:8445/api/search?q=development [HTTP/2 503  2020ms]`.
+  Originally implemented in task 456736f9-7242-40d0-894d-d5e1db50c0de.
+
+- [*] In the CSV hierarchical preview, there are two problems. The first column is
+  always selected as the key. Instead, a unique column should be selected similar to how
+  it's done in JSON. Also, currently if the first column is not unique, all identical
+  values are selected together. This should be fixed for the case when no unique column
+  is available. Original implementation in task 8038a32c-570b-45ed-b3ca-5834b3b8dc18.
+
+- [*] Typing a right arrow when the rightmost column before the preview is focused
+  should focus the preview and let the user scroll it up/down using the arrow and
+  PgUp/PgDn keys.
+
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
       now return the shared client shell.
 
