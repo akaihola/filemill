@@ -359,7 +359,7 @@ async def run_suite(bundle, fake_handle):
         await pg.wait_for_timeout(400)
         check("file:// shows the localhost hint, not a dead picker",
               "file://" in await pg.inner_text("#w-msg"))
-        await pg.evaluate(FAKE)
+        await pg.evaluate(fake_handle)
         await mount(pg)
         check("Root folder mounts", await pg.evaluate("path[0].name") == "workspace")
         check("Welcome screen hidden after mount", await pg.evaluate("welcome.hidden"))
