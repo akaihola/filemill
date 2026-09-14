@@ -28,16 +28,19 @@ function vttHTML(source, mode = "transcript") {
     return '<div class="preview-error">Malformed WebVTT: missing WEBVTT header.</div>';
   }
   const cues = [];
+  let seenCue = false;
   for (const block of text.split(/\r?\n\s*\r?\n/).slice(1)) {
     const lines = block.split(/\r?\n/);
     if (["NOTE", "STYLE", "REGION"].includes(lines[0]?.trim())) continue;
     const i = lines.findIndex(line => line.includes("-->"));
     if (i < 0) {
+      if (!seenCue && block.trim()) continue;
       if (block.trim()) return '<div class="preview-error">Malformed WebVTT: cue is missing a timestamp.</div>';
       continue;
     }
     const m = lines[i].trim().match(/^(\d{2}:\d{2}(?::\d{2})?\.\d{3})\s+-->\s+(\d{2}:\d{2}(?::\d{2})?\.\d{3})(?:\s+.*)?$/);
     if (!m) return '<div class="preview-error">Malformed WebVTT: invalid cue timestamp.</div>';
+    seenCue = true;
     let cue = lines.slice(i + 1).join("\n").trim();
     const voice = cue.match(/^<v(?:\s+([^>]+))?>([\s\S]*)$/);
     const speaker = voice?.[1]?.trim() || "";
