@@ -18,9 +18,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [17] Convert `ui/core/` and `ui/adapters/` to ES modules with one entry module per
   edition. Make `static/build-index.py` inline the module graph.
 
-- [*] Document the full port contract in `ui/core/ports.js`: `FS.node`, `FS.blob`,
-  `ROUTER.write(state, replace)`, `RouterPath.base` and every node field.
-
 - [21] Cache the preview element keyed on the previewed node and its `meta`, the same
   way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
 
