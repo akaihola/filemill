@@ -99,11 +99,15 @@ def test_search_query_cannot_become_a_path_or_option(client, tmp_root: Path):
     assert all(not e["path"].startswith("/") for e in r.json()["matches"])
 
 
-def test_search_timeout_is_reported_as_a_backend_error(client, tmp_root: Path, monkeypatch):
+def test_search_timeout_is_reported_as_a_backend_error(
+    client, tmp_root: Path, monkeypatch
+):
     import subprocess
 
     def timeout(*args, **kwargs):
-        raise subprocess.TimeoutExpired(kwargs["args"] if "args" in kwargs else args[0], 10)
+        raise subprocess.TimeoutExpired(
+            kwargs["args"] if "args" in kwargs else args[0], 10
+        )
 
     monkeypatch.setattr("filemill.api.subprocess.run", timeout)
     r = client.get("/api/search?q=needle")
