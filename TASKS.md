@@ -9,12 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
-  between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
-  viewing the source with syntax highlighting.
-
-- Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight` view.
-
 - Feature: ability to delete a file or a directory from the file manager.
 
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
@@ -255,6 +249,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
+- Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight` view.
+
+- Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
+  between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
+  viewing the source with syntax highlighting.
+
 - Bug: After navigating from a directory url without query parameters (e.g.
   `/path/to/dir`) to a file (e.g. `file1.md`), and then another file (e.g. `file2.md`),
   and then opening file2 using the `Raw` button, and navigating back using the browser's
@@ -266,13 +266,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Bug: For `.vtt` files from YouTube, this error is always displayed instead of the
   content: `Malformed WebVTT: cue is missing a timestamp`. You may test using `.vtt`
   files found on the filesystem.
-
-- [*] Bug: Markdown preview doesn't fill and wrap paragraphs at the width of the
-  preview, but keeps linefeeds. Consecutive lines of text must be considered as a single
-  paragraph. If this can't be changed by configuring the Markdown renderer currently in
-  use, consider alternative renderers, check whether they support the other features
-  currently supported (e.g. checkboxes and wikilinks). Tradeoffs must be discussed with the
-  maintainer before implementing.
 
 - [~] Typing a right arrow when the rightmost column before the preview is focused
   should focus the preview and let the user scroll it up/down using the arrow and
@@ -339,6 +332,13 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [x] Bug: Markdown preview doesn't fill and wrap paragraphs at the width of the
+  preview, but keeps linefeeds. Consecutive lines of text must be considered as a single
+  paragraph. If this can't be changed by configuring the Markdown renderer currently in
+  use, consider alternative renderers, check whether they support the other features
+  currently supported (e.g. checkboxes and wikilinks). Tradeoffs must be discussed with the
+  maintainer before implementing.
 
 - [*] Rendering if reStructuredText (`.rst`) isn't currently supported. Investigate how
   to implement it on the client side. Prefer readily available 3rd party client-side
