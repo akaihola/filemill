@@ -57,9 +57,7 @@ def render_preview(path: Path, state=None, preview_url: str | None = None) -> st
     """
     ext = path.suffix.lower()
 
-    if ext == ".desktop":
-        return _preview_desktop(path)
-    elif ext == ".md":
+    if ext == ".md":
         return _preview_md(path, state)
     elif ext == ".docx":
         return _preview_docx(path)
@@ -275,7 +273,6 @@ def _preview_desktop(path: Path) -> str:
             return f'<div class="preview-unsupported"><em>Desktop entry type: {html_lib.escape(entry_type or "unknown")} — no URL to open.</em></div>'
 
         safe_url = html_lib.escape(url)
-        open_href = f"/open-link?path={urlquote(str(path))}"
 
         icon_html = ""
         if icon.startswith(("http://", "https://")):
@@ -296,12 +293,6 @@ def _preview_desktop(path: Path) -> str:
   <div style="word-break:break-all;">
     🔗 <a href="{safe_url}" target="_blank" rel="noopener noreferrer"
           style="color:#4a9eff;">{safe_url}</a>
-  </div>
-  <div>
-    <a href="{open_href}" target="_blank" rel="noopener noreferrer"
-       style="display:inline-block;padding:0.5rem 1.2rem;background:#4a9eff;color:#fff;border-radius:4px;text-decoration:none;font-weight:600;">
-      Open →
-    </a>
   </div>
 </div>"""
     except Exception as e:
