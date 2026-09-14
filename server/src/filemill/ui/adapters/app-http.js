@@ -33,8 +33,12 @@ const withHighlighting = (provider) => ({
 });
 
 async function mountServer() {
-  useFilesystem(withJson(withJsonl(HTTP)));
-  usePreview(withJsonPreview(withJsonlPreview(withHighlighting(PreviewHTTP))));
+  useFilesystem(withCsv(withJson(withJsonl(HTTP))));
+  usePreview(
+    withCsvPreview(
+      withJsonPreview(withJsonlPreview(withHighlighting(PreviewHTTP))),
+    ),
+  );
   useRouter(RouterPath);
 
   /* Read the link *before* the first render. render() syncs the URL, and the
@@ -62,9 +66,11 @@ async function mountServer() {
    Python renderers — see PreviewUpload — so switching sides costs no fidelity;
    only the URL goes quiet. */
 async function mount(handle) {
-  useFilesystem(withJson(withJsonl(FSA)));
+  useFilesystem(withCsv(withJson(withJsonl(FSA))));
   usePreview(
-    withJsonPreview(withJsonlPreview(withHighlighting(PreviewUpload))),
+    withCsvPreview(
+      withJsonPreview(withJsonlPreview(withHighlighting(PreviewUpload))),
+    ),
   );
   useRouter(null);
   const node = FSA.node(handle.name, handle);
