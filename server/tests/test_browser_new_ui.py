@@ -76,6 +76,9 @@ def ui_root(tmp_path: Path) -> Path:
         '{"id": 2, "title": "Second", "ts": "2026-01-02"}\n'
         '{"id": 1, "title": "First", "ts": "2026-01-01"}\n'
     )
+    (tmp_path / "data.csv").write_text("name,note\nAlice,hello\nBob,\"comma, value\"\n")
+    (tmp_path / "empty.csv").write_text("")
+    (tmp_path / "bad.csv").write_text('name,note\nAlice,\"oops\n')
     con = sqlite3.connect(str(tmp_path / "sample.db"))
     con.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
     for i in range(1, 4):
@@ -849,3 +852,19 @@ def test_a_jsonl_row_previews_in_the_browser_without_asking_the_server(page):
     assert cells == [["id", "2"], ["title", "Second"], ["ts", "2026-01-02"]]
     assert page.inner_text("#pv-sub") == ""
     assert [u for u in seen if "/api/preview" in u] == []
+
+
+def test_a_csv_row_previews_headers_and_quoted_values(page):
+    seen: list[str] = []
+    page.on("request", lambda r: seen.append(r.url))
+    page.open("data.csv/Bob")
+    page.wait_for_selector("#preview .pv-kv", timeout=15000)
+    assert page.inner_text("#preview .pv-kv") == "name\tBob\nnote\tcomma, value"
+    assert [u for u in seen if "/api/preview" in u] == []
+
+
+def test_empty_and_malformed_csv_files_keep_safe_raw_fallback(page):
+    page.open("empty.csv")
+    assert "not yet" not in " ".join(page.errors)
+    page.open("bad.csv")
+    assert "not yet" not in " ".join(page.errors)
