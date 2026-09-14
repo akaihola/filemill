@@ -9,7 +9,12 @@
    colours) is part of the signature and drops the whole cache. */
 const colCache = new Map();
 let cacheSig = null;
-const CACHE_MAX = 24;
+const CACHE_MAX = 24; // Retain enough nearby columns without growing memory unbounded.
+const COLUMN_WIDTH_RATIO = 2 / 3; // Leave room for adjacent columns on narrow screens.
+const MAX_DEPTH = 5; // Keep depth styling within the available visual scale.
+const SCROLL_HINT_PADDING = 4; // Show the affordance only when content exceeds the viewport.
+const EDIT_MAX = 512 * 1024; // Keep browser edits within the provider's 512 KB text limit.
+const EDIT_MAX_LINE = 10_000; // Avoid unusably wide editor lines.
 
 /* Writing the value a property already holds still dirties it — and a width or
    custom-property write on a column relays out every row inside it. Guard the
@@ -163,7 +168,10 @@ function render(keepScroll) {
        row sat 10 px past the right one until the next render healed it.
        #finder is `flex: 1` in the viewport, so it is the live number, and it
        is the one layout() reads to set --stage-w in the first place. */
-    const w = Math.min(c.width, Math.floor(finder.clientWidth * 2 / 3));
+    const w = Math.min(
+      c.width,
+      Math.floor(finder.clientWidth * COLUMN_WIDTH_RATIO),
+    );
     widths.push(w);
 
     /* `sorting` goes in the class string rather than on classList, because this
@@ -175,7 +183,11 @@ function render(keepScroll) {
         (i < focusCol ? "ancestor" : i > focusCol ? "descendant" : "focus") +
         (node.metaLoading ? " sorting" : ""),
     );
-    set(c.el.dataset, "depth", String(Math.min(5, Math.max(0, focusCol - i))));
+    set(
+      c.el.dataset,
+      "depth",
+      String(Math.min(MAX_DEPTH, Math.max(0, focusCol - i))),
+    );
     set(c.el.dataset, "i", String(i));
     set(c.el.style, "width", w + "px");
 
@@ -206,7 +218,7 @@ function render(keepScroll) {
   for (const c of cols) {
     c.el.classList.toggle(
       "scrollable-down",
-      c.body.scrollHeight > c.body.clientHeight + 4,
+      c.body.scrollHeight > c.body.clientHeight + SCROLL_HINT_PADDING,
     );
   }
   renderCrumbs();
@@ -459,8 +471,6 @@ async function fillPreview(n) {
    preview in adapters/preview-local.js (same extensions, same cap), but it is
    core's own copy: a build picks its preview provider freely, and Edit has to
    work with any of them. Keep the two lists in step. */
-const EDIT_MAX = 512 * 1024;
-const EDIT_MAX_LINE = 10_000;
 const NON_EDIT_RE =
   /\.(desktop|docx|pptx|pdf|html?|png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
 
