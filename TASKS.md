@@ -30,9 +30,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Delete `server/PLAN-18.md`, `PLAN-19.md`, `PLAN-20-shared-frontend.md` and
   `server/lmt/`. Move a paragraph only if it is still true and is not elsewhere.
 
-- [*] Delete `server/.pi/settings.json`, `server/mobile-narrow-preview.png`,
-  `server/.claude/commands/` and `architecture-review-20260904.html`.
-
 - [*] Make root `README.md` the one explanation of the two editions and their ports.
   `server/README.md` and `static/AGENTS.md` link to it and keep edition-specific text.
 
@@ -230,6 +227,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   JavaScript console either.
 
 ## Scheduled
+
+- [*] Delete `server/.pi/settings.json`, `server/mobile-narrow-preview.png`,
+  `server/.claude/commands/` and `architecture-review-20260904.html`.
 
 - [14] Merge `server/TASKS.md`, `server/ISSUES.md` and `static/TASKS.md` into root
   `TASKS.md` and `docs/tasks/`. Keep open items. Delete closed items and the files.
