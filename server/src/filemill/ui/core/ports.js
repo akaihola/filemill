@@ -18,8 +18,9 @@
                   unreadable directory; [Node…] for loaded children; undefined
                   for a file or leaf
        denied     string when loading failed; shown instead of directory rows
-       meta       {size, mod, type} for known file metadata, or {error: string}
-                  when metadata failed; absent until loadMeta runs
+       meta       {size, mod, type} for known file metadata, {virtual: true}
+                  for virtual entries, or {error: string} when metadata failed;
+                  absent until loadMeta runs
        loading    Promise while an adapter load is active; otherwise null/absent
        lastSel    string UI scratch: last selected child name
        metaDone   boolean UI scratch: every loaded file child was asked for meta
@@ -39,13 +40,14 @@
        pages      total server listing pages
        total      total server listing entries
        previewFormat string; requested preview format
-       csv        parsed CSV state
-       jsonl      parsed JSONL virtual-file state
-       json       parsed JSON virtual-file state
+       csv        boolean; this node is a CSV virtual directory
+       jsonl      boolean; this node is a JSONL virtual directory
+       json       boolean; this node is a JSON virtual directory or value
        headers    parsed CSV column names
        csvEmpty   boolean; parsed CSV has no records
        csvError   boolean; CSV parsing/loading failed
        value      parsed JSON value for a virtual node
+       record     parsed CSV, JSONL, or JSON table-row value
        jsonError  string; JSON parsing/loading error
 
      ensureLoaded(node) → Promise   fills node.kids (idempotent, debounced)
