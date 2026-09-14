@@ -907,7 +907,7 @@ def test_raw_navigation_stays_in_the_file_manager(page):
     assert page.url.endswith("/notes/plain.txt?filemill=raw")
     assert page.evaluate("sel")[-1] == "plain.txt"
     page.click('.col[data-i="0"] .row:has-text("code")')
-    page.wait_for_timeout(400)
+    page.wait_for_function("location.pathname === '/code'")
     assert page.url.endswith("/code?filemill=raw")
 
 
