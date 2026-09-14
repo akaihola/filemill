@@ -234,9 +234,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [14] Merge `server/TASKS.md`, `server/ISSUES.md` and `static/TASKS.md` into root
   `TASKS.md` and `docs/tasks/`. Keep open items. Delete closed items and the files.
 
-- [*] Remove the `--cov*` options from `addopts` in `server/pyproject.toml`. Pass them
-  on the `pytest` command line in the CI `test` job. A single-test run must be fast.
-
 - [*] Add `.pre-commit-config.yaml` with ruff, ruff-format, mypy, deno fmt, deno lint
   and `static/build-index.py --check`. Run `pre-commit run --all-files` until it passes.
 
@@ -339,6 +336,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [x] Remove the `--cov*` options from `addopts` in `server/pyproject.toml`. Pass them
+      on the `pytest` command line in the CI `test` job. A single-test run must be fast.
 
 - [*] Rendering if reStructuredText (`.rst`) isn't currently supported. Investigate how
   to implement it on the client side. Prefer readily available 3rd party client-side
