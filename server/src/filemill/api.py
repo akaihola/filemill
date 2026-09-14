@@ -28,6 +28,7 @@ import json
 import math
 import mimetypes
 import os
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -290,6 +291,20 @@ def save_file(target: Path, data: bytes) -> Response:
         return JSONResponse({"error": str(exc)}, status_code=500)
     st = target.stat()
     return JSONResponse({"size": st.st_size, "mod": int(st.st_mtime * 1000)})
+
+
+def delete_file(target: Path) -> Response:
+    """Delete one existing real file or directory."""
+    if not target.exists():
+        return JSONResponse({"error": "Not found"}, status_code=404)
+    try:
+        if target.is_symlink() or not target.is_dir():
+            target.unlink()
+        else:
+            shutil.rmtree(target)
+    except OSError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+    return JSONResponse({"deleted": True})
 
 
 def preview_fragment(target: Path, render) -> Response:
