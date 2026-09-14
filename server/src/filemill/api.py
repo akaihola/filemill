@@ -44,7 +44,8 @@ RENDER_MAX = 8 * 1024 * 1024
 SEARCH_QUERY_MAX = 200
 SEARCH_MATCH_MAX = 100
 SEARCH_OUTPUT_MAX = 256 * 1024
-SEARCH_TIMEOUT = 2
+# The demo proxy allows more than the old two-second subprocess limit.
+SEARCH_TIMEOUT = 10
 DIR_PAGE_SIZE = 500
 
 
@@ -63,7 +64,9 @@ def search_root(root: Path, query: str) -> list[dict]:
         result = subprocess.run(
             ["rg", "--json", "--fixed-strings", "--line-number", "--column",
              "--max-count", str(SEARCH_MATCH_MAX), "--max-columns", "240",
-             "--max-columns-preview", "--glob", "!.git", "--", query, "."],
+             "--max-columns-preview", "--glob", "!.git/**", "--glob", "!node_modules/**",
+             "--glob", "!.venv/**", "--glob", "!__pycache__/**", "--glob", "!.cache/**",
+             "--", query, "."],
             cwd=root, capture_output=True, text=True, timeout=SEARCH_TIMEOUT, check=False,
         )
     except FileNotFoundError as exc:
