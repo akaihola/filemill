@@ -21,6 +21,7 @@
 
 ## In progress
 
+- [~] #49 CSV preview shows "not yet implemented" stub
 - [~] #48 Truncate filenames preserving the file extension
 - [~] #46 Automatic dark mode following OS colour-scheme preference
 - [x] **New UI migration** — the shared Miller-columns frontend runs at `/n/`,
@@ -33,8 +34,6 @@
 ---
 
 ## Scheduled
-
-- [ ] #49 CSV preview shows "not yet implemented" stub
 
 ## Open
 
