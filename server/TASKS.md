@@ -39,12 +39,15 @@
 
 ## Scheduled
 
+## Scheduled
+
+- [ ] #51 PWA: start the Filemill HTTP service alongside the installed app
+
 ## Open
 
 _Items without an issue number are not yet tracked in ISSUES.md._
 
 - [ ] #47 Column width & scrolling UX: jumps, long-name stretch, no left-scroll
-- [ ] #51 PWA: start the Filemill HTTP service alongside the installed app
 - [ ] Pagination for large directories (> 500 entries)
 - [ ] PPTX slide image rendering via LibreOffice (better fidelity than text extraction)
 - [ ] #52 Markdown raw source view toggle (Rendered / Raw button bar, `MarkdownProvider`)
