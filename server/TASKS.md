@@ -35,12 +35,15 @@
 
 ## Scheduled
 
+## Scheduled
+
+- [ ] #50 ArrowRight after ArrowLeft loses previously focused item
+
 ## Open
 
 _Items without an issue number are not yet tracked in ISSUES.md._
 
 - [ ] #47 Column width & scrolling UX: jumps, long-name stretch, no left-scroll
-- [ ] #50 ArrowRight after ArrowLeft loses previously focused item
 - [ ] #51 PWA: start the Filemill HTTP service alongside the installed app
 - [ ] Pagination for large directories (> 500 entries)
 - [ ] PPTX slide image rendering via LibreOffice (better fidelity than text extraction)
