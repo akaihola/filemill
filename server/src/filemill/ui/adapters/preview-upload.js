@@ -23,6 +23,7 @@ const PreviewUpload = {
   },
 
   async render(node) {
+    if (/\.vtt$/i.test(node.name)) return PreviewLocal.render(node);
     /* object-URL cases, and the ones too big to be worth sending */
     if (
       /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg|pdf)$/i.test(node.name) ||
