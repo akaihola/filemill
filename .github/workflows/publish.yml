@@ -78,7 +78,7 @@ jobs:
       # change that suits one project and breaks the other.
       - name: The server edition
         working-directory: server
-        run: uv run --with "playwright==1.61.0" pytest
+        run: uv run --with "playwright==1.61.0" pytest --cov=src/filemill --cov-branch --cov-report=term-missing
 
   publish:
     needs: test
