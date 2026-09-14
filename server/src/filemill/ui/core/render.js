@@ -314,7 +314,7 @@ function setupPreviewActions(n) {
     }
   }
   if (vttViews) {
-    vttViews.hidden = !vtt;
+    vttViews.hidden = !vtt || view === "highlight";
     for (const [id, mode, label] of [
       ["pv-vtt-transcript", "transcript", "View WebVTT transcript"],
       ["pv-vtt-raw", "raw", "View raw WebVTT source"],
@@ -384,7 +384,7 @@ async function fillPreview(n) {
   try {
     html = MARKDOWN_RE.test(n.name) && markdownView === "raw"
       ? (await rawMarkdown(n) || await PREVIEW.render(n))
-      : /\.vtt$/i.test(n.name)
+      : /\.vtt$/i.test(n.name) && previewView() !== "highlight"
       ? await PREVIEW.render({ ...n, previewFormat: vttView })
       : await PREVIEW.render(n);
   } catch (err) {
