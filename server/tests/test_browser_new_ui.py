@@ -66,6 +66,7 @@ def ui_root(tmp_path: Path) -> Path:
     (tmp_path / "README.md").write_text(
         "# Readme\n\nline one\nline two\n\n```python\n" + SOURCE + "```\n"
     )
+    (tmp_path / "page.html").write_text("<h1>Hi</h1>\n")
     (tmp_path / "soft-breaks.md").write_text("one\ntwo\n\nthree  \nfour\n")
     (tmp_path / "short.txt").write_text("short")
     (tmp_path / "README").write_text("readme")
@@ -934,11 +935,15 @@ def test_back_from_raw_restores_the_previous_rendered_file(page):
 
 
 def test_highlight_shows_the_source_in_the_columns(page):
-    """The view reaches /api/preview through preview-http.js."""
+    """Markdown and HTML source use the shared browser highlighter."""
     page.open_resource("notes/deep/leaf.md?filemill=highlight")
-    page.wait_for_selector("#preview .pv-rich .preview-code", timeout=15000)
-    assert "# Leaf" in page.inner_text("#preview .pv-rich")
-    assert page.locator("#preview .pv-rich h1").count() == 0
+    page.wait_for_selector("#preview .pv-text .hl-com", timeout=15000)
+    assert page.text_content("#preview .pv-text") == "# Leaf\n**bold** text\n"
+    assert page.locator("#preview .pv-rich").count() == 0
+    page.open_resource("page.html?filemill=highlight")
+    page.wait_for_selector("#preview .pv-text .hl-kw", timeout=15000)
+    assert page.text_content("#preview .pv-text") == "<h1>Hi</h1>\n"
+    assert page.locator("iframe.pv-html").count() == 0
 
 
 def test_hidden_show_starts_with_dotfiles_visible(page):

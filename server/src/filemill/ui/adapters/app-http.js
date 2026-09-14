@@ -29,7 +29,8 @@ const withHighlighting = (provider) => ({
     PreviewLocal.revoke();
   },
   render: (n) =>
-    (!n.vpath && hlLang(n.name) ? PreviewLocal : provider).render(n),
+    (!n.vpath && document.documentElement.dataset.filemill === "highlight" &&
+      hlLang(n.name) ? PreviewLocal : provider).render(n),
 });
 
 async function mountServer() {

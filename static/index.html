@@ -2145,9 +2145,8 @@ const esc = (s) =>
    once — see hlHTML.
 
    A language is one line in HL_LANGS. An extension that is not listed previews
-   as plain text, the way every file did before this existed. Markdown, SVG and
-   HTML are absent on purpose: the pane has something better than source for
-   them already.
+   as plain text, the way every file did before this existed. SVG is absent on
+   purpose: the pane has something better than source for it.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Written as plain strings rather than literals because they are assembled:
@@ -2200,6 +2199,7 @@ const K_SQL =
    keywords are not words — a TeX macro, a CSS at-rule, an XML tag — can say so
    without a second mechanism. `n: false` turns the number class off. */
 const HL_SPECS = {
+  markdown: { c: HL_HASH, s: HL_TICK, k: hlWords("true false") },
   js: { c: HL_SLASH, s: HL_TICK, k: hlWords(K_JS) },
   ts: { c: HL_SLASH, s: HL_TICK, k: hlWords(K_TS) },
   py: { c: HL_HASH, s: HL_TRIPLE, k: hlWords(K_PY) },
@@ -2321,6 +2321,10 @@ const HL_SPECS = {
 
 /* Extensions that are the same language under another name. */
 const HL_ALIAS = {
+  md: "markdown",
+  markdown: "markdown",
+  html: "xml",
+  htm: "xml",
   mjs: "js",
   cjs: "js",
   jsx: "js",
@@ -4195,7 +4199,14 @@ let lastKey = null;
 function syncURL() {
   if (applying || !ROUTER || !path.length) return;
   const key = path.slice(0, focusCol + 1).map((p) => p.name).join("/");
-  ROUTER.write({ root: path[0].name, path: currentPath() }, lastKey === key);
+  const names = currentPath();
+  const node = previewNode();
+  const view = node && !node.dir
+    ? document.documentElement.dataset.filemill === "highlight"
+      ? "highlight"
+      : "render"
+    : undefined;
+  ROUTER.write({ root: path[0].name, path: names, view }, lastKey === key);
   lastKey = key;
 }
 
@@ -4934,16 +4945,19 @@ function vttHTML(source, mode = "transcript") {
     return '<div class="preview-error">Malformed WebVTT: missing WEBVTT header.</div>';
   }
   const cues = [];
+  let seenCue = false;
   for (const block of text.split(/\r?\n\s*\r?\n/).slice(1)) {
     const lines = block.split(/\r?\n/);
     if (["NOTE", "STYLE", "REGION"].includes(lines[0]?.trim())) continue;
     const i = lines.findIndex(line => line.includes("-->"));
     if (i < 0) {
+      if (!seenCue && block.trim() && lines.every(line => line.includes(":"))) continue;
       if (block.trim()) return '<div class="preview-error">Malformed WebVTT: cue is missing a timestamp.</div>';
       continue;
     }
     const m = lines[i].trim().match(/^(\d{2}:\d{2}(?::\d{2})?\.\d{3})\s+-->\s+(\d{2}:\d{2}(?::\d{2})?\.\d{3})(?:\s+.*)?$/);
     if (!m) return '<div class="preview-error">Malformed WebVTT: invalid cue timestamp.</div>';
+    seenCue = true;
     let cue = lines.slice(i + 1).join("\n").trim();
     const voice = cue.match(/^<v(?:\s+([^>]+))?>([\s\S]*)$/);
     const speaker = voice?.[1]?.trim() || "";
