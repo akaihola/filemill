@@ -1222,6 +1222,22 @@ def test_mobile_scroll_behavior_preview_assertions(live_server: str):
         _wait_for_finder_scroll(page)
         assert page.evaluate("finder.scrollLeft") > 0
 
+        metrics = page.evaluate(
+            """() => {
+                const status = document.getElementById('status');
+                const fold = document.querySelector('.status-fold');
+                return {
+                    documentWidth: document.documentElement.scrollWidth,
+                    viewportWidth: window.innerWidth,
+                    statusRight: status.getBoundingClientRect().right,
+                    foldRight: fold.getBoundingClientRect().right,
+                };
+            }"""
+        )
+        assert metrics["documentWidth"] == metrics["viewportWidth"]
+        assert metrics["statusRight"] <= metrics["viewportWidth"]
+        assert metrics["foldRight"] <= metrics["viewportWidth"]
+
 
 @pytest.mark.integration
 def test_mobile_scroll_regression_user_case_is_covered(live_server: str):
