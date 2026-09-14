@@ -32,6 +32,12 @@ def test_manifest_required_fields(client):
     assert len(data["icons"]) >= 1
 
 
+def test_manifest_stays_on_the_server_origin(client):
+    data = client.get("/manifest.json").json()
+    assert data["start_url"] == "/"
+    assert data["scope"] == "/"
+
+
 def test_manifest_has_192_icon(client):
     data = client.get("/manifest.json").json()
     sizes = {icon["sizes"] for icon in data["icons"]}
@@ -145,3 +151,10 @@ def test_shared_ui_registers_sw(client):
     html = client.get("/n/").text
     assert "serviceWorker" in html
     assert "/sw.js" in html
+
+
+def test_shared_ui_explains_unavailable_server(client):
+    html = client.get("/n/").text
+    assert "Filemill server unavailable" in html
+    assert "Retry connection" in html
+    assert "cannot start it" in html

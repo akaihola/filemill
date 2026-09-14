@@ -21,6 +21,8 @@
 
 ## In progress
 
+- [~] #51 PWA: start the Filemill HTTP service alongside the installed app
+
 - [ ] #50 ArrowRight after ArrowLeft loses previously focused item
 
 - [~] #49 CSV preview shows "not yet implemented" stub
@@ -40,8 +42,6 @@
 ## Scheduled
 
 ## Scheduled
-
-- [ ] #51 PWA: start the Filemill HTTP service alongside the installed app
 
 ## Open
 
