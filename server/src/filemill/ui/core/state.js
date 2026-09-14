@@ -71,6 +71,11 @@ const previewNode = () => {
   return (n && !n.dir) ? n : null;
 };
 
+const selectedNode = () => {
+  const last = path[path.length - 1], s = sel[path.length - 1];
+  return s && (last.kids || []).find((k) => k.name === s) || null;
+};
+
 /* 88 columns of .pv-text plus its and .pv-body's horizontal padding (30 + 52),
    measured from the real monospace font so it agrees with the CSS min-width */
 const codeMin = () =>

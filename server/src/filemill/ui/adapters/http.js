@@ -138,4 +138,16 @@ const HTTP = {
     if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
     node.meta = await r.json();
   },
+
+  async remove(node) {
+    if (node.vpath) throw new Error("Virtual entries cannot be deleted");
+    const r = await fetch(`${API}/delete?p=${encodeURIComponent(node.rel)}`, {
+      method: "DELETE",
+    });
+    if (!r.ok) {
+      let message = `${r.status} ${r.statusText}`;
+      try { message = (await r.json()).error || message; } catch (_) { }
+      throw new Error(message);
+    }
+  },
 };
