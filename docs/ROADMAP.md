@@ -111,10 +111,7 @@ must be small enough to update in the same commit.
 2. Delete `server/PLAN-18.md`, `PLAN-19.md`, `PLAN-20-shared-frontend.md` and
    `server/lmt/`. If a paragraph in them is still true and not elsewhere,
    move that paragraph, not the file.
-3. Delete `server/.pi/settings.json`, `server/mobile-narrow-preview.png`,
-   `server/.claude/commands/` and `architecture-review-20260904.html`.
-   `docs/ARCHITECTURE-REVIEW.md` covers the last one.
-4. Make root `README.md` the one explanation of the two editions and the
+3. Make root `README.md` the one explanation of the two editions and the
    ports. `server/README.md` and `static/AGENTS.md` link to it and keep only
    what is specific to their edition.
 5. Create `docs/adr/`. Split the decisions table in `static/AGENTS.md` into
