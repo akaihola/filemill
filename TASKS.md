@@ -9,10 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [*] `.py.j2` are templates for Python files that are rendered by Jinja2. Does our
-  highlighting library support syntax highlighting for such hybrid files? If so,
-  implement that. If not, consider alternatives and write a report.
-
 - [*] Rendering if reStructuredText (`.rst`) isn't currently supported. Investigate how
   to implement it on the client side. Prefer readily available 3rd party client-side
   solutions, or pre-packaged Python solutions to run on the browser, and just implement
@@ -294,6 +290,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   JavaScript console either.
 
 ## Scheduled
+
+- [*] `.py.j2` are templates for Python files that are rendered by Jinja2. Does our
+  highlighting library support syntax highlighting for such hybrid files? If so,
+  implement that. If not, consider alternatives and write a report.
 
 - [*] On portrait mobile, a horizontal left swipe now eventually shows the preview which
   fills the screen. Good. But an additional left swipe on the screen-filling preview
