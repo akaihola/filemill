@@ -255,14 +255,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
   viewing the source with syntax highlighting.
 
-- Bug: After navigating from a directory url without query parameters (e.g.
-  `/path/to/dir`) to a file (e.g. `file1.md`), and then another file (e.g. `file2.md`),
-  and then opening file2 using the `Raw` button, and navigating back using the browser's
-  back button, in some situations the file manager view isn't displayed. Instead, the
-  raw view of file1 is shown. Navigating to files needs to always include the
-  `?filemill=render` or `?filemill=highlight` query parameter (whichever mode was last
-  active) to prevent this behavior.
-
 - [*] Bug: Markdown preview doesn't fill and wrap paragraphs at the width of the
   preview, but keeps linefeeds. Consecutive lines of text must be considered as a single
   paragraph. If this can't be changed by configuring the Markdown renderer currently in
@@ -286,6 +278,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- Bug: After navigating from a directory url without query parameters (e.g.
+  `/path/to/dir`) to a file (e.g. `file1.md`), and then another file (e.g. `file2.md`),
+  and then opening file2 using the `Raw` button, and navigating back using the browser's
+  back button, in some situations the file manager view isn't displayed. Instead, the
+  raw view of file1 is shown. Navigating to files needs to always include the
+  `?filemill=render` or `?filemill=highlight` query parameter (whichever mode was last
+  active) to prevent this behavior.
 
 - Bug: For `.vtt` files from YouTube, this error is always displayed instead of the
   content: `Malformed WebVTT: cue is missing a timestamp`. You may test using `.vtt`

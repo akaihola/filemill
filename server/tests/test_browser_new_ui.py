@@ -54,6 +54,7 @@ def ui_root(tmp_path: Path) -> Path:
     (tmp_path / "notes" / "deep").mkdir()
     (tmp_path / "notes" / "deep" / "leaf.md").write_text("# Leaf\n**bold** text\n")
     (tmp_path / "notes" / "plain.txt").write_text("hello")
+    (tmp_path / "notes" / "short.txt").write_text("short")
     (tmp_path / "code").mkdir()
     (tmp_path / "code" / "sample.py").write_text(SOURCE)
     (tmp_path / "code" / "nested.json").write_text('{"tags":["a","b"],"n":1}')
@@ -919,6 +920,17 @@ def test_raw_navigation_stays_in_the_file_manager(page):
     page.click('.col[data-i="0"] .row:has-text("code")')
     page.wait_for_function("location.pathname === '/code'")
     assert page.url.endswith("/code?filemill=raw")
+
+
+def test_back_from_raw_restores_the_previous_rendered_file(page):
+    page.open("notes")
+    page.click('.col[data-i="0"] .row:has-text("plain.txt")')
+    page.click('.col[data-i="0"] .row:has-text("short.txt")')
+    page.click("#pv-raw")
+    page.go_back()
+    page.wait_for_selector("#preview .pv-content", timeout=15000)
+    assert page.url.endswith("/notes/short.txt?filemill=render")
+    assert page.evaluate("sel")[-1] == "short.txt"
 
 
 def test_highlight_shows_the_source_in_the_columns(page):
