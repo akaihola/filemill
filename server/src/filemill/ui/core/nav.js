@@ -316,8 +316,11 @@ document.addEventListener("keydown", (e) => {
       const body = document.querySelector("#preview .pv-body");
       e.preventDefault();
       body?.scrollBy({
-        top: e.key === "ArrowUp" ? -40 : e.key === "ArrowDown" ? 40 :
-          (e.key === "PageUp" ? -1 : 1) * body.clientHeight,
+        top: e.key === "ArrowUp"
+          ? -40
+          : e.key === "ArrowDown"
+          ? 40
+          : (e.key === "PageUp" ? -1 : 1) * body.clientHeight,
       });
     }
     return;

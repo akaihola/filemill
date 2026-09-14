@@ -71,8 +71,10 @@ const FSA = {
   },
 
   async remove(node) {
-    if (node.handle.requestPermission &&
-        await node.handle.requestPermission({ mode: "readwrite" }) !== "granted") {
+    if (
+      node.handle.requestPermission &&
+      await node.handle.requestPermission({ mode: "readwrite" }) !== "granted"
+    ) {
       throw new Error("No permission to delete");
     }
     if (!node.handle.parent) throw new Error("Cannot delete this entry");
