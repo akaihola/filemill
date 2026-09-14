@@ -9,12 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [*] In the CSV hierarchical preview, there are two problems. The first column is
-  always selected as the key. Instead, a unique column should be selected similar to how
-  it's done in JSON. Also, currently if the first column is not unique, all identical
-  values are selected together. This should be fixed for the case when no unique column
-  is available. Original implementation in task 8038a32c-570b-45ed-b3ca-5834b3b8dc18.
-
 - [*] Typing a right arrow when the rightmost column before the preview is focused
   should focus the preview and let the user scroll it up/down using the arrow and
   PgUp/PgDn keys.
@@ -286,6 +280,12 @@ Rules for TASKS.md usage are at the bottom of the file.
   JavaScript console either.
 
 ## Scheduled
+
+- [*] In the CSV hierarchical preview, there are two problems. The first column is
+  always selected as the key. Instead, a unique column should be selected similar to how
+  it's done in JSON. Also, currently if the first column is not unique, all identical
+  values are selected together. This should be fixed for the case when no unique column
+  is available. Original implementation in task 8038a32c-570b-45ed-b3ca-5834b3b8dc18.
 
 - [*] Using the `Search file contents` input always causes the error
   `Search error: Search timed out` to display. JavaScript console:
