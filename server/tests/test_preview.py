@@ -1,3 +1,4 @@
+import subprocess
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -84,9 +85,10 @@ def test_dispatch_docx(tmp_path, monkeypatch):
     assert "preview-docx" in render_preview(f)
 
 
-def test_dispatch_pptx(tmp_path):
+def test_dispatch_pptx(tmp_path, monkeypatch):
     f = tmp_path / "deck.pptx"
-    _make_pptx(f, text="Hello Slide")
+    f.write_bytes(b"pptx")
+    _fake_libreoffice(monkeypatch)
     assert "preview-pptx" in render_preview(f)
 
 
@@ -166,57 +168,44 @@ def test_preview_docx_exception(tmp_path, monkeypatch):
 # ── _preview_pptx ─────────────────────────────────────────────────────────────
 
 
-def test_preview_pptx_valid(tmp_path):
+def _fake_libreoffice(monkeypatch, count=2, raises=None):
+    def run(command, **kwargs):
+        if raises:
+            raise raises
+        output = (
+            Path(command[command.index("--outdir") + 1])
+            if "--outdir" in command
+            else Path(command[-1]).parent
+        )
+        if command[0] == "libreoffice":
+            (output / f"{Path(command[-1]).stem}.pdf").write_bytes(b"pdf")
+        else:
+            for i in range(1, count + 1):
+                (output / f"slide-{i}.png").write_bytes(f"slide {i}".encode())
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr("filemill.preview.subprocess.run", run)
+
+
+def test_preview_pptx_renders_ordered_slide_images(tmp_path, monkeypatch):
     f = tmp_path / "deck.pptx"
-    _make_pptx(f, text="Hello Slide")
+    f.write_bytes(b"pptx")
+    _fake_libreoffice(monkeypatch)
     html = _preview_pptx(f)
-    assert "preview-pptx" in html
-    assert "Hello Slide" in html
+    assert html.count("<img ") == 2
+    assert html.index('alt="Slide 1"') < html.index('alt="Slide 2"')
+    assert "data:image/png;base64," in html
 
 
-def test_preview_pptx_bold(tmp_path):
+def test_preview_pptx_conversion_failure_uses_preview_error(tmp_path, monkeypatch):
     f = tmp_path / "deck.pptx"
-    _make_pptx(f, text="Bold text", bold=True)
-    assert "<strong>Bold text</strong>" in _preview_pptx(f)
-
-
-def test_preview_pptx_italic(tmp_path):
-    f = tmp_path / "deck.pptx"
-    _make_pptx(f, text="Italic text", italic=True)
-    assert "<em>Italic text</em>" in _preview_pptx(f)
-
-
-def test_preview_pptx_exception(tmp_path):
-    """Non-zip bytes cause Presentation() to raise; must return preview-error."""
-    f = tmp_path / "deck.pptx"
-    f.write_bytes(b"not a zip")
+    f.write_bytes(b"pptx")
+    _fake_libreoffice(monkeypatch, raises=FileNotFoundError("libreoffice"))
     assert "preview-error" in _preview_pptx(f)
 
 
-def test_preview_pptx_shape_without_text_frame_is_skipped(tmp_path):
-    """A picture shape (has_text_frame=False) must not crash – it is skipped."""
-    import io
-
-    from pptx import Presentation
-    from pptx.util import Inches
-
-    try:
-        from PIL import Image
-
-        img = Image.new("RGB", (1, 1), color="red")
-        buf = io.BytesIO()
-        img.save(buf, format="PNG")
-        buf.seek(0)
-        prs = Presentation()
-        slide = prs.slides.add_slide(prs.slide_layouts[6])
-        slide.shapes.add_picture(buf, Inches(0), Inches(0), Inches(1), Inches(1))
-        prs.save(str(tmp_path / "deck.pptx"))
-    except ImportError:
-        pytest.skip("Pillow not installed")
-    assert "preview-pptx" in _preview_pptx(tmp_path / "deck.pptx")
-
-
 def test_preview_pptx_empty_paragraph_is_skipped(tmp_path):
+    pytest.skip("PPTX text extraction was replaced by LibreOffice rendering")
     """A paragraph with no runs produces an empty line_parts list (if branch=False)."""
     from pptx import Presentation
     from pptx.util import Inches
