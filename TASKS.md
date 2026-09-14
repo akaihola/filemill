@@ -9,11 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [*] On portrait mobile, a horizontal left swipe now eventually shows the preview which
-  fills the screen. Good. But an additional left swipe on the screen-filling preview
-  scrolls the entire page about 1/12th width and leaves an empty margin at the right
-  edge.
-
 - [*] `.py.j2` are templates for Python files that are rendered by Jinja2. Does our
   highlighting library support syntax highlighting for such hybrid files? If so,
   implement that. If not, consider alternatives and write a report.
@@ -47,8 +42,28 @@ Rules for TASKS.md usage are at the bottom of the file.
   preview, but keeps linefeeds. Consecutive lines of text must be considered as a single
   paragraph. If this can't be changed by configuring the Markdown renderer currently in
   use, consider alternative renderers, check whether they support the other features
-  currently supported (e.g. checkboxes). Tradeoffs must be discussed with the maintainer
-  before implementing.
+  currently supported (e.g. checkboxes and wikilinks). Tradeoffs must be discussed with
+  the maintainer before implementing.
+
+- Bug: After navigating from a directory url without query parameters (e.g.
+  `/path/to/dir`) to a file (e.g. `file1.md`), and then another file (e.g. `file2.md`),
+  and then opening file2 using the `Raw` button, and navigating back using the browser's
+  back button, in some situations the file manager view isn't displayed. Instead, the
+  raw view of file1 is shown. Navigating to files needs to always include the
+  `?filemill=render` or `?filemill=highlight` query parameter (whichever mode was last
+  active) to prevent this behavior.
+
+- Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
+  between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
+  viewing the source with syntax highlighting.
+
+- Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight` view.
+
+- Bug: For `.vtt` files from YouTube, this error is always displayed instead of the
+  content: `Malformed WebVTT: cue is missing a timestamp`. You may test using `.vtt`
+  files found on the filesystem.
+
+- Feature: ability to delete a file or a directory from the file manager.
 
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
       now return the shared client shell.
@@ -279,6 +294,11 @@ Rules for TASKS.md usage are at the bottom of the file.
   JavaScript console either.
 
 ## Scheduled
+
+- [*] On portrait mobile, a horizontal left swipe now eventually shows the preview which
+  fills the screen. Good. But an additional left swipe on the screen-filling preview
+  scrolls the entire page about 1/12th width and leaves an empty margin at the right
+  edge.
 
 - [x] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
       `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in
