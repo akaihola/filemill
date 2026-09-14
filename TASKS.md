@@ -24,6 +24,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [17] Convert `ui/core/` and `ui/adapters/` to ES modules with one entry module per
   edition. Make `static/build-index.py` inline the module graph.
 
+- [*] Document the full port contract in `ui/core/ports.js`: `FS.node`, `FS.blob`,
+  `ROUTER.write(state, replace)`, `RouterPath.base` and every node field.
+
 ## Ordered backlog
 
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
@@ -48,9 +51,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [19] Move adapter code out of `ui/core/`: `jsonl.js`, the welcome screen, the local
   badge and `offerRichToggle` go to `ui/adapters/`.
     - Depends on: [17]
-
-- [*] Document the full port contract in `ui/core/ports.js`: `FS.node`, `FS.blob`,
-  `ROUTER.write(state, replace)`, `RouterPath.base` and every node field.
 
 - [20] Create `ui/core/limits.js` with one `TEXT_MAX` and one image extension list.
   Create one `mountRoot()` and one `currentPath()`. Delete the copies and `pathParts`.
@@ -223,9 +223,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   JavaScript console either.
 
 ## Scheduled
-
-- [*] Delete `server/PLAN-18.md`, `PLAN-19.md`, `PLAN-20-shared-frontend.md` and
-  `server/lmt/`. Move a paragraph only if it is still true and is not elsewhere.
 
 - [14] Merge `server/TASKS.md`, `server/ISSUES.md` and `static/TASKS.md` into root
   `TASKS.md` and `docs/tasks/`. Keep open items. Delete closed items and the files.
