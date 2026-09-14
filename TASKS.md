@@ -7,6 +7,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an unverified
   architecture proposal, conditional on a fourth provider or a pagination bug.
 
+## Scheduled
+
+- [*] Make root `README.md` the one explanation of the two editions and their ports.
+  `server/README.md` and `static/AGENTS.md` link to it and keep edition-specific text.
+
 ## Ordered backlog
 
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
@@ -23,9 +28,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
       `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
       `TASKS.md`.
-
-- [*] Make root `README.md` the one explanation of the two editions and their ports.
-  `server/README.md` and `static/AGENTS.md` link to it and keep edition-specific text.
 
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
   decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
