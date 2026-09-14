@@ -46,14 +46,18 @@ def parse(text: str) -> list[tuple[str, str, str, str]]:
     if not re.match(r"^WEBVTT(?:\s|$)", source):
         raise ValueError("missing WEBVTT header")
     cues = []
+    seen_cue = False
     for block in re.split(r"\r?\n\s*\r?\n", source)[1:]:
         lines = block.splitlines()
         if not lines or lines[0].strip() in {"NOTE", "STYLE", "REGION"}:
             continue
         parsed = _cue(block)
         if parsed is None and block.strip():
+            if not seen_cue:
+                continue
             raise ValueError("cue is missing a timestamp")
         if parsed:
+            seen_cue = True
             start, end, tagged = parsed
             speaker, cue_text = tagged.split("\x00", 1)
             if cue_text:
