@@ -134,9 +134,9 @@ def serve():
     return httpd, httpd.server_address[1]
 
 
-async def main():
+async def run_suite(bundle, fake_handle, opfs_root):
     httpd, port = serve()
-    base = f"http://127.0.0.1:{port}/{TARGET}"
+    base = f"http://127.0.0.1:{port}/static/{bundle.name}"
 
     async with async_playwright() as p:
         b = await p.chromium.launch()
@@ -279,7 +279,8 @@ async def main():
     if failed:
         print("  Failed: " + ", ".join(failed))
     print("═" * 62)
-    sys.exit(1 if failed else 0)
+    assert not failed, "; ".join(failed)
 
 
-asyncio.run(main())
+def test_url(bundle, fake_handle, opfs_root):
+    asyncio.run(run_suite(bundle, fake_handle, opfs_root))

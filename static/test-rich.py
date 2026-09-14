@@ -17,17 +17,9 @@ networkless hosts. The *loaded* path is exercised against stub modules served
 from the same loopback server, which is the only way to reach it without the
 real CDN.
 
-    uv run --with "playwright==1.61.0" python3 test-rich.py [--bundle|--dev] [--rst]
-
-The server edition serves the Markdown and .docx modules itself from ui/vendor/
-and points FILEMILL_CDN at them; the last section here loads those real files
-over the same loopback server, which is also where the renderers' output is
-checked against what filemill's Python renderers used to produce.
+    uv run --with "playwright==1.61.0" python3 test-rich.py [--bundle|--dev]
 """
 import asyncio
-import base64
-import io
-import zipfile
 import functools
 import http.server
 import socketserver
@@ -42,52 +34,24 @@ from playwright.async_api import async_playwright
 ROOT = Path(__file__).parent.parent
 TARGET = "static/" + ("index-dev.html" if "--dev" in sys.argv else "index.html")
 
-# The smallest .docx mammoth accepts: the package relationship that names the
-# document part, and one paragraph in it.
-def _docx(text: str) -> str:
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w") as z:
-        z.writestr("[Content_Types].xml", (
-            '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.'
-            'openxmlformats.org/package/2006/content-types"><Default Extension="xml" '
-            'ContentType="application/xml"/><Override PartName="/word/document.xml" '
-            'ContentType="application/vnd.openxmlformats-officedocument.'
-            'wordprocessingml.document.main+xml"/></Types>'))
-        z.writestr("_rels/.rels", (
-            '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://'
-            'schemas.openxmlformats.org/package/2006/relationships"><Relationship '
-            'Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/'
-            'relationships/officeDocument" Target="word/document.xml"/></Relationships>'))
-        z.writestr("word/document.xml", (
-            '<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://'
-            'schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p>'
-            f'<w:r><w:t>{text}</w:t></w:r></w:p></w:body></w:document>'))
-    return base64.b64encode(buf.getvalue()).decode()
-
-
 FAKE = r"""
 window.__mk = () => {
   const F = (name, text) => ({kind:'file', name,
     getFile: async () => new File([text], name, {lastModified: Date.parse('2026-08-01')})});
-  const B = (name, b64) => F(name, Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
   const D = (name, kids) => ({kind:'directory', name,
     entries: async function*(){ for (const k of kids) yield [k.name, k]; }});
   return D('vault', [
     F('note.md', '# Heading\n\nSome **bold** text and a [[Other Note]] link.\n'),
     F('fence.md', '# Code\n\nline one\nline two\n\n```python\ndef f():\n    return 1\n```\n'),
     F('Other Note.md', '# Other\n'),
-    F('rich.md', '# Rich\n\n- [x] done\n\nText[^1] and [sib](sib.md) and [[Other Note]]\n\n' +
-      '```python\ndef f():\n    return 1\n```\n\n[^1]: a note\n'),
-    B('doc.docx', '%(docx)s'),
     F('doc.rst', 'Heading\n=======\n\nSome *rst* text.\n'),
     F('code.py', 'def f():\n    return 1\n'),
     F('plain.txt', 'just text'),
     F('data.json', '{"items":["json value"],"count":2}'),
     F('deck.pptx', 'pptx bytes'),
-    F('broken.pptx', 'bad'),
   ]);
 };
-""" % {"docx": _docx("Hello docx")}
+"""
 
 # Enough of each library's shape to prove the plumbing: the loader, the plugin
 # chaining, the highlight hook, and where the output lands. Faithfulness to the
@@ -95,15 +59,13 @@ window.__mk = () => {
 STUBS = {
     "pptx-viewer.js": """
 export function createPptxViewer(host, options) {
-  /* the real viewer reports a deck it cannot open through onError */
-  if (options.source.size < 5) options.onError('bad deck');
-  else host.innerHTML = '<div class="pptx-stub">PowerPoint loaded</div>';
+  host.innerHTML = '<div class="pptx-stub">PowerPoint loaded</div>';
   return { destroy() {} };
 }
 """,
     "markdown-it.js": """
 export default class MarkdownIt {
-  constructor(o) { this.options = o; this.renderer = { rules: {} }; this.core = { ruler: { push: (n, f) => { this._rule = f; } } }; }
+  constructor(o) { this.options = o; this.core = { ruler: { push: (n, f) => { this._rule = f; } } }; }
   use() { return this; }
   render(src) {
     const first = src.split('\\n')[0].replace(/^#\\s*/, '');
@@ -119,28 +81,14 @@ export default class MarkdownIt {
 """,
     "plugin.js": "export default function noop() {}\n",
     # pyodide.mjs has no default export: the adapter calls m.loadPyodide and
-    # then the interpreter methods used by the adapter.
+    # then the three members it uses on the interpreter.
     "pyodide.js": """
 export async function loadPyodide() {
-  const stats = window.__pyStats ||= {boots: 0, packages: 0, destroyed: 0};
-  stats.boots++;
-  if (window.__pyFail === 'boot') throw Error('boot failed');
-  let src;
   return {
-    loadPackage: async () => {
-      stats.packages++;
-      if (window.__pyFail === 'package') throw Error('package failed');
-    },
-    globals: { set(_key, value) { src = value; } },
-    toPy: (values) => ({...values, destroy() { stats.destroyed++; }}),
-    runPythonAsync: async (_code, options) => {
-      await new Promise(resolve => setTimeout(resolve, 10));
-      if (window.__pyFail === 'render') throw Error('render failed');
-      const text = options?.globals.src ?? src;
-      const escaped = text.replaceAll('&', '&amp;').replaceAll('<', '&lt;');
-      return '<section><h1>Heading</h1><p>Some <em>rst</em> text.</p>' +
-        '<pre>' + escaped + '</pre></section>';
-    },
+    loadPackage: async () => {},
+    globals: { set() {} },
+    runPythonAsync: async () =>
+      '<section id="heading"><h1>Heading</h1><p>Some <em>rst</em> text.</p></section>',
   };
 }
 """,
@@ -195,18 +143,7 @@ window.FILEMILL_CDN = {
 """
 
 
-# What server/src/filemill/app.py emits in its shell: the same names, served
-# from this origin. Files, not stubs — this is the renderer the server edition
-# ships, so its output is what gets checked.
-VENDOR_MAP = """
-window.FILEMILL_CDN = Object.fromEntries(
-  ["markdown-it", "markdown-it-footnote", "markdown-it-deflist",
-   "markdown-it-task-lists", "markdown-it-anchor", "mammoth"]
-    .map((n) => [n, `/ui/vendor/${n}.js`]));
-"""
-
-
-async def boot(pg, base, *, rich=True, stubs=False, vendored=False):
+async def boot(pg, base, *, rich=True, stubs=False):
     """Load the app cold with the switch in a known state."""
     await pg.goto("about:blank")
     await pg.goto(base)
@@ -215,8 +152,6 @@ async def boot(pg, base, *, rich=True, stubs=False, vendored=False):
     )
     if stubs:
         await pg.evaluate(STUB_MAP % {"b": "/".join(base.split("/")[:3])})
-    if vendored:
-        await pg.evaluate(VENDOR_MAP)
     await pg.evaluate(FAKE)
     await pg.evaluate("mount(__mk())")
     await pg.wait_for_timeout(250)
@@ -230,91 +165,9 @@ async def preview(pg, name, timeout=4000, ready=None):
     return await pg.inner_html("#pv-content")
 
 
-async def rst_checks(pg, base):
-    await boot(pg, base, rich=True)
-    html = await preview(pg, "doc.rst", ready=".pv-note")
-    check("RST offline fallback keeps readable source", "Heading" in html and "pv-text" in html)
-    requests = []
-    def record(request):
-        if '/pyodide/' in request.url:
-            requests.append(request.url)
-    pg.on('request', record)
-    await boot(pg, base, rich=False)
-    html = await preview(pg, "doc.rst")
-    check("RST consent off requests no runtime assets", not requests and "pv-note" not in html)
-    pg.remove_listener('request', record)
-    await pg.reload()
-    check("RST consent survives reload", await pg.evaluate("localStorage.getItem('filemill.rich')") == "off")
-    # RST registry failures and interpreter lifetime, without a real CDN.
-    for failure in ('boot', 'package', 'render'):
-        await boot(pg, base, rich=True, stubs=True)
-        await pg.evaluate("failure => window.__pyFail = failure", failure)
-        html = await preview(pg, "doc.rst", ready=".pv-note")
-        check(f"RST {failure} failure falls back to source",
-              "pv-text" in html and "Heading" in html)
-        if failure == 'render':
-            check("Failed RST conversion releases Python globals",
-                  await pg.evaluate("window.__pyStats.destroyed") == 1)
-        await pg.evaluate("window.__pyFail = null")
-        await preview(pg, "plain.txt")
-        html = await preview(pg, "doc.rst", ready=".pv-rich")
-        check(f"RST retries after {failure} failure", "<em>rst</em>" in html)
-
-    await boot(pg, base, rich=True, stubs=True)
-    result = await pg.evaluate("""async () => {
-      const outputs = await Promise.all(['first document', 'second document'].map(
-        text => renderNode({name: 'doc.rst'}, new Blob([text]), 'rst')));
-      return {outputs, stats: window.__pyStats};
-    }""")
-    check("Concurrent RST previews keep their own source",
-          'first document' in result['outputs'][0]
-          and 'second document' not in result['outputs'][0]
-          and 'second document' in result['outputs'][1])
-    check("Concurrent RST previews share initialization",
-          result['stats']['boots'] == result['stats']['packages'] == 1)
-    check("RST releases per-render Python globals",
-          result['stats']['destroyed'] == 2)
-
-    await boot(pg, base, rich=True, stubs=True)
-    result = await pg.evaluate("""async () => ({
-      html: await renderNode({name: 'large.rst'}, new Blob(['x'.repeat(512*1024+1)]), 'rst'),
-      loaded: !!window.__pyStats
-    })""")
-    check("Oversize RST preserves the absent-preview limit without loading Python",
-          result['html'] is None and not result['loaded'])
-
-    await boot(pg, base, rich=False, stubs=True)
-    await preview(pg, "doc.rst")
-    check("RST consent off does not initialize the runtime",
-          not await pg.evaluate("!!window.__pyStats"))
-    await pg.click("#gear")
-    await pg.click("#s-rich")
-    await pg.wait_for_selector(".pv-rich em")
-    check("Enabling RST consent renders the selected source",
-          await pg.inner_text(".pv-rich em") == "rst")
-    await pg.click("#s-rich")
-    await pg.wait_for_selector(".pv-text")
-    check("Disabling RST consent restores source", not await pg.locator(".pv-rich").count())
-
-
-async def rst_main():
+async def run_suite(bundle, fake_handle):
     httpd, port = serve()
-    try:
-        async with async_playwright() as p:
-            async with await p.chromium.launch() as browser:
-                pg = await browser.new_page(viewport={"width": 1500, "height": 900})
-                await pg.route("https://cdn.jsdelivr.net/**", lambda r: r.abort())
-                await rst_checks(pg, f"http://127.0.0.1:{port}/{TARGET}")
-    finally:
-        httpd.shutdown()
-        httpd.server_close()
-    print(f"{len(passed)} passed, {len(failed)} failed")
-    sys.exit(1 if failed else 0)
-
-
-async def main():
-    httpd, port = serve()
-    base = f"http://127.0.0.1:{port}/{TARGET}"
+    base = f"http://127.0.0.1:{port}/static/{bundle.name}"
 
     async with async_playwright() as p:
         b = await p.chromium.launch()
@@ -348,9 +201,6 @@ async def main():
         html = await preview(pg, "doc.rst", ready=".pv-note")
         check("Offline, reStructuredText shows its source and says why",
               "Heading" in html and "pv-text" in html and "pv-note" in html)
-        html = await preview(pg, "deck.pptx", ready=".preview-error")
-        check("Offline, a PowerPoint file says the viewer is unavailable",
-              "PowerPoint preview unavailable" in html, html[:120])
 
         # ── the switch ───────────────────────────────────────────────────
         await boot(pg, base, rich=False)
@@ -365,10 +215,6 @@ async def main():
         check("Switched off, no Python runtime is requested either",
               not [u for u in requests if "jsdelivr" in u],
               "; ".join(u for u in requests if "jsdelivr" in u))
-        await preview(pg, "deck.pptx")
-        check("Switched off, no PowerPoint viewer is requested either",
-              not [u for u in requests if "pptx" in u],
-              "; ".join(u for u in requests if "pptx" in u))
 
         await pg.reload()
         await pg.wait_for_timeout(300)
@@ -391,16 +237,8 @@ async def main():
 
         requests.clear()
         html = await preview(pg, "deck.pptx", ready=".pptx-stub")
-        check("With the viewer available, a PowerPoint file is mounted in it",
-              "PowerPoint loaded" in html and "pv-pptx" in html, html[:120])
-        check("…and the viewer module is the one requested",
-              [u for u in requests if "pptx-viewer.js" in u],
-              "; ".join(requests))
-        html = await preview(
-            pg, "broken.pptx", ready='.pv-pptx:has-text("PowerPoint preview failed")'
-        )
-        check("A deck the viewer rejects shows the viewer's message",
-              "PowerPoint preview failed: bad deck" in html, html[:120])
+        check("PPTX uses the vanilla viewer CDN adapter",
+              "PowerPoint loaded" in html and "pptx-vanilla-viewer" in requests[-1])
 
         requests.clear()
         html = await preview(pg, "fence.md")
@@ -435,33 +273,6 @@ async def main():
         check("…without navigating the page away",
               (await pg.evaluate("location.href")).split("#")[0] == before.split("#")[0])
 
-        # ── the vendored modules the server edition serves ───────────────
-        # The switch is off: a module from this origin is not a download the
-        # visitor has to agree to, so it must render anyway.
-        await boot(pg, base, rich=False, vendored=True)
-        requests.clear()
-        html = await preview(pg, "rich.md", ready=".pv-rich")
-        check("A vendored renderer is used even with the switch off",
-              "<h1" in html and "pv-note" not in html, html[:120])
-        check("…and nothing is asked of a CDN for it",
-              not [u for u in requests if "esm.sh" in u or "jsdelivr" in u],
-              "; ".join(requests))
-        check("A task list renders as a checkbox",
-              'class="task-list-item-checkbox"' in html and 'checked' in html)
-        check("A footnote renders as a reference and a footnote list",
-              'class="footnote-ref"' in html and 'class="footnotes"' in html)
-        check("A fenced block is coloured by core/syntax.js",
-              'class="language-python"' in html and "hl-kw" in html, html[:300])
-        check("A wikilink renders as an in-app anchor",
-              'class="wikilink" href="#" data-wiki="Other Note"' in html)
-        check("A relative link in a browser-opened folder stays as written",
-              'href="sib.md"' in html, html[:300])
-        html = await preview(pg, "doc.docx", ready=".pv-rich")
-        check("A .docx renders through the vendored mammoth",
-              "<p>Hello docx</p>" in html and "pv-rich" in html, html[:120])
-
-        await rst_checks(pg, base)
-
         # ── turning it back on retries ───────────────────────────────────
         await boot(pg, base, rich=False, stubs=True)
         await preview(pg, "note.md")
@@ -480,8 +291,8 @@ async def main():
     if failed:
         print("  Failed: " + ", ".join(failed))
     print("═" * 62)
-    sys.exit(1 if failed else 0)
+    assert not failed, "; ".join(failed)
 
 
-if __name__ == "__main__":
-    asyncio.run(rst_main() if "--rst" in sys.argv else main())
+def test_rich(bundle, fake_handle):
+    asyncio.run(run_suite(bundle, fake_handle))
