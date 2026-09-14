@@ -41,6 +41,8 @@
 
 ## Scheduled
 
+## Scheduled
+
 ## Open
 
 _Items without an issue number are not yet tracked in ISSUES.md._
