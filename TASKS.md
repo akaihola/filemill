@@ -9,14 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- Bug: After navigating from a directory url without query parameters (e.g.
-  `/path/to/dir`) to a file (e.g. `file1.md`), and then another file (e.g. `file2.md`),
-  and then opening file2 using the `Raw` button, and navigating back using the browser's
-  back button, in some situations the file manager view isn't displayed. Instead, the
-  raw view of file1 is shown. Navigating to files needs to always include the
-  `?filemill=render` or `?filemill=highlight` query parameter (whichever mode was last
-  active) to prevent this behavior.
-
 - Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
   between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
   viewing the source with syntax highlighting.
@@ -262,6 +254,14 @@ Rules for TASKS.md usage are at the bottom of the file.
   JavaScript console either.
 
 ## Scheduled
+
+- Bug: After navigating from a directory url without query parameters (e.g.
+  `/path/to/dir`) to a file (e.g. `file1.md`), and then another file (e.g. `file2.md`),
+  and then opening file2 using the `Raw` button, and navigating back using the browser's
+  back button, in some situations the file manager view isn't displayed. Instead, the
+  raw view of file1 is shown. Navigating to files needs to always include the
+  `?filemill=render` or `?filemill=highlight` query parameter (whichever mode was last
+  active) to prevent this behavior.
 
 - Bug: For `.vtt` files from YouTube, this error is always displayed instead of the
   content: `Malformed WebVTT: cue is missing a timestamp`. You may test using `.vtt`
