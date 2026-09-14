@@ -4642,6 +4642,35 @@ function csvParse(text) {
 
 const isCsv = (n) => /\.csv$/i.test(n.name);
 
+function csvLabels(records, key) {
+  const seen = new Set();
+  const labels = [];
+  for (const record of records) {
+    const label = record[key];
+    if (!label || label.startsWith(".") || seen.has(label)) return null;
+    seen.add(label);
+    labels.push(label);
+  }
+  return labels;
+}
+
+function csvRows(node, records, headers) {
+  const key = headers.find((header) => csvLabels(records, header));
+  const labels = key
+    ? csvLabels(records, key)
+    : records.map((_, i) => `row ${i + 1}`);
+  return records.map((record, i) => ({
+    name: labels[i],
+    dir: false,
+    vpath: String(i + 1),
+    icon: "📋",
+    rel: node.rel,
+    ordered: true,
+    meta: { virtual: true },
+    record,
+  }));
+}
+
 const withCsv = (fs) => ({
   ...fs,
   async ensureLoaded(node) {
@@ -4670,16 +4699,7 @@ const withCsv = (fs) => ({
           node.dir = false;
           node.csvEmpty = true;
         }
-        node.kids = parsed.records.map((record, i) => ({
-          name: record[parsed.headers[0]] || `row ${i + 1}`,
-          dir: false,
-          vpath: String(i + 1),
-          icon: "📋",
-          rel: node.rel,
-          ordered: true,
-          meta: { virtual: true },
-          record,
-        }));
+        node.kids = csvRows(node, parsed.records, parsed.headers);
       } catch (err) {
         node.denied = String(err.message || err);
         node.dir = false;
