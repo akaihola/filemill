@@ -258,6 +258,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
+- [*] Add a `lint` job to `.github/workflows/publish.yml` that runs
+  `pre-commit run --all-files`. Make the `test` job need the `lint` job.
+
 - [*] Delete `server/.pi/settings.json`, `server/mobile-narrow-preview.png`,
   `server/.claude/commands/` and `architecture-review-20260904.html`.
 
