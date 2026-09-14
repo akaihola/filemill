@@ -243,10 +243,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
   identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
 
-- Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
-  between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
-  viewing the source with syntax highlighting.
-
 - [*] Bug: Markdown preview doesn't fill and wrap paragraphs at the width of the
   preview, but keeps linefeeds. Consecutive lines of text must be considered as a single
   paragraph. If this can't be changed by configuring the Markdown renderer currently in
@@ -270,6 +266,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
+  between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
+  viewing the source with syntax highlighting.
 
 - Bug: Task 511f90cc-2725-4ef1-a8d8-ed67c4eddb0f failed to fix the portrait mobile
   scroll to the right problem. I suspect the extra space at the right side of the page

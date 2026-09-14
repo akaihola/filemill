@@ -205,6 +205,7 @@ function render(keepScroll) {
     }
   });
   while (strip.childNodes.length > want.length) strip.lastChild.remove();
+  if (previewNode()) setupPreviewActions(previewNode());
   for (const c of cols) {
     c.el.classList.toggle(
       "scrollable-down",
@@ -252,7 +253,7 @@ function renderPreview() {
           <button id="pv-vtt-transcript" class="pv-action" type="button">Transcript</button>
           <button id="pv-vtt-raw" class="pv-action" type="button">Raw</button>
         </span>
-        <button id="pv-view" class="pv-action" hidden type="button"></button>
+        <button id="pv-view" class="pv-action" type="button"></button>
         <button id="pv-delete" class="pv-action" type="button"
                 title="Delete selected item">Delete</button>
         <button id="pv-fullscreen" class="pv-action" type="button" aria-pressed="${pvFullscreen}"
@@ -272,11 +273,10 @@ function renderPreview() {
     </div>`;
   if (n) fillPreview(n);
   pv.classList.toggle("pv-is-fullscreen", pvFullscreen);
-  setupPreviewActions(target);
   return pv;
 }
 
-const RENDERED_RE = /\.(md|markdown|docx|pptx|html?|desktop)$/i;
+const RENDERED_RE = /\.(md|markdown|rst|docx|pptx|html?|desktop)$/i;
 const MARKDOWN_RE = /\.(md|markdown)$/i;
 let markdownView = "rendered";
 let vttView = "transcript";
@@ -291,7 +291,8 @@ async function rawMarkdown(node) {
 }
 
 function previewView() {
-  const view = document.documentElement.dataset.filemill || "raw";
+  const view = new URL(location.href).searchParams.get("filemill") ||
+    document.documentElement.dataset.filemill || "raw";
   return view === "highlight"
     ? "highlight"
     : view === "render"
@@ -300,7 +301,7 @@ function previewView() {
 }
 
 function setPreviewView(view) {
-  if (!ROUTER || !location.pathname) return;
+  if (!location.pathname) return;
   const url = new URL(location.href);
   url.searchParams.set("filemill", view);
   location.href = url.pathname + url.search + url.hash;
@@ -311,9 +312,10 @@ function setupPreviewActions(n) {
   const toggle = document.getElementById("pv-view");
   const mdViews = document.getElementById("pv-md-views");
   const vttViews = document.getElementById("pv-vtt-views");
-  const markdown = MARKDOWN_RE.test(n.name);
+  const name = String(n.name || "");
+  const markdown = MARKDOWN_RE.test(name);
   const vtt = /\.vtt$/i.test(n.name);
-  const applicable = markdown || (!!ROUTER && RENDERED_RE.test(n.name));
+  const applicable = RENDERED_RE.test(name);
   if (mdViews) {
     mdViews.hidden = !markdown;
     for (const [id, mode, label] of [
@@ -353,7 +355,7 @@ function setupPreviewActions(n) {
     }
   }
   if (toggle) {
-    toggle.hidden = markdown || !applicable;
+    toggle.hidden = !markdown && !applicable;
     toggle.textContent = view === "render" ? "Source" : "Rendered";
     toggle.title = view === "render"
       ? "View highlighted source"
