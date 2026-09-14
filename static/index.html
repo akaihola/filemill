@@ -2073,18 +2073,53 @@ document.body.insertAdjacentHTML(
    and the same UI browses a server instead of a local folder.
 
    ── FS ─ the filesystem ────────────────────────────────────────────────────
-   A node is  { name, dir, kids }  plus whatever the adapter needs to fetch it:
-       kids === null        directory, not read yet   → spinner
-       kids === []          read, and empty (or unreadable — see .denied)
-       kids === [Node…]     read
-       node.denied          string; shown in place of the rows
-       node.meta            { size, mod, type } once loadMeta has run
-       node.lastSel         UI scratch — written by the UI, never by an adapter
-       node.metaDone        UI scratch — every kid's meta has been asked for
+   FS.node(name, ...args) → Node creates the adapter's root or child node. The
+   core passes the arguments declared by the adapter's node factory and does
+   not inspect them.
+
+   Every node has these core fields:
+       name       string; display name and path segment
+       dir        boolean; true when the node can have children
+       kids       null for an unread directory; [] for a loaded empty or
+                  unreadable directory; [Node…] for loaded children; undefined
+                  for a file or leaf
+       denied     string when loading failed; shown instead of directory rows
+       meta       {size, mod, type} for known file metadata, {virtual: true}
+                  for virtual entries, or {error: string} when metadata failed;
+                  absent until loadMeta runs
+       loading    Promise while an adapter load is active; otherwise null/absent
+       metaDone   boolean UI scratch: every loaded file child was asked for meta
+       metaLoading Promise while the core metadata sweep is active; UI scratch
+       metaPending number of metadata requests left in that sweep; UI scratch
+       metaSwept  {n, ms} summary of the last metadata sweep; UI scratch
+
+   Existing adapter or virtual-filesystem fields:
+       handle     File System Access API handle
+       parent     parent File System Access API handle, when available
+       file       cached File from handle.getFile()
+       rel        server root-relative path
+       vpath      virtual path inside rel (JSON key, table, or row)
+       ordered    boolean; preserve adapter child order when true
+       icon       string; explicit icon glyph
+       page       one-based current server listing page
+       pages      total server listing pages
+       total      total server listing entries
+       previewFormat string; requested preview format
+       csv        boolean; this node is a CSV virtual directory
+       jsonl      boolean; this node is a JSONL virtual directory
+       json       boolean; this node is a JSON virtual directory or value
+       headers    parsed CSV column names
+       csvEmpty   boolean; parsed CSV has no records
+       csvError   boolean; CSV parsing/loading failed
+       value      parsed JSON value for a virtual node
+       record     parsed CSV, JSONL, or JSON table-row value
+       jsonError  string; JSON parsing/loading error
 
      ensureLoaded(node) → Promise   fills node.kids (idempotent, debounced)
-     loadMeta(node)     → Promise   fills node.meta  (may be a no-op if the
-                                    listing already carried the metadata)
+     loadMeta(node)     → Promise   fills node.meta (or records {error}); may
+                                    be a no-op when the listing has metadata
+     blob(node)         → Promise<Blob|null> returns file bytes for preview, or
+                                    null when the file cannot be read
    write(node, text)  → Promise   optional; overwrite the file with `text`.
                                     A port without it is read-only — the
                                     preview pane then offers no Edit action.
@@ -2107,9 +2142,15 @@ document.body.insertAdjacentHTML(
 
    ── ROUTER ─ the address bar ───────────────────────────────────────────────
      read()          → {root, path:[names…]} | null    the location right now
-     write(state)    → void                            reflect state, no reload
+     write(state, replace) → void                      reflect state, no reload;
+                                    use replaceState when replace is true,
+                                    pushState otherwise
      onNavigate(cb)  → void                            back/forward pressed
      Set to null to run with no URL syncing at all.
+
+   RouterPath.base is the trailing-slash base URL used by the path router. It
+   comes from the current script's data-base attribute, or "/", and is used to
+   strip/add the server mount prefix. It is not part of router state.
    ═══════════════════════════════════════════════════════════════════════════ */
 let FS = null, PREVIEW = null, ROUTER = null;
 
@@ -2511,7 +2552,6 @@ const welcome = document.getElementById("welcome");
 let path = []; // node chain, [0] = root
 let sel = []; // per-column selected name
 let focusCol = 0;
-let cursor = {}; // col index -> row index
 let widths = []; // natural width per column
 let folded = 0; // columns currently folded
 let pvToken = 0; // guards async preview fills
@@ -2535,11 +2575,14 @@ const COL_MIN = 148, COL_MAX = 380;
 
 /* One filtered copy per call, ordered by core/sort.js. Every column build, every
    width measurement and every path walk comes through here, which is what keeps
-   the rows, the cursor indices and a restored chain agreeing on what row 4 is. */
+   the rows and a restored chain agreeing on what row 4 is. */
 const visibleKids = (node) =>
   ((kids) => node.ordered ? kids : sortKids(kids))(
     (node.kids || []).filter((k) => state.dotfiles || !k.name.startsWith(".")),
   );
+
+const rowIndex = (node, name) =>
+  visibleKids(node).findIndex((k) => k.name === name);
 
 const fmtSize = (b) =>
   b < 1024
@@ -2883,7 +2926,7 @@ syncSortMenu();
 /* Building a column is O(entries), and real directories hold thousands of them
    — far too expensive to redo on every arrow key. A column's DOM is therefore
    built once per (node, entry list) and cached; a re-render only re-applies the
-   state that actually changed: depth, selection, cursor, width.
+   state that actually changed: depth, selection, width.
    Anything that alters how a row *looks* (dotfile filter, density, theme icon
    colours) is part of the signature and drops the whole cache. */
 const colCache = new Map();
@@ -2974,7 +3017,7 @@ function buildCol(node) {
       (k.dir ? `<span class="chev">›</span>` : "");
     /* read the index off the element: the same node keeps its DOM across
        re-renders, and its column position is only known at render time */
-    row.onclick = () => choose(+el.dataset.i, k, ri);
+    row.onclick = () => choose(+el.dataset.i, k);
     body.appendChild(row);
     return row;
   });
@@ -3024,18 +3067,8 @@ function render(keepScroll) {
        or one a preview has already read — is built once in the sorted order
        rather than built and rebuilt. */
     sweepMeta(node);
-    const had = colCache.get(node);
     const c = columnFor(node);
-    /* A rebuilt column is the only place row indices can have moved: a sweep
-       re-ordered it, the sort changed, dotfiles appeared, the read landed. The
-       cursor is an index, so re-point it at the entry that is still selected
-       here, or ↓ resumes from whatever slid into that number. Reading c.kids,
-       which the build just produced, keeps this off the keystroke path — an
-       unchanged column skips it entirely. */
-    if (c !== had && sel[i] !== undefined) {
-      const ri = c.kids.findIndex((k) => k.name === sel[i]);
-      if (ri >= 0) cursor[i] = ri;
-    }
+    const selectedRow = rowIndex(node, sel[i]);
     /* No column may be wider than two-thirds of the live finder. The fold cap keeps the
        touched column unfolded and applyScroll's pan slides it into view, but
        neither can show a full-width column on a narrow phone —
@@ -3076,7 +3109,7 @@ function render(keepScroll) {
     }
     c.rows.forEach((row, ri) => {
       row.classList.toggle("sel", c.kids[ri].name === sel[i]);
-      row.classList.toggle("cursor", i === focusCol && cursor[i] === ri);
+      row.classList.toggle("cursor", i === focusCol && selectedRow === ri);
     });
     return c;
   });
@@ -3473,21 +3506,32 @@ function applyScroll() {
   const p = Math.min(1, finder.scrollLeft / max);
   const n = path.length;
 
+  const { raw, t } = foldFromScroll(max);
+  const { focusLeft, focusRight } = applyWidths(raw, t);
+  const pan = panFocus(raw, focusLeft, focusRight);
+  slideTail(p, pan, n);
+
+  document.getElementById("st-fold").textContent = folded
+    ? `${folded}/${n} folded`
+    : "";
+  paintTrail();
+}
+
+function foldFromScroll(max) {
   /* Half a pixel of slack, in pixels: layout() and unfoldTo() write
      round(k·unit·range), which can fall up to 0.5 px short of the boundary. A
      fixed 0.002 units was only 0.3 px once seven columns made a unit 160 px
      wide, and a landing read one column short paints the column ← just
      reached as a spine, with folded === focusCol so the next ← never scrolls. */
   const raw = Math.min(1, (finder.scrollLeft + 0.5) / max) / foldUnit();
-  folded = Math.min(n, Math.floor(raw));
+  folded = Math.min(path.length, Math.floor(raw));
   /* how far into folding the next column is — 0 = full width, 1 = a spine */
   const t = Math.min(1, Math.max(0, raw - folded));
+  return { raw, t };
+}
 
-  /* the strip lays out left to right from the stage's edge, so walking it with
-     the widths this pass is about to write is where the focused column's own
-     box comes from — arithmetic, not a rect read on every scroll event */
-  const g = GUTTER(),
-    sp = SPINE(); /* both read a computed style — once, not per column */
+function applyWidths(raw, t) {
+  const g = GUTTER(), sp = SPINE(), n = path.length;
   let x = g, focusLeft = 0, focusRight = 0;
   [...strip.querySelectorAll(".col")].forEach((col, i) => {
     col.classList.toggle("spine", i < folded);
@@ -3497,10 +3541,7 @@ function applyScroll() {
       : i === folded
       ? Math.round(widths[i] + (sp - widths[i]) * t)
       : widths[i];
-    if (i === focusCol) {
-      focusLeft = x;
-      focusRight = x + w;
-    }
+    if (i === focusCol) [focusLeft, focusRight] = [x, x + w];
     x += w + g;
     if (i < folded) {
       set(col.style, "width", "");
@@ -3510,42 +3551,26 @@ function applyScroll() {
     setVar(col, "--fold", col.dataset.fold); /* custom props need setProperty */
     set(col.style, "width", w + "px");
   });
+  return { focusLeft, focusRight };
+}
 
-  /* The cap in layout() keeps the column under the finger out of the spines. It
-     cannot keep it on screen: every folded ancestor still costs a spine and a
-     gutter, and the column itself can be as wide as measure() allows. Measured
-     at 390 px on a tree of long names, tapping two levels down left 292 px of a
-     376 px column inside the viewport and clipped the rest — the row the finger
-     had just hit, cut off at the right edge, which is the whole bug. Folding
-     further is the one answer the cap forbids, so the strip slides left instead:
-     by exactly the overflow, and never past focus's own left edge. A column
-     wider than the whole stage therefore gets its left edge, which is all a
-     stage that narrow has to give.
-
-     `reach` is what keeps this the tap's answer rather than a second dial. It
-     is 0 until the dial has folded everything left of focus — the resting place
-     layout() targets after a tap — so scrolling back left unfolds the strip
-     where it stands instead of dragging it after a focus five columns along.
-     Between the two it fades in with the fold it belongs to, so the slide is
-     part of that motion and not a jump at the end of it. */
+function panFocus(raw, focusLeft, focusRight) {
+  const g = GUTTER();
   const reach = Math.min(1, Math.max(0, raw - focusCol + 1));
   const pan = reach *
     Math.min(
       Math.max(0, focusRight - finder.clientWidth),
       Math.max(0, focusLeft - g),
     );
+  return pan;
+}
 
-  /* last 1%: slide the spine strip itself off the left edge. Widening the strip
-     by the same amount keeps the preview's flex-grow filling to the right edge. */
+function slideTail(p, pan, n) {
+  const sp = SPINE(), g = GUTTER();
   const tail = p > 0.99 ? (p - 0.99) / 0.01 : 0;
   const shift = tail * n * (sp + g) + pan;
   set(strip.style, "minWidth", (finder.clientWidth + shift) + "px");
   set(strip.style, "transform", `translateX(${-shift}px)`);
-
-  document.getElementById("st-fold").textContent = folded
-    ? `${folded}/${n} folded`
-    : "";
-  paintTrail();
 }
 
 /* Keep a row visible without letting it move the strip.
@@ -3848,14 +3873,12 @@ function autoPreview(node) {
   if (pick) sel[i] = pick.name;
 }
 
-async function choose(colIdx, node, rowIdx) {
+async function choose(colIdx, node) {
   const seq = ++navSeq;
   path = path.slice(0, colIdx + 1);
   sel = sel.slice(0, colIdx);
   sel[colIdx] = node.name;
-  cursor = { [colIdx]: rowIdx };
   focusCol = colIdx;
-  path[colIdx].lastSel = node.name; /* → returns to where you were last time */
   if (!node.dir) return void render();
 
   const reading = node.kids === null ? FS.ensureLoaded(node) : null;
@@ -3907,10 +3930,9 @@ async function choose(colIdx, node, rowIdx) {
      the selection at each level matched again by name: a re-read hands back
                                  new node objects, so the chain is re-walked
                                  rather than kept by identity
-     a selected name that is gone the walk stops there. The cursor stays on that
-                                 row index, clamped, and nothing is selected —
-                                 ↓ resumes where the user was, and the app
-                                 never shows a selection that is not real
+     a selected name that is gone the walk stops there, and nothing is selected —
+                                 ↓ resumes at the top of the remaining rows, and
+                                 the app never shows a selection that is not real
      columns below the stop      closed, because their parent no longer has the
                                  entry that opened them
      focus                       where it was, clamped to the new depth        */
@@ -3920,7 +3942,7 @@ async function refreshColumn(i) {
 
   const seq = ++navSeq; /* a click, a key or a second ⟳ overtakes */
   const names = currentPath();
-  const keepFocus = focusCol, keepCursor = { ...cursor };
+  const keepFocus = focusCol;
   /* the ⟳ spins on the column that is on screen now; the re-render replaces
      that element, which is exactly when the spinning should stop */
   const spinning = colCache.get(node)?.el;
@@ -3968,9 +3990,6 @@ async function refreshColumn(i) {
     }
     const stop = path.length - 1; /* where the walk ran out */
     const col = colCache.get(path[stop]);
-    if (col && col.rows.length && keepCursor[stop] != null) {
-      cursor[stop] = Math.min(keepCursor[stop], col.rows.length - 1);
-    }
     render(true);
     scrollCursorIntoView();
     saySt("st-refresh", `⟳ ${names[stop]} is gone`, false);
@@ -4083,10 +4102,9 @@ document.getElementById("st-path").onclick = copyPath;
 function enterColumn(i) {
   const c = colCache.get(path[i]);
   if (!c || !c.rows.length) return;
-  const remembered = sel[i] ?? path[i].lastSel;
-  let ri = c.kids.findIndex((k) => k.name === remembered);
-  if (ri < 0) ri = cursor[i] ?? 0;
-  cursor[i] = ri = Math.max(0, Math.min(c.rows.length - 1, ri < 0 ? 0 : ri));
+  const remembered = sel[i];
+  let ri = rowIndex(path[i], remembered);
+  ri = Math.max(0, Math.min(c.rows.length - 1, ri < 0 ? 0 : ri));
   c.rows[ri].click();
   revealRow(c.rows[ri]);
 }
@@ -4153,8 +4171,7 @@ document.addEventListener("keydown", (e) => {
   const c = colCache.get(path[focusCol]);
   if (!c) return;
   const rows = c.rows;
-  let ci = cursor[focusCol] ??
-    c.kids.findIndex((k) => k.name === sel[focusCol]);
+  let ci = rowIndex(path[focusCol], sel[focusCol]);
   if (ci < 0) ci = 0;
 
   /* ⌘C / Ctrl+C. A live text selection wins: the user highlighted something and
@@ -4176,7 +4193,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "ArrowDown" || e.key === "ArrowUp") {
     e.preventDefault();
     if (!rows.length) return;
-    /* a freshly entered column has a cursor but no selection yet — the first
+    /* a freshly entered column has no selection yet — the first
        press should commit that row, not skip past it */
     if (sel[focusCol] !== undefined) {
       ci = Math.max(
@@ -4198,7 +4215,7 @@ document.addEventListener("keydown", (e) => {
   } else if (e.key === "ArrowRight" || e.key === "Enter") {
     e.preventDefault();
     const next = path[focusCol + 1];
-    /* nothing open to the right: commit the cursor row, which opens it when it
+    /* nothing open to the right: commit the row, which opens it when it
        is a directory — a second → then steps into that column */
     if (!next) {
       const row = rows[ci];
@@ -4315,7 +4332,6 @@ async function applyPath(names, wantFocus) {
     const rootNode = path[0];
     path = [rootNode];
     sel = [];
-    cursor = { 0: 0 };
     focusCol = 0;
     await FS.ensureLoaded(rootNode);
     let complete = true;
@@ -4331,9 +4347,7 @@ async function applyPath(names, wantFocus) {
 
       const node = kids[ri];
       sel[i] = node.name;
-      cursor[i] = ri;
       focusCol = i; /* focus stays on the column holding it */
-      parent.lastSel = node.name;
       if (!node.dir) break;
       await FS.ensureLoaded(node);
       path.push(node);
@@ -4356,7 +4370,7 @@ async function applyPath(names, wantFocus) {
 function scrollCursorIntoView() {
   for (let i = 0; i < path.length; i++) {
     const c = colCache.get(path[i]);
-    const ri = cursor[i];
+    const ri = rowIndex(path[i], sel[i]);
     if (c && ri != null && c.rows[ri]) revealRow(c.rows[ri]);
   }
 }
@@ -5461,7 +5475,7 @@ function openWikilink(target) {
     return n === want || n === want + ".md" ||
       splitName(k.name)[0].toLowerCase() === want;
   });
-  if (ri >= 0) choose(col, kids[ri], ri);
+  if (ri >= 0) choose(col, kids[ri]);
 }
 
 document.addEventListener("click", (e) => {
@@ -5692,7 +5706,6 @@ async function mount(handle, loc) {
   path = [node];
   sel = [];
   focusCol = 0;
-  cursor = { 0: 0 };
   mounted = null;
   keptAt = null;
   welcome.hidden = true;

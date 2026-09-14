@@ -4,11 +4,10 @@
 /* Building a column is O(entries), and real directories hold thousands of them
    — far too expensive to redo on every arrow key. A column's DOM is therefore
    built once per (node, entry list) and cached; a re-render only re-applies the
-   state that actually changed: depth, selection, cursor, width.
+   state that actually changed: depth, selection, width.
    Anything that alters how a row *looks* (dotfile filter, density, theme icon
    colours) is part of the signature and drops the whole cache. */
 const colCache = new Map();
-let previewCache = null;
 let cacheSig = null;
 const CACHE_MAX = 24;
 
@@ -96,7 +95,7 @@ function buildCol(node) {
       (k.dir ? `<span class="chev">›</span>` : "");
     /* read the index off the element: the same node keeps its DOM across
        re-renders, and its column position is only known at render time */
-    row.onclick = () => choose(+el.dataset.i, k, ri);
+    row.onclick = () => choose(+el.dataset.i, k);
     body.appendChild(row);
     return row;
   });
@@ -146,18 +145,8 @@ function render(keepScroll) {
        or one a preview has already read — is built once in the sorted order
        rather than built and rebuilt. */
     sweepMeta(node);
-    const had = colCache.get(node);
     const c = columnFor(node);
-    /* A rebuilt column is the only place row indices can have moved: a sweep
-       re-ordered it, the sort changed, dotfiles appeared, the read landed. The
-       cursor is an index, so re-point it at the entry that is still selected
-       here, or ↓ resumes from whatever slid into that number. Reading c.kids,
-       which the build just produced, keeps this off the keystroke path — an
-       unchanged column skips it entirely. */
-    if (c !== had && sel[i] !== undefined) {
-      const ri = c.kids.findIndex((k) => k.name === sel[i]);
-      if (ri >= 0) cursor[i] = ri;
-    }
+    const selectedRow = rowIndex(node, sel[i]);
     /* No column may be wider than two-thirds of the live finder. The fold cap keeps the
        touched column unfolded and applyScroll's pan slides it into view, but
        neither can show a full-width column on a narrow phone —
@@ -198,7 +187,7 @@ function render(keepScroll) {
     }
     c.rows.forEach((row, ri) => {
       row.classList.toggle("sel", c.kids[ri].name === sel[i]);
-      row.classList.toggle("cursor", i === focusCol && cursor[i] === ri);
+      row.classList.toggle("cursor", i === focusCol && selectedRow === ri);
     });
     return c;
   });
@@ -229,24 +218,17 @@ function render(keepScroll) {
 function renderPreview() {
   const n = previewNode();
   const selected = selectedNode();
-  const target = n || selected;
-  if (
-    previewCache &&
-    previewCache.node === target &&
-    previewCache.meta === target?.meta
-  ) return previewCache.el;
-
-  if (previewCache) PREVIEW.revoke?.();
   const pv = document.createElement("div");
   pv.id = "preview";
   pv.tabIndex = 0;
   pv.setAttribute("aria-label", "File preview");
-  if (!target) {
+  PREVIEW.revoke?.();
+  if (!n && !selected) {
     pv.innerHTML = `<div class="pv-empty"><div class="glyph">◫</div>
                     <div>Select a file to preview</div></div>`;
-    previewCache = { node: target, meta: undefined, el: pv };
     return pv;
   }
+  const target = n || selected;
   const [stem, ext] = splitName(target.name);
   const rawPath = "/" + currentPath().map(encodeURIComponent).join("/") +
     "?filemill=raw";
@@ -288,7 +270,6 @@ function renderPreview() {
     </div>`;
   if (n) fillPreview(n);
   pv.classList.toggle("pv-is-fullscreen", pvFullscreen);
-  previewCache = { node: target, meta: target.meta, el: pv };
   return pv;
 }
 
@@ -429,7 +410,6 @@ async function fillPreview(n) {
   const token = ++pvToken;
   await FS.loadMeta(n);
   if (token !== pvToken) return;
-  if (previewCache?.node === n) previewCache.meta = n.meta;
   const m = n.meta || {};
   const sub = document.getElementById("pv-sub");
   if (!sub) return;

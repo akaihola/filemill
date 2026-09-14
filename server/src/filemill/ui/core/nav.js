@@ -25,14 +25,12 @@ function autoPreview(node) {
   if (pick) sel[i] = pick.name;
 }
 
-async function choose(colIdx, node, rowIdx) {
+async function choose(colIdx, node) {
   const seq = ++navSeq;
   path = path.slice(0, colIdx + 1);
   sel = sel.slice(0, colIdx);
   sel[colIdx] = node.name;
-  cursor = { [colIdx]: rowIdx };
   focusCol = colIdx;
-  path[colIdx].lastSel = node.name; /* → returns to where you were last time */
   if (!node.dir) return void render();
 
   const reading = node.kids === null ? FS.ensureLoaded(node) : null;
@@ -84,10 +82,9 @@ async function choose(colIdx, node, rowIdx) {
      the selection at each level matched again by name: a re-read hands back
                                  new node objects, so the chain is re-walked
                                  rather than kept by identity
-     a selected name that is gone the walk stops there. The cursor stays on that
-                                 row index, clamped, and nothing is selected —
-                                 ↓ resumes where the user was, and the app
-                                 never shows a selection that is not real
+     a selected name that is gone the walk stops there, and nothing is selected —
+                                 ↓ resumes at the top of the remaining rows, and
+                                 the app never shows a selection that is not real
      columns below the stop      closed, because their parent no longer has the
                                  entry that opened them
      focus                       where it was, clamped to the new depth        */
@@ -97,7 +94,7 @@ async function refreshColumn(i) {
 
   const seq = ++navSeq; /* a click, a key or a second ⟳ overtakes */
   const names = currentPath();
-  const keepFocus = focusCol, keepCursor = { ...cursor };
+  const keepFocus = focusCol;
   /* the ⟳ spins on the column that is on screen now; the re-render replaces
      that element, which is exactly when the spinning should stop */
   const spinning = colCache.get(node)?.el;
@@ -145,9 +142,6 @@ async function refreshColumn(i) {
     }
     const stop = path.length - 1; /* where the walk ran out */
     const col = colCache.get(path[stop]);
-    if (col && col.rows.length && keepCursor[stop] != null) {
-      cursor[stop] = Math.min(keepCursor[stop], col.rows.length - 1);
-    }
     render(true);
     scrollCursorIntoView();
     saySt("st-refresh", `⟳ ${names[stop]} is gone`, false);
@@ -260,10 +254,9 @@ document.getElementById("st-path").onclick = copyPath;
 function enterColumn(i) {
   const c = colCache.get(path[i]);
   if (!c || !c.rows.length) return;
-  const remembered = sel[i] ?? path[i].lastSel;
-  let ri = c.kids.findIndex((k) => k.name === remembered);
-  if (ri < 0) ri = cursor[i] ?? 0;
-  cursor[i] = ri = Math.max(0, Math.min(c.rows.length - 1, ri < 0 ? 0 : ri));
+  const remembered = sel[i];
+  let ri = rowIndex(path[i], remembered);
+  ri = Math.max(0, Math.min(c.rows.length - 1, ri < 0 ? 0 : ri));
   c.rows[ri].click();
   revealRow(c.rows[ri]);
 }
@@ -330,8 +323,7 @@ document.addEventListener("keydown", (e) => {
   const c = colCache.get(path[focusCol]);
   if (!c) return;
   const rows = c.rows;
-  let ci = cursor[focusCol] ??
-    c.kids.findIndex((k) => k.name === sel[focusCol]);
+  let ci = rowIndex(path[focusCol], sel[focusCol]);
   if (ci < 0) ci = 0;
 
   /* ⌘C / Ctrl+C. A live text selection wins: the user highlighted something and
@@ -353,7 +345,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "ArrowDown" || e.key === "ArrowUp") {
     e.preventDefault();
     if (!rows.length) return;
-    /* a freshly entered column has a cursor but no selection yet — the first
+    /* a freshly entered column has no selection yet — the first
        press should commit that row, not skip past it */
     if (sel[focusCol] !== undefined) {
       ci = Math.max(
@@ -375,7 +367,7 @@ document.addEventListener("keydown", (e) => {
   } else if (e.key === "ArrowRight" || e.key === "Enter") {
     e.preventDefault();
     const next = path[focusCol + 1];
-    /* nothing open to the right: commit the cursor row, which opens it when it
+    /* nothing open to the right: commit the row, which opens it when it
        is a directory — a second → then steps into that column */
     if (!next) {
       const row = rows[ci];
