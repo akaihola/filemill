@@ -79,16 +79,12 @@ def ui_root(tmp_path: Path) -> Path:
         '{"id": 1, "title": "First", "ts": "2026-01-01"}\n'
     )
     (tmp_path / "data.csv").write_text(
-        "group,id,note\nA,101,hello\nA,102,\"comma, value\"\n"
+        'group,id,note\nA,101,hello\nA,102,"comma, value"\n'
     )
-    (tmp_path / "duplicate.csv").write_text(
-        "group,note\nA,hello\nA,again\n"
-    )
-    (tmp_path / "dot.csv").write_text(
-        "name,note\n.hidden,hello\n.visible,again\n"
-    )
+    (tmp_path / "duplicate.csv").write_text("group,note\nA,hello\nA,again\n")
+    (tmp_path / "dot.csv").write_text("name,note\n.hidden,hello\n.visible,again\n")
     (tmp_path / "empty.csv").write_text("")
-    (tmp_path / "bad.csv").write_text('name,note\nAlice,\"oops\n')
+    (tmp_path / "bad.csv").write_text('name,note\nAlice,"oops\n')
     (tmp_path / "captions.vtt").write_text(
         "WEBVTT\n\n1\n00:00:01.000 --> 00:00:03.500\n"
         "<v Alice>Hello <c.green>world</c>\n\n"
@@ -211,9 +207,10 @@ def test_theme_follows_os_colour_scheme_and_keeps_manual_control(server):
             themed = Harness(context.new_page(), server)
             themed.open()
             assert themed.evaluate("root.dataset.theme") == expected
-            assert themed.locator("#s-theme").get_attribute("aria-checked") == str(
-                expected == "dark"
-            ).lower()
+            assert (
+                themed.locator("#s-theme").get_attribute("aria-checked")
+                == str(expected == "dark").lower()
+            )
             assert themed.evaluate(
                 "getComputedStyle(document.documentElement).getPropertyValue('--chrome').trim()"
             ) == ("#1b1d21" if expected == "dark" else "#e7e7ec")
@@ -221,9 +218,10 @@ def test_theme_follows_os_colour_scheme_and_keeps_manual_control(server):
             themed.click("#s-theme")
             manual = "light" if expected == "dark" else "dark"
             assert themed.evaluate("root.dataset.theme") == manual
-            assert themed.locator("#s-theme").get_attribute("aria-checked") == str(
-                manual == "dark"
-            ).lower()
+            assert (
+                themed.locator("#s-theme").get_attribute("aria-checked")
+                == str(manual == "dark").lower()
+            )
             context.close()
         browser.close()
 
@@ -293,9 +291,7 @@ def test_the_preview_comes_from_the_python_renderer(page):
 
 
 def test_markdown_rendered_raw_toggle_preserves_navigation(page):
-    source = (
-        "# Readme\n\nline one\nline two\n\n```python\n" + SOURCE + "```\n"
-    )
+    source = "# Readme\n\nline one\nline two\n\n```python\n" + SOURCE + "```\n"
     page.open("README.md")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     rendered = page.locator("#pv-md-rendered")
@@ -384,11 +380,13 @@ def test_large_directory_pages_in_the_browser(page, ui_root):
     for i in range(501):
         (ui_root / f"large-{i:03d}.txt").write_text(str(i))
     page.open()
-    page.wait_for_selector('.pager span')
-    assert page.inner_text('.pager span') == "Page 1 of 2"
+    page.wait_for_selector(".pager span")
+    assert page.inner_text(".pager span") == "Page 1 of 2"
     assert page.locator('.col[data-i="0"] .row:has-text("large-000.txt")').count() == 1
     page.click('.pager button[aria-label="Next page"]')
-    page.wait_for_function("document.querySelector('.pager span')?.innerText === 'Page 2 of 2'")
+    page.wait_for_function(
+        "document.querySelector('.pager span')?.innerText === 'Page 2 of 2'"
+    )
     assert page.locator('.col[data-i="0"] .row:has-text("large-500.txt")').count() == 1
     assert page.locator('.col[data-i="0"] .row:has-text("large-000.txt")').count() == 0
 

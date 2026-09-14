@@ -52,14 +52,21 @@ function buildCol(node) {
   if (node.pages > 1) {
     const pager = document.createElement("div");
     pager.className = "pager";
-    pager.innerHTML = `<button type="button" aria-label="Previous page">‹</button>
+    pager.innerHTML =
+      `<button type="button" aria-label="Previous page">‹</button>
       <span>Page ${node.page} of ${node.pages}</span>
       <button type="button" aria-label="Next page">›</button>`;
     const [prev, next] = pager.querySelectorAll("button");
     prev.disabled = node.page === 1;
     next.disabled = node.page === node.pages;
-    prev.onclick = (e) => { e.stopPropagation(); FS.loadPage(node, node.page - 1); };
-    next.onclick = (e) => { e.stopPropagation(); FS.loadPage(node, node.page + 1); };
+    prev.onclick = (e) => {
+      e.stopPropagation();
+      FS.loadPage(node, node.page - 1);
+    };
+    next.onclick = (e) => {
+      e.stopPropagation();
+      FS.loadPage(node, node.page + 1);
+    };
     el.appendChild(pager);
   }
   /* a folded column hides its rows, so the click lands on the column itself —
@@ -220,22 +227,24 @@ function render(keepScroll) {
 
 function renderPreview() {
   const n = previewNode();
+  const selected = selectedNode();
   const pv = document.createElement("div");
   pv.id = "preview";
   pv.tabIndex = 0;
   pv.setAttribute("aria-label", "File preview");
   PREVIEW.revoke?.();
-  if (!n) {
+  if (!n && !selected) {
     pv.innerHTML = `<div class="pv-empty"><div class="glyph">◫</div>
                     <div>Select a file to preview</div></div>`;
     return pv;
   }
-  const [stem, ext] = splitName(n.name);
+  const target = n || selected;
+  const [stem, ext] = splitName(target.name);
   const rawPath = "/" + currentPath().map(encodeURIComponent).join("/") +
     "?filemill=raw";
   pv.innerHTML = `
     <div class="col-head pv-head"><span class="name"><span>${
-    esc(n.name)
+    esc(target.name)
   }</span></span>
       <span class="pv-actions">
         ${
@@ -252,13 +261,15 @@ function renderPreview() {
           <button id="pv-vtt-raw" class="pv-action" type="button">Raw</button>
         </span>
         <button id="pv-view" class="pv-action" type="button"></button>
+        <button id="pv-delete" class="pv-action" type="button"
+                title="Delete selected item">Delete</button>
         <button id="pv-fullscreen" class="pv-action" type="button" aria-pressed="${pvFullscreen}"
                 title="Toggle fullscreen preview">Fullscreen</button>
       </span>
     </div>
     <div class="pv-body">
       <div class="pv-hero">
-        ${iconHTML(n)}
+        ${iconHTML(target)}
         <div><h2>${esc(stem)}<span style="color:var(--ink-3)">${
     esc(ext)
   }</span></h2>
@@ -267,7 +278,7 @@ function renderPreview() {
       </div>
       <div id="pv-content" class="pv-content"></div>
     </div>`;
-  fillPreview(n);
+  if (n) fillPreview(n);
   pv.classList.toggle("pv-is-fullscreen", pvFullscreen);
   return pv;
 }
@@ -314,10 +325,12 @@ function setupPreviewActions(n) {
   const applicable = RENDERED_RE.test(name);
   if (mdViews) {
     mdViews.hidden = !markdown;
-    for (const [id, mode, label] of [
-      ["pv-md-rendered", "rendered", "View rendered Markdown"],
-      ["pv-md-raw", "raw", "View raw Markdown source"],
-    ]) {
+    for (
+      const [id, mode, label] of [
+        ["pv-md-rendered", "rendered", "View rendered Markdown"],
+        ["pv-md-raw", "raw", "View raw Markdown source"],
+      ]
+    ) {
       const button = document.getElementById(id);
       if (!button) continue;
       button.setAttribute("aria-pressed", String(markdownView === mode));
@@ -333,10 +346,12 @@ function setupPreviewActions(n) {
   }
   if (vttViews) {
     vttViews.hidden = !vtt || view === "highlight";
-    for (const [id, mode, label] of [
-      ["pv-vtt-transcript", "transcript", "View WebVTT transcript"],
-      ["pv-vtt-raw", "raw", "View raw WebVTT source"],
-    ]) {
+    for (
+      const [id, mode, label] of [
+        ["pv-vtt-transcript", "transcript", "View WebVTT transcript"],
+        ["pv-vtt-raw", "raw", "View raw WebVTT source"],
+      ]
+    ) {
       const button = document.getElementById(id);
       if (!button) continue;
       button.setAttribute("aria-pressed", String(vttView === mode));
@@ -351,7 +366,7 @@ function setupPreviewActions(n) {
     }
   }
   if (toggle) {
-    toggle.hidden = !applicable;
+    toggle.hidden = !markdown && !applicable;
     toggle.textContent = view === "render" ? "Source" : "Rendered";
     toggle.title = view === "render"
       ? "View highlighted source"
@@ -371,6 +386,29 @@ function setupPreviewActions(n) {
       full.title = full.textContent;
     };
     full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
+  }
+  const del = document.getElementById("pv-delete");
+  if (del) {
+    del.hidden = !FS.remove || !!n.vpath;
+    del.onclick = async () => {
+      if (
+        !window.confirm(
+          `Delete “${n.name}”${n.dir ? " and its contents" : ""}?`,
+        )
+      ) return;
+      del.disabled = true;
+      try {
+        await FS.remove(n);
+        await refreshColumn(path.length - 1);
+      } catch (err) {
+        saySt(
+          "st-refresh",
+          `Delete failed: ${String(err.message || err)}`,
+          false,
+        );
+        del.disabled = false;
+      }
+    };
   }
 }
 

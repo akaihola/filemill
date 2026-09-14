@@ -30,7 +30,9 @@ const PreviewHTTP = {
       r = await fetch(
         `${API}/preview?p=${encodeURIComponent(node.rel)}` +
           (node.vpath ? `&v=${encodeURIComponent(node.vpath)}` : "") +
-          (node.previewFormat ? `&fmt=${encodeURIComponent(node.previewFormat)}` : "") +
+          (node.previewFormat
+            ? `&fmt=${encodeURIComponent(node.previewFormat)}`
+            : "") +
           (VIEW ? `&filemill=${encodeURIComponent(VIEW)}` : ""),
         { signal: ctl.signal },
       );
