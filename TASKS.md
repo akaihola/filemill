@@ -274,9 +274,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   currently supported (e.g. checkboxes and wikilinks). Tradeoffs must be discussed with the
   maintainer before implementing.
 
-- [*] In an installed PWA, there is no way to get back from raw file view to the file
-  manager view.
-
 - [~] Typing a right arrow when the rightmost column before the preview is focused
   should focus the preview and let the user scroll it up/down using the arrow and
   PgUp/PgDn keys.
@@ -293,6 +290,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [*] In an installed PWA, there is no way to get back from raw file view to the file
+  manager view.
 
 - [*] Using the `Search file contents` input always causes the error
   `Search error: Search timed out` to display. JavaScript console:
