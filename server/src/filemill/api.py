@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import html as html_lib
 import json
+import math
 import mimetypes
 import os
 import subprocess
@@ -44,6 +45,7 @@ SEARCH_QUERY_MAX = 200
 SEARCH_MATCH_MAX = 100
 SEARCH_OUTPUT_MAX = 256 * 1024
 SEARCH_TIMEOUT = 2
+DIR_PAGE_SIZE = 500
 
 
 class SearchError(Exception):
@@ -107,7 +109,7 @@ def rel_to_abs(rel: str, root: Path) -> Path | None:
     return root / rel if rel else root
 
 
-def dir_json(target: Path) -> JSONResponse:
+def dir_json(target: Path, page: int = 1) -> JSONResponse:
     """List a directory in the shape the UI's HTTP adapter expects.
 
     Sizes and mtimes ride along with the listing. The File System Access API
@@ -136,6 +138,14 @@ def dir_json(target: Path) -> JSONResponse:
         denied = "No permission to read"
     except OSError as exc:
         denied = str(exc)
+    entries.sort(key=lambda e: (not e["dir"], e["name"].lower(), e["name"]))
+    total = len(entries)
+    if total > DIR_PAGE_SIZE:
+        pages = math.ceil(total / DIR_PAGE_SIZE)
+        page = min(page, pages)
+        entries = entries[(page - 1) * DIR_PAGE_SIZE:page * DIR_PAGE_SIZE]
+        return JSONResponse({"entries": entries, "denied": denied,
+                             "page": page, "pages": pages, "total": total})
     return JSONResponse({"entries": entries, "denied": denied})
 
 
@@ -156,7 +166,7 @@ def _opens_as_folder(path: Path) -> bool:
         return False
 
 
-def vfs_dir_json(target: Path, vpath: str) -> JSONResponse:
+def vfs_dir_json(target: Path, vpath: str, page: int = 1) -> JSONResponse:
     """List one level inside a virtual filesystem.
 
     The entries carry their own `vpath`, which is how the client knows to keep
@@ -169,21 +179,30 @@ def vfs_dir_json(target: Path, vpath: str) -> JSONResponse:
         listed = provider.list_entries(target, vpath)
     except Exception as exc:
         return JSONResponse({"entries": [], "denied": str(exc)})
+    entries = [
+        {
+            "name": e.name,
+            "dir": e.is_folder,
+            "vpath": e.vpath,
+            "icon": e.icon,
+            "ordered": e.ordered,
+            "size": 0,
+            "mod": 0,
+        }
+        for e in listed
+    ]
+    total = len(entries)
+    pagination = {}
+    if total > DIR_PAGE_SIZE:
+        pages = math.ceil(total / DIR_PAGE_SIZE)
+        page = min(page, pages)
+        entries = entries[(page - 1) * DIR_PAGE_SIZE:page * DIR_PAGE_SIZE]
+        pagination = {"page": page, "pages": pages, "total": total}
     return JSONResponse(
         {
-            "entries": [
-                {
-                    "name": e.name,
-                    "dir": e.is_folder,
-                    "vpath": e.vpath,
-                    "icon": e.icon,
-                    "ordered": e.ordered,
-                    "size": 0,
-                    "mod": 0,
-                }
-                for e in listed
-            ],
+            "entries": entries,
             "denied": None,
+            **pagination,
         }
     )
 
