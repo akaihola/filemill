@@ -146,7 +146,7 @@ const HTTP = {
     });
     if (!r.ok) {
       let message = `${r.status} ${r.statusText}`;
-      try { message = (await r.json()).error || message; } catch (_) { }
+      try { message = (await r.json()).error || message; } catch (_) { /* text error */ }
       throw new Error(message);
     }
   },
