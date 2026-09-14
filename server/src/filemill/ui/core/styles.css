@@ -1196,6 +1196,20 @@ body {
   background: color-mix(in srgb, var(--chrome) 70%, var(--surface));
   overflow: hidden;
 }
+.status-hints {
+  display: contents;
+}
+@media (max-width: 600px) and (orientation: portrait) {
+  #status {
+    gap: 8px;
+  }
+  #status .status-hints {
+    display: none;
+  }
+  #st-path {
+    max-width: 35%;
+  }
+}
 #status kbd {
   font-family: var(--mono);
   font-size: 10px;

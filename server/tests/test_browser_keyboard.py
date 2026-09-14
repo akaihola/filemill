@@ -1225,7 +1225,7 @@ def test_mobile_scroll_behavior_preview_assertions(live_server: str):
         metrics = page.evaluate(
             """() => {
                 const status = document.getElementById('status');
-                const fold = document.querySelector('#status span:last-child');
+                const fold = document.querySelector('.status-fold');
                 return {
                     documentWidth: document.documentElement.scrollWidth,
                     viewportWidth: window.innerWidth,
