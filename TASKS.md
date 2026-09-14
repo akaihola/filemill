@@ -9,10 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
-  between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
-  viewing the source with syntax highlighting.
-
 - Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight` view.
 
 - Feature: ability to delete a file or a directory from the file manager.
@@ -254,6 +250,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   JavaScript console either.
 
 ## Scheduled
+
+- Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
+  between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
+  viewing the source with syntax highlighting.
 
 - Bug: After navigating from a directory url without query parameters (e.g.
   `/path/to/dir`) to a file (e.g. `file1.md`), and then another file (e.g. `file2.md`),
