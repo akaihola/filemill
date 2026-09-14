@@ -40,6 +40,16 @@ Rules for TASKS.md usage are at the bottom of the file.
   should focus the preview and let the user scroll it up/down using the arrow and
   PgUp/PgDn keys.
 
+- [*] In an installed PWA, there is no way to get back from raw file view to the file
+  manager view.
+
+- [*] Bug: Markdown preview doesn't fill and wrap paragraphs at the width of the
+  preview, but keeps linefeeds. Consecutive lines of text must be considered as a single
+  paragraph. If this can't be changed by configuring the Markdown renderer currently in
+  use, consider alternative renderers, check whether they support the other features
+  currently supported (e.g. checkboxes). Tradeoffs must be discussed with the maintainer
+  before implementing.
+
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
       now return the shared client shell.
 
