@@ -230,6 +230,10 @@ function renderPreview() {
           <button id="pv-md-rendered" class="pv-action" type="button">Rendered</button>
           <button id="pv-md-raw" class="pv-action" type="button">Raw</button>
         </span>
+        <span id="pv-vtt-views" hidden role="group" aria-label="WebVTT view">
+          <button id="pv-vtt-transcript" class="pv-action" type="button">Transcript</button>
+          <button id="pv-vtt-raw" class="pv-action" type="button">Raw</button>
+        </span>
         <button id="pv-view" class="pv-action" hidden type="button"></button>
         <button id="pv-fullscreen" class="pv-action" type="button" aria-pressed="${pvFullscreen}"
                 title="Toggle fullscreen preview">Fullscreen</button>
@@ -255,6 +259,7 @@ function renderPreview() {
 const RENDERED_RE = /\.(md|markdown|docx|pptx|html?|desktop)$/i;
 const MARKDOWN_RE = /\.(md|markdown)$/i;
 let markdownView = "rendered";
+let vttView = "transcript";
 
 async function rawMarkdown(node) {
   try {
@@ -285,7 +290,9 @@ function setupPreviewActions(n) {
   const view = previewView();
   const toggle = document.getElementById("pv-view");
   const mdViews = document.getElementById("pv-md-views");
+  const vttViews = document.getElementById("pv-vtt-views");
   const markdown = MARKDOWN_RE.test(n.name);
+  const vtt = /\.vtt$/i.test(n.name);
   const applicable = markdown || (!!ROUTER && RENDERED_RE.test(n.name));
   if (mdViews) {
     mdViews.hidden = !markdown;
@@ -302,6 +309,25 @@ function setupPreviewActions(n) {
         if (markdownView === mode) return;
         markdownView = mode;
         fillPreview(n);
+        setupPreviewActions(n);
+      };
+    }
+  }
+  if (vttViews) {
+    vttViews.hidden = !vtt || view === "highlight";
+    for (const [id, mode, label] of [
+      ["pv-vtt-transcript", "transcript", "View WebVTT transcript"],
+      ["pv-vtt-raw", "raw", "View raw WebVTT source"],
+    ]) {
+      const button = document.getElementById(id);
+      if (!button) continue;
+      button.setAttribute("aria-pressed", String(vttView === mode));
+      button.setAttribute("aria-label", label);
+      button.title = label;
+      button.onclick = () => {
+        if (vttView === mode) return;
+        vttView = mode;
+        fillPreview({ ...n, previewFormat: mode });
         setupPreviewActions(n);
       };
     }
@@ -358,6 +384,8 @@ async function fillPreview(n) {
   try {
     html = MARKDOWN_RE.test(n.name) && markdownView === "raw"
       ? (await rawMarkdown(n) || await PREVIEW.render(n))
+      : /\.vtt$/i.test(n.name) && previewView() !== "highlight"
+      ? await PREVIEW.render({ ...n, previewFormat: vttView })
       : await PREVIEW.render(n);
   } catch (err) {
     html = `<p class="pv-err">Preview failed: ${

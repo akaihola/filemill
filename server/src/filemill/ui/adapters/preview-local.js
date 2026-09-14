@@ -21,6 +21,36 @@ const TEXT_MAX = 512 * 1024;
 
 let pvURL = null;
 
+function vttHTML(source, mode = "transcript") {
+  if (mode === "raw") return `<pre class="preview-raw">${esc(source)}</pre>`;
+  const text = source.replace(/^\uFEFF/, "");
+  if (!/^WEBVTT(?:\s|$)/.test(text)) {
+    return '<div class="preview-error">Malformed WebVTT: missing WEBVTT header.</div>';
+  }
+  const cues = [];
+  for (const block of text.split(/\r?\n\s*\r?\n/).slice(1)) {
+    const lines = block.split(/\r?\n/);
+    if (["NOTE", "STYLE", "REGION"].includes(lines[0]?.trim())) continue;
+    const i = lines.findIndex(line => line.includes("-->"));
+    if (i < 0) {
+      if (block.trim()) return '<div class="preview-error">Malformed WebVTT: cue is missing a timestamp.</div>';
+      continue;
+    }
+    const m = lines[i].trim().match(/^(\d{2}:\d{2}(?::\d{2})?\.\d{3})\s+-->\s+(\d{2}:\d{2}(?::\d{2})?\.\d{3})(?:\s+.*)?$/);
+    if (!m) return '<div class="preview-error">Malformed WebVTT: invalid cue timestamp.</div>';
+    let cue = lines.slice(i + 1).join("\n").trim();
+    const voice = cue.match(/^<v(?:\s+([^>]+))?>([\s\S]*)$/);
+    const speaker = voice?.[1]?.trim() || "";
+    if (voice) cue = voice[2];
+    cue = cue.replace(/<[^>]+>/g, "").trim();
+    if (cue) cues.push([m[1], m[2], speaker, cue]);
+  }
+  if (!cues.length) return '<div class="preview-empty">WebVTT file has no cues.</div>';
+  return `<div class="preview-transcript">${cues.map(([start, end, speaker, cue]) =>
+    `<p class="preview-cue"><span class="preview-cue-time">${esc(start)} → ${esc(end)}</span><span class="preview-cue-text">${speaker ? `<strong>${esc(speaker)}:</strong> ` : ""}${esc(cue).replace(/\n/g, "<br>")}</span></p>`
+  ).join("")}</div>`;
+}
+
 /* .desktop is an INI file; only Type=Link entries have anything to show. */
 function desktopCard(text) {
   const e = {};
@@ -83,6 +113,8 @@ const PreviewLocal = {
     if (/\.desktop$/i.test(node.name) && blob.size <= TEXT_MAX) {
       return desktopCard(await blob.text()) ?? null;
     }
+
+    if (/\.vtt$/i.test(node.name)) return vttHTML(await blob.text(), node.previewFormat);
 
     if (blob.size <= TEXT_MAX) {
       let text;
