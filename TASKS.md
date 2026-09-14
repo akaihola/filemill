@@ -38,6 +38,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
   registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
 
+- [*] Default `--bind` in `server/src/filemill/cli.py` to `127.0.0.1`. Document it in
+  `SECURITY.md`.
+
 ## Ordered backlog
 
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
@@ -116,9 +119,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Compute the symlink zone map one time per request in `paths.py`. Delete the three
   other walks of the root that build the same map.
     - Depends on: [24]
-
-- [*] Default `--bind` in `server/src/filemill/cli.py` to `127.0.0.1`. Document it in
-  `SECURITY.md`.
 
 - [*] Replace `python-fasthtml` with `starlette` and `uvicorn`. The shell becomes one
   string template. Done when `dependencies` has starlette, uvicorn, typer, python-pptx.
