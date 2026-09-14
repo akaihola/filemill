@@ -69,7 +69,6 @@ async function mount(handle, loc) {
   path = [node];
   sel = [];
   focusCol = 0;
-  cursor = { 0: 0 };
   mounted = null;
   keptAt = null;
   welcome.hidden = true;
