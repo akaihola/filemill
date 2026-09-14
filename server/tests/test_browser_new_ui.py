@@ -79,6 +79,16 @@ def ui_root(tmp_path: Path) -> Path:
     (tmp_path / "data.csv").write_text("name,note\nAlice,hello\nBob,\"comma, value\"\n")
     (tmp_path / "empty.csv").write_text("")
     (tmp_path / "bad.csv").write_text('name,note\nAlice,\"oops\n')
+    (tmp_path / "captions.vtt").write_text(
+        "WEBVTT\n\n1\n00:00:01.000 --> 00:00:03.500\n"
+        "<v Alice>Hello <c.green>world</c>\n\n"
+        "00:00:04.000 --> 00:00:05.000\nBye\n",
+        newline="",
+    )
+    (tmp_path / "empty.vtt").write_text("WEBVTT\n\n", newline="")
+    (tmp_path / "bad.vtt").write_text(
+        "WEBVTT\n\n00:00:00.000 --> nope\ntext\n", newline=""
+    )
     con = sqlite3.connect(str(tmp_path / "sample.db"))
     con.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
     for i in range(1, 4):
@@ -295,6 +305,38 @@ def test_markdown_rendered_raw_toggle_preserves_navigation(page):
     rendered.press("Enter")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     assert page.evaluate("sel")[-1] == "README.md"
+
+
+def test_vtt_transcript_and_raw_views_preserve_navigation(page):
+    source = (
+        "WEBVTT\n\n1\n00:00:01.000 --> 00:00:03.500\n"
+        "<v Alice>Hello <c.green>world</c>\n\n"
+        "00:00:04.000 --> 00:00:05.000\nBye\n"
+    )
+    page.open("captions.vtt")
+    page.wait_for_selector(".preview-transcript .preview-cue", timeout=15000)
+    assert "00:00:01.000" in page.inner_text("#pv-content")
+    assert "Hello world" in page.inner_text("#pv-content")
+    assert page.locator("#pv-vtt-transcript").get_attribute("aria-pressed") == "true"
+    assert page.evaluate("sel")[-1] == "captions.vtt"
+
+    page.click("#pv-vtt-raw")
+    page.wait_for_function("document.querySelector('#pv-content .preview-raw')")
+    assert page.text_content("#pv-content .preview-raw") == source
+    assert page.locator("#pv-vtt-raw").get_attribute("aria-pressed") == "true"
+    assert page.evaluate("sel")[-1] == "captions.vtt"
+
+    page.click("#pv-vtt-transcript")
+    page.wait_for_selector(".preview-transcript .preview-cue", timeout=15000)
+    assert page.locator("#pv-vtt-transcript").get_attribute("aria-pressed") == "true"
+
+
+def test_vtt_empty_and_malformed_files_are_safe(page):
+    page.open("empty.vtt")
+    assert "no cues" in page.inner_text("#pv-content").lower()
+    assert page.locator("#pv-vtt-views").is_visible()
+    page.open("bad.vtt")
+    assert "malformed webvtt" in page.inner_text("#pv-content").lower()
 
 
 def test_content_search_opens_a_matching_file(page):
