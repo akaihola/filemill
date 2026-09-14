@@ -237,9 +237,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Remove the `--cov*` options from `addopts` in `server/pyproject.toml`. Pass them
   on the `pytest` command line in the CI `test` job. A single-test run must be fast.
 
-- [*] Add `.pre-commit-config.yaml` with ruff, ruff-format, mypy, deno fmt, deno lint
-  and `static/build-index.py --check`. Run `pre-commit run --all-files` until it passes.
-
 - [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
   identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
 
@@ -270,6 +267,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
   between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
   viewing the source with syntax highlighting.
+
+- [*] Add `.pre-commit-config.yaml` with ruff, ruff-format, mypy, deno fmt, deno lint
+  and `static/build-index.py --check`. Run `pre-commit run --all-files` until it passes.
 
 - Bug: Task 511f90cc-2725-4ef1-a8d8-ed67c4eddb0f failed to fix the portrait mobile
   scroll to the right problem. I suspect the extra space at the right side of the page
