@@ -54,7 +54,9 @@ Cold download from jsDelivr, once per session, measured on 2026-09-14:
 
 Time on the development server with the assets already local, under deno:
 interpreter boot 4.5 s, `loadPackage("docutils")` 0.3 s, first render 1.7 s
-(importing docutils), later renders well under a second. The rejected
+(importing docutils), later renders well under a second. In headless
+Chromium on the same server, cold cache, through its outbound proxy: 8.2 s
+from click to rendered text. The rejected
 JavaScript option would have been 157 KB and instant, which is why it was
 tried first.
 
