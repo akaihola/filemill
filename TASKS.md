@@ -9,13 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [*] Bug: Markdown preview doesn't fill and wrap paragraphs at the width of the
-  preview, but keeps linefeeds. Consecutive lines of text must be considered as a single
-  paragraph. If this can't be changed by configuring the Markdown renderer currently in
-  use, consider alternative renderers, check whether they support the other features
-  currently supported (e.g. checkboxes and wikilinks). Tradeoffs must be discussed with
-  the maintainer before implementing.
-
 - Bug: After navigating from a directory url without query parameters (e.g.
   `/path/to/dir`) to a file (e.g. `file1.md`), and then another file (e.g. `file2.md`),
   and then opening file2 using the `Raw` button, and navigating back using the browser's
@@ -273,6 +266,13 @@ Rules for TASKS.md usage are at the bottom of the file.
   JavaScript console either.
 
 ## Scheduled
+
+- [*] Bug: Markdown preview doesn't fill and wrap paragraphs at the width of the
+  preview, but keeps linefeeds. Consecutive lines of text must be considered as a single
+  paragraph. If this can't be changed by configuring the Markdown renderer currently in
+  use, consider alternative renderers, check whether they support the other features
+  currently supported (e.g. checkboxes and wikilinks). Tradeoffs must be discussed with the
+  maintainer before implementing.
 
 - [*] In an installed PWA, there is no way to get back from raw file view to the file
   manager view.
