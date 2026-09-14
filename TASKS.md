@@ -9,8 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight` view.
-
 - Feature: ability to delete a file or a directory from the file manager.
 
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
@@ -250,6 +248,8 @@ Rules for TASKS.md usage are at the bottom of the file.
   JavaScript console either.
 
 ## Scheduled
+
+- Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight` view.
 
 - Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
   between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
