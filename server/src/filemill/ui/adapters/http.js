@@ -34,7 +34,10 @@ const httpNode = (name, rel, dir, meta, vpath, icon, ordered = false) => ({
 
 const q = (rel, vpath) =>
   `${API}/dir?p=${encodeURIComponent(rel)}` +
-  (vpath ? `&v=${encodeURIComponent(vpath)}` : "");
+    (vpath ? `&v=${encodeURIComponent(vpath)}` : "");
+
+const pageQ = (rel, vpath, page) =>
+  `${q(rel, vpath)}&page=${page}`;
 
 const HTTP = {
   node: (name, rel) => httpNode(name, rel || "", true),
@@ -44,12 +47,15 @@ const HTTP = {
     if (node.loading) return node.loading;
     node.loading = (async () => {
       try {
-        const r = await fetch(q(node.rel, node.vpath), {
+        const r = await fetch(pageQ(node.rel, node.vpath, 1), {
           headers: { Accept: "application/json" },
         });
         if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
         const j = await r.json();
         node.denied = j.denied || undefined;
+        node.page = j.page;
+        node.pages = j.pages;
+        node.total = j.total;
         node.kids = (j.entries || []).map((e) =>
           e.vpath !== undefined
             /* virtual: same file, deeper key */
@@ -76,6 +82,39 @@ const HTTP = {
       node.loading = null;
     })();
     return node.loading;
+  },
+
+  async loadPage(node, page) {
+    if (!node.pages || page < 1 || page > node.pages || node.loading) return;
+    node.loading = (async () => {
+      const r = await fetch(pageQ(node.rel, node.vpath, page), {
+        headers: { Accept: "application/json" },
+      });
+      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+      const j = await r.json();
+      const i = path.indexOf(node);
+      if (i >= 0) {
+        path = path.slice(0, i + 1);
+        sel = sel.slice(0, i);
+        focusCol = Math.min(focusCol, i);
+      }
+      node.kids = (j.entries || []).map((e) =>
+        e.vpath !== undefined
+          ? httpNode(e.name, node.rel, e.dir, { virtual: true }, e.vpath,
+                     e.icon, e.ordered)
+          : httpNode(e.name, relOf(node.rel, e.name), e.dir,
+                     e.dir ? undefined : { size: e.size, mod: e.mod })
+      );
+      node.page = j.page;
+      node.pages = j.pages;
+      node.total = j.total;
+      node.loading = null;
+    })();
+    try { await node.loading; } catch (err) {
+      node.denied = String(err.message || err);
+      node.loading = null;
+    }
+    render();
   },
 
   /* The listing already carried it — or there is none to carry, for a node
