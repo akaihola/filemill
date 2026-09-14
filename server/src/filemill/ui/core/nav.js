@@ -311,6 +311,17 @@ document.addEventListener("keydown", (e) => {
     return;
   }
   if (!welcome.hidden) return;
+  if (e.target.closest?.("#preview")) {
+    if (["ArrowUp", "ArrowDown", "PageUp", "PageDown"].includes(e.key)) {
+      const body = document.querySelector("#preview .pv-body");
+      e.preventDefault();
+      body?.scrollBy({
+        top: e.key === "ArrowUp" ? -40 : e.key === "ArrowDown" ? 40 :
+          (e.key === "PageUp" ? -1 : 1) * body.clientHeight,
+      });
+    }
+    return;
+  }
   /* the cached column knows its rows — never re-query them, a directory can
      hold tens of thousands and this runs on every keystroke */
   const c = colCache.get(path[focusCol]);
@@ -363,7 +374,14 @@ document.addEventListener("keydown", (e) => {
     const next = path[focusCol + 1];
     /* nothing open to the right: commit the cursor row, which opens it when it
        is a directory — a second → then steps into that column */
-    if (!next) return void rows[ci]?.click();
+    if (!next) {
+      const row = rows[ci];
+      row?.click();
+      if (e.key === "ArrowRight" && c.kids[ci] && !c.kids[ci].dir) {
+        document.getElementById("preview")?.focus();
+      }
+      return;
+    }
     if (next.kids === null) {
       FS.ensureLoaded(next).then(() => {
         render();
