@@ -24,6 +24,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Document the full port contract in `ui/core/ports.js`: `FS.node`, `FS.blob`,
   `ROUTER.write(state, replace)`, `RouterPath.base` and every node field.
 
+- [21] Cache the preview element keyed on the previewed node and its `meta`, the same
+  way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
+
 ## Ordered backlog
 
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
@@ -56,9 +59,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into `withVirtual`,
   and `withJsonlPreview` and `withJsonPreview` into `withVirtualPreview`.
     - Depends on: [19]
-
-- [21] Cache the preview element keyed on the previewed node and its `meta`, the same
-  way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
 
 - [22] Replace `cursor[i]`, `sel[i]` and `node.lastSel` with one selection model:
   `sel[i]` is the selected name. Derive the row index when needed.
