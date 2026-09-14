@@ -255,16 +255,3 @@ body {
 
 """
 )
-
-
-LIVE_RELOAD_JS = """
-(function() {
-    var evtSource = new EventSource('/sse/reload');
-    evtSource.onmessage = function(e) {
-        if (e.data === 'reload') window.location.reload();
-    };
-    evtSource.onerror = function() {
-        // Connection lost – retry is automatic for EventSource
-    };
-})();
-"""

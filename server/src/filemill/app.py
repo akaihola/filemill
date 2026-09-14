@@ -30,7 +30,7 @@ from starlette.responses import (
 from filemill import api, urls
 from filemill.env import env
 from filemill.preview import render_preview, render_source
-from filemill.styles import APP_CSS, LIVE_RELOAD_JS
+from filemill.styles import APP_CSS
 
 # CDN URL for mermaid.js (UMD build – sets window.mermaid on load)
 # Static files bundled with the package (PWA manifest, service worker, icons)
@@ -46,10 +46,8 @@ _SW_REGISTER_JS: str = dedent("""\
 # HTML file extensions that get a "View as web page" button in the preview
 _HTML_EXTS = {".html", ".htm"}
 
-# Overridden by cli.py before serve() is called; also supports env var for reload mode
+# Overridden by cli.py before serve() is called.
 ROOT: Path = Path(env("ROOT", str(Path.home())))
-
-LIVE_MODE: bool = env("LIVE").lower() in ("1", "true", "yes")
 
 app, rt = fast_app(
     hdrs=(),
@@ -104,7 +102,6 @@ def _resolve_safe(path_str: str, root: Path | None = None) -> Path | None:
 
 def _head_tags(*extra_head_scripts):
     """Return the ``<head>`` every Filemill page shares."""
-    extra_scripts = [Script(LIVE_RELOAD_JS)] if LIVE_MODE else []
     return Head(
         Title("Filemill"),
         Meta(name="viewport", content="width=device-width, initial-scale=1"),
@@ -120,7 +117,6 @@ def _head_tags(*extra_head_scripts):
         Link(rel="apple-touch-icon", href="/icons/icon-192.png"),
         Style(APP_CSS),
         Script(_SW_REGISTER_JS),
-        *extra_scripts,
         *extra_head_scripts,
     )
 
@@ -167,40 +163,6 @@ def _page_html(body_children, state, *extra_head_scripts):
 def index(request):
     """Serve the root directory; ``resource`` holds the one directory rule."""
     return resource(request)
-
-
-@rt("/sse/reload")
-async def sse_reload():
-    """Server-Sent Events stream; emits a reload event when files under ROOT change."""
-    if not LIVE_MODE:
-        from starlette.responses import Response
-
-        return Response(status_code=404)
-
-    import asyncio
-
-    from starlette.responses import StreamingResponse
-
-    async def event_generator():
-        try:
-            from watchfiles import awatch
-
-            async for _changes in awatch(str(ROOT)):
-                yield "data: reload\n\n"
-        except Exception:
-            # If watchfiles not available or error, just keep stream open
-            while True:
-                await asyncio.sleep(30)
-                yield ": keepalive\n\n"
-
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no",
-        },
-    )
 
 
 @rt("/raw")
