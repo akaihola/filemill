@@ -281,11 +281,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] In the CSV hierarchical preview, there are two problems. The first column is
-  always selected as the key. Instead, a unique column should be selected similar to how
-  it's done in JSON. Also, currently if the first column is not unique, all identical
-  values are selected together. This should be fixed for the case when no unique column
-  is available. Original implementation in task 8038a32c-570b-45ed-b3ca-5834b3b8dc18.
+- [*] Using the `Search file contents` input always causes the error
+  `Search error: Search timed out` to display. JavaScript console:
+  `XHR GET https://gogo.crane-boa.ts.net:8445/api/search?q=development [HTTP/2 503  2020ms]`.
+  Originally implemented in task 456736f9-7242-40d0-894d-d5e1db50c0de.
 
 - [*] Rendering if reStructuredText (`.rst`) isn't currently supported. Investigate how
   to implement it on the client side. Prefer readily available 3rd party client-side
@@ -306,6 +305,12 @@ Rules for TASKS.md usage are at the bottom of the file.
   `Search error: Search timed out` to display. JavaScript console:
   `XHR GET https://gogo.crane-boa.ts.net:8445/api/search?q=development [HTTP/2 503  2020ms]`.
   Originally implemented in task 456736f9-7242-40d0-894d-d5e1db50c0de.
+
+- [*] In the CSV hierarchical preview, there are two problems. The first column is
+  always selected as the key. Instead, a unique column should be selected similar to how
+  it's done in JSON. Also, currently if the first column is not unique, all identical
+  values are selected together. This should be fixed for the case when no unique column
+  is available. Original implementation in task 8038a32c-570b-45ed-b3ca-5834b3b8dc18.
 
 - [*] `.py.j2` are templates for Python files that are rendered by Jinja2. Does our
   highlighting library support syntax highlighting for such hybrid files? If so,
