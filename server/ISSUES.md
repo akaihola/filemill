@@ -36,6 +36,15 @@ git log -p -- ISSUES.md | grep -B 5 "^-## #34"
 
 ---
 
+## #49 – CSV preview shows "not yet implemented" stub
+
+**Type:** feature
+**Status:** in-progress
+
+CSV files currently reach the server CSV provider, which returns a placeholder instead of useful row and value data. The shared browser UI also has no CSV virtual filesystem adapter, so local and server previews cannot expose CSV rows through the hierarchical navigation used by JSON and JSONL.
+
+---
+
 ## #43 – Mobile preview fills 100 % width; rightmost column peek needed as scroll hint
 
 **Type:** UX
