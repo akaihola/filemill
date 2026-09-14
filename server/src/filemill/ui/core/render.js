@@ -226,6 +226,10 @@ function renderPreview() {
       ? `<a id="pv-raw" class="pv-action" href="${rawPath}" title="View raw file">Raw</a>`
       : ""
   }
+        <span id="pv-md-views" hidden role="group" aria-label="Markdown view">
+          <button id="pv-md-rendered" class="pv-action" type="button">Rendered</button>
+          <button id="pv-md-raw" class="pv-action" type="button">Raw</button>
+        </span>
         <button id="pv-view" class="pv-action" hidden type="button"></button>
         <button id="pv-fullscreen" class="pv-action" type="button" aria-pressed="${pvFullscreen}"
                 title="Toggle fullscreen preview">Fullscreen</button>
@@ -253,8 +257,12 @@ const MARKDOWN_RE = /\.(md|markdown)$/i;
 let markdownView = "rendered";
 
 async function rawMarkdown(node) {
-  const blob = await FS.blob(node);
-  return blob ? `<pre class="pv-text">${esc(await blob.text())}</pre>` : null;
+  try {
+    const blob = await FS.blob(node);
+    return blob ? `<pre class="pv-text">${esc(await blob.text())}</pre>` : null;
+  } catch (_) {
+    return null;
+  }
 }
 
 function previewView() {
@@ -276,25 +284,37 @@ function setPreviewView(view) {
 function setupPreviewActions(n) {
   const view = previewView();
   const toggle = document.getElementById("pv-view");
+  const mdViews = document.getElementById("pv-md-views");
   const markdown = MARKDOWN_RE.test(n.name);
   const applicable = markdown || (!!ROUTER && RENDERED_RE.test(n.name));
-  if (toggle) {
-    toggle.hidden = !applicable;
-    toggle.textContent = markdown
-      ? (markdownView === "rendered" ? "Raw" : "Rendered")
-      : (view === "render" ? "Source" : "Rendered");
-    toggle.title = markdown
-      ? (markdownView === "rendered" ? "View raw Markdown source" : "View rendered Markdown")
-      : (view === "render" ? "View highlighted source" : "View rendered preview");
-    toggle.setAttribute("aria-label", toggle.title);
-    toggle.onclick = () => {
-      if (markdown) {
-        markdownView = markdownView === "rendered" ? "raw" : "rendered";
+  if (mdViews) {
+    mdViews.hidden = !markdown;
+    for (const [id, mode, label] of [
+      ["pv-md-rendered", "rendered", "View rendered Markdown"],
+      ["pv-md-raw", "raw", "View raw Markdown source"],
+    ]) {
+      const button = document.getElementById(id);
+      if (!button) continue;
+      button.setAttribute("aria-pressed", String(markdownView === mode));
+      button.setAttribute("aria-label", label);
+      button.title = label;
+      button.onclick = () => {
+        if (markdownView === mode) return;
+        markdownView = mode;
         fillPreview(n);
         setupPreviewActions(n);
-      } else {
-        setPreviewView(view === "render" ? "highlight" : "render");
-      }
+      };
+    }
+  }
+  if (toggle) {
+    toggle.hidden = markdown || !applicable;
+    toggle.textContent = view === "render" ? "Source" : "Rendered";
+    toggle.title = view === "render"
+      ? "View highlighted source"
+      : "View rendered preview";
+    toggle.setAttribute("aria-label", toggle.title);
+    toggle.onclick = () => {
+      setPreviewView(view === "render" ? "highlight" : "render");
     };
   }
   const full = document.getElementById("pv-fullscreen");
@@ -337,7 +357,7 @@ async function fillPreview(n) {
   let html = null;
   try {
     html = MARKDOWN_RE.test(n.name) && markdownView === "raw"
-      ? await rawMarkdown(n)
+      ? (await rawMarkdown(n) || await PREVIEW.render(n))
       : await PREVIEW.render(n);
   } catch (err) {
     html = `<p class="pv-err">Preview failed: ${
