@@ -30,14 +30,18 @@ const withHighlighting = (provider) => ({
   },
   render: (n) =>
     (!n.vpath && document.documentElement.dataset.filemill === "highlight" &&
-      hlLang(n.name) ? PreviewLocal : provider).render(n),
+        hlLang(n.name)
+      ? PreviewLocal
+      : provider).render(n),
 });
 
 async function mountServer() {
   useFilesystem(withCsv(withJson(withJsonl(HTTP))));
   usePreview(
     withCsvPreview(
-      withJsonPreview(withJsonlPreview(withHighlighting(PreviewHTTP))),
+      withJsonPreview(
+        withJsonlPreview(withPptxPreview(withHighlighting(PreviewHTTP))),
+      ),
     ),
   );
   useRouter(RouterPath);
@@ -70,7 +74,8 @@ async function mountServer() {
 
 function showServerUnavailable() {
   welcome.hidden = false;
-  document.getElementById("w-title").textContent = "Filemill server unavailable";
+  document.getElementById("w-title").textContent =
+    "Filemill server unavailable";
   document.getElementById("w-msg").innerHTML =
     "Start Filemill locally with <code>uv run filemill</code>, then retry. " +
     "The installed app can connect to the service but cannot start it.";
@@ -79,7 +84,9 @@ function showServerUnavailable() {
   button.textContent = "Retry connection";
   button.onclick = () => {
     button.disabled = true;
-    mountServer().finally(() => { button.disabled = false; });
+    mountServer().finally(() => {
+      button.disabled = false;
+    });
   };
   document.getElementById("w-recent").hidden = true;
 }
@@ -91,7 +98,9 @@ async function mount(handle) {
   useFilesystem(withCsv(withJson(withJsonl(FSA))));
   usePreview(
     withCsvPreview(
-      withJsonPreview(withJsonlPreview(withHighlighting(PreviewUpload))),
+      withJsonPreview(
+        withJsonlPreview(withPptxPreview(withHighlighting(PreviewUpload))),
+      ),
     ),
   );
   useRouter(null);
