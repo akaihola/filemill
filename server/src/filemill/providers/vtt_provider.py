@@ -53,7 +53,7 @@ def parse(text: str) -> list[tuple[str, str, str, str]]:
             continue
         parsed = _cue(block)
         if parsed is None and block.strip():
-            if not seen_cue:
+            if not seen_cue and all(":" in line for line in lines):
                 continue
             raise ValueError("cue is missing a timestamp")
         if parsed:
