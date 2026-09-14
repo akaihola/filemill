@@ -4,9 +4,10 @@
    Fills the FS port (see core/ports.js). Nodes carry the handle they came
    from; nothing else in the app ever touches it.
    ═══════════════════════════════════════════════════════════════════════════ */
-const fsaNode = (name, handle) => ({
+const fsaNode = (name, handle, parent = null) => ({
   name,
   handle,
+  parent,
   dir: handle.kind === "directory",
   kids: handle.kind === "directory" ? null : undefined,
 });
@@ -21,7 +22,7 @@ const FSA = {
       const kids = [];
       try {
         for await (const [name, handle] of node.handle.entries()) {
-          kids.push(fsaNode(name, handle));
+          kids.push(fsaNode(name, handle, node.handle));
         }
       } catch (err) {
         node.denied = err.name === "NotAllowedError"
@@ -67,5 +68,14 @@ const FSA = {
     await w.close();
     node.file = null; /* stale — reread on the next preview */
     node.meta = null;
+  },
+
+  async remove(node) {
+    if (node.handle.requestPermission &&
+        await node.handle.requestPermission({ mode: "readwrite" }) !== "granted") {
+      throw new Error("No permission to delete");
+    }
+    if (!node.handle.parent) throw new Error("Cannot delete this entry");
+    await node.handle.parent.removeEntry(node.name, { recursive: node.dir });
   },
 };

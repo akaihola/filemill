@@ -247,8 +247,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   scroll to the right problem. I suspect the extra space at the right side of the page
   is caused by the `⇧+wheel fold` label flowing outside the right edge of the page.
 
-- Feature: ability to delete a file or a directory from the file manager.
-
 - Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
   between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
   viewing the source with syntax highlighting.
@@ -276,6 +274,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- Feature: ability to delete a file or a directory from the file manager.
 
 - [~] Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight` view.
 
