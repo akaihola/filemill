@@ -287,11 +287,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   values are selected together. This should be fixed for the case when no unique column
   is available. Original implementation in task 8038a32c-570b-45ed-b3ca-5834b3b8dc18.
 
-- [*] Using the `Search file contents` input always causes the error
-  `Search error: Search timed out` to display. JavaScript console:
-  `XHR GET https://gogo.crane-boa.ts.net:8445/api/search?q=development [HTTP/2 503  2020ms]`.
-  Originally implemented in task 456736f9-7242-40d0-894d-d5e1db50c0de.
-
 - [*] Rendering if reStructuredText (`.rst`) isn't currently supported. Investigate how
   to implement it on the client side. Prefer readily available 3rd party client-side
   solutions, or pre-packaged Python solutions to run on the browser, and just implement
@@ -306,6 +301,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [*] Using the `Search file contents` input always causes the error
+  `Search error: Search timed out` to display. JavaScript console:
+  `XHR GET https://gogo.crane-boa.ts.net:8445/api/search?q=development [HTTP/2 503  2020ms]`.
+  Originally implemented in task 456736f9-7242-40d0-894d-d5e1db50c0de.
 
 - [*] `.py.j2` are templates for Python files that are rendered by Jinja2. Does our
   highlighting library support syntax highlighting for such hybrid files? If so,
