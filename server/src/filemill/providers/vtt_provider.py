@@ -43,7 +43,7 @@ def _cue(block: str) -> tuple[str, str, str] | None:
 
 def parse(text: str) -> list[tuple[str, str, str, str]]:
     source = text.removeprefix("\ufeff")
-    if not source.startswith("WEBVTT"):
+    if not re.match(r"^WEBVTT(?:\s|$)", source):
         raise ValueError("missing WEBVTT header")
     cues = []
     for block in re.split(r"\r?\n\s*\r?\n", source)[1:]:
@@ -51,6 +51,8 @@ def parse(text: str) -> list[tuple[str, str, str, str]]:
         if not lines or lines[0].strip() in {"NOTE", "STYLE", "REGION"}:
             continue
         parsed = _cue(block)
+        if parsed is None and block.strip():
+            raise ValueError("cue is missing a timestamp")
         if parsed:
             start, end, tagged = parsed
             speaker, cue_text = tagged.split("\x00", 1)

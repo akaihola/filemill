@@ -339,6 +339,13 @@ def test_vtt_empty_and_malformed_files_are_safe(page):
     assert "malformed webvtt" in page.inner_text("#pv-content").lower()
 
 
+def test_vtt_highlight_view_keeps_the_source_fallback(page):
+    page.open("captions.vtt?filemill=highlight")
+    page.wait_for_selector("#preview .pv-rich .preview-raw", timeout=15000)
+    assert "WEBVTT" in page.inner_text("#preview .pv-rich")
+    assert page.locator("#pv-vtt-views").is_hidden()
+
+
 def test_content_search_opens_a_matching_file(page):
     page.open()
     page.fill("#search-bar", "Leaf")
