@@ -38,7 +38,14 @@ let lastKey = null;
 function syncURL() {
   if (applying || !ROUTER || !path.length) return;
   const key = path.slice(0, focusCol + 1).map((p) => p.name).join("/");
-  ROUTER.write({ root: path[0].name, path: currentPath() }, lastKey === key);
+  const names = currentPath();
+  const node = previewNode();
+  const view = node && !node.dir
+    ? document.documentElement.dataset.filemill === "highlight"
+      ? "highlight"
+      : "render"
+    : undefined;
+  ROUTER.write({ root: path[0].name, path: names, view }, lastKey === key);
   lastKey = key;
 }
 
