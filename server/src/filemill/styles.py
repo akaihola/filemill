@@ -127,6 +127,12 @@ body {
     background: #fafafa;
 }
 
+.preview-pptx .slide img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
 .preview-pptx .slide h3 {
     margin: 0 0 0.5em 0;
     font-size: 1em;
