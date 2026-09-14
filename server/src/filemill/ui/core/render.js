@@ -221,6 +221,8 @@ function renderPreview() {
   const n = previewNode();
   const pv = document.createElement("div");
   pv.id = "preview";
+  pv.tabIndex = 0;
+  pv.setAttribute("aria-label", "File preview");
   PREVIEW.revoke?.();
   if (!n) {
     pv.innerHTML = `<div class="pv-empty"><div class="glyph">◫</div>

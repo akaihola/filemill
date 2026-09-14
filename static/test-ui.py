@@ -470,6 +470,26 @@ async def main():
         check("→ returns to the row the column was left on",
               await pg.evaluate("sel[4]") == "leaf.md" and
               await pg.evaluate("focusCol") == 4)
+        await pg.keyboard.press("ArrowRight")
+        check("→ focuses the preview from the rightmost column",
+              await pg.evaluate("document.activeElement?.id") == "preview")
+        before = await pg.evaluate("document.querySelector('#preview .pv-body').scrollTop")
+        await pg.keyboard.press("PageDown")
+        after = await pg.evaluate("document.querySelector('#preview .pv-body').scrollTop")
+        check("PageDown scrolls the focused preview", after > before,
+              f"{before} -> {after}")
+        await pg.keyboard.press("ArrowUp")
+        restored = await pg.evaluate("document.querySelector('#preview .pv-body').scrollTop")
+        check("ArrowUp scrolls the focused preview up", restored < after,
+              f"{after} -> {restored}")
+        await pg.keyboard.press("ArrowDown")
+        down = await pg.evaluate("document.querySelector('#preview .pv-body').scrollTop")
+        check("ArrowDown scrolls the focused preview down", down > restored,
+              f"{restored} -> {down}")
+        await pg.keyboard.press("PageUp")
+        up = await pg.evaluate("document.querySelector('#preview .pv-body').scrollTop")
+        check("PageUp scrolls the focused preview up", up < down,
+              f"{down} -> {up}")
 
         print("\n── Folding dial ─────────────────────────────────────────────")
         # Both moves glide: the dial is a CSS smooth scroll either way round, so
