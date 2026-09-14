@@ -26,9 +26,12 @@ const RouterPath = {
     };
   },
 
-  write({ path }, replace) {
+  write({ path, view }, replace) {
+    const search = new URLSearchParams(location.search);
+    if (view && !search.has("filemill")) search.set("filemill", view);
+    const query = search.toString();
     const url = BASE + path.map(encodeURIComponent).join("/") +
-      location.search + location.hash;
+      (query ? `?${query}` : "") + location.hash;
     if (url === location.pathname + location.search + location.hash) return;
     history[replace ? "replaceState" : "pushState"](null, "", url);
   },
