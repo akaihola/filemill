@@ -429,6 +429,7 @@ async function fillPreview(n) {
   const token = ++pvToken;
   await FS.loadMeta(n);
   if (token !== pvToken) return;
+  if (previewCache?.node === n) previewCache.meta = n.meta;
   const m = n.meta || {};
   const sub = document.getElementById("pv-sub");
   if (!sub) return;
