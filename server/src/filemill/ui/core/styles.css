@@ -1157,6 +1157,18 @@ body {
   max-width: 100%;
   border-radius: 6px;
 }
+.pv-pptx {
+  min-height: 240px;
+  height: min(78vh, 720px);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--hover);
+  padding: 8px;
+}
+.pv-pptx > :first-child {
+  margin-top: 0;
+}
 .pv-rich table {
   border-collapse: collapse;
   font-size: 12px;

@@ -382,6 +382,7 @@ _UI_ADAPTERS = [
     "http.js",
     "preview-http.js",
     "preview-local.js",
+    "preview-rich.js",
     "preview-upload.js",
     "vfs-csv.js",
     "router-path.js",
