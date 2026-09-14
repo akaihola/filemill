@@ -79,7 +79,12 @@ def ui_root(tmp_path: Path) -> Path:
     (tmp_path / "data.csv").write_text(
         "group,id,note\nA,101,hello\nA,102,\"comma, value\"\n"
     )
-    (tmp_path / "duplicate.csv").write_text("group,note\nA,hello\nA,again\n")
+    (tmp_path / "duplicate.csv").write_text(
+        "group,note\nA,hello\nA,again\n"
+    )
+    (tmp_path / "dot.csv").write_text(
+        "name,note\n.hidden,hello\n.visible,again\n"
+    )
     (tmp_path / "empty.csv").write_text("")
     (tmp_path / "bad.csv").write_text('name,note\nAlice,\"oops\n')
     (tmp_path / "captions.vtt").write_text(
@@ -955,6 +960,14 @@ def test_a_csv_row_previews_headers_and_quoted_values(page):
 
 def test_csv_without_unique_column_names_rows_individually(page):
     page.open("duplicate.csv")
+    page.wait_for_selector('.col[data-i="1"] .row', timeout=15000)
+    assert page.eval_on_selector_all(
+        '.col[data-i="1"] .row', "els => els.map(e => e.title)"
+    ) == ["row 1", "row 2"]
+
+
+def test_csv_unique_dot_labels_fall_back_to_visible_row_names(page):
+    page.open("dot.csv")
     page.wait_for_selector('.col[data-i="1"] .row', timeout=15000)
     assert page.eval_on_selector_all(
         '.col[data-i="1"] .row', "els => els.map(e => e.title)"
