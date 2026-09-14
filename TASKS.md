@@ -9,8 +9,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] Add root `CONTRIBUTING.md` (setup, tests, commit style, STE rule), `SECURITY.md`
-  (threat model, how to report) and `CHANGELOG.md` (Keep a Changelog format).
+- [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
+  decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
 
 - [16] Rewrite all remaining Markdown files in Simplified Technical English. Done when
   the Markdown line count is below the line count of `*.py`, `*.js` and `*.css`.
@@ -23,9 +23,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [21] Cache the preview element keyed on the previewed node and its `meta`, the same
   way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
-
-- [22] Replace `cursor[i]`, `sel[i]` and `node.lastSel` with one selection model:
-  `sel[i]` is the selected name. Derive the row index when needed.
 
 ## Ordered backlog
 
@@ -59,6 +56,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into `withVirtual`,
   and `withJsonlPreview` and `withJsonPreview` into `withVirtualPreview`.
     - Depends on: [19]
+
+- [22] Replace `cursor[i]`, `sel[i]` and `node.lastSel` with one selection model:
+  `sel[i]` is the selected name. Derive the row index when needed.
 
 - [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
   `panFocus` and `slideTail`. Each function is under 25 lines.
@@ -248,8 +248,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
-- [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
-  decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
+- [*] Add root `CONTRIBUTING.md` (setup, tests, commit style, STE rule), `SECURITY.md`
+  (threat model, how to report) and `CHANGELOG.md` (Keep a Changelog format).
 
 - [*] Delete `server/PLAN-18.md`, `PLAN-19.md`, `PLAN-20-shared-frontend.md` and
   `server/lmt/`. Move a paragraph only if it is still true and is not elsewhere.
