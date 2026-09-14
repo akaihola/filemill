@@ -1133,6 +1133,9 @@ body {
   margin-bottom: 18px;
   overflow-wrap: anywhere;
 }
+.pv-rich p {
+  max-width: none;
+}
 .pv-rich > :first-child {
   margin-top: 0;
 }
