@@ -24,9 +24,6 @@ Rules for TASKS.md usage are at the bottom of the file.
       `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
       `TASKS.md`.
 
-- [*] Add `.pre-commit-config.yaml` with ruff, ruff-format, mypy, deno fmt, deno lint
-  and `static/build-index.py --check`. Run `pre-commit run --all-files` until it passes.
-
 - [*] Add a `lint` job to `.github/workflows/publish.yml` that runs
   `pre-commit run --all-files`. Make the `test` job need the `lint` job.
 
@@ -239,6 +236,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   JavaScript console either.
 
 ## Scheduled
+
+- [*] Add `.pre-commit-config.yaml` with ruff, ruff-format, mypy, deno fmt, deno lint
+  and `static/build-index.py --check`. Run `pre-commit run --all-files` until it passes.
 
 - [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
   identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
