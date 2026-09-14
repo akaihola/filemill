@@ -9,6 +9,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
+- [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
+  `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
+
 - [*] Give each magic number in `ui/core/state.js`, `layout.js`, `nav.js`, `render.js` a
   name and a one-line comment that says why the value is what it is.
 
@@ -31,9 +34,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [23] Write the narrow-screen layout model as an ADR: what folds, what pans, what stays
   on screen. Add one test each for phone portrait, phone landscape, tablet and desktop.
-
-- [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
-  `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
 
 - [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
   registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.

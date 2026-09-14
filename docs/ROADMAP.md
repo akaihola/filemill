@@ -244,7 +244,7 @@ static edition. Two render paths for one document drift apart.
    rows with the JSON hierarchical view. Delete `render_preview` and the two
    HTML renderers in `providers/sqlite.py`. This closes proposal [9].
 4. Delete what the browser already does: `/api/render` and
-   `preview-upload.js`, `/open-link` and live reload,
+   `preview-upload.js`, `/sse/reload` and live reload,
    `providers/json_provider.py`, `providers/csv_provider.py`, `styles.py`
    and `/raw?path=`. Decide `/w/` and its CORS middleware with its consumer.
 5. Reduce `app.py` to routing. Move `_resolve_safe` and the symlink map to
@@ -257,7 +257,7 @@ static edition. Two render paths for one document drift apart.
 **Done when.** `dependencies` in `server/pyproject.toml` lists `starlette`,
 `uvicorn`, `typer` and `python-pptx` only. The line count of
 `server/src/filemill/**/*.py` is under 1 500. No function-local imports.
-`grep -rn "raw?path\|open-link" server/src` finds nothing. The
+`grep -rn "raw?path\|sse/reload" server/src` finds nothing. The
 same Markdown file shows the same HTML in both editions.
 
 **Model.** Redis: one file per subsystem, and the entry point is short.
