@@ -34,8 +34,6 @@ git log -p -- ISSUES.md | grep -A 20 "ArrowLeft must update"
 git log -p -- ISSUES.md | grep -B 5 "^-## #34"
 ```
 
----
-
 ## #43 – Mobile preview fills 100 % width; rightmost column peek needed as scroll hint
 
 **Type:** UX
@@ -197,7 +195,7 @@ flex-shrink: 1`. `.fn-ext` gets `flex-shrink: 0; white-space: nowrap`.
 ## #49 – CSV preview shows "not yet implemented" stub
 
 **Type:** bug
-**Status:** open
+**Status:** in-progress
 
 `csv_provider.py` returns a static `<em>CSV VFS not yet implemented.</em>` message
 for every `.csv` file. Users see this instead of the file's actual content.

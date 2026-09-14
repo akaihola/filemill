@@ -10,8 +10,8 @@
    rather than at the bottom of each adapter file means a page may load more
    than one of them — which the server build does — without script order
    silently deciding which wins. */
-useFilesystem(withJson(withJsonl(FSA)));
-usePreview(withJsonPreview(withJsonlPreview(PreviewRich)));
+useFilesystem(withCsv(withJson(withJsonl(FSA))));
+usePreview(withCsvPreview(withJsonPreview(withJsonlPreview(PreviewRich))));
 /* The router is already the one place that hears "the selection changed": core
    writes the location there and nowhere else. Wrapping write() here, rather
    than adding a hook to core, keeps remembering in the only file that knows

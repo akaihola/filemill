@@ -317,12 +317,19 @@ def test_a_database_lists_as_a_folder(db_client, db_root: Path):
     assert by_name["sample.db"]["dir"] is True
 
 
-def test_a_provider_with_no_entries_stays_a_file(client, tmp_root: Path):
-    """The CSV provider is a stub that yields nothing; calling it a folder would
-    make it an always-empty column with no preview."""
+def test_csv_stays_a_plain_file_for_server_api(client, tmp_root: Path):
+    """CSV is browsed by the shared browser adapter and remains raw on the API."""
     (tmp_root / "data.csv").write_text("a,b\n1,2\n")
     by_name = {e["name"]: e for e in client.get("/api/dir?p=").json()["entries"]}
     assert by_name["data.csv"]["dir"] is False
+    assert client.get("/api/raw?p=data.csv").text == "a,b\n1,2\n"
+
+
+def test_empty_and_malformed_csv_remain_raw_files(client, tmp_root: Path):
+    (tmp_root / "empty.csv").write_text("")
+    (tmp_root / "bad.csv").write_text('a,b\n1,"oops\n')
+    assert client.get("/api/raw?p=empty.csv").text == ""
+    assert client.get("/api/raw?p=bad.csv").text == 'a,b\n1,"oops\n'
 
 
 def test_dir_inside_a_database_lists_its_tables(db_client, db_root: Path):

@@ -229,7 +229,10 @@ def split_vfs(rel: str, root: Path, resolve) -> tuple[str, str] | None:
             return "/".join(parts[:i]), ""
         # .jsonl is browsed on the client (ui/core/jsonl.js); its rows still
         # need a URL that reloads.
-        if REGISTRY.get(real) is not None or real.suffix.lower() == ".jsonl":
+        if (
+            REGISTRY.get(real) is not None
+            or real.suffix.lower() in {".jsonl", ".csv"}
+        ):
             return "/".join(parts[:i]), "/".join(parts[i:])
         return None
     return ("", "") if not parts else None
