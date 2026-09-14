@@ -251,6 +251,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
   decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
 
+- [*] Document the full port contract in `ui/core/ports.js`: `FS.node`, `FS.blob`,
+  `ROUTER.write(state, replace)`, `RouterPath.base` and every node field.
+
 - [*] Delete `server/PLAN-18.md`, `PLAN-19.md`, `PLAN-20-shared-frontend.md` and
   `server/lmt/`. Move a paragraph only if it is still true and is not elsewhere.
 
