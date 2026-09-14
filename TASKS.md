@@ -24,6 +24,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
   and the `watchfiles` dependency. Delete their tests.
 
+- [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
+  `static/FSA-TEST-CHECKLIST.md`.
+
 ## Scheduled
 
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
@@ -140,9 +143,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done when
   `uv run pytest -n auto` passes at the repository root.
-
-- [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
-  `static/FSA-TEST-CHECKLIST.md`.
 
 - [*] Replace `python-fasthtml` with `starlette` and `uvicorn`. The shell becomes one
   string template. Done when `dependencies` has starlette, uvicorn, typer, python-pptx.
