@@ -9,9 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
-  decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
-
 - [*] Add root `CONTRIBUTING.md` (setup, tests, commit style, STE rule), `SECURITY.md`
   (threat model, how to report) and `CHANGELOG.md` (Keep a Changelog format).
 
@@ -250,6 +247,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
+  decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
 
 - [*] Delete `server/PLAN-18.md`, `PLAN-19.md`, `PLAN-20-shared-frontend.md` and
   `server/lmt/`. Move a paragraph only if it is still true and is not elsewhere.
