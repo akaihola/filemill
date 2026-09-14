@@ -55,6 +55,9 @@ Offline, the preview shows the raw source, or says that the viewer is
 unavailable for a `.pptx` file. Every CDN URL carries a version pin; see
 [ADR 0040](docs/adr/0040-version-pins-on-every-cdn-url.md).
 
+Use the [manual FSA test checklist](static/FSA-TEST-CHECKLIST.md) for visual
+checks and the headed real-folder check.
+
 See [`static/AGENTS.md`](static/AGENTS.md).
 
 ## server — the Python edition
