@@ -336,7 +336,6 @@ dependencies = [
     { name = "python-fasthtml" },
     { name = "python-pptx" },
     { name = "typer" },
-    { name = "watchfiles" },
 ]
 
 [package.dev-dependencies]
@@ -359,7 +358,6 @@ requires-dist = [
     { name = "python-fasthtml", specifier = ">=0.12" },
     { name = "python-pptx" },
     { name = "typer" },
-    { name = "watchfiles", specifier = ">=0.21" },
 ]
 
 [package.metadata.requires-dev]

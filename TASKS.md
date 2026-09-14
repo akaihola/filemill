@@ -15,6 +15,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [21] Cache the preview element keyed on the previewed node and its `meta`, the same
   way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
 
+- [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
+  and the `watchfiles` dependency. Delete their tests.
+
 ## Scheduled
 
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
@@ -28,9 +31,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [23] Write the narrow-screen layout model as an ADR: what folds, what pans, what stays
   on screen. Add one test each for phone portrait, phone landscape, tablet and desktop.
-
-- [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
-  and the `watchfiles` dependency. Delete their tests.
 
 - [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
   `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
