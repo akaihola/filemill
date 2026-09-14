@@ -21,6 +21,3 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   support.
 - Previews for Markdown, DOCX, PPTX, PDF, images, plain text, and source code.
 - SQLite and JSON virtual filesystem views.
-
-[Unreleased]: https://github.com/akaihola/filemill/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/akaihola/filemill/releases/tag/v0.1.0
