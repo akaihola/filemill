@@ -9,6 +9,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
+  files. Current PPTX support was implemented in task
+  38ab06e2-c607-4d4a-9978-67847e70d27d.
+
 - Bug: Task 511f90cc-2725-4ef1-a8d8-ed67c4eddb0f failed to fix the portrait mobile
   scroll to the right problem. I suspect the extra space at the right side of the page
   is caused by the `⇧+wheel fold` label flowing outside the right edge of the page.
@@ -243,10 +247,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
-  files. Current PPTX support was implemented in task
-  38ab06e2-c607-4d4a-9978-67847e70d27d.
-
 - Feature: ability to delete a file or a directory from the file manager.
 
 - Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight` view.
@@ -263,9 +263,12 @@ Rules for TASKS.md usage are at the bottom of the file.
   `?filemill=render` or `?filemill=highlight` query parameter (whichever mode was last
   active) to prevent this behavior.
 
-- Bug: For `.vtt` files from YouTube, this error is always displayed instead of the
-  content: `Malformed WebVTT: cue is missing a timestamp`. You may test using `.vtt`
-  files found on the filesystem.
+- [*] Bug: Markdown preview doesn't fill and wrap paragraphs at the width of the
+  preview, but keeps linefeeds. Consecutive lines of text must be considered as a single
+  paragraph. If this can't be changed by configuring the Markdown renderer currently in
+  use, consider alternative renderers, check whether they support the other features
+  currently supported (e.g. checkboxes and wikilinks). Tradeoffs must be discussed with the
+  maintainer before implementing.
 
 - [~] Typing a right arrow when the rightmost column before the preview is focused
   should focus the preview and let the user scroll it up/down using the arrow and
@@ -283,6 +286,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- Bug: For `.vtt` files from YouTube, this error is always displayed instead of the
+  content: `Malformed WebVTT: cue is missing a timestamp`. You may test using `.vtt`
+  files found on the filesystem.
 
 - [*] In an installed PWA, there is no way to get back from raw file view to the file
   manager view.
@@ -332,13 +339,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
-
-- [x] Bug: Markdown preview doesn't fill and wrap paragraphs at the width of the
-  preview, but keeps linefeeds. Consecutive lines of text must be considered as a single
-  paragraph. If this can't be changed by configuring the Markdown renderer currently in
-  use, consider alternative renderers, check whether they support the other features
-  currently supported (e.g. checkboxes and wikilinks). Tradeoffs must be discussed with the
-  maintainer before implementing.
 
 - [*] Rendering if reStructuredText (`.rst`) isn't currently supported. Investigate how
   to implement it on the client side. Prefer readily available 3rd party client-side
