@@ -56,8 +56,9 @@ file under the server's root and a granted folder is not under it.
 ## Rich rendering in the static build
 
 `preview-rich.js` is a _different provider_, not a bigger `preview-local.js`. It
-imports markdown-it and mammoth from a CDN the first time a file needs one,
-because bundling them would make the portable file eight times bigger. It sits
+imports markdown-it, mammoth, or Pyodide with docutils for reStructuredText,
+from a CDN the first time a file needs one, because bundling them would make the
+portable file eight times bigger — or sixty, for the Python runtime. It sits
 behind a remembered switch — the app's pitch is that your folder does not leave
 the browser, and this is the one thing that talks to the network at all — and
 every failure falls back to `preview-local.js`, so offline costs fidelity rather
