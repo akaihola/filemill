@@ -18,9 +18,8 @@
    once — see hlHTML.
 
    A language is one line in HL_LANGS. An extension that is not listed previews
-   as plain text, the way every file did before this existed. Markdown, SVG and
-   HTML are absent on purpose: the pane has something better than source for
-   them already.
+   as plain text, the way every file did before this existed. SVG is absent on
+   purpose: the pane has something better than source for it.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Written as plain strings rather than literals because they are assembled:
@@ -73,6 +72,7 @@ const K_SQL =
    keywords are not words — a TeX macro, a CSS at-rule, an XML tag — can say so
    without a second mechanism. `n: false` turns the number class off. */
 const HL_SPECS = {
+  markdown: { c: HL_HASH, s: HL_TICK, k: hlWords("true false") },
   js: { c: HL_SLASH, s: HL_TICK, k: hlWords(K_JS) },
   ts: { c: HL_SLASH, s: HL_TICK, k: hlWords(K_TS) },
   py: { c: HL_HASH, s: HL_TRIPLE, k: hlWords(K_PY) },
@@ -194,6 +194,10 @@ const HL_SPECS = {
 
 /* Extensions that are the same language under another name. */
 const HL_ALIAS = {
+  md: "markdown",
+  markdown: "markdown",
+  html: "xml",
+  htm: "xml",
   mjs: "js",
   cjs: "js",
   jsx: "js",
