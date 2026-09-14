@@ -7,9 +7,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an unverified
   architecture proposal, conditional on a fourth provider or a pagination bug.
 
-## Scheduled
-
 ## Ordered backlog
+
+- [*] On portrait mobile, a horizontal left swipe now eventually shows the preview which
+  fills the screen. Good. But an additional left swipe on the screen-filling preview
+  scrolls the entire page about 1/12th width and leaves an empty margin at the right
+  edge.
 
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
       now return the shared client shell.
@@ -242,7 +245,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## Scheduled
 
 - [x] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
-  `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in `server/src/filemill/styles.py`.
+      `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in
+      `server/src/filemill/styles.py`.
 
 - Back-navigation still often fails to unfold the newly focused column.
 
@@ -255,7 +259,7 @@ Rules for TASKS.md usage are at the bottom of the file.
   `[tool.ruff]` with `line-length = 88`. Fix all findings. Run `ruff format`.
 
 - [x] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT. Use
-  the current year and "Antti Kaihola" as the copyright holder.
+      the current year and "Antti Kaihola" as the copyright holder.
 
 - [*] In the preview pane top bar, add buttons for viewing the raw file
   (`/path/to/file.ext` without query parameters), toggling highlighted source vs
@@ -275,7 +279,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## Completed
 
 - [x] Use `/path/to/file.html` instead of `/raw?path=/path/to/file.html` for HTML
-  previews. Server HTML iframes now use canonical root-relative file paths.
+      previews. Server HTML iframes now use canonical root-relative file paths.
 
 - [8] One shared JavaScript finder owns interaction. The server supplies API data and
   document previews. Decision recorded in `docs/adr/0001-one-finder.md`.
