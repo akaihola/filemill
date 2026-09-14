@@ -66,6 +66,16 @@ def test_default_bind_is_loopback(tmp_path, monkeypatch):
     assert mock_run.call_args.kwargs["host"] == "127.0.0.1"
 
 
+def test_default_bind_is_loopback_live(tmp_path, monkeypatch):
+    mock_run = MagicMock()
+    monkeypatch.delenv("FILEMILL_BIND", raising=False)
+    monkeypatch.delenv("BIND", raising=False)
+    monkeypatch.setattr(uvicorn, "run", mock_run)
+    result = runner.invoke(cli, [str(tmp_path), "--live"])
+    assert result.exit_code == 0
+    assert mock_run.call_args.kwargs["host"] == "127.0.0.1"
+
+
 # ── #16 bind address option ───────────────────────────────────────────────────
 
 
