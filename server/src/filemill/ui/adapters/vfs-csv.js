@@ -39,7 +39,7 @@ function csvLabels(records, key) {
   const labels = [];
   for (const record of records) {
     const label = record[key];
-    if (!label || seen.has(label)) return null;
+    if (!label || label.startsWith(".") || seen.has(label)) return null;
     seen.add(label);
     labels.push(label);
   }
