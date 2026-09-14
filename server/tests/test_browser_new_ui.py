@@ -916,7 +916,7 @@ def test_rendered_source_toggle_updates_the_url_and_history(page):
     page.open_resource("notes/deep/leaf.md?filemill=render")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     page.click("#pv-view")
-    page.wait_for_selector("#preview .pv-rich", timeout=15000)
+    page.wait_for_selector("#preview .pv-text", timeout=15000)
     assert page.url.endswith("/notes/deep/leaf.md?filemill=highlight")
     assert page.locator("#preview .pv-rich h1").count() == 0
     assert page.inner_text("#pv-view") == "Rendered"
