@@ -547,6 +547,8 @@ def api_preview(p: str = "", v: str = "", fmt: str = "", filemill: str = ""):
         return HTMLResponse("", status_code=404)
     if v:
         return api.vfs_preview(target, v, fmt)
+    if target.suffix.lower() == ".vtt":
+        return api.vfs_preview(target, "", fmt)
     if filemill == urls.VIEW_HIGHLIGHT:
         render = render_source
     else:
