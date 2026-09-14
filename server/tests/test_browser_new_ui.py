@@ -273,21 +273,26 @@ def test_the_preview_comes_from_the_python_renderer(page):
 
 
 def test_markdown_rendered_raw_toggle_preserves_navigation(page):
-    source = "# Readme\n\nline one\nline two\n\n```python\n" + SOURCE + "```\n"
+    source = (
+        "# Readme\n\nline one\nline two\n\n```python\n" + SOURCE + "```\n"
+    )
     page.open("README.md")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
-    toggle = page.locator("#pv-view")
-    assert toggle.get_attribute("aria-label") == "View raw Markdown source"
+    rendered = page.locator("#pv-md-rendered")
+    raw = page.locator("#pv-md-raw")
+    assert rendered.get_attribute("aria-pressed") == "true"
+    assert raw.get_attribute("aria-pressed") == "false"
     assert page.evaluate("sel")[-1] == "README.md"
 
-    toggle.click()
+    raw.click()
     page.wait_for_function("document.querySelector('#preview .pv-text')?.textContent")
     assert page.locator("#preview .pv-rich h1").count() == 0
     assert page.text_content("#preview .pv-text") == source
-    assert toggle.get_attribute("aria-label") == "View rendered Markdown"
+    assert rendered.get_attribute("aria-pressed") == "false"
+    assert raw.get_attribute("aria-pressed") == "true"
     assert page.evaluate("sel")[-1] == "README.md"
 
-    toggle.press("Enter")
+    rendered.press("Enter")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     assert page.evaluate("sel")[-1] == "README.md"
 
