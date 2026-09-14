@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """filemill rich-preview suite — the one feature that touches the network.
 
-Rich rendering (Markdown, .docx) is fetched from a CDN on first use rather than
-bundled: the libraries are an order of magnitude larger than the app. That buys
+Rich rendering (Markdown, .docx, reStructuredText) is fetched from a CDN on first
+use rather than bundled: the libraries are an order of magnitude larger than the
+app, and the reStructuredText one is a Python runtime. That buys
 parity with filemill's Python renderers at no cost to the single file, and it
 costs the promise that nothing leaves the browser — so the behaviour that
 matters is what happens when the download does not arrive, and whether the
@@ -10,10 +11,11 @@ switch that turns it off is honoured. Syntax highlighting is no longer on that
 list: core/syntax.js colours source in the page, so it is checked here only to
 the extent that it needs no download at all.
 
-The offline path is forced here by a Playwright route that aborts `esm.sh`
-requests, so it is tested the same way on networked and networkless hosts. The
-*loaded* path is exercised against stub modules served from the same loopback
-server, which is the only way to reach it without the real CDN.
+The offline path is forced here by a Playwright route that aborts `esm.sh` and
+`cdn.jsdelivr.net` requests, so it is tested the same way on networked and
+networkless hosts. The *loaded* path is exercised against stub modules served
+from the same loopback server, which is the only way to reach it without the
+real CDN.
 
     uv run --with "playwright==1.61.0" python3 test-rich.py [--bundle|--dev]
 """
@@ -42,6 +44,7 @@ window.__mk = () => {
     F('note.md', '# Heading\n\nSome **bold** text and a [[Other Note]] link.\n'),
     F('fence.md', '# Code\n\nline one\nline two\n\n```python\ndef f():\n    return 1\n```\n'),
     F('Other Note.md', '# Other\n'),
+    F('doc.rst', 'Heading\n=======\n\nSome *rst* text.\n'),
     F('code.py', 'def f():\n    return 1\n'),
     F('plain.txt', 'just text'),
     F('data.json', '{"items":["json value"],"count":2}'),
@@ -70,6 +73,18 @@ export default class MarkdownIt {
 }
 """,
     "plugin.js": "export default function noop() {}\n",
+    # pyodide.mjs has no default export: the adapter calls m.loadPyodide and
+    # then the three members it uses on the interpreter.
+    "pyodide.js": """
+export async function loadPyodide() {
+  return {
+    loadPackage: async () => {},
+    globals: { set() {} },
+    runPythonAsync: async () =>
+      '<section id="heading"><h1>Heading</h1><p>Some <em>rst</em> text.</p></section>',
+  };
+}
+""",
 }
 
 passed, failed = [], []
@@ -115,6 +130,7 @@ window.FILEMILL_CDN = {
   "markdown-it-deflist":    "%(b)s/__stub/plugin.js",
   "markdown-it-task-lists": "%(b)s/__stub/plugin.js",
   "markdown-it-anchor":     "%(b)s/__stub/plugin.js",
+  "pyodide":                "%(b)s/__stub/pyodide.js",
 };
 """
 
@@ -150,6 +166,7 @@ async def main():
         pg = await b.new_page(viewport={"width": 1500, "height": 900})
         # Block the real CDN so the offline path is tested on every host.
         await pg.route("https://esm.sh/**", lambda r: r.abort())
+        await pg.route("https://cdn.jsdelivr.net/**", lambda r: r.abort())
         requests = []
         pg.on("request", lambda r: requests.append(r.url))
 
@@ -173,6 +190,9 @@ async def main():
         html = await preview(pg, "plain.txt")
         check("A file needing no renderer is unaffected offline",
               "just text" in html and "pv-note" not in html)
+        html = await preview(pg, "doc.rst", ready=".pv-note")
+        check("Offline, reStructuredText shows its source and says why",
+              "Heading" in html and "pv-text" in html and "pv-note" in html)
 
         # ── the switch ───────────────────────────────────────────────────
         await boot(pg, base, rich=False)
@@ -183,6 +203,10 @@ async def main():
         check("Switched off, nothing is requested from a CDN",
               not [u for u in requests if "esm.sh" in u],
               "; ".join(u for u in requests if "esm.sh" in u))
+        await preview(pg, "doc.rst")
+        check("Switched off, no Python runtime is requested either",
+              not [u for u in requests if "jsdelivr" in u],
+              "; ".join(u for u in requests if "jsdelivr" in u))
 
         await pg.reload()
         await pg.wait_for_timeout(300)
@@ -197,6 +221,11 @@ async def main():
         check("With the renderer available, Markdown renders",
               "<h1>Heading</h1>" in html and "pv-note" not in html, html[:90])
         check("…into the shared rich-preview container", "pv-rich" in html)
+
+        html = await preview(pg, "doc.rst")
+        check("With the runtime available, reStructuredText renders",
+              "<h1>Heading</h1>" in html and "pv-rich" in html
+              and "pv-note" not in html, html[:120])
 
         requests.clear()
         html = await preview(pg, "fence.md")
