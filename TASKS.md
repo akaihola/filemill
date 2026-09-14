@@ -295,11 +295,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] On portrait mobile, a horizontal left swipe now eventually shows the preview which
-  fills the screen. Good. But an additional left swipe on the screen-filling preview
-  scrolls the entire page about 1/12th width and leaves an empty margin at the right
-  edge.
-
 - [x] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
       `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in
       `server/src/filemill/styles.py`.
