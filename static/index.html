@@ -1191,6 +1191,7 @@ body {
 /* ── Status strip ──────────────────────────────────────────────────────── */
 #status {
   flex: 0 0 auto;
+  min-width: 0;
   height: 24px;
   display: flex;
   align-items: center;
@@ -1200,6 +1201,7 @@ body {
   color: var(--ink-3);
   border-top: 1px solid var(--hairline);
   background: color-mix(in srgb, var(--chrome) 70%, var(--surface));
+  overflow: hidden;
 }
 #status kbd {
   font-family: var(--mono);
