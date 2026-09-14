@@ -12,7 +12,6 @@ const welcome = document.getElementById("welcome");
 let path = []; // node chain, [0] = root
 let sel = []; // per-column selected name
 let focusCol = 0;
-let cursor = {}; // col index -> row index
 let widths = []; // natural width per column
 let folded = 0; // columns currently folded
 let pvToken = 0; // guards async preview fills
@@ -36,11 +35,14 @@ const COL_MIN = 148, COL_MAX = 380;
 
 /* One filtered copy per call, ordered by core/sort.js. Every column build, every
    width measurement and every path walk comes through here, which is what keeps
-   the rows, the cursor indices and a restored chain agreeing on what row 4 is. */
+   the rows and a restored chain agreeing on what row 4 is. */
 const visibleKids = (node) =>
   ((kids) => node.ordered ? kids : sortKids(kids))(
     (node.kids || []).filter((k) => state.dotfiles || !k.name.startsWith(".")),
   );
+
+const rowIndex = (node, name) =>
+  visibleKids(node).findIndex((k) => k.name === name);
 
 const fmtSize = (b) =>
   b < 1024

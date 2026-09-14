@@ -4,7 +4,7 @@
 /* Building a column is O(entries), and real directories hold thousands of them
    — far too expensive to redo on every arrow key. A column's DOM is therefore
    built once per (node, entry list) and cached; a re-render only re-applies the
-   state that actually changed: depth, selection, cursor, width.
+   state that actually changed: depth, selection, width.
    Anything that alters how a row *looks* (dotfile filter, density, theme icon
    colours) is part of the signature and drops the whole cache. */
 const colCache = new Map();
@@ -145,18 +145,8 @@ function render(keepScroll) {
        or one a preview has already read — is built once in the sorted order
        rather than built and rebuilt. */
     sweepMeta(node);
-    const had = colCache.get(node);
     const c = columnFor(node);
-    /* A rebuilt column is the only place row indices can have moved: a sweep
-       re-ordered it, the sort changed, dotfiles appeared, the read landed. The
-       cursor is an index, so re-point it at the entry that is still selected
-       here, or ↓ resumes from whatever slid into that number. Reading c.kids,
-       which the build just produced, keeps this off the keystroke path — an
-       unchanged column skips it entirely. */
-    if (c !== had && sel[i] !== undefined) {
-      const ri = c.kids.findIndex((k) => k.name === sel[i]);
-      if (ri >= 0) cursor[i] = ri;
-    }
+    const selectedRow = rowIndex(node, sel[i]);
     /* No column may be wider than two-thirds of the live finder. The fold cap keeps the
        touched column unfolded and applyScroll's pan slides it into view, but
        neither can show a full-width column on a narrow phone —
@@ -197,7 +187,7 @@ function render(keepScroll) {
     }
     c.rows.forEach((row, ri) => {
       row.classList.toggle("sel", c.kids[ri].name === sel[i]);
-      row.classList.toggle("cursor", i === focusCol && cursor[i] === ri);
+      row.classList.toggle("cursor", i === focusCol && selectedRow === ri);
     });
     return c;
   });

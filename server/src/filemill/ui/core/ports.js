@@ -22,7 +22,6 @@
                   for virtual entries, or {error: string} when metadata failed;
                   absent until loadMeta runs
        loading    Promise while an adapter load is active; otherwise null/absent
-       lastSel    string UI scratch: last selected child name
        metaDone   boolean UI scratch: every loaded file child was asked for meta
        metaLoading Promise while the core metadata sweep is active; UI scratch
        metaPending number of metadata requests left in that sweep; UI scratch
