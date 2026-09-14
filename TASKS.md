@@ -9,10 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
-  files. Current PPTX support was implemented in task
-  38ab06e2-c607-4d4a-9978-67847e70d27d.
-
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
       now return the shared client shell.
 
@@ -274,6 +270,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
+  files. Current PPTX support was implemented in task
+  38ab06e2-c607-4d4a-9978-67847e70d27d.
 
 - Feature: ability to delete a file or a directory from the file manager.
 
