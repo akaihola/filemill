@@ -263,10 +263,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   `?filemill=render` or `?filemill=highlight` query parameter (whichever mode was last
   active) to prevent this behavior.
 
-- Bug: For `.vtt` files from YouTube, this error is always displayed instead of the
-  content: `Malformed WebVTT: cue is missing a timestamp`. You may test using `.vtt`
-  files found on the filesystem.
-
 - [*] Bug: Markdown preview doesn't fill and wrap paragraphs at the width of the
   preview, but keeps linefeeds. Consecutive lines of text must be considered as a single
   paragraph. If this can't be changed by configuring the Markdown renderer currently in
@@ -290,6 +286,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- Bug: For `.vtt` files from YouTube, this error is always displayed instead of the
+  content: `Malformed WebVTT: cue is missing a timestamp`. You may test using `.vtt`
+  files found on the filesystem.
 
 - [*] In an installed PWA, there is no way to get back from raw file view to the file
   manager view.
