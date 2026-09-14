@@ -519,3 +519,13 @@ def test_delete_removes_files_and_directories(client, tmp_root: Path):
 def test_delete_rejects_missing_and_root(client, tmp_root: Path):
     assert client.delete("/api/delete?p=missing").status_code == 404
     assert client.delete("/api/delete?p=").status_code == 404
+
+
+def test_delete_removes_a_symlink_without_following_it(client, tmp_root: Path):
+    outside = tmp_root.parent / "outside-delete-target"
+    outside.mkdir()
+    (outside / "keep.txt").write_text("keep")
+    (tmp_root / "linked").symlink_to(outside, target_is_directory=True)
+    assert client.delete("/api/delete?p=linked").json() == {"deleted": True}
+    assert not (tmp_root / "linked").exists()
+    assert (outside / "keep.txt").exists()
