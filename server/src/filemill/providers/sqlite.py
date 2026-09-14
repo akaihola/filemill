@@ -23,6 +23,10 @@ MAX_ROW_ENTRIES = 500  # max rows shown in the folders/column view
 MAX_STR_LEN = 200  # strings longer than this are truncated in spreadsheet cells
 
 
+def _quote_identifier(identifier: str) -> str:
+    return '"' + identifier.replace('"', '""') + '"'
+
+
 def _cell_val(v: object) -> str:
     """Format a cell value for display in a spreadsheet (with truncation)."""
     if v is None:
@@ -128,7 +132,7 @@ class SQLiteProvider:
         self, con: sqlite3.Connection, schema: str, prefix: str
     ) -> list[VFSEntry]:
         rows = con.execute(
-            f"SELECT name FROM [{schema}].sqlite_master "
+            f"SELECT name FROM {_quote_identifier(schema)}.sqlite_master "
             "WHERE type='table' AND name NOT LIKE 'sqlite_%' "
             "ORDER BY name"
         ).fetchall()
@@ -155,7 +159,8 @@ class SQLiteProvider:
         rows = con.execute(
             # Use _rowid_ alias to avoid collision when INTEGER PRIMARY KEY
             # aliases the rowid (which makes 'rowid' vanish from column names).
-            f"SELECT rowid AS _rowid_, * FROM [{schema}].[{table}] "
+            f"SELECT rowid AS _rowid_, * FROM {_quote_identifier(schema)}."
+            f"{_quote_identifier(table)} "
             f"LIMIT {MAX_ROW_ENTRIES}"
         ).fetchall()
         entries: list[VFSEntry] = []
@@ -193,7 +198,9 @@ class SQLiteProvider:
         idx: int,
     ) -> str:
         """Derive a display key (priority: single-PK → composite-PK → unique-first-col → rowid)."""
-        info = con.execute(f"PRAGMA [{schema}].table_info([{table}])").fetchall()
+        info = con.execute(
+            f"PRAGMA {_quote_identifier(schema)}.table_info({_quote_identifier(table)})"
+        ).fetchall()
 
         pk_cols = sorted([col for col in info if col["pk"] > 0], key=lambda c: c["pk"])
 
@@ -227,12 +234,15 @@ class SQLiteProvider:
             try:
                 fetch_limit = MAX_ROW_ENTRIES
                 total = con.execute(
-                    f"SELECT COUNT(*) FROM (SELECT [{first_col}] "
-                    f"FROM [{schema}].[{table}] LIMIT {fetch_limit})"
+                    f"SELECT COUNT(*) FROM (SELECT {_quote_identifier(first_col)} "
+                    f"FROM {_quote_identifier(schema)}.{_quote_identifier(table)} "
+                    f"LIMIT {fetch_limit})"
                 ).fetchone()[0]
                 distinct = con.execute(
-                    f"SELECT COUNT(DISTINCT [{first_col}]) FROM "
-                    f"(SELECT [{first_col}] FROM [{schema}].[{table}] LIMIT {fetch_limit})"
+                    f"SELECT COUNT(DISTINCT {_quote_identifier(first_col)}) FROM "
+                    f"(SELECT {_quote_identifier(first_col)} "
+                    f"FROM {_quote_identifier(schema)}.{_quote_identifier(table)} "
+                    f"LIMIT {fetch_limit})"
                 ).fetchone()[0]
                 if total == distinct and distinct > 0:
                     try:
@@ -331,11 +341,12 @@ class SQLiteProvider:
     ) -> str:
         try:
             rows = con.execute(
-                f"SELECT * FROM [{schema}].[{table}] LIMIT ? OFFSET ?",
+                f"SELECT * FROM {_quote_identifier(schema)}.{_quote_identifier(table)} "
+                "LIMIT ? OFFSET ?",
                 (limit, (page - 1) * limit),
             ).fetchall()
             total = con.execute(
-                f"SELECT COUNT(*) FROM [{schema}].[{table}]"
+                f"SELECT COUNT(*) FROM {_quote_identifier(schema)}.{_quote_identifier(table)}"
             ).fetchone()[0]
         except Exception as exc:
             return (
@@ -350,7 +361,8 @@ class SQLiteProvider:
             col_names = [
                 desc[0]
                 for desc in con.execute(
-                    f"SELECT * FROM [{schema}].[{table}] LIMIT 0"
+                    f"SELECT * FROM {_quote_identifier(schema)}.{_quote_identifier(table)} "
+                    "LIMIT 0"
                 ).description
                 or []
             ]
@@ -398,7 +410,8 @@ class SQLiteProvider:
             try:
                 rowid = int(row_key[4:])
                 row = con.execute(
-                    f"SELECT * FROM [{schema}].[{table}] WHERE rowid = ?",
+                    f"SELECT * FROM {_quote_identifier(schema)}.{_quote_identifier(table)} "
+                    "WHERE rowid = ?",
                     (rowid,),
                 ).fetchone()
             except Exception:  # noqa: S110 — rowid probing is best effort
@@ -409,7 +422,8 @@ class SQLiteProvider:
             # Use _rowid_ alias to avoid column-name collision with INTEGER PRIMARY KEY.
             try:
                 all_rows = con.execute(
-                    f"SELECT rowid AS _rowid_, * FROM [{schema}].[{table}] "
+                    f"SELECT rowid AS _rowid_, * FROM {_quote_identifier(schema)}."
+                    f"{_quote_identifier(table)} "
                     f"LIMIT {MAX_ROW_ENTRIES}"
                 ).fetchall()
                 for idx, r in enumerate(all_rows):
@@ -417,7 +431,8 @@ class SQLiteProvider:
                     if candidate == row_key or _truncate(candidate) == row_key:
                         rowid = r["_rowid_"]
                         row = con.execute(
-                            f"SELECT * FROM [{schema}].[{table}] WHERE rowid = ?",
+                            f"SELECT * FROM {_quote_identifier(schema)}."
+                            f"{_quote_identifier(table)} WHERE rowid = ?",
                             (rowid,),
                         ).fetchone()
                         break
