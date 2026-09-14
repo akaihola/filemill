@@ -48,6 +48,7 @@ window.__mk = () => {
     F('code.py', 'def f():\n    return 1\n'),
     F('plain.txt', 'just text'),
     F('data.json', '{"items":["json value"],"count":2}'),
+    F('deck.pptx', 'pptx bytes'),
   ]);
 };
 """
@@ -56,6 +57,12 @@ window.__mk = () => {
 # chaining, the highlight hook, and where the output lands. Faithfulness to the
 # real renderers is the CDN's problem, not this suite's.
 STUBS = {
+    "pptx-viewer.js": """
+export function createPptxViewer(host, options) {
+  host.innerHTML = '<div class="pptx-stub">PowerPoint loaded</div>';
+  return { destroy() {} };
+}
+""",
     "markdown-it.js": """
 export default class MarkdownIt {
   constructor(o) { this.options = o; this.core = { ruler: { push: (n, f) => { this._rule = f; } } }; }
@@ -131,6 +138,7 @@ window.FILEMILL_CDN = {
   "markdown-it-task-lists": "%(b)s/__stub/plugin.js",
   "markdown-it-anchor":     "%(b)s/__stub/plugin.js",
   "pyodide":                "%(b)s/__stub/pyodide.js",
+  "pptx-vanilla-viewer":    "%(b)s/__stub/pptx-viewer.js",
 };
 """
 
@@ -226,6 +234,11 @@ async def main():
         check("With the runtime available, reStructuredText renders",
               "<h1>Heading</h1>" in html and "pv-rich" in html
               and "pv-note" not in html, html[:120])
+
+        requests.clear()
+        html = await preview(pg, "deck.pptx", ready=".pptx-stub")
+        check("PPTX uses the vanilla viewer CDN adapter",
+              "PowerPoint loaded" in html and "pptx-vanilla-viewer" in requests[-1])
 
         requests.clear()
         html = await preview(pg, "fence.md")
