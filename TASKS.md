@@ -228,6 +228,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
+## In progress
+
 - [*] Delete `server/.pi/settings.json`, `server/mobile-narrow-preview.png`,
   `server/.claude/commands/` and `architecture-review-20260904.html`.
 
