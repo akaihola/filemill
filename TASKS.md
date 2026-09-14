@@ -27,9 +27,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Add a `lint` job to `.github/workflows/publish.yml` that runs
   `pre-commit run --all-files`. Make the `test` job need the `lint` job.
 
-- [14] Merge `server/TASKS.md`, `server/ISSUES.md` and `static/TASKS.md` into root
-  `TASKS.md` and `docs/tasks/`. Keep open items. Delete closed items and the files.
-
 - [*] Delete `server/PLAN-18.md`, `PLAN-19.md`, `PLAN-20-shared-frontend.md` and
   `server/lmt/`. Move a paragraph only if it is still true and is not elsewhere.
 
@@ -233,6 +230,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   JavaScript console either.
 
 ## Scheduled
+
+- [14] Merge `server/TASKS.md`, `server/ISSUES.md` and `static/TASKS.md` into root
+  `TASKS.md` and `docs/tasks/`. Keep open items. Delete closed items and the files.
 
 - [*] Remove the `--cov*` options from `addopts` in `server/pyproject.toml`. Pass them
   on the `pytest` command line in the CI `test` job. A single-test run must be fast.
