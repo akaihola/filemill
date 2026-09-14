@@ -24,6 +24,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Give each magic number in `ui/core/state.js`, `layout.js`, `nav.js`, `render.js` a
   name and a one-line comment that says why the value is what it is.
 
+- [23] Write the narrow-screen layout model as an ADR: what folds, what pans, what stays
+  on screen. Add one test each for phone portrait, phone landscape, tablet and desktop.
+
 ## Ordered backlog
 
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
@@ -62,9 +65,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
   `panFocus` and `slideTail`. Each function is under 25 lines.
-
-- [23] Write the narrow-screen layout model as an ADR: what folds, what pans, what stays
-  on screen. Add one test each for phone portrait, phone landscape, tablet and desktop.
 
 - [6] Centralize file-kind classification across filesystem producers and preview/edit
   consumers. Add one test table per language that both sides share.
