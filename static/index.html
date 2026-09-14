@@ -2055,9 +2055,11 @@ document.body.insertAdjacentHTML(
      ensureLoaded(node) → Promise   fills node.kids (idempotent, debounced)
      loadMeta(node)     → Promise   fills node.meta  (may be a no-op if the
                                     listing already carried the metadata)
-     write(node, text)  → Promise   optional; overwrite the file with `text`.
+   write(node, text)  → Promise   optional; overwrite the file with `text`.
                                     A port without it is read-only — the
                                     preview pane then offers no Edit action.
+   remove(node)       → Promise   optional; delete a selected real file or
+                                    directory.
 
    loadMeta is called once per selected file, and once per *row* when the user
    sorts a column by size or by modification time — see core/sort.js. A port
@@ -2536,6 +2538,11 @@ const previewNode = () => {
   const last = path[path.length - 1], s = sel[path.length - 1];
   const n = s && (last.kids || []).find((k) => k.name === s);
   return (n && !n.dir) ? n : null;
+};
+
+const selectedNode = () => {
+  const last = path[path.length - 1], s = sel[path.length - 1];
+  return s && (last.kids || []).find((k) => k.name === s) || null;
 };
 
 /* 88 columns of .pv-text plus its and .pv-body's horizontal padding (30 + 52),
@@ -3061,22 +3068,24 @@ function render(keepScroll) {
 
 function renderPreview() {
   const n = previewNode();
+  const selected = selectedNode();
   const pv = document.createElement("div");
   pv.id = "preview";
   pv.tabIndex = 0;
   pv.setAttribute("aria-label", "File preview");
   PREVIEW.revoke?.();
-  if (!n) {
+  if (!n && !selected) {
     pv.innerHTML = `<div class="pv-empty"><div class="glyph">◫</div>
                     <div>Select a file to preview</div></div>`;
     return pv;
   }
-  const [stem, ext] = splitName(n.name);
+  const target = n || selected;
+  const [stem, ext] = splitName(target.name);
   const rawPath = "/" + currentPath().map(encodeURIComponent).join("/") +
     "?filemill=raw";
   pv.innerHTML = `
     <div class="col-head pv-head"><span class="name"><span>${
-    esc(n.name)
+    esc(target.name)
   }</span></span>
       <span class="pv-actions">
         ${
@@ -3093,13 +3102,15 @@ function renderPreview() {
           <button id="pv-vtt-raw" class="pv-action" type="button">Raw</button>
         </span>
         <button id="pv-view" class="pv-action" hidden type="button"></button>
+        <button id="pv-delete" class="pv-action" type="button"
+                title="Delete selected item">Delete</button>
         <button id="pv-fullscreen" class="pv-action" type="button" aria-pressed="${pvFullscreen}"
                 title="Toggle fullscreen preview">Fullscreen</button>
       </span>
     </div>
     <div class="pv-body">
       <div class="pv-hero">
-        ${iconHTML(n)}
+        ${iconHTML(target)}
         <div><h2>${esc(stem)}<span style="color:var(--ink-3)">${
     esc(ext)
   }</span></h2>
@@ -3108,9 +3119,9 @@ function renderPreview() {
       </div>
       <div id="pv-content" class="pv-content"></div>
     </div>`;
-  fillPreview(n);
+  if (n) fillPreview(n);
   pv.classList.toggle("pv-is-fullscreen", pvFullscreen);
-  setupPreviewActions(n);
+  setupPreviewActions(target);
   return pv;
 }
 
@@ -3211,6 +3222,21 @@ function setupPreviewActions(n) {
       full.title = full.textContent;
     };
     full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
+  }
+  const del = document.getElementById("pv-delete");
+  if (del) {
+    del.hidden = !FS.remove || !!n.vpath;
+    del.onclick = async () => {
+      if (!window.confirm(`Delete “${n.name}”${n.dir ? " and its contents" : ""}?`)) return;
+      del.disabled = true;
+      try {
+        await FS.remove(n);
+        await refreshColumn(path.length - 1);
+      } catch (err) {
+        saySt("st-refresh", `Delete failed: ${String(err.message || err)}`, false);
+        del.disabled = false;
+      }
+    };
   }
 }
 
@@ -4848,9 +4874,10 @@ if (searchForm && document.documentElement.dataset.root) {
    Fills the FS port (see core/ports.js). Nodes carry the handle they came
    from; nothing else in the app ever touches it.
    ═══════════════════════════════════════════════════════════════════════════ */
-const fsaNode = (name, handle) => ({
+const fsaNode = (name, handle, parent = null) => ({
   name,
   handle,
+  parent,
   dir: handle.kind === "directory",
   kids: handle.kind === "directory" ? null : undefined,
 });
@@ -4865,7 +4892,7 @@ const FSA = {
       const kids = [];
       try {
         for await (const [name, handle] of node.handle.entries()) {
-          kids.push(fsaNode(name, handle));
+          kids.push(fsaNode(name, handle, node.handle));
         }
       } catch (err) {
         node.denied = err.name === "NotAllowedError"
@@ -4911,6 +4938,15 @@ const FSA = {
     await w.close();
     node.file = null; /* stale — reread on the next preview */
     node.meta = null;
+  },
+
+  async remove(node) {
+    if (node.handle.requestPermission &&
+        await node.handle.requestPermission({ mode: "readwrite" }) !== "granted") {
+      throw new Error("No permission to delete");
+    }
+    if (!node.handle.parent) throw new Error("Cannot delete this entry");
+    await node.handle.parent.removeEntry(node.name, { recursive: node.dir });
   },
 };
 </script>
