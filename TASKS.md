@@ -13,10 +13,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   files. Current PPTX support was implemented in task
   38ab06e2-c607-4d4a-9978-67847e70d27d.
 
-- Bug: Task 511f90cc-2725-4ef1-a8d8-ed67c4eddb0f failed to fix the portrait mobile
-  scroll to the right problem. I suspect the extra space at the right side of the page
-  is caused by the `⇧+wheel fold` label flowing outside the right edge of the page.
-
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
       now return the shared client shell.
 
@@ -28,26 +24,11 @@ Rules for TASKS.md usage are at the bottom of the file.
       `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
       `TASKS.md`.
 
-- [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
-  identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
-
-- [*] Add `.pre-commit-config.yaml` with ruff, ruff-format, mypy, deno fmt, deno lint
-  and `static/build-index.py --check`. Run `pre-commit run --all-files` until it passes.
-
 - [*] Add a `lint` job to `.github/workflows/publish.yml` that runs
   `pre-commit run --all-files`. Make the `test` job need the `lint` job.
 
-- [*] Remove the `--cov*` options from `addopts` in `server/pyproject.toml`. Pass them
-  on the `pytest` command line in the CI `test` job. A single-test run must be fast.
-
-- [14] Merge `server/TASKS.md`, `server/ISSUES.md` and `static/TASKS.md` into root
-  `TASKS.md` and `docs/tasks/`. Keep open items. Delete closed items and the files.
-
 - [*] Delete `server/PLAN-18.md`, `PLAN-19.md`, `PLAN-20-shared-frontend.md` and
   `server/lmt/`. Move a paragraph only if it is still true and is not elsewhere.
-
-- [*] Delete `server/.pi/settings.json`, `server/mobile-narrow-preview.png`,
-  `server/.claude/commands/` and `architecture-review-20260904.html`.
 
 - [*] Make root `README.md` the one explanation of the two editions and their ports.
   `server/README.md` and `static/AGENTS.md` link to it and keep edition-specific text.
@@ -247,17 +228,26 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
+- [*] Delete `server/.pi/settings.json`, `server/mobile-narrow-preview.png`,
+  `server/.claude/commands/` and `architecture-review-20260904.html`.
+
+- [14] Merge `server/TASKS.md`, `server/ISSUES.md` and `static/TASKS.md` into root
+  `TASKS.md` and `docs/tasks/`. Keep open items. Delete closed items and the files.
+
+- [*] Remove the `--cov*` options from `addopts` in `server/pyproject.toml`. Pass them
+  on the `pytest` command line in the CI `test` job. A single-test run must be fast.
+
+- [*] Add `.pre-commit-config.yaml` with ruff, ruff-format, mypy, deno fmt, deno lint
+  and `static/build-index.py --check`. Run `pre-commit run --all-files` until it passes.
+
+- [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
+  identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
+
+- Bug: Task 511f90cc-2725-4ef1-a8d8-ed67c4eddb0f failed to fix the portrait mobile
+  scroll to the right problem. I suspect the extra space at the right side of the page
+  is caused by the `⇧+wheel fold` label flowing outside the right edge of the page.
+
 - Feature: ability to delete a file or a directory from the file manager.
-
-- Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight` view.
-
-- Bug: After navigating from a directory url without query parameters (e.g.
-  `/path/to/dir`) to a file (e.g. `file1.md`), and then another file (e.g. `file2.md`),
-  and then opening file2 using the `Raw` button, and navigating back using the browser's
-  back button, in some situations the file manager view isn't displayed. Instead, the
-  raw view of file1 is shown. Navigating to files needs to always include the
-  `?filemill=render` or `?filemill=highlight` query parameter (whichever mode was last
-  active) to prevent this behavior.
 
 - [*] Bug: Markdown preview doesn't fill and wrap paragraphs at the width of the
   preview, but keeps linefeeds. Consecutive lines of text must be considered as a single
@@ -286,6 +276,16 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
   between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
   viewing the source with syntax highlighting.
+
+- [~] Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight` view.
+
+- Bug: After navigating from a directory url without query parameters (e.g.
+  `/path/to/dir`) to a file (e.g. `file1.md`), and then another file (e.g. `file2.md`),
+  and then opening file2 using the `Raw` button, and navigating back using the browser's
+  back button, in some situations the file manager view isn't displayed. Instead, the
+  raw view of file1 is shown. Navigating to files needs to always include the
+  `?filemill=render` or `?filemill=highlight` query parameter (whichever mode was last
+  active) to prevent this behavior.
 
 - Bug: For `.vtt` files from YouTube, this error is always displayed instead of the
   content: `Malformed WebVTT: cue is missing a timestamp`. You may test using `.vtt`
