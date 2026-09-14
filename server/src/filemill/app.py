@@ -573,6 +573,15 @@ async def api_save(request, p: str = ""):
     return api.save_file(target, await request.body())
 
 
+@rt("/api/delete", methods=["DELETE"])
+def api_delete(p: str = ""):
+    """Delete one real file or directory after the normal root check."""
+    target = _api_target(p)
+    if target is None or target == ROOT:
+        return JSONResponse({"error": "Not found"}, status_code=404)
+    return api.delete_file(target)
+
+
 # ── The root-relative resource route (PLAN-19) ───────────────────────────────
 #
 # Every route above this line is addressed by a prefix that names a *mechanism*:
