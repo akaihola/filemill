@@ -15,6 +15,14 @@ def test_youtube_vtt_header_metadata_is_ignored(tmp_path: Path):
     assert "missing a timestamp" not in html
 
 
+def test_vtt_malformed_pre_cue_block_is_rejected(tmp_path: Path):
+    path = tmp_path / "bad.vtt"
+    path.write_text("WEBVTT\n\nnot metadata\n\n00:00:00.000 --> 00:00:01.000\ntext\n", newline="")
+    assert "cue is missing a timestamp" in VTTProvider().render_preview(
+        path, "", "transcript", 1, 1000
+    )
+
+
 def test_vtt_transcript_has_timing_text_tags_and_voice(tmp_path: Path):
     path = tmp_path / "captions.vtt"
     path.write_text(VALID, newline="")
