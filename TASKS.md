@@ -255,9 +255,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
-- [*] Add a `lint` job to `.github/workflows/publish.yml` that runs
-  `pre-commit run --all-files`. Make the `test` job need the `lint` job.
-
 - [*] Delete `server/.pi/settings.json`, `server/mobile-narrow-preview.png`,
   `server/.claude/commands/` and `architecture-review-20260904.html`.
 
@@ -336,6 +333,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [*] Add a `lint` job to `.github/workflows/publish.yml` that runs
+  `pre-commit run --all-files`. Make the `test` job need the `lint` job.
 
 - [x] Remove the `--cov*` options from `addopts` in `server/pyproject.toml`. Pass them
       on the `pytest` command line in the CI `test` job. A single-test run must be fast.
