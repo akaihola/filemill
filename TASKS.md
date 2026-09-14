@@ -9,9 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] Make root `README.md` the one explanation of the two editions and their ports.
-  `server/README.md` and `static/AGENTS.md` link to it and keep edition-specific text.
-
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
   decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
 
@@ -256,6 +253,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [*] Make root `README.md` the one explanation of the two editions and their ports.
+  `server/README.md` and `static/AGENTS.md` link to it and keep edition-specific text.
 
 - [*] Delete `server/.pi/settings.json`, `server/mobile-narrow-preview.png`,
   `server/.claude/commands/` and `architecture-review-20260904.html`.
