@@ -1,5 +1,8 @@
+import base64
 import configparser
 import html as html_lib
+import subprocess
+import tempfile
 from pathlib import Path
 from urllib.parse import quote as urlquote
 
@@ -9,6 +12,7 @@ IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
 SYNTAX_SIZE_LIMIT = 512 * 1024  # 512 KB
 RAW_SIZE_LIMIT = SYNTAX_SIZE_LIMIT
 MAX_LINE_LENGTH = 10_000
+PPTX_CONVERSION_TIMEOUT = 30
 
 
 def valid_text(data: bytes, reject_wide: bool = True) -> str | None:
@@ -187,28 +191,39 @@ def _preview_docx(path: Path) -> str:
 
 def _preview_pptx(path: Path) -> str:
     try:
-        from pptx import Presentation
-
-        prs = Presentation(str(path))
-        slides_html = []
-        for i, slide in enumerate(prs.slides, 1):
-            parts = [f'<div class="slide"><h3>Slide {i}</h3>']
-            for shape in slide.shapes:
-                if not shape.has_text_frame:
-                    continue
-                for para in shape.text_frame.paragraphs:
-                    line_parts = []
-                    for run in para.runs:
-                        text = html_lib.escape(run.text)
-                        if run.font.bold:
-                            text = f"<strong>{text}</strong>"
-                        if run.font.italic:
-                            text = f"<em>{text}</em>"
-                        line_parts.append(text)
-                    if line_parts:
-                        parts.append(f"<p>{''.join(line_parts)}</p>")
-            parts.append("</div>")
-            slides_html.append("".join(parts))
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            subprocess.run(
+                [
+                    "libreoffice",
+                    "--headless",
+                    "--convert-to",
+                    "pdf",
+                    "--outdir",
+                    str(output),
+                    str(path),
+                ],
+                capture_output=True,
+                check=True,
+                timeout=PPTX_CONVERSION_TIMEOUT,
+            )
+            pdf = output / f"{path.stem}.pdf"
+            if not pdf.is_file():
+                raise RuntimeError("LibreOffice produced no PDF")
+            prefix = output / "slide"
+            subprocess.run(
+                ["pdftoppm", "-png", str(pdf), str(prefix)],
+                capture_output=True,
+                check=True,
+                timeout=PPTX_CONVERSION_TIMEOUT,
+            )
+            slides = sorted(output.glob("slide-*.png"))
+            if not slides:
+                raise RuntimeError("PDF produced no slide images")
+            slides_html = [
+                f'<div class="slide"><img src="data:image/png;base64,{base64.b64encode(slide.read_bytes()).decode("ascii")}" alt="Slide {i}"></div>'
+                for i, slide in enumerate(slides, 1)
+            ]
         return f'<div class="preview-pptx">{"".join(slides_html)}</div>'
     except Exception as e:
         return (
