@@ -257,9 +257,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
-- [14] Merge `server/TASKS.md`, `server/ISSUES.md` and `static/TASKS.md` into root
-  `TASKS.md` and `docs/tasks/`. Keep open items. Delete closed items and the files.
-
 - [*] Add root `CONTRIBUTING.md` (setup, tests, commit style, STE rule), `SECURITY.md`
   (threat model, how to report) and `CHANGELOG.md` (Keep a Changelog format).
 
@@ -347,6 +344,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [14] Merge `server/TASKS.md`, `server/ISSUES.md` and `static/TASKS.md` into root
+  `TASKS.md` and `docs/tasks/`. Keep open items. Delete closed items and the files.
 
 - [*] Add a `lint` job to `.github/workflows/publish.yml` that runs
   `pre-commit run --all-files`. Make the `test` job need the `lint` job.
