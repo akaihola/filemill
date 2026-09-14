@@ -580,10 +580,29 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
         assert page.evaluate("focusCol") == 1
         assert page.evaluate("sel[1]") == "docs"
 
+        folder_url = page.url
+        page.keyboard.press("ArrowLeft")
+        page.keyboard.press("ArrowRight")
+        page.wait_for_timeout(500)
+        assert page.evaluate("focusCol") == 1
+        assert page.evaluate("sel[1]") == "docs"
+        assert page.locator('.col[data-i="1"] .row.sel .label').inner_text() == "docs"
+        assert page.url == folder_url
+
         page.keyboard.press("ArrowDown")  # docs → AGENTS.md, previewed as a file
         page.wait_for_timeout(400)
         assert page.evaluate("sel[1]") == "AGENTS.md"
         _expect_ui_column(page, 1)
+        _expect_preview(page)
+
+        file_url = page.url
+        page.keyboard.press("ArrowLeft")
+        page.keyboard.press("ArrowRight")
+        page.wait_for_timeout(500)
+        assert page.evaluate("focusCol") == 1
+        assert page.evaluate("sel[1]") == "AGENTS.md"
+        assert page.locator('.col[data-i="1"] .row.sel .label').inner_text() == "AGENTS.md"
+        assert page.url == file_url
         _expect_preview(page)
 
         page.keyboard.press("ArrowLeft")  # focus out — the column must survive
