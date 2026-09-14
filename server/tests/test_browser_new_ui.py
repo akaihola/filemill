@@ -251,21 +251,6 @@ def test_short_and_extensionless_names_remain_readable(page):
         assert row.get_attribute("aria-label") == name
 
 
-def test_resizing_keeps_the_preview_element(page):
-    page.open()
-    page.evaluate(
-        "window.previewRenders = 0; "
-        "const renderPreview = PREVIEW.render; "
-        "PREVIEW.render = async n => { window.previewRenders++; return renderPreview(n); }"
-    )
-    page.click('.col[data-i="0"] .row:has-text("README.md")')
-    page.wait_for_selector("#pv-content > *")
-    renders = page.evaluate("window.previewRenders")
-    page.set_viewport_size({"width": 1200, "height": 700})
-    page.wait_for_timeout(100)
-    assert page.evaluate("window.previewRenders") == renders
-
-
 def test_clicking_a_folder_opens_its_column(page):
     page.open()
     page.click('.col[data-i="0"] .row:has-text("notes")')

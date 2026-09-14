@@ -35,6 +35,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
   `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
 
+- [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
+  registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
+
 ## Ordered backlog
 
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
@@ -68,9 +71,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   and `withJsonlPreview` and `withJsonPreview` into `withVirtualPreview`.
     - Depends on: [19]
 
-- [22] Replace `cursor[i]`, `sel[i]` and `node.lastSel` with one selection model:
-  `sel[i]` is the selected name. Derive the row index when needed.
-
 - [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
   `panFocus` and `slideTail`. Each function is under 25 lines.
 
@@ -96,9 +96,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Delete `/api/render` in `app.py`, `render_upload` in `api.py` and
   `ui/adapters/preview-upload.js`. Local folders in the server edition use PreviewRich.
     - Depends on: [32], [34]
-
-- [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
-  registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
 
 - [*] Delete `server/src/filemill/styles.py`. The shell links `/ui/core/styles.css`, and
   no other server route emits HTML. Delete the tests that pin `APP_CSS`.
@@ -255,6 +252,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [22] Replace `cursor[i]`, `sel[i]` and `node.lastSel` with one selection model:
+  `sel[i]` is the selected name. Derive the row index when needed.
 
 - [*] Add root `CONTRIBUTING.md` (setup, tests, commit style, STE rule), `SECURITY.md`
   (threat model, how to report) and `CHANGELOG.md` (Keep a Changelog format).
