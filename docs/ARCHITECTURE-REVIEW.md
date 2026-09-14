@@ -1,8 +1,7 @@
 # Architecture review, 2026-09-05
 
 This review measures the code against `docs/GOALS.md`. It replaces the review
-of 2026-09-04 (`architecture-review-20260904.html`), which it also reviews in
-its last section. `docs/ROADMAP.md` turns the findings into ordered work.
+of 2026-09-04. `docs/ROADMAP.md` turns the findings into ordered work.
 
 ## How to read this review
 
@@ -291,9 +290,6 @@ There are 10 502 lines of Markdown for 4 313 lines of Python and about
   reconstruction with no tangler in the repository to check it.
   `server/PLAN-18.md`, `PLAN-19.md` and `PLAN-20-shared-frontend.md` are
   3 217 lines that call themselves history.
-- **Scratch committed.** `server/.pi/settings.json` contains `{}`.
-  `server/mobile-narrow-preview.png` sits beside `pyproject.toml`.
-  `architecture-review-20260904.html` sits at the root and nothing links to it.
 - **Missing.** `README.md` says MIT and there is no `LICENSE` file. There is
   no `CHANGELOG.md`, `SECURITY.md` or root `CONTRIBUTING.md`.
 - **Not in Simplified Technical English.** No existing document is. This
