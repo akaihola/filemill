@@ -9,6 +9,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
+- [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
+  `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
+
 - [*] Give each magic number in `ui/core/state.js`, `layout.js`, `nav.js`, `render.js` a
   name and a one-line comment that says why the value is what it is.
 
@@ -32,14 +35,17 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [23] Write the narrow-screen layout model as an ADR: what folds, what pans, what stays
   on screen. Add one test each for phone portrait, phone landscape, tablet and desktop.
 
-- [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
-  `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
-
 - [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
   registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
 
 - [*] Default `--bind` in `server/src/filemill/cli.py` to `127.0.0.1`. Document it in
  `SECURITY.md`.
+
+- [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
+  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
+
+- [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
+  `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
 
 ## Ordered backlog
 
@@ -123,12 +129,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Replace `python-fasthtml` with `starlette` and `uvicorn`. The shell becomes one
   string template. Done when `dependencies` has starlette, uvicorn, typer, python-pptx.
     - Depends on: [24]
-
-- [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
-  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
-
-- [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
-  `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
 
 - [*] Run the static and server browser tests through one root `conftest.py` and one
   Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.

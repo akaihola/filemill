@@ -21,7 +21,6 @@ const PRECACHE = [
 const NETWORK_ONLY_PREFIXES = [
   "/api/",
   "/sse/",
-  "/open-link",
 ];
 
 self.addEventListener("install", (event) => {
