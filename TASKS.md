@@ -120,9 +120,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [21] Cache the preview element keyed on the previewed node and its `meta`, the same
   way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
 
-- [22] Replace `cursor[i]`, `sel[i]` and `node.lastSel` with one selection model:
-  `sel[i]` is the selected name. Derive the row index when needed.
-
 - [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
   `panFocus` and `slideTail`. Each function is under 25 lines.
 
@@ -327,6 +324,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [22] Replace `cursor[i]`, `sel[i]` and `node.lastSel` with one selection model:
+  `sel[i]` is the selected name. Derive the row index when needed.
 
 - [*] On portrait mobile, a horizontal left swipe now eventually shows the preview which
   fills the screen. Good. But an additional left swipe on the screen-filling preview
