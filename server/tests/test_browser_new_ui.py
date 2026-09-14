@@ -370,6 +370,19 @@ def test_fenced_code_is_highlighted_in_the_browser(page):
     assert page.text_content("#preview .pv-rich pre code") == SOURCE
 
 
+def test_large_directory_pages_in_the_browser(page, ui_root):
+    for i in range(501):
+        (ui_root / f"large-{i:03d}.txt").write_text(str(i))
+    page.open()
+    page.wait_for_selector('.pager span')
+    assert page.inner_text('.pager span') == "Page 1 of 2"
+    assert page.locator('.col[data-i="0"] .row:has-text("large-000.txt")').count() == 1
+    page.click('.pager button[aria-label="Next page"]')
+    page.wait_for_function("document.querySelector('.pager span')?.innerText === 'Page 2 of 2'")
+    assert page.locator('.col[data-i="0"] .row:has-text("large-500.txt")').count() == 1
+    assert page.locator('.col[data-i="0"] .row:has-text("large-000.txt")').count() == 0
+
+
 def test_markdown_soft_breaks_wrap_and_hard_breaks_remain(page):
     page.open("soft-breaks.md")
     page.wait_for_selector("#preview .pv-rich p", timeout=15000)
