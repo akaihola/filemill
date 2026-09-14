@@ -13,6 +13,9 @@ column headers with counts, three distinct selection states, a drawn trail
 between selected rows, and horizontal scroll as a 0–100 % *condensing dial* that
 folds columns into spines from the left.
 
+The two editions and their shared ports are described in the
+[repository README](../README.md). This document covers the static edition.
+
 ---
 
 ## Agent memory convention
