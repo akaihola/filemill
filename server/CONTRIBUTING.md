@@ -130,8 +130,8 @@ remains at `/f/` for compatibility.
 - **Full test coverage** – every new or changed behaviour must be covered by
   tests; the suite runs at 100% branch coverage. Unit/integration tests use
   pytest.
-- **Documentation stays current** – update `README.md`, `ISSUES.md`, and
-  `TASKS.md` as part of every change, not as an afterthought.
+- **Documentation stays current** – update `README.md` and the root `TASKS.md`
+  as part of every change, not as an afterthought.
 - **Simplify aggressively** – look for opportunities to simplify and gain
   elegance on every pass; less code is usually better code.
 - **Frequent conventional commits** – commit at every logical checkpoint using
@@ -152,7 +152,7 @@ timeout 1800 uv run pytest tests/test_browser_keyboard.py tests/test_browser_new
 > **Important:** always wrap `uv run pytest` in a shell-level timeout when
 > calling it from a script or agent tool. SSE streaming tests that misbehave can
 > otherwise block indefinitely (see
-> [issue #17](ISSUES.md#17--fix-hanging-sse-test-test_sse_reload_exists_with_live_mode)).
+> issue #17, fix hanging SSE test).
 > Use 1800 seconds, not 120: the browser tests alone take about 9 minutes.
 
 ### Do Not Pass `--with playwright==…`
@@ -286,8 +286,7 @@ from the cause.
 
 ## Submitting changes
 
-1. Open an issue in `ISSUES.md` and set its status to `in-progress`.
-2. Add a matching `[~]` entry in `TASKS.md`.
-3. Follow the TDD cycle above.
-4. Update `README.md`, `CONTRIBUTING.md`, `ISSUES.md`, and `TASKS.md`.
-5. Mark the issue closed before committing.
+1. Move the issue in the root `TASKS.md` as its Rules section says.
+2. Follow the TDD cycle above.
+3. Update `README.md`, `CONTRIBUTING.md` and the root `TASKS.md`.
+4. Mark the issue completed before committing.
