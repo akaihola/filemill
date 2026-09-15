@@ -282,7 +282,7 @@ def web_static(path: str):
 # itself at runtime — see ui/adapters/README.md. The static edition builds its
 # single file from these same sources, which is what makes these the same app
 # rather than two that resemble each other. Its core/ is source-agnostic; the
-# adapters loaded below point it at this server.
+# adapters ui/entry-server.js names point it at this server.
 #
 # Mounted under /n/ during the migration. Cutting over is changing UI_BASE to
 # "/" and letting the catch-all serve the shell — at which point the URL path
@@ -291,39 +291,12 @@ def web_static(path: str):
 UI_BASE = "/n/"
 _UI_DIR: Path = Path(__file__).parent / "ui"
 
-_UI_CORE = [
-    "shell.js",
-    "ports.js",
-    "icons.js",
-    "syntax.js",
-    "state.js",
-    "sort.js",
-    "render.js",
-    "layout.js",
-    "trail.js",
-    "typeahead.js",
-    "nav.js",
-    "deeplink.js",
-    "settings.js",
-    "jsonl.js",
-    "search.js",
-]
-
-# Load order is dependency order. Both filesystem adapters are present because
-# "Open local folder…" switches between them at runtime; app-http.js is what
-# selects, so the order of the adapter files themselves does not matter.
-_UI_ADAPTERS = [
-    "http.js",
-    "preview-http.js",
-    "preview-local.js",
-    "preview-rich.js",
-    "preview-upload.js",
-    "vfs-csv.js",
-    "router-path.js",
-    "fsa.js",
-    "storage.js",
-    "app-http.js",
-]
+# The shell loads one module, ui/entry-server.js, which imports the core and
+# this edition's adapters in dependency order. Both filesystem adapters are in
+# that graph because "Open local folder…" switches between them at runtime;
+# app-http.js is what selects. The static edition's entry-static.js names the
+# other set — see ui/adapters/README.md.
+_UI_ENTRY = "entry-server.js"
 
 
 @rt("/ui/{path:path}")
@@ -331,7 +304,7 @@ def ui_asset(path: str):
     """Serve a vendored UI file."""
     parts = [p for p in path.split("/") if p not in ("", ".", "..")]
     target = _UI_DIR.joinpath(*parts)
-    if len(parts) < 2 or not target.is_file():
+    if not parts or not target.is_file():
         return HTMLResponse("Not found", status_code=404)
     media = {
         ".js": "application/javascript",
@@ -363,9 +336,10 @@ def _ui_shell(state, base: str, hidden: bool = False):
     index.html cannot drift apart — there is no markup here to keep in step.
 
     The view and layout reach the client as data attributes on ``<html>``, beside
-    the theme and density the shell already reads from there. *base* is the URL
-    prefix the router strips: ``/n/`` for the migration mount, ``/`` for the
-    resource route, where the path already is the file path.
+    the theme and density the shell already reads from there, and so do the two
+    adapter settings: the API prefix for ui/adapters/http.js and *base*, the URL
+    prefix ui/adapters/router-path.js strips — ``/n/`` for the migration mount,
+    ``/`` for the resource route, where the path already is the file path.
     """
     return Html(
         Head(
@@ -378,30 +352,17 @@ def _ui_shell(state, base: str, hidden: bool = False):
             Script(src="/ui/vendor/seti-map.js"),
             Script(_SW_REGISTER_JS),
         ),
-        Body(
-            *[Script(src=f"/ui/core/{n}") for n in _UI_CORE],
-            *[
-                Script(src=f"/ui/adapters/{n}", **_ui_script_attrs(n, base))
-                for n in _UI_ADAPTERS
-            ],
-        ),
+        Body(Script(src=f"/ui/{_UI_ENTRY}", type="module")),
         lang="en",
         data_density="compact",
         data_root=ROOT.name or "/",
+        data_api="/api",
+        data_base=base,
         data_filemill=state.view,
         data_layout=state.layout,
         **({"data_commit": _COMMIT} if _COMMIT else {}),
         **({"data_hidden": "show"} if hidden else {}),
     )
-
-
-def _ui_script_attrs(name: str, base: str) -> dict:
-    """Per-adapter configuration, read back via ``document.currentScript``."""
-    if name == "http.js":
-        return {"data_api": "/api"}
-    if name == "router-path.js":
-        return {"data_base": base}
-    return {}
 
 
 @rt(UI_BASE)

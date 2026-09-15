@@ -7,7 +7,25 @@
      99%      every column folded; preview fills what is left
      99–100%  the spine strip itself slides away; at 100% the preview is alone
    ═══════════════════════════════════════════════════════════════════════════ */
-function stripSpan(k) {
+import { render, set, setVar } from "./render.js";
+import {
+  finder,
+  focusCol,
+  folded,
+  GUTTER,
+  path,
+  previewTarget,
+  rail,
+  root,
+  setState,
+  SPINE,
+  stage,
+  strip,
+  widths,
+} from "./state.js";
+import { paintTrail } from "./trail.js";
+
+export function stripSpan(k) {
   /* width of the column strip with k folded */
   const g = GUTTER(), n = path.length;
   const cols = widths.reduce((a, w, i) => a + (i < k ? SPINE() : w), 0);
@@ -18,10 +36,10 @@ const MIN_SCROLL_RANGE = 1; // Keep division and scroll arithmetic valid before 
 const BOUNDARY_SLACK = 0.5; // Absorb rounding that can otherwise land one column short.
 const FULL_FOLD_THRESHOLD = 0.99; // Treat the dial's first 99 percent as column folding.
 const TAIL_RANGE = 0.01; // The final one percent slides the folded strip away.
-const foldUnit = () => FOLD_RANGE / path.length;
-const range = () => Math.max(MIN_SCROLL_RANGE, stripSpan(0) - GUTTER());
+export const foldUnit = () => FOLD_RANGE / path.length;
+export const range = () => Math.max(MIN_SCROLL_RANGE, stripSpan(0) - GUTTER());
 
-function layout(keepScroll) {
+export function layout(keepScroll) {
   const stageW = finder.clientWidth;
   setVar(root, "--stage-w", stageW + "px");
   setVar(root, "--preview-w", previewTarget() + "px");
@@ -80,7 +98,7 @@ function foldFromScroll(max) {
      reached as a spine, with folded === focusCol so the next ← never scrolls. */
   const raw = Math.min(1, (finder.scrollLeft + BOUNDARY_SLACK) / max) /
     foldUnit();
-  folded = Math.min(path.length, Math.floor(raw));
+  setState({ folded: Math.min(path.length, Math.floor(raw)) });
   /* how far into folding the next column is — 0 = full width, 1 = a spine */
   const t = Math.min(1, Math.max(0, raw - folded));
   return { raw, t };
@@ -142,12 +160,14 @@ function slideTail(p, pan, n) {
    its own column to scroll, and that is vertical. The arithmetic below is
    `block: "nearest"`: nothing if the row is already inside, otherwise the
    shorter of the two edges — the same numbers scrollIntoView produced. */
-function revealRow(row) {
+export function revealRow(row) {
   const body = row.parentElement; /* .col-body scrolls */
   const r = row.getBoundingClientRect(), b = body.getBoundingClientRect();
   if (r.top < b.top) body.scrollTop += r.top - b.top;
   else if (r.bottom > b.bottom) body.scrollTop += r.bottom - b.bottom;
 }
 
-finder.addEventListener("scroll", applyScroll, { passive: true });
-addEventListener("resize", () => render());
+export function initLayout() {
+  finder.addEventListener("scroll", applyScroll, { passive: true });
+  addEventListener("resize", () => render());
+}

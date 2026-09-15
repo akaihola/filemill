@@ -122,7 +122,7 @@ def test_root_without_index_html_serves_shared_ui(tmp_path, monkeypatch):
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     resp = _client(tmp_path).get("/")
     assert resp.status_code == 200
-    assert "/ui/core/shell.js" in resp.text
+    assert "/ui/entry-server.js" in resp.text
     assert 'data-base="/"' in resp.text
 
 
@@ -156,7 +156,7 @@ def test_directory_without_index_html_serves_the_listing(tmp_path, monkeypatch):
     (tmp_path / "site").mkdir()
     resp = _client(tmp_path).get("/site")
     assert resp.status_code == 200
-    assert "/ui/core/shell.js" in resp.text
+    assert "/ui/entry-server.js" in resp.text
 
 
 def test_root_with_short_view_uses_the_resource_route(tmp_path, monkeypatch):

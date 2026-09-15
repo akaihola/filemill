@@ -1,3 +1,7 @@
+import { esc } from "../core/icons.js";
+import { FS } from "../core/ports.js";
+import { render } from "../core/render.js";
+
 const CSV_MAX = 512 * 1024;
 
 function csvParse(text) {
@@ -63,7 +67,7 @@ function csvRows(node, records, headers) {
   }));
 }
 
-const withCsv = (fs) => ({
+export const withCsv = (fs) => ({
   ...fs,
   async ensureLoaded(node) {
     if (!node.csv) {
@@ -104,7 +108,7 @@ const withCsv = (fs) => ({
   },
 });
 
-const withCsvPreview = (provider) => ({
+export const withCsvPreview = (provider) => ({
   revoke() {
     provider.revoke?.();
   },

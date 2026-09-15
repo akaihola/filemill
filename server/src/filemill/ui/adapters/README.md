@@ -5,10 +5,12 @@ model, the preview pane, deep links. It knows **nodes** and nothing about their
 source. Everything source-specific is here, behind the three ports declared in
 [`../core/ports.js`](../core/ports.js).
 
-Both editions load these files from here. `static/` inlines them into its
-single-file bundle. `server/` serves them from its package, which is where this
-directory is. The repository root's `ui/` is a symlink to it. Neither edition
-has its own version to drift.
+Both editions load these files from here, through one entry module each:
+`../entry-static.js` and `../entry-server.js`. Each entry names the adapters of
+its edition and the app module that wires them. `static/` inlines the import
+graph into its single-file bundle. `server/` serves the modules from its
+package, which is where this directory is. The repository root's `ui/` is a
+symlink to it. Neither edition has its own version to drift.
 
 Pick a different set of adapters and the same UI browses something else. That is
 the whole mechanism. There is no framework under it.

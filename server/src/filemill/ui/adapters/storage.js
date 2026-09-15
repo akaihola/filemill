@@ -16,6 +16,8 @@
    a read that has not happened yet when the page loads, and a name survives
    anything. It is the same list a deep link carries, so one walk restores both.
    ═══════════════════════════════════════════════════════════════════════════ */
+import { path, root } from "../core/state.js";
+
 const RECENT_MAX = 8;
 
 /* Databases written before the chain existed hold a bare handle. Normalising on
@@ -45,7 +47,7 @@ const kvPut = (db, key, value) =>
 /* Move a root to the front of the list. `path` is the selection chain inside
    it; leave it out and whatever was stored stays, because picking the same
    folder again from the OS dialog must not forget where you were in it. */
-async function rememberRoot(handle, path) {
+export async function rememberRoot(handle, path) {
   try {
     const db = await idb();
     const kept = [];
@@ -66,7 +68,7 @@ async function rememberRoot(handle, path) {
   }
 }
 
-async function recallRoots() {
+export async function recallRoots() {
   try {
     const db = await idb();
     return ((await kvGet(db, "recent")) || []).map(asRoot);
@@ -78,7 +80,7 @@ async function recallRoots() {
 /* The chain stored for one folder, in the shape applyPath already speaks. Null
    when the folder is new, or was last left sitting on its own root — there is
    nothing to restore then, and mounting plainly is the honest result. */
-async function recallView(handle) {
+export async function recallView(handle) {
   for (const r of await recallRoots()) {
     if (await r.handle.isSameEntry(handle)) {
       return r.path.length ? { root: handle.name, path: r.path } : null;

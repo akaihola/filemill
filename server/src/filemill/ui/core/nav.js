@@ -5,6 +5,23 @@
    directory opens its column as a preview but keeps you where you are, so ↑/↓
    keep walking the current column. → is what moves you in, ← what moves out.
    ═══════════════════════════════════════════════════════════════════════════ */
+import { applyPath, currentPath, scrollCursorIntoView } from "./deeplink.js";
+import { foldUnit, range, revealRow } from "./layout.js";
+import { FS } from "./ports.js";
+import { colCache, columnFor, render } from "./render.js";
+import { closeSettings } from "./settings.js";
+import {
+  finder,
+  focusCol,
+  path,
+  rowIndex,
+  sel,
+  setState,
+  visibleKids,
+  welcome,
+} from "./state.js";
+import { taCancel, taLive, taType, taWants } from "./typeahead.js";
+
 const OPEN_GRACE = 50; // Let ordinary local reads land before showing the column.
 const STATUS_OK_MS = 1600; // Successful status messages need only a brief confirmation.
 const STATUS_ERROR_MS = 8000; // Error status messages stay visible long enough to act on.
@@ -25,12 +42,11 @@ function autoPreview(node) {
   if (pick) sel[i] = pick.name;
 }
 
-async function choose(colIdx, node) {
+export async function choose(colIdx, node) {
   const seq = ++navSeq;
-  path = path.slice(0, colIdx + 1);
-  sel = sel.slice(0, colIdx);
+  setState({ path: path.slice(0, colIdx + 1), sel: sel.slice(0, colIdx) });
   sel[colIdx] = node.name;
-  focusCol = colIdx;
+  setState({ focusCol: colIdx });
   if (!node.dir) return void render();
 
   const reading = node.kids === null ? FS.ensureLoaded(node) : null;
@@ -88,7 +104,7 @@ async function choose(colIdx, node) {
      columns below the stop      closed, because their parent no longer has the
                                  entry that opened them
      focus                       where it was, clamped to the new depth        */
-async function refreshColumn(i) {
+export async function refreshColumn(i) {
   const node = path[i];
   if (!node || !node.dir || !FS) return;
 
@@ -151,7 +167,7 @@ async function refreshColumn(i) {
 }
 
 /* clicking a spine scrolls back just far enough to unfold it */
-function unfoldTo(i) {
+export function unfoldTo(i) {
   finder.scrollTo({
     left: Math.round(i * foldUnit() * range()),
     behavior: "smooth",
@@ -168,7 +184,7 @@ function pathParts() {
   return parts;
 }
 
-function renderCrumbs() {
+export function renderCrumbs() {
   const el = document.getElementById("crumbs");
   el.textContent = "";
   path.forEach((p, i) => {
@@ -179,9 +195,11 @@ function renderCrumbs() {
     b.className = "crumb" + (i === path.length - 1 ? " here" : "");
     b.textContent = p.name;
     b.onclick = () => {
-      path = path.slice(0, i + 1);
-      sel = sel.slice(0, i);
-      focusCol = i;
+      setState({
+        path: path.slice(0, i + 1),
+        sel: sel.slice(0, i),
+        focusCol: i,
+      });
       render();
     };
     el.appendChild(b);
@@ -206,7 +224,7 @@ function renderCrumbs() {
 /* One transient line in the status strip, per slot, cleared on a timer. A
    success can flash; a refusal or a loss stays long enough to be read and acted
    on, because it is asking the user to do something about it. */
-function saySt(id, msg, ok) {
+export function saySt(id, msg, ok) {
   const el = document.getElementById(id);
   el.textContent = msg;
   el.classList.toggle("bad", !ok);
@@ -268,7 +286,7 @@ function stepInto(node) {
   const i = path.indexOf(node);
   if (i < 0) return; /* moved on while it was still reading */
   if (!columnFor(node).rows.length) return;
-  focusCol = i;
+  setState({ focusCol: i });
   enterColumn(i);
 }
 
@@ -386,7 +404,7 @@ document.addEventListener("keydown", (e) => {
   } else if (e.key === "ArrowLeft") {
     e.preventDefault();
     if (focusCol > 0) {
-      focusCol--;
+      setState({ focusCol: focusCol - 1 });
       unfoldTo(focusCol);
       render(true);
     }

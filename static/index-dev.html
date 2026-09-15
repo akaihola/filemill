@@ -12,31 +12,9 @@
      static build and the server build. See ../ui/adapters/README.md.
 
      ui/core/ is the shared UI and knows nothing about where its nodes come
-     from; ui/adapters/ chooses. Swap the four adapter lines and the same app browses a
-     server instead — that is exactly what the server edition's page does.
-     Load order is dependency order; only app-*.js runs anything at load time. -->
-<script src="../ui/core/shell.js"></script>
-<script src="../ui/core/ports.js"></script>
-<script src="../ui/core/icons.js"></script>
-<script src="../ui/core/syntax.js"></script>
-<script src="../ui/core/state.js"></script>
-<script src="../ui/core/sort.js"></script>
-<script src="../ui/core/render.js"></script>
-<script src="../ui/core/layout.js"></script>
-<script src="../ui/core/trail.js"></script>
-<script src="../ui/core/typeahead.js"></script>
-<script src="../ui/core/nav.js"></script>
-<script src="../ui/core/deeplink.js"></script>
-<script src="../ui/core/settings.js"></script>
-<script src="../ui/core/jsonl.js"></script>
-<script src="../ui/adapters/vfs-csv.js"></script>
-<script src="../ui/core/search.js"></script>
-
-<script src="../ui/adapters/fsa.js"></script>
-<script src="../ui/adapters/preview-local.js"></script>
-<script src="../ui/adapters/preview-rich.js"></script>
-<script src="../ui/adapters/router-hash.js"></script>
-<script src="../ui/adapters/storage.js"></script>
-<script src="../ui/adapters/app-fsa.js"></script>
+     from; ui/adapters/ chooses. The one module below names this edition's
+     adapters and imports the rest; ../ui/entry-server.js is what the server
+     edition's page loads instead. build-index.py inlines the whole graph. -->
+<script type="module" src="../ui/entry-static.js"></script>
 </body>
 </html>

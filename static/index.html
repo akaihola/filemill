@@ -1949,10 +1949,11 @@ window.SETI = {
      static build and the server build. See ../ui/adapters/README.md.
 
      ui/core/ is the shared UI and knows nothing about where its nodes come
-     from; ui/adapters/ chooses. Swap the four adapter lines and the same app browses a
-     server instead — that is exactly what the server edition's page does.
-     Load order is dependency order; only app-*.js runs anything at load time. -->
-<script>
+     from; ui/adapters/ chooses. The one module below names this edition's
+     adapters and imports the rest; ../ui/entry-server.js is what the server
+     edition's page loads instead. build-index.py inlines the whole graph. -->
+<script type="module">
+/* ═══ core/shell.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    The chrome — top bar, stage, status strip, welcome screen.
 
@@ -2062,8 +2063,12 @@ document.body.insertAdjacentHTML(
   <p class="note">Needs a Chromium-based desktop browser (File System Access API).</p>
 </div>`,
 );
-</script>
-<script>
+
+/* Nothing to export: the page structure is the product. The empty export
+   marks the file as a module, which is what lets the entry import it for
+   its effect alone. */
+
+/* ═══ core/ports.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Ports — the three seams between the shared UI and whatever is behind it.
 
@@ -2163,11 +2168,377 @@ const usePreview = (p) => {
 const useRouter = (r) => {
   ROUTER = r;
 };
-</script>
-<script>
+
+/* ═══ core/trail.js ═══ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   The trail: an elbow from each selected row into the next column's header.
+   The vertical run sits on the centre line of the gutter between the columns.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function paintTrail() {
+  const fr = stage.getBoundingClientRect();
+  trail.setAttribute("viewBox", `0 0 ${fr.width} ${fr.height}`);
+  trail.style.width = fr.width + "px";
+  trail.style.height = fr.height + "px";
+  let out = "";
+
+  /* a column past the crossfade midpoint anchors on its spine icon, not its rows */
+  const asSpine = (el) =>
+    el.classList.contains("spine") || +(el.dataset.fold || 0) > 0.5;
+
+  const cols = [...strip.querySelectorAll(".col")];
+  cols.forEach((col, i) => {
+    const next = cols[i + 1] || document.getElementById("preview");
+    if (!next) return;
+    const cr = col.getBoundingClientRect(), nr = next.getBoundingClientRect();
+
+    /* start: right edge of the selected pill, or the spine's icon when folded */
+    let x1, y1;
+    if (asSpine(col)) {
+      const dot = col.querySelector(".dot").getBoundingClientRect();
+      x1 = cr.right - fr.left;
+      y1 = dot.top + dot.height / 2 - fr.top;
+    } else {
+      const selRow = col.querySelector(".row.sel");
+      if (!selRow) return;
+      const rr = selRow.getBoundingClientRect();
+      const br = col.querySelector(".col-body").getBoundingClientRect();
+      const cy = rr.top + rr.height / 2;
+      if (cy < br.top + 2 || cy > br.bottom - 2) {
+        return; /* scrolled out of view */
+      }
+      x1 = rr.right - fr.left;
+      y1 = cy - fr.top;
+    }
+    if (x1 < 0) {
+      return; /* origin has slid off the left edge — no dangling hook */
+    }
+
+    /* end: the next column's header — or its spine icon when that one is folded */
+    const anchor = asSpine(next)
+      ? next.querySelector(".dot")
+      : next.querySelector(".col-head");
+    const ar = anchor && anchor.getBoundingClientRect();
+    const x2 = nr.left - fr.left;
+    const y2 = ar ? ar.top + ar.height / 2 - fr.top : nr.top + 15 - fr.top;
+
+    /* the vertical run bisects the gutter, not the pill-to-column span */
+    const mx = (cr.right + nr.left) / 2 - fr.left;
+    const r = Math.min(
+      6,
+      Math.abs(y2 - y1) / 2,
+      Math.abs(mx - x1),
+      Math.abs(x2 - mx),
+    );
+    const s = Math.sign(y2 - y1) || 1;
+    const dp = Math.abs(y2 - y1) < 1
+      ? `M${x1},${y1} L${x2},${y2}`
+      : `M${x1},${y1} L${mx - r},${y1} Q${mx},${y1} ${mx},${y1 + s * r}` +
+        ` L${mx},${y2 - s * r} Q${mx},${y2} ${mx + r},${y2} L${x2},${y2}`;
+
+    out += `<path class="${
+      +col.dataset.i === focusCol ? "" : "thread"
+    }" d="${dp}"/>`;
+  });
+  trail.innerHTML = out;
+}
+
+/* ═══ core/layout.js ═══ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Layout + the scroll dial
+
+   scrollLeft is not a translation — it is a 0–100% condensing dial:
+     0%       every column unfolded; preview overflows off the right edge
+     k·unit   the leftmost k columns folded to spines   (unit = 99% / ncols)
+     99%      every column folded; preview fills what is left
+     99–100%  the spine strip itself slides away; at 100% the preview is alone
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function stripSpan(k) {
+  /* width of the column strip with k folded */
+  const g = GUTTER(), n = path.length;
+  const cols = widths.reduce((a, w, i) => a + (i < k ? SPINE() : w), 0);
+  return cols + g * (n + 1); /* padding either side + inter-column gaps */
+}
+const FOLD_RANGE = 0.99; // Reserve the final one percent for sliding the spine strip.
+const MIN_SCROLL_RANGE = 1; // Keep division and scroll arithmetic valid before layout settles.
+const BOUNDARY_SLACK = 0.5; // Absorb rounding that can otherwise land one column short.
+const FULL_FOLD_THRESHOLD = 0.99; // Treat the dial's first 99 percent as column folding.
+const TAIL_RANGE = 0.01; // The final one percent slides the folded strip away.
+const foldUnit = () => FOLD_RANGE / path.length;
+const range = () => Math.max(MIN_SCROLL_RANGE, stripSpan(0) - GUTTER());
+
+function layout(keepScroll) {
+  const stageW = finder.clientWidth;
+  setVar(root, "--stage-w", stageW + "px");
+  setVar(root, "--preview-w", previewTarget() + "px");
+  rail.style.width = (stageW + range()) + "px";
+
+  if (!keepScroll) {
+    /* default: the least folding that still gives the preview its full width.
+       ?layout=compressed-columns asks for every column folded instead, which is
+       the dial at 99% and the one thing the HTMX shell could never do. */
+    let k = 0;
+    while (k < path.length && stripSpan(k) + previewTarget() > stageW) k++;
+    /* Fold more when the new contents need it, but never past the focused
+       column: that is the one under the user's finger, and the column to its
+       right is what opening it just produced — answering a tap by hiding
+       either is not condensing, it is discarding the answer. What is left of
+       focus has been walked past and may condense; folding further than this
+       is a user action: scroll, spine, ←. */
+    k = Math.min(focusCol, Math.max(k, folded));
+    if (root.dataset.layout === "compressed-columns") k = path.length;
+    finder.scrollLeft = Math.round(k * foldUnit() * range());
+  }
+  applyScroll();
+}
+
+function applyScroll() {
+  if (!path.length) return;
+  /* The dial is the only thing that may move the strip, and #stage is where
+     that gets decided: overflow hidden stops a finger, not a programmatic
+     scroll. Now that the strip may be wider than the stage — a column right of
+     focus peeks past the edge instead of folding — anything that scrolls an
+     element into view drags every column out through the left edge, and the
+     dial writes #finder, so nothing would put them back. revealRow keeps the
+     app's own row reveals from doing it; this undoes whatever else did, at the
+     next repaint. */
+  if (stage.scrollLeft) stage.scrollLeft = 0;
+  const max = Math.max(MIN_SCROLL_RANGE, rail.clientWidth - finder.clientWidth);
+  const p = Math.min(1, finder.scrollLeft / max);
+  const n = path.length;
+
+  const { raw, t } = foldFromScroll(max);
+  const { focusLeft, focusRight } = applyWidths(raw, t);
+  const pan = panFocus(raw, focusLeft, focusRight);
+  slideTail(p, pan, n);
+
+  document.getElementById("st-fold").textContent = folded
+    ? `${folded}/${n} folded`
+    : "";
+  paintTrail();
+}
+
+function foldFromScroll(max) {
+  /* Half a pixel of slack, in pixels: layout() and unfoldTo() write
+     round(k·unit·range), which can fall up to 0.5 px short of the boundary. A
+     fixed 0.002 units was only 0.3 px once seven columns made a unit 160 px
+     wide, and a landing read one column short paints the column ← just
+     reached as a spine, with folded === focusCol so the next ← never scrolls. */
+  const raw = Math.min(1, (finder.scrollLeft + BOUNDARY_SLACK) / max) /
+    foldUnit();
+  setState({ folded: Math.min(path.length, Math.floor(raw)) });
+  /* how far into folding the next column is — 0 = full width, 1 = a spine */
+  const t = Math.min(1, Math.max(0, raw - folded));
+  return { raw, t };
+}
+
+function applyWidths(raw, t) {
+  const g = GUTTER(), sp = SPINE(), n = path.length;
+  let x = g, focusLeft = 0, focusRight = 0;
+  [...strip.querySelectorAll(".col")].forEach((col, i) => {
+    col.classList.toggle("spine", i < folded);
+    col.classList.toggle("folding", i === folded && folded < n);
+    const w = i < folded
+      ? sp
+      : i === folded
+      ? Math.round(widths[i] + (sp - widths[i]) * t)
+      : widths[i];
+    if (i === focusCol) [focusLeft, focusRight] = [x, x + w];
+    x += w + g;
+    if (i < folded) {
+      set(col.style, "width", "");
+      return;
+    }
+    set(col.dataset, "fold", String(i === folded ? t : 0));
+    setVar(col, "--fold", col.dataset.fold); /* custom props need setProperty */
+    set(col.style, "width", w + "px");
+  });
+  return { focusLeft, focusRight };
+}
+
+function panFocus(raw, focusLeft, focusRight) {
+  const g = GUTTER();
+  const reach = Math.min(1, Math.max(0, raw - focusCol + 1));
+  const pan = reach *
+    Math.min(
+      Math.max(0, focusRight - finder.clientWidth),
+      Math.max(0, focusLeft - g),
+    );
+  return pan;
+}
+
+function slideTail(p, pan, n) {
+  const sp = SPINE(), g = GUTTER();
+  const tail = p > FULL_FOLD_THRESHOLD
+    ? (p - FULL_FOLD_THRESHOLD) / TAIL_RANGE
+    : 0;
+  const shift = tail * n * (sp + g) + pan;
+  set(strip.style, "minWidth", (finder.clientWidth + shift) + "px");
+  set(strip.style, "transform", `translateX(${-shift}px)`);
+}
+
+/* Keep a row visible without letting it move the strip.
+
+   scrollIntoView() is the obvious call and the wrong one here: it scrolls
+   whichever ancestor brings the row into view, and now that a column can reach
+   past the viewport that ancestor is #stage. Measured at 390 px on a chain
+   seven deep: one keystroke moved it 28 px, and a walk in left it at 141 with
+   the first three columns dragged off the left edge — for good, because the
+   dial writes #finder and nothing writes #stage back. A row only ever needs
+   its own column to scroll, and that is vertical. The arithmetic below is
+   `block: "nearest"`: nothing if the row is already inside, otherwise the
+   shorter of the two edges — the same numbers scrollIntoView produced. */
+function revealRow(row) {
+  const body = row.parentElement; /* .col-body scrolls */
+  const r = row.getBoundingClientRect(), b = body.getBoundingClientRect();
+  if (r.top < b.top) body.scrollTop += r.top - b.top;
+  else if (r.bottom > b.bottom) body.scrollTop += r.bottom - b.bottom;
+}
+
+function initLayout() {
+  finder.addEventListener("scroll", applyScroll, { passive: true });
+  addEventListener("resize", () => render());
+}
+
+/* ═══ core/deeplink.js ═══ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Deep links — turning the selection into a path and back.
+
+   Shared verbatim between the static build and the server build; only the
+   ROUTER differs (a hash in one, a real URL path in the other). Everything
+   here speaks in *names below the root*:
+
+       path = [workspace, src, core]      →   ["src", "core", "state.js"]
+       sel  = ["src", "core", "state.js"]
+
+   The last segment is the selection in the deepest open column, which is the
+   thing the address bar should name — a file when a file is selected, and the
+   directory itself when one is open with nothing chosen inside it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* render() runs on resize and on every keystroke, so writing the URL from it is
+   only safe if an unchanged location is left alone — otherwise Back fills up
+   with duplicates. applying is the re-entrancy guard: a URL being *read* must
+   not be immediately re-written from the half-built state it produces. */
+let applying = false;
+
+function currentPath() {
+  const names = path.slice(1).map((p) => p.name);
+  const leaf = sel[path.length - 1];
+  if (leaf !== undefined) names.push(leaf);
+  return names;
+}
+
+/* Walking a column with ↑/↓ is one selection change per keystroke — pushing a
+   history entry for each would make Back useless. What counts as a navigation
+   is *entering* a column, not opening one: selecting a folder opens its column
+   without moving focus (that is the whole focus model), and ↑/↓ down a list of
+   folders would otherwise push an entry per row. So the history key is the
+   chain up to the focused column, and everything else rewrites in place.
+   Back then steps back out of folders, which is what it looks like it does. */
+let lastKey = null;
+
+function syncURL() {
+  if (applying || !ROUTER || !path.length) return;
+  const key = path.slice(0, focusCol + 1).map((p) => p.name).join("/");
+  const names = currentPath();
+  const node = previewNode();
+  const view = node && !node.dir
+    ? document.documentElement.dataset.filemill === "highlight"
+      ? "highlight"
+      : "render"
+    : undefined;
+  ROUTER.write({ root: path[0].name, path: names, view }, lastKey === key);
+  lastKey = key;
+}
+
+/* Walk down from the root, opening each directory in turn. Stops at the first
+   segment that is not there — a link into a folder that has since been renamed
+   still gets you as far as it can rather than showing nothing. Returns whether
+   every segment was found, which is how a caller learns the chain was cut.
+
+   `wantFocus` is for the callers that already know where the user was looking:
+   a refresh must not move focus to the deepest column just because it re-walked
+   the chain to get there. A link has no such opinion and omits it. */
+async function applyPath(names, wantFocus) {
+  if (!path.length) return false;
+  names = (names || []).filter(Boolean);
+
+  /* a link to a dotfile has to reveal dotfiles, or visibleKids would hide the
+     very thing the URL asked for */
+  if (!state.dotfiles && names.some((n) => n.startsWith("."))) {
+    state.dotfiles = true;
+    const b = document.getElementById("s-dot");
+    if (b) b.setAttribute("aria-checked", "true");
+  }
+
+  applying = true;
+  try {
+    const rootNode = path[0];
+    setState({ path: [rootNode], sel: [], focusCol: 0 });
+    await FS.ensureLoaded(rootNode);
+    let complete = true;
+
+    for (let i = 0; i < names.length; i++) {
+      const parent = path[i];
+      const kids = visibleKids(parent);
+      const ri = kids.findIndex((k) => k.name === names[i]);
+      if (ri < 0) {
+        complete = false;
+        break;
+      }
+
+      const node = kids[ri];
+      sel[i] = node.name;
+      setState({ focusCol: i }); /* focus stays on the column holding it */
+      if (!node.dir) break;
+      await FS.ensureLoaded(node);
+      path.push(node);
+    }
+    return complete;
+  } finally {
+    applying = false;
+    /* clamped: the chain may have come back shorter than the column that had
+       focus, and focusing a column that is no longer open kills ↑/↓ */
+    if (wantFocus != null) {
+      setState({ focusCol: Math.max(0, Math.min(wantFocus, path.length - 1)) });
+    }
+    render();
+    scrollCursorIntoView();
+  }
+}
+
+/* A restored selection can be thousands of rows down a column; the row exists
+   but nothing has ever scrolled to it. */
+function scrollCursorIntoView() {
+  for (let i = 0; i < path.length; i++) {
+    const c = colCache.get(path[i]);
+    const ri = rowIndex(path[i], sel[i]);
+    if (c && ri != null && c.rows[ri]) revealRow(c.rows[ri]);
+  }
+}
+
+/* Wire Back/Forward once a root is mounted — and only once, however many roots
+   are opened after it, or one Back would replay through every listener. */
+let routing = false;
+
+function startRouting() {
+  if (routing || !ROUTER) return;
+  routing = true;
+  ROUTER.onNavigate((loc) => {
+    /* Only the path is honoured: a Back that lands on a different root cannot
+       remount it without a user gesture, so it would silently walk the wrong
+       tree. Leaving the columns where they are is the honest outcome. */
+    if (loc && (!loc.root || loc.root === path[0]?.name)) applyPath(loc.path);
+  });
+}
+
+/* ═══ core/icons.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Icons — Seti UI font (MIT), extension map generated by build-seti-map.py.
    ═══════════════════════════════════════════════════════════════════════════ */
+
 /* Seti has glyphs for these but mapping.less never binds them to an extension. */
 const SUPP = {
   nix: ["e019", "#519aba"],
@@ -2196,8 +2567,670 @@ const esc = (s) =>
     /[&<>"]/g,
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]),
   );
-</script>
-<script>
+
+/* ═══ core/settings.js ═══ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Settings popover
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const gear = document.getElementById("gear"),
+  panel = document.getElementById("settings");
+const closeSettings = () => {
+  panel.hidden = true;
+  gear.setAttribute("aria-expanded", "false");
+};
+const toggle = (id, get, set) => {
+  const b = document.getElementById(id);
+  b.onclick = () => {
+    set(!get());
+    b.setAttribute("aria-checked", String(get()));
+    render(true);
+  };
+  b.setAttribute("aria-checked", String(get()));
+};
+
+/* Everything the old classic script did at load time. Called by the app
+   module once every core module has been evaluated. */
+function initSettings() {
+  gear.onclick = (e) => {
+    e.stopPropagation();
+    panel.hidden = !panel.hidden;
+    gear.setAttribute("aria-expanded", String(!panel.hidden));
+  };
+  document.addEventListener("click", (e) => {
+    if (!panel.contains(e.target)) closeSettings();
+  });
+
+  root.dataset.theme = matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+
+  toggle("s-dot", () => state.dotfiles, (v) => state.dotfiles = v);
+  toggle(
+    "s-density",
+    () => root.dataset.density === "compact",
+    (v) => root.dataset.density = v ? "compact" : "comfortable",
+  );
+  toggle(
+    "s-theme",
+    () => root.dataset.theme === "dark",
+    (v) => root.dataset.theme = v ? "dark" : "light",
+  );
+
+  /* Radios rather than three toggles: one key is active, and a menu that lets you
+     uncheck every one of them has no answer for what the column is ordered by.
+     Direction is separate because it applies to whichever key is chosen — and
+     because flipping it re-sorts what is already in memory, with no second sweep.
+     setSort (core/sort.js) stores the choice and re-renders. */
+  SORT_KEYS.forEach((k) => {
+    document.getElementById(`s-sort-${k}`).onclick = () =>
+      setSort(k, state.sort.desc);
+  });
+  document.getElementById("s-sort-desc").onclick = () =>
+    setSort(state.sort.key, !state.sort.desc);
+}
+
+/* Only the builds that can actually fetch a renderer show the switch — on the
+   server build the previews come from Python and nothing is downloaded, so the
+   row would be a promise the page does not keep. preview-rich.js reveals it. */
+function offerRichToggle(get, set) {
+  document.getElementById("s-previews").hidden = false;
+  document.getElementById("s-rich").hidden = false;
+  document.getElementById("s-rich-hr").hidden = false;
+  toggle("s-rich", get, set);
+}
+
+/* ═══ core/typeahead.js ═══ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Type-ahead
+
+   Typing letters jumps to a row in the focused column. In a folder of 400
+   entries that is three keystrokes instead of 200 presses of ↓.
+
+   Three rungs, tried in order over the whole column, first hit wins:
+
+     1. prefix     "re" → readme.md
+     2. substring  "notes" → beta-notes.md, when nothing *starts* with "notes"
+     3. fuzzy      "arp" → Alpha Report.txt, the letters in order, gaps allowed
+
+   The rung that matched also decides what gets marked, so the highlight is the
+   explanation: a solid run for rungs 1 and 2, scattered characters for rung 3.
+
+   Nothing here knows where the entries came from, so it is shared with the
+   server build — a column is a list of names either way.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* How long the buffer survives a pause. 1.2 s is long enough to type "adme"
+   after "re" without hurrying, short enough that a search you walked away from
+   is gone before you touch the keyboard again. */
+const TA_IDLE = 1200;
+
+let taBuf = ""; /* what has been typed since the last pause */
+let taTimer = null;
+let taRow = null; /* the row wearing <mark> right now, so it can be undone */
+let taName = ""; /* its plain name, to rebuild the label from */
+
+const taLive = () => taBuf !== "";
+
+/* A letter with Ctrl, ⌘ or Alt held belongs to the browser or to a command —
+   ⌘C copies the path, ⌘R reloads. Swallowing those into a search is the kind
+   of bug you notice only when reload stops working. Shift does not disqualify:
+   capital letters are part of file names. Backspace counts only while a search
+   is live, so it stays free for anything else to claim later. */
+const taWants = (e) =>
+  !e.ctrlKey && !e.metaKey && !e.altKey &&
+  (e.key.length === 1 || (e.key === "Backspace" && taLive()));
+
+/* All of `q` in `n`, in order, gaps allowed. No allocation: this runs once per
+   entry per keystroke, and a column can hold thousands. */
+const taFuzzy = (n, q) => {
+  let qi = 0;
+  for (let i = 0; i < n.length && qi < q.length; i++) if (n[i] === q[qi]) qi++;
+  return qi === q.length;
+};
+
+/* Row index of the winner, or -1. Three passes, each stopping at its own first
+   hit — a prefix match on row 2 never looks at rows 3…3000. A prefix match on
+   row 2 800 still beats a substring match on row 3, which is the point of
+   separate passes rather than one scan that scores. */
+function taSearch(lower, q) {
+  let i = lower.findIndex((n) => n.startsWith(q));
+  if (i < 0) i = lower.findIndex((n) => n.includes(q));
+  if (i < 0) i = lower.findIndex((n) => taFuzzy(n, q));
+  return i;
+}
+
+/* Which characters of `lower` the query landed on: a contiguous run for prefix
+   and substring, scattered ones for fuzzy. Runs once, on the winner only. */
+function taHits(lower, q) {
+  const hit = new Array(lower.length).fill(false);
+  const at = lower.indexOf(q);
+  if (at >= 0) {
+    for (let k = 0; k < q.length; k++) hit[at + k] = true;
+    return hit;
+  }
+  let qi = 0;
+  for (let i = 0; i < lower.length && qi < q.length; i++) {
+    if (lower[i] === q[qi]) {
+      hit[i] = true;
+      qi++;
+    }
+  }
+  return qi === q.length ? hit : null;
+}
+
+/* Consecutive hits become one <mark>, so "notes" is a single pill and a fuzzy
+   match is a row of beads. */
+const taRuns = (text, hit, off) => {
+  let out = "", open = false;
+  for (let i = 0; i < text.length; i++) {
+    const on = !!hit[off + i];
+    if (on !== open) {
+      out += on ? "<mark>" : "</mark>";
+      open = on;
+    }
+    out += esc(text[i]);
+  }
+  return out + (open ? "</mark>" : "");
+};
+
+/* The same structure buildCol writes, so un-marking restores it exactly. */
+const taLabel = (name, hit) => {
+  const [stem, ext] = splitName(name);
+  return hit
+    ? taRuns(stem, hit, 0) +
+      `<span class="dim">${taRuns(ext, hit, stem.length)}</span>`
+    : `${esc(stem)}<span class="dim">${esc(ext)}</span>`;
+};
+
+const taSay = (msg) => {
+  document.getElementById("st-find").textContent = msg;
+};
+
+function taUnmark() {
+  if (taRow) taRow.querySelector(".label").innerHTML = taLabel(taName, null);
+  taRow = null;
+}
+
+/* Only two rows are ever rewritten per keystroke: the one that was marked and
+   the one that now is. Marking every matching row would be an innerHTML write
+   per entry, which is the O(entries)-per-keystroke cost this app spent a lot of
+   effort deleting (740 ms → 4–9 ms at 3 000 entries). */
+function taMark(row, name, hit) {
+  taUnmark();
+  if (!hit) return;
+  row.querySelector(".label").innerHTML = taLabel(name, hit);
+  taRow = row;
+  taName = name;
+}
+
+function taCancel() {
+  clearTimeout(taTimer);
+  taTimer = null;
+  if (!taLive()) return;
+  taBuf = "";
+  taUnmark();
+  taSay("");
+}
+
+/* One keystroke. `c` is the focused column's cache entry, which nav.js has
+   already looked up — never re-query the rows, a directory can hold tens of
+   thousands of them. */
+function taType(key, c) {
+  taBuf = key === "Backspace" ? taBuf.slice(0, -1) : taBuf + key;
+  clearTimeout(taTimer);
+  if (!taLive()) return void taSay("");
+  taTimer = setTimeout(taCancel, TA_IDLE);
+
+  /* The match runs on the rows the column already holds. A directory still
+     being read has none, so nothing matches and the buffer waits — there is no
+     re-run when the read lands, because by then you have typed more anyway. */
+  if (!c.rows.length) return void taSay(`⌕ ${taBuf} — still reading`);
+
+  /* Lower-cased names, cached beside the rows they were built from, so the two
+     die together. Lower-casing 3 000 names costs ~1.4 ms; paying it once per
+     column instead of once per keystroke is what keeps a search inside the
+     budget the arrow keys set. */
+  const lower = (c.lower ||= c.kids.map((k) => k.name.toLowerCase()));
+  const q = taBuf.toLowerCase();
+  const i = taSearch(lower, q);
+  taSay(i < 0 ? `⌕ ${taBuf} — no match` : `⌕ ${taBuf}`);
+  if (i < 0) return; /* keep the buffer: Backspace should undo the typo */
+
+  const name = c.kids[i].name;
+  taUnmark(); /* before the click, so the row it re-selects is clean */
+  c.rows[i].click(); /* the ordinary selection path: preview, trail, URL */
+  revealRow(c.rows[i]);
+  /* toLowerCase can change a string's length ("İ" → two characters), and then
+     the hit positions no longer index the original name. Skip the marks rather
+     than paint them one character off. */
+  taMark(
+    c.rows[i],
+    name,
+    lower[i].length === name.length ? taHits(lower[i], q) : null,
+  );
+}
+
+/* A real click means you went somewhere by hand, so the search is over. The
+   click taType fires is untrusted, which is exactly the distinction needed —
+   no flag to set and unset around it. */
+document.addEventListener("click", (e) => {
+  if (e.isTrusted) taCancel();
+});
+
+/* ═══ core/nav.js ═══ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Navigation
+
+   Focus follows the *selection*, not the newly opened column: selecting a
+   directory opens its column as a preview but keeps you where you are, so ↑/↓
+   keep walking the current column. → is what moves you in, ← what moves out.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const OPEN_GRACE = 50; // Let ordinary local reads land before showing the column.
+const STATUS_OK_MS = 1600; // Successful status messages need only a brief confirmation.
+const STATUS_ERROR_MS = 8000; // Error status messages stay visible long enough to act on.
+const PREVIEW_SCROLL_STEP = 40; // Arrow keys move the preview by a small readable increment.
+
+let navSeq = 0; /* a read that outlives its selection must not repaint */
+
+/* When a folder opens with nothing chosen inside it, dash-select its README
+   (exact name first, then README.*, then index.html) so the preview shows it.
+   Focus stays where it is — this is a preview, not a navigation. */
+function autoPreview(node) {
+  const i = path.length - 1;
+  if (path[i] !== node || sel[i] !== undefined) return;
+  const files = visibleKids(node).filter((k) => !k.dir);
+  const pick = files.find((k) => k.name === "README") ||
+    files.find((k) => k.name.startsWith("README.")) ||
+    files.find((k) => k.name === "index.html");
+  if (pick) sel[i] = pick.name;
+}
+
+async function choose(colIdx, node) {
+  const seq = ++navSeq;
+  setState({ path: path.slice(0, colIdx + 1), sel: sel.slice(0, colIdx) });
+  sel[colIdx] = node.name;
+  setState({ focusCol: colIdx });
+  if (!node.dir) return void render();
+
+  const reading = node.kids === null ? FS.ensureLoaded(node) : null;
+  if (reading) {
+    /* Highlight the row at once, but hold its column back for a moment: a
+       column measures the names it holds, and one built before the read lands
+       measures empty — it would open at the minimum width and jump wider a
+       frame later. Most directories arrive well inside the grace; a slower one
+       opens on the spinner, which is honest about the wait. */
+    render();
+    await Promise.race([
+      reading,
+      new Promise((r) => setTimeout(r, OPEN_GRACE)),
+    ]);
+    if (seq !== navSeq) return; /* selection moved on while it was read */
+    if (!node.dir) {
+      return void render(); /* a virtual wrapper declined the file */
+    }
+  }
+  path.push(node);
+  autoPreview(node); /* kids already in memory (revisit, fast read) */
+  render();
+  if (reading) {
+    await reading;
+    if (seq !== navSeq || !path.includes(node)) return; /* still up? repaint */
+    autoPreview(node); /* kids landed after the grace period */
+    render();
+  }
+}
+
+/* ── Refresh ────────────────────────────────────────────────────────────────
+   Neither port can tell the app that a directory changed. The File System
+   Access API has no watch call at all, and the server one would need a socket
+   the static build cannot open. So a folder read once stays as it was read
+   until somebody asks again, and asking has to be a thing the user does.
+
+   Refreshing is *not* a second way to load a directory. It empties node.kids
+   and calls the same FS.ensureLoaded every other caller uses — one loading
+   path, one debounce, one place where node.kids is written. A separate
+   "reload" call would be two writers on one field, and the interleaving that
+   loses is the one you never reproduce.
+
+   Which columns it touches, and what survives:
+
+     the focused column          re-read from the port
+     columns open below it       re-read too — they are on screen, and a fresh
+                                 column beside three stale ones is worse than
+                                 the extra reads. Closed subtrees are untouched
+     the selection at each level matched again by name: a re-read hands back
+                                 new node objects, so the chain is re-walked
+                                 rather than kept by identity
+     a selected name that is gone the walk stops there, and nothing is selected —
+                                 ↓ resumes at the top of the remaining rows, and
+                                 the app never shows a selection that is not real
+     columns below the stop      closed, because their parent no longer has the
+                                 entry that opened them
+     focus                       where it was, clamped to the new depth        */
+async function refreshColumn(i) {
+  const node = path[i];
+  if (!node || !node.dir || !FS) return;
+
+  const seq = ++navSeq; /* a click, a key or a second ⟳ overtakes */
+  const names = currentPath();
+  const keepFocus = focusCol;
+  /* the ⟳ spins on the column that is on screen now; the re-render replaces
+     that element, which is exactly when the spinning should stop */
+  const spinning = colCache.get(node)?.el;
+  spinning?.classList.add("busy");
+
+  try {
+    /* A read already in flight owns node.kids. Wait for it before invalidating:
+       ensureLoaded hands a concurrent caller the in-flight promise, so asking
+       now would return the very listing this refresh was called to replace,
+       and two reads would race to write the same field. */
+    if (node.loading) await node.loading;
+    if (seq !== navSeq) return;
+
+    const before = new Set(visibleKids(node).map((k) => k.name));
+    node.kids = null;
+    node.denied = undefined;
+    /* The entries are about to be different objects, so what was swept is about
+       to be about files that are no longer in this listing. A size sort re-reads
+       them; a name sort never asked. */
+    node.metaDone = false;
+    /* Nothing renders between here and the read landing. The column cache still
+       holds the previous DOM, so the screen keeps showing the old listing
+       instead of flashing back to "Reading…" and losing its scroll position. */
+    await FS.ensureLoaded(node);
+    if (seq !== navSeq) return;
+
+    const after = visibleKids(node);
+    const added = after.reduce((n, k) => n + !before.has(k.name), 0);
+    const gone = before.size - (after.length - added);
+
+    /* The same walk a deep link uses: down from the root by name, stopping at
+       the first segment that is not there. Three callers, one implementation —
+       refresh, a pasted link, and a restored folder cannot disagree about what
+       a half-valid chain means. */
+    const complete = await applyPath(names, keepFocus);
+    if (seq !== navSeq) return;
+
+    if (complete) {
+      saySt(
+        "st-refresh",
+        added || gone ? `⟳ ${added} new, ${gone} gone` : "⟳ no change",
+        true,
+      );
+      return;
+    }
+    const stop = path.length - 1; /* where the walk ran out */
+    const col = colCache.get(path[stop]);
+    render(true);
+    scrollCursorIntoView();
+    saySt("st-refresh", `⟳ ${names[stop]} is gone`, false);
+  } finally {
+    spinning?.classList.remove("busy");
+  }
+}
+
+/* clicking a spine scrolls back just far enough to unfold it */
+function unfoldTo(i) {
+  finder.scrollTo({
+    left: Math.round(i * foldUnit() * range()),
+    behavior: "smooth",
+  });
+}
+
+/* Where you are, from the root down to the selected row. The first element is a
+   folder *name*, not an absolute path: the File System Access API never hands
+   one out, so this is everything the app knows about the location. */
+function pathParts() {
+  const parts = path.map((p) => p.name);
+  const leaf = sel[path.length - 1];
+  if (leaf) parts.push(leaf);
+  return parts;
+}
+
+function renderCrumbs() {
+  const el = document.getElementById("crumbs");
+  el.textContent = "";
+  path.forEach((p, i) => {
+    if (i) {
+      el.insertAdjacentHTML("beforeend", `<span class="crumb-sep">›</span>`);
+    }
+    const b = document.createElement("span");
+    b.className = "crumb" + (i === path.length - 1 ? " here" : "");
+    b.textContent = p.name;
+    b.onclick = () => {
+      setState({
+        path: path.slice(0, i + 1),
+        sel: sel.slice(0, i),
+        focusCol: i,
+      });
+      render();
+    };
+    el.appendChild(b);
+  });
+  /* "/" rather than the " / " this strip used to show: clicking it copies the
+     string, and a fallback selection copies the characters on screen. The two
+     have to be the same string or the fallback quietly hands over a path that
+     no shell will take. */
+  document.getElementById("st-path").textContent = pathParts().join("/");
+}
+
+/* ── Copy path ──────────────────────────────────────────────────────────────
+   The status strip already shows where you are; ⌘C, or a click on it, puts that
+   path on the clipboard.
+
+   navigator.clipboard.writeText can be refused: a browser policy, a page the
+   user has not touched yet, an insecure context with no clipboard object at
+   all. A silent refusal is the worst outcome, because the next paste hands over
+   whatever was on the clipboard before and nothing says so. So a refusal says
+   so and selects the path, which leaves the browser's own ⌘C one keystroke
+   away — the fallback needs no permission because the user presses it. */
+/* One transient line in the status strip, per slot, cleared on a timer. A
+   success can flash; a refusal or a loss stays long enough to be read and acted
+   on, because it is asking the user to do something about it. */
+function saySt(id, msg, ok) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.classList.toggle("bad", !ok);
+  clearTimeout((saySt.t ||= {})[id]);
+  saySt.t[id] = setTimeout(() => {
+    el.textContent = "";
+    el.classList.remove("bad");
+  }, ok ? STATUS_OK_MS : STATUS_ERROR_MS);
+}
+
+const sayCopy = (msg, ok) => saySt("st-copy", msg, ok);
+
+function selectPath() {
+  const r = document.createRange();
+  r.selectNodeContents(document.getElementById("st-path"));
+  const s = getSelection();
+  s.removeAllRanges();
+  s.addRange(r);
+}
+
+async function copyPath() {
+  const text = document.getElementById("st-path").textContent;
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    sayCopy("copied", true);
+  } catch (err) {
+    selectPath();
+    sayCopy(
+      `clipboard refused (${err.name || "error"}) — press ${COPY_KEY} again`,
+      false,
+    );
+  }
+}
+
+const MAC = /Mac|iP(hone|ad)/.test(
+  navigator.userAgentData?.platform || navigator.platform || "",
+);
+const COPY_KEY = MAC ? "⌘C" : "Ctrl+C";
+document.getElementById("kbd-copy").textContent = COPY_KEY;
+document.getElementById("st-path").onclick = copyPath;
+
+/* Entering a column: the row it was left on, else the one it remembers, else
+   the first. The column may still be reading, so this can run twice. */
+function enterColumn(i) {
+  const c = colCache.get(path[i]);
+  if (!c || !c.rows.length) return;
+  const remembered = sel[i];
+  let ri = rowIndex(path[i], remembered);
+  ri = Math.max(0, Math.min(c.rows.length - 1, ri < 0 ? 0 : ri));
+  c.rows[ri].click();
+  revealRow(c.rows[ri]);
+}
+
+/* Stepping right into a column that has no rows would move focus with nothing
+   to highlight — the screen would not change, yet ↑/↓ would go dead. Stay put.
+   columnFor rebuilds the column if it finished reading since the last render. */
+function stepInto(node) {
+  const i = path.indexOf(node);
+  if (i < 0) return; /* moved on while it was still reading */
+  if (!columnFor(node).rows.length) return;
+  setState({ focusCol: i });
+  enterColumn(i);
+}
+
+function pageMove(c, dir, ci) {
+  const body = c.rows[0]?.parentElement;
+  if (!body || !c.rows.length) return;
+  const edge = () => {
+    const b = body.getBoundingClientRect();
+    const visible = c.rows.filter((row) => {
+      const r = row.getBoundingClientRect();
+      return r.bottom > b.top && r.top < b.bottom;
+    });
+    return dir < 0 ? visible[0] : visible.at(-1);
+  };
+  let row = edge();
+  if (!row) return;
+  if (c.rows[ci] === row) {
+    const h = row.offsetHeight;
+    const lines = h ? Math.max(1, Math.floor(body.clientHeight / h)) : 1;
+    body.scrollTop += dir * lines * h;
+    row = edge();
+  }
+  row?.click();
+  if (row) revealRow(row);
+}
+
+document.addEventListener("keydown", (e) => {
+  /* a keystroke inside a form field (the preview editor) is typing, not
+     navigation — leave it alone */
+  if (
+    e.target.matches?.("input, textarea, select") || e.target.isContentEditable
+  ) {
+    return;
+  }
+  if (!welcome.hidden) return;
+  if (e.target.closest?.("#preview")) {
+    if (["ArrowUp", "ArrowDown", "PageUp", "PageDown"].includes(e.key)) {
+      const body = document.querySelector("#preview .pv-body");
+      e.preventDefault();
+      body?.scrollBy({
+        top: e.key === "ArrowUp"
+          ? -PREVIEW_SCROLL_STEP
+          : e.key === "ArrowDown"
+          ? PREVIEW_SCROLL_STEP
+          : (e.key === "PageUp" ? -1 : 1) * body.clientHeight,
+      });
+    }
+    return;
+  }
+  /* the cached column knows its rows — never re-query them, a directory can
+     hold tens of thousands and this runs on every keystroke */
+  const c = colCache.get(path[focusCol]);
+  if (!c) return;
+  const rows = c.rows;
+  let ci = rowIndex(path[focusCol], sel[focusCol]);
+  if (ci < 0) ci = 0;
+
+  /* ⌘C / Ctrl+C. A live text selection wins: the user highlighted something and
+     asked for *that*, and after a refused copy the selected path is exactly
+     what the second press has to reach. */
+  if (e.key === "c" && (e.metaKey || e.ctrlKey) && !getSelection().toString()) {
+    e.preventDefault();
+    return void copyPath();
+  }
+  /* Letters go to the search unless an arrow, Home/End or Escape claimed the
+     keystroke first — those four are the navigation model and type-ahead does
+     not get to argue with them. Each of them also ends a live search. */
+  if (taWants(e)) {
+    e.preventDefault();
+    return void taType(e.key, c);
+  }
+  if (e.key !== "Escape") taCancel();
+
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    if (!rows.length) return;
+    /* a freshly entered column has no selection yet — the first
+       press should commit that row, not skip past it */
+    if (sel[focusCol] !== undefined) {
+      ci = Math.max(
+        0,
+        Math.min(rows.length - 1, ci + (e.key === "ArrowDown" ? 1 : -1)),
+      );
+    }
+    rows[ci].click();
+    revealRow(rows[ci]);
+  } else if (e.key === "Home" || e.key === "End") {
+    e.preventDefault();
+    if (!rows.length) return;
+    const ri = e.key === "Home" ? 0 : rows.length - 1;
+    rows[ri].click();
+    revealRow(rows[ri]);
+  } else if (e.key === "PageUp" || e.key === "PageDown") {
+    e.preventDefault();
+    pageMove(c, e.key === "PageUp" ? -1 : 1, ci);
+  } else if (e.key === "ArrowRight" || e.key === "Enter") {
+    e.preventDefault();
+    const next = path[focusCol + 1];
+    /* nothing open to the right: commit the row, which opens it when it
+       is a directory — a second → then steps into that column */
+    if (!next) {
+      const row = rows[ci];
+      row?.click();
+      if (e.key === "ArrowRight" && c.kids[ci] && !c.kids[ci].dir) {
+        document.getElementById("preview")?.focus();
+      }
+      return;
+    }
+    if (next.kids === null) {
+      FS.ensureLoaded(next).then(() => {
+        render();
+        stepInto(next);
+      });
+    } else stepInto(next);
+  } else if (e.key === "ArrowLeft") {
+    e.preventDefault();
+    if (focusCol > 0) {
+      setState({ focusCol: focusCol - 1 });
+      unfoldTo(focusCol);
+      render(true);
+    }
+  } else if (e.key === "F5" && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+    /* Every desktop file manager reads F5 as "re-read this folder", and here a
+       page reload is a far worse trade: it drops the mounted root, the whole
+       column chain and the scroll position, then asks the browser for the
+       folder again. ⌘R, Ctrl+R and Ctrl+F5 are left alone, so a real reload is
+       still one keystroke away — the same rule type-ahead follows for ⌘R. */
+    e.preventDefault();
+    refreshColumn(focusCol);
+  } else if (e.key === "Escape") {
+    /* one Escape does one thing: abandon the search if there is one, otherwise
+       close the popover. Both at once would make it impossible to tell which
+       one the key just did. */
+    if (taLive()) taCancel();
+    else closeSettings();
+  }
+});
+
+/* ═══ core/syntax.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Syntax highlighting — in the browser, so one copy serves both builds.
 
@@ -2536,130 +3569,547 @@ function hlFences(host) {
     if (key) code.innerHTML = hlHTML(code.textContent, key);
   }
 }
-</script>
-<script>
-/* ═══════════════════════════════════════════════════════════════════════════
-   State
-   ═══════════════════════════════════════════════════════════════════════════ */
-const root = document.documentElement;
-const finder = document.getElementById("finder");
-const rail = document.getElementById("rail");
-const stage = document.getElementById("stage");
-const strip = document.getElementById("strip");
-const trail = document.getElementById("trail");
-const welcome = document.getElementById("welcome");
 
-let path = []; // node chain, [0] = root
-let sel = []; // per-column selected name
-let focusCol = 0;
-let widths = []; // natural width per column
-let folded = 0; // columns currently folded
-let pvToken = 0; // guards async preview fills
-let pvFullscreen = false;
-const state = {
-  dotfiles: root.dataset.hidden === "show",
-  sort: { key: "name", desc: false },
+/* ═══ core/render.js ═══ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Render
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Building a column is O(entries), and real directories hold thousands of them
+   — far too expensive to redo on every arrow key. A column's DOM is therefore
+   built once per (node, entry list) and cached; a re-render only re-applies the
+   state that actually changed: depth, selection, width.
+   Anything that alters how a row *looks* (dotfile filter, density, theme icon
+   colours) is part of the signature and drops the whole cache. */
+const colCache = new Map();
+let cacheSig = null;
+const CACHE_MAX = 24; // Retain enough nearby columns without growing memory unbounded.
+const COLUMN_WIDTH_RATIO = 2 / 3; // Leave room for adjacent columns on narrow screens.
+const MAX_DEPTH = 5; // Keep depth styling within the available visual scale.
+const SCROLL_HINT_PADDING = 4; // Show the affordance only when content exceeds the viewport.
+const EDIT_MAX = 512 * 1024; // Keep browser edits within the provider's 512 KB text limit.
+const EDIT_MAX_LINE = 10_000; // Avoid unusably wide editor lines.
+
+/* Writing the value a property already holds still dirties it — and a width or
+   custom-property write on a column relays out every row inside it. Guard the
+   writes and a re-render of an unchanged column costs nothing. */
+const set = (obj, key, value) => {
+  if (obj[key] !== value) obj[key] = value;
+};
+const setVar = (el, name, value) => {
+  if (el.style.getPropertyValue(name) !== value) {
+    el.style.setProperty(name, value);
+  }
 };
 
-const GUTTER = () =>
-  parseInt(getComputedStyle(root).getPropertyValue("--gutter"));
-const SPINE = () =>
-  parseInt(getComputedStyle(root).getPropertyValue("--spine-w"));
+function buildCol(node) {
+  const kids = visibleKids(node);
+  const el = document.createElement("div");
+  el.className = "col";
+  el.innerHTML = `
+    <div class="col-head">
+      <span class="name"><span>${esc(node.name)}</span></span>
+      <span class="count">${node.kids === null ? "" : kids.length}</span>
+      <button class="rf" tabindex="-1" title="Re-read this folder (F5)"
+              aria-label="Refresh ${esc(node.name)}">⟳</button>
+    </div>
+    <div class="col-body"></div>
+    <div class="spine-label" title="${esc(node.name)} — click to unfold">
+      <span class="dot"></span>
+      <span class="txt">${esc(node.name)}</span>
+    </div>`;
 
-/* what a column's content-driven width is allowed to be. COL_MAX is 380 not
-   268: a vault of 80-character page titles needs the room, and the dial makes
-   wide columns affordable — fold what you are not reading. render() narrows
-   the ceiling again against the stage, which on a phone is the smaller of
-   the two. */
-const COL_MIN = 148, COL_MAX = 380;
+  const body = el.querySelector(".col-body");
+  if (node.kids === null) {
+    body.innerHTML =
+      `<div class="col-note"><span class="spinner"></span>Reading…</div>`;
+  } else if (node.denied) {
+    body.innerHTML = `<div class="col-note">⚠ ${esc(node.denied)}</div>`;
+  } else if (!kids.length) {
+    body.innerHTML = `<div class="col-note">Empty</div>`;
+  }
+  if (node.pages > 1) {
+    const pager = document.createElement("div");
+    pager.className = "pager";
+    pager.innerHTML =
+      `<button type="button" aria-label="Previous page">‹</button>
+      <span>Page ${node.page} of ${node.pages}</span>
+      <button type="button" aria-label="Next page">›</button>`;
+    const [prev, next] = pager.querySelectorAll("button");
+    prev.disabled = node.page === 1;
+    next.disabled = node.page === node.pages;
+    prev.onclick = (e) => {
+      e.stopPropagation();
+      FS.loadPage(node, node.page - 1);
+    };
+    next.onclick = (e) => {
+      e.stopPropagation();
+      FS.loadPage(node, node.page + 1);
+    };
+    el.appendChild(pager);
+  }
+  /* a folded column hides its rows, so the click lands on the column itself —
+     that is what makes the advertised "click a spine to unfold" work */
+  el.onclick = () => {
+    if (el.classList.contains("spine")) unfoldTo(+el.dataset.i);
+  };
+  /* Read the index off the element for the same reason a row does: the node
+     keeps its DOM across re-renders, and only render time knows its column.
+     stopPropagation, or a ⟳ on a folded spine would unfold it instead. */
+  el.querySelector(".rf").onclick = (e) => {
+    e.stopPropagation();
+    refreshColumn(+el.dataset.i);
+  };
 
-/* One filtered copy per call, ordered by core/sort.js. Every column build, every
-   width measurement and every path walk comes through here, which is what keeps
-   the rows and a restored chain agreeing on what row 4 is. */
-const visibleKids = (node) =>
-  ((kids) => node.ordered ? kids : sortKids(kids))(
-    (node.kids || []).filter((k) => state.dotfiles || !k.name.startsWith(".")),
-  );
+  const rows = kids.map((k, ri) => {
+    const [stem, ext] = splitName(k.name);
+    const row = document.createElement("div");
+    row.className = "row" + (k.name.startsWith(".") ? " dotfile" : "");
+    row.title = k.name; /* the full name is always one hover away */
+    row.setAttribute("aria-label", k.name);
+    row.innerHTML = iconHTML(k) +
+      `<span class="label"><span class="stem">${
+        esc(stem)
+      }</span><span class="dim">${esc(ext)}</span></span>` +
+      (k.dir ? `<span class="chev">›</span>` : "");
+    /* read the index off the element: the same node keeps its DOM across
+       re-renders, and its column position is only known at render time */
+    row.onclick = () => choose(+el.dataset.i, k);
+    body.appendChild(row);
+    return row;
+  });
+  body.onscroll = paintTrail;
 
-const rowIndex = (node, name) =>
-  visibleKids(node).findIndex((k) => k.name === name);
+  return {
+    el,
+    body,
+    kids,
+    rows,
+    kidsRef: node.kids,
+    metaRef: !!node.metaDone,
+    dot: el.querySelector(".dot"),
+    width: measure(node),
+  };
+}
 
-const fmtSize = (b) =>
-  b < 1024
-    ? `${b} B`
-    : b < 1024 ** 2
-    ? `${(b / 1024).toFixed(b < 10240 ? 1 : 0)} KB`
-    : b < 1024 ** 3
-    ? `${(b / 1024 ** 2).toFixed(1)} MB`
-    : `${(b / 1024 ** 3).toFixed(2)} GB`;
+function columnFor(node) {
+  let c = colCache.get(node);
+  /* Two ways this DOM stops being the column: the directory was re-read, or a
+     metadata sweep landed and re-ordered the rows under it. Same test, one
+     field along. */
+  if (c && (c.kidsRef !== node.kids || c.metaRef !== !!node.metaDone)) c = null;
+  if (!c) c = buildCol(node);
+  colCache.delete(node); /* re-insert = most recently used */
+  colCache.set(node, c);
+  for (const k of colCache.keys()) {
+    if (colCache.size <= CACHE_MAX) break;
+    if (!path.includes(k)) colCache.delete(k);
+  }
+  return c;
+}
 
-const fmtDate = (ms) =>
-  new Date(ms).toLocaleString(undefined, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+function render(keepScroll) {
+  if (!path.length) return;
+  const sig =
+    `${state.dotfiles}|${root.dataset.density}|${root.dataset.theme}` +
+    `|${state.sort.key}|${state.sort.desc}`;
+  if (sig !== cacheSig) {
+    colCache.clear();
+    cacheSig = sig;
+  }
+
+  setState({ widths: [] });
+  const cols = path.map((node, i) => {
+    /* Before columnFor, so a directory that needs no fetch — the server build,
+       or one a preview has already read — is built once in the sorted order
+       rather than built and rebuilt. */
+    sweepMeta(node);
+    const c = columnFor(node);
+    const selectedRow = rowIndex(node, sel[i]);
+    /* No column may be wider than two-thirds of the live finder. The fold cap keeps the
+       touched column unfolded and applyScroll's pan slides it into view, but
+       neither can show a full-width column on a narrow phone —
+       the row would still lose its right edge. Clamped here rather than in
+       measure() because columnFor caches the built column: a width measured
+       against the old viewport would survive a rotation, while `widths` is
+       rebuilt by every render, including the one `resize` fires.
+
+       Measured against #finder, not #stage, because the stage is one render
+       behind: its width is `--stage-w`, which layout() writes *after* this
+       loop has already chosen the widths. Turning a phone from 568 px to 375
+       therefore clamped this render against 568 — oversized columns on a 375 px
+       screen, and the pan can only choose which edge to lose, so the tapped
+       row sat 10 px past the right one until the next render healed it.
+       #finder is `flex: 1` in the viewport, so it is the live number, and it
+       is the one layout() reads to set --stage-w in the first place. */
+    const w = Math.min(
+      c.width,
+      Math.floor(finder.clientWidth * COLUMN_WIDTH_RATIO),
+    );
+    widths.push(w);
+
+    /* `sorting` goes in the class string rather than on classList, because this
+       write replaces the whole attribute and would drop it a frame later. */
+    set(
+      c.el,
+      "className",
+      "col " +
+        (i < focusCol ? "ancestor" : i > focusCol ? "descendant" : "focus") +
+        (node.metaLoading ? " sorting" : ""),
+    );
+    set(
+      c.el.dataset,
+      "depth",
+      String(Math.min(MAX_DEPTH, Math.max(0, focusCol - i))),
+    );
+    set(c.el.dataset, "i", String(i));
+    set(c.el.style, "width", w + "px");
+
+    if (c.dotFor !== sel[i]) {
+      /* spine icon of the chosen child */
+      const chosen = c.kids.find((k) => k.name === sel[i]);
+      c.dot.innerHTML = chosen ? iconHTML(chosen) : "";
+      c.dotFor = sel[i];
+    }
+    c.rows.forEach((row, ri) => {
+      row.classList.toggle("sel", c.kids[ri].name === sel[i]);
+      row.classList.toggle("cursor", i === focusCol && selectedRow === ri);
+    });
+    return c;
   });
 
-const splitName = (name) => {
-  const i = name.lastIndexOf(".");
-  return (i > 0) ? [name.slice(0, i), name.slice(i)] : [name, ""];
-};
-
-const previewNode = () => {
-  const last = path[path.length - 1], s = sel[path.length - 1];
-  const n = s && (last.kids || []).find((k) => k.name === s);
-  return (n && !n.dir) ? n : null;
-};
-
-const selectedNode = () => {
-  const last = path[path.length - 1], s = sel[path.length - 1];
-  return s && (last.kids || []).find((k) => k.name === s) || null;
-};
-
-/* 88 columns of .pv-text plus its and .pv-body's horizontal padding (30 + 52),
-   measured from the real monospace font so it agrees with the CSS min-width */
-const codeMin = () =>
-  codeMin._w ||= (() => {
-    const c = document.createElement("canvas").getContext("2d");
-    const cs = getComputedStyle(root);
-    c.font = `11.5px ${cs.getPropertyValue("--mono")}`;
-    return Math.ceil(c.measureText("0").width * 88) + 82;
-  })();
-
-/* target reading width for the preview — the thing scrolling tries to protect.
-   Never wider than the stage itself: a phone cannot show 88 columns, and a
-   pane that runs past the right edge is clipped, not scrollable — so there
-   the pane fits and .pv-body pans over the code instead. */
-const previewTarget = () =>
-  previewNode()
-    ? Math.min(
-      760,
-      stage.clientWidth,
-      Math.max(codeMin(), Math.round(stage.clientWidth * 0.45)),
-    )
-    : 300;
-
-function measure(node) {
-  /* content-driven width, clamped — no manual resizing, no wasted space */
-  const c = (measure._c ||= document.createElement("canvas").getContext("2d"));
-  const cs = getComputedStyle(root);
-  c.font = `${cs.getPropertyValue("--fs-row").trim()} ${
-    cs.getPropertyValue("--font")
-  }`;
-  let w = 0;
-  for (const k of visibleKids(node)) {
-    w = Math.max(w, c.measureText(k.name).width);
+  /* Reconcile instead of replaceChildren: re-inserting an element detaches it,
+     which throws away the style and layout of every row underneath it. Columns
+     that keep their slot must not be touched at all. */
+  const want = [...cols.map((c) => c.el), renderPreview()];
+  want.forEach((el, i) => {
+    if (strip.childNodes[i] !== el) {
+      strip.insertBefore(el, strip.childNodes[i] || null);
+    }
+  });
+  while (strip.childNodes.length > want.length) strip.lastChild.remove();
+  if (previewNode()) setupPreviewActions(previewNode());
+  for (const c of cols) {
+    c.el.classList.toggle(
+      "scrollable-down",
+      c.body.scrollHeight > c.body.clientHeight + SCROLL_HINT_PADDING,
+    );
   }
-  c.font = `600 ${cs.getPropertyValue("--fs-head").trim()} ${
-    cs.getPropertyValue("--font")
-  }`;
-  w = Math.max(w, c.measureText(node.name).width + 34);
-  return Math.min(COL_MAX, Math.max(COL_MIN, Math.ceil(w) + 58));
+  renderCrumbs();
+  sortSay(sortStatus());
+  layout(keepScroll);
+  syncURL();
 }
-</script>
-<script>
+
+function renderPreview() {
+  const n = previewNode();
+  const selected = selectedNode();
+  const pv = document.createElement("div");
+  pv.id = "preview";
+  pv.tabIndex = 0;
+  pv.setAttribute("aria-label", "File preview");
+  PREVIEW.revoke?.();
+  if (!n && !selected) {
+    pv.innerHTML = `<div class="pv-empty"><div class="glyph">◫</div>
+                    <div>Select a file to preview</div></div>`;
+    return pv;
+  }
+  const target = n || selected;
+  const [stem, ext] = splitName(target.name);
+  const rawPath = "/" + currentPath().map(encodeURIComponent).join("/") +
+    "?filemill=raw";
+  pv.innerHTML = `
+    <div class="col-head pv-head"><span class="name"><span>${
+    esc(target.name)
+  }</span></span>
+      <span class="pv-actions">
+        ${
+    ROUTER
+      ? `<a id="pv-raw" class="pv-action" href="${rawPath}" title="View raw file">Raw</a>`
+      : ""
+  }
+        <span id="pv-md-views" hidden role="group" aria-label="Markdown view">
+          <button id="pv-md-rendered" class="pv-action" type="button">Rendered</button>
+          <button id="pv-md-raw" class="pv-action" type="button">Raw</button>
+        </span>
+        <span id="pv-vtt-views" hidden role="group" aria-label="WebVTT view">
+          <button id="pv-vtt-transcript" class="pv-action" type="button">Transcript</button>
+          <button id="pv-vtt-raw" class="pv-action" type="button">Raw</button>
+        </span>
+        <button id="pv-view" class="pv-action" type="button"></button>
+        <button id="pv-delete" class="pv-action" type="button"
+                title="Delete selected item">Delete</button>
+        <button id="pv-fullscreen" class="pv-action" type="button" aria-pressed="${pvFullscreen}"
+                title="Toggle fullscreen preview">Fullscreen</button>
+      </span>
+    </div>
+    <div class="pv-body">
+      <div class="pv-hero">
+        ${iconHTML(target)}
+        <div><h2>${esc(stem)}<span style="color:var(--ink-3)">${
+    esc(ext)
+  }</span></h2>
+             <div class="sub" id="pv-sub">reading…</div></div>
+        <button id="pv-edit" hidden>Edit</button>
+      </div>
+      <div id="pv-content" class="pv-content"></div>
+    </div>`;
+  if (n) fillPreview(n);
+  pv.classList.toggle("pv-is-fullscreen", pvFullscreen);
+  return pv;
+}
+
+const RENDERED_RE = /\.(md|markdown|rst|docx|pptx|html?|desktop)$/i;
+const MARKDOWN_RE = /\.(md|markdown)$/i;
+let markdownView = "rendered";
+let vttView = "transcript";
+
+async function rawMarkdown(node) {
+  try {
+    const blob = await FS.blob(node);
+    return blob ? `<pre class="pv-text">${esc(await blob.text())}</pre>` : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function previewView() {
+  const view = new URL(location.href).searchParams.get("filemill") ||
+    document.documentElement.dataset.filemill || "raw";
+  return view === "highlight"
+    ? "highlight"
+    : view === "render"
+    ? "render"
+    : "raw";
+}
+
+function setPreviewView(view) {
+  if (!location.pathname) return;
+  const url = new URL(location.href);
+  url.searchParams.set("filemill", view);
+  location.href = url.pathname + url.search + url.hash;
+}
+
+function setupPreviewActions(n) {
+  const view = previewView();
+  const toggle = document.getElementById("pv-view");
+  const mdViews = document.getElementById("pv-md-views");
+  const vttViews = document.getElementById("pv-vtt-views");
+  const name = String(n.name || "");
+  const markdown = MARKDOWN_RE.test(name);
+  const vtt = /\.vtt$/i.test(n.name);
+  const applicable = RENDERED_RE.test(name);
+  if (mdViews) {
+    mdViews.hidden = !markdown;
+    for (
+      const [id, mode, label] of [
+        ["pv-md-rendered", "rendered", "View rendered Markdown"],
+        ["pv-md-raw", "raw", "View raw Markdown source"],
+      ]
+    ) {
+      const button = document.getElementById(id);
+      if (!button) continue;
+      button.setAttribute("aria-pressed", String(markdownView === mode));
+      button.setAttribute("aria-label", label);
+      button.title = label;
+      button.onclick = () => {
+        if (markdownView === mode) return;
+        markdownView = mode;
+        fillPreview(n);
+        setupPreviewActions(n);
+      };
+    }
+  }
+  if (vttViews) {
+    vttViews.hidden = !vtt || view === "highlight";
+    for (
+      const [id, mode, label] of [
+        ["pv-vtt-transcript", "transcript", "View WebVTT transcript"],
+        ["pv-vtt-raw", "raw", "View raw WebVTT source"],
+      ]
+    ) {
+      const button = document.getElementById(id);
+      if (!button) continue;
+      button.setAttribute("aria-pressed", String(vttView === mode));
+      button.setAttribute("aria-label", label);
+      button.title = label;
+      button.onclick = () => {
+        if (vttView === mode) return;
+        vttView = mode;
+        fillPreview({ ...n, previewFormat: mode });
+        setupPreviewActions(n);
+      };
+    }
+  }
+  if (toggle) {
+    toggle.hidden = !markdown && !applicable;
+    toggle.textContent = view === "render" ? "Source" : "Rendered";
+    toggle.title = view === "render"
+      ? "View highlighted source"
+      : "View rendered preview";
+    toggle.setAttribute("aria-label", toggle.title);
+    toggle.onclick = () => {
+      setPreviewView(view === "render" ? "highlight" : "render");
+    };
+  }
+  const full = document.getElementById("pv-fullscreen");
+  if (full) {
+    full.onclick = () => {
+      setState({ pvFullscreen: !pvFullscreen });
+      root.classList.toggle("pv-fullscreen", pvFullscreen);
+      full.setAttribute("aria-pressed", pvFullscreen);
+      full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
+      full.title = full.textContent;
+    };
+    full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
+  }
+  const del = document.getElementById("pv-delete");
+  if (del) {
+    del.hidden = !FS.remove || !!n.vpath;
+    del.onclick = async () => {
+      if (
+        !window.confirm(
+          `Delete “${n.name}”${n.dir ? " and its contents" : ""}?`,
+        )
+      ) return;
+      del.disabled = true;
+      try {
+        await FS.remove(n);
+        await refreshColumn(path.length - 1);
+      } catch (err) {
+        saySt(
+          "st-refresh",
+          `Delete failed: ${String(err.message || err)}`,
+          false,
+        );
+        del.disabled = false;
+      }
+    };
+  }
+}
+
+/* Metadata and contents arrive after the layout is already on screen; the token
+   makes sure a slow read for a file you have since navigated away from is
+   dropped. That guard lives here, not in the provider, so a provider is free to
+   be as slow as it needs to be — a server round-trip, a WASM highlighter. */
+async function fillPreview(n) {
+  const token = nextPvToken();
+  await FS.loadMeta(n);
+  if (token !== pvToken) return;
+  const m = n.meta || {};
+  const sub = document.getElementById("pv-sub");
+  if (!sub) return;
+  if (m.error) {
+    sub.textContent = "unreadable";
+    return;
+  }
+  /* Not everything a column can hold is a file. A row inside a database has no
+     size and no mtime, and inventing them prints "0 B · 1 Jan 1970" — so leave
+     the sub-line empty and go straight to the body. */
+  if (m.size == null) {
+    sub.textContent = "";
+  } else {
+    sub.textContent = `${fmtSize(m.size)} · modified ${fmtDate(m.mod)}`;
+  }
+
+  let html = null;
+  try {
+    html = MARKDOWN_RE.test(n.name) && markdownView === "raw"
+      ? (await rawMarkdown(n) || await PREVIEW.render(n))
+      : /\.vtt$/i.test(n.name) && previewView() !== "highlight"
+      ? await PREVIEW.render({ ...n, previewFormat: vttView })
+      : await PREVIEW.render(n);
+  } catch (err) {
+    html = `<p class="pv-err">Preview failed: ${
+      esc(String(err.message || err))
+    }</p>`;
+  }
+  if (token !== pvToken) return;
+  const host = document.getElementById("pv-content");
+  if (!host) return;
+  host.innerHTML = html ?? `<p>No inline preview for this file type.</p>`;
+  hlFences(host);
+  const btn = document.getElementById("pv-edit");
+  if (btn) {
+    btn.hidden = true;
+    if (await editableText(n) !== null) {
+      btn.hidden = false;
+      btn.onclick = () => openEditor(n);
+    }
+  }
+  paintTrail();
+}
+
+/* ── Edit mode ──────────────────────────────────────────────────────────────
+   A plain textarea over FS.write — see ports.js. The gate mirrors the text
+   preview in adapters/preview-local.js (same extensions, same cap), but it is
+   core's own copy: a build picks its preview provider freely, and Edit has to
+   work with any of them. Keep the two lists in step. */
+const NON_EDIT_RE =
+  /\.(desktop|docx|pptx|pdf|html?|png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
+
+async function editableText(n) {
+  if (
+    !FS.write || n.dir || n.vpath || NON_EDIT_RE.test(n.name) ||
+    (n.meta?.size ?? 0) > EDIT_MAX
+  ) return null;
+  const blob = await FS.blob(n);
+  if (!blob || blob.size > EDIT_MAX) return null;
+  try {
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(
+      await blob.arrayBuffer(),
+    );
+    return !text.includes("\0") &&
+        Math.max(...text.split(/\r?\n/).map((line) => line.length), 0) <=
+          EDIT_MAX_LINE
+      ? text
+      : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function openEditor(n) {
+  const token = pvToken;
+  const blob = await FS.blob(n);
+  if (token !== pvToken || !blob) return;
+  /* Read again rather than lifting the text out of the pane: the preview is
+     HTML by then, coloured and escaped, and un-escaping it back into source
+     is a round trip that can only lose. Same bytes either way — EDIT_MAX and
+     the provider's TEXT_MAX are the same 512 KB. */
+  const text = await blob.text();
+  const host = document.getElementById("pv-content");
+  if (token !== pvToken || !host) return;
+  document.getElementById("pv-edit").hidden = true;
+  host.innerHTML = `
+    <textarea id="pv-editor" spellcheck="false" aria-label="Edit ${
+    esc(n.name)
+  }"></textarea>
+    <div class="pv-edit-bar">
+      <button id="pv-save">Save</button>
+      <button id="pv-cancel">Cancel</button>
+      <span class="pv-err" id="pv-edit-err"></span>
+    </div>`;
+  const ta = document.getElementById("pv-editor");
+  ta.value = text;
+  ta.focus();
+  ta.setSelectionRange(0, 0);
+  ta.scrollTop = 0;
+  document.getElementById("pv-cancel").onclick = () => fillPreview(n);
+  document.getElementById("pv-save").onclick = async () => {
+    try {
+      await FS.write(n, ta.value);
+    } catch (err) {
+      const box = document.getElementById("pv-edit-err");
+      if (box) box.textContent = String(err.message || err);
+      return;
+    }
+    /* the pane may have moved on while the write was in flight */
+    if (ta.isConnected) fillPreview(n);
+  };
+}
+
+/* ═══ core/sort.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Sort order — name, size or modification time, ascending or descending.
 
@@ -2916,1547 +4366,163 @@ function syncSortMenu() {
   if (d) d.setAttribute("aria-checked", String(state.sort.desc));
 }
 
-loadSort();
-syncSortMenu();
-</script>
-<script>
+function initSort() {
+  loadSort();
+  syncSortMenu();
+}
+
+/* ═══ core/state.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
-   Render
-   ═══════════════════════════════════════════════════════════════════════════ */
-/* Building a column is O(entries), and real directories hold thousands of them
-   — far too expensive to redo on every arrow key. A column's DOM is therefore
-   built once per (node, entry list) and cached; a re-render only re-applies the
-   state that actually changed: depth, selection, width.
-   Anything that alters how a row *looks* (dotfile filter, density, theme icon
-   colours) is part of the signature and drops the whole cache. */
-const colCache = new Map();
-let cacheSig = null;
-const CACHE_MAX = 24;
-
-/* Writing the value a property already holds still dirties it — and a width or
-   custom-property write on a column relays out every row inside it. Guard the
-   writes and a re-render of an unchanged column costs nothing. */
-const set = (obj, key, value) => {
-  if (obj[key] !== value) obj[key] = value;
-};
-const setVar = (el, name, value) => {
-  if (el.style.getPropertyValue(name) !== value) {
-    el.style.setProperty(name, value);
-  }
-};
-
-function buildCol(node) {
-  const kids = visibleKids(node);
-  const el = document.createElement("div");
-  el.className = "col";
-  el.innerHTML = `
-    <div class="col-head">
-      <span class="name"><span>${esc(node.name)}</span></span>
-      <span class="count">${node.kids === null ? "" : kids.length}</span>
-      <button class="rf" tabindex="-1" title="Re-read this folder (F5)"
-              aria-label="Refresh ${esc(node.name)}">⟳</button>
-    </div>
-    <div class="col-body"></div>
-    <div class="spine-label" title="${esc(node.name)} — click to unfold">
-      <span class="dot"></span>
-      <span class="txt">${esc(node.name)}</span>
-    </div>`;
-
-  const body = el.querySelector(".col-body");
-  if (node.kids === null) {
-    body.innerHTML =
-      `<div class="col-note"><span class="spinner"></span>Reading…</div>`;
-  } else if (node.denied) {
-    body.innerHTML = `<div class="col-note">⚠ ${esc(node.denied)}</div>`;
-  } else if (!kids.length) {
-    body.innerHTML = `<div class="col-note">Empty</div>`;
-  }
-  if (node.pages > 1) {
-    const pager = document.createElement("div");
-    pager.className = "pager";
-    pager.innerHTML =
-      `<button type="button" aria-label="Previous page">‹</button>
-      <span>Page ${node.page} of ${node.pages}</span>
-      <button type="button" aria-label="Next page">›</button>`;
-    const [prev, next] = pager.querySelectorAll("button");
-    prev.disabled = node.page === 1;
-    next.disabled = node.page === node.pages;
-    prev.onclick = (e) => {
-      e.stopPropagation();
-      FS.loadPage(node, node.page - 1);
-    };
-    next.onclick = (e) => {
-      e.stopPropagation();
-      FS.loadPage(node, node.page + 1);
-    };
-    el.appendChild(pager);
-  }
-  /* a folded column hides its rows, so the click lands on the column itself —
-     that is what makes the advertised "click a spine to unfold" work */
-  el.onclick = () => {
-    if (el.classList.contains("spine")) unfoldTo(+el.dataset.i);
-  };
-  /* Read the index off the element for the same reason a row does: the node
-     keeps its DOM across re-renders, and only render time knows its column.
-     stopPropagation, or a ⟳ on a folded spine would unfold it instead. */
-  el.querySelector(".rf").onclick = (e) => {
-    e.stopPropagation();
-    refreshColumn(+el.dataset.i);
-  };
-
-  const rows = kids.map((k, ri) => {
-    const [stem, ext] = splitName(k.name);
-    const row = document.createElement("div");
-    row.className = "row" + (k.name.startsWith(".") ? " dotfile" : "");
-    row.title = k.name; /* the full name is always one hover away */
-    row.setAttribute("aria-label", k.name);
-    row.innerHTML = iconHTML(k) +
-      `<span class="label"><span class="stem">${
-        esc(stem)
-      }</span><span class="dim">${esc(ext)}</span></span>` +
-      (k.dir ? `<span class="chev">›</span>` : "");
-    /* read the index off the element: the same node keeps its DOM across
-       re-renders, and its column position is only known at render time */
-    row.onclick = () => choose(+el.dataset.i, k);
-    body.appendChild(row);
-    return row;
-  });
-  body.onscroll = paintTrail;
-
-  return {
-    el,
-    body,
-    kids,
-    rows,
-    kidsRef: node.kids,
-    metaRef: !!node.metaDone,
-    dot: el.querySelector(".dot"),
-    width: measure(node),
-  };
-}
-
-function columnFor(node) {
-  let c = colCache.get(node);
-  /* Two ways this DOM stops being the column: the directory was re-read, or a
-     metadata sweep landed and re-ordered the rows under it. Same test, one
-     field along. */
-  if (c && (c.kidsRef !== node.kids || c.metaRef !== !!node.metaDone)) c = null;
-  if (!c) c = buildCol(node);
-  colCache.delete(node); /* re-insert = most recently used */
-  colCache.set(node, c);
-  for (const k of colCache.keys()) {
-    if (colCache.size <= CACHE_MAX) break;
-    if (!path.includes(k)) colCache.delete(k);
-  }
-  return c;
-}
-
-function render(keepScroll) {
-  if (!path.length) return;
-  const sig =
-    `${state.dotfiles}|${root.dataset.density}|${root.dataset.theme}` +
-    `|${state.sort.key}|${state.sort.desc}`;
-  if (sig !== cacheSig) {
-    colCache.clear();
-    cacheSig = sig;
-  }
-
-  widths = [];
-  const cols = path.map((node, i) => {
-    /* Before columnFor, so a directory that needs no fetch — the server build,
-       or one a preview has already read — is built once in the sorted order
-       rather than built and rebuilt. */
-    sweepMeta(node);
-    const c = columnFor(node);
-    const selectedRow = rowIndex(node, sel[i]);
-    /* No column may be wider than two-thirds of the live finder. The fold cap keeps the
-       touched column unfolded and applyScroll's pan slides it into view, but
-       neither can show a full-width column on a narrow phone —
-       the row would still lose its right edge. Clamped here rather than in
-       measure() because columnFor caches the built column: a width measured
-       against the old viewport would survive a rotation, while `widths` is
-       rebuilt by every render, including the one `resize` fires.
-
-       Measured against #finder, not #stage, because the stage is one render
-       behind: its width is `--stage-w`, which layout() writes *after* this
-       loop has already chosen the widths. Turning a phone from 568 px to 375
-       therefore clamped this render against 568 — oversized columns on a 375 px
-       screen, and the pan can only choose which edge to lose, so the tapped
-       row sat 10 px past the right one until the next render healed it.
-       #finder is `flex: 1` in the viewport, so it is the live number, and it
-       is the one layout() reads to set --stage-w in the first place. */
-    const w = Math.min(c.width, Math.floor(finder.clientWidth * 2 / 3));
-    widths.push(w);
-
-    /* `sorting` goes in the class string rather than on classList, because this
-       write replaces the whole attribute and would drop it a frame later. */
-    set(
-      c.el,
-      "className",
-      "col " +
-        (i < focusCol ? "ancestor" : i > focusCol ? "descendant" : "focus") +
-        (node.metaLoading ? " sorting" : ""),
-    );
-    set(c.el.dataset, "depth", String(Math.min(5, Math.max(0, focusCol - i))));
-    set(c.el.dataset, "i", String(i));
-    set(c.el.style, "width", w + "px");
-
-    if (c.dotFor !== sel[i]) {
-      /* spine icon of the chosen child */
-      const chosen = c.kids.find((k) => k.name === sel[i]);
-      c.dot.innerHTML = chosen ? iconHTML(chosen) : "";
-      c.dotFor = sel[i];
-    }
-    c.rows.forEach((row, ri) => {
-      row.classList.toggle("sel", c.kids[ri].name === sel[i]);
-      row.classList.toggle("cursor", i === focusCol && selectedRow === ri);
-    });
-    return c;
-  });
-
-  /* Reconcile instead of replaceChildren: re-inserting an element detaches it,
-     which throws away the style and layout of every row underneath it. Columns
-     that keep their slot must not be touched at all. */
-  const want = [...cols.map((c) => c.el), renderPreview()];
-  want.forEach((el, i) => {
-    if (strip.childNodes[i] !== el) {
-      strip.insertBefore(el, strip.childNodes[i] || null);
-    }
-  });
-  while (strip.childNodes.length > want.length) strip.lastChild.remove();
-  if (previewNode()) setupPreviewActions(previewNode());
-  for (const c of cols) {
-    c.el.classList.toggle(
-      "scrollable-down",
-      c.body.scrollHeight > c.body.clientHeight + 4,
-    );
-  }
-  renderCrumbs();
-  sortSay(sortStatus());
-  layout(keepScroll);
-  syncURL();
-}
-
-function renderPreview() {
-  const n = previewNode();
-  const selected = selectedNode();
-  const pv = document.createElement("div");
-  pv.id = "preview";
-  pv.tabIndex = 0;
-  pv.setAttribute("aria-label", "File preview");
-  PREVIEW.revoke?.();
-  if (!n && !selected) {
-    pv.innerHTML = `<div class="pv-empty"><div class="glyph">◫</div>
-                    <div>Select a file to preview</div></div>`;
-    return pv;
-  }
-  const target = n || selected;
-  const [stem, ext] = splitName(target.name);
-  const rawPath = "/" + currentPath().map(encodeURIComponent).join("/") +
-    "?filemill=raw";
-  pv.innerHTML = `
-    <div class="col-head pv-head"><span class="name"><span>${
-    esc(target.name)
-  }</span></span>
-      <span class="pv-actions">
-        ${
-    ROUTER
-      ? `<a id="pv-raw" class="pv-action" href="${rawPath}" title="View raw file">Raw</a>`
-      : ""
-  }
-        <span id="pv-md-views" hidden role="group" aria-label="Markdown view">
-          <button id="pv-md-rendered" class="pv-action" type="button">Rendered</button>
-          <button id="pv-md-raw" class="pv-action" type="button">Raw</button>
-        </span>
-        <span id="pv-vtt-views" hidden role="group" aria-label="WebVTT view">
-          <button id="pv-vtt-transcript" class="pv-action" type="button">Transcript</button>
-          <button id="pv-vtt-raw" class="pv-action" type="button">Raw</button>
-        </span>
-        <button id="pv-view" class="pv-action" type="button"></button>
-        <button id="pv-delete" class="pv-action" type="button"
-                title="Delete selected item">Delete</button>
-        <button id="pv-fullscreen" class="pv-action" type="button" aria-pressed="${pvFullscreen}"
-                title="Toggle fullscreen preview">Fullscreen</button>
-      </span>
-    </div>
-    <div class="pv-body">
-      <div class="pv-hero">
-        ${iconHTML(target)}
-        <div><h2>${esc(stem)}<span style="color:var(--ink-3)">${
-    esc(ext)
-  }</span></h2>
-             <div class="sub" id="pv-sub">reading…</div></div>
-        <button id="pv-edit" hidden>Edit</button>
-      </div>
-      <div id="pv-content" class="pv-content"></div>
-    </div>`;
-  if (n) fillPreview(n);
-  pv.classList.toggle("pv-is-fullscreen", pvFullscreen);
-  return pv;
-}
-
-const RENDERED_RE = /\.(md|markdown|rst|docx|pptx|html?|desktop)$/i;
-const MARKDOWN_RE = /\.(md|markdown)$/i;
-let markdownView = "rendered";
-let vttView = "transcript";
-
-async function rawMarkdown(node) {
-  try {
-    const blob = await FS.blob(node);
-    return blob ? `<pre class="pv-text">${esc(await blob.text())}</pre>` : null;
-  } catch (_) {
-    return null;
-  }
-}
-
-function previewView() {
-  const view = new URL(location.href).searchParams.get("filemill") ||
-    document.documentElement.dataset.filemill || "raw";
-  return view === "highlight"
-    ? "highlight"
-    : view === "render"
-    ? "render"
-    : "raw";
-}
-
-function setPreviewView(view) {
-  if (!location.pathname) return;
-  const url = new URL(location.href);
-  url.searchParams.set("filemill", view);
-  location.href = url.pathname + url.search + url.hash;
-}
-
-function setupPreviewActions(n) {
-  const view = previewView();
-  const toggle = document.getElementById("pv-view");
-  const mdViews = document.getElementById("pv-md-views");
-  const vttViews = document.getElementById("pv-vtt-views");
-  const name = String(n.name || "");
-  const markdown = MARKDOWN_RE.test(name);
-  const vtt = /\.vtt$/i.test(n.name);
-  const applicable = RENDERED_RE.test(name);
-  if (mdViews) {
-    mdViews.hidden = !markdown;
-    for (
-      const [id, mode, label] of [
-        ["pv-md-rendered", "rendered", "View rendered Markdown"],
-        ["pv-md-raw", "raw", "View raw Markdown source"],
-      ]
-    ) {
-      const button = document.getElementById(id);
-      if (!button) continue;
-      button.setAttribute("aria-pressed", String(markdownView === mode));
-      button.setAttribute("aria-label", label);
-      button.title = label;
-      button.onclick = () => {
-        if (markdownView === mode) return;
-        markdownView = mode;
-        fillPreview(n);
-        setupPreviewActions(n);
-      };
-    }
-  }
-  if (vttViews) {
-    vttViews.hidden = !vtt || view === "highlight";
-    for (
-      const [id, mode, label] of [
-        ["pv-vtt-transcript", "transcript", "View WebVTT transcript"],
-        ["pv-vtt-raw", "raw", "View raw WebVTT source"],
-      ]
-    ) {
-      const button = document.getElementById(id);
-      if (!button) continue;
-      button.setAttribute("aria-pressed", String(vttView === mode));
-      button.setAttribute("aria-label", label);
-      button.title = label;
-      button.onclick = () => {
-        if (vttView === mode) return;
-        vttView = mode;
-        fillPreview({ ...n, previewFormat: mode });
-        setupPreviewActions(n);
-      };
-    }
-  }
-  if (toggle) {
-    toggle.hidden = !markdown && !applicable;
-    toggle.textContent = view === "render" ? "Source" : "Rendered";
-    toggle.title = view === "render"
-      ? "View highlighted source"
-      : "View rendered preview";
-    toggle.setAttribute("aria-label", toggle.title);
-    toggle.onclick = () => {
-      setPreviewView(view === "render" ? "highlight" : "render");
-    };
-  }
-  const full = document.getElementById("pv-fullscreen");
-  if (full) {
-    full.onclick = () => {
-      pvFullscreen = !pvFullscreen;
-      root.classList.toggle("pv-fullscreen", pvFullscreen);
-      full.setAttribute("aria-pressed", pvFullscreen);
-      full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
-      full.title = full.textContent;
-    };
-    full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
-  }
-  const del = document.getElementById("pv-delete");
-  if (del) {
-    del.hidden = !FS.remove || !!n.vpath;
-    del.onclick = async () => {
-      if (
-        !window.confirm(
-          `Delete “${n.name}”${n.dir ? " and its contents" : ""}?`,
-        )
-      ) return;
-      del.disabled = true;
-      try {
-        await FS.remove(n);
-        await refreshColumn(path.length - 1);
-      } catch (err) {
-        saySt(
-          "st-refresh",
-          `Delete failed: ${String(err.message || err)}`,
-          false,
-        );
-        del.disabled = false;
-      }
-    };
-  }
-}
-
-/* Metadata and contents arrive after the layout is already on screen; the token
-   makes sure a slow read for a file you have since navigated away from is
-   dropped. That guard lives here, not in the provider, so a provider is free to
-   be as slow as it needs to be — a server round-trip, a WASM highlighter. */
-async function fillPreview(n) {
-  const token = ++pvToken;
-  await FS.loadMeta(n);
-  if (token !== pvToken) return;
-  const m = n.meta || {};
-  const sub = document.getElementById("pv-sub");
-  if (!sub) return;
-  if (m.error) {
-    sub.textContent = "unreadable";
-    return;
-  }
-  /* Not everything a column can hold is a file. A row inside a database has no
-     size and no mtime, and inventing them prints "0 B · 1 Jan 1970" — so leave
-     the sub-line empty and go straight to the body. */
-  if (m.size == null) {
-    sub.textContent = "";
-  } else {
-    sub.textContent = `${fmtSize(m.size)} · modified ${fmtDate(m.mod)}`;
-  }
-
-  let html = null;
-  try {
-    html = MARKDOWN_RE.test(n.name) && markdownView === "raw"
-      ? (await rawMarkdown(n) || await PREVIEW.render(n))
-      : /\.vtt$/i.test(n.name) && previewView() !== "highlight"
-      ? await PREVIEW.render({ ...n, previewFormat: vttView })
-      : await PREVIEW.render(n);
-  } catch (err) {
-    html = `<p class="pv-err">Preview failed: ${
-      esc(String(err.message || err))
-    }</p>`;
-  }
-  if (token !== pvToken) return;
-  const host = document.getElementById("pv-content");
-  if (!host) return;
-  host.innerHTML = html ?? `<p>No inline preview for this file type.</p>`;
-  hlFences(host);
-  const btn = document.getElementById("pv-edit");
-  if (btn) {
-    btn.hidden = true;
-    if (await editableText(n) !== null) {
-      btn.hidden = false;
-      btn.onclick = () => openEditor(n);
-    }
-  }
-  paintTrail();
-}
-
-/* ── Edit mode ──────────────────────────────────────────────────────────────
-   A plain textarea over FS.write — see ports.js. The gate mirrors the text
-   preview in adapters/preview-local.js (same extensions, same cap), but it is
-   core's own copy: a build picks its preview provider freely, and Edit has to
-   work with any of them. Keep the two lists in step. */
-const EDIT_MAX = 512 * 1024;
-const EDIT_MAX_LINE = 10_000;
-const NON_EDIT_RE =
-  /\.(desktop|docx|pptx|pdf|html?|png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
-
-async function editableText(n) {
-  if (
-    !FS.write || n.dir || n.vpath || NON_EDIT_RE.test(n.name) ||
-    (n.meta?.size ?? 0) > EDIT_MAX
-  ) return null;
-  const blob = await FS.blob(n);
-  if (!blob || blob.size > EDIT_MAX) return null;
-  try {
-    const text = new TextDecoder("utf-8", { fatal: true }).decode(
-      await blob.arrayBuffer(),
-    );
-    return !text.includes("\0") &&
-        Math.max(...text.split(/\r?\n/).map((line) => line.length), 0) <=
-          EDIT_MAX_LINE
-      ? text
-      : null;
-  } catch (_) {
-    return null;
-  }
-}
-
-async function openEditor(n) {
-  const token = pvToken;
-  const blob = await FS.blob(n);
-  if (token !== pvToken || !blob) return;
-  /* Read again rather than lifting the text out of the pane: the preview is
-     HTML by then, coloured and escaped, and un-escaping it back into source
-     is a round trip that can only lose. Same bytes either way — EDIT_MAX and
-     the provider's TEXT_MAX are the same 512 KB. */
-  const text = await blob.text();
-  const host = document.getElementById("pv-content");
-  if (token !== pvToken || !host) return;
-  document.getElementById("pv-edit").hidden = true;
-  host.innerHTML = `
-    <textarea id="pv-editor" spellcheck="false" aria-label="Edit ${
-    esc(n.name)
-  }"></textarea>
-    <div class="pv-edit-bar">
-      <button id="pv-save">Save</button>
-      <button id="pv-cancel">Cancel</button>
-      <span class="pv-err" id="pv-edit-err"></span>
-    </div>`;
-  const ta = document.getElementById("pv-editor");
-  ta.value = text;
-  ta.focus();
-  ta.setSelectionRange(0, 0);
-  ta.scrollTop = 0;
-  document.getElementById("pv-cancel").onclick = () => fillPreview(n);
-  document.getElementById("pv-save").onclick = async () => {
-    try {
-      await FS.write(n, ta.value);
-    } catch (err) {
-      const box = document.getElementById("pv-edit-err");
-      if (box) box.textContent = String(err.message || err);
-      return;
-    }
-    /* the pane may have moved on while the write was in flight */
-    if (ta.isConnected) fillPreview(n);
-  };
-}
-</script>
-<script>
-/* ═══════════════════════════════════════════════════════════════════════════
-   Layout + the scroll dial
-
-   scrollLeft is not a translation — it is a 0–100% condensing dial:
-     0%       every column unfolded; preview overflows off the right edge
-     k·unit   the leftmost k columns folded to spines   (unit = 99% / ncols)
-     99%      every column folded; preview fills what is left
-     99–100%  the spine strip itself slides away; at 100% the preview is alone
-   ═══════════════════════════════════════════════════════════════════════════ */
-function stripSpan(k) {
-  /* width of the column strip with k folded */
-  const g = GUTTER(), n = path.length;
-  const cols = widths.reduce((a, w, i) => a + (i < k ? SPINE() : w), 0);
-  return cols + g * (n + 1); /* padding either side + inter-column gaps */
-}
-const foldUnit = () => 0.99 / path.length;
-const range = () => Math.max(1, stripSpan(0) - GUTTER());
-
-function layout(keepScroll) {
-  const stageW = finder.clientWidth;
-  setVar(root, "--stage-w", stageW + "px");
-  setVar(root, "--preview-w", previewTarget() + "px");
-  rail.style.width = (stageW + range()) + "px";
-
-  if (!keepScroll) {
-    /* default: the least folding that still gives the preview its full width.
-       ?layout=compressed-columns asks for every column folded instead, which is
-       the dial at 99% and the one thing the HTMX shell could never do. */
-    let k = 0;
-    while (k < path.length && stripSpan(k) + previewTarget() > stageW) k++;
-    /* Fold more when the new contents need it, but never past the focused
-       column: that is the one under the user's finger, and the column to its
-       right is what opening it just produced — answering a tap by hiding
-       either is not condensing, it is discarding the answer. What is left of
-       focus has been walked past and may condense; folding further than this
-       is a user action: scroll, spine, ←. */
-    k = Math.min(focusCol, Math.max(k, folded));
-    if (root.dataset.layout === "compressed-columns") k = path.length;
-    finder.scrollLeft = Math.round(k * foldUnit() * range());
-  }
-  applyScroll();
-}
-
-function applyScroll() {
-  if (!path.length) return;
-  /* The dial is the only thing that may move the strip, and #stage is where
-     that gets decided: overflow hidden stops a finger, not a programmatic
-     scroll. Now that the strip may be wider than the stage — a column right of
-     focus peeks past the edge instead of folding — anything that scrolls an
-     element into view drags every column out through the left edge, and the
-     dial writes #finder, so nothing would put them back. revealRow keeps the
-     app's own row reveals from doing it; this undoes whatever else did, at the
-     next repaint. */
-  if (stage.scrollLeft) stage.scrollLeft = 0;
-  const max = Math.max(1, rail.clientWidth - finder.clientWidth);
-  const p = Math.min(1, finder.scrollLeft / max);
-  const n = path.length;
-
-  const { raw, t } = foldFromScroll(max);
-  const { focusLeft, focusRight } = applyWidths(raw, t);
-  const pan = panFocus(raw, focusLeft, focusRight);
-  slideTail(p, pan, n);
-
-  document.getElementById("st-fold").textContent = folded
-    ? `${folded}/${n} folded`
-    : "";
-  paintTrail();
-}
-
-function foldFromScroll(max) {
-  /* Half a pixel of slack, in pixels: layout() and unfoldTo() write
-     round(k·unit·range), which can fall up to 0.5 px short of the boundary. A
-     fixed 0.002 units was only 0.3 px once seven columns made a unit 160 px
-     wide, and a landing read one column short paints the column ← just
-     reached as a spine, with folded === focusCol so the next ← never scrolls. */
-  const raw = Math.min(1, (finder.scrollLeft + 0.5) / max) / foldUnit();
-  folded = Math.min(path.length, Math.floor(raw));
-  /* how far into folding the next column is — 0 = full width, 1 = a spine */
-  const t = Math.min(1, Math.max(0, raw - folded));
-  return { raw, t };
-}
-
-function applyWidths(raw, t) {
-  const g = GUTTER(), sp = SPINE(), n = path.length;
-  let x = g, focusLeft = 0, focusRight = 0;
-  [...strip.querySelectorAll(".col")].forEach((col, i) => {
-    col.classList.toggle("spine", i < folded);
-    col.classList.toggle("folding", i === folded && folded < n);
-    const w = i < folded
-      ? sp
-      : i === folded
-      ? Math.round(widths[i] + (sp - widths[i]) * t)
-      : widths[i];
-    if (i === focusCol) [focusLeft, focusRight] = [x, x + w];
-    x += w + g;
-    if (i < folded) {
-      set(col.style, "width", "");
-      return;
-    }
-    set(col.dataset, "fold", String(i === folded ? t : 0));
-    setVar(col, "--fold", col.dataset.fold); /* custom props need setProperty */
-    set(col.style, "width", w + "px");
-  });
-  return { focusLeft, focusRight };
-}
-
-function panFocus(raw, focusLeft, focusRight) {
-  const g = GUTTER();
-  const reach = Math.min(1, Math.max(0, raw - focusCol + 1));
-  const pan = reach *
-    Math.min(
-      Math.max(0, focusRight - finder.clientWidth),
-      Math.max(0, focusLeft - g),
-    );
-  return pan;
-}
-
-function slideTail(p, pan, n) {
-  const sp = SPINE(), g = GUTTER();
-  const tail = p > 0.99 ? (p - 0.99) / 0.01 : 0;
-  const shift = tail * n * (sp + g) + pan;
-  set(strip.style, "minWidth", (finder.clientWidth + shift) + "px");
-  set(strip.style, "transform", `translateX(${-shift}px)`);
-}
-
-/* Keep a row visible without letting it move the strip.
-
-   scrollIntoView() is the obvious call and the wrong one here: it scrolls
-   whichever ancestor brings the row into view, and now that a column can reach
-   past the viewport that ancestor is #stage. Measured at 390 px on a chain
-   seven deep: one keystroke moved it 28 px, and a walk in left it at 141 with
-   the first three columns dragged off the left edge — for good, because the
-   dial writes #finder and nothing writes #stage back. A row only ever needs
-   its own column to scroll, and that is vertical. The arithmetic below is
-   `block: "nearest"`: nothing if the row is already inside, otherwise the
-   shorter of the two edges — the same numbers scrollIntoView produced. */
-function revealRow(row) {
-  const body = row.parentElement; /* .col-body scrolls */
-  const r = row.getBoundingClientRect(), b = body.getBoundingClientRect();
-  if (r.top < b.top) body.scrollTop += r.top - b.top;
-  else if (r.bottom > b.bottom) body.scrollTop += r.bottom - b.bottom;
-}
-
-finder.addEventListener("scroll", applyScroll, { passive: true });
-addEventListener("resize", () => render());
-</script>
-<script>
-/* ═══════════════════════════════════════════════════════════════════════════
-   The trail: an elbow from each selected row into the next column's header.
-   The vertical run sits on the centre line of the gutter between the columns.
-   ═══════════════════════════════════════════════════════════════════════════ */
-function paintTrail() {
-  const fr = stage.getBoundingClientRect();
-  trail.setAttribute("viewBox", `0 0 ${fr.width} ${fr.height}`);
-  trail.style.width = fr.width + "px";
-  trail.style.height = fr.height + "px";
-  let out = "";
-
-  /* a column past the crossfade midpoint anchors on its spine icon, not its rows */
-  const asSpine = (el) =>
-    el.classList.contains("spine") || +(el.dataset.fold || 0) > 0.5;
-
-  const cols = [...strip.querySelectorAll(".col")];
-  cols.forEach((col, i) => {
-    const next = cols[i + 1] || document.getElementById("preview");
-    if (!next) return;
-    const cr = col.getBoundingClientRect(), nr = next.getBoundingClientRect();
-
-    /* start: right edge of the selected pill, or the spine's icon when folded */
-    let x1, y1;
-    if (asSpine(col)) {
-      const dot = col.querySelector(".dot").getBoundingClientRect();
-      x1 = cr.right - fr.left;
-      y1 = dot.top + dot.height / 2 - fr.top;
-    } else {
-      const selRow = col.querySelector(".row.sel");
-      if (!selRow) return;
-      const rr = selRow.getBoundingClientRect();
-      const br = col.querySelector(".col-body").getBoundingClientRect();
-      const cy = rr.top + rr.height / 2;
-      if (cy < br.top + 2 || cy > br.bottom - 2) {
-        return; /* scrolled out of view */
-      }
-      x1 = rr.right - fr.left;
-      y1 = cy - fr.top;
-    }
-    if (x1 < 0) {
-      return; /* origin has slid off the left edge — no dangling hook */
-    }
-
-    /* end: the next column's header — or its spine icon when that one is folded */
-    const anchor = asSpine(next)
-      ? next.querySelector(".dot")
-      : next.querySelector(".col-head");
-    const ar = anchor && anchor.getBoundingClientRect();
-    const x2 = nr.left - fr.left;
-    const y2 = ar ? ar.top + ar.height / 2 - fr.top : nr.top + 15 - fr.top;
-
-    /* the vertical run bisects the gutter, not the pill-to-column span */
-    const mx = (cr.right + nr.left) / 2 - fr.left;
-    const r = Math.min(
-      6,
-      Math.abs(y2 - y1) / 2,
-      Math.abs(mx - x1),
-      Math.abs(x2 - mx),
-    );
-    const s = Math.sign(y2 - y1) || 1;
-    const dp = Math.abs(y2 - y1) < 1
-      ? `M${x1},${y1} L${x2},${y2}`
-      : `M${x1},${y1} L${mx - r},${y1} Q${mx},${y1} ${mx},${y1 + s * r}` +
-        ` L${mx},${y2 - s * r} Q${mx},${y2} ${mx + r},${y2} L${x2},${y2}`;
-
-    out += `<path class="${
-      +col.dataset.i === focusCol ? "" : "thread"
-    }" d="${dp}"/>`;
-  });
-  trail.innerHTML = out;
-}
-</script>
-<script>
-/* ═══════════════════════════════════════════════════════════════════════════
-   Type-ahead
-
-   Typing letters jumps to a row in the focused column. In a folder of 400
-   entries that is three keystrokes instead of 200 presses of ↓.
-
-   Three rungs, tried in order over the whole column, first hit wins:
-
-     1. prefix     "re" → readme.md
-     2. substring  "notes" → beta-notes.md, when nothing *starts* with "notes"
-     3. fuzzy      "arp" → Alpha Report.txt, the letters in order, gaps allowed
-
-   The rung that matched also decides what gets marked, so the highlight is the
-   explanation: a solid run for rungs 1 and 2, scattered characters for rung 3.
-
-   Nothing here knows where the entries came from, so it is shared with the
-   server build — a column is a list of names either way.
+   State
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* How long the buffer survives a pause. 1.2 s is long enough to type "adme"
-   after "re" without hurrying, short enough that a search you walked away from
-   is gone before you touch the keyboard again. */
-const TA_IDLE = 1200;
+const root = document.documentElement;
+const finder = document.getElementById("finder");
+const rail = document.getElementById("rail");
+const stage = document.getElementById("stage");
+const strip = document.getElementById("strip");
+const trail = document.getElementById("trail");
+const welcome = document.getElementById("welcome");
 
-let taBuf = ""; /* what has been typed since the last pause */
-let taTimer = null;
-let taRow = null; /* the row wearing <mark> right now, so it can be undone */
-let taName = ""; /* its plain name, to rebuild the label from */
-
-const taLive = () => taBuf !== "";
-
-/* A letter with Ctrl, ⌘ or Alt held belongs to the browser or to a command —
-   ⌘C copies the path, ⌘R reloads. Swallowing those into a search is the kind
-   of bug you notice only when reload stops working. Shift does not disqualify:
-   capital letters are part of file names. Backspace counts only while a search
-   is live, so it stays free for anything else to claim later. */
-const taWants = (e) =>
-  !e.ctrlKey && !e.metaKey && !e.altKey &&
-  (e.key.length === 1 || (e.key === "Backspace" && taLive()));
-
-/* All of `q` in `n`, in order, gaps allowed. No allocation: this runs once per
-   entry per keystroke, and a column can hold thousands. */
-const taFuzzy = (n, q) => {
-  let qi = 0;
-  for (let i = 0; i < n.length && qi < q.length; i++) if (n[i] === q[qi]) qi++;
-  return qi === q.length;
+let path = []; // node chain, [0] = root
+let sel = []; // per-column selected name
+let focusCol = 0;
+let widths = []; // natural width per column
+let folded = 0; // columns currently folded
+let pvToken = 0; // guards async preview fills
+let pvFullscreen = false;
+/* Module bindings are read-only for importers, so the files that used to
+   assign these directly go through here. */
+function setState(patch) {
+  if ("path" in patch) path = patch.path;
+  if ("sel" in patch) sel = patch.sel;
+  if ("focusCol" in patch) focusCol = patch.focusCol;
+  if ("widths" in patch) widths = patch.widths;
+  if ("folded" in patch) folded = patch.folded;
+  if ("pvFullscreen" in patch) pvFullscreen = patch.pvFullscreen;
+}
+const nextPvToken = () => ++pvToken;
+const state = {
+  dotfiles: root.dataset.hidden === "show",
+  sort: { key: "name", desc: false },
 };
 
-/* Row index of the winner, or -1. Three passes, each stopping at its own first
-   hit — a prefix match on row 2 never looks at rows 3…3000. A prefix match on
-   row 2 800 still beats a substring match on row 3, which is the point of
-   separate passes rather than one scan that scores. */
-function taSearch(lower, q) {
-  let i = lower.findIndex((n) => n.startsWith(q));
-  if (i < 0) i = lower.findIndex((n) => n.includes(q));
-  if (i < 0) i = lower.findIndex((n) => taFuzzy(n, q));
-  return i;
-}
+const GUTTER = () =>
+  parseInt(getComputedStyle(root).getPropertyValue("--gutter"));
+const SPINE = () =>
+  parseInt(getComputedStyle(root).getPropertyValue("--spine-w"));
 
-/* Which characters of `lower` the query landed on: a contiguous run for prefix
-   and substring, scattered ones for fuzzy. Runs once, on the winner only. */
-function taHits(lower, q) {
-  const hit = new Array(lower.length).fill(false);
-  const at = lower.indexOf(q);
-  if (at >= 0) {
-    for (let k = 0; k < q.length; k++) hit[at + k] = true;
-    return hit;
+const COL_MIN = 148; // Keep columns wide enough for readable rows and controls.
+const COL_MAX = 380; // Fit long page titles while folding columns outside focus.
+const BYTE_BASE = 1024; // File sizes use binary units.
+const KB_DECIMAL_LIMIT = 10; // Small KB values keep one decimal place.
+const KB_DECIMAL_DIGITS = 1; // One decimal keeps small sizes readable.
+const KB_DIGITS = 0; // Larger KB values do not need fractional precision.
+const MB_DECIMAL_DIGITS = 1; // MB values retain one decimal for useful precision.
+const GB_DECIMAL_DIGITS = 2; // GB values retain two decimals for useful precision.
+const DATE_PART_DIGITS = "2-digit"; // Clock fields align consistently in the metadata line.
+const CODE_COLUMNS = 88; // Preview text targets an 88-character reading width.
+const CODE_HORIZONTAL_PADDING = 82; // Preview padding is 30px plus 52px.
+const PREVIEW_MAX_WIDTH = 760; // Keep the preview from becoming too wide to read.
+const PREVIEW_MIN_RATIO = 0.45; // Preserve nearly half the stage for preview content.
+const EMPTY_PREVIEW_WIDTH = 300; // Keep the empty preview stable before a file is selected.
+const HEADER_HORIZONTAL_PADDING = 34; // Reserve space for the column heading chrome.
+const COLUMN_HORIZONTAL_PADDING = 58; // Reserve space for row padding and scrollbar.
+const CODE_FONT_SIZE = 11.5; // Match the compact monospace preview typography.
+
+/* One filtered copy per call, ordered by core/sort.js. Every column build, every
+   width measurement and every path walk comes through here, which is what keeps
+   the rows and a restored chain agreeing on what row 4 is. */
+const visibleKids = (node) =>
+  ((kids) => node.ordered ? kids : sortKids(kids))(
+    (node.kids || []).filter((k) => state.dotfiles || !k.name.startsWith(".")),
+  );
+
+const rowIndex = (node, name) =>
+  visibleKids(node).findIndex((k) => k.name === name);
+
+const fmtSize = (b) =>
+  b < BYTE_BASE ? `${b} B` : b < BYTE_BASE ** 2
+    ? `${
+      (b / BYTE_BASE).toFixed(
+        b < BYTE_BASE * KB_DECIMAL_LIMIT ? KB_DECIMAL_DIGITS : KB_DIGITS,
+      )
+    } KB`
+    : b < BYTE_BASE ** 3
+    ? `${(b / BYTE_BASE ** 2).toFixed(MB_DECIMAL_DIGITS)} MB`
+    : `${(b / BYTE_BASE ** 3).toFixed(GB_DECIMAL_DIGITS)} GB`;
+
+const fmtDate = (ms) =>
+  new Date(ms).toLocaleString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: DATE_PART_DIGITS,
+    minute: DATE_PART_DIGITS,
+  });
+
+const splitName = (name) => {
+  const i = name.lastIndexOf(".");
+  return (i > 0) ? [name.slice(0, i), name.slice(i)] : [name, ""];
+};
+
+const previewNode = () => {
+  const last = path[path.length - 1], s = sel[path.length - 1];
+  const n = s && (last.kids || []).find((k) => k.name === s);
+  return (n && !n.dir) ? n : null;
+};
+
+const selectedNode = () => {
+  const last = path[path.length - 1], s = sel[path.length - 1];
+  return s && (last.kids || []).find((k) => k.name === s) || null;
+};
+
+/* 88 columns of .pv-text plus its and .pv-body's horizontal padding (30 + 52),
+   measured from the real monospace font so it agrees with the CSS min-width */
+const codeMin = () =>
+  codeMin._w ||= (() => {
+    const c = document.createElement("canvas").getContext("2d");
+    const cs = getComputedStyle(root);
+    c.font = `${CODE_FONT_SIZE}px ${cs.getPropertyValue("--mono")}`;
+    return Math.ceil(c.measureText("0").width * CODE_COLUMNS) +
+      CODE_HORIZONTAL_PADDING;
+  })();
+
+/* target reading width for the preview — the thing scrolling tries to protect.
+   Never wider than the stage itself: a phone cannot show 88 columns, and a
+   pane that runs past the right edge is clipped, not scrollable — so there
+   the pane fits and .pv-body pans over the code instead. */
+const previewTarget = () =>
+  previewNode()
+    ? Math.min(
+      PREVIEW_MAX_WIDTH,
+      stage.clientWidth,
+      Math.max(codeMin(), Math.round(stage.clientWidth * PREVIEW_MIN_RATIO)),
+    )
+    : EMPTY_PREVIEW_WIDTH;
+
+function measure(node) {
+  /* content-driven width, clamped — no manual resizing, no wasted space */
+  const c = (measure._c ||= document.createElement("canvas").getContext("2d"));
+  const cs = getComputedStyle(root);
+  c.font = `${cs.getPropertyValue("--fs-row").trim()} ${
+    cs.getPropertyValue("--font")
+  }`;
+  let w = 0;
+  for (const k of visibleKids(node)) {
+    w = Math.max(w, c.measureText(k.name).width);
   }
-  let qi = 0;
-  for (let i = 0; i < lower.length && qi < q.length; i++) {
-    if (lower[i] === q[qi]) {
-      hit[i] = true;
-      qi++;
-    }
-  }
-  return qi === q.length ? hit : null;
-}
-
-/* Consecutive hits become one <mark>, so "notes" is a single pill and a fuzzy
-   match is a row of beads. */
-const taRuns = (text, hit, off) => {
-  let out = "", open = false;
-  for (let i = 0; i < text.length; i++) {
-    const on = !!hit[off + i];
-    if (on !== open) {
-      out += on ? "<mark>" : "</mark>";
-      open = on;
-    }
-    out += esc(text[i]);
-  }
-  return out + (open ? "</mark>" : "");
-};
-
-/* The same structure buildCol writes, so un-marking restores it exactly. */
-const taLabel = (name, hit) => {
-  const [stem, ext] = splitName(name);
-  return hit
-    ? taRuns(stem, hit, 0) +
-      `<span class="dim">${taRuns(ext, hit, stem.length)}</span>`
-    : `${esc(stem)}<span class="dim">${esc(ext)}</span>`;
-};
-
-const taSay = (msg) => {
-  document.getElementById("st-find").textContent = msg;
-};
-
-function taUnmark() {
-  if (taRow) taRow.querySelector(".label").innerHTML = taLabel(taName, null);
-  taRow = null;
-}
-
-/* Only two rows are ever rewritten per keystroke: the one that was marked and
-   the one that now is. Marking every matching row would be an innerHTML write
-   per entry, which is the O(entries)-per-keystroke cost this app spent a lot of
-   effort deleting (740 ms → 4–9 ms at 3 000 entries). */
-function taMark(row, name, hit) {
-  taUnmark();
-  if (!hit) return;
-  row.querySelector(".label").innerHTML = taLabel(name, hit);
-  taRow = row;
-  taName = name;
-}
-
-function taCancel() {
-  clearTimeout(taTimer);
-  taTimer = null;
-  if (!taLive()) return;
-  taBuf = "";
-  taUnmark();
-  taSay("");
-}
-
-/* One keystroke. `c` is the focused column's cache entry, which nav.js has
-   already looked up — never re-query the rows, a directory can hold tens of
-   thousands of them. */
-function taType(key, c) {
-  taBuf = key === "Backspace" ? taBuf.slice(0, -1) : taBuf + key;
-  clearTimeout(taTimer);
-  if (!taLive()) return void taSay("");
-  taTimer = setTimeout(taCancel, TA_IDLE);
-
-  /* The match runs on the rows the column already holds. A directory still
-     being read has none, so nothing matches and the buffer waits — there is no
-     re-run when the read lands, because by then you have typed more anyway. */
-  if (!c.rows.length) return void taSay(`⌕ ${taBuf} — still reading`);
-
-  /* Lower-cased names, cached beside the rows they were built from, so the two
-     die together. Lower-casing 3 000 names costs ~1.4 ms; paying it once per
-     column instead of once per keystroke is what keeps a search inside the
-     budget the arrow keys set. */
-  const lower = (c.lower ||= c.kids.map((k) => k.name.toLowerCase()));
-  const q = taBuf.toLowerCase();
-  const i = taSearch(lower, q);
-  taSay(i < 0 ? `⌕ ${taBuf} — no match` : `⌕ ${taBuf}`);
-  if (i < 0) return; /* keep the buffer: Backspace should undo the typo */
-
-  const name = c.kids[i].name;
-  taUnmark(); /* before the click, so the row it re-selects is clean */
-  c.rows[i].click(); /* the ordinary selection path: preview, trail, URL */
-  revealRow(c.rows[i]);
-  /* toLowerCase can change a string's length ("İ" → two characters), and then
-     the hit positions no longer index the original name. Skip the marks rather
-     than paint them one character off. */
-  taMark(
-    c.rows[i],
-    name,
-    lower[i].length === name.length ? taHits(lower[i], q) : null,
+  c.font = `600 ${cs.getPropertyValue("--fs-head").trim()} ${
+    cs.getPropertyValue("--font")
+  }`;
+  w = Math.max(w, c.measureText(node.name).width + HEADER_HORIZONTAL_PADDING);
+  return Math.min(
+    COL_MAX,
+    Math.max(COL_MIN, Math.ceil(w) + COLUMN_HORIZONTAL_PADDING),
   );
 }
 
-/* A real click means you went somewhere by hand, so the search is over. The
-   click taType fires is untrusted, which is exactly the distinction needed —
-   no flag to set and unset around it. */
-document.addEventListener("click", (e) => {
-  if (e.isTrusted) taCancel();
-});
-</script>
-<script>
-/* ═══════════════════════════════════════════════════════════════════════════
-   Navigation
-
-   Focus follows the *selection*, not the newly opened column: selecting a
-   directory opens its column as a preview but keeps you where you are, so ↑/↓
-   keep walking the current column. → is what moves you in, ← what moves out.
-   ═══════════════════════════════════════════════════════════════════════════ */
-/* How long a column may stay unopened while its directory is read. Long enough
-   that a local read of any ordinary size lands first, short enough to pass for
-   an instant response. */
-const OPEN_GRACE = 50;
-
-let navSeq = 0; /* a read that outlives its selection must not repaint */
-
-/* When a folder opens with nothing chosen inside it, dash-select its README
-   (exact name first, then README.*, then index.html) so the preview shows it.
-   Focus stays where it is — this is a preview, not a navigation. */
-function autoPreview(node) {
-  const i = path.length - 1;
-  if (path[i] !== node || sel[i] !== undefined) return;
-  const files = visibleKids(node).filter((k) => !k.dir);
-  const pick = files.find((k) => k.name === "README") ||
-    files.find((k) => k.name.startsWith("README.")) ||
-    files.find((k) => k.name === "index.html");
-  if (pick) sel[i] = pick.name;
-}
-
-async function choose(colIdx, node) {
-  const seq = ++navSeq;
-  path = path.slice(0, colIdx + 1);
-  sel = sel.slice(0, colIdx);
-  sel[colIdx] = node.name;
-  focusCol = colIdx;
-  if (!node.dir) return void render();
-
-  const reading = node.kids === null ? FS.ensureLoaded(node) : null;
-  if (reading) {
-    /* Highlight the row at once, but hold its column back for a moment: a
-       column measures the names it holds, and one built before the read lands
-       measures empty — it would open at the minimum width and jump wider a
-       frame later. Most directories arrive well inside the grace; a slower one
-       opens on the spinner, which is honest about the wait. */
-    render();
-    await Promise.race([
-      reading,
-      new Promise((r) => setTimeout(r, OPEN_GRACE)),
-    ]);
-    if (seq !== navSeq) return; /* selection moved on while it was read */
-    if (!node.dir) {
-      return void render(); /* a virtual wrapper declined the file */
-    }
-  }
-  path.push(node);
-  autoPreview(node); /* kids already in memory (revisit, fast read) */
-  render();
-  if (reading) {
-    await reading;
-    if (seq !== navSeq || !path.includes(node)) return; /* still up? repaint */
-    autoPreview(node); /* kids landed after the grace period */
-    render();
-  }
-}
-
-/* ── Refresh ────────────────────────────────────────────────────────────────
-   Neither port can tell the app that a directory changed. The File System
-   Access API has no watch call at all, and the server one would need a socket
-   the static build cannot open. So a folder read once stays as it was read
-   until somebody asks again, and asking has to be a thing the user does.
-
-   Refreshing is *not* a second way to load a directory. It empties node.kids
-   and calls the same FS.ensureLoaded every other caller uses — one loading
-   path, one debounce, one place where node.kids is written. A separate
-   "reload" call would be two writers on one field, and the interleaving that
-   loses is the one you never reproduce.
-
-   Which columns it touches, and what survives:
-
-     the focused column          re-read from the port
-     columns open below it       re-read too — they are on screen, and a fresh
-                                 column beside three stale ones is worse than
-                                 the extra reads. Closed subtrees are untouched
-     the selection at each level matched again by name: a re-read hands back
-                                 new node objects, so the chain is re-walked
-                                 rather than kept by identity
-     a selected name that is gone the walk stops there, and nothing is selected —
-                                 ↓ resumes at the top of the remaining rows, and
-                                 the app never shows a selection that is not real
-     columns below the stop      closed, because their parent no longer has the
-                                 entry that opened them
-     focus                       where it was, clamped to the new depth        */
-async function refreshColumn(i) {
-  const node = path[i];
-  if (!node || !node.dir || !FS) return;
-
-  const seq = ++navSeq; /* a click, a key or a second ⟳ overtakes */
-  const names = currentPath();
-  const keepFocus = focusCol;
-  /* the ⟳ spins on the column that is on screen now; the re-render replaces
-     that element, which is exactly when the spinning should stop */
-  const spinning = colCache.get(node)?.el;
-  spinning?.classList.add("busy");
-
-  try {
-    /* A read already in flight owns node.kids. Wait for it before invalidating:
-       ensureLoaded hands a concurrent caller the in-flight promise, so asking
-       now would return the very listing this refresh was called to replace,
-       and two reads would race to write the same field. */
-    if (node.loading) await node.loading;
-    if (seq !== navSeq) return;
-
-    const before = new Set(visibleKids(node).map((k) => k.name));
-    node.kids = null;
-    node.denied = undefined;
-    /* The entries are about to be different objects, so what was swept is about
-       to be about files that are no longer in this listing. A size sort re-reads
-       them; a name sort never asked. */
-    node.metaDone = false;
-    /* Nothing renders between here and the read landing. The column cache still
-       holds the previous DOM, so the screen keeps showing the old listing
-       instead of flashing back to "Reading…" and losing its scroll position. */
-    await FS.ensureLoaded(node);
-    if (seq !== navSeq) return;
-
-    const after = visibleKids(node);
-    const added = after.reduce((n, k) => n + !before.has(k.name), 0);
-    const gone = before.size - (after.length - added);
-
-    /* The same walk a deep link uses: down from the root by name, stopping at
-       the first segment that is not there. Three callers, one implementation —
-       refresh, a pasted link, and a restored folder cannot disagree about what
-       a half-valid chain means. */
-    const complete = await applyPath(names, keepFocus);
-    if (seq !== navSeq) return;
-
-    if (complete) {
-      saySt(
-        "st-refresh",
-        added || gone ? `⟳ ${added} new, ${gone} gone` : "⟳ no change",
-        true,
-      );
-      return;
-    }
-    const stop = path.length - 1; /* where the walk ran out */
-    const col = colCache.get(path[stop]);
-    render(true);
-    scrollCursorIntoView();
-    saySt("st-refresh", `⟳ ${names[stop]} is gone`, false);
-  } finally {
-    spinning?.classList.remove("busy");
-  }
-}
-
-/* clicking a spine scrolls back just far enough to unfold it */
-function unfoldTo(i) {
-  finder.scrollTo({
-    left: Math.round(i * foldUnit() * range()),
-    behavior: "smooth",
-  });
-}
-
-/* Where you are, from the root down to the selected row. The first element is a
-   folder *name*, not an absolute path: the File System Access API never hands
-   one out, so this is everything the app knows about the location. */
-function pathParts() {
-  const parts = path.map((p) => p.name);
-  const leaf = sel[path.length - 1];
-  if (leaf) parts.push(leaf);
-  return parts;
-}
-
-function renderCrumbs() {
-  const el = document.getElementById("crumbs");
-  el.textContent = "";
-  path.forEach((p, i) => {
-    if (i) {
-      el.insertAdjacentHTML("beforeend", `<span class="crumb-sep">›</span>`);
-    }
-    const b = document.createElement("span");
-    b.className = "crumb" + (i === path.length - 1 ? " here" : "");
-    b.textContent = p.name;
-    b.onclick = () => {
-      path = path.slice(0, i + 1);
-      sel = sel.slice(0, i);
-      focusCol = i;
-      render();
-    };
-    el.appendChild(b);
-  });
-  /* "/" rather than the " / " this strip used to show: clicking it copies the
-     string, and a fallback selection copies the characters on screen. The two
-     have to be the same string or the fallback quietly hands over a path that
-     no shell will take. */
-  document.getElementById("st-path").textContent = pathParts().join("/");
-}
-
-/* ── Copy path ──────────────────────────────────────────────────────────────
-   The status strip already shows where you are; ⌘C, or a click on it, puts that
-   path on the clipboard.
-
-   navigator.clipboard.writeText can be refused: a browser policy, a page the
-   user has not touched yet, an insecure context with no clipboard object at
-   all. A silent refusal is the worst outcome, because the next paste hands over
-   whatever was on the clipboard before and nothing says so. So a refusal says
-   so and selects the path, which leaves the browser's own ⌘C one keystroke
-   away — the fallback needs no permission because the user presses it. */
-/* One transient line in the status strip, per slot, cleared on a timer. A
-   success can flash; a refusal or a loss stays long enough to be read and acted
-   on, because it is asking the user to do something about it. */
-function saySt(id, msg, ok) {
-  const el = document.getElementById(id);
-  el.textContent = msg;
-  el.classList.toggle("bad", !ok);
-  clearTimeout((saySt.t ||= {})[id]);
-  saySt.t[id] = setTimeout(() => {
-    el.textContent = "";
-    el.classList.remove("bad");
-  }, ok ? 1600 : 8000);
-}
-
-const sayCopy = (msg, ok) => saySt("st-copy", msg, ok);
-
-function selectPath() {
-  const r = document.createRange();
-  r.selectNodeContents(document.getElementById("st-path"));
-  const s = getSelection();
-  s.removeAllRanges();
-  s.addRange(r);
-}
-
-async function copyPath() {
-  const text = document.getElementById("st-path").textContent;
-  if (!text) return;
-  try {
-    await navigator.clipboard.writeText(text);
-    sayCopy("copied", true);
-  } catch (err) {
-    selectPath();
-    sayCopy(
-      `clipboard refused (${err.name || "error"}) — press ${COPY_KEY} again`,
-      false,
-    );
-  }
-}
-
-const MAC = /Mac|iP(hone|ad)/.test(
-  navigator.userAgentData?.platform || navigator.platform || "",
-);
-const COPY_KEY = MAC ? "⌘C" : "Ctrl+C";
-document.getElementById("kbd-copy").textContent = COPY_KEY;
-document.getElementById("st-path").onclick = copyPath;
-
-/* Entering a column: the row it was left on, else the one it remembers, else
-   the first. The column may still be reading, so this can run twice. */
-function enterColumn(i) {
-  const c = colCache.get(path[i]);
-  if (!c || !c.rows.length) return;
-  const remembered = sel[i];
-  let ri = rowIndex(path[i], remembered);
-  ri = Math.max(0, Math.min(c.rows.length - 1, ri < 0 ? 0 : ri));
-  c.rows[ri].click();
-  revealRow(c.rows[ri]);
-}
-
-/* Stepping right into a column that has no rows would move focus with nothing
-   to highlight — the screen would not change, yet ↑/↓ would go dead. Stay put.
-   columnFor rebuilds the column if it finished reading since the last render. */
-function stepInto(node) {
-  const i = path.indexOf(node);
-  if (i < 0) return; /* moved on while it was still reading */
-  if (!columnFor(node).rows.length) return;
-  focusCol = i;
-  enterColumn(i);
-}
-
-function pageMove(c, dir, ci) {
-  const body = c.rows[0]?.parentElement;
-  if (!body || !c.rows.length) return;
-  const edge = () => {
-    const b = body.getBoundingClientRect();
-    const visible = c.rows.filter((row) => {
-      const r = row.getBoundingClientRect();
-      return r.bottom > b.top && r.top < b.bottom;
-    });
-    return dir < 0 ? visible[0] : visible.at(-1);
-  };
-  let row = edge();
-  if (!row) return;
-  if (c.rows[ci] === row) {
-    const h = row.offsetHeight;
-    const lines = h ? Math.max(1, Math.floor(body.clientHeight / h)) : 1;
-    body.scrollTop += dir * lines * h;
-    row = edge();
-  }
-  row?.click();
-  if (row) revealRow(row);
-}
-
-document.addEventListener("keydown", (e) => {
-  /* a keystroke inside a form field (the preview editor) is typing, not
-     navigation — leave it alone */
-  if (
-    e.target.matches?.("input, textarea, select") || e.target.isContentEditable
-  ) {
-    return;
-  }
-  if (!welcome.hidden) return;
-  if (e.target.closest?.("#preview")) {
-    if (["ArrowUp", "ArrowDown", "PageUp", "PageDown"].includes(e.key)) {
-      const body = document.querySelector("#preview .pv-body");
-      e.preventDefault();
-      body?.scrollBy({
-        top: e.key === "ArrowUp"
-          ? -40
-          : e.key === "ArrowDown"
-          ? 40
-          : (e.key === "PageUp" ? -1 : 1) * body.clientHeight,
-      });
-    }
-    return;
-  }
-  /* the cached column knows its rows — never re-query them, a directory can
-     hold tens of thousands and this runs on every keystroke */
-  const c = colCache.get(path[focusCol]);
-  if (!c) return;
-  const rows = c.rows;
-  let ci = rowIndex(path[focusCol], sel[focusCol]);
-  if (ci < 0) ci = 0;
-
-  /* ⌘C / Ctrl+C. A live text selection wins: the user highlighted something and
-     asked for *that*, and after a refused copy the selected path is exactly
-     what the second press has to reach. */
-  if (e.key === "c" && (e.metaKey || e.ctrlKey) && !getSelection().toString()) {
-    e.preventDefault();
-    return void copyPath();
-  }
-  /* Letters go to the search unless an arrow, Home/End or Escape claimed the
-     keystroke first — those four are the navigation model and type-ahead does
-     not get to argue with them. Each of them also ends a live search. */
-  if (taWants(e)) {
-    e.preventDefault();
-    return void taType(e.key, c);
-  }
-  if (e.key !== "Escape") taCancel();
-
-  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-    e.preventDefault();
-    if (!rows.length) return;
-    /* a freshly entered column has no selection yet — the first
-       press should commit that row, not skip past it */
-    if (sel[focusCol] !== undefined) {
-      ci = Math.max(
-        0,
-        Math.min(rows.length - 1, ci + (e.key === "ArrowDown" ? 1 : -1)),
-      );
-    }
-    rows[ci].click();
-    revealRow(rows[ci]);
-  } else if (e.key === "Home" || e.key === "End") {
-    e.preventDefault();
-    if (!rows.length) return;
-    const ri = e.key === "Home" ? 0 : rows.length - 1;
-    rows[ri].click();
-    revealRow(rows[ri]);
-  } else if (e.key === "PageUp" || e.key === "PageDown") {
-    e.preventDefault();
-    pageMove(c, e.key === "PageUp" ? -1 : 1, ci);
-  } else if (e.key === "ArrowRight" || e.key === "Enter") {
-    e.preventDefault();
-    const next = path[focusCol + 1];
-    /* nothing open to the right: commit the row, which opens it when it
-       is a directory — a second → then steps into that column */
-    if (!next) {
-      const row = rows[ci];
-      row?.click();
-      if (e.key === "ArrowRight" && c.kids[ci] && !c.kids[ci].dir) {
-        document.getElementById("preview")?.focus();
-      }
-      return;
-    }
-    if (next.kids === null) {
-      FS.ensureLoaded(next).then(() => {
-        render();
-        stepInto(next);
-      });
-    } else stepInto(next);
-  } else if (e.key === "ArrowLeft") {
-    e.preventDefault();
-    if (focusCol > 0) {
-      focusCol--;
-      unfoldTo(focusCol);
-      render(true);
-    }
-  } else if (e.key === "F5" && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
-    /* Every desktop file manager reads F5 as "re-read this folder", and here a
-       page reload is a far worse trade: it drops the mounted root, the whole
-       column chain and the scroll position, then asks the browser for the
-       folder again. ⌘R, Ctrl+R and Ctrl+F5 are left alone, so a real reload is
-       still one keystroke away — the same rule type-ahead follows for ⌘R. */
-    e.preventDefault();
-    refreshColumn(focusCol);
-  } else if (e.key === "Escape") {
-    /* one Escape does one thing: abandon the search if there is one, otherwise
-       close the popover. Both at once would make it impossible to tell which
-       one the key just did. */
-    if (taLive()) taCancel();
-    else closeSettings();
-  }
-});
-</script>
-<script>
-/* ═══════════════════════════════════════════════════════════════════════════
-   Deep links — turning the selection into a path and back.
-
-   Shared verbatim between the static build and the server build; only the
-   ROUTER differs (a hash in one, a real URL path in the other). Everything
-   here speaks in *names below the root*:
-
-       path = [workspace, src, core]      →   ["src", "core", "state.js"]
-       sel  = ["src", "core", "state.js"]
-
-   The last segment is the selection in the deepest open column, which is the
-   thing the address bar should name — a file when a file is selected, and the
-   directory itself when one is open with nothing chosen inside it.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* render() runs on resize and on every keystroke, so writing the URL from it is
-   only safe if an unchanged location is left alone — otherwise Back fills up
-   with duplicates. applying is the re-entrancy guard: a URL being *read* must
-   not be immediately re-written from the half-built state it produces. */
-let applying = false;
-
-function currentPath() {
-  const names = path.slice(1).map((p) => p.name);
-  const leaf = sel[path.length - 1];
-  if (leaf !== undefined) names.push(leaf);
-  return names;
-}
-
-/* Walking a column with ↑/↓ is one selection change per keystroke — pushing a
-   history entry for each would make Back useless. What counts as a navigation
-   is *entering* a column, not opening one: selecting a folder opens its column
-   without moving focus (that is the whole focus model), and ↑/↓ down a list of
-   folders would otherwise push an entry per row. So the history key is the
-   chain up to the focused column, and everything else rewrites in place.
-   Back then steps back out of folders, which is what it looks like it does. */
-let lastKey = null;
-
-function syncURL() {
-  if (applying || !ROUTER || !path.length) return;
-  const key = path.slice(0, focusCol + 1).map((p) => p.name).join("/");
-  const names = currentPath();
-  const node = previewNode();
-  const view = node && !node.dir
-    ? document.documentElement.dataset.filemill === "highlight"
-      ? "highlight"
-      : "render"
-    : undefined;
-  ROUTER.write({ root: path[0].name, path: names, view }, lastKey === key);
-  lastKey = key;
-}
-
-/* Walk down from the root, opening each directory in turn. Stops at the first
-   segment that is not there — a link into a folder that has since been renamed
-   still gets you as far as it can rather than showing nothing. Returns whether
-   every segment was found, which is how a caller learns the chain was cut.
-
-   `wantFocus` is for the callers that already know where the user was looking:
-   a refresh must not move focus to the deepest column just because it re-walked
-   the chain to get there. A link has no such opinion and omits it. */
-async function applyPath(names, wantFocus) {
-  if (!path.length) return false;
-  names = (names || []).filter(Boolean);
-
-  /* a link to a dotfile has to reveal dotfiles, or visibleKids would hide the
-     very thing the URL asked for */
-  if (!state.dotfiles && names.some((n) => n.startsWith("."))) {
-    state.dotfiles = true;
-    const b = document.getElementById("s-dot");
-    if (b) b.setAttribute("aria-checked", "true");
-  }
-
-  applying = true;
-  try {
-    const rootNode = path[0];
-    path = [rootNode];
-    sel = [];
-    focusCol = 0;
-    await FS.ensureLoaded(rootNode);
-    let complete = true;
-
-    for (let i = 0; i < names.length; i++) {
-      const parent = path[i];
-      const kids = visibleKids(parent);
-      const ri = kids.findIndex((k) => k.name === names[i]);
-      if (ri < 0) {
-        complete = false;
-        break;
-      }
-
-      const node = kids[ri];
-      sel[i] = node.name;
-      focusCol = i; /* focus stays on the column holding it */
-      if (!node.dir) break;
-      await FS.ensureLoaded(node);
-      path.push(node);
-    }
-    return complete;
-  } finally {
-    applying = false;
-    /* clamped: the chain may have come back shorter than the column that had
-       focus, and focusing a column that is no longer open kills ↑/↓ */
-    if (wantFocus != null) {
-      focusCol = Math.max(0, Math.min(wantFocus, path.length - 1));
-    }
-    render();
-    scrollCursorIntoView();
-  }
-}
-
-/* A restored selection can be thousands of rows down a column; the row exists
-   but nothing has ever scrolled to it. */
-function scrollCursorIntoView() {
-  for (let i = 0; i < path.length; i++) {
-    const c = colCache.get(path[i]);
-    const ri = rowIndex(path[i], sel[i]);
-    if (c && ri != null && c.rows[ri]) revealRow(c.rows[ri]);
-  }
-}
-
-/* Wire Back/Forward once a root is mounted — and only once, however many roots
-   are opened after it, or one Back would replay through every listener. */
-let routing = false;
-
-function startRouting() {
-  if (routing || !ROUTER) return;
-  routing = true;
-  ROUTER.onNavigate((loc) => {
-    /* Only the path is honoured: a Back that lands on a different root cannot
-       remount it without a user gesture, so it would silently walk the wrong
-       tree. Leaving the columns where they are is the honest outcome. */
-    if (loc && (!loc.root || loc.root === path[0]?.name)) applyPath(loc.path);
-  });
-}
-</script>
-<script>
-/* ═══════════════════════════════════════════════════════════════════════════
-   Settings popover
-   ═══════════════════════════════════════════════════════════════════════════ */
-const gear = document.getElementById("gear"),
-  panel = document.getElementById("settings");
-const closeSettings = () => {
-  panel.hidden = true;
-  gear.setAttribute("aria-expanded", "false");
-};
-gear.onclick = (e) => {
-  e.stopPropagation();
-  panel.hidden = !panel.hidden;
-  gear.setAttribute("aria-expanded", String(!panel.hidden));
-};
-document.addEventListener("click", (e) => {
-  if (!panel.contains(e.target)) closeSettings();
-});
-
-root.dataset.theme = matchMedia("(prefers-color-scheme: dark)").matches
-  ? "dark"
-  : "light";
-
-const toggle = (id, get, set) => {
-  const b = document.getElementById(id);
-  b.onclick = () => {
-    set(!get());
-    b.setAttribute("aria-checked", String(get()));
-    render(true);
-  };
-  b.setAttribute("aria-checked", String(get()));
-};
-toggle("s-dot", () => state.dotfiles, (v) => state.dotfiles = v);
-toggle(
-  "s-density",
-  () => root.dataset.density === "compact",
-  (v) => root.dataset.density = v ? "compact" : "comfortable",
-);
-toggle(
-  "s-theme",
-  () => root.dataset.theme === "dark",
-  (v) => root.dataset.theme = v ? "dark" : "light",
-);
-
-/* Radios rather than three toggles: one key is active, and a menu that lets you
-   uncheck every one of them has no answer for what the column is ordered by.
-   Direction is separate because it applies to whichever key is chosen — and
-   because flipping it re-sorts what is already in memory, with no second sweep.
-   setSort (core/sort.js) stores the choice and re-renders. */
-SORT_KEYS.forEach((k) => {
-  document.getElementById(`s-sort-${k}`).onclick = () =>
-    setSort(k, state.sort.desc);
-});
-document.getElementById("s-sort-desc").onclick = () =>
-  setSort(state.sort.key, !state.sort.desc);
-
-/* Only the builds that can actually fetch a renderer show the switch — on the
-   server build the previews come from Python and nothing is downloaded, so the
-   row would be a promise the page does not keep. preview-rich.js reveals it. */
-function offerRichToggle(get, set) {
-  document.getElementById("s-previews").hidden = false;
-  document.getElementById("s-rich").hidden = false;
-  document.getElementById("s-rich-hr").hidden = false;
-  toggle("s-rich", get, set);
-}
-</script>
-<script>
+/* ═══ core/jsonl.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    JSONL — a file of one JSON object per line, browsed as a column of rows.
 
@@ -4471,6 +4537,7 @@ function offerRichToggle(get, set) {
    (timestamp, id…), and falling back to the line number. Unique because the
    selection, the URL and applyPath all name a row by it.
    ═══════════════════════════════════════════════════════════════════════════ */
+
 const JSONL_MAX = 512 * 1024; /* the same ceiling as TEXT_MAX */
 const JSONL_LABEL = 60; /* as the server's MAX_LABEL_LEN */
 const JSONL_TEXT = ["title", "name", "description", "summary", "label"];
@@ -4733,8 +4800,8 @@ const withJsonPreview = (provider) => ({
     );
   },
 });
-</script>
-<script>
+
+/* ═══ adapters/vfs-csv.js ═══ */
 const CSV_MAX = 512 * 1024;
 
 function csvParse(text) {
@@ -4862,9 +4929,16 @@ const withCsvPreview = (provider) => ({
     );
   },
 });
-</script>
-<script>
+
+/* ═══ core/search.js ═══ */
 /* Server-only content search. The control stays hidden in local FSA mode. */
+
+/* The same attribute adapters/router-path.js reads; core must not import a
+   server-only adapter, or the static bundle would carry it too. */
+const SEARCH_BASE = (document.documentElement.dataset.base || "/").replace(
+  /\/*$/,
+  "/",
+);
 const searchForm = document.getElementById("search-form");
 const searchInput = document.getElementById("search-bar");
 const searchResults = document.getElementById("search-results");
@@ -4909,7 +4983,7 @@ async function runSearch() {
     );
     searchResults.querySelectorAll(".search-result").forEach((button) => {
       button.onclick = () => {
-        location.href = `${RouterPath.base}${
+        location.href = `${SEARCH_BASE}${
           button.dataset.path.split("/").map(encodeURIComponent).join("/")
         }`;
       };
@@ -4933,9 +5007,8 @@ if (searchForm && document.documentElement.dataset.root) {
 } else {
   searchForm?.remove();
 }
-</script>
 
-<script>
+/* ═══ adapters/fsa.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Filesystem adapter — File System Access API, read-only, one level at a time.
 
@@ -5019,8 +5092,8 @@ const FSA = {
     await node.handle.parent.removeEntry(node.name, { recursive: node.dir });
   },
 };
-</script>
-<script>
+
+/* ═══ adapters/preview-local.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Preview provider — in-browser, zero dependencies.
 
@@ -5039,6 +5112,7 @@ const FSA = {
    bigger version of this one: see preview-http.js for the server-rendered
    variant, and preview-rich.js for the downloaded one.
    ═══════════════════════════════════════════════════════════════════════════ */
+
 const IMG_RE = /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
 const TEXT_MAX = 512 * 1024;
 
@@ -5191,8 +5265,8 @@ const PreviewLocal = {
     return null;
   },
 };
-</script>
-<script>
+
+/* ═══ adapters/preview-rich.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Preview provider — rich rendering, fetched on demand.
 
@@ -5221,6 +5295,7 @@ const PreviewLocal = {
    Version pins are deliberate: "@latest" would mean a preview that renders
    differently next week, and a supply chain that can change under you.
    ═══════════════════════════════════════════════════════════════════════════ */
+
 const CDN = {
   "markdown-it": "https://esm.sh/markdown-it@14.1.0",
   "markdown-it-footnote": "https://esm.sh/markdown-it-footnote@4.0.0",
@@ -5484,8 +5559,8 @@ document.addEventListener("click", (e) => {
   e.preventDefault();
   openWikilink(a.dataset.wiki);
 });
-</script>
-<script>
+
+/* ═══ adapters/router-hash.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Router — the fragment, for the static build.
 
@@ -5504,6 +5579,7 @@ document.addEventListener("click", (e) => {
    directories on your disk. Folder *names* are what is matched, so two
    different folders with the same basename resolve to the more recent one.
    ═══════════════════════════════════════════════════════════════════════════ */
+
 const encSeg = (s) => encodeURIComponent(s).replace(/%2F/gi, "%2F");
 
 /* A file:// page has an opaque origin and pushState throws SecurityError on it.
@@ -5543,8 +5619,8 @@ const RouterHash = {
     addEventListener("hashchange", () => cb(RouterHash.read()));
   },
 };
-</script>
-<script>
+
+/* ═══ adapters/storage.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Remembering folders across sessions.
 
@@ -5563,6 +5639,7 @@ const RouterHash = {
    a read that has not happened yet when the page loads, and a name survives
    anything. It is the same list a deep link carries, so one walk restores both.
    ═══════════════════════════════════════════════════════════════════════════ */
+
 const RECENT_MAX = 8;
 
 /* Databases written before the chain existed hold a bare handle. Normalising on
@@ -5633,19 +5710,26 @@ async function recallView(handle) {
   }
   return null;
 }
-</script>
-<script>
+
+/* ═══ adapters/app-fsa.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Static build — boot, folder picker, welcome screen.
 
    The only file that knows this is the local-folder flavour of the app. It
-   picks the adapters (fsa + preview-local + router-hash, all loaded before
-   this) and owns the one entry point into the tree, mount().
+   picks the adapters (fsa + preview-rich + router-hash, imported below) and
+   owns the one entry point into the tree, mount(). ../entry-static.js is what
+   the page loads; this is the module it ends with.
    ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The load-time work sort.js, layout.js and settings.js did as classic scripts,
+   in the order they used to load. */
+initSort();
+initLayout();
+initSettings();
 
 /* Adapters define themselves; the app entry is what chooses. Selecting here
    rather than at the bottom of each adapter file means a page may load more
-   than one of them — which the server build does — without script order
+   than one of them — which the server build does — without import order
    silently deciding which wins. */
 useFilesystem(withCsv(withJson(withJsonl(FSA))));
 usePreview(withCsvPreview(withJsonPreview(withJsonlPreview(PreviewRich))));
@@ -5665,6 +5749,7 @@ useRouter({
    it — the URL names a folder, but a folder is not browsable until the browser
    has granted it. */
 let pendingLoc = null;
+const setPendingLoc = (loc) => pendingLoc = loc;
 
 /* ── Where the user was, per folder ─────────────────────────────────────────
    Saved against the mounted root and restored on the way back in. `mounted` is
@@ -5703,9 +5788,7 @@ document.addEventListener("visibilitychange", () => {
 async function mount(handle, loc) {
   const node = FS.node(handle.name, handle);
   colCache.clear();
-  path = [node];
-  sel = [];
-  focusCol = 0;
+  setState({ path: [node], sel: [], focusCol: 0 });
   mounted = null;
   keptAt = null;
   welcome.hidden = true;
@@ -5830,6 +5913,87 @@ document.getElementById("w-pick").onclick = pickFolder;
 })();
 
 document.fonts.ready.then(() => render(true));
+
+/* ═══ core/debug.js ═══ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Test surface.
+
+   The browser tests in static/ and server/tests/ reach app internals as page
+   globals — page.evaluate("sel"), "mount(__local())", "setSort(…)". Module
+   scope hides them, so each entry module republishes the names the tests read,
+   as live getters. Nothing in the app itself goes through here; the surface
+   goes away when the static tests move under pytest (TASKS.md [25]).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Each value is a getter, or a property descriptor when a test also assigns. */
+function expose(bindings) {
+  for (const [name, b] of Object.entries(bindings)) {
+    const desc = typeof b === "function" ? { get: b } : b;
+    Object.defineProperty(globalThis, name, { ...desc, configurable: true });
+  }
+}
+
+function exposeCore() {
+  expose({
+    sel: () => sel,
+    path: () => path,
+    focusCol: () => focusCol,
+    widths: () => widths,
+    folded: () => folded,
+    pvToken: () => pvToken,
+    state: () => state,
+    root: () => root,
+    finder: () => finder,
+    stage: () => stage,
+    strip: () => strip,
+    welcome: () => welcome,
+    gear: () => gear,
+    FS: () => FS,
+    PREVIEW: () => PREVIEW,
+    ROUTER: () => ROUTER,
+    render: () => render,
+    colCache: () => colCache,
+    refreshColumn: () => refreshColumn,
+    applyPath: () => applyPath,
+    setSort: () => setSort,
+    loadSort: () => loadSort,
+    ensureMeta: () => ensureMeta,
+    visibleKids: () => visibleKids,
+    previewTarget: () => previewTarget,
+    stripSpan: () => stripSpan,
+    foldUnit: () => foldUnit,
+    range: () => range,
+    taSearch: () => taSearch,
+    TA_IDLE: () => TA_IDLE,
+  });
+}
+
+/* ═══ entry-static.js ═══ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Static edition — the one module the page loads.
+
+   core/ is the shared UI and knows nothing about where its nodes come from;
+   adapters/ chooses. This file names the adapters of the local-folder flavour
+   and the app module that wires them (app-fsa.js), which is the only module
+   that runs anything at load time. entry-server.js is the counterpart.
+
+   Import order is evaluation order. state.js first: it pulls in shell.js (the
+   markup every other module queries) and, through the core cycle, the rest.
+   static/build-index.py walks this graph and inlines it in the same order.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+
+/* Test surface — see core/debug.js. */
+
+exposeCore();
+expose({
+  mount: () => mount,
+  FSA: () => FSA,
+  recallRoots: () => recallRoots,
+  recallView: () => recallView,
+  rememberRoot: () => rememberRoot,
+  pendingLoc: { get: () => pendingLoc, set: setPendingLoc },
+});
 </script>
 </body>
 </html>
