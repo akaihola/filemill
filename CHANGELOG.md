@@ -1,8 +1,8 @@
 # Changelog
 
-All notable changes to Filemill are recorded in this file.
+This file records all notable changes to Filemill.
 
-This file follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
