@@ -23,10 +23,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [18] Break the import cycles in `ui/core/`: `render.js` gets its callbacks as one
-  `actions` object at boot; `layout.js` gets `set` and `setVar` from a new `dom.js`.
-    - Depends on: [17]
-
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
   files. Current PPTX support was implemented in task
   38ab06e2-c607-4d4a-9978-67847e70d27d.
@@ -339,6 +335,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [18] Break the import cycles in `ui/core/`: `render.js` gets its callbacks as one
+  `actions` object at boot; `layout.js` gets `set` and `setVar` from a new `dom.js`.
+    - Depends on: [17]
 
 - [23] Write the narrow-screen layout model as an ADR: what folds, what pans, what stays
   on screen. Add one test each for phone portrait, phone landscape, tablet and desktop.
