@@ -9,9 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
-- [17] Convert `ui/core/` and `ui/adapters/` to ES modules with one entry module per
-  edition. Make `static/build-index.py` inline the module graph.
-
 - [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
   `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
 
@@ -343,6 +340,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [17] Convert `ui/core/` and `ui/adapters/` to ES modules with one entry module per
+  edition. Make `static/build-index.py` inline the module graph.
 
 - [16] Rewrite all remaining Markdown files in Simplified Technical English. Done when
   the Markdown line count is below the line count of `*.py`, `*.js` and `*.css`.
