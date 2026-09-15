@@ -21,9 +21,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
   and the `watchfiles` dependency. Delete their tests.
 
-- [23] Write the narrow-screen layout model as an ADR: what folds, what pans, what stays
-  on screen. Add one test each for phone portrait, phone landscape, tablet and desktop.
-
 ## Scheduled
 
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
@@ -340,6 +337,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [23] Write the narrow-screen layout model as an ADR: what folds, what pans, what stays
+  on screen. Add one test each for phone portrait, phone landscape, tablet and desktop.
 
 - [17] Convert `ui/core/` and `ui/adapters/` to ES modules with one entry module per
   edition. Make `static/build-index.py` inline the module graph.
