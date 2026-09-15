@@ -21,7 +21,7 @@ import {
   withJsonl,
   withJsonlPreview,
   withJsonPreview,
-} from "../core/jsonl.js";
+} from "./vfs-json.js";
 import {
   FS,
   ROUTER,
@@ -31,7 +31,11 @@ import {
 } from "../core/ports.js";
 import { colCache, render, setActions } from "../core/render.js";
 import { choose, refreshColumn, renderCrumbs, saySt, unfoldTo } from "../core/nav.js";
-import { focusCol, path, root, sel, setState, setSortKids, welcome } from "../core/state.js";
+import { focusCol, path, root, sel, setState, setSortKids } from "../core/state.js";
+
+document.getElementById("bar").insertAdjacentHTML("beforeend", `<button class="tb" id="open" title="Open a folder on this machine">Open Folder…</button>`);
+document.body.insertAdjacentHTML("beforeend", `<div id="welcome"><svg class="mark" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1-1-1z"/></svg><h1 id="w-title">Filemill</h1><p id="w-msg">Pick a folder on this machine to browse it in Miller columns. Nothing leaves the browser — the folder is read locally, on demand.</p><button class="btn" id="w-pick">Choose Folder…</button><div id="w-recent" hidden><div class="rec-head">Recently opened</div><div class="rec-list"></div></div><p class="note">Needs a Chromium-based desktop browser (File System Access API).</p></div>`);
+const welcome = document.getElementById("welcome");
 
 /* The load-time work sort.js, layout.js and settings.js did as classic scripts,
    in the order they used to load. */

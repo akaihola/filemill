@@ -31,8 +31,20 @@ import { esc } from "../core/icons.js";
 import { choose } from "../core/nav.js";
 import { FS } from "../core/ports.js";
 import { render } from "../core/render.js";
-import { offerRichToggle } from "../core/settings.js";
 import { path, splitName, state, visibleKids } from "../core/state.js";
+
+const offerRichToggle = (get, set) => {
+  document.getElementById("s-previews").hidden = false;
+  document.getElementById("s-rich").hidden = false;
+  document.getElementById("s-rich-hr").hidden = false;
+  const button = document.getElementById("s-rich");
+  button.onclick = () => {
+    set(!get());
+    button.setAttribute("aria-checked", String(get()));
+    render(true);
+  };
+  button.setAttribute("aria-checked", String(get()));
+};
 
 const CDN = {
   "markdown-it": "https://esm.sh/markdown-it@14.1.0",

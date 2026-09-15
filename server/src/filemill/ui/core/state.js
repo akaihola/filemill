@@ -9,7 +9,6 @@ export const rail = document.getElementById("rail");
 export const stage = document.getElementById("stage");
 export const strip = document.getElementById("strip");
 export const trail = document.getElementById("trail");
-export const welcome = document.getElementById("welcome");
 
 export let path = []; // node chain, [0] = root
 export let sel = []; // per-column selected name

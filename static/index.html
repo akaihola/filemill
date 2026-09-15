@@ -1980,14 +1980,6 @@ document.body.insertAdjacentHTML(
       <div id="search-results" role="status" aria-live="polite" hidden></div>
     </form>
     <div class="spacer"></div>
-    <span id="local-badge" hidden>
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/></svg>
-      <span class="nm"></span>
-      <button id="leave-local" title="Back to the served folder">✕</button>
-    </span>
-    <button class="tb" id="open" title="Open a folder on this machine">
-      <svg class="tb-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/></svg>
-      Open Folder…</button>
     <button class="tb" id="gear" aria-expanded="false" title="Settings">⚙</button>
     <div id="settings" hidden>
       <div class="grp">View</div>
@@ -2050,18 +2042,7 @@ document.body.insertAdjacentHTML(
   </div>
 </div>
 
-<div id="welcome">
-  <svg class="mark" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/></svg>
-  <h1 id="w-title">Filemill</h1>
-  <p id="w-msg">Pick a folder on this machine to browse it in Miller columns.
-     Nothing leaves the browser — the folder is read locally, on demand.</p>
-  <button class="btn" id="w-pick">Choose Folder…</button>
-  <div id="w-recent" hidden>
-    <div class="rec-head">Recently opened</div>
-    <div class="rec-list"></div>
-  </div>
-  <p class="note">Needs a Chromium-based desktop browser (File System Access API).</p>
-</div>`,
+`,
 );
 
 /* Nothing to export: the page structure is the product. The empty export
@@ -2079,7 +2060,6 @@ const rail = document.getElementById("rail");
 const stage = document.getElementById("stage");
 const strip = document.getElementById("strip");
 const trail = document.getElementById("trail");
-const welcome = document.getElementById("welcome");
 
 let path = []; // node chain, [0] = root
 let sel = []; // per-column selected name
@@ -4111,16 +4091,6 @@ function initSettings() {
     setSort(state.sort.key, !state.sort.desc);
 }
 
-/* Only the builds that can actually fetch a renderer show the switch — on the
-   server build the previews come from Python and nothing is downloaded, so the
-   row would be a promise the page does not keep. preview-rich.js reveals it. */
-function offerRichToggle(get, set) {
-  document.getElementById("s-previews").hidden = false;
-  document.getElementById("s-rich").hidden = false;
-  document.getElementById("s-rich-hr").hidden = false;
-  toggle("s-rich", get, set);
-}
-
 /* ═══ core/nav.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Navigation
@@ -4429,7 +4399,7 @@ document.addEventListener("keydown", (e) => {
   ) {
     return;
   }
-  if (!welcome.hidden) return;
+  if (!document.getElementById("welcome")?.hidden) return;
   if (e.target.closest?.("#preview")) {
     if (["ArrowUp", "ArrowDown", "PageUp", "PageDown"].includes(e.key)) {
       const body = document.querySelector("#preview .pv-body");
@@ -4533,7 +4503,7 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-/* ═══ core/jsonl.js ═══ */
+/* ═══ adapters/vfs-json.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    JSONL — a file of one JSON object per line, browsed as a column of rows.
 
@@ -5307,6 +5277,19 @@ const PreviewLocal = {
    differently next week, and a supply chain that can change under you.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+const offerRichToggle = (get, set) => {
+  document.getElementById("s-previews").hidden = false;
+  document.getElementById("s-rich").hidden = false;
+  document.getElementById("s-rich-hr").hidden = false;
+  const button = document.getElementById("s-rich");
+  button.onclick = () => {
+    set(!get());
+    button.setAttribute("aria-checked", String(get()));
+    render(true);
+  };
+  button.setAttribute("aria-checked", String(get()));
+};
+
 const CDN = {
   "markdown-it": "https://esm.sh/markdown-it@14.1.0",
   "markdown-it-footnote": "https://esm.sh/markdown-it-footnote@4.0.0",
@@ -5732,6 +5715,10 @@ async function recallView(handle) {
    the page loads; this is the module it ends with.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+document.getElementById("bar").insertAdjacentHTML("beforeend", `<button class="tb" id="open" title="Open a folder on this machine">Open Folder…</button>`);
+document.body.insertAdjacentHTML("beforeend", `<div id="welcome"><svg class="mark" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1-1-1z"/></svg><h1 id="w-title">Filemill</h1><p id="w-msg">Pick a folder on this machine to browse it in Miller columns. Nothing leaves the browser — the folder is read locally, on demand.</p><button class="btn" id="w-pick">Choose Folder…</button><div id="w-recent" hidden><div class="rec-head">Recently opened</div><div class="rec-list"></div></div><p class="note">Needs a Chromium-based desktop browser (File System Access API).</p></div>`);
+const welcome = document.getElementById("welcome");
+
 /* The load-time work sort.js, layout.js and settings.js did as classic scripts,
    in the order they used to load. */
 initSort();
@@ -5961,7 +5948,7 @@ function exposeCore() {
     finder: () => finder,
     stage: () => stage,
     strip: () => strip,
-    welcome: () => welcome,
+    welcome: () => document.getElementById("welcome"),
     gear: () => gear,
     FS: () => FS,
     PREVIEW: () => PREVIEW,
