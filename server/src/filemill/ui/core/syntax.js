@@ -21,6 +21,7 @@
    as plain text, the way every file did before this existed. SVG is absent on
    purpose: the pane has something better than source for it.
    ═══════════════════════════════════════════════════════════════════════════ */
+import { esc } from "./icons.js";
 
 /* Written as plain strings rather than literals because they are assembled:
    a regex literal cannot be pasted into another one without going through its
@@ -243,7 +244,7 @@ const HL_LANGS = Object.fromEntries(
 /* The language for a file name, or null for "no highlighting known". Starting
    at index 0 so a dotfile is its own extension: .gitignore is a shell-comment
    file and has nothing else to go on. */
-function hlLang(name) {
+export function hlLang(name) {
   const i = name.lastIndexOf(".");
   if (i < 0) return null;
   const ext = name.slice(i + 1).toLowerCase();
@@ -256,7 +257,7 @@ function hlLang(name) {
    and copied, the match itself is escaped inside its span, and the tail after
    the last match is escaped and copied. Nothing here interpolates unescaped
    input, which is what makes the output safe to assign to innerHTML. */
-function hlHTML(text, key) {
+export function hlHTML(text, key) {
   const re = HL_LANGS[key];
   let out = "", last = 0, m;
   re.lastIndex = 0;
@@ -281,7 +282,7 @@ function hlHTML(text, key) {
    for either build to wire. Inside a pre-wrap <pre> a newline that precedes a
    block is swallowed and one that follows it draws a blank line, so every text
    line ends in "\n" and no run of text begins with one. */
-function jsonHTML(text) {
+export function jsonHTML(text) {
   let doc;
   try {
     doc = JSON.parse(text);
@@ -329,7 +330,7 @@ function jsonHTML(text) {
    configured, so this one function is what makes "fenced code is coloured" true
    in both builds. Only code nodes are touched: paragraphs and their soft line
    breaks stay exactly as the renderer left them. */
-function hlFences(host) {
+export function hlFences(host) {
   for (const code of host.querySelectorAll('pre > code[class*="language-"]')) {
     const m = /(?:^|\s)language-(\S+)/.exec(code.className);
     const key = m && hlLang("x." + m[1]);

@@ -26,6 +26,14 @@
    Version pins are deliberate: "@latest" would mean a preview that renders
    differently next week, and a supply chain that can change under you.
    ═══════════════════════════════════════════════════════════════════════════ */
+import { PreviewLocal } from "./preview-local.js";
+import { esc } from "../core/icons.js";
+import { choose } from "../core/nav.js";
+import { FS } from "../core/ports.js";
+import { render } from "../core/render.js";
+import { offerRichToggle } from "../core/settings.js";
+import { path, splitName, state, visibleKids } from "../core/state.js";
+
 const CDN = {
   "markdown-it": "https://esm.sh/markdown-it@14.1.0",
   "markdown-it-footnote": "https://esm.sh/markdown-it-footnote@4.0.0",
@@ -182,7 +190,7 @@ async function rst(text) {
 }
 
 /* ── The provider ────────────────────────────────────────────────────────── */
-const PreviewRich = {
+export const PreviewRich = {
   revoke() {
     PreviewLocal.revoke();
   },
@@ -255,7 +263,7 @@ const PreviewRich = {
   },
 };
 
-const withPptxPreview = (provider) => ({
+export const withPptxPreview = (provider) => ({
   revoke() {
     provider.revoke?.();
     PreviewRich.revoke();

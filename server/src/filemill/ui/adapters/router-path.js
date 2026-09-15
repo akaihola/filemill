@@ -12,9 +12,14 @@
    Needs a server that serves the app shell for any path under BASE — which is
    the same requirement as any history-API single-page app.
    ═══════════════════════════════════════════════════════════════════════════ */
-const BASE = (document.currentScript?.dataset.base || "/").replace(/\/*$/, "/");
+import { path } from "../core/state.js";
 
-const RouterPath = {
+const BASE = (document.documentElement.dataset.base || "/").replace(
+  /\/*$/,
+  "/",
+);
+
+export const RouterPath = {
   base: BASE,
 
   read() {

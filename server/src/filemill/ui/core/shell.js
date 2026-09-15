@@ -107,3 +107,8 @@ document.body.insertAdjacentHTML(
   <p class="note">Needs a Chromium-based desktop browser (File System Access API).</p>
 </div>`,
 );
+
+/* Nothing to export: the page structure is the product. The empty export
+   marks the file as a module, which is what lets the entry import it for
+   its effect alone. */
+export {};

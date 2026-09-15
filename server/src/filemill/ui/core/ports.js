@@ -86,14 +86,14 @@
    comes from the current script's data-base attribute, or "/", and is used to
    strip/add the server mount prefix. It is not part of router state.
    ═══════════════════════════════════════════════════════════════════════════ */
-let FS = null, PREVIEW = null, ROUTER = null;
+export let FS = null, PREVIEW = null, ROUTER = null;
 
-const useFilesystem = (a) => {
+export const useFilesystem = (a) => {
   FS = a;
 };
-const usePreview = (p) => {
+export const usePreview = (p) => {
   PREVIEW = p;
 };
-const useRouter = (r) => {
+export const useRouter = (r) => {
   ROUTER = r;
 };

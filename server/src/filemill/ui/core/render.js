@@ -1,13 +1,44 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Render
    ═══════════════════════════════════════════════════════════════════════════ */
+import { currentPath, syncURL } from "./deeplink.js";
+import { esc, iconHTML } from "./icons.js";
+import { layout } from "./layout.js";
+import { choose, refreshColumn, renderCrumbs, saySt, unfoldTo } from "./nav.js";
+import { FS, PREVIEW, ROUTER } from "./ports.js";
+import { sortSay, sortStatus, sweepMeta } from "./sort.js";
+import {
+  finder,
+  fmtDate,
+  fmtSize,
+  focusCol,
+  measure,
+  nextPvToken,
+  path,
+  previewNode,
+  pvFullscreen,
+  pvToken,
+  root,
+  rowIndex,
+  sel,
+  selectedNode,
+  setState,
+  splitName,
+  state,
+  strip,
+  visibleKids,
+  widths,
+} from "./state.js";
+import { hlFences } from "./syntax.js";
+import { paintTrail } from "./trail.js";
+
 /* Building a column is O(entries), and real directories hold thousands of them
    — far too expensive to redo on every arrow key. A column's DOM is therefore
    built once per (node, entry list) and cached; a re-render only re-applies the
    state that actually changed: depth, selection, width.
    Anything that alters how a row *looks* (dotfile filter, density, theme icon
    colours) is part of the signature and drops the whole cache. */
-const colCache = new Map();
+export const colCache = new Map();
 let cacheSig = null;
 const CACHE_MAX = 24; // Retain enough nearby columns without growing memory unbounded.
 const COLUMN_WIDTH_RATIO = 2 / 3; // Leave room for adjacent columns on narrow screens.
@@ -19,10 +50,10 @@ const EDIT_MAX_LINE = 10_000; // Avoid unusably wide editor lines.
 /* Writing the value a property already holds still dirties it — and a width or
    custom-property write on a column relays out every row inside it. Guard the
    writes and a re-render of an unchanged column costs nothing. */
-const set = (obj, key, value) => {
+export const set = (obj, key, value) => {
   if (obj[key] !== value) obj[key] = value;
 };
-const setVar = (el, name, value) => {
+export const setVar = (el, name, value) => {
   if (el.style.getPropertyValue(name) !== value) {
     el.style.setProperty(name, value);
   }
@@ -118,7 +149,7 @@ function buildCol(node) {
   };
 }
 
-function columnFor(node) {
+export function columnFor(node) {
   let c = colCache.get(node);
   /* Two ways this DOM stops being the column: the directory was re-read, or a
      metadata sweep landed and re-ordered the rows under it. Same test, one
@@ -134,7 +165,7 @@ function columnFor(node) {
   return c;
 }
 
-function render(keepScroll) {
+export function render(keepScroll) {
   if (!path.length) return;
   const sig =
     `${state.dotfiles}|${root.dataset.density}|${root.dataset.theme}` +
@@ -144,7 +175,7 @@ function render(keepScroll) {
     cacheSig = sig;
   }
 
-  widths = [];
+  setState({ widths: [] });
   const cols = path.map((node, i) => {
     /* Before columnFor, so a directory that needs no fetch — the server build,
        or one a preview has already read — is built once in the sorted order
@@ -381,7 +412,7 @@ function setupPreviewActions(n) {
   const full = document.getElementById("pv-fullscreen");
   if (full) {
     full.onclick = () => {
-      pvFullscreen = !pvFullscreen;
+      setState({ pvFullscreen: !pvFullscreen });
       root.classList.toggle("pv-fullscreen", pvFullscreen);
       full.setAttribute("aria-pressed", pvFullscreen);
       full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
@@ -419,7 +450,7 @@ function setupPreviewActions(n) {
    dropped. That guard lives here, not in the provider, so a provider is free to
    be as slow as it needs to be — a server round-trip, a WASM highlighter. */
 async function fillPreview(n) {
-  const token = ++pvToken;
+  const token = nextPvToken();
   await FS.loadMeta(n);
   if (token !== pvToken) return;
   const m = n.meta || {};

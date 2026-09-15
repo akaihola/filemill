@@ -1,4 +1,12 @@
 /* Server-only content search. The control stays hidden in local FSA mode. */
+import { path } from "./state.js";
+
+/* The same attribute adapters/router-path.js reads; core must not import a
+   server-only adapter, or the static bundle would carry it too. */
+const SEARCH_BASE = (document.documentElement.dataset.base || "/").replace(
+  /\/*$/,
+  "/",
+);
 const searchForm = document.getElementById("search-form");
 const searchInput = document.getElementById("search-bar");
 const searchResults = document.getElementById("search-results");
@@ -43,7 +51,7 @@ async function runSearch() {
     );
     searchResults.querySelectorAll(".search-result").forEach((button) => {
       button.onclick = () => {
-        location.href = `${RouterPath.base}${
+        location.href = `${SEARCH_BASE}${
           button.dataset.path.split("/").map(encodeURIComponent).join("/")
         }`;
       };
