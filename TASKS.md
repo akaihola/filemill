@@ -69,7 +69,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 
 
-- [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
+- [x] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
   `panFocus` and `slideTail`. Each function is under 25 lines.
 
 - [6] Centralize file-kind classification across filesystem producers and preview/edit
