@@ -334,8 +334,10 @@ async def main():
                   await themed.evaluate(
                       "getComputedStyle(document.documentElement).getPropertyValue('--chrome').trim()"
                   ) == ("#1b1d21" if expected == "dark" else "#e7e7ec"))
-            await themed.click("#gear")
-            await themed.click("#s-theme")
+            # No folder is mounted here, so #welcome covers the chrome and a
+            # pointer click never reaches the toolbar; dispatch it directly.
+            await themed.locator("#gear").dispatch_event("click")
+            await themed.locator("#s-theme").dispatch_event("click")
             check(f"Manual toggle overrides {scheme} scheme",
                   await themed.evaluate("root.dataset.theme") != expected)
             check("Manual toggle updates theme accessibility state",
@@ -631,6 +633,55 @@ async def main():
               "keep their natural width",
               desktop["pan"] == 0 and desktop["whole"]
               and desktop["natural"] <= desktop["cap"], json.dumps(desktop))
+
+        # The whole model, one check per device class (ADR 0062). Every
+        # viewport walks the same four folders at the width ceiling and asserts
+        # the same promises: the touched column and its row are whole, the
+        # column that tap opened starts on screen unless the pan had to give
+        # the touched column the whole width (ADR 0024), nothing right of focus
+        # is a spine, no column is wider than two thirds of the finder, and the
+        # strip moved by its own transform, never by scrolling #stage. Which
+        # mechanism got there differs — the phones fold and pan, the tablet and
+        # desktop fit — and the detail shows it.
+        for label, w, h in (("phone portrait", 390, 844),
+                            ("phone landscape", 844, 390),
+                            ("tablet", 1024, 768),
+                            ("desktop", 1440, 900)):
+            await mount(pg)
+            await pg.set_viewport_size({"width": w, "height": h})
+            await scroll_settled(pg)
+            await pg.click('.col[data-i="0"] .row:has-text("wide")')
+            await pg.wait_for_timeout(250)
+            for i in range(3):
+                await pg.click(f'.col[data-i="{i + 1}"] .row:has-text("level-{i}-")')
+                await pg.wait_for_timeout(250)
+            await scroll_settled(pg)
+            m = await pg.evaluate("""(() => {
+              const fr = finder.getBoundingClientRect();
+              const col = document.querySelector(`.col[data-i="${focusCol}"]`);
+              const opened = document.querySelector(`.col[data-i="${focusCol + 1}"]`);
+              const r = col.getBoundingClientRect();
+              const row = col.querySelector('.row.sel').getBoundingClientRect();
+              const o = opened.getBoundingClientRect();
+              const tf = getComputedStyle(strip).transform;
+              const pan = tf && tf !== 'none' ? -new DOMMatrix(tf).m41 : 0;
+              return {focusCol, folded, pan: Math.round(pan), stage: stage.scrollLeft,
+                      touchedWhole: r.left >= fr.left - 2 && r.right <= fr.right + 2,
+                      rowWhole: row.left >= fr.left - 2 && row.right <= fr.right + 2,
+                      openedStartsInside: o.left >= fr.left - 2 && o.left <= fr.right - 2,
+                      spinesAtOrRight: [...document.querySelectorAll('.col.spine')]
+                          .map(c => +c.dataset.i).filter(i => i >= focusCol),
+                      maxWidth: Math.max(...widths.map(Math.round)),
+                      cap: Math.floor(finder.clientWidth * 2 / 3)};
+            })()""")
+            check(f"{label} {w}x{h}: the touched column stays whole, the opened "
+                  "column starts on screen unless the pan took its room, nothing "
+                  "at or right of focus folds",
+                  m["focusCol"] == 3 and m["touchedWhole"] and m["rowWhole"]
+                  and (m["openedStartsInside"] or m["pan"] > 0)
+                  and not m["spinesAtOrRight"]
+                  and m["stage"] == 0 and m["maxWidth"] <= m["cap"],
+                  json.dumps(m))
 
         # Walking in on a narrow screen leaves the focused column reaching past
         # the right edge — 4 spines and a 148 px column need 334 of 320 — so
