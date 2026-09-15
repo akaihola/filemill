@@ -20,9 +20,9 @@ import { esc } from "../core/icons.js";
 import { FS } from "../core/ports.js";
 import { render } from "../core/render.js";
 import { hlHTML, hlLang, jsonHTML } from "../core/syntax.js";
+import { IMAGE_EXTENSIONS, TEXT_MAX } from "../core/limits.js";
 
-const IMG_RE = /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
-const TEXT_MAX = 512 * 1024;
+const IMG_RE = new RegExp(`\\.(${IMAGE_EXTENSIONS.join("|")})$`, "i");
 
 let pvURL = null;
 

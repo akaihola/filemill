@@ -9,6 +9,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
+- [20] Create `ui/core/limits.js` with one `TEXT_MAX` and one image extension list.
+  Create one `mountRoot()` and one `currentPath()`. Delete the copies and `pathParts`.
+    - Depends on: [17]
+
 - [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
   `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
 
@@ -23,10 +27,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
+- [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into `withVirtual`,
+  and `withJsonlPreview` and `withJsonPreview` into `withVirtualPreview`.
+    - Depends on: [19]
 
-- [20] Create `ui/core/limits.js` with one `TEXT_MAX` and one image extension list.
-  Create one `mountRoot()` and one `currentPath()`. Delete the copies and `pathParts`.
-    - Depends on: [17]
 
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
   files. Current PPTX support was implemented in task
@@ -64,9 +68,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 
 
-- [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into `withVirtual`,
-  and `withJsonlPreview` and `withJsonPreview` into `withVirtualPreview`.
-    - Depends on: [19]
 
 - [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
   `panFocus` and `slideTail`. Each function is under 25 lines.

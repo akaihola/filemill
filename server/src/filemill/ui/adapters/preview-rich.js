@@ -27,6 +27,7 @@
    differently next week, and a supply chain that can change under you.
    ═══════════════════════════════════════════════════════════════════════════ */
 import { PreviewLocal } from "./preview-local.js";
+import { TEXT_MAX } from "../core/limits.js";
 import { esc } from "../core/icons.js";
 import { choose } from "../core/nav.js";
 import { FS } from "../core/ports.js";
@@ -255,7 +256,7 @@ export const PreviewRich = {
         return `<div class="pv-rich">${value}</div>`;
       }
 
-      if (blob.size > 512 * 1024) return PreviewLocal.render(node);
+      if (blob.size > TEXT_MAX) return PreviewLocal.render(node);
       const text = await blob.text();
 
       if (RST_RE.test(node.name)) {
