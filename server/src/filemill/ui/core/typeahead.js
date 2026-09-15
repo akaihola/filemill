@@ -16,25 +16,28 @@
    Nothing here knows where the entries came from, so it is shared with the
    server build — a column is a list of names either way.
    ═══════════════════════════════════════════════════════════════════════════ */
+import { esc } from "./icons.js";
+import { revealRow } from "./layout.js";
+import { splitName } from "./state.js";
 
 /* How long the buffer survives a pause. 1.2 s is long enough to type "adme"
    after "re" without hurrying, short enough that a search you walked away from
    is gone before you touch the keyboard again. */
-const TA_IDLE = 1200;
+export const TA_IDLE = 1200;
 
 let taBuf = ""; /* what has been typed since the last pause */
 let taTimer = null;
 let taRow = null; /* the row wearing <mark> right now, so it can be undone */
 let taName = ""; /* its plain name, to rebuild the label from */
 
-const taLive = () => taBuf !== "";
+export const taLive = () => taBuf !== "";
 
 /* A letter with Ctrl, ⌘ or Alt held belongs to the browser or to a command —
    ⌘C copies the path, ⌘R reloads. Swallowing those into a search is the kind
    of bug you notice only when reload stops working. Shift does not disqualify:
    capital letters are part of file names. Backspace counts only while a search
    is live, so it stays free for anything else to claim later. */
-const taWants = (e) =>
+export const taWants = (e) =>
   !e.ctrlKey && !e.metaKey && !e.altKey &&
   (e.key.length === 1 || (e.key === "Backspace" && taLive()));
 
@@ -50,7 +53,7 @@ const taFuzzy = (n, q) => {
    hit — a prefix match on row 2 never looks at rows 3…3000. A prefix match on
    row 2 800 still beats a substring match on row 3, which is the point of
    separate passes rather than one scan that scores. */
-function taSearch(lower, q) {
+export function taSearch(lower, q) {
   let i = lower.findIndex((n) => n.startsWith(q));
   if (i < 0) i = lower.findIndex((n) => n.includes(q));
   if (i < 0) i = lower.findIndex((n) => taFuzzy(n, q));
@@ -121,7 +124,7 @@ function taMark(row, name, hit) {
   taName = name;
 }
 
-function taCancel() {
+export function taCancel() {
   clearTimeout(taTimer);
   taTimer = null;
   if (!taLive()) return;
@@ -133,7 +136,7 @@ function taCancel() {
 /* One keystroke. `c` is the focused column's cache entry, which nav.js has
    already looked up — never re-query the rows, a directory can hold tens of
    thousands of them. */
-function taType(key, c) {
+export function taType(key, c) {
   taBuf = key === "Backspace" ? taBuf.slice(0, -1) : taBuf + key;
   clearTimeout(taTimer);
   if (!taLive()) return void taSay("");

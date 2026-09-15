@@ -9,7 +9,10 @@
    satisfied by the listing. That is what makes server-side sorting by size or
    date affordable, where the local build would need a getFile() sweep.
    ═══════════════════════════════════════════════════════════════════════════ */
-const API = (document.currentScript?.dataset.api) || "/api";
+import { render } from "../core/render.js";
+import { focusCol, path, sel, setState } from "../core/state.js";
+
+export const API = document.documentElement.dataset.api || "/api";
 
 /* Nodes carry their root-relative path instead of a handle. Joining here rather
    than in the caller keeps the root itself at "" — the server's own idea of the
@@ -38,7 +41,7 @@ const q = (rel, vpath) =>
 
 const pageQ = (rel, vpath, page) => `${q(rel, vpath)}&page=${page}`;
 
-const HTTP = {
+export const HTTP = {
   node: (name, rel) => httpNode(name, rel || "", true),
 
   async ensureLoaded(node) {
@@ -93,9 +96,11 @@ const HTTP = {
       const j = await r.json();
       const i = path.indexOf(node);
       if (i >= 0) {
-        path = path.slice(0, i + 1);
-        sel = sel.slice(0, i);
-        focusCol = Math.min(focusCol, i);
+        setState({
+          path: path.slice(0, i + 1),
+          sel: sel.slice(0, i),
+          focusCol: Math.min(focusCol, i),
+        });
       }
       node.kids = (j.entries || []).map((e) =>
         e.vpath !== undefined

@@ -12,6 +12,20 @@
    thing the address bar should name — a file when a file is selected, and the
    directory itself when one is open with nothing chosen inside it.
    ═══════════════════════════════════════════════════════════════════════════ */
+import { revealRow } from "./layout.js";
+import { FS, ROUTER } from "./ports.js";
+import { colCache, render } from "./render.js";
+import {
+  focusCol,
+  path,
+  previewNode,
+  root,
+  rowIndex,
+  sel,
+  setState,
+  state,
+  visibleKids,
+} from "./state.js";
 
 /* render() runs on resize and on every keystroke, so writing the URL from it is
    only safe if an unchanged location is left alone — otherwise Back fills up
@@ -19,7 +33,7 @@
    not be immediately re-written from the half-built state it produces. */
 let applying = false;
 
-function currentPath() {
+export function currentPath() {
   const names = path.slice(1).map((p) => p.name);
   const leaf = sel[path.length - 1];
   if (leaf !== undefined) names.push(leaf);
@@ -35,7 +49,7 @@ function currentPath() {
    Back then steps back out of folders, which is what it looks like it does. */
 let lastKey = null;
 
-function syncURL() {
+export function syncURL() {
   if (applying || !ROUTER || !path.length) return;
   const key = path.slice(0, focusCol + 1).map((p) => p.name).join("/");
   const names = currentPath();
@@ -57,7 +71,7 @@ function syncURL() {
    `wantFocus` is for the callers that already know where the user was looking:
    a refresh must not move focus to the deepest column just because it re-walked
    the chain to get there. A link has no such opinion and omits it. */
-async function applyPath(names, wantFocus) {
+export async function applyPath(names, wantFocus) {
   if (!path.length) return false;
   names = (names || []).filter(Boolean);
 
@@ -72,9 +86,7 @@ async function applyPath(names, wantFocus) {
   applying = true;
   try {
     const rootNode = path[0];
-    path = [rootNode];
-    sel = [];
-    focusCol = 0;
+    setState({ path: [rootNode], sel: [], focusCol: 0 });
     await FS.ensureLoaded(rootNode);
     let complete = true;
 
@@ -89,7 +101,7 @@ async function applyPath(names, wantFocus) {
 
       const node = kids[ri];
       sel[i] = node.name;
-      focusCol = i; /* focus stays on the column holding it */
+      setState({ focusCol: i }); /* focus stays on the column holding it */
       if (!node.dir) break;
       await FS.ensureLoaded(node);
       path.push(node);
@@ -100,7 +112,7 @@ async function applyPath(names, wantFocus) {
     /* clamped: the chain may have come back shorter than the column that had
        focus, and focusing a column that is no longer open kills ↑/↓ */
     if (wantFocus != null) {
-      focusCol = Math.max(0, Math.min(wantFocus, path.length - 1));
+      setState({ focusCol: Math.max(0, Math.min(wantFocus, path.length - 1)) });
     }
     render();
     scrollCursorIntoView();
@@ -109,7 +121,7 @@ async function applyPath(names, wantFocus) {
 
 /* A restored selection can be thousands of rows down a column; the row exists
    but nothing has ever scrolled to it. */
-function scrollCursorIntoView() {
+export function scrollCursorIntoView() {
   for (let i = 0; i < path.length; i++) {
     const c = colCache.get(path[i]);
     const ri = rowIndex(path[i], sel[i]);
@@ -121,7 +133,7 @@ function scrollCursorIntoView() {
    are opened after it, or one Back would replay through every listener. */
 let routing = false;
 
-function startRouting() {
+export function startRouting() {
   if (routing || !ROUTER) return;
   routing = true;
   ROUTER.onNavigate((loc) => {

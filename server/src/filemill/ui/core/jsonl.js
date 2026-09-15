@@ -12,6 +12,9 @@
    (timestamp, id…), and falling back to the line number. Unique because the
    selection, the URL and applyPath all name a row by it.
    ═══════════════════════════════════════════════════════════════════════════ */
+import { esc } from "./icons.js";
+import { render } from "./render.js";
+
 const JSONL_MAX = 512 * 1024; /* the same ceiling as TEXT_MAX */
 const JSONL_LABEL = 60; /* as the server's MAX_LABEL_LEN */
 const JSONL_TEXT = ["title", "name", "description", "summary", "label"];
@@ -96,7 +99,7 @@ function jsonlParse(text) {
   return records;
 }
 
-const withJsonl = (fs) => ({
+export const withJsonl = (fs) => ({
   ...fs,
   async ensureLoaded(node) {
     if (!node.jsonl) {
@@ -138,7 +141,7 @@ const withJsonl = (fs) => ({
   },
 });
 
-const withJsonlPreview = (provider) => ({
+export const withJsonlPreview = (provider) => ({
   revoke() {
     provider.revoke?.();
   },
@@ -199,7 +202,7 @@ function jsonKids(node, value) {
   );
 }
 
-const withJson = (fs) => ({
+export const withJson = (fs) => ({
   ...fs,
   async ensureLoaded(node) {
     if (!node.json) {
@@ -248,7 +251,7 @@ const withJson = (fs) => ({
   },
 });
 
-const withJsonPreview = (provider) => ({
+export const withJsonPreview = (provider) => ({
   revoke() {
     provider.revoke?.();
   },

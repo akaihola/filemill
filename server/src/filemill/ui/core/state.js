@@ -1,29 +1,43 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    State
    ═══════════════════════════════════════════════════════════════════════════ */
-const root = document.documentElement;
-const finder = document.getElementById("finder");
-const rail = document.getElementById("rail");
-const stage = document.getElementById("stage");
-const strip = document.getElementById("strip");
-const trail = document.getElementById("trail");
-const welcome = document.getElementById("welcome");
+import "./shell.js";
+import { sortKids } from "./sort.js";
 
-let path = []; // node chain, [0] = root
-let sel = []; // per-column selected name
-let focusCol = 0;
-let widths = []; // natural width per column
-let folded = 0; // columns currently folded
-let pvToken = 0; // guards async preview fills
-let pvFullscreen = false;
-const state = {
+export const root = document.documentElement;
+export const finder = document.getElementById("finder");
+export const rail = document.getElementById("rail");
+export const stage = document.getElementById("stage");
+export const strip = document.getElementById("strip");
+export const trail = document.getElementById("trail");
+export const welcome = document.getElementById("welcome");
+
+export let path = []; // node chain, [0] = root
+export let sel = []; // per-column selected name
+export let focusCol = 0;
+export let widths = []; // natural width per column
+export let folded = 0; // columns currently folded
+export let pvToken = 0; // guards async preview fills
+export let pvFullscreen = false;
+/* Module bindings are read-only for importers, so the files that used to
+   assign these directly go through here. */
+export function setState(patch) {
+  if ("path" in patch) path = patch.path;
+  if ("sel" in patch) sel = patch.sel;
+  if ("focusCol" in patch) focusCol = patch.focusCol;
+  if ("widths" in patch) widths = patch.widths;
+  if ("folded" in patch) folded = patch.folded;
+  if ("pvFullscreen" in patch) pvFullscreen = patch.pvFullscreen;
+}
+export const nextPvToken = () => ++pvToken;
+export const state = {
   dotfiles: root.dataset.hidden === "show",
   sort: { key: "name", desc: false },
 };
 
-const GUTTER = () =>
+export const GUTTER = () =>
   parseInt(getComputedStyle(root).getPropertyValue("--gutter"));
-const SPINE = () =>
+export const SPINE = () =>
   parseInt(getComputedStyle(root).getPropertyValue("--spine-w"));
 
 const COL_MIN = 148; // Keep columns wide enough for readable rows and controls.
@@ -47,15 +61,15 @@ const CODE_FONT_SIZE = 11.5; // Match the compact monospace preview typography.
 /* One filtered copy per call, ordered by core/sort.js. Every column build, every
    width measurement and every path walk comes through here, which is what keeps
    the rows and a restored chain agreeing on what row 4 is. */
-const visibleKids = (node) =>
+export const visibleKids = (node) =>
   ((kids) => node.ordered ? kids : sortKids(kids))(
     (node.kids || []).filter((k) => state.dotfiles || !k.name.startsWith(".")),
   );
 
-const rowIndex = (node, name) =>
+export const rowIndex = (node, name) =>
   visibleKids(node).findIndex((k) => k.name === name);
 
-const fmtSize = (b) =>
+export const fmtSize = (b) =>
   b < BYTE_BASE ? `${b} B` : b < BYTE_BASE ** 2
     ? `${
       (b / BYTE_BASE).toFixed(
@@ -66,7 +80,7 @@ const fmtSize = (b) =>
     ? `${(b / BYTE_BASE ** 2).toFixed(MB_DECIMAL_DIGITS)} MB`
     : `${(b / BYTE_BASE ** 3).toFixed(GB_DECIMAL_DIGITS)} GB`;
 
-const fmtDate = (ms) =>
+export const fmtDate = (ms) =>
   new Date(ms).toLocaleString(undefined, {
     day: "numeric",
     month: "short",
@@ -75,18 +89,18 @@ const fmtDate = (ms) =>
     minute: DATE_PART_DIGITS,
   });
 
-const splitName = (name) => {
+export const splitName = (name) => {
   const i = name.lastIndexOf(".");
   return (i > 0) ? [name.slice(0, i), name.slice(i)] : [name, ""];
 };
 
-const previewNode = () => {
+export const previewNode = () => {
   const last = path[path.length - 1], s = sel[path.length - 1];
   const n = s && (last.kids || []).find((k) => k.name === s);
   return (n && !n.dir) ? n : null;
 };
 
-const selectedNode = () => {
+export const selectedNode = () => {
   const last = path[path.length - 1], s = sel[path.length - 1];
   return s && (last.kids || []).find((k) => k.name === s) || null;
 };
@@ -106,7 +120,7 @@ const codeMin = () =>
    Never wider than the stage itself: a phone cannot show 88 columns, and a
    pane that runs past the right edge is clipped, not scrollable — so there
    the pane fits and .pv-body pans over the code instead. */
-const previewTarget = () =>
+export const previewTarget = () =>
   previewNode()
     ? Math.min(
       PREVIEW_MAX_WIDTH,
@@ -115,7 +129,7 @@ const previewTarget = () =>
     )
     : EMPTY_PREVIEW_WIDTH;
 
-function measure(node) {
+export function measure(node) {
   /* content-driven width, clamped — no manual resizing, no wasted space */
   const c = (measure._c ||= document.createElement("canvas").getContext("2d"));
   const cs = getComputedStyle(root);

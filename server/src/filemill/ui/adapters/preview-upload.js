@@ -15,9 +15,14 @@
    images and PDFs become object URLs, because uploading a 40 MB scan to render
    an <img> would be silly.
    ═══════════════════════════════════════════════════════════════════════════ */
+import { API } from "./http.js";
+import { PreviewLocal } from "./preview-local.js";
+import { FS } from "../core/ports.js";
+import { render } from "../core/render.js";
+
 const UPLOAD_MAX = 4 * 1024 * 1024;
 
-const PreviewUpload = {
+export const PreviewUpload = {
   revoke() {
     PreviewLocal.revoke();
   },

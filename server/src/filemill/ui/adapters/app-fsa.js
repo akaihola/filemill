@@ -5,6 +5,37 @@
    picks the adapters (fsa + preview-local + router-hash, all loaded before
    this) and owns the one entry point into the tree, mount().
    ═══════════════════════════════════════════════════════════════════════════ */
+import { initSettings } from "../core/settings.js";
+import { initLayout } from "../core/layout.js";
+import { initSort } from "../core/sort.js";
+import { FSA } from "./fsa.js";
+import { PreviewRich } from "./preview-rich.js";
+import { RouterHash } from "./router-hash.js";
+import { recallRoots, recallView, rememberRoot } from "./storage.js";
+import { withCsv, withCsvPreview } from "./vfs-csv.js";
+import { applyPath, startRouting } from "../core/deeplink.js";
+import { FOLDER_PATH } from "../core/icons.js";
+import {
+  withJson,
+  withJsonl,
+  withJsonlPreview,
+  withJsonPreview,
+} from "../core/jsonl.js";
+import {
+  FS,
+  ROUTER,
+  useFilesystem,
+  usePreview,
+  useRouter,
+} from "../core/ports.js";
+import { colCache, render } from "../core/render.js";
+import { focusCol, path, root, sel, setState, welcome } from "../core/state.js";
+
+/* The load-time work sort.js, layout.js and settings.js did as classic scripts,
+   in the order they used to load. */
+initSort();
+initLayout();
+initSettings();
 
 /* Adapters define themselves; the app entry is what chooses. Selecting here
    rather than at the bottom of each adapter file means a page may load more
@@ -27,7 +58,8 @@ useRouter({
 /* A deep link read at startup, held until a root is mounted that can satisfy
    it — the URL names a folder, but a folder is not browsable until the browser
    has granted it. */
-let pendingLoc = null;
+export let pendingLoc = null;
+export const setPendingLoc = (loc) => pendingLoc = loc;
 
 /* ── Where the user was, per folder ─────────────────────────────────────────
    Saved against the mounted root and restored on the way back in. `mounted` is
@@ -63,12 +95,10 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") flushView();
 });
 
-async function mount(handle, loc) {
+export async function mount(handle, loc) {
   const node = FS.node(handle.name, handle);
   colCache.clear();
-  path = [node];
-  sel = [];
-  focusCol = 0;
+  setState({ path: [node], sel: [], focusCol: 0 });
   mounted = null;
   keptAt = null;
   welcome.hidden = true;
