@@ -26,6 +26,7 @@ import "./core/settings.js";
 import "./adapters/vfs-json.js";
 import "./adapters/vfs-csv.js";
 import "./core/search.js";
+import "./core/mount.js";
 
 import "./adapters/fsa.js";
 import "./adapters/preview-local.js";

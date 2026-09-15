@@ -2,7 +2,9 @@ import { esc } from "../core/icons.js";
 import { FS } from "../core/ports.js";
 import { render } from "../core/render.js";
 
-const CSV_MAX = 512 * 1024;
+import { TEXT_MAX } from "../core/limits.js";
+
+const CSV_MAX = TEXT_MAX;
 
 function csvParse(text) {
   const rows = [], row = [];

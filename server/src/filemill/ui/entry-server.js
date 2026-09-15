@@ -22,6 +22,7 @@ import "./core/deeplink.js";
 import "./core/settings.js";
 import "./adapters/vfs-json.js";
 import "./core/search.js";
+import "./core/mount.js";
 
 import "./adapters/http.js";
 import "./adapters/preview-http.js";

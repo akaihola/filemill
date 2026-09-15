@@ -30,6 +30,7 @@ import {
   useRouter,
 } from "../core/ports.js";
 import { colCache, render, setActions } from "../core/render.js";
+import { mountRoot } from "../core/mount.js";
 import { choose, refreshColumn, renderCrumbs, saySt, unfoldTo } from "../core/nav.js";
 import { focusCol, path, root, sel, setState, setSortKids } from "../core/state.js";
 
@@ -107,11 +108,10 @@ document.addEventListener("visibilitychange", () => {
 
 export async function mount(handle, loc) {
   const node = FS.node(handle.name, handle);
-  colCache.clear();
-  setState({ path: [node], sel: [], focusCol: 0 });
   mounted = null;
   keptAt = null;
   welcome.hidden = true;
+  await mountRoot(node, handle.name + " — Filemill");
   document.title = handle.name + " — Filemill";
   render();
   await FS.ensureLoaded(node);

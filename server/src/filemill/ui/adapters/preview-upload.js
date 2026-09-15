@@ -19,8 +19,10 @@ import { API } from "./http.js";
 import { PreviewLocal } from "./preview-local.js";
 import { FS } from "../core/ports.js";
 import { render } from "../core/render.js";
+import { IMAGE_EXTENSIONS } from "../core/limits.js";
 
 const UPLOAD_MAX = 4 * 1024 * 1024;
+const IMAGE_RE = new RegExp(`\\.(${IMAGE_EXTENSIONS.join("|")}|pdf)$`, "i");
 
 export const PreviewUpload = {
   revoke() {
@@ -31,7 +33,7 @@ export const PreviewUpload = {
     if (/\.vtt$/i.test(node.name)) return PreviewLocal.render(node);
     /* object-URL cases, and the ones too big to be worth sending */
     if (
-      /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg|pdf)$/i.test(node.name) ||
+      IMAGE_RE.test(node.name) ||
       (node.meta?.size ?? 0) > UPLOAD_MAX
     ) {
       return PreviewLocal.render(node);
