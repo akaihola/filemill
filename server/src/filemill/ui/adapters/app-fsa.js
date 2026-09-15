@@ -8,13 +8,13 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { initSettings } from "../core/settings.js";
 import { initLayout } from "../core/layout.js";
-import { initSort } from "../core/sort.js";
+import { initSort, setSortActions, sortKids } from "../core/sort.js";
 import { FSA } from "./fsa.js";
 import { PreviewRich } from "./preview-rich.js";
 import { RouterHash } from "./router-hash.js";
 import { recallRoots, recallView, rememberRoot } from "./storage.js";
 import { withCsv, withCsvPreview } from "./vfs-csv.js";
-import { applyPath, startRouting } from "../core/deeplink.js";
+import { applyPath, setDeepLinkActions, startRouting } from "../core/deeplink.js";
 import { FOLDER_PATH } from "../core/icons.js";
 import {
   withJson,
@@ -29,13 +29,18 @@ import {
   usePreview,
   useRouter,
 } from "../core/ports.js";
-import { colCache, render } from "../core/render.js";
-import { focusCol, path, root, sel, setState, welcome } from "../core/state.js";
+import { colCache, render, setActions } from "../core/render.js";
+import { choose, refreshColumn, renderCrumbs, saySt, unfoldTo } from "../core/nav.js";
+import { focusCol, path, root, sel, setState, setSortKids, welcome } from "../core/state.js";
 
 /* The load-time work sort.js, layout.js and settings.js did as classic scripts,
    in the order they used to load. */
 initSort();
-initLayout();
+setSortKids(sortKids);
+setActions({ choose, refreshColumn, renderCrumbs, saySt, unfoldTo });
+setSortActions({ render });
+setDeepLinkActions({ render, colCache });
+initLayout(render);
 initSettings();
 
 /* Adapters define themselves; the app entry is what chooses. Selecting here

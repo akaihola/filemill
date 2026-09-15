@@ -7,7 +7,7 @@
      99%      every column folded; preview fills what is left
      99–100%  the spine strip itself slides away; at 100% the preview is alone
    ═══════════════════════════════════════════════════════════════════════════ */
-import { render, set, setVar } from "./render.js";
+import { set, setVar } from "./dom.js";
 import {
   finder,
   focusCol,
@@ -167,7 +167,7 @@ export function revealRow(row) {
   else if (r.bottom > b.bottom) body.scrollTop += r.bottom - b.bottom;
 }
 
-export function initLayout() {
+export function initLayout(render) {
   finder.addEventListener("scroll", applyScroll, { passive: true });
   addEventListener("resize", () => render());
 }
