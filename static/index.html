@@ -3225,7 +3225,9 @@ function initLayout(render) {
    not be immediately re-written from the half-built state it produces. */
 let applying = false;
 let renderPage, colCache;
-const setDeepLinkActions = (actions) => ({ renderPage, colCache } = actions);
+const setDeepLinkActions = (
+  actions,
+) => ({ renderPage, colCache } = actions);
 
 function currentPath() {
   const names = path.slice(1).map((p) => p.name);
@@ -3338,6 +3340,19 @@ function startRouting() {
   });
 }
 
+/* ═══ core/limits.js ═══ */
+const TEXT_MAX = 512 * 1024;
+const IMAGE_EXTENSIONS = [
+  "png",
+  "jpe?g",
+  "gif",
+  "webp",
+  "avif",
+  "bmp",
+  "ico",
+  "svg",
+];
+
 /* ═══ core/render.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Render
@@ -3355,7 +3370,7 @@ const CACHE_MAX = 24; // Retain enough nearby columns without growing memory unb
 const COLUMN_WIDTH_RATIO = 2 / 3; // Leave room for adjacent columns on narrow screens.
 const MAX_DEPTH = 5; // Keep depth styling within the available visual scale.
 const SCROLL_HINT_PADDING = 4; // Show the affordance only when content exceeds the viewport.
-const EDIT_MAX = 512 * 1024; // Keep browser edits within the provider's 512 KB text limit.
+const EDIT_MAX = TEXT_MAX;
 const EDIT_MAX_LINE = 10_000; // Avoid unusably wide editor lines.
 
 /* Writing the value a property already holds still dirties it — and a width or
@@ -3807,8 +3822,10 @@ async function fillPreview(n) {
    preview in adapters/preview-local.js (same extensions, same cap), but it is
    core's own copy: a build picks its preview provider freely, and Edit has to
    work with any of them. Keep the two lists in step. */
-const NON_EDIT_RE =
-  /\.(desktop|docx|pptx|pdf|html?|png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
+const NON_EDIT_RE = new RegExp(
+  `\\.(desktop|docx|pptx|pdf|html?|${IMAGE_EXTENSIONS.join("|")})$`,
+  "i",
+);
 
 async function editableText(n) {
   if (
@@ -4285,13 +4302,6 @@ function unfoldTo(i) {
 /* Where you are, from the root down to the selected row. The first element is a
    folder *name*, not an absolute path: the File System Access API never hands
    one out, so this is everything the app knows about the location. */
-function pathParts() {
-  const parts = path.map((p) => p.name);
-  const leaf = sel[path.length - 1];
-  if (leaf) parts.push(leaf);
-  return parts;
-}
-
 function renderCrumbs() {
   const el = document.getElementById("crumbs");
   el.textContent = "";
@@ -4316,7 +4326,7 @@ function renderCrumbs() {
      string, and a fallback selection copies the characters on screen. The two
      have to be the same string or the fallback quietly hands over a path that
      no shell will take. */
-  document.getElementById("st-path").textContent = pathParts().join("/");
+  document.getElementById("st-path").textContent = currentPath().join("/");
 }
 
 /* ── Copy path ──────────────────────────────────────────────────────────────
@@ -4549,11 +4559,11 @@ document.addEventListener("keydown", (e) => {
    selection, the URL and applyPath all name a row by it.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const JSONL_MAX = 512 * 1024; /* the same ceiling as TEXT_MAX */
+const JSONL_MAX = TEXT_MAX;
 const JSONL_LABEL = 60; /* as the server's MAX_LABEL_LEN */
 const JSONL_TEXT = ["title", "name", "description", "summary", "label"];
 const JSONL_SCALAR = ["timestamp", "time", "ts", "id", "uuid", "key"];
-const JSON_MAX = 512 * 1024;
+const JSON_MAX = TEXT_MAX;
 
 const isJsonl = (n) => /\.jsonl$/i.test(n.name);
 const isJson = (n) => /\.jsonc?$/i.test(n.name);
@@ -4813,7 +4823,7 @@ const withJsonPreview = (provider) => ({
 });
 
 /* ═══ adapters/vfs-csv.js ═══ */
-const CSV_MAX = 512 * 1024;
+const CSV_MAX = TEXT_MAX;
 
 function csvParse(text) {
   const rows = [], row = [];
@@ -5019,6 +5029,15 @@ if (searchForm && document.documentElement.dataset.root) {
   searchForm?.remove();
 }
 
+/* ═══ core/mount.js ═══ */
+async function mountRoot(node, title = node.name) {
+  colCache.clear();
+  setState({ path: [node], sel: [], focusCol: 0 });
+  document.title = title;
+  render();
+  await FS.ensureLoaded(node);
+}
+
 /* ═══ adapters/fsa.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Filesystem adapter — File System Access API, read-only, one level at a time.
@@ -5124,8 +5143,7 @@ const FSA = {
    variant, and preview-rich.js for the downloaded one.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const IMG_RE = /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
-const TEXT_MAX = 512 * 1024;
+const IMG_RE = new RegExp(`\\.(${IMAGE_EXTENSIONS.join("|")})$`, "i");
 
 let pvURL = null;
 
@@ -5516,7 +5534,7 @@ const PreviewRich = {
         return `<div class="pv-rich">${value}</div>`;
       }
 
-      if (blob.size > 512 * 1024) return PreviewLocal.render(node);
+      if (blob.size > TEXT_MAX) return PreviewLocal.render(node);
       const text = await blob.text();
 
       if (RST_RE.test(node.name)) {
@@ -5802,15 +5820,10 @@ document.addEventListener("visibilitychange", () => {
 
 async function mount(handle, loc) {
   const node = FS.node(handle.name, handle);
-  colCache.clear();
-  setState({ path: [node], sel: [], focusCol: 0 });
+  welcome.hidden = true;
+  await mountRoot(node, handle.name + " — Filemill");
   mounted = null;
   keptAt = null;
-  welcome.hidden = true;
-  document.title = handle.name + " — Filemill";
-  render();
-  await FS.ensureLoaded(node);
-
   /* A link in the address bar beats the remembered chain: the user followed it
      just now, where the chain is only where they happened to stop last time.
      applyPath walks as far as the names still exist and stops, so a folder

@@ -22,7 +22,11 @@ import { PreviewUpload } from "./preview-upload.js";
 import { RouterPath } from "./router-path.js";
 import { rememberRoot } from "./storage.js";
 import { withCsv, withCsvPreview } from "./vfs-csv.js";
-import { applyPath, setDeepLinkActions, startRouting } from "../core/deeplink.js";
+import {
+  applyPath,
+  setDeepLinkActions,
+  startRouting,
+} from "../core/deeplink.js";
 import {
   withJson,
   withJsonl,
@@ -31,9 +35,23 @@ import {
 } from "../core/jsonl.js";
 import { FS, useFilesystem, usePreview, useRouter } from "../core/ports.js";
 import { colCache, render, setActions } from "../core/render.js";
-import { choose, refreshColumn, renderCrumbs, saySt, unfoldTo } from "../core/nav.js";
-import { focusCol, path, sel, setState, setSortKids, welcome } from "../core/state.js";
+import {
+  choose,
+  refreshColumn,
+  renderCrumbs,
+  saySt,
+  unfoldTo,
+} from "../core/nav.js";
+import {
+  focusCol,
+  path,
+  sel,
+  setSortKids,
+  setState,
+  welcome,
+} from "../core/state.js";
 import { hlLang } from "../core/syntax.js";
+import { mountRoot } from "../core/mount.js";
 
 /* The load-time work sort.js, layout.js and settings.js did as classic scripts,
    in the order they used to load. */
@@ -87,12 +105,8 @@ async function mountServer() {
   const loc = RouterPath.read();
 
   const node = HTTP.node(ROOT_NAME, "");
-  colCache.clear();
-  setState({ path: [node], sel: [], focusCol: 0 });
   if (welcome) welcome.hidden = true;
-  document.title = ROOT_NAME;
-  render();
-  await FS.ensureLoaded(node);
+  await mountRoot(node, ROOT_NAME);
 
   if (node.denied) {
     showServerUnavailable();
@@ -137,15 +151,11 @@ export async function mount(handle) {
   );
   useRouter(null);
   const node = FSA.node(handle.name, handle);
-  colCache.clear();
-  setState({ path: [node], sel: [], focusCol: 0 });
   if (welcome) welcome.hidden = true;
-  document.title = handle.name;
+  await mountRoot(node, handle.name);
   /* Back to the bare base, not one segment up: the URL was naming a file
      under the server's root and nothing here is under it any more. */
   history.replaceState(null, "", RouterPath.base);
-  render();
-  await FS.ensureLoaded(node);
   render();
   setLocalBadge(handle.name);
 }
