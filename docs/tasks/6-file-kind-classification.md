@@ -7,13 +7,13 @@ depends-on: [19]
 
 ## Proposal
 
-When Filemill reads a file system entry, it should decide its kind one time.
-The kind must be one of `folder`, `link`, `vfs`, or `file`. The entry should
+When Filemill reads a file system entry, it must decide its kind one time.
+The kind must be one of `folder`, `link`, `vfs`, or `file`. The entry must
 also say how the UI can preview it.
 
 The code that reads entries, including the Python API and the File System
-Access adapter, should set these values. Code that shows an icon, opens a
-preview, or enables editing should use these values.
+Access adapter, must set these values. Code that shows an icon, opens a
+preview, or enables editing must use these values.
 
 ## Evidence
 

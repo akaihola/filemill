@@ -1,7 +1,7 @@
 # Filemill
 
-A file explorer in Miller columns, in two editions that are the same
-application.
+Filemill is a file explorer in Miller columns. It has two editions. Both run
+the same application.
 
 ```
 ui/        the shared UI — columns, folding, the trail, keyboard, deep links,
@@ -10,9 +10,9 @@ static/    one portable index.html that browses a folder on your own machine
 server/    a local web app that browses a folder on the server, in Python
 ```
 
-`ui/core/` *is* the application. It knows about **nodes** — `{name, dir, kids}`
-— and nothing about where a node comes from. `ui/adapters/` supplies that,
-through three small ports declared in [`ui/core/ports.js`](ui/core/ports.js):
+`ui/core/` is the application. It knows **nodes** — `{name, dir, kids}` — and
+nothing about their source. `ui/adapters/` supplies the source through three
+ports declared in [`ui/core/ports.js`](ui/core/ports.js):
 
 | | **static** | **server** |
 | --- | --- | --- |
@@ -20,20 +20,17 @@ through three small ports declared in [`ui/core/ports.js`](ui/core/ports.js):
 | preview | markdown-it / highlight.js, fetched on demand | `GET /api/preview` — Python renderers |
 | router | `#r=root&p=a/b.md` | `/n/a/b.md` — the path *is* the file path |
 
-A port is also where the two editions' costs differ. Sorting a column by size
-needs a size per row: the server's listing already carries one, while the File
-System Access API hands out names and handles only, so the static edition pays
-one `getFile()` per entry (roughly 300 µs each, about a second for 3 000). One
-implementation in `ui/core/sort.js`, two prices, and neither edition had to know
-about the other.
+The ports also set the cost of each edition. A sort by size needs a size per
+row. The server listing has the size. The File System Access API gives names
+and handles only, so the static edition calls `getFile()` one time per entry.
+Each call takes about 300 µs, so 3 000 entries take about one second.
+`ui/core/sort.js` is one implementation with two prices.
 
-One repository because the alternative was two, and two lookalike UIs drift
-apart one bug fix at a time however much discipline is applied to copying
-between them. Here a fix to `ui/` is a fix to both, in one commit.
+One repository holds both editions. Two copies of one UI drift apart one bug
+fix at a time. A fix to `ui/` is a fix to both editions in one commit.
 
-> The server edition was called **pykofinder** until it was folded in here.
-> `FILEMILL_ROOT` and friends are the current environment variables; the
-> `PYKOFINDER_*` names still work, so existing setups keep running.
+> The server edition was called **pykofinder**. `FILEMILL_ROOT` and the other
+> `FILEMILL_*` variables are current. The `PYKOFINDER_*` names still work.
 
 ## static — one file, no server, no install
 
@@ -45,16 +42,15 @@ python3 -m http.server 8000 -d ..     # then …
 #   localhost:8000/static/index.html       ← the bundle
 ```
 
-`index.html` is generated *and* committed — one file is the whole deliverable.
-`./build-index.py --check` fails when it has gone stale, and CI publishes it to
-GitHub Pages. That last part matters more than it sounds: `showDirectoryPicker()`
-needs a secure context, so the same file opened from disk cannot open a folder
-at all. An `https://` link can.
+`index.html` is generated and committed. It is the whole deliverable.
+`./build-index.py --check` fails when the bundle is stale. CI publishes the
+bundle to GitHub Pages. `showDirectoryPicker()` needs a secure context, so the
+file opened from disk cannot open a folder. An `https://` page can.
 
-Rich previews (Markdown, .docx, reStructuredText) are fetched from a CDN on first
-use rather than bundled, behind a switch in ⚙ — it is the only thing here that
-touches the network. reStructuredText runs docutils on Pyodide, a 13 MB one-time
-download. Offline, previews fall back to the raw source.
+Rich previews (Markdown, .docx, reStructuredText) load from a CDN on first
+use. A switch in ⚙ turns them off. This is the only network access.
+reStructuredText runs docutils on Pyodide, a 13 MB one-time download. Offline,
+the preview shows the raw source.
 
 See [`static/AGENTS.md`](static/AGENTS.md).
 
@@ -63,33 +59,29 @@ See [`static/AGENTS.md`](static/AGENTS.md).
 ```bash
 cd server
 uv sync && uv run filemill [ROOT]
-#   localhost:8000/f/    ← the older HTMX UI (still the default)
-#   localhost:8000/n/    ← the shared UI, and "Open local folder…"
+#   localhost:8000/     ← the shared UI, and "Open local folder…"
 ```
 
-Markdown with plugins, Pygments, docx, pptx, and SQLite/JSON virtual
-filesystems are all rendered in Python and served into the shared preview pane
-— which is why none of it had to be rewritten in JavaScript. Opening a *local*
-folder from the served page still uses them: the bytes are posted to
-`/api/render`.
+Python renders Markdown with plugins, Pygments, docx, pptx and the SQLite and
+JSON virtual filesystems. The result goes into the shared preview pane. A
+local folder opened from the served page posts its bytes to `/api/render`, so
+the same renderers apply.
 
 See [`server/CONTRIBUTING.md`](server/CONTRIBUTING.md).
 
 ## Working on the shared UI
 
-Edit `ui/`. It is a symlink to `server/src/filemill/ui/`, where the files
-actually live: a wheel cannot reach outside its own package, so the shared
-frontend sits inside the server package and the repository root points at it.
-One set of files, so a change reaches both editions at once and there is
-nothing to keep in sync.
+Edit `ui/`. It is a symlink to `server/src/filemill/ui/`. A wheel cannot reach
+outside its package, so the files live in the server package. There is one set
+of files and nothing to keep in sync.
 
 ```bash
 (cd static && ./build-index.py)      # rebuild the bundle
 ```
 
-The bundle is generated *and* committed, so it is the one thing that can go
-stale; CI runs `./build-index.py --check`. A checkout needs symlink support —
-the default everywhere except Windows without developer mode.
+The bundle is generated and committed, so it can go stale. CI runs
+`./build-index.py --check`. A checkout needs symlink support. Windows needs
+developer mode for that.
 
 ## Tests
 
@@ -107,13 +99,12 @@ cd server && uv run pytest
 
 - [`docs/GOALS.md`](docs/GOALS.md) — what Filemill must become, and the
   goals the code already shows.
-- [`docs/ARCHITECTURE-REVIEW.md`](docs/ARCHITECTURE-REVIEW.md) — how far
-  the code is from those goals, with file and line for each finding.
-- [`docs/ROADMAP.md`](docs/ROADMAP.md) — the order in which we close the
-  gap.
+- [`docs/ARCHITECTURE-REVIEW.md`](docs/ARCHITECTURE-REVIEW.md) — the distance
+  between the code and the goals, with file and line for each finding.
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — the order in which we close the gap.
 
-These three live in `docs/` and not in `docs/tasks/`, because they are not
-tasks. `TASKS.md` links the roadmap as one backlog item.
+These three are not tasks, so they are in `docs/` and not in `docs/tasks/`.
+`TASKS.md` links the roadmap as one backlog item.
 
 ## License
 
