@@ -20,7 +20,7 @@ shared ports. This document covers the Python edition.
 - **Keyboard navigation** – `↑↓` move in a column; `→`/`Enter` open; `←` goes back; `Home`/`End`/`PgUp`/`PgDn` scroll
 - **Live reload** – the `--live` flag restarts the server on code changes
 - **`.desktop` files** – show as a link card
-- **Symlink support** – follows a symlink when its target stays inside the root
+- **Symlink bookmarks** – a direct symlink child of the root opens as a bookmark, and its target subtree is browsable
 - **Open local folder…** – the served page can browse a folder on your machine through the File System Access API. Python still renders the previews, because the page posts the bytes to `/api/render`
 - **PWA** – installable. Includes a Web App Manifest, a service worker and an icon set. The worker caches the app shell (stale-while-revalidate) and never caches `/api/` responses
 
