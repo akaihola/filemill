@@ -22,7 +22,11 @@ import { PreviewUpload } from "./preview-upload.js";
 import { RouterPath } from "./router-path.js";
 import { rememberRoot } from "./storage.js";
 import { withCsv, withCsvPreview } from "./vfs-csv.js";
-import { applyPath, setDeepLinkActions, startRouting } from "../core/deeplink.js";
+import {
+  applyPath,
+  setDeepLinkActions,
+  startRouting,
+} from "../core/deeplink.js";
 import {
   withJson,
   withJsonl,
@@ -32,12 +36,24 @@ import {
 import { FS, useFilesystem, usePreview, useRouter } from "../core/ports.js";
 import { colCache, render, setActions } from "../core/render.js";
 import { mountRoot } from "../core/mount.js";
-import { choose, refreshColumn, renderCrumbs, saySt, unfoldTo } from "../core/nav.js";
-import { focusCol, path, sel, setState, setSortKids } from "../core/state.js";
+import {
+  choose,
+  refreshColumn,
+  renderCrumbs,
+  saySt,
+  unfoldTo,
+} from "../core/nav.js";
+import { focusCol, path, sel, setSortKids, setState } from "../core/state.js";
 import { hlLang } from "../core/syntax.js";
 
-document.getElementById("bar").insertAdjacentHTML("beforeend", `<span id="local-badge" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1-1-1z"/></svg><span class="nm"></span><button id="leave-local" title="Back to the served folder">✕</button></span><button class="tb" id="open" title="Open a folder on this machine">Open Folder…</button>`);
-document.body.insertAdjacentHTML("beforeend", `<div id="welcome"><h1 id="w-title">Filemill server unavailable</h1><p id="w-msg"></p><button class="btn" id="w-pick">Retry connection</button><div id="w-recent" hidden></div></div>`);
+document.getElementById("bar").insertAdjacentHTML(
+  "beforeend",
+  `<span id="local-badge" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1-1-1z"/></svg><span class="nm"></span><button id="leave-local" title="Back to the served folder">✕</button></span><button class="tb" id="open" title="Open a folder on this machine">Open Folder…</button>`,
+);
+document.body.insertAdjacentHTML(
+  "beforeend",
+  `<div id="welcome"><h1 id="w-title">Filemill server unavailable</h1><p id="w-msg"></p><button class="btn" id="w-pick">Retry connection</button><div id="w-recent" hidden></div></div>`,
+);
 const welcome = document.getElementById("welcome");
 
 /* The load-time work sort.js, layout.js and settings.js did as classic scripts,
