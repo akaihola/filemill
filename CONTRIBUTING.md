@@ -3,28 +3,28 @@
 ## Setup
 
 Filemill has a static edition and a server edition. Read the [root
-README](README.md) for the project layout and links to each edition.
+README](README.md) for the project layout and the link to each edition.
 
-For the server edition:
+Set up the server edition:
 
 ```bash
 cd server
 uv sync
 ```
 
-Edit shared UI files through `ui/`. The root `ui/` path points to the server
-package directory.
+Edit shared UI files through `ui/`. The root `ui/` path is a symlink into the
+server package.
 
 ## Tests
 
-Run the server tests with:
+Run the server tests:
 
 ```bash
 cd server
 uv run pytest
 ```
 
-Run the static checks with:
+Run the static checks:
 
 ```bash
 cd static
@@ -39,12 +39,13 @@ formatters and linters, the type checker, and the static bundle check.
 
 ## Commits
 
-Use a Conventional Commit prefix. Examples include `feat:`, `fix:`, `test:`,
-`docs:`, `refactor:`, `chore:`, `style:`, and `perf:`. Keep each commit to one
-logical change. Update documentation in the same commit as the change.
+Use a Conventional Commit prefix: `feat:`, `fix:`, `test:`, `docs:`,
+`refactor:`, `chore:`, `style:` or `perf:`. Keep each commit to one logical
+change. Update the documentation in the same commit as the change.
 
 ## Writing
 
 Write Markdown in ASD-STE100 Simplified Technical English. Use short sentences,
-common words, active voice, and one instruction per step. Define a technical term
-before you use it. Keep links relative when the target is in this repository.
+common words, the active voice, and one instruction per step. Define a technical
+term before you use it. Use a relative link when the target is in this
+repository.

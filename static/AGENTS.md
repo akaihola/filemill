@@ -2,28 +2,27 @@
 
 ## What this project is
 
-A file manager that browses a **real local folder** in **Miller columns**, and
-ships as one self-contained `index.html`. No network, no server, no example
-content: the app opens on a folder picker and everything it shows comes from the
-directory the user grants, read through the File System Access API.
+A file manager that browses a **real local folder** in **Miller columns**. It
+ships as one self-contained `index.html`. There is no network, no server and
+no example content. The app opens on a folder picker. It shows only the
+directory that the user grants, read through the File System Access API.
 
-The UI comes from the "Trail" Miller-columns design study
-(originally a filemill design study):
-column headers with counts, three distinct selection states, a drawn trail
-between selected rows, and horizontal scroll as a 0–100 % *condensing dial* that
-folds columns into spines from the left.
+The UI comes from the "Trail" Miller-columns design study: column headers with
+counts, three selection states, a drawn trail between selected rows, and
+horizontal scroll as a 0–100 % *condensing dial* that folds columns into spines
+from the left.
 
-The two editions and their shared ports are described in the
-[repository README](../README.md). This document covers the static edition.
+The [repository README](../README.md) describes the two editions and their
+shared ports. This document covers the static edition.
 
 ---
 
 ## Agent memory convention
 
-Whenever the user says "remember X" or "always do Y", or whenever you detect
-a project-specific rule worth preserving, **immediately update this file** with
-the new rule or fact before doing anything else. Same applies to any correction
-the user makes to your behaviour — capture it here so it survives a context reset.
+When the user says "remember X" or "always do Y", or when you find a
+project-specific rule worth keeping, **update this file first**. Do the same
+for each correction the user makes to your behaviour. The rule then survives a
+context reset.
 
 ---
 
@@ -31,8 +30,8 @@ the user makes to your behaviour — capture it here so it survives a context re
 
 ```
 <repo>/
-├── README.md               ← what the two projects are, and why one repo
-├── .github/workflows/      ← test both, publish filemill to Pages
+├── README.md               ← what the two editions are, and why one repo
+├── .github/workflows/      ← test both, publish index.html to Pages
 ├── ui/                     ← THE SHARED FRONTEND — a symlink to
 │                             server/src/filemill/ui; see ui/adapters/README.md
 │   ├── core/               ← source-agnostic: columns, keyboard, preview, links
@@ -47,48 +46,48 @@ the user makes to your behaviour — capture it here so it survives a context re
 │   │   ├── layout.js       ← the fold dial: stripSpan, layout, applyScroll
 │   │   ├── trail.js        ← the SVG elbows between columns
 │   │   ├── typeahead.js    ← prefix → substring → fuzzy, <mark>, idle buffer
+│   │   ├── search.js       ← file-content search
+│   │   ├── jsonl.js        ← JSON and JSONL as a virtual directory
 │   │   ├── nav.js          ← choose(), crumbs, copy path, refresh, all keys
 │   │   ├── deeplink.js     ← path ⇄ column chain; push-vs-replace policy
 │   │   └── settings.js     ← ⚙ popover toggles
 │   ├── adapters/           ← everything source-specific
-│   │   ├── fsa.js          ← FS: File System Access API      (filemill)
-│   │   ├── http.js         ← FS: GET /api/dir                (filemill)
+│   │   ├── fsa.js          ← FS: File System Access API      (static)
+│   │   ├── http.js         ← FS: GET /api/dir                (server)
+│   │   ├── vfs-csv.js      ← FS: CSV as a virtual directory
 │   │   ├── preview-local.js  ← PREVIEW: coloured text, image, PDF, .desktop
 │   │   ├── preview-rich.js   ← PREVIEW: markdown-it/mammoth/docutils, on demand
 │   │   ├── preview-http.js   ← PREVIEW: GET /api/preview — the Python renderers
 │   │   ├── preview-upload.js ← PREVIEW: local bytes → POST /api/render
-│   │   ├── router-hash.js  ← ROUTER: #r=root&p=a/b.md        (filemill)
-│   │   ├── router-path.js  ← ROUTER: /a/b.md                 (filemill)
+│   │   ├── router-hash.js  ← ROUTER: #r=root&p=a/b.md        (static)
+│   │   ├── router-path.js  ← ROUTER: /a/b.md                 (server)
 │   │   ├── storage.js      ← IndexedDB: remembered folders
-│   │   ├── app-fsa.js      ← boot: picker, welcome screen    (filemill)
+│   │   ├── app-fsa.js      ← boot: picker, welcome screen    (static)
 │   │   └── app-http.js     ← boot: server root + Open local folder…
 │   └── vendor/             ← Seti icon map + WOFF font (MIT)
-├── filemill/             ← the Python server; see its CONTRIBUTING.md
-└── filemill/               ← THIS PROJECT
+├── server/                 ← the Python server; see its CONTRIBUTING.md
+└── static/                 ← THIS PROJECT
     ├── AGENTS.md               ← this file
-    ├── TASKS.md                ← open task list
     ├── FSA-TEST-CHECKLIST.md   ← what the automated tests cannot check
     ├── index.html              ← GENERATED bundle (do not hand-edit)
     ├── index-dev.html          ← dev entry point: <script src="../ui/…">
     ├── build-index.py          ← index-dev.html + ../ui → index.html
-    ├── test-ui.py              ← headless suite, fake handle (148 checks)
+    ├── test-ui.py              ← headless suite, fake handle
     ├── test-url.py             ← needs a real origin: deep links, and a real
-    │                             filesystem through OPFS (15 checks)
-    ├── test-rich.py            ← CDN renderers: offline/switch/loaded (22)
+    │                             filesystem through OPFS
+    ├── test-rich.py            ← CDN renderers: offline/switch/loaded
     └── test-e2e.py             ← headed suite, real folder + real picker
 ```
 
-**Edit `../ui/`, never `index.html`.** The UI is shared with `server/` in
-the same repository — a change here is a change there, which is the entire
-reason the two live together.
+**Edit `../ui/`, never `index.html`.** The UI is shared with `server/` in the
+same repository. A change here is a change there. That is the reason the two
+live together.
 
-`../ui/` is a **symlink** to `../server/src/filemill/ui/`, where the files
-actually live. A wheel cannot reach outside its own package, so the shared
-frontend sits inside the server package and the repository root points at it.
-There is exactly one copy, which is what makes "a change here is a change
-there" literal rather than a promise some sync script has to keep. A checkout
-therefore needs symlink support — the default everywhere except Windows
-without developer mode.
+`../ui/` is a **symlink** to `../server/src/filemill/ui/`. A wheel cannot
+reach outside its package, so the shared frontend is inside the server package
+and the repository root points at it. There is one copy, so no sync script is
+needed. A checkout needs symlink support. Windows needs developer mode for
+that.
 
 Two ways to run what you edited:
 
@@ -99,70 +98,70 @@ python3 -m http.server 8000 -d ..    # serve the repo root, not static/
 #   http://localhost:8000/static/index.html      ← the bundle
 ```
 
-`build-index.py` inlines each `<link rel=stylesheet>` and `<script src>` the
-browser would have fetched, and swaps the `@font-face` URL for a base64 data
-URI — the same trick the old `build.py` used, extended to cover the font.
+`build-index.py` inlines each `<link rel=stylesheet>` and `<script src>` that
+the browser fetches, and replaces the `@font-face` URL with a base64 data URI.
 
-`./build-index.py --check` exits non-zero when the committed bundle no longer
-matches `src/`. CI runs it, because a generated-and-committed file is exactly
-the kind that gets published a week stale.
+`./build-index.py --check` exits non-zero when the committed bundle does not
+match `../ui/`. CI runs it, because a generated and committed file goes stale
+without a check.
 
 ---
 
 ## Publishing
 
-`.github/workflows/publish.yml` tests every push and deploys `index.html` — and
-only that file — to GitHub Pages from `main`.
+`.github/workflows/publish.yml` tests every push and deploys `index.html`, and
+only that file, to GitHub Pages from `main`.
 
-Pages is the right target for a reason beyond convenience: `showDirectoryPicker()`
-needs a **secure context**, so a downloaded `index.html` opened from disk hits
+Pages is the right target for a technical reason. `showDirectoryPicker()`
+needs a **secure context**. A downloaded `index.html` opened from disk shows
 the `file://` welcome screen instead of a folder picker (see below). An
-`https://` page just works, which turns "browse a local folder, install nothing"
-into one link. Nothing published can read anything — there is no backend, and
-the folder is read in the visitor's browser after they grant it.
+`https://` page works, so one link gives "browse a local folder, install
+nothing". Nothing published can read anything: there is no backend, and the
+visitor's browser reads the folder after the visitor grants it.
 
-Note the workflow runs `playwright install`, which is **forbidden on the dev
-machines** where browsers come from the Nix store; on a stock CI runner it is
-the only way to get them.
+The workflow runs `playwright install`. That command is **forbidden on the
+dev machines**, where browsers come from the Nix store. On a stock CI runner
+it is the only way to get them.
 
 ---
 
 ## Serve it over localhost — `file://` cannot work
 
-Chrome refuses `showDirectoryPicker()` on an opaque origin, which is what a
-`file://` page has. Double-clicking `index.html` therefore shows an explanatory
-welcome screen instead of a folder, by design (`showBlocked("file")` in
-`main.js`, triggered both up front from `location.protocol` and from the
-`SecurityError`). This is the single most common "it's broken" report.
+Chrome refuses `showDirectoryPicker()` on an opaque origin, which a `file://`
+page has. A double-click on `index.html` therefore shows a welcome screen
+with instructions instead of a folder. `showBlocked("file")` in `app-fsa.js`
+does this, both up front from `location.protocol` and from the
+`SecurityError`. This is the most common "it's broken" report.
 
 ---
 
 ## Remembered folders (IndexedDB)
 
 `FileSystemHandle` is structured-cloneable, so `storage.js` keeps the last 8
-picked roots in the `filemill` database, `kv` store, key `recent`. A record is
-the handle **and** the selection chain inside it:
+picked roots (`RECENT_MAX`) in the `filemill` database, `kv` store, key
+`recent`. A record is the handle **and** the selection chain inside it:
 
 ```js
 { handle: FileSystemDirectoryHandle, path: ["notes", "drafts"] }
 ```
 
-- `rememberRoot(handle[, path])` after every successful pick and, debounced
-  400 ms, after every selection change; `isSameEntry()` dedupes. Omit `path`
-  and the stored chain is kept, so re-picking a folder does not forget it.
-- `recallRoots()` at startup. `queryPermission()` needs no user gesture, so a
-  folder still `'granted'` **re-mounts with no dialog at all** — and `mount()`
-  walks it back to `recallView()`'s chain, so the return trip costs no clicks.
+- `rememberRoot(handle[, path])` runs after every successful pick and, with a
+  400 ms debounce, after every selection change. `isSameEntry()` removes
+  duplicates. Omit `path` and the stored chain stays, so a re-pick of a folder
+  does not forget it.
+- `recallRoots()` runs at startup. `queryPermission()` needs no user gesture,
+  so a folder still `'granted'` **re-mounts with no dialog**. `mount()` walks
+  it back to `recallView()`'s chain, so the return trip costs no clicks.
 - `asRoot` reads a bare handle as `{handle, path: []}`, so a database written
-  before the chain existed keeps its folders instead of losing all eight.
-- Saving hangs off `ROUTER.write` in `app-fsa.js`, which is the one place core
-  already reports a selection change. `mounted` is set only when a mount has
-  finished, so the mount's own renders cannot overwrite the chain they are
-  about to restore.
-- Otherwise the roots are listed under "Recently opened" on the welcome screen;
-  clicking one calls `requestPermission()` from that gesture. Chrome usually
-  downgrades grants to `'prompt'` when the browser restarts, so expect one
-  in-page permission bar per session — but never the OS picker again.
+  before the chain existed keeps its folders.
+- Saves hang off `ROUTER.write` in `app-fsa.js`, the one place where core
+  reports a selection change. `mounted` is set only when a mount has finished,
+  so the mount's own renders cannot overwrite the chain they are about to
+  restore.
+- Otherwise the welcome screen lists the roots under "Recently opened". A
+  click calls `requestPermission()` from that gesture. Chrome usually
+  downgrades a grant to `'prompt'` when the browser restarts. Expect one
+  in-page permission bar per session, and never the OS picker again.
 
 ---
 
@@ -179,35 +178,35 @@ uv run --with "playwright==1.61.0" python3 test-e2e.py         # real folder
 ```
 
 `test-rich.py` covers the only feature that touches the network. It needs no
-network itself: the test aborts `esm.sh` requests to force the offline path, and
-the loaded path runs against stub modules served from the same loopback port via
-`window.FILEMILL_CDN`. `test-ui.py` and `test-url.py` switch rich previews off,
-because a failed CDN import logs console errors that would drown their own
-assertions.
+network itself. The test aborts `esm.sh` requests to force the offline path.
+The loaded path runs against stub modules served from the same loopback port
+through `window.FILEMILL_CDN`. `test-ui.py` and `test-url.py` switch rich
+previews off, because a failed CDN import logs console errors that hide their
+own assertions.
 
-`test-url.py` is separate because it needs a real origin, and two things need
-one. `history.pushState` throws on the opaque origin of a `file://` page, which
-is the case `test-ui.py` covers. So does `navigator.storage.getDirectory()`,
-with `SecurityError: … unsafe for access within a Web application`. It serves
+`test-url.py` is separate because it needs a real origin. `history.pushState`
+throws on the opaque origin of a `file://` page, which is the case `test-ui.py`
+covers. `navigator.storage.getDirectory()` throws there too, with
+`SecurityError: … unsafe for access within a Web application`. The test serves
 the repo on a loopback port and drives the same fake handle for the links.
 
-**The origin private file system is how this repo tests real files headlessly.**
-OPFS hands out a genuine `FileSystemDirectoryHandle` with no folder dialog:
-same `entries()`, same `getFile()`, same browser-side plumbing as a picked
+**The origin private file system (OPFS) is how this repo tests real files
+headlessly.** OPFS gives a real `FileSystemDirectoryHandle` with no folder
+dialog: the same `entries()`, `getFile()` and browser-side plumbing as a picked
 folder. `test-url.py` builds 3 000 real files in it (250 at a time; one at a
-time takes 25 s) and runs `FSA` against them. That is the only place the cost of
-a size sort is visible, because the fake handle answers `getFile()` out of
-memory. Measured there at 3 000 files: `entries()` 363–1 117 ms, the sweep
-851–1 707 ms (284–569 µs per file), the comparison 18–90 ms. Read the ratio, not
-the milliseconds: the sweep lands at 1.5–2.9× the listing in the same run, and
-the check asserts that rather than a wall-clock ceiling. What OPFS cannot claim
-to be is the user's own disk, which is `test-e2e.py`'s job.
+time takes 25 s) and runs `FSA` against them. That is the only place where the
+cost of a size sort is visible, because the fake handle answers `getFile()`
+from memory. Measured there at 3 000 files: `entries()` 363–1 117 ms, the
+sweep 851–1 707 ms (284–569 µs per file), the comparison 18–90 ms. Read the
+ratio, not the milliseconds. The sweep lands at 1.5–2.9× the listing in the
+same run, and the check asserts that ratio, not a wall-clock ceiling. OPFS is
+not the user's own disk. That is `test-e2e.py`'s job.
 
-**Never run `playwright install`.** Pin the version matching the
-NixOS-installed browsers — currently rev 1228 → `playwright==1.61.0`, which is
-also what `$UV_CONSTRAINT` says.
+**Never run `playwright install`.** Pin the version that matches the
+NixOS-installed browsers. Now that is rev 1228 → `playwright==1.61.0`, which
+is also what `$UV_CONSTRAINT` says.
 
-`test-ui.py` fakes the handle API, which is all the app ever touches:
+`test-ui.py` fakes the handle API, which is all the app touches:
 
 ```js
 const D = (name, kids) => ({kind:'directory', name,
@@ -217,59 +216,58 @@ const F = (name, text) => ({kind:'file', name,
 mount(D('workspace', [D('src', [F('app.py', 'print(1)')]), F('README.md', '# hi')]));
 ```
 
-A `file://` page is fine for it — `mount(fake)` bypasses the picker. Measure
-render cost **in-page** (`performance.now()` around `render()`), never by timing
-Playwright keystrokes; the round-trip dominates. The suite asserts a 100 ms
-ceiling at 3 000 entries, which exists to catch the O(entries)-per-keystroke
-regression that cost 500–740 ms, not to benchmark a loaded machine. Read the
-numbers it prints *relative to each other in the same run*, because absolute
-figures move by 3× with load: a type-ahead hit should land near the arrow-key
+A `file://` page is fine for it, because `mount(fake)` bypasses the picker.
+Measure render cost **in-page** (`performance.now()` around `render()`), never
+by timing Playwright keystrokes. The round trip dominates. The suite asserts a
+100 ms ceiling at 3 000 entries. The ceiling catches the O(entries)-per-keystroke
+regression that cost 500–740 ms. It does not benchmark a loaded machine. Read
+the printed numbers *relative to each other in the same run*, because absolute
+figures move by 3× with load. A type-ahead hit must land near the arrow-key
 keystroke it shares a re-render with, and a type-ahead miss well under it.
 
 **End `FAKE` on a value, never on an assignment.** Playwright evaluates the
-string and *calls the result if it is a function*, and the result is the
-completion value of the last statement. Ending on `window.__spySaves = () => {…}`
-handed Playwright that arrow, which it duly invoked — stubbing `recallRoots`
-before a single check ran, so two storage checks read an empty list out of a
-database that visibly held a record. The trailing `"fake handle ready";` is
+string and *calls the result if it is a function*. The result is the completion
+value of the last statement. Ending on `window.__spySaves = () => {…}` gave
+Playwright that arrow function, which it invoked. That stubbed `recallRoots`
+before a single check ran, so two storage checks read an empty list from a
+database that held a record. The trailing `"fake handle ready";` is
 load-bearing.
 
-`test-e2e.py` is the only suite that changes a directory, and it changes one it
-made itself: `fixture()` builds a folder under the system temp directory and
-`owned()` refuses any path outside it, so no check can edit a folder you picked.
-It deletes the folder in a `finally`.
+`test-e2e.py` is the only suite that changes a directory, and it changes one
+it made itself. `fixture()` builds a folder under the system temp directory.
+`owned()` refuses any path outside it, so no check can edit a folder you
+picked. The suite deletes the folder in a `finally`.
 
-A bench that points at the wrong column reports a wonderful number instead of
-failing. `__typebench` therefore returns the row count it searched and the check
-asserts it — the first version measured the 8-row root column and reported 0 ms,
-because `__keybench` had walked the 3 000-entry directory off the path first.
+A bench that points at the wrong column reports a good number instead of a
+failure. `__typebench` therefore returns the row count it searched, and the
+check asserts it. The first version measured the 8-row root column and
+reported 0 ms, because `__keybench` had walked the 3 000-entry directory off
+the path first.
 
 **Assert against a number from the same run, not a wall clock.** An arrow key
-at 3 000 entries measured 11.5 to 89.9 ms over 12 runs on one machine and 106 ms
-on a slower one. A check that puts a flat 100 ms on that decides by machine load
-rather than by code, and it fails for whoever happens to be running something
-else. The sort suite therefore compares the keystroke after a sweep against the
-arrow key measured in the same run and the same column, allowing the budget as
-slack, which is the form the type-ahead check already uses.
+at 3 000 entries measured 11.5 to 89.9 ms over 12 runs on one machine and 106
+ms on a slower one. A flat 100 ms limit decides by machine load, not by code,
+and fails for whoever runs something else. The sort suite therefore compares
+the keystroke after a sweep against the arrow key measured in the same run and
+the same column, with the budget as slack. The type-ahead check uses the same
+form.
 
-**Back a relative timing with an exact assertion.** `arrow + budget` is still
-loose enough to hide a re-sort per keystroke, which costs 18–90 ms at this size.
-The sort check therefore also asserts something with no clock in it: after 20
-presses the focused column is the *same cached entry*. Prove such a pair works
-by injecting the regression rather than reasoning about it — a `buildCol` whose
-`metaRef` never matches took the keystroke to 569–640 ms against a 109–139 ms
-threshold and flipped the identity check false.
+**Back a relative timing with an exact assertion.** `arrow + budget` can still
+hide a re-sort per keystroke, which costs 18–90 ms at this size. The sort check
+therefore also asserts something with no clock in it: after 20 presses the
+focused column is the *same cached entry*. Prove such a pair works by injecting
+the regression. A `buildCol` whose `metaRef` never matches took the keystroke
+to 569–640 ms against a 109–139 ms threshold and flipped the identity check to
+false.
 
-Attribution matters more than the totals. Selecting a *file* inside a
-3 000-entry directory costs ~60 ms on its own (a preview build plus a
-re-render), which swamps anything type-ahead does; the suite therefore measures
-an arrow key in that same column for comparison and times `taSearch` separately.
-Isolated at 3 000 entries: matching 1.1–1.8 ms, mark plus un-mark 0.07 ms, the
-status-strip write 0.01 ms, a whole no-match keystroke 2.3–3.3 ms.
+Attribution matters more than the totals. Selecting a *file* in a 3 000-entry
+directory costs about 60 ms on its own (a preview build plus a re-render). That
+hides anything type-ahead does. The suite therefore measures an arrow key in
+the same column for comparison and times `taSearch` separately. Isolated at
+3 000 entries: matching 1.1–1.8 ms, mark plus un-mark 0.07 ms, the status-strip
+write 0.01 ms, a whole no-match keystroke 2.3–3.3 ms.
 
 ---
-
-## Key design decisions
 
 ## Key design decisions
 
@@ -337,10 +335,10 @@ status-strip write 0.01 ms, a whole no-match keystroke 2.3–3.3 ms.
 
 ## Visual spec
 
-All of it is CSS custom properties at the top of `src/styles.css` — change the
-tokens, not the rules. `data-theme="light|dark"` and
+All of it is CSS custom properties at the top of `../ui/core/styles.css`.
+Change the tokens, not the rules. `data-theme="light|dark"` and
 `data-density="compact|comfortable"` on `<html>` switch whole palettes and
-metrics; both come from the ⚙ popover.
+metrics. Both come from the ⚙ popover.
 
 - Accent `#2f6df6` (light) / `#5b8dff` (dark); everything else derives via `color-mix()`
 - Rows 21 px compact / 26 px comfortable; column header 26 px with an item count
