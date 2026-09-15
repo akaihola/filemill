@@ -12,8 +12,8 @@
    (timestamp, id…), and falling back to the line number. Unique because the
    selection, the URL and applyPath all name a row by it.
    ═══════════════════════════════════════════════════════════════════════════ */
-import { esc } from "./icons.js";
-import { render } from "./render.js";
+import { esc } from "../core/icons.js";
+import { render } from "../core/render.js";
 
 const JSONL_MAX = 512 * 1024; /* the same ceiling as TEXT_MAX */
 const JSONL_LABEL = 60; /* as the server's MAX_LABEL_LEN */

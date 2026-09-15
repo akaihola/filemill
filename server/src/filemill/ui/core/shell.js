@@ -24,14 +24,6 @@ document.body.insertAdjacentHTML(
       <div id="search-results" role="status" aria-live="polite" hidden></div>
     </form>
     <div class="spacer"></div>
-    <span id="local-badge" hidden>
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/></svg>
-      <span class="nm"></span>
-      <button id="leave-local" title="Back to the served folder">✕</button>
-    </span>
-    <button class="tb" id="open" title="Open a folder on this machine">
-      <svg class="tb-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/></svg>
-      Open Folder…</button>
     <button class="tb" id="gear" aria-expanded="false" title="Settings">⚙</button>
     <div id="settings" hidden>
       <div class="grp">View</div>
@@ -94,18 +86,7 @@ document.body.insertAdjacentHTML(
   </div>
 </div>
 
-<div id="welcome">
-  <svg class="mark" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/></svg>
-  <h1 id="w-title">Filemill</h1>
-  <p id="w-msg">Pick a folder on this machine to browse it in Miller columns.
-     Nothing leaves the browser — the folder is read locally, on demand.</p>
-  <button class="btn" id="w-pick">Choose Folder…</button>
-  <div id="w-recent" hidden>
-    <div class="rec-head">Recently opened</div>
-    <div class="rec-list"></div>
-  </div>
-  <p class="note">Needs a Chromium-based desktop browser (File System Access API).</p>
-</div>`,
+`,
 );
 
 /* Nothing to export: the page structure is the product. The empty export
