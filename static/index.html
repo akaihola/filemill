@@ -5820,10 +5820,10 @@ document.addEventListener("visibilitychange", () => {
 
 async function mount(handle, loc) {
   const node = FS.node(handle.name, handle);
-  welcome.hidden = true;
-  await mountRoot(node, handle.name + " — Filemill");
   mounted = null;
   keptAt = null;
+  welcome.hidden = true;
+  await mountRoot(node, handle.name + " — Filemill");
   /* A link in the address bar beats the remembered chain: the user followed it
      just now, where the chain is only where they happened to stop last time.
      applyPath walks as far as the names still exist and stops, so a folder
