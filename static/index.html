@@ -2068,6 +2068,159 @@ document.body.insertAdjacentHTML(
    marks the file as a module, which is what lets the entry import it for
    its effect alone. */
 
+/* ═══ core/state.js ═══ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   State
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const root = document.documentElement;
+const finder = document.getElementById("finder");
+const rail = document.getElementById("rail");
+const stage = document.getElementById("stage");
+const strip = document.getElementById("strip");
+const trail = document.getElementById("trail");
+const welcome = document.getElementById("welcome");
+
+let path = []; // node chain, [0] = root
+let sel = []; // per-column selected name
+let focusCol = 0;
+let widths = []; // natural width per column
+let folded = 0; // columns currently folded
+let pvToken = 0; // guards async preview fills
+let pvFullscreen = false;
+/* Module bindings are read-only for importers, so the files that used to
+   assign these directly go through here. */
+function setState(patch) {
+  if ("path" in patch) path = patch.path;
+  if ("sel" in patch) sel = patch.sel;
+  if ("focusCol" in patch) focusCol = patch.focusCol;
+  if ("widths" in patch) widths = patch.widths;
+  if ("folded" in patch) folded = patch.folded;
+  if ("pvFullscreen" in patch) pvFullscreen = patch.pvFullscreen;
+}
+const nextPvToken = () => ++pvToken;
+const state = {
+  dotfiles: root.dataset.hidden === "show",
+  sort: { key: "name", desc: false },
+};
+let sortOrder = (kids) => kids;
+const setSortKids = (value) => sortOrder = value;
+
+const GUTTER = () =>
+  parseInt(getComputedStyle(root).getPropertyValue("--gutter"));
+const SPINE = () =>
+  parseInt(getComputedStyle(root).getPropertyValue("--spine-w"));
+
+const COL_MIN = 148; // Keep columns wide enough for readable rows and controls.
+const COL_MAX = 380; // Fit long page titles while folding columns outside focus.
+const BYTE_BASE = 1024; // File sizes use binary units.
+const KB_DECIMAL_LIMIT = 10; // Small KB values keep one decimal place.
+const KB_DECIMAL_DIGITS = 1; // One decimal keeps small sizes readable.
+const KB_DIGITS = 0; // Larger KB values do not need fractional precision.
+const MB_DECIMAL_DIGITS = 1; // MB values retain one decimal for useful precision.
+const GB_DECIMAL_DIGITS = 2; // GB values retain two decimals for useful precision.
+const DATE_PART_DIGITS = "2-digit"; // Clock fields align consistently in the metadata line.
+const CODE_COLUMNS = 88; // Preview text targets an 88-character reading width.
+const CODE_HORIZONTAL_PADDING = 82; // Preview padding is 30px plus 52px.
+const PREVIEW_MAX_WIDTH = 760; // Keep the preview from becoming too wide to read.
+const PREVIEW_MIN_RATIO = 0.45; // Preserve nearly half the stage for preview content.
+const EMPTY_PREVIEW_WIDTH = 300; // Keep the empty preview stable before a file is selected.
+const HEADER_HORIZONTAL_PADDING = 34; // Reserve space for the column heading chrome.
+const COLUMN_HORIZONTAL_PADDING = 58; // Reserve space for row padding and scrollbar.
+const CODE_FONT_SIZE = 11.5; // Match the compact monospace preview typography.
+
+/* One filtered copy per call, ordered by core/sort.js. Every column build, every
+   width measurement and every path walk comes through here, which is what keeps
+   the rows and a restored chain agreeing on what row 4 is. */
+const visibleKids = (node) =>
+  ((kids) => node.ordered ? kids : sortOrder(kids))(
+    (node.kids || []).filter((k) => state.dotfiles || !k.name.startsWith(".")),
+  );
+
+const rowIndex = (node, name) =>
+  visibleKids(node).findIndex((k) => k.name === name);
+
+const fmtSize = (b) =>
+  b < BYTE_BASE ? `${b} B` : b < BYTE_BASE ** 2
+    ? `${
+      (b / BYTE_BASE).toFixed(
+        b < BYTE_BASE * KB_DECIMAL_LIMIT ? KB_DECIMAL_DIGITS : KB_DIGITS,
+      )
+    } KB`
+    : b < BYTE_BASE ** 3
+    ? `${(b / BYTE_BASE ** 2).toFixed(MB_DECIMAL_DIGITS)} MB`
+    : `${(b / BYTE_BASE ** 3).toFixed(GB_DECIMAL_DIGITS)} GB`;
+
+const fmtDate = (ms) =>
+  new Date(ms).toLocaleString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: DATE_PART_DIGITS,
+    minute: DATE_PART_DIGITS,
+  });
+
+const splitName = (name) => {
+  const i = name.lastIndexOf(".");
+  return (i > 0) ? [name.slice(0, i), name.slice(i)] : [name, ""];
+};
+
+const previewNode = () => {
+  const last = path[path.length - 1], s = sel[path.length - 1];
+  const n = s && (last.kids || []).find((k) => k.name === s);
+  return (n && !n.dir) ? n : null;
+};
+
+const selectedNode = () => {
+  const last = path[path.length - 1], s = sel[path.length - 1];
+  return s && (last.kids || []).find((k) => k.name === s) || null;
+};
+
+/* 88 columns of .pv-text plus its and .pv-body's horizontal padding (30 + 52),
+   measured from the real monospace font so it agrees with the CSS min-width */
+const codeMin = () =>
+  codeMin._w ||= (() => {
+    const c = document.createElement("canvas").getContext("2d");
+    const cs = getComputedStyle(root);
+    c.font = `${CODE_FONT_SIZE}px ${cs.getPropertyValue("--mono")}`;
+    return Math.ceil(c.measureText("0").width * CODE_COLUMNS) +
+      CODE_HORIZONTAL_PADDING;
+  })();
+
+/* target reading width for the preview — the thing scrolling tries to protect.
+   Never wider than the stage itself: a phone cannot show 88 columns, and a
+   pane that runs past the right edge is clipped, not scrollable — so there
+   the pane fits and .pv-body pans over the code instead. */
+const previewTarget = () =>
+  previewNode()
+    ? Math.min(
+      PREVIEW_MAX_WIDTH,
+      stage.clientWidth,
+      Math.max(codeMin(), Math.round(stage.clientWidth * PREVIEW_MIN_RATIO)),
+    )
+    : EMPTY_PREVIEW_WIDTH;
+
+function measure(node) {
+  /* content-driven width, clamped — no manual resizing, no wasted space */
+  const c = (measure._c ||= document.createElement("canvas").getContext("2d"));
+  const cs = getComputedStyle(root);
+  c.font = `${cs.getPropertyValue("--fs-row").trim()} ${
+    cs.getPropertyValue("--font")
+  }`;
+  let w = 0;
+  for (const k of visibleKids(node)) {
+    w = Math.max(w, c.measureText(k.name).width);
+  }
+  c.font = `600 ${cs.getPropertyValue("--fs-head").trim()} ${
+    cs.getPropertyValue("--font")
+  }`;
+  w = Math.max(w, c.measureText(node.name).width + HEADER_HORIZONTAL_PADDING);
+  return Math.min(
+    COL_MAX,
+    Math.max(COL_MIN, Math.ceil(w) + COLUMN_HORIZONTAL_PADDING),
+  );
+}
+
 /* ═══ core/ports.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Ports — the three seams between the shared UI and whatever is behind it.
@@ -2167,6 +2320,655 @@ const usePreview = (p) => {
 };
 const useRouter = (r) => {
   ROUTER = r;
+};
+
+/* ═══ core/icons.js ═══ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Icons — Seti UI font (MIT), extension map generated by build-seti-map.py.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Seti has glyphs for these but mapping.less never binds them to an extension. */
+const SUPP = {
+  nix: ["e019", "#519aba"],
+  db: ["e022", "#dd4b78"],
+  sqlite: ["e022", "#dd4b78"],
+  lock: ["e05d", "#7fae42"],
+  desktop: ["e019", "#6d8086"],
+};
+const FOLDER_PATH =
+  '<path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/>';
+const FOLDER_SVG = `<svg viewBox="0 0 16 16">${FOLDER_PATH}</svg>`;
+
+function iconHTML(node) {
+  /* An adapter may name its own glyph — a virtual filesystem's tables and rows
+     are not files and have no extension to look up. */
+  if (node.icon) return `<span class="ico glyph">${esc(node.icon)}</span>`;
+  if (node.dir) return `<span class="ico dir">${FOLDER_SVG}</span>`;
+  const lower = node.name.toLowerCase(), ext = lower.split(".").pop();
+  const e = SETI.name[lower] || SETI.ext[ext] || SUPP[ext] || SETI.default;
+  const color = (root.dataset.theme === "light" && SETI.light[ext]) || e[1];
+  return `<span class="ico seti" style="color:${color}">&#x${e[0]};</span>`;
+}
+
+const esc = (s) =>
+  s.replace(
+    /[&<>"]/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]),
+  );
+
+/* ═══ core/syntax.js ═══ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Syntax highlighting — in the browser, so one copy serves both builds.
+
+   The Python side can already colour source with Pygments, and does for its
+   own pages. The shared UI deliberately does not use it: a preview that is
+   coloured only when a Python process is behind it would have to be written
+   twice — once here for the single file, once there for the served page.
+   Colouring the text in the browser instead means both builds run *this*
+   file, and a folder reached through "Open local folder…" is coloured on the
+   server build too, though the server has never seen a byte of it.
+
+   This is not a parser. Four token classes — comment, string, number, keyword
+   — one regular expression per language, and the leftmost match wins, which is
+   what keeps a `#` inside a string out of the comment class with no state to
+   carry from one token to the next. That is enough to read a file by and well
+   short of a language front end: what it gets wrong is mis-coloured, never
+   mangled, because every character of the input is escaped and emitted exactly
+   once — see hlHTML.
+
+   A language is one line in HL_LANGS. An extension that is not listed previews
+   as plain text, the way every file did before this existed. SVG is absent on
+   purpose: the pane has something better than source for it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Written as plain strings rather than literals because they are assembled:
+   a regex literal cannot be pasted into another one without going through its
+   .source anyway, and doubling the backslashes once here is the smaller cost. */
+const HL_NUM =
+  "\\b(?:0[xXbBoO][0-9a-fA-F_]+|\\d[\\d_]*(?:\\.\\d+)?(?:[eE][+-]?\\d+)?)\\b";
+
+/* A quoted run ends at the first unescaped quote of the same kind; `\\[\\s\\S]`
+   rather than `\\.` so a backslash before a newline does not end the string. */
+const HL_STR = "\"(?:\\\\[\\s\\S]|[^\"\\\\])*\"|'(?:\\\\[\\s\\S]|[^'\\\\])*'";
+const HL_TICK = "`(?:\\\\[\\s\\S]|[^`\\\\])*`|" + HL_STR; /* + JS template */
+const HL_TRIPLE = "\"\"\"[\\s\\S]*?\"\"\"|'''[\\s\\S]*?'''|" +
+  HL_STR; /* + Python */
+
+const HL_SLASH = "//[^\\n]*|/\\*[\\s\\S]*?\\*/";
+const HL_HASH = "#[^\\n]*";
+const HL_DASH = "--[^\\n]*";
+const HL_BLOCK = "/\\*[\\s\\S]*?\\*/";
+
+const hlWords = (s) => "\\b(?:" + s.trim().split(/\s+/).join("|") + ")\\b";
+
+const K_JS =
+  `as async await break case catch class const continue debugger default delete do
+  else export extends false finally for from function if import in instanceof let new null of
+  return static super switch this throw true try typeof undefined var void while with yield`;
+const K_TS = K_JS +
+  ` abstract declare enum implements interface is keyof namespace never
+  private protected public readonly type unknown satisfies`;
+const K_PY =
+  `and as assert async await break class continue def del elif else except False
+  finally for from global if import in is lambda None nonlocal not or pass raise return self
+  True try while with yield`;
+const K_C =
+  `auto break bool case char const continue default do double else enum extern false
+  float for goto if inline int long NULL register return short signed sizeof static struct
+  switch true typedef union unsigned void volatile while`;
+const K_CPP = K_C +
+  ` catch class constexpr delete explicit friend mutable namespace new
+  noexcept nullptr operator override private protected public template this throw try typename
+  using virtual`;
+const K_SQL =
+  `add all alter and as asc begin between by case check column commit constraint
+  count create cross default delete desc distinct drop else end exists foreign from full group
+  having in index inner insert into is join key left like limit max min not null offset on or
+  order outer primary references returning right rollback select set sum table then transaction
+  union unique update values view when where with`;
+
+/* One entry per language; `k` is a finished pattern so that a language whose
+   keywords are not words — a TeX macro, a CSS at-rule, an XML tag — can say so
+   without a second mechanism. `n: false` turns the number class off. */
+const HL_SPECS = {
+  markdown: { c: HL_HASH, s: HL_TICK, k: hlWords("true false") },
+  js: { c: HL_SLASH, s: HL_TICK, k: hlWords(K_JS) },
+  ts: { c: HL_SLASH, s: HL_TICK, k: hlWords(K_TS) },
+  py: { c: HL_HASH, s: HL_TRIPLE, k: hlWords(K_PY) },
+  c: { c: HL_SLASH, s: HL_STR, k: hlWords(K_C) },
+  cpp: { c: HL_SLASH, s: HL_STR, k: hlWords(K_CPP) },
+  cs: {
+    c: HL_SLASH,
+    s: HL_STR,
+    k: hlWords(
+      K_CPP + ` base checked decimal event foreach
+           get in interface internal is lock object out params readonly ref sealed set string
+           unchecked unsafe var where yield`,
+    ),
+  },
+  java: {
+    c: HL_SLASH,
+    s: HL_STR,
+    k: hlWords(
+      K_C + ` abstract assert catch class extends
+           final finally implements import instanceof interface native new package private
+           protected public super synchronized this throw throws transient try var`,
+    ),
+  },
+  kt: {
+    c: HL_SLASH,
+    s: HL_STR,
+    k: hlWords(`as break by class companion const continue
+           data do else enum false for fun if import in infix init inline interface internal is
+           lateinit null object open operator out override package private protected public
+           reified return sealed super suspend this throw true try typealias val var vararg when
+           where while`),
+  },
+  go: {
+    c: HL_SLASH,
+    s: HL_TICK,
+    k: hlWords(`break case chan const continue default defer
+           else fallthrough false for func go goto if import interface map nil package range
+           return select struct switch true type var`),
+  },
+  rs: {
+    c: HL_SLASH,
+    s: HL_STR,
+    k: hlWords(`as async await break const continue crate dyn
+           else enum extern false fn for if impl in let loop match mod move mut pub ref return
+           self Self static struct super trait true type unsafe use where while`),
+  },
+  swift: {
+    c: HL_SLASH,
+    s: HL_STR,
+    k: hlWords(`as associatedtype async await break case catch
+           class continue default defer deinit do else enum extension fallthrough false
+           fileprivate final for func guard if import in init internal is lazy let mutating nil
+           open operator private protocol public repeat rethrows return self Self static struct
+           subscript super switch throw throws true try typealias var weak where while`),
+  },
+  php: {
+    c: HL_SLASH + "|" + HL_HASH,
+    s: HL_STR,
+    k: hlWords(`abstract and array as break case
+           catch class clone const continue declare default do echo else elseif empty enum
+           extends false final finally fn for foreach function global if implements include
+           instanceof interface isset list match namespace new null or print private protected
+           public readonly require return static switch throw trait true try unset use var
+           while yield`),
+  },
+  rb: {
+    c: HL_HASH,
+    s: HL_STR,
+    k: hlWords(`alias and begin break case class def defined
+           do else elsif end ensure false for if in module next nil not or redo require rescue
+           retry return self super then true undef unless until when while yield`),
+  },
+  pl: {
+    c: HL_HASH,
+    s: HL_STR,
+    k: hlWords(`and bless defined do else elsif eq foreach ge
+           gt if last le local lt my ne next no not or our package print qw redo ref require
+           return sub undef unless until use while`),
+  },
+  sh: {
+    c: HL_HASH,
+    s: HL_STR,
+    k: hlWords(`alias break case cd continue declare do done
+           elif else esac eval exec exit export fi for function if in local read readonly return
+           select set shift source then trap unset until while`),
+  },
+  lua: {
+    c: "--\\[\\[[\\s\\S]*?\\]\\]|" + HL_DASH,
+    s: HL_STR,
+    k: hlWords(`and break do else
+           elseif end false for function goto if in local nil not or repeat return then true
+           until while`),
+  },
+  r: {
+    c: HL_HASH,
+    s: HL_STR,
+    k: hlWords(`break else FALSE for function if in Inf NA
+           NaN next NULL repeat return TRUE while`),
+  },
+  sql: { c: HL_DASH + "|" + HL_BLOCK, s: HL_STR, k: hlWords(K_SQL), i: true },
+  nix: {
+    c: HL_HASH + "|" + HL_BLOCK,
+    s: HL_TRIPLE,
+    k: hlWords(`assert builtins else false if
+           import in inherit let null or rec then true with`),
+  },
+  json: { c: HL_SLASH, s: HL_STR, k: hlWords("true false null") },
+  yaml: { c: HL_HASH, s: HL_STR, k: hlWords("true false null yes no on off") },
+  toml: { c: HL_HASH, s: HL_TRIPLE, k: hlWords("true false") },
+  ini: {
+    c: HL_HASH + "|;[^\\n]*",
+    s: HL_STR,
+    k: hlWords("true false yes no on off"),
+  },
+  css: { c: HL_BLOCK, s: HL_STR, k: "@[a-zA-Z-]+" },
+  xml: { c: "<!--[\\s\\S]*?-->", s: HL_STR, k: "</?[A-Za-z_][\\w.:-]*" },
+  tex: { c: "%[^\\n]*", n: false, k: "\\\\[A-Za-z@]+" },
+};
+
+/* Extensions that are the same language under another name. */
+const HL_ALIAS = {
+  md: "markdown",
+  markdown: "markdown",
+  html: "xml",
+  htm: "xml",
+  mjs: "js",
+  cjs: "js",
+  jsx: "js",
+  tsx: "ts",
+  h: "c",
+  hpp: "cpp",
+  cc: "cpp",
+  cxx: "cpp",
+  bash: "sh",
+  zsh: "sh",
+  fish: "sh",
+  yml: "yaml",
+  jsonc: "json",
+  cfg: "ini",
+  conf: "ini",
+  scss: "css",
+  less: "css",
+  gitignore: "sh",
+  env: "sh",
+  /* what a Markdown fence calls the language, when that is not an extension */
+  python: "py",
+  javascript: "js",
+  typescript: "ts",
+  shell: "sh",
+  rust: "rs",
+  ruby: "rb",
+};
+
+/* Comment, then string, then number, then keyword. The order only settles ties
+   at one position — `exec` takes the leftmost match either way, which is what
+   puts a quote inside a comment in the comment and not in a string of its own. */
+const HL_LANGS = Object.fromEntries(
+  Object.entries(HL_SPECS).map(([key, sp]) => {
+    const alts = [];
+    if (sp.c) alts.push(`(?<com>${sp.c})`);
+    if (sp.s) alts.push(`(?<str>${sp.s})`);
+    if (sp.n !== false) alts.push(`(?<num>${HL_NUM})`);
+    if (sp.k) alts.push(`(?<kw>${sp.k})`);
+    return [key, new RegExp(alts.join("|"), sp.i ? "gi" : "g")];
+  }),
+);
+
+/* The language for a file name, or null for "no highlighting known". Starting
+   at index 0 so a dotfile is its own extension: .gitignore is a shell-comment
+   file and has nothing else to go on. */
+function hlLang(name) {
+  const i = name.lastIndexOf(".");
+  if (i < 0) return null;
+  const ext = name.slice(i + 1).toLowerCase();
+  const key = HL_ALIAS[ext] || ext;
+  return key in HL_LANGS ? key : null;
+}
+
+/* Escaped HTML for `text`, with the recognised tokens wrapped in spans. Every
+   character reaches the output exactly once: the gap before a match is escaped
+   and copied, the match itself is escaped inside its span, and the tail after
+   the last match is escaped and copied. Nothing here interpolates unescaped
+   input, which is what makes the output safe to assign to innerHTML. */
+function hlHTML(text, key) {
+  const re = HL_LANGS[key];
+  let out = "", last = 0, m;
+  re.lastIndex = 0;
+  while ((m = re.exec(text)) !== null) {
+    /* No alternative can match the empty string today; the guard is what keeps
+       that from becoming an infinite loop if one ever does. */
+    if (!m[0]) {
+      re.lastIndex++;
+      continue;
+    }
+    const cls = Object.keys(m.groups).find((g) => m.groups[g] !== undefined);
+    out += esc(text.slice(last, m.index)) +
+      `<span class="hl-${cls}">${esc(m[0])}</span>`;
+    last = re.lastIndex;
+  }
+  return out + esc(text.slice(last));
+}
+
+/* Pretty-printed, foldable HTML for a JSON document, or null when `text` is
+   not JSON — the caller then colours it as source instead. Objects and arrays
+   become <details open>, so folding is the browser's: no handlers, and nothing
+   for either build to wire. Inside a pre-wrap <pre> a newline that precedes a
+   block is swallowed and one that follows it draws a blank line, so every text
+   line ends in "\n" and no run of text begins with one. */
+function jsonHTML(text) {
+  let doc;
+  try {
+    doc = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  const scalar = (v) =>
+    v === null || typeof v === "boolean"
+      ? `<span class="hl-kw">${v}</span>`
+      : typeof v === "number"
+      ? `<span class="hl-num">${v}</span>`
+      : `<span class="hl-str">${esc(JSON.stringify(v))}</span>`;
+  const node = (v, pad, head, tail) => {
+    if (typeof v !== "object" || v === null) {
+      return `${pad}${head}${scalar(v)}${tail}\n`;
+    }
+    const arr = Array.isArray(v);
+    const keys = arr ? v.map((_, i) => i) : Object.keys(v);
+    const [open, close] = arr ? ["[", "]"] : ["{", "}"];
+    if (!keys.length) return `${pad}${head}${open}${close}${tail}\n`;
+    let out =
+      `<details open><summary data-n="${keys.length}" data-close="${close}${tail}">` +
+      `${pad}${head}${open}</summary>`;
+    keys.forEach((k, i) => {
+      out += node(
+        v[k],
+        pad + "  ",
+        arr ? "" : `${esc(JSON.stringify(k))}: `,
+        i < keys.length - 1 ? "," : "",
+      );
+    });
+    return out + `${pad}${close}${tail}</details>`;
+  };
+  /* Nesting deep enough to exhaust the stack is still valid JSON; it is shown
+     as source, the same as anything else this cannot fold. */
+  try {
+    return node(doc, "", "", "");
+  } catch {
+    return null;
+  }
+}
+
+/* Colour the fenced code inside a rendered Markdown fragment. Both markdown-it
+   and markdown-it-py emit <pre><code class="language-x"> with no highlighter
+   configured, so this one function is what makes "fenced code is coloured" true
+   in both builds. Only code nodes are touched: paragraphs and their soft line
+   breaks stay exactly as the renderer left them. */
+function hlFences(host) {
+  for (const code of host.querySelectorAll('pre > code[class*="language-"]')) {
+    const m = /(?:^|\s)language-(\S+)/.exec(code.className);
+    const key = m && hlLang("x." + m[1]);
+    if (key) code.innerHTML = hlHTML(code.textContent, key);
+  }
+}
+
+/* ═══ core/sort.js ═══ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Sort order — name, size or modification time, ascending or descending.
+
+   The three keys do not cost the same, and that asymmetry is the whole design.
+
+   A listing already carries the names, so sorting by name reads what the column
+   is holding: no fetch, no wait, no code below `sortKids` runs at all. It is the
+   default for that reason.
+
+   Size and modification time are not in a File System Access API listing.
+   `entries()` yields a name and a handle; a size costs one `getFile()` per row.
+   Ordering 3 000 entries by size therefore means 3 000 reads before the first
+   row can be placed — the sweep this file exists to manage. It runs when the
+   user picks one of the two keys that needs it, on the directories on screen,
+   once each.
+
+   One sweep serves both metadata keys: `getFile()` hands back the size and the
+   mtime together, so switching from size to modified re-sorts what is already
+   in hand and fetches nothing.
+
+   Nothing here knows where metadata comes from. `FS.loadMeta` does, which is
+   what makes this shared: the server build's listing carries size and mtime
+   already, so its sweep finds nothing to fetch and returns on one `if`. The
+   same option costs the server build a comparison and the static build a
+   syscall per row.
+   ═══════════════════════════════════════════════════════════════════════════ */
+let repaint;
+const setSortActions = ({ render }) => repaint = render;
+
+const SORT_KEYS = ["name", "size", "mtime"];
+const SORT_FIELD = { size: "size", mtime: "mod" }; /* node.meta field per key */
+const SORT_LABEL = { name: "name", size: "size", mtime: "modified" };
+
+const sortNeedsMeta = () => state.sort.key !== "name";
+
+/* One collator, reused. `"a".localeCompare(b, undefined, {numeric: true})` has
+   to resolve those options on every call, and this comparator runs n log n
+   times per column build — about 35 000 times at 3 000 entries. */
+const NAME_COLLATOR = new Intl.Collator(undefined, { numeric: true });
+const byName = (a, b) => NAME_COLLATOR.compare(a.name, b.name);
+
+/* The number to order on, or null for "this row has none". A file the port
+   could not open carries `meta.error`; a row inside a database carries
+   `meta.virtual` and no size at all. Both are honestly unknown. */
+const sortValue = (k, field) => {
+  const v = k.meta && !k.meta.error ? k.meta[field] : undefined;
+  return typeof v === "number" ? v : null;
+};
+
+/* Directories first, then the chosen key, then the name to break ties.
+   `kids` is already the filtered copy visibleKids made, so sorting it in place
+   never touches node.kids.
+
+   Directories are never ordered by size or time. Neither port can give a
+   directory either number: the File System Access API has no `getFile()` for a
+   directory handle, and the server build's listing sends metadata for files
+   only. A folder ordered by an invented 0 would sit at one end of every size
+   sort and mean nothing there, so folders keep the one order that is real for
+   them.
+
+   A file whose metadata could not be read sorts last, in name order, in *both*
+   directions. Sorting by size descending asks "what is biggest here"; a file
+   the app could not open is not the answer, and putting one at the top is how a
+   permission error gets read as a result. Last either way keeps the end the
+   user is looking at meaningful. The row is never dropped — an unreadable file
+   is still a file in that folder, and hiding the rows it failed to stat would
+   make the app lie about the directory. */
+function sortKids(kids) {
+  const { key, desc } = state.sort;
+  const dir = desc ? -1 : 1;
+  const field = SORT_FIELD[key];
+  return kids.sort((a, b) => {
+    const kind = !!b.dir - !!a.dir;
+    if (kind) return kind;
+    if (field && !a.dir) {
+      const av = sortValue(a, field), bv = sortValue(b, field);
+      if (av === null || bv === null) {
+        if (av !== bv) return av === null ? 1 : -1; /* unknown sinks */
+      } else if (av !== bv) {
+        return (av < bv ? -1 : 1) * dir;
+      }
+    }
+    return byName(a, b) * (field ? 1 : dir);
+  });
+}
+
+/* ── The sweep ──────────────────────────────────────────────────────────────
+   One sweep per directory, one in-flight promise held on the node, one writer
+   of the metadata — the shape `FS.ensureLoaded` already has for `node.kids`, so
+   a second render during a sweep joins the one running instead of starting a
+   rival. `metaDone` is the counterpart of `kids !== null`: this directory has
+   been asked, and asking again would be 3 000 syscalls for an answer already in
+   memory. */
+function ensureMeta(node) {
+  if (node.metaLoading) return node.metaLoading;
+  const kids = node.kids;
+  const todo = kids.filter((k) => !k.dir && !k.meta);
+  /* Nothing to fetch: the listing carried it (the server build), or a preview
+     already did. Settle it here, before columnFor runs, so a column with no
+     sweep to run is built once in the right order rather than built and
+     rebuilt. */
+  if (!todo.length) {
+    node.metaDone = true;
+    return null;
+  }
+
+  /* Files still to read in *this* column. The strip sums it across the columns
+     sweeping at once, so the number it shows is the number of getFile() calls
+     outstanding and nothing else. */
+  node.metaPending = todo.length;
+  node.metaLoading = (async () => {
+    const t0 = performance.now();
+    await Promise.all(todo.map((k) =>
+      FS.loadMeta(k)
+        /* The port promises to *fill* node.meta, not that it never rejects. One
+         rejection escaping here would leave metaLoading set and metaDone false
+         for good, and the column would spin at the user until the tab closed.
+         Recording the error on the row puts it in the same bucket
+         FSA.loadMeta already uses for a file it could not open, which is the
+         bucket sortValue reads as "unknown". */
+        .catch((err) => {
+          k.meta = { error: String((err && err.message) || err) };
+        })
+        /* One status write per row would cost more than the sweep it reports.
+         Every 64th is an update per ~20 ms at the rates measured here, which is
+         faster than anyone reads. */
+        .then(() => {
+          if (--node.metaPending > 0 && node.metaPending % 64 === 0) {
+            sortSay(sortStatus());
+          }
+        })
+    ));
+    node.metaSwept = { n: todo.length, ms: Math.round(performance.now() - t0) };
+    /* A refresh replaces node.kids wholesale. A sweep that started on the old
+       array has just filled objects nobody can see, and marking the *new* list
+       done would leave it ordered by whatever its rows happened to carry. */
+    if (node.kids === kids) node.metaDone = true;
+    node.metaLoading = null;
+  })();
+  return node.metaLoading;
+}
+
+/* Called from render(), so no navigation path has to remember to ask: whatever
+   is on screen gets the metadata the current sort needs, exactly once. Sorting
+   by name needs none, so the default never reaches `ensureMeta` at all — the
+   expensive path is entered by the option that asked for it and by nothing
+   else. */
+function sweepMeta(node) {
+  if (
+    !FS || !node.dir || node.kids === null || node.metaDone ||
+    node.metaLoading ||
+    !sortNeedsMeta()
+  ) return;
+  const p = ensureMeta(node);
+  if (!p) return; /* answered without fetching */
+  p.then(() => {
+    /* The second half of the guard choose() uses on its own reads: a sweep can
+       outlive the column that started it, and re-rendering for a directory that
+       is no longer open would reorder nothing and cost a rebuild. The metadata
+       it collected is kept either way — it is a fact about those files, and
+       stepping back into the folder finds it there.
+
+       Dropping the repaint is safe rather than lossy because columnFor treats
+       `metaDone` like `kidsRef`: any later render rebuilds a column whose DOM
+       predates its sweep. Nothing can be left showing an order it no longer
+       has. */
+    if (!path.includes(node)) return;
+    repaint(true);
+  });
+}
+
+/* ── What the strip says ────────────────────────────────────────────────────
+   A sort that reads 3 000 files takes a visible moment, and a column that sits
+   there in name order while it happens looks like a sort that did nothing. */
+const sortSay = (msg) => {
+  const el = document.getElementById("st-sort");
+  if (el) el.textContent = msg;
+};
+
+/* Written by render(), and again by the sweep as it counts down. Silent on the
+   default, name ascending: a strip that always says something says nothing.
+
+   While a sweep runs it shows the files still to read, summed over every column
+   sweeping at once, because one sort can start several. When it is over it names
+   the deepest column that was swept — the folder the user just stepped into is
+   the one they are asking about, and a per-column figure beats a total that
+   double-counts sweeps which overlapped. */
+function sortStatus() {
+  const { key, desc } = state.sort;
+  /* `metaLoading` decides, not the count, because the count reaches 0 a
+     microtask before the sweep resolves. Deciding on the count would let the
+     strip report a finished sort while the column beside it still spins, and
+     the two are describing the same thing. */
+  if (path.some((x) => x.metaLoading)) {
+    const left = path.reduce(
+      (n, x) => n + (x.metaLoading ? x.metaPending : 0),
+      0,
+    );
+    return `⇅ ${SORT_LABEL[key]} — reading ${Math.max(left, 1)} files…`;
+  }
+  if (key === "name" && !desc) return "";
+  const deepest = sortNeedsMeta() &&
+    [...path].reverse().find((n) => n.metaSwept && n.metaSwept.n);
+  return `⇅ ${SORT_LABEL[key]} ${desc ? "↓" : "↑"}` +
+    (deepest
+      ? ` · ${deepest.name}: ${deepest.metaSwept.n} files read in ` +
+        `${deepest.metaSwept.ms} ms`
+      : "");
+}
+
+/* ── Remembering it ─────────────────────────────────────────────────────────
+   localStorage, not the per-folder record in IndexedDB. The sort is a property
+   of how a person reads a list, not of the folder they are reading — the same
+   argument that already keeps dotfiles, density and the rich-preview switch out
+   of that record. It is also the only store both builds have: the server build
+   serves this file and has no remembered folders at all. And the record offers
+   nowhere to hang it: `keepView` fires from `ROUTER.write`, which core calls
+   when the *location* changes, and choosing a sort moves nobody.
+
+   A remembered size sort does mean a mount can start a sweep the user did not
+   ask for in this session. They did ask for it, last session, and the column
+   says so while it reads. */
+const SORT_STORE = "filemill.sort";
+
+function loadSort() {
+  try {
+    const [key, dir] = String(localStorage.getItem(SORT_STORE) || "").split(
+      ":",
+    );
+    if (SORT_KEYS.includes(key)) state.sort = { key, desc: dir === "desc" };
+  } catch (err) {
+    /* private mode, or an opaque file:// origin — keep the default */
+  }
+}
+
+function setSort(key, desc) {
+  state.sort = { key, desc };
+  try {
+    localStorage.setItem(SORT_STORE, `${key}:${desc ? "desc" : "asc"}`);
+  } catch (err) {
+    /* the sort still applies; it just will not survive a reload */
+  }
+  syncSortMenu();
+  /* cacheSig carries the sort, so this drops every cached column and rebuilds
+     it in the new order — the same route the dotfile and density switches take
+     for the same reason. */
+  repaint(true);
+}
+
+function syncSortMenu() {
+  for (const k of SORT_KEYS) {
+    const b = document.getElementById(`s-sort-${k}`);
+    if (b) b.setAttribute("aria-checked", String(state.sort.key === k));
+  }
+  const d = document.getElementById("s-sort-desc");
+  if (d) d.setAttribute("aria-checked", String(state.sort.desc));
+}
+
+function initSort() {
+  loadSort();
+  syncSortMenu();
+}
+
+/* ═══ core/dom.js ═══ */
+const set = (obj, key, value) => {
+  if (obj[key] !== value) obj[key] = value;
+};
+
+const setVar = (el, name, value) => {
+  if (el.style.getPropertyValue(name) !== value) {
+    el.style.setProperty(name, value);
+  }
 };
 
 /* ═══ core/trail.js ═══ */
@@ -2396,7 +3198,7 @@ function revealRow(row) {
   else if (r.bottom > b.bottom) body.scrollTop += r.bottom - b.bottom;
 }
 
-function initLayout() {
+function initLayout(render) {
   finder.addEventListener("scroll", applyScroll, { passive: true });
   addEventListener("resize", () => render());
 }
@@ -2422,6 +3224,8 @@ function initLayout() {
    with duplicates. applying is the re-entrancy guard: a URL being *read* must
    not be immediately re-written from the half-built state it produces. */
 let applying = false;
+let renderPage, colCache;
+const setDeepLinkActions = (actions) => ({ renderPage, colCache } = actions);
 
 function currentPath() {
   const names = path.slice(1).map((p) => p.name);
@@ -2504,7 +3308,7 @@ async function applyPath(names, wantFocus) {
     if (wantFocus != null) {
       setState({ focusCol: Math.max(0, Math.min(wantFocus, path.length - 1)) });
     }
-    render();
+    renderPage();
     scrollCursorIntoView();
   }
 }
@@ -2534,110 +3338,537 @@ function startRouting() {
   });
 }
 
-/* ═══ core/icons.js ═══ */
+/* ═══ core/render.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
-   Icons — Seti UI font (MIT), extension map generated by build-seti-map.py.
+   Render
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Seti has glyphs for these but mapping.less never binds them to an extension. */
-const SUPP = {
-  nix: ["e019", "#519aba"],
-  db: ["e022", "#dd4b78"],
-  sqlite: ["e022", "#dd4b78"],
-  lock: ["e05d", "#7fae42"],
-  desktop: ["e019", "#6d8086"],
-};
-const FOLDER_PATH =
-  '<path d="M1.4 3.2h4.1l1.3 1.7h7.8c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H1.4c-.6 0-1-.4-1-1V4.2c0-.6.4-1 1-1z"/>';
-const FOLDER_SVG = `<svg viewBox="0 0 16 16">${FOLDER_PATH}</svg>`;
+/* Building a column is O(entries), and real directories hold thousands of them
+   — far too expensive to redo on every arrow key. A column's DOM is therefore
+   built once per (node, entry list) and cached; a re-render only re-applies the
+   state that actually changed: depth, selection, width.
+   Anything that alters how a row *looks* (dotfile filter, density, theme icon
+   colours) is part of the signature and drops the whole cache. */
+const colCache = new Map();
+let cacheSig = null;
+const CACHE_MAX = 24; // Retain enough nearby columns without growing memory unbounded.
+const COLUMN_WIDTH_RATIO = 2 / 3; // Leave room for adjacent columns on narrow screens.
+const MAX_DEPTH = 5; // Keep depth styling within the available visual scale.
+const SCROLL_HINT_PADDING = 4; // Show the affordance only when content exceeds the viewport.
+const EDIT_MAX = 512 * 1024; // Keep browser edits within the provider's 512 KB text limit.
+const EDIT_MAX_LINE = 10_000; // Avoid unusably wide editor lines.
 
-function iconHTML(node) {
-  /* An adapter may name its own glyph — a virtual filesystem's tables and rows
-     are not files and have no extension to look up. */
-  if (node.icon) return `<span class="ico glyph">${esc(node.icon)}</span>`;
-  if (node.dir) return `<span class="ico dir">${FOLDER_SVG}</span>`;
-  const lower = node.name.toLowerCase(), ext = lower.split(".").pop();
-  const e = SETI.name[lower] || SETI.ext[ext] || SUPP[ext] || SETI.default;
-  const color = (root.dataset.theme === "light" && SETI.light[ext]) || e[1];
-  return `<span class="ico seti" style="color:${color}">&#x${e[0]};</span>`;
-}
+/* Writing the value a property already holds still dirties it — and a width or
+   custom-property write on a column relays out every row inside it. Guard the
+   writes and a re-render of an unchanged column costs nothing. */
+let actions;
+const setActions = (value) => actions = value;
 
-const esc = (s) =>
-  s.replace(
-    /[&<>"]/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]),
-  );
+function buildCol(node) {
+  const kids = visibleKids(node);
+  const el = document.createElement("div");
+  el.className = "col";
+  el.innerHTML = `
+    <div class="col-head">
+      <span class="name"><span>${esc(node.name)}</span></span>
+      <span class="count">${node.kids === null ? "" : kids.length}</span>
+      <button class="rf" tabindex="-1" title="Re-read this folder (F5)"
+              aria-label="Refresh ${esc(node.name)}">⟳</button>
+    </div>
+    <div class="col-body"></div>
+    <div class="spine-label" title="${esc(node.name)} — click to unfold">
+      <span class="dot"></span>
+      <span class="txt">${esc(node.name)}</span>
+    </div>`;
 
-/* ═══ core/settings.js ═══ */
-/* ═══════════════════════════════════════════════════════════════════════════
-   Settings popover
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-const gear = document.getElementById("gear"),
-  panel = document.getElementById("settings");
-const closeSettings = () => {
-  panel.hidden = true;
-  gear.setAttribute("aria-expanded", "false");
-};
-const toggle = (id, get, set) => {
-  const b = document.getElementById(id);
-  b.onclick = () => {
-    set(!get());
-    b.setAttribute("aria-checked", String(get()));
-    render(true);
+  const body = el.querySelector(".col-body");
+  if (node.kids === null) {
+    body.innerHTML =
+      `<div class="col-note"><span class="spinner"></span>Reading…</div>`;
+  } else if (node.denied) {
+    body.innerHTML = `<div class="col-note">⚠ ${esc(node.denied)}</div>`;
+  } else if (!kids.length) {
+    body.innerHTML = `<div class="col-note">Empty</div>`;
+  }
+  if (node.pages > 1) {
+    const pager = document.createElement("div");
+    pager.className = "pager";
+    pager.innerHTML =
+      `<button type="button" aria-label="Previous page">‹</button>
+      <span>Page ${node.page} of ${node.pages}</span>
+      <button type="button" aria-label="Next page">›</button>`;
+    const [prev, next] = pager.querySelectorAll("button");
+    prev.disabled = node.page === 1;
+    next.disabled = node.page === node.pages;
+    prev.onclick = (e) => {
+      e.stopPropagation();
+      FS.loadPage(node, node.page - 1);
+    };
+    next.onclick = (e) => {
+      e.stopPropagation();
+      FS.loadPage(node, node.page + 1);
+    };
+    el.appendChild(pager);
+  }
+  /* a folded column hides its rows, so the click lands on the column itself —
+     that is what makes the advertised "click a spine to unfold" work */
+  el.onclick = () => {
+    if (el.classList.contains("spine")) actions.unfoldTo(+el.dataset.i);
   };
-  b.setAttribute("aria-checked", String(get()));
-};
-
-/* Everything the old classic script did at load time. Called by the app
-   module once every core module has been evaluated. */
-function initSettings() {
-  gear.onclick = (e) => {
+  /* Read the index off the element for the same reason a row does: the node
+     keeps its DOM across re-renders, and only render time knows its column.
+     stopPropagation, or a ⟳ on a folded spine would unfold it instead. */
+  el.querySelector(".rf").onclick = (e) => {
     e.stopPropagation();
-    panel.hidden = !panel.hidden;
-    gear.setAttribute("aria-expanded", String(!panel.hidden));
+    actions.refreshColumn(+el.dataset.i);
   };
-  document.addEventListener("click", (e) => {
-    if (!panel.contains(e.target)) closeSettings();
+
+  const rows = kids.map((k, ri) => {
+    const [stem, ext] = splitName(k.name);
+    const row = document.createElement("div");
+    row.className = "row" + (k.name.startsWith(".") ? " dotfile" : "");
+    row.title = k.name; /* the full name is always one hover away */
+    row.setAttribute("aria-label", k.name);
+    row.innerHTML = iconHTML(k) +
+      `<span class="label"><span class="stem">${
+        esc(stem)
+      }</span><span class="dim">${esc(ext)}</span></span>` +
+      (k.dir ? `<span class="chev">›</span>` : "");
+    /* read the index off the element: the same node keeps its DOM across
+       re-renders, and its column position is only known at render time */
+    row.onclick = () => actions.choose(+el.dataset.i, k);
+    body.appendChild(row);
+    return row;
   });
+  body.onscroll = paintTrail;
 
-  root.dataset.theme = matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-
-  toggle("s-dot", () => state.dotfiles, (v) => state.dotfiles = v);
-  toggle(
-    "s-density",
-    () => root.dataset.density === "compact",
-    (v) => root.dataset.density = v ? "compact" : "comfortable",
-  );
-  toggle(
-    "s-theme",
-    () => root.dataset.theme === "dark",
-    (v) => root.dataset.theme = v ? "dark" : "light",
-  );
-
-  /* Radios rather than three toggles: one key is active, and a menu that lets you
-     uncheck every one of them has no answer for what the column is ordered by.
-     Direction is separate because it applies to whichever key is chosen — and
-     because flipping it re-sorts what is already in memory, with no second sweep.
-     setSort (core/sort.js) stores the choice and re-renders. */
-  SORT_KEYS.forEach((k) => {
-    document.getElementById(`s-sort-${k}`).onclick = () =>
-      setSort(k, state.sort.desc);
-  });
-  document.getElementById("s-sort-desc").onclick = () =>
-    setSort(state.sort.key, !state.sort.desc);
+  return {
+    el,
+    body,
+    kids,
+    rows,
+    kidsRef: node.kids,
+    metaRef: !!node.metaDone,
+    dot: el.querySelector(".dot"),
+    width: measure(node),
+  };
 }
 
-/* Only the builds that can actually fetch a renderer show the switch — on the
-   server build the previews come from Python and nothing is downloaded, so the
-   row would be a promise the page does not keep. preview-rich.js reveals it. */
-function offerRichToggle(get, set) {
-  document.getElementById("s-previews").hidden = false;
-  document.getElementById("s-rich").hidden = false;
-  document.getElementById("s-rich-hr").hidden = false;
-  toggle("s-rich", get, set);
+function columnFor(node) {
+  let c = colCache.get(node);
+  /* Two ways this DOM stops being the column: the directory was re-read, or a
+     metadata sweep landed and re-ordered the rows under it. Same test, one
+     field along. */
+  if (c && (c.kidsRef !== node.kids || c.metaRef !== !!node.metaDone)) c = null;
+  if (!c) c = buildCol(node);
+  colCache.delete(node); /* re-insert = most recently used */
+  colCache.set(node, c);
+  for (const k of colCache.keys()) {
+    if (colCache.size <= CACHE_MAX) break;
+    if (!path.includes(k)) colCache.delete(k);
+  }
+  return c;
+}
+
+function render(keepScroll) {
+  if (!path.length) return;
+  const sig =
+    `${state.dotfiles}|${root.dataset.density}|${root.dataset.theme}` +
+    `|${state.sort.key}|${state.sort.desc}`;
+  if (sig !== cacheSig) {
+    colCache.clear();
+    cacheSig = sig;
+  }
+
+  setState({ widths: [] });
+  const cols = path.map((node, i) => {
+    /* Before columnFor, so a directory that needs no fetch — the server build,
+       or one a preview has already read — is built once in the sorted order
+       rather than built and rebuilt. */
+    sweepMeta(node);
+    const c = columnFor(node);
+    const selectedRow = rowIndex(node, sel[i]);
+    /* No column may be wider than two-thirds of the live finder. The fold cap keeps the
+       touched column unfolded and applyScroll's pan slides it into view, but
+       neither can show a full-width column on a narrow phone —
+       the row would still lose its right edge. Clamped here rather than in
+       measure() because columnFor caches the built column: a width measured
+       against the old viewport would survive a rotation, while `widths` is
+       rebuilt by every render, including the one `resize` fires.
+
+       Measured against #finder, not #stage, because the stage is one render
+       behind: its width is `--stage-w`, which layout() writes *after* this
+       loop has already chosen the widths. Turning a phone from 568 px to 375
+       therefore clamped this render against 568 — oversized columns on a 375 px
+       screen, and the pan can only choose which edge to lose, so the tapped
+       row sat 10 px past the right one until the next render healed it.
+       #finder is `flex: 1` in the viewport, so it is the live number, and it
+       is the one layout() reads to set --stage-w in the first place. */
+    const w = Math.min(
+      c.width,
+      Math.floor(finder.clientWidth * COLUMN_WIDTH_RATIO),
+    );
+    widths.push(w);
+
+    /* `sorting` goes in the class string rather than on classList, because this
+       write replaces the whole attribute and would drop it a frame later. */
+    set(
+      c.el,
+      "className",
+      "col " +
+        (i < focusCol ? "ancestor" : i > focusCol ? "descendant" : "focus") +
+        (node.metaLoading ? " sorting" : ""),
+    );
+    set(
+      c.el.dataset,
+      "depth",
+      String(Math.min(MAX_DEPTH, Math.max(0, focusCol - i))),
+    );
+    set(c.el.dataset, "i", String(i));
+    set(c.el.style, "width", w + "px");
+
+    if (c.dotFor !== sel[i]) {
+      /* spine icon of the chosen child */
+      const chosen = c.kids.find((k) => k.name === sel[i]);
+      c.dot.innerHTML = chosen ? iconHTML(chosen) : "";
+      c.dotFor = sel[i];
+    }
+    c.rows.forEach((row, ri) => {
+      row.classList.toggle("sel", c.kids[ri].name === sel[i]);
+      row.classList.toggle("cursor", i === focusCol && selectedRow === ri);
+    });
+    return c;
+  });
+
+  /* Reconcile instead of replaceChildren: re-inserting an element detaches it,
+     which throws away the style and layout of every row underneath it. Columns
+     that keep their slot must not be touched at all. */
+  const want = [...cols.map((c) => c.el), renderPreview()];
+  want.forEach((el, i) => {
+    if (strip.childNodes[i] !== el) {
+      strip.insertBefore(el, strip.childNodes[i] || null);
+    }
+  });
+  while (strip.childNodes.length > want.length) strip.lastChild.remove();
+  if (previewNode()) setupPreviewActions(previewNode());
+  for (const c of cols) {
+    c.el.classList.toggle(
+      "scrollable-down",
+      c.body.scrollHeight > c.body.clientHeight + SCROLL_HINT_PADDING,
+    );
+  }
+  actions.renderCrumbs();
+  sortSay(sortStatus());
+  layout(keepScroll);
+  syncURL();
+}
+
+function renderPreview() {
+  const n = previewNode();
+  const selected = selectedNode();
+  const pv = document.createElement("div");
+  pv.id = "preview";
+  pv.tabIndex = 0;
+  pv.setAttribute("aria-label", "File preview");
+  PREVIEW.revoke?.();
+  if (!n && !selected) {
+    pv.innerHTML = `<div class="pv-empty"><div class="glyph">◫</div>
+                    <div>Select a file to preview</div></div>`;
+    return pv;
+  }
+  const target = n || selected;
+  const [stem, ext] = splitName(target.name);
+  const rawPath = "/" + currentPath().map(encodeURIComponent).join("/") +
+    "?filemill=raw";
+  pv.innerHTML = `
+    <div class="col-head pv-head"><span class="name"><span>${
+    esc(target.name)
+  }</span></span>
+      <span class="pv-actions">
+        ${
+    ROUTER
+      ? `<a id="pv-raw" class="pv-action" href="${rawPath}" title="View raw file">Raw</a>`
+      : ""
+  }
+        <span id="pv-md-views" hidden role="group" aria-label="Markdown view">
+          <button id="pv-md-rendered" class="pv-action" type="button">Rendered</button>
+          <button id="pv-md-raw" class="pv-action" type="button">Raw</button>
+        </span>
+        <span id="pv-vtt-views" hidden role="group" aria-label="WebVTT view">
+          <button id="pv-vtt-transcript" class="pv-action" type="button">Transcript</button>
+          <button id="pv-vtt-raw" class="pv-action" type="button">Raw</button>
+        </span>
+        <button id="pv-view" class="pv-action" type="button"></button>
+        <button id="pv-delete" class="pv-action" type="button"
+                title="Delete selected item">Delete</button>
+        <button id="pv-fullscreen" class="pv-action" type="button" aria-pressed="${pvFullscreen}"
+                title="Toggle fullscreen preview">Fullscreen</button>
+      </span>
+    </div>
+    <div class="pv-body">
+      <div class="pv-hero">
+        ${iconHTML(target)}
+        <div><h2>${esc(stem)}<span style="color:var(--ink-3)">${
+    esc(ext)
+  }</span></h2>
+             <div class="sub" id="pv-sub">reading…</div></div>
+        <button id="pv-edit" hidden>Edit</button>
+      </div>
+      <div id="pv-content" class="pv-content"></div>
+    </div>`;
+  if (n) fillPreview(n);
+  pv.classList.toggle("pv-is-fullscreen", pvFullscreen);
+  return pv;
+}
+
+const RENDERED_RE = /\.(md|markdown|rst|docx|pptx|html?|desktop)$/i;
+const MARKDOWN_RE = /\.(md|markdown)$/i;
+let markdownView = "rendered";
+let vttView = "transcript";
+
+async function rawMarkdown(node) {
+  try {
+    const blob = await FS.blob(node);
+    return blob ? `<pre class="pv-text">${esc(await blob.text())}</pre>` : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function previewView() {
+  const view = new URL(location.href).searchParams.get("filemill") ||
+    document.documentElement.dataset.filemill || "raw";
+  return view === "highlight"
+    ? "highlight"
+    : view === "render"
+    ? "render"
+    : "raw";
+}
+
+function setPreviewView(view) {
+  if (!location.pathname) return;
+  const url = new URL(location.href);
+  url.searchParams.set("filemill", view);
+  location.href = url.pathname + url.search + url.hash;
+}
+
+function setupPreviewActions(n) {
+  const view = previewView();
+  const toggle = document.getElementById("pv-view");
+  const mdViews = document.getElementById("pv-md-views");
+  const vttViews = document.getElementById("pv-vtt-views");
+  const name = String(n.name || "");
+  const markdown = MARKDOWN_RE.test(name);
+  const vtt = /\.vtt$/i.test(n.name);
+  const applicable = RENDERED_RE.test(name);
+  if (mdViews) {
+    mdViews.hidden = !markdown;
+    for (
+      const [id, mode, label] of [
+        ["pv-md-rendered", "rendered", "View rendered Markdown"],
+        ["pv-md-raw", "raw", "View raw Markdown source"],
+      ]
+    ) {
+      const button = document.getElementById(id);
+      if (!button) continue;
+      button.setAttribute("aria-pressed", String(markdownView === mode));
+      button.setAttribute("aria-label", label);
+      button.title = label;
+      button.onclick = () => {
+        if (markdownView === mode) return;
+        markdownView = mode;
+        fillPreview(n);
+        setupPreviewActions(n);
+      };
+    }
+  }
+  if (vttViews) {
+    vttViews.hidden = !vtt || view === "highlight";
+    for (
+      const [id, mode, label] of [
+        ["pv-vtt-transcript", "transcript", "View WebVTT transcript"],
+        ["pv-vtt-raw", "raw", "View raw WebVTT source"],
+      ]
+    ) {
+      const button = document.getElementById(id);
+      if (!button) continue;
+      button.setAttribute("aria-pressed", String(vttView === mode));
+      button.setAttribute("aria-label", label);
+      button.title = label;
+      button.onclick = () => {
+        if (vttView === mode) return;
+        vttView = mode;
+        fillPreview({ ...n, previewFormat: mode });
+        setupPreviewActions(n);
+      };
+    }
+  }
+  if (toggle) {
+    toggle.hidden = !markdown && !applicable;
+    toggle.textContent = view === "render" ? "Source" : "Rendered";
+    toggle.title = view === "render"
+      ? "View highlighted source"
+      : "View rendered preview";
+    toggle.setAttribute("aria-label", toggle.title);
+    toggle.onclick = () => {
+      setPreviewView(view === "render" ? "highlight" : "render");
+    };
+  }
+  const full = document.getElementById("pv-fullscreen");
+  if (full) {
+    full.onclick = () => {
+      setState({ pvFullscreen: !pvFullscreen });
+      root.classList.toggle("pv-fullscreen", pvFullscreen);
+      full.setAttribute("aria-pressed", pvFullscreen);
+      full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
+      full.title = full.textContent;
+    };
+    full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
+  }
+  const del = document.getElementById("pv-delete");
+  if (del) {
+    del.hidden = !FS.remove || !!n.vpath;
+    del.onclick = async () => {
+      if (
+        !window.confirm(
+          `Delete “${n.name}”${n.dir ? " and its contents" : ""}?`,
+        )
+      ) return;
+      del.disabled = true;
+      try {
+        await FS.remove(n);
+        await actions.refreshColumn(path.length - 1);
+      } catch (err) {
+        actions.saySt(
+          "st-refresh",
+          `Delete failed: ${String(err.message || err)}`,
+          false,
+        );
+        del.disabled = false;
+      }
+    };
+  }
+}
+
+/* Metadata and contents arrive after the layout is already on screen; the token
+   makes sure a slow read for a file you have since navigated away from is
+   dropped. That guard lives here, not in the provider, so a provider is free to
+   be as slow as it needs to be — a server round-trip, a WASM highlighter. */
+async function fillPreview(n) {
+  const token = nextPvToken();
+  await FS.loadMeta(n);
+  if (token !== pvToken) return;
+  const m = n.meta || {};
+  const sub = document.getElementById("pv-sub");
+  if (!sub) return;
+  if (m.error) {
+    sub.textContent = "unreadable";
+    return;
+  }
+  /* Not everything a column can hold is a file. A row inside a database has no
+     size and no mtime, and inventing them prints "0 B · 1 Jan 1970" — so leave
+     the sub-line empty and go straight to the body. */
+  if (m.size == null) {
+    sub.textContent = "";
+  } else {
+    sub.textContent = `${fmtSize(m.size)} · modified ${fmtDate(m.mod)}`;
+  }
+
+  let html = null;
+  try {
+    html = MARKDOWN_RE.test(n.name) && markdownView === "raw"
+      ? (await rawMarkdown(n) || await PREVIEW.render(n))
+      : /\.vtt$/i.test(n.name) && previewView() !== "highlight"
+      ? await PREVIEW.render({ ...n, previewFormat: vttView })
+      : await PREVIEW.render(n);
+  } catch (err) {
+    html = `<p class="pv-err">Preview failed: ${
+      esc(String(err.message || err))
+    }</p>`;
+  }
+  if (token !== pvToken) return;
+  const host = document.getElementById("pv-content");
+  if (!host) return;
+  host.innerHTML = html ?? `<p>No inline preview for this file type.</p>`;
+  hlFences(host);
+  const btn = document.getElementById("pv-edit");
+  if (btn) {
+    btn.hidden = true;
+    if (await editableText(n) !== null) {
+      btn.hidden = false;
+      btn.onclick = () => openEditor(n);
+    }
+  }
+  paintTrail();
+}
+
+/* ── Edit mode ──────────────────────────────────────────────────────────────
+   A plain textarea over FS.write — see ports.js. The gate mirrors the text
+   preview in adapters/preview-local.js (same extensions, same cap), but it is
+   core's own copy: a build picks its preview provider freely, and Edit has to
+   work with any of them. Keep the two lists in step. */
+const NON_EDIT_RE =
+  /\.(desktop|docx|pptx|pdf|html?|png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
+
+async function editableText(n) {
+  if (
+    !FS.write || n.dir || n.vpath || NON_EDIT_RE.test(n.name) ||
+    (n.meta?.size ?? 0) > EDIT_MAX
+  ) return null;
+  const blob = await FS.blob(n);
+  if (!blob || blob.size > EDIT_MAX) return null;
+  try {
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(
+      await blob.arrayBuffer(),
+    );
+    return !text.includes("\0") &&
+        Math.max(...text.split(/\r?\n/).map((line) => line.length), 0) <=
+          EDIT_MAX_LINE
+      ? text
+      : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function openEditor(n) {
+  const token = pvToken;
+  const blob = await FS.blob(n);
+  if (token !== pvToken || !blob) return;
+  /* Read again rather than lifting the text out of the pane: the preview is
+     HTML by then, coloured and escaped, and un-escaping it back into source
+     is a round trip that can only lose. Same bytes either way — EDIT_MAX and
+     the provider's TEXT_MAX are the same 512 KB. */
+  const text = await blob.text();
+  const host = document.getElementById("pv-content");
+  if (token !== pvToken || !host) return;
+  document.getElementById("pv-edit").hidden = true;
+  host.innerHTML = `
+    <textarea id="pv-editor" spellcheck="false" aria-label="Edit ${
+    esc(n.name)
+  }"></textarea>
+    <div class="pv-edit-bar">
+      <button id="pv-save">Save</button>
+      <button id="pv-cancel">Cancel</button>
+      <span class="pv-err" id="pv-edit-err"></span>
+    </div>`;
+  const ta = document.getElementById("pv-editor");
+  ta.value = text;
+  ta.focus();
+  ta.setSelectionRange(0, 0);
+  ta.scrollTop = 0;
+  document.getElementById("pv-cancel").onclick = () => fillPreview(n);
+  document.getElementById("pv-save").onclick = async () => {
+    try {
+      await FS.write(n, ta.value);
+    } catch (err) {
+      const box = document.getElementById("pv-edit-err");
+      if (box) box.textContent = String(err.message || err);
+      return;
+    }
+    /* the pane may have moved on while the write was in flight */
+    if (ta.isConnected) fillPreview(n);
+  };
 }
 
 /* ═══ core/typeahead.js ═══ */
@@ -2817,6 +4048,78 @@ function taType(key, c) {
 document.addEventListener("click", (e) => {
   if (e.isTrusted) taCancel();
 });
+
+/* ═══ core/settings.js ═══ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Settings popover
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const gear = document.getElementById("gear"),
+  panel = document.getElementById("settings");
+const closeSettings = () => {
+  panel.hidden = true;
+  gear.setAttribute("aria-expanded", "false");
+};
+const toggle = (id, get, set) => {
+  const b = document.getElementById(id);
+  b.onclick = () => {
+    set(!get());
+    b.setAttribute("aria-checked", String(get()));
+    render(true);
+  };
+  b.setAttribute("aria-checked", String(get()));
+};
+
+/* Everything the old classic script did at load time. Called by the app
+   module once every core module has been evaluated. */
+function initSettings() {
+  gear.onclick = (e) => {
+    e.stopPropagation();
+    panel.hidden = !panel.hidden;
+    gear.setAttribute("aria-expanded", String(!panel.hidden));
+  };
+  document.addEventListener("click", (e) => {
+    if (!panel.contains(e.target)) closeSettings();
+  });
+
+  root.dataset.theme = matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+
+  toggle("s-dot", () => state.dotfiles, (v) => state.dotfiles = v);
+  toggle(
+    "s-density",
+    () => root.dataset.density === "compact",
+    (v) => root.dataset.density = v ? "compact" : "comfortable",
+  );
+  toggle(
+    "s-theme",
+    () => root.dataset.theme === "dark",
+    (v) => root.dataset.theme = v ? "dark" : "light",
+  );
+
+  /* Radios rather than three toggles: one key is active, and a menu that lets you
+     uncheck every one of them has no answer for what the column is ordered by.
+     Direction is separate because it applies to whichever key is chosen — and
+     because flipping it re-sorts what is already in memory, with no second sweep.
+     setSort (core/sort.js) stores the choice and re-renders. */
+  SORT_KEYS.forEach((k) => {
+    document.getElementById(`s-sort-${k}`).onclick = () =>
+      setSort(k, state.sort.desc);
+  });
+  document.getElementById("s-sort-desc").onclick = () =>
+    setSort(state.sort.key, !state.sort.desc);
+}
+
+/* Only the builds that can actually fetch a renderer show the switch — on the
+   server build the previews come from Python and nothing is downloaded, so the
+   row would be a promise the page does not keep. preview-rich.js reveals it. */
+function offerRichToggle(get, set) {
+  document.getElementById("s-previews").hidden = false;
+  document.getElementById("s-rich").hidden = false;
+  document.getElementById("s-rich-hr").hidden = false;
+  toggle("s-rich", get, set);
+}
 
 /* ═══ core/nav.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -3229,1298 +4532,6 @@ document.addEventListener("keydown", (e) => {
     else closeSettings();
   }
 });
-
-/* ═══ core/syntax.js ═══ */
-/* ═══════════════════════════════════════════════════════════════════════════
-   Syntax highlighting — in the browser, so one copy serves both builds.
-
-   The Python side can already colour source with Pygments, and does for its
-   own pages. The shared UI deliberately does not use it: a preview that is
-   coloured only when a Python process is behind it would have to be written
-   twice — once here for the single file, once there for the served page.
-   Colouring the text in the browser instead means both builds run *this*
-   file, and a folder reached through "Open local folder…" is coloured on the
-   server build too, though the server has never seen a byte of it.
-
-   This is not a parser. Four token classes — comment, string, number, keyword
-   — one regular expression per language, and the leftmost match wins, which is
-   what keeps a `#` inside a string out of the comment class with no state to
-   carry from one token to the next. That is enough to read a file by and well
-   short of a language front end: what it gets wrong is mis-coloured, never
-   mangled, because every character of the input is escaped and emitted exactly
-   once — see hlHTML.
-
-   A language is one line in HL_LANGS. An extension that is not listed previews
-   as plain text, the way every file did before this existed. SVG is absent on
-   purpose: the pane has something better than source for it.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* Written as plain strings rather than literals because they are assembled:
-   a regex literal cannot be pasted into another one without going through its
-   .source anyway, and doubling the backslashes once here is the smaller cost. */
-const HL_NUM =
-  "\\b(?:0[xXbBoO][0-9a-fA-F_]+|\\d[\\d_]*(?:\\.\\d+)?(?:[eE][+-]?\\d+)?)\\b";
-
-/* A quoted run ends at the first unescaped quote of the same kind; `\\[\\s\\S]`
-   rather than `\\.` so a backslash before a newline does not end the string. */
-const HL_STR = "\"(?:\\\\[\\s\\S]|[^\"\\\\])*\"|'(?:\\\\[\\s\\S]|[^'\\\\])*'";
-const HL_TICK = "`(?:\\\\[\\s\\S]|[^`\\\\])*`|" + HL_STR; /* + JS template */
-const HL_TRIPLE = "\"\"\"[\\s\\S]*?\"\"\"|'''[\\s\\S]*?'''|" +
-  HL_STR; /* + Python */
-
-const HL_SLASH = "//[^\\n]*|/\\*[\\s\\S]*?\\*/";
-const HL_HASH = "#[^\\n]*";
-const HL_DASH = "--[^\\n]*";
-const HL_BLOCK = "/\\*[\\s\\S]*?\\*/";
-
-const hlWords = (s) => "\\b(?:" + s.trim().split(/\s+/).join("|") + ")\\b";
-
-const K_JS =
-  `as async await break case catch class const continue debugger default delete do
-  else export extends false finally for from function if import in instanceof let new null of
-  return static super switch this throw true try typeof undefined var void while with yield`;
-const K_TS = K_JS +
-  ` abstract declare enum implements interface is keyof namespace never
-  private protected public readonly type unknown satisfies`;
-const K_PY =
-  `and as assert async await break class continue def del elif else except False
-  finally for from global if import in is lambda None nonlocal not or pass raise return self
-  True try while with yield`;
-const K_C =
-  `auto break bool case char const continue default do double else enum extern false
-  float for goto if inline int long NULL register return short signed sizeof static struct
-  switch true typedef union unsigned void volatile while`;
-const K_CPP = K_C +
-  ` catch class constexpr delete explicit friend mutable namespace new
-  noexcept nullptr operator override private protected public template this throw try typename
-  using virtual`;
-const K_SQL =
-  `add all alter and as asc begin between by case check column commit constraint
-  count create cross default delete desc distinct drop else end exists foreign from full group
-  having in index inner insert into is join key left like limit max min not null offset on or
-  order outer primary references returning right rollback select set sum table then transaction
-  union unique update values view when where with`;
-
-/* One entry per language; `k` is a finished pattern so that a language whose
-   keywords are not words — a TeX macro, a CSS at-rule, an XML tag — can say so
-   without a second mechanism. `n: false` turns the number class off. */
-const HL_SPECS = {
-  markdown: { c: HL_HASH, s: HL_TICK, k: hlWords("true false") },
-  js: { c: HL_SLASH, s: HL_TICK, k: hlWords(K_JS) },
-  ts: { c: HL_SLASH, s: HL_TICK, k: hlWords(K_TS) },
-  py: { c: HL_HASH, s: HL_TRIPLE, k: hlWords(K_PY) },
-  c: { c: HL_SLASH, s: HL_STR, k: hlWords(K_C) },
-  cpp: { c: HL_SLASH, s: HL_STR, k: hlWords(K_CPP) },
-  cs: {
-    c: HL_SLASH,
-    s: HL_STR,
-    k: hlWords(
-      K_CPP + ` base checked decimal event foreach
-           get in interface internal is lock object out params readonly ref sealed set string
-           unchecked unsafe var where yield`,
-    ),
-  },
-  java: {
-    c: HL_SLASH,
-    s: HL_STR,
-    k: hlWords(
-      K_C + ` abstract assert catch class extends
-           final finally implements import instanceof interface native new package private
-           protected public super synchronized this throw throws transient try var`,
-    ),
-  },
-  kt: {
-    c: HL_SLASH,
-    s: HL_STR,
-    k: hlWords(`as break by class companion const continue
-           data do else enum false for fun if import in infix init inline interface internal is
-           lateinit null object open operator out override package private protected public
-           reified return sealed super suspend this throw true try typealias val var vararg when
-           where while`),
-  },
-  go: {
-    c: HL_SLASH,
-    s: HL_TICK,
-    k: hlWords(`break case chan const continue default defer
-           else fallthrough false for func go goto if import interface map nil package range
-           return select struct switch true type var`),
-  },
-  rs: {
-    c: HL_SLASH,
-    s: HL_STR,
-    k: hlWords(`as async await break const continue crate dyn
-           else enum extern false fn for if impl in let loop match mod move mut pub ref return
-           self Self static struct super trait true type unsafe use where while`),
-  },
-  swift: {
-    c: HL_SLASH,
-    s: HL_STR,
-    k: hlWords(`as associatedtype async await break case catch
-           class continue default defer deinit do else enum extension fallthrough false
-           fileprivate final for func guard if import in init internal is lazy let mutating nil
-           open operator private protocol public repeat rethrows return self Self static struct
-           subscript super switch throw throws true try typealias var weak where while`),
-  },
-  php: {
-    c: HL_SLASH + "|" + HL_HASH,
-    s: HL_STR,
-    k: hlWords(`abstract and array as break case
-           catch class clone const continue declare default do echo else elseif empty enum
-           extends false final finally fn for foreach function global if implements include
-           instanceof interface isset list match namespace new null or print private protected
-           public readonly require return static switch throw trait true try unset use var
-           while yield`),
-  },
-  rb: {
-    c: HL_HASH,
-    s: HL_STR,
-    k: hlWords(`alias and begin break case class def defined
-           do else elsif end ensure false for if in module next nil not or redo require rescue
-           retry return self super then true undef unless until when while yield`),
-  },
-  pl: {
-    c: HL_HASH,
-    s: HL_STR,
-    k: hlWords(`and bless defined do else elsif eq foreach ge
-           gt if last le local lt my ne next no not or our package print qw redo ref require
-           return sub undef unless until use while`),
-  },
-  sh: {
-    c: HL_HASH,
-    s: HL_STR,
-    k: hlWords(`alias break case cd continue declare do done
-           elif else esac eval exec exit export fi for function if in local read readonly return
-           select set shift source then trap unset until while`),
-  },
-  lua: {
-    c: "--\\[\\[[\\s\\S]*?\\]\\]|" + HL_DASH,
-    s: HL_STR,
-    k: hlWords(`and break do else
-           elseif end false for function goto if in local nil not or repeat return then true
-           until while`),
-  },
-  r: {
-    c: HL_HASH,
-    s: HL_STR,
-    k: hlWords(`break else FALSE for function if in Inf NA
-           NaN next NULL repeat return TRUE while`),
-  },
-  sql: { c: HL_DASH + "|" + HL_BLOCK, s: HL_STR, k: hlWords(K_SQL), i: true },
-  nix: {
-    c: HL_HASH + "|" + HL_BLOCK,
-    s: HL_TRIPLE,
-    k: hlWords(`assert builtins else false if
-           import in inherit let null or rec then true with`),
-  },
-  json: { c: HL_SLASH, s: HL_STR, k: hlWords("true false null") },
-  yaml: { c: HL_HASH, s: HL_STR, k: hlWords("true false null yes no on off") },
-  toml: { c: HL_HASH, s: HL_TRIPLE, k: hlWords("true false") },
-  ini: {
-    c: HL_HASH + "|;[^\\n]*",
-    s: HL_STR,
-    k: hlWords("true false yes no on off"),
-  },
-  css: { c: HL_BLOCK, s: HL_STR, k: "@[a-zA-Z-]+" },
-  xml: { c: "<!--[\\s\\S]*?-->", s: HL_STR, k: "</?[A-Za-z_][\\w.:-]*" },
-  tex: { c: "%[^\\n]*", n: false, k: "\\\\[A-Za-z@]+" },
-};
-
-/* Extensions that are the same language under another name. */
-const HL_ALIAS = {
-  md: "markdown",
-  markdown: "markdown",
-  html: "xml",
-  htm: "xml",
-  mjs: "js",
-  cjs: "js",
-  jsx: "js",
-  tsx: "ts",
-  h: "c",
-  hpp: "cpp",
-  cc: "cpp",
-  cxx: "cpp",
-  bash: "sh",
-  zsh: "sh",
-  fish: "sh",
-  yml: "yaml",
-  jsonc: "json",
-  cfg: "ini",
-  conf: "ini",
-  scss: "css",
-  less: "css",
-  gitignore: "sh",
-  env: "sh",
-  /* what a Markdown fence calls the language, when that is not an extension */
-  python: "py",
-  javascript: "js",
-  typescript: "ts",
-  shell: "sh",
-  rust: "rs",
-  ruby: "rb",
-};
-
-/* Comment, then string, then number, then keyword. The order only settles ties
-   at one position — `exec` takes the leftmost match either way, which is what
-   puts a quote inside a comment in the comment and not in a string of its own. */
-const HL_LANGS = Object.fromEntries(
-  Object.entries(HL_SPECS).map(([key, sp]) => {
-    const alts = [];
-    if (sp.c) alts.push(`(?<com>${sp.c})`);
-    if (sp.s) alts.push(`(?<str>${sp.s})`);
-    if (sp.n !== false) alts.push(`(?<num>${HL_NUM})`);
-    if (sp.k) alts.push(`(?<kw>${sp.k})`);
-    return [key, new RegExp(alts.join("|"), sp.i ? "gi" : "g")];
-  }),
-);
-
-/* The language for a file name, or null for "no highlighting known". Starting
-   at index 0 so a dotfile is its own extension: .gitignore is a shell-comment
-   file and has nothing else to go on. */
-function hlLang(name) {
-  const i = name.lastIndexOf(".");
-  if (i < 0) return null;
-  const ext = name.slice(i + 1).toLowerCase();
-  const key = HL_ALIAS[ext] || ext;
-  return key in HL_LANGS ? key : null;
-}
-
-/* Escaped HTML for `text`, with the recognised tokens wrapped in spans. Every
-   character reaches the output exactly once: the gap before a match is escaped
-   and copied, the match itself is escaped inside its span, and the tail after
-   the last match is escaped and copied. Nothing here interpolates unescaped
-   input, which is what makes the output safe to assign to innerHTML. */
-function hlHTML(text, key) {
-  const re = HL_LANGS[key];
-  let out = "", last = 0, m;
-  re.lastIndex = 0;
-  while ((m = re.exec(text)) !== null) {
-    /* No alternative can match the empty string today; the guard is what keeps
-       that from becoming an infinite loop if one ever does. */
-    if (!m[0]) {
-      re.lastIndex++;
-      continue;
-    }
-    const cls = Object.keys(m.groups).find((g) => m.groups[g] !== undefined);
-    out += esc(text.slice(last, m.index)) +
-      `<span class="hl-${cls}">${esc(m[0])}</span>`;
-    last = re.lastIndex;
-  }
-  return out + esc(text.slice(last));
-}
-
-/* Pretty-printed, foldable HTML for a JSON document, or null when `text` is
-   not JSON — the caller then colours it as source instead. Objects and arrays
-   become <details open>, so folding is the browser's: no handlers, and nothing
-   for either build to wire. Inside a pre-wrap <pre> a newline that precedes a
-   block is swallowed and one that follows it draws a blank line, so every text
-   line ends in "\n" and no run of text begins with one. */
-function jsonHTML(text) {
-  let doc;
-  try {
-    doc = JSON.parse(text);
-  } catch {
-    return null;
-  }
-  const scalar = (v) =>
-    v === null || typeof v === "boolean"
-      ? `<span class="hl-kw">${v}</span>`
-      : typeof v === "number"
-      ? `<span class="hl-num">${v}</span>`
-      : `<span class="hl-str">${esc(JSON.stringify(v))}</span>`;
-  const node = (v, pad, head, tail) => {
-    if (typeof v !== "object" || v === null) {
-      return `${pad}${head}${scalar(v)}${tail}\n`;
-    }
-    const arr = Array.isArray(v);
-    const keys = arr ? v.map((_, i) => i) : Object.keys(v);
-    const [open, close] = arr ? ["[", "]"] : ["{", "}"];
-    if (!keys.length) return `${pad}${head}${open}${close}${tail}\n`;
-    let out =
-      `<details open><summary data-n="${keys.length}" data-close="${close}${tail}">` +
-      `${pad}${head}${open}</summary>`;
-    keys.forEach((k, i) => {
-      out += node(
-        v[k],
-        pad + "  ",
-        arr ? "" : `${esc(JSON.stringify(k))}: `,
-        i < keys.length - 1 ? "," : "",
-      );
-    });
-    return out + `${pad}${close}${tail}</details>`;
-  };
-  /* Nesting deep enough to exhaust the stack is still valid JSON; it is shown
-     as source, the same as anything else this cannot fold. */
-  try {
-    return node(doc, "", "", "");
-  } catch {
-    return null;
-  }
-}
-
-/* Colour the fenced code inside a rendered Markdown fragment. Both markdown-it
-   and markdown-it-py emit <pre><code class="language-x"> with no highlighter
-   configured, so this one function is what makes "fenced code is coloured" true
-   in both builds. Only code nodes are touched: paragraphs and their soft line
-   breaks stay exactly as the renderer left them. */
-function hlFences(host) {
-  for (const code of host.querySelectorAll('pre > code[class*="language-"]')) {
-    const m = /(?:^|\s)language-(\S+)/.exec(code.className);
-    const key = m && hlLang("x." + m[1]);
-    if (key) code.innerHTML = hlHTML(code.textContent, key);
-  }
-}
-
-/* ═══ core/render.js ═══ */
-/* ═══════════════════════════════════════════════════════════════════════════
-   Render
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* Building a column is O(entries), and real directories hold thousands of them
-   — far too expensive to redo on every arrow key. A column's DOM is therefore
-   built once per (node, entry list) and cached; a re-render only re-applies the
-   state that actually changed: depth, selection, width.
-   Anything that alters how a row *looks* (dotfile filter, density, theme icon
-   colours) is part of the signature and drops the whole cache. */
-const colCache = new Map();
-let cacheSig = null;
-const CACHE_MAX = 24; // Retain enough nearby columns without growing memory unbounded.
-const COLUMN_WIDTH_RATIO = 2 / 3; // Leave room for adjacent columns on narrow screens.
-const MAX_DEPTH = 5; // Keep depth styling within the available visual scale.
-const SCROLL_HINT_PADDING = 4; // Show the affordance only when content exceeds the viewport.
-const EDIT_MAX = 512 * 1024; // Keep browser edits within the provider's 512 KB text limit.
-const EDIT_MAX_LINE = 10_000; // Avoid unusably wide editor lines.
-
-/* Writing the value a property already holds still dirties it — and a width or
-   custom-property write on a column relays out every row inside it. Guard the
-   writes and a re-render of an unchanged column costs nothing. */
-const set = (obj, key, value) => {
-  if (obj[key] !== value) obj[key] = value;
-};
-const setVar = (el, name, value) => {
-  if (el.style.getPropertyValue(name) !== value) {
-    el.style.setProperty(name, value);
-  }
-};
-
-function buildCol(node) {
-  const kids = visibleKids(node);
-  const el = document.createElement("div");
-  el.className = "col";
-  el.innerHTML = `
-    <div class="col-head">
-      <span class="name"><span>${esc(node.name)}</span></span>
-      <span class="count">${node.kids === null ? "" : kids.length}</span>
-      <button class="rf" tabindex="-1" title="Re-read this folder (F5)"
-              aria-label="Refresh ${esc(node.name)}">⟳</button>
-    </div>
-    <div class="col-body"></div>
-    <div class="spine-label" title="${esc(node.name)} — click to unfold">
-      <span class="dot"></span>
-      <span class="txt">${esc(node.name)}</span>
-    </div>`;
-
-  const body = el.querySelector(".col-body");
-  if (node.kids === null) {
-    body.innerHTML =
-      `<div class="col-note"><span class="spinner"></span>Reading…</div>`;
-  } else if (node.denied) {
-    body.innerHTML = `<div class="col-note">⚠ ${esc(node.denied)}</div>`;
-  } else if (!kids.length) {
-    body.innerHTML = `<div class="col-note">Empty</div>`;
-  }
-  if (node.pages > 1) {
-    const pager = document.createElement("div");
-    pager.className = "pager";
-    pager.innerHTML =
-      `<button type="button" aria-label="Previous page">‹</button>
-      <span>Page ${node.page} of ${node.pages}</span>
-      <button type="button" aria-label="Next page">›</button>`;
-    const [prev, next] = pager.querySelectorAll("button");
-    prev.disabled = node.page === 1;
-    next.disabled = node.page === node.pages;
-    prev.onclick = (e) => {
-      e.stopPropagation();
-      FS.loadPage(node, node.page - 1);
-    };
-    next.onclick = (e) => {
-      e.stopPropagation();
-      FS.loadPage(node, node.page + 1);
-    };
-    el.appendChild(pager);
-  }
-  /* a folded column hides its rows, so the click lands on the column itself —
-     that is what makes the advertised "click a spine to unfold" work */
-  el.onclick = () => {
-    if (el.classList.contains("spine")) unfoldTo(+el.dataset.i);
-  };
-  /* Read the index off the element for the same reason a row does: the node
-     keeps its DOM across re-renders, and only render time knows its column.
-     stopPropagation, or a ⟳ on a folded spine would unfold it instead. */
-  el.querySelector(".rf").onclick = (e) => {
-    e.stopPropagation();
-    refreshColumn(+el.dataset.i);
-  };
-
-  const rows = kids.map((k, ri) => {
-    const [stem, ext] = splitName(k.name);
-    const row = document.createElement("div");
-    row.className = "row" + (k.name.startsWith(".") ? " dotfile" : "");
-    row.title = k.name; /* the full name is always one hover away */
-    row.setAttribute("aria-label", k.name);
-    row.innerHTML = iconHTML(k) +
-      `<span class="label"><span class="stem">${
-        esc(stem)
-      }</span><span class="dim">${esc(ext)}</span></span>` +
-      (k.dir ? `<span class="chev">›</span>` : "");
-    /* read the index off the element: the same node keeps its DOM across
-       re-renders, and its column position is only known at render time */
-    row.onclick = () => choose(+el.dataset.i, k);
-    body.appendChild(row);
-    return row;
-  });
-  body.onscroll = paintTrail;
-
-  return {
-    el,
-    body,
-    kids,
-    rows,
-    kidsRef: node.kids,
-    metaRef: !!node.metaDone,
-    dot: el.querySelector(".dot"),
-    width: measure(node),
-  };
-}
-
-function columnFor(node) {
-  let c = colCache.get(node);
-  /* Two ways this DOM stops being the column: the directory was re-read, or a
-     metadata sweep landed and re-ordered the rows under it. Same test, one
-     field along. */
-  if (c && (c.kidsRef !== node.kids || c.metaRef !== !!node.metaDone)) c = null;
-  if (!c) c = buildCol(node);
-  colCache.delete(node); /* re-insert = most recently used */
-  colCache.set(node, c);
-  for (const k of colCache.keys()) {
-    if (colCache.size <= CACHE_MAX) break;
-    if (!path.includes(k)) colCache.delete(k);
-  }
-  return c;
-}
-
-function render(keepScroll) {
-  if (!path.length) return;
-  const sig =
-    `${state.dotfiles}|${root.dataset.density}|${root.dataset.theme}` +
-    `|${state.sort.key}|${state.sort.desc}`;
-  if (sig !== cacheSig) {
-    colCache.clear();
-    cacheSig = sig;
-  }
-
-  setState({ widths: [] });
-  const cols = path.map((node, i) => {
-    /* Before columnFor, so a directory that needs no fetch — the server build,
-       or one a preview has already read — is built once in the sorted order
-       rather than built and rebuilt. */
-    sweepMeta(node);
-    const c = columnFor(node);
-    const selectedRow = rowIndex(node, sel[i]);
-    /* No column may be wider than two-thirds of the live finder. The fold cap keeps the
-       touched column unfolded and applyScroll's pan slides it into view, but
-       neither can show a full-width column on a narrow phone —
-       the row would still lose its right edge. Clamped here rather than in
-       measure() because columnFor caches the built column: a width measured
-       against the old viewport would survive a rotation, while `widths` is
-       rebuilt by every render, including the one `resize` fires.
-
-       Measured against #finder, not #stage, because the stage is one render
-       behind: its width is `--stage-w`, which layout() writes *after* this
-       loop has already chosen the widths. Turning a phone from 568 px to 375
-       therefore clamped this render against 568 — oversized columns on a 375 px
-       screen, and the pan can only choose which edge to lose, so the tapped
-       row sat 10 px past the right one until the next render healed it.
-       #finder is `flex: 1` in the viewport, so it is the live number, and it
-       is the one layout() reads to set --stage-w in the first place. */
-    const w = Math.min(
-      c.width,
-      Math.floor(finder.clientWidth * COLUMN_WIDTH_RATIO),
-    );
-    widths.push(w);
-
-    /* `sorting` goes in the class string rather than on classList, because this
-       write replaces the whole attribute and would drop it a frame later. */
-    set(
-      c.el,
-      "className",
-      "col " +
-        (i < focusCol ? "ancestor" : i > focusCol ? "descendant" : "focus") +
-        (node.metaLoading ? " sorting" : ""),
-    );
-    set(
-      c.el.dataset,
-      "depth",
-      String(Math.min(MAX_DEPTH, Math.max(0, focusCol - i))),
-    );
-    set(c.el.dataset, "i", String(i));
-    set(c.el.style, "width", w + "px");
-
-    if (c.dotFor !== sel[i]) {
-      /* spine icon of the chosen child */
-      const chosen = c.kids.find((k) => k.name === sel[i]);
-      c.dot.innerHTML = chosen ? iconHTML(chosen) : "";
-      c.dotFor = sel[i];
-    }
-    c.rows.forEach((row, ri) => {
-      row.classList.toggle("sel", c.kids[ri].name === sel[i]);
-      row.classList.toggle("cursor", i === focusCol && selectedRow === ri);
-    });
-    return c;
-  });
-
-  /* Reconcile instead of replaceChildren: re-inserting an element detaches it,
-     which throws away the style and layout of every row underneath it. Columns
-     that keep their slot must not be touched at all. */
-  const want = [...cols.map((c) => c.el), renderPreview()];
-  want.forEach((el, i) => {
-    if (strip.childNodes[i] !== el) {
-      strip.insertBefore(el, strip.childNodes[i] || null);
-    }
-  });
-  while (strip.childNodes.length > want.length) strip.lastChild.remove();
-  if (previewNode()) setupPreviewActions(previewNode());
-  for (const c of cols) {
-    c.el.classList.toggle(
-      "scrollable-down",
-      c.body.scrollHeight > c.body.clientHeight + SCROLL_HINT_PADDING,
-    );
-  }
-  renderCrumbs();
-  sortSay(sortStatus());
-  layout(keepScroll);
-  syncURL();
-}
-
-function renderPreview() {
-  const n = previewNode();
-  const selected = selectedNode();
-  const pv = document.createElement("div");
-  pv.id = "preview";
-  pv.tabIndex = 0;
-  pv.setAttribute("aria-label", "File preview");
-  PREVIEW.revoke?.();
-  if (!n && !selected) {
-    pv.innerHTML = `<div class="pv-empty"><div class="glyph">◫</div>
-                    <div>Select a file to preview</div></div>`;
-    return pv;
-  }
-  const target = n || selected;
-  const [stem, ext] = splitName(target.name);
-  const rawPath = "/" + currentPath().map(encodeURIComponent).join("/") +
-    "?filemill=raw";
-  pv.innerHTML = `
-    <div class="col-head pv-head"><span class="name"><span>${
-    esc(target.name)
-  }</span></span>
-      <span class="pv-actions">
-        ${
-    ROUTER
-      ? `<a id="pv-raw" class="pv-action" href="${rawPath}" title="View raw file">Raw</a>`
-      : ""
-  }
-        <span id="pv-md-views" hidden role="group" aria-label="Markdown view">
-          <button id="pv-md-rendered" class="pv-action" type="button">Rendered</button>
-          <button id="pv-md-raw" class="pv-action" type="button">Raw</button>
-        </span>
-        <span id="pv-vtt-views" hidden role="group" aria-label="WebVTT view">
-          <button id="pv-vtt-transcript" class="pv-action" type="button">Transcript</button>
-          <button id="pv-vtt-raw" class="pv-action" type="button">Raw</button>
-        </span>
-        <button id="pv-view" class="pv-action" type="button"></button>
-        <button id="pv-delete" class="pv-action" type="button"
-                title="Delete selected item">Delete</button>
-        <button id="pv-fullscreen" class="pv-action" type="button" aria-pressed="${pvFullscreen}"
-                title="Toggle fullscreen preview">Fullscreen</button>
-      </span>
-    </div>
-    <div class="pv-body">
-      <div class="pv-hero">
-        ${iconHTML(target)}
-        <div><h2>${esc(stem)}<span style="color:var(--ink-3)">${
-    esc(ext)
-  }</span></h2>
-             <div class="sub" id="pv-sub">reading…</div></div>
-        <button id="pv-edit" hidden>Edit</button>
-      </div>
-      <div id="pv-content" class="pv-content"></div>
-    </div>`;
-  if (n) fillPreview(n);
-  pv.classList.toggle("pv-is-fullscreen", pvFullscreen);
-  return pv;
-}
-
-const RENDERED_RE = /\.(md|markdown|rst|docx|pptx|html?|desktop)$/i;
-const MARKDOWN_RE = /\.(md|markdown)$/i;
-let markdownView = "rendered";
-let vttView = "transcript";
-
-async function rawMarkdown(node) {
-  try {
-    const blob = await FS.blob(node);
-    return blob ? `<pre class="pv-text">${esc(await blob.text())}</pre>` : null;
-  } catch (_) {
-    return null;
-  }
-}
-
-function previewView() {
-  const view = new URL(location.href).searchParams.get("filemill") ||
-    document.documentElement.dataset.filemill || "raw";
-  return view === "highlight"
-    ? "highlight"
-    : view === "render"
-    ? "render"
-    : "raw";
-}
-
-function setPreviewView(view) {
-  if (!location.pathname) return;
-  const url = new URL(location.href);
-  url.searchParams.set("filemill", view);
-  location.href = url.pathname + url.search + url.hash;
-}
-
-function setupPreviewActions(n) {
-  const view = previewView();
-  const toggle = document.getElementById("pv-view");
-  const mdViews = document.getElementById("pv-md-views");
-  const vttViews = document.getElementById("pv-vtt-views");
-  const name = String(n.name || "");
-  const markdown = MARKDOWN_RE.test(name);
-  const vtt = /\.vtt$/i.test(n.name);
-  const applicable = RENDERED_RE.test(name);
-  if (mdViews) {
-    mdViews.hidden = !markdown;
-    for (
-      const [id, mode, label] of [
-        ["pv-md-rendered", "rendered", "View rendered Markdown"],
-        ["pv-md-raw", "raw", "View raw Markdown source"],
-      ]
-    ) {
-      const button = document.getElementById(id);
-      if (!button) continue;
-      button.setAttribute("aria-pressed", String(markdownView === mode));
-      button.setAttribute("aria-label", label);
-      button.title = label;
-      button.onclick = () => {
-        if (markdownView === mode) return;
-        markdownView = mode;
-        fillPreview(n);
-        setupPreviewActions(n);
-      };
-    }
-  }
-  if (vttViews) {
-    vttViews.hidden = !vtt || view === "highlight";
-    for (
-      const [id, mode, label] of [
-        ["pv-vtt-transcript", "transcript", "View WebVTT transcript"],
-        ["pv-vtt-raw", "raw", "View raw WebVTT source"],
-      ]
-    ) {
-      const button = document.getElementById(id);
-      if (!button) continue;
-      button.setAttribute("aria-pressed", String(vttView === mode));
-      button.setAttribute("aria-label", label);
-      button.title = label;
-      button.onclick = () => {
-        if (vttView === mode) return;
-        vttView = mode;
-        fillPreview({ ...n, previewFormat: mode });
-        setupPreviewActions(n);
-      };
-    }
-  }
-  if (toggle) {
-    toggle.hidden = !markdown && !applicable;
-    toggle.textContent = view === "render" ? "Source" : "Rendered";
-    toggle.title = view === "render"
-      ? "View highlighted source"
-      : "View rendered preview";
-    toggle.setAttribute("aria-label", toggle.title);
-    toggle.onclick = () => {
-      setPreviewView(view === "render" ? "highlight" : "render");
-    };
-  }
-  const full = document.getElementById("pv-fullscreen");
-  if (full) {
-    full.onclick = () => {
-      setState({ pvFullscreen: !pvFullscreen });
-      root.classList.toggle("pv-fullscreen", pvFullscreen);
-      full.setAttribute("aria-pressed", pvFullscreen);
-      full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
-      full.title = full.textContent;
-    };
-    full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
-  }
-  const del = document.getElementById("pv-delete");
-  if (del) {
-    del.hidden = !FS.remove || !!n.vpath;
-    del.onclick = async () => {
-      if (
-        !window.confirm(
-          `Delete “${n.name}”${n.dir ? " and its contents" : ""}?`,
-        )
-      ) return;
-      del.disabled = true;
-      try {
-        await FS.remove(n);
-        await refreshColumn(path.length - 1);
-      } catch (err) {
-        saySt(
-          "st-refresh",
-          `Delete failed: ${String(err.message || err)}`,
-          false,
-        );
-        del.disabled = false;
-      }
-    };
-  }
-}
-
-/* Metadata and contents arrive after the layout is already on screen; the token
-   makes sure a slow read for a file you have since navigated away from is
-   dropped. That guard lives here, not in the provider, so a provider is free to
-   be as slow as it needs to be — a server round-trip, a WASM highlighter. */
-async function fillPreview(n) {
-  const token = nextPvToken();
-  await FS.loadMeta(n);
-  if (token !== pvToken) return;
-  const m = n.meta || {};
-  const sub = document.getElementById("pv-sub");
-  if (!sub) return;
-  if (m.error) {
-    sub.textContent = "unreadable";
-    return;
-  }
-  /* Not everything a column can hold is a file. A row inside a database has no
-     size and no mtime, and inventing them prints "0 B · 1 Jan 1970" — so leave
-     the sub-line empty and go straight to the body. */
-  if (m.size == null) {
-    sub.textContent = "";
-  } else {
-    sub.textContent = `${fmtSize(m.size)} · modified ${fmtDate(m.mod)}`;
-  }
-
-  let html = null;
-  try {
-    html = MARKDOWN_RE.test(n.name) && markdownView === "raw"
-      ? (await rawMarkdown(n) || await PREVIEW.render(n))
-      : /\.vtt$/i.test(n.name) && previewView() !== "highlight"
-      ? await PREVIEW.render({ ...n, previewFormat: vttView })
-      : await PREVIEW.render(n);
-  } catch (err) {
-    html = `<p class="pv-err">Preview failed: ${
-      esc(String(err.message || err))
-    }</p>`;
-  }
-  if (token !== pvToken) return;
-  const host = document.getElementById("pv-content");
-  if (!host) return;
-  host.innerHTML = html ?? `<p>No inline preview for this file type.</p>`;
-  hlFences(host);
-  const btn = document.getElementById("pv-edit");
-  if (btn) {
-    btn.hidden = true;
-    if (await editableText(n) !== null) {
-      btn.hidden = false;
-      btn.onclick = () => openEditor(n);
-    }
-  }
-  paintTrail();
-}
-
-/* ── Edit mode ──────────────────────────────────────────────────────────────
-   A plain textarea over FS.write — see ports.js. The gate mirrors the text
-   preview in adapters/preview-local.js (same extensions, same cap), but it is
-   core's own copy: a build picks its preview provider freely, and Edit has to
-   work with any of them. Keep the two lists in step. */
-const NON_EDIT_RE =
-  /\.(desktop|docx|pptx|pdf|html?|png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
-
-async function editableText(n) {
-  if (
-    !FS.write || n.dir || n.vpath || NON_EDIT_RE.test(n.name) ||
-    (n.meta?.size ?? 0) > EDIT_MAX
-  ) return null;
-  const blob = await FS.blob(n);
-  if (!blob || blob.size > EDIT_MAX) return null;
-  try {
-    const text = new TextDecoder("utf-8", { fatal: true }).decode(
-      await blob.arrayBuffer(),
-    );
-    return !text.includes("\0") &&
-        Math.max(...text.split(/\r?\n/).map((line) => line.length), 0) <=
-          EDIT_MAX_LINE
-      ? text
-      : null;
-  } catch (_) {
-    return null;
-  }
-}
-
-async function openEditor(n) {
-  const token = pvToken;
-  const blob = await FS.blob(n);
-  if (token !== pvToken || !blob) return;
-  /* Read again rather than lifting the text out of the pane: the preview is
-     HTML by then, coloured and escaped, and un-escaping it back into source
-     is a round trip that can only lose. Same bytes either way — EDIT_MAX and
-     the provider's TEXT_MAX are the same 512 KB. */
-  const text = await blob.text();
-  const host = document.getElementById("pv-content");
-  if (token !== pvToken || !host) return;
-  document.getElementById("pv-edit").hidden = true;
-  host.innerHTML = `
-    <textarea id="pv-editor" spellcheck="false" aria-label="Edit ${
-    esc(n.name)
-  }"></textarea>
-    <div class="pv-edit-bar">
-      <button id="pv-save">Save</button>
-      <button id="pv-cancel">Cancel</button>
-      <span class="pv-err" id="pv-edit-err"></span>
-    </div>`;
-  const ta = document.getElementById("pv-editor");
-  ta.value = text;
-  ta.focus();
-  ta.setSelectionRange(0, 0);
-  ta.scrollTop = 0;
-  document.getElementById("pv-cancel").onclick = () => fillPreview(n);
-  document.getElementById("pv-save").onclick = async () => {
-    try {
-      await FS.write(n, ta.value);
-    } catch (err) {
-      const box = document.getElementById("pv-edit-err");
-      if (box) box.textContent = String(err.message || err);
-      return;
-    }
-    /* the pane may have moved on while the write was in flight */
-    if (ta.isConnected) fillPreview(n);
-  };
-}
-
-/* ═══ core/sort.js ═══ */
-/* ═══════════════════════════════════════════════════════════════════════════
-   Sort order — name, size or modification time, ascending or descending.
-
-   The three keys do not cost the same, and that asymmetry is the whole design.
-
-   A listing already carries the names, so sorting by name reads what the column
-   is holding: no fetch, no wait, no code below `sortKids` runs at all. It is the
-   default for that reason.
-
-   Size and modification time are not in a File System Access API listing.
-   `entries()` yields a name and a handle; a size costs one `getFile()` per row.
-   Ordering 3 000 entries by size therefore means 3 000 reads before the first
-   row can be placed — the sweep this file exists to manage. It runs when the
-   user picks one of the two keys that needs it, on the directories on screen,
-   once each.
-
-   One sweep serves both metadata keys: `getFile()` hands back the size and the
-   mtime together, so switching from size to modified re-sorts what is already
-   in hand and fetches nothing.
-
-   Nothing here knows where metadata comes from. `FS.loadMeta` does, which is
-   what makes this shared: the server build's listing carries size and mtime
-   already, so its sweep finds nothing to fetch and returns on one `if`. The
-   same option costs the server build a comparison and the static build a
-   syscall per row.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-const SORT_KEYS = ["name", "size", "mtime"];
-const SORT_FIELD = { size: "size", mtime: "mod" }; /* node.meta field per key */
-const SORT_LABEL = { name: "name", size: "size", mtime: "modified" };
-
-const sortNeedsMeta = () => state.sort.key !== "name";
-
-/* One collator, reused. `"a".localeCompare(b, undefined, {numeric: true})` has
-   to resolve those options on every call, and this comparator runs n log n
-   times per column build — about 35 000 times at 3 000 entries. */
-const NAME_COLLATOR = new Intl.Collator(undefined, { numeric: true });
-const byName = (a, b) => NAME_COLLATOR.compare(a.name, b.name);
-
-/* The number to order on, or null for "this row has none". A file the port
-   could not open carries `meta.error`; a row inside a database carries
-   `meta.virtual` and no size at all. Both are honestly unknown. */
-const sortValue = (k, field) => {
-  const v = k.meta && !k.meta.error ? k.meta[field] : undefined;
-  return typeof v === "number" ? v : null;
-};
-
-/* Directories first, then the chosen key, then the name to break ties.
-   `kids` is already the filtered copy visibleKids made, so sorting it in place
-   never touches node.kids.
-
-   Directories are never ordered by size or time. Neither port can give a
-   directory either number: the File System Access API has no `getFile()` for a
-   directory handle, and the server build's listing sends metadata for files
-   only. A folder ordered by an invented 0 would sit at one end of every size
-   sort and mean nothing there, so folders keep the one order that is real for
-   them.
-
-   A file whose metadata could not be read sorts last, in name order, in *both*
-   directions. Sorting by size descending asks "what is biggest here"; a file
-   the app could not open is not the answer, and putting one at the top is how a
-   permission error gets read as a result. Last either way keeps the end the
-   user is looking at meaningful. The row is never dropped — an unreadable file
-   is still a file in that folder, and hiding the rows it failed to stat would
-   make the app lie about the directory. */
-function sortKids(kids) {
-  const { key, desc } = state.sort;
-  const dir = desc ? -1 : 1;
-  const field = SORT_FIELD[key];
-  return kids.sort((a, b) => {
-    const kind = !!b.dir - !!a.dir;
-    if (kind) return kind;
-    if (field && !a.dir) {
-      const av = sortValue(a, field), bv = sortValue(b, field);
-      if (av === null || bv === null) {
-        if (av !== bv) return av === null ? 1 : -1; /* unknown sinks */
-      } else if (av !== bv) {
-        return (av < bv ? -1 : 1) * dir;
-      }
-    }
-    return byName(a, b) * (field ? 1 : dir);
-  });
-}
-
-/* ── The sweep ──────────────────────────────────────────────────────────────
-   One sweep per directory, one in-flight promise held on the node, one writer
-   of the metadata — the shape `FS.ensureLoaded` already has for `node.kids`, so
-   a second render during a sweep joins the one running instead of starting a
-   rival. `metaDone` is the counterpart of `kids !== null`: this directory has
-   been asked, and asking again would be 3 000 syscalls for an answer already in
-   memory. */
-function ensureMeta(node) {
-  if (node.metaLoading) return node.metaLoading;
-  const kids = node.kids;
-  const todo = kids.filter((k) => !k.dir && !k.meta);
-  /* Nothing to fetch: the listing carried it (the server build), or a preview
-     already did. Settle it here, before columnFor runs, so a column with no
-     sweep to run is built once in the right order rather than built and
-     rebuilt. */
-  if (!todo.length) {
-    node.metaDone = true;
-    return null;
-  }
-
-  /* Files still to read in *this* column. The strip sums it across the columns
-     sweeping at once, so the number it shows is the number of getFile() calls
-     outstanding and nothing else. */
-  node.metaPending = todo.length;
-  node.metaLoading = (async () => {
-    const t0 = performance.now();
-    await Promise.all(todo.map((k) =>
-      FS.loadMeta(k)
-        /* The port promises to *fill* node.meta, not that it never rejects. One
-         rejection escaping here would leave metaLoading set and metaDone false
-         for good, and the column would spin at the user until the tab closed.
-         Recording the error on the row puts it in the same bucket
-         FSA.loadMeta already uses for a file it could not open, which is the
-         bucket sortValue reads as "unknown". */
-        .catch((err) => {
-          k.meta = { error: String((err && err.message) || err) };
-        })
-        /* One status write per row would cost more than the sweep it reports.
-         Every 64th is an update per ~20 ms at the rates measured here, which is
-         faster than anyone reads. */
-        .then(() => {
-          if (--node.metaPending > 0 && node.metaPending % 64 === 0) {
-            sortSay(sortStatus());
-          }
-        })
-    ));
-    node.metaSwept = { n: todo.length, ms: Math.round(performance.now() - t0) };
-    /* A refresh replaces node.kids wholesale. A sweep that started on the old
-       array has just filled objects nobody can see, and marking the *new* list
-       done would leave it ordered by whatever its rows happened to carry. */
-    if (node.kids === kids) node.metaDone = true;
-    node.metaLoading = null;
-  })();
-  return node.metaLoading;
-}
-
-/* Called from render(), so no navigation path has to remember to ask: whatever
-   is on screen gets the metadata the current sort needs, exactly once. Sorting
-   by name needs none, so the default never reaches `ensureMeta` at all — the
-   expensive path is entered by the option that asked for it and by nothing
-   else. */
-function sweepMeta(node) {
-  if (
-    !FS || !node.dir || node.kids === null || node.metaDone ||
-    node.metaLoading ||
-    !sortNeedsMeta()
-  ) return;
-  const p = ensureMeta(node);
-  if (!p) return; /* answered without fetching */
-  p.then(() => {
-    /* The second half of the guard choose() uses on its own reads: a sweep can
-       outlive the column that started it, and re-rendering for a directory that
-       is no longer open would reorder nothing and cost a rebuild. The metadata
-       it collected is kept either way — it is a fact about those files, and
-       stepping back into the folder finds it there.
-
-       Dropping the repaint is safe rather than lossy because columnFor treats
-       `metaDone` like `kidsRef`: any later render rebuilds a column whose DOM
-       predates its sweep. Nothing can be left showing an order it no longer
-       has. */
-    if (!path.includes(node)) return;
-    render(true);
-  });
-}
-
-/* ── What the strip says ────────────────────────────────────────────────────
-   A sort that reads 3 000 files takes a visible moment, and a column that sits
-   there in name order while it happens looks like a sort that did nothing. */
-const sortSay = (msg) => {
-  const el = document.getElementById("st-sort");
-  if (el) el.textContent = msg;
-};
-
-/* Written by render(), and again by the sweep as it counts down. Silent on the
-   default, name ascending: a strip that always says something says nothing.
-
-   While a sweep runs it shows the files still to read, summed over every column
-   sweeping at once, because one sort can start several. When it is over it names
-   the deepest column that was swept — the folder the user just stepped into is
-   the one they are asking about, and a per-column figure beats a total that
-   double-counts sweeps which overlapped. */
-function sortStatus() {
-  const { key, desc } = state.sort;
-  /* `metaLoading` decides, not the count, because the count reaches 0 a
-     microtask before the sweep resolves. Deciding on the count would let the
-     strip report a finished sort while the column beside it still spins, and
-     the two are describing the same thing. */
-  if (path.some((x) => x.metaLoading)) {
-    const left = path.reduce(
-      (n, x) => n + (x.metaLoading ? x.metaPending : 0),
-      0,
-    );
-    return `⇅ ${SORT_LABEL[key]} — reading ${Math.max(left, 1)} files…`;
-  }
-  if (key === "name" && !desc) return "";
-  const deepest = sortNeedsMeta() &&
-    [...path].reverse().find((n) => n.metaSwept && n.metaSwept.n);
-  return `⇅ ${SORT_LABEL[key]} ${desc ? "↓" : "↑"}` +
-    (deepest
-      ? ` · ${deepest.name}: ${deepest.metaSwept.n} files read in ` +
-        `${deepest.metaSwept.ms} ms`
-      : "");
-}
-
-/* ── Remembering it ─────────────────────────────────────────────────────────
-   localStorage, not the per-folder record in IndexedDB. The sort is a property
-   of how a person reads a list, not of the folder they are reading — the same
-   argument that already keeps dotfiles, density and the rich-preview switch out
-   of that record. It is also the only store both builds have: the server build
-   serves this file and has no remembered folders at all. And the record offers
-   nowhere to hang it: `keepView` fires from `ROUTER.write`, which core calls
-   when the *location* changes, and choosing a sort moves nobody.
-
-   A remembered size sort does mean a mount can start a sweep the user did not
-   ask for in this session. They did ask for it, last session, and the column
-   says so while it reads. */
-const SORT_STORE = "filemill.sort";
-
-function loadSort() {
-  try {
-    const [key, dir] = String(localStorage.getItem(SORT_STORE) || "").split(
-      ":",
-    );
-    if (SORT_KEYS.includes(key)) state.sort = { key, desc: dir === "desc" };
-  } catch (err) {
-    /* private mode, or an opaque file:// origin — keep the default */
-  }
-}
-
-function setSort(key, desc) {
-  state.sort = { key, desc };
-  try {
-    localStorage.setItem(SORT_STORE, `${key}:${desc ? "desc" : "asc"}`);
-  } catch (err) {
-    /* the sort still applies; it just will not survive a reload */
-  }
-  syncSortMenu();
-  /* cacheSig carries the sort, so this drops every cached column and rebuilds
-     it in the new order — the same route the dotfile and density switches take
-     for the same reason. */
-  render(true);
-}
-
-function syncSortMenu() {
-  for (const k of SORT_KEYS) {
-    const b = document.getElementById(`s-sort-${k}`);
-    if (b) b.setAttribute("aria-checked", String(state.sort.key === k));
-  }
-  const d = document.getElementById("s-sort-desc");
-  if (d) d.setAttribute("aria-checked", String(state.sort.desc));
-}
-
-function initSort() {
-  loadSort();
-  syncSortMenu();
-}
-
-/* ═══ core/state.js ═══ */
-/* ═══════════════════════════════════════════════════════════════════════════
-   State
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-const root = document.documentElement;
-const finder = document.getElementById("finder");
-const rail = document.getElementById("rail");
-const stage = document.getElementById("stage");
-const strip = document.getElementById("strip");
-const trail = document.getElementById("trail");
-const welcome = document.getElementById("welcome");
-
-let path = []; // node chain, [0] = root
-let sel = []; // per-column selected name
-let focusCol = 0;
-let widths = []; // natural width per column
-let folded = 0; // columns currently folded
-let pvToken = 0; // guards async preview fills
-let pvFullscreen = false;
-/* Module bindings are read-only for importers, so the files that used to
-   assign these directly go through here. */
-function setState(patch) {
-  if ("path" in patch) path = patch.path;
-  if ("sel" in patch) sel = patch.sel;
-  if ("focusCol" in patch) focusCol = patch.focusCol;
-  if ("widths" in patch) widths = patch.widths;
-  if ("folded" in patch) folded = patch.folded;
-  if ("pvFullscreen" in patch) pvFullscreen = patch.pvFullscreen;
-}
-const nextPvToken = () => ++pvToken;
-const state = {
-  dotfiles: root.dataset.hidden === "show",
-  sort: { key: "name", desc: false },
-};
-
-const GUTTER = () =>
-  parseInt(getComputedStyle(root).getPropertyValue("--gutter"));
-const SPINE = () =>
-  parseInt(getComputedStyle(root).getPropertyValue("--spine-w"));
-
-const COL_MIN = 148; // Keep columns wide enough for readable rows and controls.
-const COL_MAX = 380; // Fit long page titles while folding columns outside focus.
-const BYTE_BASE = 1024; // File sizes use binary units.
-const KB_DECIMAL_LIMIT = 10; // Small KB values keep one decimal place.
-const KB_DECIMAL_DIGITS = 1; // One decimal keeps small sizes readable.
-const KB_DIGITS = 0; // Larger KB values do not need fractional precision.
-const MB_DECIMAL_DIGITS = 1; // MB values retain one decimal for useful precision.
-const GB_DECIMAL_DIGITS = 2; // GB values retain two decimals for useful precision.
-const DATE_PART_DIGITS = "2-digit"; // Clock fields align consistently in the metadata line.
-const CODE_COLUMNS = 88; // Preview text targets an 88-character reading width.
-const CODE_HORIZONTAL_PADDING = 82; // Preview padding is 30px plus 52px.
-const PREVIEW_MAX_WIDTH = 760; // Keep the preview from becoming too wide to read.
-const PREVIEW_MIN_RATIO = 0.45; // Preserve nearly half the stage for preview content.
-const EMPTY_PREVIEW_WIDTH = 300; // Keep the empty preview stable before a file is selected.
-const HEADER_HORIZONTAL_PADDING = 34; // Reserve space for the column heading chrome.
-const COLUMN_HORIZONTAL_PADDING = 58; // Reserve space for row padding and scrollbar.
-const CODE_FONT_SIZE = 11.5; // Match the compact monospace preview typography.
-
-/* One filtered copy per call, ordered by core/sort.js. Every column build, every
-   width measurement and every path walk comes through here, which is what keeps
-   the rows and a restored chain agreeing on what row 4 is. */
-const visibleKids = (node) =>
-  ((kids) => node.ordered ? kids : sortKids(kids))(
-    (node.kids || []).filter((k) => state.dotfiles || !k.name.startsWith(".")),
-  );
-
-const rowIndex = (node, name) =>
-  visibleKids(node).findIndex((k) => k.name === name);
-
-const fmtSize = (b) =>
-  b < BYTE_BASE ? `${b} B` : b < BYTE_BASE ** 2
-    ? `${
-      (b / BYTE_BASE).toFixed(
-        b < BYTE_BASE * KB_DECIMAL_LIMIT ? KB_DECIMAL_DIGITS : KB_DIGITS,
-      )
-    } KB`
-    : b < BYTE_BASE ** 3
-    ? `${(b / BYTE_BASE ** 2).toFixed(MB_DECIMAL_DIGITS)} MB`
-    : `${(b / BYTE_BASE ** 3).toFixed(GB_DECIMAL_DIGITS)} GB`;
-
-const fmtDate = (ms) =>
-  new Date(ms).toLocaleString(undefined, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: DATE_PART_DIGITS,
-    minute: DATE_PART_DIGITS,
-  });
-
-const splitName = (name) => {
-  const i = name.lastIndexOf(".");
-  return (i > 0) ? [name.slice(0, i), name.slice(i)] : [name, ""];
-};
-
-const previewNode = () => {
-  const last = path[path.length - 1], s = sel[path.length - 1];
-  const n = s && (last.kids || []).find((k) => k.name === s);
-  return (n && !n.dir) ? n : null;
-};
-
-const selectedNode = () => {
-  const last = path[path.length - 1], s = sel[path.length - 1];
-  return s && (last.kids || []).find((k) => k.name === s) || null;
-};
-
-/* 88 columns of .pv-text plus its and .pv-body's horizontal padding (30 + 52),
-   measured from the real monospace font so it agrees with the CSS min-width */
-const codeMin = () =>
-  codeMin._w ||= (() => {
-    const c = document.createElement("canvas").getContext("2d");
-    const cs = getComputedStyle(root);
-    c.font = `${CODE_FONT_SIZE}px ${cs.getPropertyValue("--mono")}`;
-    return Math.ceil(c.measureText("0").width * CODE_COLUMNS) +
-      CODE_HORIZONTAL_PADDING;
-  })();
-
-/* target reading width for the preview — the thing scrolling tries to protect.
-   Never wider than the stage itself: a phone cannot show 88 columns, and a
-   pane that runs past the right edge is clipped, not scrollable — so there
-   the pane fits and .pv-body pans over the code instead. */
-const previewTarget = () =>
-  previewNode()
-    ? Math.min(
-      PREVIEW_MAX_WIDTH,
-      stage.clientWidth,
-      Math.max(codeMin(), Math.round(stage.clientWidth * PREVIEW_MIN_RATIO)),
-    )
-    : EMPTY_PREVIEW_WIDTH;
-
-function measure(node) {
-  /* content-driven width, clamped — no manual resizing, no wasted space */
-  const c = (measure._c ||= document.createElement("canvas").getContext("2d"));
-  const cs = getComputedStyle(root);
-  c.font = `${cs.getPropertyValue("--fs-row").trim()} ${
-    cs.getPropertyValue("--font")
-  }`;
-  let w = 0;
-  for (const k of visibleKids(node)) {
-    w = Math.max(w, c.measureText(k.name).width);
-  }
-  c.font = `600 ${cs.getPropertyValue("--fs-head").trim()} ${
-    cs.getPropertyValue("--font")
-  }`;
-  w = Math.max(w, c.measureText(node.name).width + HEADER_HORIZONTAL_PADDING);
-  return Math.min(
-    COL_MAX,
-    Math.max(COL_MIN, Math.ceil(w) + COLUMN_HORIZONTAL_PADDING),
-  );
-}
 
 /* ═══ core/jsonl.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -5724,7 +5735,11 @@ async function recallView(handle) {
 /* The load-time work sort.js, layout.js and settings.js did as classic scripts,
    in the order they used to load. */
 initSort();
-initLayout();
+setSortKids(sortKids);
+setActions({ choose, refreshColumn, renderCrumbs, saySt, unfoldTo });
+setSortActions({ render });
+setDeepLinkActions({ render, colCache });
+initLayout(render);
 initSettings();
 
 /* Adapters define themselves; the app entry is what chooses. Selecting here

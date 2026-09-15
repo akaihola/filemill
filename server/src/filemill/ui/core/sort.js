@@ -25,8 +25,9 @@
    syscall per row.
    ═══════════════════════════════════════════════════════════════════════════ */
 import { FS } from "./ports.js";
-import { render } from "./render.js";
 import { path, state } from "./state.js";
+let repaint;
+export const setSortActions = ({ render }) => repaint = render;
 
 export const SORT_KEYS = ["name", "size", "mtime"];
 const SORT_FIELD = { size: "size", mtime: "mod" }; /* node.meta field per key */
@@ -166,7 +167,7 @@ export function sweepMeta(node) {
        predates its sweep. Nothing can be left showing an order it no longer
        has. */
     if (!path.includes(node)) return;
-    render(true);
+    repaint(true);
   });
 }
 
@@ -245,7 +246,7 @@ export function setSort(key, desc) {
   /* cacheSig carries the sort, so this drops every cached column and rebuilds
      it in the new order — the same route the dotfile and density switches take
      for the same reason. */
-  render(true);
+  repaint(true);
 }
 
 function syncSortMenu() {
