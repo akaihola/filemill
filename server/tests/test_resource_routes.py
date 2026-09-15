@@ -104,7 +104,7 @@ def test_a_space_in_a_path_is_served(client):
 def test_document_views_serve_the_shared_shell(client, view):
     resp = client.get(f"/docs/readme.md?filemill={view}&layout=no-columns")
     assert resp.status_code == 200
-    assert "/ui/core/shell.js" in resp.text
+    assert "/ui/entry-server.js" in resp.text
     assert f'data-filemill="{view}"' in resp.text
     assert 'data-layout="no-columns"' in resp.text
     assert "preview-standalone" not in resp.text
@@ -116,7 +116,7 @@ def test_document_views_serve_the_shared_shell(client, view):
 def test_no_columns_layout_serves_the_shared_shell(client):
     resp = client.get("/docs/readme.md?filemill=render&layout=no-columns")
     assert resp.status_code == 200
-    assert "/ui/core/shell.js" in resp.text
+    assert "/ui/entry-server.js" in resp.text
     assert 'data-layout="no-columns"' in resp.text
 
 
@@ -128,7 +128,7 @@ def test_full_columns_layout_serves_the_shared_ui(client):
     """
     resp = client.get("/docs/readme.md?filemill=render&layout=full-columns")
     assert resp.status_code == 200
-    assert "/ui/core/shell.js" in resp.text
+    assert "/ui/entry-server.js" in resp.text
     assert 'data-filemill="render"' in resp.text
     assert ">Guide</h1>" not in resp.text
 
@@ -148,7 +148,7 @@ def test_compressed_columns_reaches_the_shared_ui(client):
     """
     resp = client.get("/docs/readme.md?filemill=render&layout=compressed-columns")
     assert 'data-layout="compressed-columns"' in resp.text
-    assert "/ui/core/layout.js" in resp.text
+    assert "/ui/entry-server.js" in resp.text
 
 
 def test_layout_is_reported_on_the_body(client):
@@ -218,7 +218,7 @@ def test_directory_serves_the_shared_ui(client):
     """A directory has no bytes, so the column layouts open the finder on it."""
     resp = client.get("/docs")
     assert resp.status_code == 200
-    assert "/ui/core/shell.js" in resp.text
+    assert "/ui/entry-server.js" in resp.text
     assert 'data-root="menu"' in resp.text
 
 
@@ -278,7 +278,7 @@ def test_markdown_link_targets_the_files_own_path(site, client):
     (site / "note.md").write_text("[link](other.md)\n")
     (site / "other.md").write_text("# Other\n")
     resp = client.get("/note.md?filemill=render&layout=no-columns")
-    assert "/ui/core/shell.js" in resp.text
+    assert "/ui/entry-server.js" in resp.text
     assert 'data-layout="no-columns"' in resp.text
 
 
@@ -295,7 +295,7 @@ def test_markdown_image_src_is_left_relative_and_now_resolves(site, client):
     """
     (site / "docs" / "note.md").write_text("![photo](../photo.png)\n")
     resp = client.get("/docs/note.md?filemill=render&layout=no-columns")
-    assert "/ui/core/shell.js" in resp.text
+    assert "/ui/entry-server.js" in resp.text
 
     # The browser would resolve that against /docs/note.md. Follow it and check.
     resolved = client.get("/photo.png")
