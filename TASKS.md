@@ -21,13 +21,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
   and the `watchfiles` dependency. Delete their tests.
 
+- [23] Write the narrow-screen layout model as an ADR: what folds, what pans, what stays
+  on screen. Add one test each for phone portrait, phone landscape, tablet and desktop.
+
 ## Scheduled
 
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
   decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
-
-- [23] Write the narrow-screen layout model as an ADR: what folds, what pans, what stays
-  on screen. Add one test each for phone portrait, phone landscape, tablet and desktop.
 
 - [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
   registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
