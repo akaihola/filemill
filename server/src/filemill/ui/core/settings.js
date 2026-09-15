@@ -61,13 +61,3 @@ export function initSettings() {
   document.getElementById("s-sort-desc").onclick = () =>
     setSort(state.sort.key, !state.sort.desc);
 }
-
-/* Only the builds that can actually fetch a renderer show the switch — on the
-   server build the previews come from Python and nothing is downloaded, so the
-   row would be a promise the page does not keep. preview-rich.js reveals it. */
-export function offerRichToggle(get, set) {
-  document.getElementById("s-previews").hidden = false;
-  document.getElementById("s-rich").hidden = false;
-  document.getElementById("s-rich-hr").hidden = false;
-  toggle("s-rich", get, set);
-}

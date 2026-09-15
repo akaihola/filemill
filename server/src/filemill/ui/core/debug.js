@@ -27,7 +27,6 @@ import {
   state,
   strip,
   visibleKids,
-  welcome,
   widths,
 } from "./state.js";
 import { TA_IDLE, taSearch } from "./typeahead.js";
@@ -53,7 +52,7 @@ export function exposeCore() {
     finder: () => finder,
     stage: () => stage,
     strip: () => strip,
-    welcome: () => welcome,
+    welcome: () => document.getElementById("welcome"),
     gear: () => gear,
     FS: () => FS,
     PREVIEW: () => PREVIEW,

@@ -18,7 +18,6 @@ import {
   sel,
   setState,
   visibleKids,
-  welcome,
 } from "./state.js";
 import { taCancel, taLive, taType, taWants } from "./typeahead.js";
 
@@ -321,7 +320,7 @@ document.addEventListener("keydown", (e) => {
   ) {
     return;
   }
-  if (!welcome.hidden) return;
+  if (!document.getElementById("welcome")?.hidden) return;
   if (e.target.closest?.("#preview")) {
     if (["ArrowUp", "ArrowDown", "PageUp", "PageDown"].includes(e.key)) {
       const body = document.querySelector("#preview .pv-body");

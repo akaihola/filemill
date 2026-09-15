@@ -57,10 +57,6 @@ Rules for TASKS.md usage are at the bottom of the file.
       `TASKS.md`.
 
 
-- [19] Move adapter code out of `ui/core/`: `jsonl.js`, the welcome screen, the local
-  badge and `offerRichToggle` go to `ui/adapters/`.
-    - Depends on: [17]
-
 - [20] Create `ui/core/limits.js` with one `TEXT_MAX` and one image extension list.
   Create one `mountRoot()` and one `currentPath()`. Delete the copies and `pathParts`.
     - Depends on: [17]
@@ -335,6 +331,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [19] Move adapter code out of `ui/core/`: `jsonl.js`, the welcome screen, the local
+  badge and `offerRichToggle` go to `ui/adapters/`.
+    - Depends on: [17]
 
 - [18] Break the import cycles in `ui/core/`: `render.js` gets its callbacks as one
   `actions` object at boot; `layout.js` gets `set` and `setVar` from a new `dom.js`.
