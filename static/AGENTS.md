@@ -70,8 +70,8 @@ context reset.
     ├── AGENTS.md               ← this file
     ├── FSA-TEST-CHECKLIST.md   ← what the automated tests cannot check
     ├── index.html              ← GENERATED bundle (do not hand-edit)
-    ├── index-dev.html          ← dev entry point: <script src="../ui/…">
-    ├── build-index.py          ← index-dev.html + ../ui → index.html
+    ├── index-dev.html          ← dev entry point: loads ../ui/entry-static.js
+    ├── build-index.py          ← index-dev.html + the module graph → index.html
     ├── test-ui.py              ← headless suite, fake handle
     ├── test-url.py             ← needs a real origin: deep links, and a real
     │                             filesystem through OPFS
@@ -98,8 +98,12 @@ python3 -m http.server 8000 -d ..    # serve the repo root, not static/
 #   http://localhost:8000/static/index.html      ← the bundle
 ```
 
-`build-index.py` inlines each `<link rel=stylesheet>` and `<script src>` that
-the browser fetches, and replaces the `@font-face` URL with a base64 data URI.
+`build-index.py` inlines the stylesheet, the icon map and the module graph.
+It walks the imports from `../ui/entry-static.js` in the order the browser
+evaluates them, removes the `import` lines and the `export` keywords, and
+writes the result as one `<script type="module">`. It replaces the
+`@font-face` URL with a base64 data URI. It refuses imports it cannot inline:
+non-relative specifiers, renames, default and namespace forms.
 
 `./build-index.py --check` exits non-zero when the committed bundle does not
 match `../ui/`. CI runs it, because a generated and committed file goes stale

@@ -16,6 +16,8 @@
    directories on your disk. Folder *names* are what is matched, so two
    different folders with the same basename resolve to the more recent one.
    ═══════════════════════════════════════════════════════════════════════════ */
+import { path, root } from "../core/state.js";
+
 const encSeg = (s) => encodeURIComponent(s).replace(/%2F/gi, "%2F");
 
 /* A file:// page has an opaque origin and pushState throws SecurityError on it.
@@ -24,7 +26,7 @@ const encSeg = (s) => encodeURIComponent(s).replace(/%2F/gi, "%2F");
    every render would be fatal. Fail once, then stay quiet. */
 let dead = false;
 
-const RouterHash = {
+export const RouterHash = {
   read() {
     const h = location.hash.replace(/^#/, "");
     if (!h) return null;

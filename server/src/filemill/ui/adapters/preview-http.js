@@ -9,6 +9,9 @@
    The staleness guard is core's (see fillPreview), so this may take as long as
    it takes; the abort is only good manners for a preview nobody is waiting for.
    ═══════════════════════════════════════════════════════════════════════════ */
+import { API } from "./http.js";
+import { render } from "../core/render.js";
+
 /* The page's own ?filemill= value. The server puts it on <html>; forwarding it
    keeps `highlight` meaning the same coloured source in the columns as it does
    on the embedded page. Absent on the static build, which has no server. */
@@ -16,7 +19,7 @@ const VIEW = document.documentElement.dataset.filemill || "";
 
 let inflight = null;
 
-const PreviewHTTP = {
+export const PreviewHTTP = {
   revoke() {
     inflight?.abort();
     inflight = null;

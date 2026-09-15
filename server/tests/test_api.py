@@ -4,6 +4,7 @@ The contract these tests pin down is the one in `src/filemill/api.py`: every
 request names a path *relative to ROOT*, and nothing may name an absolute one.
 """
 
+import re
 from pathlib import Path
 
 import filemill.app as app_module
@@ -264,8 +265,8 @@ def test_render_without_a_file_is_400(client, tmp_root: Path):
 
 def test_ui_root_serves_the_shell(client, tmp_root: Path):
     html = client.get("/n/").text
-    assert "/ui/core/shell.js" in html
-    assert "/ui/adapters/app-http.js" in html
+    assert '<script src="/ui/entry-server.js" type="module">' in html
+    assert "/ui/adapters/" not in html  # one entry module, no script list
 
 
 def test_shell_carries_no_chrome_markup(client, tmp_root: Path):
@@ -318,13 +319,35 @@ def test_ui_assets_cannot_escape_the_ui_directory(client, tmp_root: Path):
         assert client.get(bad).status_code == 404, bad
 
 
+def _module_graph(entry: Path) -> set[str]:
+    """Every module reachable from *entry*, as ui/-relative paths — the same
+    walk static/build-index.py does, and the only definition of "loaded" now
+    that the shell names one file."""
+    ui = entry.parent
+    seen: set[Path] = set()
+
+    def visit(path: Path) -> None:
+        if path in seen:
+            return
+        seen.add(path)
+        for m in re.finditer(
+            r'^import\s*(?:\{[^}]*\}\s*from\s*)?"(\.[^"]+)";',
+            path.read_text(),
+            re.MULTILINE,
+        ):
+            visit((path.parent / m.group(1)).resolve())
+
+    visit(entry.resolve())
+    return {f"ui/{p.relative_to(ui).as_posix()}" for p in seen}
+
+
 def test_the_vendored_ui_is_whole(client, tmp_root: Path):
-    """Every script the shell references must actually be there — a missing one
-    is a blank page, and nothing else in the suite would notice."""
-    for name in app_module._UI_CORE:
-        assert client.get(f"/ui/core/{name}").status_code == 200, name
-    for name in app_module._UI_ADAPTERS:
-        assert client.get(f"/ui/adapters/{name}").status_code == 200, name
+    """Every module the entry reaches must actually be served — one missing
+    import fails the whole graph, and nothing else in the suite would notice."""
+    loaded = _module_graph(app_module._UI_DIR / app_module._UI_ENTRY)
+    assert len(loaded) > 20, loaded
+    for rel in sorted(loaded):
+        assert client.get(f"/{rel}").status_code == 200, rel
 
 
 def test_the_wheel_excludes_only_what_the_shell_never_loads():
@@ -341,8 +364,7 @@ def test_the_wheel_excludes_only_what_the_shell_never_loads():
     excluded = set(cfg["tool"]["uv"]["build-backend"]["wheel-exclude"])
 
     # Everything _ui_shell() asks the browser for, plus the font styles.css names.
-    loaded = {f"ui/core/{n}" for n in app_module._UI_CORE}
-    loaded |= {f"ui/adapters/{n}" for n in app_module._UI_ADAPTERS}
+    loaded = _module_graph(app_module._UI_DIR / app_module._UI_ENTRY)
     loaded |= {"ui/core/styles.css", "ui/vendor/seti-map.js", "ui/vendor/seti.woff"}
     assert not excluded & loaded, f"the wheel would omit: {sorted(excluded & loaded)}"
 

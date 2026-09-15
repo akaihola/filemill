@@ -12,7 +12,7 @@ const fsaNode = (name, handle, parent = null) => ({
   kids: handle.kind === "directory" ? null : undefined,
 });
 
-const FSA = {
+export const FSA = {
   node: fsaNode,
 
   async ensureLoaded(node) {

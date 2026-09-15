@@ -318,7 +318,9 @@ async def scroll_settled(pg, tries=40, step=100):
 
 async def main():
     async with async_playwright() as p:
-        b = await p.chromium.launch()
+        # index-dev.html loads ../ui/entry-static.js as a module, which a file://
+        # page may not fetch without this; the bundle needs nothing.
+        b = await p.chromium.launch(args=["--allow-file-access-from-files"])
         for scheme, expected in (("dark", "dark"), ("light", "light")):
             ctx = await b.new_context(color_scheme=scheme)
             themed = await ctx.new_page()

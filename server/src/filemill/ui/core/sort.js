@@ -24,8 +24,11 @@
    same option costs the server build a comparison and the static build a
    syscall per row.
    ═══════════════════════════════════════════════════════════════════════════ */
+import { FS } from "./ports.js";
+import { render } from "./render.js";
+import { path, state } from "./state.js";
 
-const SORT_KEYS = ["name", "size", "mtime"];
+export const SORT_KEYS = ["name", "size", "mtime"];
 const SORT_FIELD = { size: "size", mtime: "mod" }; /* node.meta field per key */
 const SORT_LABEL = { name: "name", size: "size", mtime: "modified" };
 
@@ -63,7 +66,7 @@ const sortValue = (k, field) => {
    user is looking at meaningful. The row is never dropped — an unreadable file
    is still a file in that folder, and hiding the rows it failed to stat would
    make the app lie about the directory. */
-function sortKids(kids) {
+export function sortKids(kids) {
   const { key, desc } = state.sort;
   const dir = desc ? -1 : 1;
   const field = SORT_FIELD[key];
@@ -89,7 +92,7 @@ function sortKids(kids) {
    rival. `metaDone` is the counterpart of `kids !== null`: this directory has
    been asked, and asking again would be 3 000 syscalls for an answer already in
    memory. */
-function ensureMeta(node) {
+export function ensureMeta(node) {
   if (node.metaLoading) return node.metaLoading;
   const kids = node.kids;
   const todo = kids.filter((k) => !k.dir && !k.meta);
@@ -143,7 +146,7 @@ function ensureMeta(node) {
    by name needs none, so the default never reaches `ensureMeta` at all — the
    expensive path is entered by the option that asked for it and by nothing
    else. */
-function sweepMeta(node) {
+export function sweepMeta(node) {
   if (
     !FS || !node.dir || node.kids === null || node.metaDone ||
     node.metaLoading ||
@@ -170,7 +173,7 @@ function sweepMeta(node) {
 /* ── What the strip says ────────────────────────────────────────────────────
    A sort that reads 3 000 files takes a visible moment, and a column that sits
    there in name order while it happens looks like a sort that did nothing. */
-const sortSay = (msg) => {
+export const sortSay = (msg) => {
   const el = document.getElementById("st-sort");
   if (el) el.textContent = msg;
 };
@@ -183,7 +186,7 @@ const sortSay = (msg) => {
    the deepest column that was swept — the folder the user just stepped into is
    the one they are asking about, and a per-column figure beats a total that
    double-counts sweeps which overlapped. */
-function sortStatus() {
+export function sortStatus() {
   const { key, desc } = state.sort;
   /* `metaLoading` decides, not the count, because the count reaches 0 a
      microtask before the sweep resolves. Deciding on the count would let the
@@ -220,7 +223,7 @@ function sortStatus() {
    says so while it reads. */
 const SORT_STORE = "filemill.sort";
 
-function loadSort() {
+export function loadSort() {
   try {
     const [key, dir] = String(localStorage.getItem(SORT_STORE) || "").split(
       ":",
@@ -231,7 +234,7 @@ function loadSort() {
   }
 }
 
-function setSort(key, desc) {
+export function setSort(key, desc) {
   state.sort = { key, desc };
   try {
     localStorage.setItem(SORT_STORE, `${key}:${desc ? "desc" : "asc"}`);
@@ -254,5 +257,7 @@ function syncSortMenu() {
   if (d) d.setAttribute("aria-checked", String(state.sort.desc));
 }
 
-loadSort();
-syncSortMenu();
+export function initSort() {
+  loadSort();
+  syncSortMenu();
+}
