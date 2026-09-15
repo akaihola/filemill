@@ -28,10 +28,8 @@ import {
   startRouting,
 } from "../core/deeplink.js";
 import {
-  withJson,
-  withJsonl,
-  withJsonlPreview,
-  withJsonPreview,
+  withVirtual,
+  withVirtualPreview,
 } from "./vfs-json.js";
 import { FS, useFilesystem, usePreview, useRouter } from "../core/ports.js";
 import { colCache, render, setActions } from "../core/render.js";
@@ -92,11 +90,11 @@ const withHighlighting = (provider) => ({
 });
 
 async function mountServer() {
-  useFilesystem(withCsv(withJson(withJsonl(HTTP))));
+  useFilesystem(withCsv(withVirtual(HTTP)));
   usePreview(
     withCsvPreview(
-      withJsonPreview(
-        withJsonlPreview(withPptxPreview(withHighlighting(PreviewHTTP))),
+      withVirtualPreview(
+        withPptxPreview(withHighlighting(PreviewHTTP)),
       ),
     ),
   );
@@ -144,11 +142,11 @@ function showServerUnavailable() {
    Python renderers — see PreviewUpload — so switching sides costs no fidelity;
    only the URL goes quiet. */
 export async function mount(handle) {
-  useFilesystem(withCsv(withJson(withJsonl(FSA))));
+  useFilesystem(withCsv(withVirtual(FSA)));
   usePreview(
     withCsvPreview(
-      withJsonPreview(
-        withJsonlPreview(withPptxPreview(withHighlighting(PreviewUpload))),
+      withVirtualPreview(
+        withPptxPreview(withHighlighting(PreviewUpload)),
       ),
     ),
   );

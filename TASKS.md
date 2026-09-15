@@ -13,6 +13,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   and `withJsonlPreview` and `withJsonPreview` into `withVirtualPreview`.
     - Depends on: [19]
 
+- [20] Create `ui/core/limits.js` with one `TEXT_MAX` and one image extension list.
+  Create one `mountRoot()` and one `currentPath()`. Delete the copies and `pathParts`.
+    - Depends on: [17]
+
 - [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
   `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
 
@@ -27,10 +31,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-
-- [20] Create `ui/core/limits.js` with one `TEXT_MAX` and one image extension list.
-  Create one `mountRoot()` and one `currentPath()`. Delete the copies and `pathParts`.
-    - Depends on: [17]
 
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
   files. Current PPTX support was implemented in task
@@ -64,6 +64,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
       `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
       `TASKS.md`.
+
 
 
 
