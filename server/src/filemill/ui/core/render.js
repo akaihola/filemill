@@ -30,6 +30,7 @@ import {
   widths,
 } from "./state.js";
 import { hlFences } from "./syntax.js";
+import { IMAGE_EXTENSIONS, TEXT_MAX } from "./limits.js";
 import { paintTrail } from "./trail.js";
 
 /* Building a column is O(entries), and real directories hold thousands of them
@@ -44,7 +45,7 @@ const CACHE_MAX = 24; // Retain enough nearby columns without growing memory unb
 const COLUMN_WIDTH_RATIO = 2 / 3; // Leave room for adjacent columns on narrow screens.
 const MAX_DEPTH = 5; // Keep depth styling within the available visual scale.
 const SCROLL_HINT_PADDING = 4; // Show the affordance only when content exceeds the viewport.
-const EDIT_MAX = 512 * 1024; // Keep browser edits within the provider's 512 KB text limit.
+const EDIT_MAX = TEXT_MAX;
 const EDIT_MAX_LINE = 10_000; // Avoid unusably wide editor lines.
 
 /* Writing the value a property already holds still dirties it — and a width or
@@ -496,8 +497,10 @@ async function fillPreview(n) {
    preview in adapters/preview-local.js (same extensions, same cap), but it is
    core's own copy: a build picks its preview provider freely, and Edit has to
    work with any of them. Keep the two lists in step. */
-const NON_EDIT_RE =
-  /\.(desktop|docx|pptx|pdf|html?|png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
+const NON_EDIT_RE = new RegExp(
+  `\\.(desktop|docx|pptx|pdf|html?|${IMAGE_EXTENSIONS.join("|")})$`,
+  "i",
+);
 
 async function editableText(n) {
   if (

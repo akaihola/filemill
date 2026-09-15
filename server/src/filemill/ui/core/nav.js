@@ -177,13 +177,6 @@ export function unfoldTo(i) {
 /* Where you are, from the root down to the selected row. The first element is a
    folder *name*, not an absolute path: the File System Access API never hands
    one out, so this is everything the app knows about the location. */
-function pathParts() {
-  const parts = path.map((p) => p.name);
-  const leaf = sel[path.length - 1];
-  if (leaf) parts.push(leaf);
-  return parts;
-}
-
 export function renderCrumbs() {
   const el = document.getElementById("crumbs");
   el.textContent = "";
@@ -208,7 +201,7 @@ export function renderCrumbs() {
      string, and a fallback selection copies the characters on screen. The two
      have to be the same string or the fallback quietly hands over a path that
      no shell will take. */
-  document.getElementById("st-path").textContent = pathParts().join("/");
+  document.getElementById("st-path").textContent = currentPath().join("/");
 }
 
 /* ── Copy path ──────────────────────────────────────────────────────────────

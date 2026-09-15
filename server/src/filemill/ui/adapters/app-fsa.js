@@ -14,8 +14,13 @@ import { PreviewRich } from "./preview-rich.js";
 import { RouterHash } from "./router-hash.js";
 import { recallRoots, recallView, rememberRoot } from "./storage.js";
 import { withCsv, withCsvPreview } from "./vfs-csv.js";
-import { applyPath, setDeepLinkActions, startRouting } from "../core/deeplink.js";
+import {
+  applyPath,
+  setDeepLinkActions,
+  startRouting,
+} from "../core/deeplink.js";
 import { FOLDER_PATH } from "../core/icons.js";
+import { mountRoot } from "../core/mount.js";
 import {
   withJson,
   withJsonl,
@@ -30,8 +35,22 @@ import {
   useRouter,
 } from "../core/ports.js";
 import { colCache, render, setActions } from "../core/render.js";
-import { choose, refreshColumn, renderCrumbs, saySt, unfoldTo } from "../core/nav.js";
-import { focusCol, path, root, sel, setState, setSortKids, welcome } from "../core/state.js";
+import {
+  choose,
+  refreshColumn,
+  renderCrumbs,
+  saySt,
+  unfoldTo,
+} from "../core/nav.js";
+import {
+  focusCol,
+  path,
+  root,
+  sel,
+  setSortKids,
+  setState,
+  welcome,
+} from "../core/state.js";
 
 /* The load-time work sort.js, layout.js and settings.js did as classic scripts,
    in the order they used to load. */
@@ -103,15 +122,10 @@ document.addEventListener("visibilitychange", () => {
 
 export async function mount(handle, loc) {
   const node = FS.node(handle.name, handle);
-  colCache.clear();
-  setState({ path: [node], sel: [], focusCol: 0 });
+  welcome.hidden = true;
+  await mountRoot(node, handle.name + " — Filemill");
   mounted = null;
   keptAt = null;
-  welcome.hidden = true;
-  document.title = handle.name + " — Filemill";
-  render();
-  await FS.ensureLoaded(node);
-
   /* A link in the address bar beats the remembered chain: the user followed it
      just now, where the chain is only where they happened to stop last time.
      applyPath walks as far as the names still exist and stops, so a folder

@@ -32,7 +32,9 @@ import {
    not be immediately re-written from the half-built state it produces. */
 let applying = false;
 let renderPage, colCache;
-export const setDeepLinkActions = (actions) => ({ renderPage, colCache } = actions);
+export const setDeepLinkActions = (
+  actions,
+) => ({ renderPage, colCache } = actions);
 
 export function currentPath() {
   const names = path.slice(1).map((p) => p.name);

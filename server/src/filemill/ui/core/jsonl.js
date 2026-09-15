@@ -14,12 +14,13 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { esc } from "./icons.js";
 import { render } from "./render.js";
+import { TEXT_MAX } from "./limits.js";
 
-const JSONL_MAX = 512 * 1024; /* the same ceiling as TEXT_MAX */
+const JSONL_MAX = TEXT_MAX;
 const JSONL_LABEL = 60; /* as the server's MAX_LABEL_LEN */
 const JSONL_TEXT = ["title", "name", "description", "summary", "label"];
 const JSONL_SCALAR = ["timestamp", "time", "ts", "id", "uuid", "key"];
-const JSON_MAX = 512 * 1024;
+const JSON_MAX = TEXT_MAX;
 
 const isJsonl = (n) => /\.jsonl$/i.test(n.name);
 const isJson = (n) => /\.jsonc?$/i.test(n.name);
