@@ -2,8 +2,9 @@
    Static build — boot, folder picker, welcome screen.
 
    The only file that knows this is the local-folder flavour of the app. It
-   picks the adapters (fsa + preview-local + router-hash, all loaded before
-   this) and owns the one entry point into the tree, mount().
+   picks the adapters (fsa + preview-rich + router-hash, imported below) and
+   owns the one entry point into the tree, mount(). ../entry-static.js is what
+   the page loads; this is the module it ends with.
    ═══════════════════════════════════════════════════════════════════════════ */
 import { initSettings } from "../core/settings.js";
 import { initLayout } from "../core/layout.js";
@@ -39,7 +40,7 @@ initSettings();
 
 /* Adapters define themselves; the app entry is what chooses. Selecting here
    rather than at the bottom of each adapter file means a page may load more
-   than one of them — which the server build does — without script order
+   than one of them — which the server build does — without import order
    silently deciding which wins. */
 useFilesystem(withCsv(withJson(withJsonl(FSA))));
 usePreview(withCsvPreview(withJsonPreview(withJsonlPreview(PreviewRich))));

@@ -282,7 +282,7 @@ def web_static(path: str):
 # itself at runtime — see ui/adapters/README.md. The static edition builds its
 # single file from these same sources, which is what makes these the same app
 # rather than two that resemble each other. Its core/ is source-agnostic; the
-# adapters loaded below point it at this server.
+# adapters ui/entry-server.js names point it at this server.
 #
 # Mounted under /n/ during the migration. Cutting over is changing UI_BASE to
 # "/" and letting the catch-all serve the shell — at which point the URL path
