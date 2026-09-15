@@ -21,9 +21,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
   and the `watchfiles` dependency. Delete their tests.
 
-- [16] Rewrite all remaining Markdown files in Simplified Technical English. Done when
-  the Markdown line count is below the line count of `*.py`, `*.js` and `*.css`.
-
 ## Scheduled
 
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
@@ -346,6 +343,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [16] Rewrite all remaining Markdown files in Simplified Technical English. Done when
+  the Markdown line count is below the line count of `*.py`, `*.js` and `*.css`.
 
 - [14] Merge `server/TASKS.md`, `server/ISSUES.md` and `static/TASKS.md` into root
   `TASKS.md` and `docs/tasks/`. Keep open items. Delete closed items and the files.
