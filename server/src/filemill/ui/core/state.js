@@ -2,7 +2,6 @@
    State
    ═══════════════════════════════════════════════════════════════════════════ */
 import "./shell.js";
-import { sortKids } from "./sort.js";
 
 export const root = document.documentElement;
 export const finder = document.getElementById("finder");
@@ -34,6 +33,8 @@ export const state = {
   dotfiles: root.dataset.hidden === "show",
   sort: { key: "name", desc: false },
 };
+let sortOrder = (kids) => kids;
+export const setSortKids = (value) => sortOrder = value;
 
 export const GUTTER = () =>
   parseInt(getComputedStyle(root).getPropertyValue("--gutter"));
@@ -62,7 +63,7 @@ const CODE_FONT_SIZE = 11.5; // Match the compact monospace preview typography.
    width measurement and every path walk comes through here, which is what keeps
    the rows and a restored chain agreeing on what row 4 is. */
 export const visibleKids = (node) =>
-  ((kids) => node.ordered ? kids : sortKids(kids))(
+  ((kids) => node.ordered ? kids : sortOrder(kids))(
     (node.kids || []).filter((k) => state.dotfiles || !k.name.startsWith(".")),
   );
 

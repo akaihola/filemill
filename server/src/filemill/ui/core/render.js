@@ -4,7 +4,7 @@
 import { currentPath, syncURL } from "./deeplink.js";
 import { esc, iconHTML } from "./icons.js";
 import { layout } from "./layout.js";
-import { choose, refreshColumn, renderCrumbs, saySt, unfoldTo } from "./nav.js";
+import { set, setVar } from "./dom.js";
 import { FS, PREVIEW, ROUTER } from "./ports.js";
 import { sortSay, sortStatus, sweepMeta } from "./sort.js";
 import {
@@ -50,14 +50,8 @@ const EDIT_MAX_LINE = 10_000; // Avoid unusably wide editor lines.
 /* Writing the value a property already holds still dirties it — and a width or
    custom-property write on a column relays out every row inside it. Guard the
    writes and a re-render of an unchanged column costs nothing. */
-export const set = (obj, key, value) => {
-  if (obj[key] !== value) obj[key] = value;
-};
-export const setVar = (el, name, value) => {
-  if (el.style.getPropertyValue(name) !== value) {
-    el.style.setProperty(name, value);
-  }
-};
+let actions;
+export const setActions = (value) => actions = value;
 
 function buildCol(node) {
   const kids = visibleKids(node);
@@ -108,14 +102,14 @@ function buildCol(node) {
   /* a folded column hides its rows, so the click lands on the column itself —
      that is what makes the advertised "click a spine to unfold" work */
   el.onclick = () => {
-    if (el.classList.contains("spine")) unfoldTo(+el.dataset.i);
+    if (el.classList.contains("spine")) actions.unfoldTo(+el.dataset.i);
   };
   /* Read the index off the element for the same reason a row does: the node
      keeps its DOM across re-renders, and only render time knows its column.
      stopPropagation, or a ⟳ on a folded spine would unfold it instead. */
   el.querySelector(".rf").onclick = (e) => {
     e.stopPropagation();
-    refreshColumn(+el.dataset.i);
+    actions.refreshColumn(+el.dataset.i);
   };
 
   const rows = kids.map((k, ri) => {
@@ -131,7 +125,7 @@ function buildCol(node) {
       (k.dir ? `<span class="chev">›</span>` : "");
     /* read the index off the element: the same node keeps its DOM across
        re-renders, and its column position is only known at render time */
-    row.onclick = () => choose(+el.dataset.i, k);
+    row.onclick = () => actions.choose(+el.dataset.i, k);
     body.appendChild(row);
     return row;
   });
@@ -252,7 +246,7 @@ export function render(keepScroll) {
       c.body.scrollHeight > c.body.clientHeight + SCROLL_HINT_PADDING,
     );
   }
-  renderCrumbs();
+  actions.renderCrumbs();
   sortSay(sortStatus());
   layout(keepScroll);
   syncURL();
@@ -432,9 +426,9 @@ function setupPreviewActions(n) {
       del.disabled = true;
       try {
         await FS.remove(n);
-        await refreshColumn(path.length - 1);
+        await actions.refreshColumn(path.length - 1);
       } catch (err) {
-        saySt(
+        actions.saySt(
           "st-refresh",
           `Delete failed: ${String(err.message || err)}`,
           false,

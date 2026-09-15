@@ -14,7 +14,6 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { revealRow } from "./layout.js";
 import { FS, ROUTER } from "./ports.js";
-import { colCache, render } from "./render.js";
 import {
   focusCol,
   path,
@@ -32,6 +31,8 @@ import {
    with duplicates. applying is the re-entrancy guard: a URL being *read* must
    not be immediately re-written from the half-built state it produces. */
 let applying = false;
+let renderPage, colCache;
+export const setDeepLinkActions = (actions) => ({ renderPage, colCache } = actions);
 
 export function currentPath() {
   const names = path.slice(1).map((p) => p.name);
@@ -114,7 +115,7 @@ export async function applyPath(names, wantFocus) {
     if (wantFocus != null) {
       setState({ focusCol: Math.max(0, Math.min(wantFocus, path.length - 1)) });
     }
-    render();
+    renderPage();
     scrollCursorIntoView();
   }
 }
