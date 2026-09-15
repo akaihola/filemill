@@ -12,7 +12,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { initSettings } from "../core/settings.js";
 import { initLayout } from "../core/layout.js";
-import { initSort } from "../core/sort.js";
+import { initSort, setSortActions, sortKids } from "../core/sort.js";
 import { FSA } from "./fsa.js";
 import { API, HTTP } from "./http.js";
 import { PreviewHTTP } from "./preview-http.js";
@@ -22,7 +22,7 @@ import { PreviewUpload } from "./preview-upload.js";
 import { RouterPath } from "./router-path.js";
 import { rememberRoot } from "./storage.js";
 import { withCsv, withCsvPreview } from "./vfs-csv.js";
-import { applyPath, startRouting } from "../core/deeplink.js";
+import { applyPath, setDeepLinkActions, startRouting } from "../core/deeplink.js";
 import {
   withJson,
   withJsonl,
@@ -30,14 +30,19 @@ import {
   withJsonPreview,
 } from "../core/jsonl.js";
 import { FS, useFilesystem, usePreview, useRouter } from "../core/ports.js";
-import { colCache, render } from "../core/render.js";
-import { focusCol, path, sel, setState, welcome } from "../core/state.js";
+import { colCache, render, setActions } from "../core/render.js";
+import { choose, refreshColumn, renderCrumbs, saySt, unfoldTo } from "../core/nav.js";
+import { focusCol, path, sel, setState, setSortKids, welcome } from "../core/state.js";
 import { hlLang } from "../core/syntax.js";
 
 /* The load-time work sort.js, layout.js and settings.js did as classic scripts,
    in the order they used to load. */
 initSort();
-initLayout();
+setSortKids(sortKids);
+setActions({ choose, refreshColumn, renderCrumbs, saySt, unfoldTo });
+setSortActions({ render });
+setDeepLinkActions({ render, colCache });
+initLayout(render);
 initSettings();
 
 const ROOT_NAME = document.documentElement.dataset.root || "/";
