@@ -9,6 +9,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
+- [20] Create `ui/core/limits.js` with one `TEXT_MAX` and one image extension list.
+  Create one `mountRoot()` and one `currentPath()`. Delete the copies and `pathParts`.
+    - Depends on: [17]
+
 - [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
   `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
 
@@ -22,14 +26,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   and the `watchfiles` dependency. Delete their tests.
 
 ## Scheduled
-
-- [19] Move adapter code out of `ui/core/`: `jsonl.js`, the welcome screen, the local
-  badge and `offerRichToggle` go to `ui/adapters/`.
-    - Depends on: [17]
-
-- [20] Create `ui/core/limits.js` with one `TEXT_MAX` and one image extension list.
-  Create one `mountRoot()` and one `currentPath()`. Delete the copies and `pathParts`.
-    - Depends on: [17]
 
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
   files. Current PPTX support was implemented in task
@@ -65,7 +61,9 @@ Rules for TASKS.md usage are at the bottom of the file.
       `TASKS.md`.
 
 
-
+- [19] Move adapter code out of `ui/core/`: `jsonl.js`, the welcome screen, the local
+  badge and `offerRichToggle` go to `ui/adapters/`.
+    - Depends on: [17]
 
 - [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into `withVirtual`,
   and `withJsonlPreview` and `withJsonPreview` into `withVirtualPreview`.
