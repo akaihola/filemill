@@ -100,10 +100,10 @@ function jsonlParse(text) {
   return records;
 }
 
-export const withJsonl = (fs) => ({
+export const withVirtual = (fs) => ({
   ...fs,
   async ensureLoaded(node) {
-    if (!node.jsonl) {
+    if (!node.jsonl && !node.json) {
       await fs.ensureLoaded(node);
       for (const k of node.kids || []) {
         if (!k.dir && isJsonl(k)) {
@@ -114,8 +114,47 @@ export const withJsonl = (fs) => ({
             ordered: true,
           });
         }
+        if (!k.dir && isJson(k)) {
+          Object.assign(k, {
+            dir: true,
+            kids: null,
+            json: true,
+            ordered: true,
+          });
+        }
       }
       return;
+    }
+    if (node.json) {
+      if (node.value !== undefined) {
+        if (node.kids === null) node.kids = jsonKids(node, node.value);
+        return;
+      }
+      if (node.loading) return node.loading;
+      node.loading = (async () => {
+        try {
+          const blob = await fs.blob({ ...node, dir: false, vpath: "" });
+          if (!blob) throw new Error("Cannot read file");
+          if (blob.size > JSON_MAX) {
+            throw new Error("Too large to browse (over 512 KB)");
+          }
+          const value = JSON.parse(await blob.text());
+          if (value === null || typeof value !== "object") {
+            node.dir = false;
+            node.value = value;
+            node.kids = undefined;
+          } else {
+            node.value = value;
+            node.kids = jsonKids(node, value);
+          }
+        } catch (err) {
+          node.jsonError = String(err.message || err);
+          node.dir = false;
+          node.kids = undefined;
+        }
+        node.loading = null;
+      })();
+      return node.loading;
     }
     if (node.kids !== null) return;
     if (node.loading) return node.loading;
@@ -142,18 +181,27 @@ export const withJsonl = (fs) => ({
   },
 });
 
-export const withJsonlPreview = (provider) => ({
+export const withVirtualPreview = (provider) => ({
   revoke() {
     provider.revoke?.();
   },
   render(n) {
-    if (!n.record) return provider.render(n);
-    const cell = (v) => typeof v === "object" ? JSON.stringify(v) : String(v);
-    const rows = Object.entries(n.record)
-      .map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(cell(v))}</td></tr>`)
-      .join("");
+    if (n.record) {
+      const cell = (v) =>
+        v !== null && typeof v === "object" ? JSON.stringify(v) : String(v);
+      const rows = Object.entries(n.record)
+        .map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(cell(v))}</td></tr>`)
+        .join("");
+      return Promise.resolve(
+        `<div class="pv-rich"><table class="pv-kv">${rows}</table></div>`,
+      );
+    }
+    if (!n.json || n.value === undefined) return provider.render(n);
+    const text = typeof n.value === "string" ? n.value : JSON.stringify(n.value);
     return Promise.resolve(
-      `<div class="pv-rich"><table class="pv-kv">${rows}</table></div>`,
+      n.value !== null && typeof n.value === "object"
+        ? null
+        : `<pre class="pv-text pv-json-value">${esc(text)}</pre>`,
     );
   },
 });
@@ -161,7 +209,7 @@ export const withJsonlPreview = (provider) => ({
 /* JSON documents use the same virtual-node contract as JSONL and SQLite. The
    value stays on each node so the preview can answer locally; vpath is only a
    stable address for the shared router and server-shaped nodes. */
-const jsonValue = (parent, name, value, vpath) => {
+function jsonValue(parent, name, value, vpath) {
   const container = value !== null && typeof value === "object";
   return {
     name,
@@ -175,7 +223,7 @@ const jsonValue = (parent, name, value, vpath) => {
     ordered: true,
     meta: { virtual: true },
   };
-};
+}
 
 function jsonKids(node, value) {
   if (
@@ -202,79 +250,3 @@ function jsonKids(node, value) {
     jsonValue(node, name, value, node.vpath ? `${node.vpath}/${i}` : String(i))
   );
 }
-
-export const withJson = (fs) => ({
-  ...fs,
-  async ensureLoaded(node) {
-    if (!node.json) {
-      await fs.ensureLoaded(node);
-      for (const k of node.kids || []) {
-        if (!k.dir && isJson(k)) {
-          Object.assign(k, {
-            dir: true,
-            kids: null,
-            json: true,
-            ordered: true,
-          });
-        }
-      }
-      return;
-    }
-    if (node.value !== undefined) {
-      if (node.kids === null) node.kids = jsonKids(node, node.value);
-      return;
-    }
-    if (node.loading) return node.loading;
-    node.loading = (async () => {
-      try {
-        const blob = await fs.blob({ ...node, dir: false, vpath: "" });
-        if (!blob) throw new Error("Cannot read file");
-        if (blob.size > JSON_MAX) {
-          throw new Error("Too large to browse (over 512 KB)");
-        }
-        const value = JSON.parse(await blob.text());
-        if (value === null || typeof value !== "object") {
-          node.dir = false;
-          node.value = value;
-          node.kids = undefined;
-        } else {
-          node.value = value;
-          node.kids = jsonKids(node, value);
-        }
-      } catch (err) {
-        node.jsonError = String(err.message || err);
-        node.dir = false;
-        node.kids = undefined;
-      }
-      node.loading = null;
-    })();
-    return node.loading;
-  },
-});
-
-export const withJsonPreview = (provider) => ({
-  revoke() {
-    provider.revoke?.();
-  },
-  render(n) {
-    if (n.record) {
-      const cell = (v) =>
-        v !== null && typeof v === "object" ? JSON.stringify(v) : String(v);
-      const rows = Object.entries(n.record)
-        .map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(cell(v))}</td></tr>`)
-        .join("");
-      return Promise.resolve(
-        `<div class="pv-rich"><table class="pv-kv">${rows}</table></div>`,
-      );
-    }
-    if (!n.json || n.value === undefined) return provider.render(n);
-    const value = n.value;
-    if (value !== null && typeof value === "object") {
-      return Promise.resolve(null);
-    }
-    const text = typeof value === "string" ? value : JSON.stringify(value);
-    return Promise.resolve(
-      `<pre class="pv-text pv-json-value">${esc(text)}</pre>`,
-    );
-  },
-});

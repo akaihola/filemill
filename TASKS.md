@@ -9,6 +9,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
+- [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into `withVirtual`,
+  and `withJsonlPreview` and `withJsonPreview` into `withVirtualPreview`.
+    - Depends on: [19]
+
 - [20] Create `ui/core/limits.js` with one `TEXT_MAX` and one image extension list.
   Create one `mountRoot()` and one `currentPath()`. Delete the copies and `pathParts`.
     - Depends on: [17]
@@ -26,10 +30,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   and the `watchfiles` dependency. Delete their tests.
 
 ## Scheduled
-
-- [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into `withVirtual`,
-  and `withJsonlPreview` and `withJsonPreview` into `withVirtualPreview`.
-    - Depends on: [19]
 
 
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
