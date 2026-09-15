@@ -1,39 +1,28 @@
 # Filemill — server edition
 
-A column-view file browser and previewer, served as a local web application.
-Navigate directories by clicking column entries; previews render inline for
-Markdown, DOCX, PPTX, PDF, images, plain text, and source code.
+Filemill is a column-view file browser and previewer. The server edition is a
+local web application in Python. Click a column entry to open a directory.
+Previews for Markdown, DOCX, PPTX, PDF, images, plain text and source code show
+inline.
 
-The two editions and their shared ports are described in the
-[repository README](../README.md). This document covers the Python edition.
+The [repository README](../README.md) describes the two editions and their
+shared ports. This document covers the Python edition.
 
 ## Features
 
-- **Column view** – multi-pane navigation à la macOS Finder
-- **Rich previews** – Markdown (with plugins), DOCX, PPTX, PDF, images, plain text, source code with syntax highlighting (Pygments "friendly" theme)
-- **Markdown extras** – wikilinks (`[[PageName]]`), Mermaid diagrams, plain-URL linkification, relative-link normalisation
-- **Virtual filesystem** – SQLite databases are browsable as navigable table → row columns; additional VFS providers for JSON and CSV files
-- **Static web server** – `/w/<mount>/<path>` serves any file under a named mount with the correct Content-Type (useful for HTML files); the root directory itself is mounted as `/w/<ROOT.name>/...`, and each direct symlink child of ROOT is mounted under its own name
-- **Canonical finder URLs** – workspace-local navigation uses `/n/<path>` in the shared UI; legacy `/f/<mount>/<path>` and `/f/?path=<absolute>` remain accepted for compatibility fallbacks
-- **Breadcrumb trail** – `~ / dir / subdir / file` navigation bar; includes a `.*` dotfile toggle that persists across sessions
-- **URL sync** – browser URL stays in sync with the selected path using `/n/<path>` URLs in the shared UI; deep-link any location directly
-- **Keyboard navigation** – `↑↓` move within a column; `→`/`Enter` open; `←` go back while keeping the URL in sync with the visible parent/root state; `Home`/`End`/`PgUp`/`PgDn` scroll; column focus states visually indicated
-- **Live reload** – `--live` flag restarts the server on code changes
-- **Zoom** – expand preview pane to full viewport width
-- **`.desktop` hyperlinks** – open service URLs directly from the browser
-- **Symlink support** – safely follows symlink bookmarks in the configured root
-- **Miller-columns UI (new, at `/n/`)** – the shared frontend from
-  [`../ui/`](../ui): column headers with counts, three selection states, a
-  drawn trail between selected rows, and horizontal scroll as a fold dial. Its
-  URL path mirrors the file path relative to the browsed root exactly
-  (`/n/docs/readme.md`), and previews still come from the Python renderers below.
-  SQLite/JSON virtual filesystems browse through it too — `/n/sample.db/users/1`
-  deep-links to a single row
-- **Open local folder…** – the same page can browse a folder on *your* machine
-  through the File System Access API instead of the served root; previews are
-  still rendered by markdown-it-py, Pygments and mammoth, because the bytes are
-  posted to `/api/render`
-- **PWA** – installable as a Progressive Web App; includes a Web App Manifest, service worker (stale-while-revalidate for the app shell, network-only for API and dynamic responses), and full icon set
+- **Column view** – multi-pane navigation in the style of macOS Finder
+- **Rich previews** – Markdown (with plugins), DOCX, PPTX, PDF, images, plain text, and source code with Pygments highlighting ("friendly" theme)
+- **Markdown extras** – wikilinks (`[[PageName]]`), Mermaid diagrams, plain-URL links, relative-link normalisation
+- **Virtual filesystem** – a SQLite database opens as table → row columns; JSON files open through their own provider
+- **Static web server** – `/w/<mount>/<path>` serves a file under a named mount with the correct Content-Type. The root directory is mounted as `/w/<ROOT.name>/...`. Each direct symlink child of ROOT is mounted under its own name
+- **Finder URLs** – the URL path is the file path relative to the root, for example `/docs/readme.md`. A deep link opens any location. `/sample.db/users/1` opens one database row
+- **Dotfiles** – add `?hidden=show` to the URL to show them
+- **Keyboard navigation** – `↑↓` move in a column; `→`/`Enter` open; `←` goes back; `Home`/`End`/`PgUp`/`PgDn` scroll
+- **Live reload** – the `--live` flag restarts the server on code changes
+- **`.desktop` files** – show as a link card
+- **Symlink support** – follows a symlink when its target stays inside the root
+- **Open local folder…** – the served page can browse a folder on your machine through the File System Access API. Python still renders the previews, because the page posts the bytes to `/api/render`
+- **PWA** – installable. Includes a Web App Manifest, a service worker and an icon set. The worker caches the app shell (stale-while-revalidate) and never caches `/api/` responses
 
 ## Installation
 
@@ -63,14 +52,14 @@ local service first:
 uv run filemill [ROOT]
 ```
 
-The default listener is `127.0.0.1:8000`, so it is local to this machine. The
-PWA cannot start a native process; if the service is stopped, it shows the same
-command and a retry button. Use `--bind` only when deliberately exposing the
-server beyond loopback.
+The default listener is `127.0.0.1:8000`, so only this machine can reach it.
+The PWA cannot start a native process. When the service is stopped, the app
+shows the command above and a retry button. Use `--bind` only when you want to
+expose the server beyond loopback.
 
 ## Development
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full development workflow and rules.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for the development rules.
 
 Quick start:
 
@@ -78,13 +67,13 @@ Quick start:
 uv sync
 timeout 1800 uv run pytest         # everything, browser tests included
 
-# Just the 76 real-browser tests. Needs PLAYWRIGHT_BROWSERS_PATH. The browser
+# Only the real-browser tests. Needs PLAYWRIGHT_BROWSERS_PATH. The browser
 # suite takes minutes on a 4-core host, so budget accordingly.
 timeout 1800 uv run pytest tests/test_browser_keyboard.py tests/test_browser_new_ui.py
 ```
 
-Note the absence of `--with`. `uv sync` installs the Playwright the lock pins,
-and that version is the one whose driver matches the browsers Nix provides.
+Do not add `--with`. `uv sync` installs the Playwright version that the lock
+pins. That version matches the browsers that Nix provides.
 `uv run --with "playwright==1.57.0"` overrides the lock and fails like this:
 
 ```
@@ -92,43 +81,35 @@ BrowserType.launch: Executable doesn't exist at
   .../chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
 ```
 
-The message ends by telling you to run `playwright install`. Do not. Nix already
-ships the browsers, one revision per bundle, and `pyproject.toml` pins the
-Playwright that matches them.
-
-The legacy `/f/` tests in `tests/test_browser_keyboard.py` need outbound network:
-that compatibility shell loads htmx from `unpkg.com` and mermaid from
-`cdn.jsdelivr.net`.
-They read `$HTTPS_PROXY` and hand Chromium its credentials, because Chromium
-reads that variable but drops the username and password in it. Without a route
-to those two hosts the page still draws its first column and then ignores every
-click, which reads like a navigation bug and is not one. The 27 tests in
-`tests/test_browser_new_ui.py` serve every asset themselves and pass offline.
+The message tells you to run `playwright install`. Do not run it. Nix ships
+the browsers, one revision per bundle, and `pyproject.toml` pins the Playwright
+that matches them.
 
 ## Architecture
 
 ```
 src/filemill/
 ├── app.py          # FastHTML app, routes, _resolve_safe()
-├── api.py          # /api/dir, /api/raw, /api/preview, /api/render
+├── api.py          # /api/dir, /api/search, /api/raw, /api/preview, /api/render
 ├── cli.py          # Typer CLI entry point
-├── columns.py      # Legacy /f/ column HTML generation
+├── env.py          # FILEMILL_* variables, PYKOFINDER_* fallback
 ├── preview.py      # Preview dispatcher (md / docx / pptx / pdf / img / code / raw)
 ├── rendering.py    # markdown-it-py instance with plugins
-├── styles.py       # Legacy /f/ CSS and scripts
+├── styles.py       # Pygments and app CSS
+├── urls.py         # View state and canonical URLs
 ├── vfs.py          # Virtual-filesystem registry + provider protocol
-├── providers/      # VFS backends: SQLite, JSON, CSV
+├── providers/      # VFS backends: SQLite, JSON, VTT
 ├── static/         # Bundled PWA assets: manifest.json, sw.js, icons/
 └── ui/             # The shared frontend; the repo root's ui/ symlinks here
 ```
 
-The shared Miller-columns UI is served at `/n/`. The legacy HTMX UI remains at
-`/f/` for compatibility. The shared UI source is
-`src/filemill/ui/`, which the repository root's [`../ui/`](../ui) symlinks to.
-There is one set of files and no packaging copy; see [CONTRIBUTING.md](CONTRIBUTING.md).
+The server serves the shared Miller-columns UI at `/` and at `/n/`. The UI
+source is `src/filemill/ui/`. The repository root's [`../ui/`](../ui) is a
+symlink to it. There is one set of files and no packaging copy. Read
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
-> Renamed from **pykofinder**. `PYKOFINDER_ROOT`, `PYKOFINDER_BIND` and
-> `PYKOFINDER_LIVE` are still honoured, so an existing setup keeps running.
+> The package was **pykofinder**. `PYKOFINDER_ROOT`, `PYKOFINDER_BIND` and
+> `PYKOFINDER_LIVE` still work, so an existing setup keeps running.
 
 ## License
 
