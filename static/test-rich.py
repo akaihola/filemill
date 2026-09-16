@@ -49,6 +49,7 @@ window.__mk = () => {
     F('plain.txt', 'just text'),
     F('data.json', '{"items":["json value"],"count":2}'),
     F('deck.pptx', 'pptx bytes'),
+    F('broken.pptx', 'bad'),
   ]);
 };
 """
@@ -59,7 +60,9 @@ window.__mk = () => {
 STUBS = {
     "pptx-viewer.js": """
 export function createPptxViewer(host, options) {
-  host.innerHTML = '<div class="pptx-stub">PowerPoint loaded</div>';
+  /* the real viewer reports a deck it cannot open through onError */
+  if (options.source.size < 5) options.onError('bad deck');
+  else host.innerHTML = '<div class="pptx-stub">PowerPoint loaded</div>';
   return { destroy() {} };
 }
 """,
@@ -201,6 +204,9 @@ async def main():
         html = await preview(pg, "doc.rst", ready=".pv-note")
         check("Offline, reStructuredText shows its source and says why",
               "Heading" in html and "pv-text" in html and "pv-note" in html)
+        html = await preview(pg, "deck.pptx", ready=".preview-error")
+        check("Offline, a PowerPoint file says the viewer is unavailable",
+              "PowerPoint preview unavailable" in html, html[:120])
 
         # ── the switch ───────────────────────────────────────────────────
         await boot(pg, base, rich=False)
@@ -215,6 +221,10 @@ async def main():
         check("Switched off, no Python runtime is requested either",
               not [u for u in requests if "jsdelivr" in u],
               "; ".join(u for u in requests if "jsdelivr" in u))
+        await preview(pg, "deck.pptx")
+        check("Switched off, no PowerPoint viewer is requested either",
+              not [u for u in requests if "pptx" in u],
+              "; ".join(u for u in requests if "pptx" in u))
 
         await pg.reload()
         await pg.wait_for_timeout(300)
@@ -237,8 +247,16 @@ async def main():
 
         requests.clear()
         html = await preview(pg, "deck.pptx", ready=".pptx-stub")
-        check("PPTX uses the vanilla viewer CDN adapter",
-              "PowerPoint loaded" in html and "pptx-vanilla-viewer" in requests[-1])
+        check("With the viewer available, a PowerPoint file is mounted in it",
+              "PowerPoint loaded" in html and "pv-pptx" in html, html[:120])
+        check("…and the viewer module is the one requested",
+              [u for u in requests if "pptx-viewer.js" in u],
+              "; ".join(requests))
+        html = await preview(
+            pg, "broken.pptx", ready='.pv-pptx:has-text("PowerPoint preview failed")'
+        )
+        check("A deck the viewer rejects shows the viewer's message",
+              "PowerPoint preview failed: bad deck" in html, html[:120])
 
         requests.clear()
         html = await preview(pg, "fence.md")
