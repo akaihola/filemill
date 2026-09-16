@@ -5461,7 +5461,10 @@ const PreviewRich = {
       if (PPTX_RE.test(node.name)) {
         const { createPptxViewer } = await load("pptx-vanilla-viewer");
         const id = `pptx-${crypto.randomUUID()}`;
-        queueMicrotask(async () => {
+        /* The viewer draws into a live element, and the pane only receives
+           the returned HTML after this promise settles — a microtask would
+           run before that and find no host. A macrotask runs after it. */
+        setTimeout(() => {
           const host = document.getElementById(id);
           if (!host) return;
           host.textContent = "Loading PowerPoint preview…";
