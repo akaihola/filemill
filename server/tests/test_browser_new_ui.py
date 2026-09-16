@@ -779,9 +779,10 @@ def test_nothing_is_fetched_from_a_cdn(page):
     docstring is actually about. Source files now go through neither — they are
     coloured in the page by core/syntax.js — so they are the easiest half to
     keep honest and are checked here too. `ui/adapters/preview-rich.js` does lazy-load a
-    renderer from a CDN; the server edition imports it (for `withPptxPreview`)
-    but never asks it for a rich renderer, so nothing is fetched. A preview that
-    started to would break this test, which is the point of the test.
+    renderer from a CDN; the server edition asks it for one only for `.pptx`
+    (through `withPptxPreview`), which this test never opens, so nothing is
+    fetched. Any other preview that started to would break this test, which is
+    the point of the test.
     """
     external = []
     page.on(

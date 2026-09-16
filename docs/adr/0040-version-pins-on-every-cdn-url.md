@@ -17,3 +17,10 @@ Version pins on every CDN URL
 ## Consequences
 
 The static edition follows this decision. The measurement above records the basis for maintaining and evaluating it.
+
+The pins live in the `CDN` table in `ui/adapters/preview-rich.js`. The
+renderers arrive through a dynamic `import()`, which has no `integrity`
+attribute, so the version pin is the reproducibility mechanism: `esm.sh` and
+`cdn.jsdelivr.net` serve a versioned path as immutable content.
+`pptx-vanilla-viewer@2.1.4` is pinned this way for PowerPoint files. Tests
+replace a URL through `window.FILEMILL_CDN` to load a local stub instead.
