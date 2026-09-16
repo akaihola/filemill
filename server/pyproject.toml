@@ -27,8 +27,9 @@ build-backend = "uv_build"
 # wheel; everything ui/entry-server.js reaches must be in it, because one
 # missing module fails the whole import graph. preview-rich.js is in that graph
 # (app-http.js takes withPptxPreview from it), so it ships — its CDN fetch only
-# happens when a rich renderer is asked for, which the server edition never
-# does; tests/test_browser_new_ui.py::test_nothing_is_fetched_from_a_cdn checks.
+# happens for a .pptx preview, the one file type this edition does not render
+# itself; tests/test_browser_new_ui.py::test_nothing_is_fetched_from_a_cdn
+# checks that every other preview stays local.
 # The excluded files remain in the sdist, which is the whole source tree.
 [tool.uv.build-backend]
 wheel-exclude = [
