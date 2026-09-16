@@ -31,10 +31,13 @@ import {
    with duplicates. applying is the re-entrancy guard: a URL being *read* must
    not be immediately re-written from the half-built state it produces. */
 let applying = false;
-let renderPage, colCache;
+/* Named apart from render.js's exports: static/build-index.py concatenates
+   every module into one script, so a module-scope `colCache` here would
+   collide with the real one and the bundle would not parse. */
+let renderPage, columnCache;
 export const setDeepLinkActions = (
   actions,
-) => ({ renderPage, colCache } = actions);
+) => ({ renderPage, colCache: columnCache } = actions);
 
 export function currentPath() {
   const names = path.slice(1).map((p) => p.name);
@@ -126,7 +129,7 @@ export async function applyPath(names, wantFocus) {
    but nothing has ever scrolled to it. */
 export function scrollCursorIntoView() {
   for (let i = 0; i < path.length; i++) {
-    const c = colCache.get(path[i]);
+    const c = columnCache.get(path[i]);
     const ri = rowIndex(path[i], sel[i]);
     if (c && ri != null && c.rows[ri]) revealRow(c.rows[ri]);
   }

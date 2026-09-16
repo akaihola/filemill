@@ -47,10 +47,13 @@ python3 -m http.server 8000 -d ..     # then …
 bundle to GitHub Pages. `showDirectoryPicker()` needs a secure context, so the
 file opened from disk cannot open a folder. An `https://` page can.
 
-Rich previews (Markdown, .docx, reStructuredText) load from a CDN on first
-use. A switch in ⚙ turns them off. This is the only network access.
-reStructuredText runs docutils on Pyodide, a 13 MB one-time download. Offline,
-the preview shows the raw source.
+Rich previews (Markdown, .docx, reStructuredText, .pptx) load from a CDN on
+first use. A switch in ⚙ turns them off. This is the only network access.
+reStructuredText runs docutils on Pyodide, a 13 MB one-time download.
+PowerPoint files open in `pptx-vanilla-viewer`, a 4 MB one-time download.
+Offline, the preview shows the raw source, or says that the viewer is
+unavailable for a `.pptx` file. Every CDN URL carries a version pin; see
+[ADR 0040](docs/adr/0040-version-pins-on-every-cdn-url.md).
 
 See [`static/AGENTS.md`](static/AGENTS.md).
 
@@ -62,10 +65,11 @@ uv sync && uv run filemill [ROOT]
 #   localhost:8000/     ← the shared UI, and "Open local folder…"
 ```
 
-Python renders Markdown with plugins, Pygments, docx, pptx and the SQLite and
-JSON virtual filesystems. The result goes into the shared preview pane. A
-local folder opened from the served page posts its bytes to `/api/render`, so
-the same renderers apply.
+Python renders Markdown with plugins, Pygments, docx and the SQLite and JSON
+virtual filesystems. The result goes into the shared preview pane. A local
+folder opened from the served page posts its bytes to `/api/render`, so the
+same renderers apply. PowerPoint files are the one exception: both editions
+open them in the browser with `pptx-vanilla-viewer` from the CDN.
 
 See [`server/CONTRIBUTING.md`](server/CONTRIBUTING.md).
 
