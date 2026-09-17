@@ -325,7 +325,7 @@ def save_file(target: Path, data: bytes) -> Response:
 
 def delete_file(target: Path) -> Response:
     """Delete one existing real file or directory."""
-    if not target.exists():
+    if not target.exists() and not target.is_symlink():
         return JSONResponse({"error": "Not found"}, status_code=404)
     try:
         if target.is_symlink() or not target.is_dir():

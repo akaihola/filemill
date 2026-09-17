@@ -555,3 +555,9 @@ def test_delete_removes_a_symlink_without_following_it(client, tmp_root: Path):
     assert client.delete("/api/delete?p=linked").json() == {"deleted": True}
     assert not (tmp_root / "linked").exists()
     assert (outside / "keep.txt").exists()
+
+
+def test_delete_removes_a_broken_symlink(client, tmp_root: Path):
+    (tmp_root / "broken").symlink_to(tmp_root / "missing")
+    assert client.delete("/api/delete?p=broken").json() == {"deleted": True}
+    assert not (tmp_root / "broken").is_symlink()
