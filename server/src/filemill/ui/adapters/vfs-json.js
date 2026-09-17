@@ -71,16 +71,9 @@ function jsonlRows(node, records) {
   const labels = key
     ? jsonlLabels(records, key)
     : records.map((_, i) => `line ${i + 1}`);
-  return records.map((record, i) => ({
-    name: labels[i],
-    dir: false,
-    vpath: String(i + 1),
-    icon: "📋",
-    rel: node.rel,
-    ordered: true,
-    meta: { virtual: true },
-    record,
-  }));
+  return records.map((record, i) =>
+    jsonValue(node, labels[i], record, String(i + 1))
+  );
 }
 
 function jsonlParse(text) {
@@ -189,16 +182,6 @@ export const withVirtualPreview = (provider) => ({
     provider.revoke?.();
   },
   render(n) {
-    if (n.record) {
-      const cell = (v) =>
-        v !== null && typeof v === "object" ? JSON.stringify(v) : String(v);
-      const rows = Object.entries(n.record)
-        .map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(cell(v))}</td></tr>`)
-        .join("");
-      return Promise.resolve(
-        `<div class="pv-rich"><table class="pv-kv">${rows}</table></div>`,
-      );
-    }
     if (!n.json || n.value === undefined) return provider.render(n);
     const text = typeof n.value === "string" ? n.value : JSON.stringify(n.value);
     return Promise.resolve(
@@ -219,7 +202,7 @@ function jsonValue(parent, name, value, vpath) {
     dir: container,
     kids: container ? null : undefined,
     vpath,
-    icon: container ? "📁" : "◻",
+    icon: container ? (Array.isArray(value) ? "[]" : "{}") : "◻",
     json: true,
     value,
     rel: parent.rel,
