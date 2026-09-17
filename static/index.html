@@ -5154,29 +5154,32 @@ const FSA = {
   },
 };
 
-/* ═══ adapters/preview-local.js ═══ */
+/* ═══ core/renderers.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
-   Preview provider — in-browser, zero dependencies.
+   Renderer registry — one table for every preview kind.
 
-   Fills the PREVIEW port (see core/ports.js). Everything here works from the
-   bytes alone, so it costs nothing in the bundle and works with no network:
+   An entry is `{kind, render, fallback}`. `kind` is the `preview` string from
+   core/file-kind.js. `render(node, blob)` returns the HTML for the preview
+   body, null for "no inline preview", or throws. `fallback` names the kind to
+   render instead when it throws. renderNode walks that chain.
 
-     images   → object URL
-     PDF      → object URL in an <iframe>; Chromium renders it natively, so a
-                PDF viewer is not something this has to carry
-     .desktop → the same link card the server build shows, parsed in 20 lines
-     text     → escaped <pre>, whole, and coloured by core/syntax.js when
-                the extension names a language it knows. TEXT_MAX is the only
-                limit: what is previewed at all is previewed entire
-
-   Rich rendering (Markdown, docx, pptx) is a *different provider*, not a
-   bigger version of this one: see preview-http.js for the server-rendered
-   variant, and preview-rich.js for the downloaded one.
+   CORE_RENDERERS is what the browser can do from the bytes alone, with no
+   download and no server: images, PDF and HTML as object URLs, .desktop as a
+   link card, WebVTT as a transcript, and everything else as coloured text.
+   Both editions register this list at boot; each app module adds the entries
+   of its own adapters after it (adapters/app-fsa.js, adapters/app-http.js).
+   Adding a kind is one entry here or in an adapter, plus one test.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const IMG_RE = new RegExp(`\\.(${IMAGE_EXTENSIONS.join("|")})$`, "i");
-
 let pvURL = null;
+
+/* Release the object URL of the last image, PDF or HTML preview. */
+function revokeObjectURL() {
+  if (pvURL) {
+    URL.revokeObjectURL(pvURL);
+    pvURL = null;
+  }
+}
 
 function vttHTML(source, mode = "transcript") {
   if (mode === "raw") return `<pre class="preview-raw">${esc(source)}</pre>`;
@@ -5250,12 +5253,124 @@ function desktopCard(text) {
     </div>`;
 }
 
+async function textHTML(node, blob) {
+  if (blob.size > TEXT_MAX) return null;
+  let text;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(
+      await blob.arrayBuffer(),
+    );
+  } catch (_) {
+    return null;
+  }
+  if (text.includes("\0")) return null;
+  /* core/syntax.js colours what it has a language for and escapes the rest;
+     a plain .txt or an unknown extension takes the same path it always did.
+     Colouring the whole file costs 22 ms of regex and 273 ms of DOM at the
+     512 KB ceiling, measured in Chromium — once, on the click that asked
+     for it. Highlighting a slice at a time would be cheaper and wrong: a
+     triple-quoted string spanning the cut mis-tokenises, and syntax.js
+     promises every character exactly once. */
+  const lang = hlLang(node.name);
+  /* A .json that parses is shown pretty-printed and foldable; one that does
+     not (or a .jsonc with comments) is coloured as source like any other.
+     This is the whole-file preview only. Browsing a .json as columns, the
+     way adapters/vfs-json.js does, wraps the FS and PREVIEW ports outside
+     the registry and answers for its own virtual nodes before they get
+     here — jsonHTML is a plain function it can call on a subtree. */
+  const json = lang === "json" ? jsonHTML(text) : null;
+  const body = json ?? (lang ? hlHTML(text, lang) : esc(text));
+  return `<pre class="pv-text${json ? " pv-json" : ""}">${body}</pre>`;
+}
+
+const CORE_RENDERERS = [
+  {
+    kind: "image",
+    render(_node, blob) {
+      pvURL = URL.createObjectURL(blob);
+      return `<img class="pv-img" src="${pvURL}" alt="">`;
+    },
+  },
+  {
+    kind: "pdf",
+    render(node, blob) {
+      pvURL = URL.createObjectURL(blob.slice(0, blob.size, "application/pdf"));
+      return `<iframe class="pv-pdf" src="${pvURL}" title="${
+        esc(node.name)
+      }"></iframe>`;
+    },
+  },
+  {
+    kind: "html",
+    render(node, blob) {
+      pvURL = URL.createObjectURL(blob.slice(0, blob.size, "text/html"));
+      return `<iframe class="pv-html" src="${pvURL}" title="${
+        esc(node.name)
+      }"></iframe>`;
+    },
+  },
+  {
+    kind: "desktop",
+    async render(_node, blob) {
+      if (blob.size > TEXT_MAX) return null;
+      return desktopCard(await blob.text()) ?? null;
+    },
+  },
+  {
+    kind: "vtt",
+    async render(node, blob) {
+      return vttHTML(await blob.text(), node.previewFormat);
+    },
+  },
+  { kind: "text", render: textHTML },
+];
+
+/* The live table. Empty until an app module fills it. */
+const RENDERERS = [];
+
+const addRenderers = (entries) => {
+  RENDERERS.push(...entries);
+};
+
+/* The first entry for `kind` renders; an unknown kind renders as text. When an
+   entry throws and names a fallback, that kind renders instead — the chain
+   ends at an entry with no fallback, whose error reaches the caller. */
+async function renderNode(
+  node,
+  blob,
+  kind = classifyFile(node.name, node).preview,
+  list = RENDERERS,
+) {
+  const entry = list.find((e) => e.kind === kind) ??
+    list.find((e) => e.kind === "text");
+  if (!entry) return null;
+  try {
+    return await entry.render(node, blob);
+  } catch (err) {
+    if (!entry.fallback) throw err;
+    return renderNode(node, blob, entry.fallback, list);
+  }
+}
+
+/* ═══ adapters/preview-local.js ═══ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Preview provider — in-browser, zero dependencies.
+
+   Fills the PREVIEW port (see core/ports.js) from the bytes alone, so it costs
+   nothing in the bundle and works with no network. The kinds it draws are the
+   CORE_RENDERERS table in core/renderers.js: images, PDF, HTML, .desktop,
+   WebVTT, and escaped text coloured by core/syntax.js. TEXT_MAX is the only
+   limit: what is previewed at all is previewed entire.
+
+   Rich rendering (Markdown, docx, pptx) is a *different provider*, not a
+   bigger version of this one: see preview-http.js for the server-rendered
+   variant, and preview-rich.js for the downloaded one. This one renders only
+   the core table, so a switched-off rich renderer leaves a .md as text.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 const PreviewLocal = {
   revoke() {
-    if (pvURL) {
-      URL.revokeObjectURL(pvURL);
-      pvURL = null;
-    }
+    revokeObjectURL();
   },
 
   async render(node) {
@@ -5264,66 +5379,13 @@ const PreviewLocal = {
        HTTP.blob (adapters/http.js) does `await r.blob()`, which buffers the
        whole response, and by then a 400 MB .sql is already in memory. node.meta
        is filled by fillPreview before any provider runs, the same thing canEdit
-       leans on. The blob.size test below stays: this one is only as good as the
-       listing's size, and the limit should not depend on that being right. */
+       leans on. The blob.size test in the text entry stays: this one is only
+       as good as the listing's size, and the limit should not depend on that
+       being right. */
     if ((node.meta?.size ?? 0) > TEXT_MAX) return null;
     const blob = await FS.blob(node);
     if (!blob) return null;
-
-    const kind = classifyFile(node.name, node);
-    if (kind.preview === "image") {
-      pvURL = URL.createObjectURL(blob);
-      return `<img class="pv-img" src="${pvURL}" alt="">`;
-    }
-    if (kind.preview === "pdf") {
-      pvURL = URL.createObjectURL(blob.slice(0, blob.size, "application/pdf"));
-      return `<iframe class="pv-pdf" src="${pvURL}" title="${
-        esc(node.name)
-      }"></iframe>`;
-    }
-    if (kind.preview === "html") {
-      pvURL = URL.createObjectURL(blob.slice(0, blob.size, "text/html"));
-      return `<iframe class="pv-html" src="${pvURL}" title="${
-        esc(node.name)
-      }"></iframe>`;
-    }
-    if (kind.preview === "desktop" && blob.size <= TEXT_MAX) {
-      return desktopCard(await blob.text()) ?? null;
-    }
-
-    if (/\.vtt$/i.test(node.name)) {
-      return vttHTML(await blob.text(), node.previewFormat);
-    }
-
-    if (blob.size <= TEXT_MAX) {
-      let text;
-      try {
-        text = new TextDecoder("utf-8", { fatal: true }).decode(
-          await blob.arrayBuffer(),
-        );
-      } catch (_) {
-        return null;
-      }
-      if (text.includes("\0")) return null;
-      /* core/syntax.js colours what it has a language for and escapes the rest;
-         a plain .txt or an unknown extension takes the same path it always did.
-         Colouring the whole file costs 22 ms of regex and 273 ms of DOM at the
-         512 KB ceiling, measured in Chromium — once, on the click that asked
-         for it. Highlighting a slice at a time would be cheaper and wrong: a
-         triple-quoted string spanning the cut mis-tokenises, and syntax.js
-         promises every character exactly once. */
-      const lang = hlLang(node.name);
-      /* A .json that parses is shown pretty-printed and foldable; one that does
-         not (or a .jsonc with comments) is coloured as source like any other.
-         This is the whole-file preview only. Browsing a .json as columns, the
-         way core/jsonl.js does for .jsonl, wraps the FS and PREVIEW ports
-         outside this provider and answers for its own virtual nodes before
-         they get here — jsonHTML is a plain function it can call on a subtree. */
-      const json = lang === "json" ? jsonHTML(text) : null;
-      const body = json ?? (lang ? hlHTML(text, lang) : esc(text));
-      return `<pre class="pv-text${json ? " pv-json" : ""}">${body}</pre>`;
-    }
-    return null;
+    return renderNode(node, blob, undefined, CORE_RENDERERS);
   },
 };
 
@@ -5534,6 +5596,70 @@ async function rst(text) {
   );
 }
 
+/* ── The entries ─────────────────────────────────────────────────────────── */
+const pptxHTML = async (node, blob) => {
+  try {
+    const { createPptxViewer } = await load("pptx-vanilla-viewer");
+    const id = `pptx-${crypto.randomUUID()}`;
+    /* The viewer draws into a live element, and the pane only receives
+       the returned HTML after this promise settles — a microtask would
+       run before that and find no host. A macrotask runs after it. */
+    setTimeout(() => {
+      const host = document.getElementById(id);
+      if (!host) return;
+      host.textContent = "Loading PowerPoint preview…";
+      try {
+        const viewer = createPptxViewer(host, {
+          source: blob,
+          editable: false,
+          showToolbar: true,
+          showThumbnails: true,
+          onError: (message) => {
+            host.textContent = `PowerPoint preview failed: ${message}`;
+          },
+        });
+        host._pptxViewer = viewer;
+      } catch (err) {
+        host.textContent = `PowerPoint preview failed: ${err.message || err}`;
+      }
+    });
+    return `<div id="${id}" class="pv-pptx" aria-live="polite">Loading PowerPoint preview…</div>`;
+  } catch (err) {
+    return `<div class="preview-error">PowerPoint preview unavailable: ${
+      esc(String(err.message || err))
+    }</div>`;
+  }
+};
+
+const docxHTML = async (_node, blob) => {
+  const mammoth = await load("mammoth");
+  const { value } = await mammoth.convertToHtml(
+    { arrayBuffer: await blob.arrayBuffer() },
+  );
+  return `<div class="pv-rich">${value}</div>`;
+};
+
+/* A text renderer: oversize files take the plain path, like the local one. */
+const richText = (convert) => async (node, blob) => {
+  if (blob.size > TEXT_MAX) return renderNode(node, blob, "text");
+  return `<div class="pv-rich">${await convert(await blob.text())}</div>`;
+};
+
+/* Offline, blocked, or the CDN moved. The file is still readable. */
+const offlineHTML = async (node, blob) => {
+  const fallback = await renderNode(node, blob, "text");
+  return fallback ? NOTE + fallback : null;
+};
+
+const RICH_RENDERERS = [
+  { kind: "md", render: richText(markdown), fallback: "offline" },
+  { kind: "markdown", render: richText(markdown), fallback: "offline" },
+  { kind: "rst", render: richText(rst), fallback: "offline" },
+  { kind: "docx", render: docxHTML, fallback: "offline" },
+  { kind: "pptx", render: pptxHTML },
+  { kind: "offline", render: offlineHTML },
+];
+
 /* ── The provider ────────────────────────────────────────────────────────── */
 const PreviewRich = {
   revoke() {
@@ -5541,74 +5667,13 @@ const PreviewRich = {
   },
 
   async render(node) {
-    if (!richEnabled()) return PreviewLocal.render(node);
-
-    if (
-      !["md", "markdown", "rst", "docx", "pptx"].includes(
-        classifyFile(node.name, node).preview,
-      )
-    ) {
+    const kind = classifyFile(node.name, node).preview;
+    if (!richEnabled() || !RICH_RENDERERS.some((e) => e.kind === kind)) {
       return PreviewLocal.render(node);
     }
-
     const blob = await FS.blob(node);
     if (!blob) return PreviewLocal.render(node);
-
-    try {
-      if (classifyFile(node.name, node).preview === "pptx") {
-        const { createPptxViewer } = await load("pptx-vanilla-viewer");
-        const id = `pptx-${crypto.randomUUID()}`;
-        /* The viewer draws into a live element, and the pane only receives
-           the returned HTML after this promise settles — a microtask would
-           run before that and find no host. A macrotask runs after it. */
-        setTimeout(() => {
-          const host = document.getElementById(id);
-          if (!host) return;
-          host.textContent = "Loading PowerPoint preview…";
-          try {
-            const viewer = createPptxViewer(host, {
-              source: blob,
-              editable: false,
-              showToolbar: true,
-              showThumbnails: true,
-              onError: (message) => {
-                host.textContent = `PowerPoint preview failed: ${message}`;
-              },
-            });
-            host._pptxViewer = viewer;
-          } catch (err) {
-            host.textContent = `PowerPoint preview failed: ${
-              err.message || err
-            }`;
-          }
-        });
-        return `<div id="${id}" class="pv-pptx" aria-live="polite">Loading PowerPoint preview…</div>`;
-      }
-      if (classifyFile(node.name, node).preview === "docx") {
-        const mammoth = await load("mammoth");
-        const { value } = await mammoth.convertToHtml(
-          { arrayBuffer: await blob.arrayBuffer() },
-        );
-        return `<div class="pv-rich">${value}</div>`;
-      }
-
-      if (blob.size > TEXT_MAX) return PreviewLocal.render(node);
-      const text = await blob.text();
-
-      if (classifyFile(node.name, node).preview === "rst") {
-        return `<div class="pv-rich">${await rst(text)}</div>`;
-      }
-      return `<div class="pv-rich">${await markdown(text)}</div>`;
-    } catch (err) {
-      /* Offline, blocked, or the CDN moved. The file is still readable. */
-      if (classifyFile(node.name, node).preview === "pptx") {
-        return `<div class="preview-error">PowerPoint preview unavailable: ${
-          esc(String(err.message || err))
-        }</div>`;
-      }
-      const fallback = await PreviewLocal.render(node);
-      return fallback ? NOTE + fallback : null;
-    }
+    return renderNode(node, blob, kind);
   },
 };
 
@@ -5827,6 +5892,10 @@ setSortActions({ render });
 setDeepLinkActions({ render, colCache });
 initLayout(render);
 initSettings();
+
+/* The renderer table, core first: this edition draws every rich kind in the
+   browser, from a CDN. */
+addRenderers([...CORE_RENDERERS, ...RICH_RENDERERS]);
 
 /* Adapters define themselves; the app entry is what chooses. Selecting here
    rather than at the bottom of each adapter file means a page may load more
@@ -6090,6 +6159,9 @@ expose({
   mount: () => mount,
   FSA: () => FSA,
   classifyFile: () => classifyFile,
+  RENDERERS: () => RENDERERS,
+  addRenderers: () => addRenderers,
+  renderNode: () => renderNode,
   recallRoots: () => recallRoots,
   recallView: () => recallView,
   rememberRoot: () => rememberRoot,

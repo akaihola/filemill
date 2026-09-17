@@ -33,6 +33,7 @@ import { esc } from "../core/icons.js";
 import { choose } from "../core/nav.js";
 import { FS } from "../core/ports.js";
 import { render } from "../core/render.js";
+import { renderNode } from "../core/renderers.js";
 import { path, splitName, state, visibleKids } from "../core/state.js";
 
 const offerRichToggle = (get, set) => {
@@ -212,6 +213,70 @@ async function rst(text) {
   );
 }
 
+/* ── The entries ─────────────────────────────────────────────────────────── */
+const pptxHTML = async (node, blob) => {
+  try {
+    const { createPptxViewer } = await load("pptx-vanilla-viewer");
+    const id = `pptx-${crypto.randomUUID()}`;
+    /* The viewer draws into a live element, and the pane only receives
+       the returned HTML after this promise settles — a microtask would
+       run before that and find no host. A macrotask runs after it. */
+    setTimeout(() => {
+      const host = document.getElementById(id);
+      if (!host) return;
+      host.textContent = "Loading PowerPoint preview…";
+      try {
+        const viewer = createPptxViewer(host, {
+          source: blob,
+          editable: false,
+          showToolbar: true,
+          showThumbnails: true,
+          onError: (message) => {
+            host.textContent = `PowerPoint preview failed: ${message}`;
+          },
+        });
+        host._pptxViewer = viewer;
+      } catch (err) {
+        host.textContent = `PowerPoint preview failed: ${err.message || err}`;
+      }
+    });
+    return `<div id="${id}" class="pv-pptx" aria-live="polite">Loading PowerPoint preview…</div>`;
+  } catch (err) {
+    return `<div class="preview-error">PowerPoint preview unavailable: ${
+      esc(String(err.message || err))
+    }</div>`;
+  }
+};
+
+const docxHTML = async (_node, blob) => {
+  const mammoth = await load("mammoth");
+  const { value } = await mammoth.convertToHtml(
+    { arrayBuffer: await blob.arrayBuffer() },
+  );
+  return `<div class="pv-rich">${value}</div>`;
+};
+
+/* A text renderer: oversize files take the plain path, like the local one. */
+const richText = (convert) => async (node, blob) => {
+  if (blob.size > TEXT_MAX) return renderNode(node, blob, "text");
+  return `<div class="pv-rich">${await convert(await blob.text())}</div>`;
+};
+
+/* Offline, blocked, or the CDN moved. The file is still readable. */
+const offlineHTML = async (node, blob) => {
+  const fallback = await renderNode(node, blob, "text");
+  return fallback ? NOTE + fallback : null;
+};
+
+export const RICH_RENDERERS = [
+  { kind: "md", render: richText(markdown), fallback: "offline" },
+  { kind: "markdown", render: richText(markdown), fallback: "offline" },
+  { kind: "rst", render: richText(rst), fallback: "offline" },
+  { kind: "docx", render: docxHTML, fallback: "offline" },
+  { kind: "pptx", render: pptxHTML },
+  { kind: "offline", render: offlineHTML },
+];
+
 /* ── The provider ────────────────────────────────────────────────────────── */
 export const PreviewRich = {
   revoke() {
@@ -219,74 +284,13 @@ export const PreviewRich = {
   },
 
   async render(node) {
-    if (!richEnabled()) return PreviewLocal.render(node);
-
-    if (
-      !["md", "markdown", "rst", "docx", "pptx"].includes(
-        classifyFile(node.name, node).preview,
-      )
-    ) {
+    const kind = classifyFile(node.name, node).preview;
+    if (!richEnabled() || !RICH_RENDERERS.some((e) => e.kind === kind)) {
       return PreviewLocal.render(node);
     }
-
     const blob = await FS.blob(node);
     if (!blob) return PreviewLocal.render(node);
-
-    try {
-      if (classifyFile(node.name, node).preview === "pptx") {
-        const { createPptxViewer } = await load("pptx-vanilla-viewer");
-        const id = `pptx-${crypto.randomUUID()}`;
-        /* The viewer draws into a live element, and the pane only receives
-           the returned HTML after this promise settles — a microtask would
-           run before that and find no host. A macrotask runs after it. */
-        setTimeout(() => {
-          const host = document.getElementById(id);
-          if (!host) return;
-          host.textContent = "Loading PowerPoint preview…";
-          try {
-            const viewer = createPptxViewer(host, {
-              source: blob,
-              editable: false,
-              showToolbar: true,
-              showThumbnails: true,
-              onError: (message) => {
-                host.textContent = `PowerPoint preview failed: ${message}`;
-              },
-            });
-            host._pptxViewer = viewer;
-          } catch (err) {
-            host.textContent = `PowerPoint preview failed: ${
-              err.message || err
-            }`;
-          }
-        });
-        return `<div id="${id}" class="pv-pptx" aria-live="polite">Loading PowerPoint preview…</div>`;
-      }
-      if (classifyFile(node.name, node).preview === "docx") {
-        const mammoth = await load("mammoth");
-        const { value } = await mammoth.convertToHtml(
-          { arrayBuffer: await blob.arrayBuffer() },
-        );
-        return `<div class="pv-rich">${value}</div>`;
-      }
-
-      if (blob.size > TEXT_MAX) return PreviewLocal.render(node);
-      const text = await blob.text();
-
-      if (classifyFile(node.name, node).preview === "rst") {
-        return `<div class="pv-rich">${await rst(text)}</div>`;
-      }
-      return `<div class="pv-rich">${await markdown(text)}</div>`;
-    } catch (err) {
-      /* Offline, blocked, or the CDN moved. The file is still readable. */
-      if (classifyFile(node.name, node).preview === "pptx") {
-        return `<div class="preview-error">PowerPoint preview unavailable: ${
-          esc(String(err.message || err))
-        }</div>`;
-      }
-      const fallback = await PreviewLocal.render(node);
-      return fallback ? NOTE + fallback : null;
-    }
+    return renderNode(node, blob, kind);
   },
 };
 
