@@ -176,14 +176,21 @@ Rules for TASKS.md usage are at the bottom of the file.
   63b87ad4-33c9-4f45-ae24-280034e8b0eb claims to have implemented and tested it. Do
   red-green testing, investigate, and fix.
 
+- [*] For user testing, document how to run on agent@gogo instances of Filemill that are
+  as close as possible to the browser test setup you have in the test suite. Put each
+  different browser test setup in its own HTTP port, and link them in
+  `/home/agent/index.html`. We will separately set up systemd user services for each
+  different browser test setup.
+
+
+- [*] Treat `.py.j2` as Python.
+
+## In Progress
 - [*] Opening `https://gogo.crane-boa.ts.net:8445/<any path>` without query parameters
   redirects to `https://gogo.crane-boa.ts.net:8445/` and spins `Reading...` for a very
   long time (if not forever). It should instead return files raw with the correct
   content type.
 
-- [*] Treat `.py.j2` as Python.
-
-## In Progress
 - [*] Bug: after focusing the preview pane using the arrow right key, the arrow left key
   doesn't return back and focus the parent column. Instead, it scrolls the page
   horizontally to the left. Make sure the arrow left key returns to the parent column
@@ -225,12 +232,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
-
-- [*] For user testing, document how to run on agent@gogo instances of Filemill that are
-  as close as possible to the browser test setup you have in the test suite. Put each
-  different browser test setup in its own HTTP port, and link them in
-  `/home/agent/index.html`. We will separately set up systemd user services for each
-  different browser test setup.
 
 - [*] GET https://gogo.crane-boa.ts.net:8445/favicon.ico
 
