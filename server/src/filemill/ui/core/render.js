@@ -1,58 +1,27 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Render
    ═══════════════════════════════════════════════════════════════════════════ */
-import { currentPath, syncURL } from "./deeplink.js";
-import { esc, iconHTML } from "./icons.js";
-import { layout } from "./layout.js";
-import { set, setVar } from "./dom.js";
-import { FS, PREVIEW, ROUTER } from "./ports.js";
-import { sortSay, sortStatus, sweepMeta } from "./sort.js";
-import {
-  finder,
-  fmtDate,
-  fmtSize,
-  focusCol,
-  measure,
-  nextPvToken,
-  path,
-  previewNode,
-  pvFullscreen,
-  pvToken,
-  root,
-  rowIndex,
-  sel,
-  selectedNode,
-  setState,
-  splitName,
-  state,
-  strip,
-  visibleKids,
-  widths,
-} from "./state.js";
-import { hlFences } from "./syntax.js";
-import { IMAGE_EXTENSIONS, TEXT_MAX } from "./limits.js";
-import { paintTrail } from "./trail.js";
-
 /* Building a column is O(entries), and real directories hold thousands of them
    — far too expensive to redo on every arrow key. A column's DOM is therefore
    built once per (node, entry list) and cached; a re-render only re-applies the
-   state that actually changed: depth, selection, width.
+   state that actually changed: depth, selection, cursor, width.
    Anything that alters how a row *looks* (dotfile filter, density, theme icon
    colours) is part of the signature and drops the whole cache. */
-export const colCache = new Map();
+const colCache = new Map();
 let cacheSig = null;
-const CACHE_MAX = 24; // Retain enough nearby columns without growing memory unbounded.
-const COLUMN_WIDTH_RATIO = 2 / 3; // Leave room for adjacent columns on narrow screens.
-const MAX_DEPTH = 5; // Keep depth styling within the available visual scale.
-const SCROLL_HINT_PADDING = 4; // Show the affordance only when content exceeds the viewport.
-const EDIT_MAX = TEXT_MAX;
-const EDIT_MAX_LINE = 10_000; // Avoid unusably wide editor lines.
+const CACHE_MAX = 24;
 
 /* Writing the value a property already holds still dirties it — and a width or
    custom-property write on a column relays out every row inside it. Guard the
    writes and a re-render of an unchanged column costs nothing. */
-let actions;
-export const setActions = (value) => actions = value;
+const set = (obj, key, value) => {
+  if (obj[key] !== value) obj[key] = value;
+};
+const setVar = (el, name, value) => {
+  if (el.style.getPropertyValue(name) !== value) {
+    el.style.setProperty(name, value);
+  }
+};
 
 function buildCol(node) {
   const kids = visibleKids(node);
@@ -83,34 +52,27 @@ function buildCol(node) {
   if (node.pages > 1) {
     const pager = document.createElement("div");
     pager.className = "pager";
-    pager.innerHTML =
-      `<button type="button" aria-label="Previous page">‹</button>
+    pager.innerHTML = `<button type="button" aria-label="Previous page">‹</button>
       <span>Page ${node.page} of ${node.pages}</span>
       <button type="button" aria-label="Next page">›</button>`;
     const [prev, next] = pager.querySelectorAll("button");
     prev.disabled = node.page === 1;
     next.disabled = node.page === node.pages;
-    prev.onclick = (e) => {
-      e.stopPropagation();
-      FS.loadPage(node, node.page - 1);
-    };
-    next.onclick = (e) => {
-      e.stopPropagation();
-      FS.loadPage(node, node.page + 1);
-    };
+    prev.onclick = (e) => { e.stopPropagation(); FS.loadPage(node, node.page - 1); };
+    next.onclick = (e) => { e.stopPropagation(); FS.loadPage(node, node.page + 1); };
     el.appendChild(pager);
   }
   /* a folded column hides its rows, so the click lands on the column itself —
      that is what makes the advertised "click a spine to unfold" work */
   el.onclick = () => {
-    if (el.classList.contains("spine")) actions.unfoldTo(+el.dataset.i);
+    if (el.classList.contains("spine")) unfoldTo(+el.dataset.i);
   };
   /* Read the index off the element for the same reason a row does: the node
      keeps its DOM across re-renders, and only render time knows its column.
      stopPropagation, or a ⟳ on a folded spine would unfold it instead. */
   el.querySelector(".rf").onclick = (e) => {
     e.stopPropagation();
-    actions.refreshColumn(+el.dataset.i);
+    refreshColumn(+el.dataset.i);
   };
 
   const rows = kids.map((k, ri) => {
@@ -126,7 +88,7 @@ function buildCol(node) {
       (k.dir ? `<span class="chev">›</span>` : "");
     /* read the index off the element: the same node keeps its DOM across
        re-renders, and its column position is only known at render time */
-    row.onclick = () => actions.choose(+el.dataset.i, k);
+    row.onclick = () => choose(+el.dataset.i, k, ri);
     body.appendChild(row);
     return row;
   });
@@ -144,7 +106,7 @@ function buildCol(node) {
   };
 }
 
-export function columnFor(node) {
+function columnFor(node) {
   let c = colCache.get(node);
   /* Two ways this DOM stops being the column: the directory was re-read, or a
      metadata sweep landed and re-ordered the rows under it. Same test, one
@@ -160,7 +122,7 @@ export function columnFor(node) {
   return c;
 }
 
-export function render(keepScroll) {
+function render(keepScroll) {
   if (!path.length) return;
   const sig =
     `${state.dotfiles}|${root.dataset.density}|${root.dataset.theme}` +
@@ -170,14 +132,24 @@ export function render(keepScroll) {
     cacheSig = sig;
   }
 
-  setState({ widths: [] });
+  widths = [];
   const cols = path.map((node, i) => {
     /* Before columnFor, so a directory that needs no fetch — the server build,
        or one a preview has already read — is built once in the sorted order
        rather than built and rebuilt. */
     sweepMeta(node);
+    const had = colCache.get(node);
     const c = columnFor(node);
-    const selectedRow = rowIndex(node, sel[i]);
+    /* A rebuilt column is the only place row indices can have moved: a sweep
+       re-ordered it, the sort changed, dotfiles appeared, the read landed. The
+       cursor is an index, so re-point it at the entry that is still selected
+       here, or ↓ resumes from whatever slid into that number. Reading c.kids,
+       which the build just produced, keeps this off the keystroke path — an
+       unchanged column skips it entirely. */
+    if (c !== had && sel[i] !== undefined) {
+      const ri = c.kids.findIndex((k) => k.name === sel[i]);
+      if (ri >= 0) cursor[i] = ri;
+    }
     /* No column may be wider than two-thirds of the live finder. The fold cap keeps the
        touched column unfolded and applyScroll's pan slides it into view, but
        neither can show a full-width column on a narrow phone —
@@ -194,10 +166,7 @@ export function render(keepScroll) {
        row sat 10 px past the right one until the next render healed it.
        #finder is `flex: 1` in the viewport, so it is the live number, and it
        is the one layout() reads to set --stage-w in the first place. */
-    const w = Math.min(
-      c.width,
-      Math.floor(finder.clientWidth * COLUMN_WIDTH_RATIO),
-    );
+    const w = Math.min(c.width, Math.floor(finder.clientWidth * 2 / 3));
     widths.push(w);
 
     /* `sorting` goes in the class string rather than on classList, because this
@@ -209,11 +178,7 @@ export function render(keepScroll) {
         (i < focusCol ? "ancestor" : i > focusCol ? "descendant" : "focus") +
         (node.metaLoading ? " sorting" : ""),
     );
-    set(
-      c.el.dataset,
-      "depth",
-      String(Math.min(MAX_DEPTH, Math.max(0, focusCol - i))),
-    );
+    set(c.el.dataset, "depth", String(Math.min(5, Math.max(0, focusCol - i))));
     set(c.el.dataset, "i", String(i));
     set(c.el.style, "width", w + "px");
 
@@ -225,7 +190,7 @@ export function render(keepScroll) {
     }
     c.rows.forEach((row, ri) => {
       row.classList.toggle("sel", c.kids[ri].name === sel[i]);
-      row.classList.toggle("cursor", i === focusCol && selectedRow === ri);
+      row.classList.toggle("cursor", i === focusCol && cursor[i] === ri);
     });
     return c;
   });
@@ -240,14 +205,13 @@ export function render(keepScroll) {
     }
   });
   while (strip.childNodes.length > want.length) strip.lastChild.remove();
-  if (previewNode()) setupPreviewActions(previewNode());
   for (const c of cols) {
     c.el.classList.toggle(
       "scrollable-down",
-      c.body.scrollHeight > c.body.clientHeight + SCROLL_HINT_PADDING,
+      c.body.scrollHeight > c.body.clientHeight + 4,
     );
   }
-  actions.renderCrumbs();
+  renderCrumbs();
   sortSay(sortStatus());
   layout(keepScroll);
   syncURL();
@@ -288,7 +252,7 @@ function renderPreview() {
           <button id="pv-vtt-transcript" class="pv-action" type="button">Transcript</button>
           <button id="pv-vtt-raw" class="pv-action" type="button">Raw</button>
         </span>
-        <button id="pv-view" class="pv-action" type="button"></button>
+        <button id="pv-view" class="pv-action" hidden type="button"></button>
         <button id="pv-delete" class="pv-action" type="button"
                 title="Delete selected item">Delete</button>
         <button id="pv-fullscreen" class="pv-action" type="button" aria-pressed="${pvFullscreen}"
@@ -308,10 +272,11 @@ function renderPreview() {
     </div>`;
   if (n) fillPreview(n);
   pv.classList.toggle("pv-is-fullscreen", pvFullscreen);
+  setupPreviewActions(target);
   return pv;
 }
 
-const RENDERED_RE = /\.(md|markdown|rst|docx|pptx|html?|desktop)$/i;
+const RENDERED_RE = /\.(md|markdown|docx|pptx|html?|desktop)$/i;
 const MARKDOWN_RE = /\.(md|markdown)$/i;
 let markdownView = "rendered";
 let vttView = "transcript";
@@ -326,8 +291,7 @@ async function rawMarkdown(node) {
 }
 
 function previewView() {
-  const view = new URL(location.href).searchParams.get("filemill") ||
-    document.documentElement.dataset.filemill || "raw";
+  const view = document.documentElement.dataset.filemill || "raw";
   return view === "highlight"
     ? "highlight"
     : view === "render"
@@ -336,7 +300,7 @@ function previewView() {
 }
 
 function setPreviewView(view) {
-  if (!location.pathname) return;
+  if (!ROUTER || !location.pathname) return;
   const url = new URL(location.href);
   url.searchParams.set("filemill", view);
   location.href = url.pathname + url.search + url.hash;
@@ -347,18 +311,15 @@ function setupPreviewActions(n) {
   const toggle = document.getElementById("pv-view");
   const mdViews = document.getElementById("pv-md-views");
   const vttViews = document.getElementById("pv-vtt-views");
-  const name = String(n.name || "");
-  const markdown = MARKDOWN_RE.test(name);
+  const markdown = MARKDOWN_RE.test(n.name);
   const vtt = /\.vtt$/i.test(n.name);
-  const applicable = RENDERED_RE.test(name);
+  const applicable = markdown || (!!ROUTER && RENDERED_RE.test(n.name));
   if (mdViews) {
     mdViews.hidden = !markdown;
-    for (
-      const [id, mode, label] of [
-        ["pv-md-rendered", "rendered", "View rendered Markdown"],
-        ["pv-md-raw", "raw", "View raw Markdown source"],
-      ]
-    ) {
+    for (const [id, mode, label] of [
+      ["pv-md-rendered", "rendered", "View rendered Markdown"],
+      ["pv-md-raw", "raw", "View raw Markdown source"],
+    ]) {
       const button = document.getElementById(id);
       if (!button) continue;
       button.setAttribute("aria-pressed", String(markdownView === mode));
@@ -374,12 +335,10 @@ function setupPreviewActions(n) {
   }
   if (vttViews) {
     vttViews.hidden = !vtt || view === "highlight";
-    for (
-      const [id, mode, label] of [
-        ["pv-vtt-transcript", "transcript", "View WebVTT transcript"],
-        ["pv-vtt-raw", "raw", "View raw WebVTT source"],
-      ]
-    ) {
+    for (const [id, mode, label] of [
+      ["pv-vtt-transcript", "transcript", "View WebVTT transcript"],
+      ["pv-vtt-raw", "raw", "View raw WebVTT source"],
+    ]) {
       const button = document.getElementById(id);
       if (!button) continue;
       button.setAttribute("aria-pressed", String(vttView === mode));
@@ -394,7 +353,7 @@ function setupPreviewActions(n) {
     }
   }
   if (toggle) {
-    toggle.hidden = !markdown && !applicable;
+    toggle.hidden = markdown || !applicable;
     toggle.textContent = view === "render" ? "Source" : "Rendered";
     toggle.title = view === "render"
       ? "View highlighted source"
@@ -407,7 +366,7 @@ function setupPreviewActions(n) {
   const full = document.getElementById("pv-fullscreen");
   if (full) {
     full.onclick = () => {
-      setState({ pvFullscreen: !pvFullscreen });
+      pvFullscreen = !pvFullscreen;
       root.classList.toggle("pv-fullscreen", pvFullscreen);
       full.setAttribute("aria-pressed", pvFullscreen);
       full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
@@ -419,21 +378,21 @@ function setupPreviewActions(n) {
   if (del) {
     del.hidden = !FS.remove || !!n.vpath;
     del.onclick = async () => {
-      if (
-        !window.confirm(
-          `Delete “${n.name}”${n.dir ? " and its contents" : ""}?`,
-        )
-      ) return;
+      if (!window.confirm(`Delete “${n.name}”${n.dir ? " and its contents" : ""}?`)) return;
       del.disabled = true;
+      const parent = path[path.length - 1];
+      const parentIndex = path.length - 1;
       try {
         await FS.remove(n);
-        await actions.refreshColumn(path.length - 1);
+        if (path[parentIndex] === parent && parent.kids) {
+          parent.kids = parent.kids.filter((kid) => kid.name !== n.name);
+          sel = sel.slice(0, parentIndex);
+          render();
+        } else if (path.includes(parent)) {
+          await refreshColumn(path.indexOf(parent));
+        }
       } catch (err) {
-        actions.saySt(
-          "st-refresh",
-          `Delete failed: ${String(err.message || err)}`,
-          false,
-        );
+        saySt("st-refresh", `Delete failed: ${String(err.message || err)}`, false);
         del.disabled = false;
       }
     };
@@ -445,7 +404,7 @@ function setupPreviewActions(n) {
    dropped. That guard lives here, not in the provider, so a provider is free to
    be as slow as it needs to be — a server round-trip, a WASM highlighter. */
 async function fillPreview(n) {
-  const token = nextPvToken();
+  const token = ++pvToken;
   await FS.loadMeta(n);
   if (token !== pvToken) return;
   const m = n.meta || {};
@@ -497,10 +456,10 @@ async function fillPreview(n) {
    preview in adapters/preview-local.js (same extensions, same cap), but it is
    core's own copy: a build picks its preview provider freely, and Edit has to
    work with any of them. Keep the two lists in step. */
-const NON_EDIT_RE = new RegExp(
-  `\\.(desktop|docx|pptx|pdf|html?|${IMAGE_EXTENSIONS.join("|")})$`,
-  "i",
-);
+const EDIT_MAX = 512 * 1024;
+const EDIT_MAX_LINE = 10_000;
+const NON_EDIT_RE =
+  /\.(desktop|docx|pptx|pdf|html?|png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
 
 async function editableText(n) {
   if (
