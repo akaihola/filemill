@@ -24,7 +24,8 @@ them with the same hierarchical view it uses for JSON files. Roadmap phase
 3. In `ui/adapters/http.js`, copy `record` onto the node. The JSON
    hierarchical view in `ui/adapters/vfs-json.js` already draws any node
    with a `record` as a key/value table, so a row previews with no new
-   client code.
+   client code. The CSV wrapper in `vfs-csv.js` must draw only its own
+   rows: it escapes values as strings, and a SQLite `id` is a number.
 4. Delete `render_preview`, `_render_inner`, `_render_spreadsheet`,
    `_render_kv`, `default_fmt` and `_cell_val` in `sqlite.py`, and the
    `db-*` CSS in `styles.py`. Drop `render_preview` and `default_fmt` from
