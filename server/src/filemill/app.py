@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 from pathlib import Path
@@ -329,6 +330,31 @@ except OSError:
     _COMMIT = ""
 
 
+# ui/adapters/preview-rich.js imports its renderers from the URL FILEMILL_CDN
+# names, or from a CDN when it names none. This edition serves the Markdown and
+# .docx modules itself — ui/vendor/README.md lists the pins — so a document
+# renders with nothing fetched from a third party, and the rich-preview switch
+# does not apply to them. reStructuredText stays with Python; .pptx keeps its
+# CDN viewer.
+_VENDOR_MAP_JS = (
+    "window.FILEMILL_CDN = "
+    + json.dumps(
+        {
+            name: f"/ui/vendor/{name}.js"
+            for name in (
+                "markdown-it",
+                "markdown-it-footnote",
+                "markdown-it-deflist",
+                "markdown-it-task-lists",
+                "markdown-it-anchor",
+                "mammoth",
+            )
+        }
+    )
+    + ";"
+)
+
+
 def _ui_shell(state, base: str, hidden: bool = False):
     """The app shell for the shared UI. Deliberately almost empty.
 
@@ -350,6 +376,7 @@ def _ui_shell(state, base: str, hidden: bool = False):
             Link(rel="apple-touch-icon", href="/icons/icon-192.png"),
             Link(rel="stylesheet", href="/ui/core/styles.css"),
             Script(src="/ui/vendor/seti-map.js"),
+            Script(_VENDOR_MAP_JS),
             Script(_SW_REGISTER_JS),
         ),
         Body(Script(src=f"/ui/{_UI_ENTRY}", type="module")),

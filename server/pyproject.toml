@@ -5,14 +5,10 @@ description = "Filemill — a Miller-columns file explorer and previewer, served
 requires-python = ">=3.12"
 dependencies = [
     "python-fasthtml>=0.12",
-    "markdown-it-py",
-    "mdit-py-plugins",
     "pygments",
-    "mammoth",
     "docutils",
     "python-pptx",
     "typer",
-    "linkify-it-py>=2.1.0",
 ]
 
 [project.scripts]
@@ -26,11 +22,11 @@ build-backend = "uv_build"
 # package because a wheel cannot reach outside itself at runtime. The static
 # edition's entry module and the two adapters only it imports stay out of the
 # wheel; everything ui/entry-server.js reaches must be in it, because one
-# missing module fails the whole import graph. preview-rich.js is in that graph
-# (app-http.js takes withPptxPreview from it), so it ships — its CDN fetch only
-# happens for a .pptx preview, the one file type this edition does not render
-# itself; tests/test_browser_new_ui.py::test_nothing_is_fetched_from_a_cdn
-# checks that every other preview stays local.
+# missing module fails the whole import graph. preview-rich.js renders Markdown
+# and .docx in this edition too, from the pinned modules in ui/vendor/, which
+# therefore ship as well; its only CDN fetch is the .pptx viewer.
+# tests/test_browser_new_ui.py::test_nothing_is_fetched_from_a_cdn checks that
+# every other preview stays local.
 # The excluded files remain in the sdist, which is the whole source tree.
 [tool.uv.build-backend]
 wheel-exclude = [

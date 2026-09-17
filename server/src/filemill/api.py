@@ -17,8 +17,9 @@ path can still climb with ``..`` and ROOT can still contain symlinks.
 
 ``POST /api/render`` is what keeps "Open local folder…" from being a downgrade.
 When the browser has granted a folder the server cannot see, the UI posts the
-file's bytes and gets back a fragment rendered by the same markdown-it-py,
-Pygments and mammoth pipeline as everything else.
+file's bytes and gets back a fragment rendered by the same Pygments and
+docutils pipeline as everything else. Markdown and .docx never arrive here:
+the browser renders them itself.
 """
 
 from __future__ import annotations

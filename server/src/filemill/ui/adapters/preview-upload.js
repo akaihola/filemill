@@ -6,10 +6,10 @@
    renderers are right there, on the same origin, on this machine. So post the
    bytes and get the fragment back.
 
-   That is what keeps "Open local folder…" from being a downgrade. Markdown
-   still renders with the full markdown-it-py plugin set, source still gets
-   Pygments, .docx still goes through mammoth — from a folder the server has
-   never heard of.
+   That is what keeps "Open local folder…" from being a downgrade:
+   reStructuredText still goes through docutils, from a folder the server has
+   never heard of. Markdown and .docx no longer come here at all — app-http.js
+   sends them to PreviewRich, which renders them in the page.
 
    Anything the browser can already do itself is done without the round-trip:
    images and PDFs become object URLs, because uploading a 40 MB scan to render
