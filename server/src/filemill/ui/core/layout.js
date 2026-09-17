@@ -39,7 +39,7 @@ const TAIL_RANGE = 0.01; // The final one percent slides the folded strip away.
 export const foldUnit = () => FOLD_RANGE / path.length;
 export const range = () => Math.max(MIN_SCROLL_RANGE, stripSpan(0) - GUTTER());
 
-export function layout(keepScroll) {
+export function layout(keepScroll, preserveFolded = false) {
   const stageW = finder.clientWidth;
   setVar(root, "--stage-w", stageW + "px");
   setVar(root, "--preview-w", previewTarget() + "px");
@@ -60,6 +60,10 @@ export function layout(keepScroll) {
     k = Math.min(focusCol, Math.max(k, folded));
     if (root.dataset.layout === "compressed-columns") k = path.length;
     finder.scrollLeft = Math.round(k * foldUnit() * range());
+  } else if (preserveFolded) {
+    finder.scrollLeft = Math.round(
+      Math.min(folded, path.length) * foldUnit() * range(),
+    );
   }
   applyScroll();
 }
