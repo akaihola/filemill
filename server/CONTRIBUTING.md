@@ -55,7 +55,7 @@ receives:
 | | **static** | **server** (here) |
 | --- | --- | --- |
 | filesystem | File System Access API | `GET /api/dir` |
-| preview | text/image, in the browser | `GET /api/preview` — **this module's renderers** |
+| preview | text/image, in the browser | `GET /api/preview` — **this module's renderers**; a database row travels as JSON on its `/api/dir` entry and the client draws it |
 | router | `#r=root&p=a/b.md` | `/n/a/b.md` |
 
 Virtual filesystems use the same adapter. A `.db` file lists as a directory
