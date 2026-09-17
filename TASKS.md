@@ -105,14 +105,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   haven't been able to understand what's special about the folders that cause this
   behavior.
 
-- Navigating with the right arrow key to the preview area must fold all folder columns
-  to maximize the preview area width. A left arrow should return to the parent folder of
-  the reviewed document and unfold that folder column (but no ancestor folder columns).
-
-- Task 04ce9574-92c8-4a4c-8148-32d2e827c13d didn't fix the erratic folding/unfolding of
-  the parent column. Hard rule: Up/down navigation must never change folding state of
-  ancestor folder columns.
-
 - Keyboard navigation using arrows still doesn't animate folding/unfolding/resizing of
   columns. Do systematic debugging to identify the cause, and fix it.
 
@@ -127,6 +119,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   JSON preview of the selected item in the second column to the right.
 
 ## Scheduled
+
+- Navigating with the right arrow key to the preview area must fold all folder columns
+  to maximize the preview area width. A left arrow should return to the parent folder of
+  the reviewed document and unfold that folder column (but no ancestor folder columns).
 
 - The server browser suites show 11 failures on the branch, but a run against a clean
   main checkout produced exactly the same 11: two legacy-htmx tests that main
@@ -165,6 +161,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## In Progress
 - [7] Make entry ordering an adapter-owned contract.
     - Depends on: [6]
+
+- Task 04ce9574-92c8-4a4c-8148-32d2e827c13d didn't fix the erratic folding/unfolding of
+  the parent column. Hard rule: Up/down navigation must never change folding state of
+  ancestor folder columns.
 
 - [*] Add a PWA manifest and service worker to the static bundle so `static/index.html`
   installs as a standalone window. The server edition already serves `/manifest.json`.
