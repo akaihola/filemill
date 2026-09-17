@@ -112,9 +112,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   comparison in an ADR. Do not start a native toolkit before the ADR exists.
     - Depends on: [30]
 
-- [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
-  Today `[text](~/note.md)` is a dead link although the file exists.
-
 - [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100 k-entry
   directory still builds 100 k DOM nodes. Do this only if such folders show up.
 
@@ -164,6 +161,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   Iterate until fixed.
 
 ## Scheduled
+
+- [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
+  Today `[text](~/note.md)` is a dead link although the file exists.
 
 - [36] Decide how the installed PWA gets a running server: a systemd or launchd unit, a
   launcher, a desktop shell, or only a better "server not running" page.
