@@ -100,6 +100,23 @@ def test_search_query_cannot_become_a_path_or_option(client, tmp_root: Path):
     assert all(not e["path"].startswith("/") for e in r.json()["matches"])
 
 
+def test_search_stays_inside_focused_directory(client, tmp_root: Path):
+    (tmp_root / "subdir" / "inside.txt").write_text("needle\n")
+    (tmp_root / "outside.txt").write_text("needle\n")
+    r = client.get("/api/search?q=needle&p=subdir")
+    assert r.json()["matches"] == [
+        {"path": "subdir/inside.txt", "line": 1, "column": 1, "context": "needle"}
+    ]
+
+
+def test_search_limits_large_result_sets(client, tmp_root: Path):
+    for i in range(200):
+        (tmp_root / "subdir" / f"{i}.txt").write_text("needle\n" * 20)
+    r = client.get("/api/search?q=needle&p=subdir")
+    assert r.status_code == 200
+    assert len(r.json()["matches"]) == 100
+
+
 def test_search_timeout_is_reported_as_a_backend_error(
     client, tmp_root: Path, monkeypatch
 ):
