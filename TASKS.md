@@ -105,9 +105,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] Each row of a JSONL file must be presented exactly like a hierarchical nested view
-  of a JSON file. Depends on [5].
-
 - [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100 k-entry
   directory still builds 100 k DOM nodes. Do this only if such folders show up.
 
@@ -146,6 +143,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+- [*] Each row of a JSONL file must be presented exactly like a hierarchical nested view
+  of a JSON file. Depends on [5].
+
 - When an object or list is selected in a hierarchical nested view of JSON, show the
   child nodes in the column to the right, and a foldable highlighted and pretty-printed
   JSON preview of the selected item in the second column to the right.
