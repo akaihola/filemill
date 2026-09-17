@@ -139,10 +139,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
-- [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both editions
-  fill it from the same core list plus their own adapters.
-    - Depends on: [19]
-
 - [*] Each row of a JSONL file must be presented exactly like a hierarchical nested view
   of a JSON file. Depends on [5].
 
@@ -357,6 +353,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both editions
+  fill it from the same core list plus their own adapters.
+    - Depends on: [19]
 
 - [36] Decide how the installed PWA gets a running server: a systemd or launchd unit, a
   launcher, a desktop shell, or only a better "server not running" page.
