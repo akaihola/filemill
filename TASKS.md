@@ -193,17 +193,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   horizontally to the left. Make sure the arrow left key returns to the parent column
   after focusing the preview pane.
 
-- [*] GET https://gogo.crane-boa.ts.net:8445/favicon.ico
-
-    ```
-    [HTTP/2 404  6ms]
-    Uncaught (in promise) TypeError: renderPage is not a function
-        applyPath https://gogo.crane-boa.ts.net:8445/ui/core/deeplink.js:123
-        mountServer https://gogo.crane-boa.ts.net:8445/ui/adapters/app-http.js:117
-        async* https://gogo.crane-boa.ts.net:8445/ui/adapters/app-http.js:201
-    deeplink.js:123:5
-    ```
-
 - [*] Treat `.py.j2` as Python.
 
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
@@ -242,6 +231,17 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [*] GET https://gogo.crane-boa.ts.net:8445/favicon.ico
+
+    ```
+    [HTTP/2 404  6ms]
+    Uncaught (in promise) TypeError: renderPage is not a function
+        applyPath https://gogo.crane-boa.ts.net:8445/ui/core/deeplink.js:123
+        mountServer https://gogo.crane-boa.ts.net:8445/ui/adapters/app-http.js:117
+        async* https://gogo.crane-boa.ts.net:8445/ui/adapters/app-http.js:201
+    deeplink.js:123:5
+    ```
 
 - [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into `withVirtual`,
   and `withJsonlPreview` and `withJsonPreview` into `withVirtualPreview`.
