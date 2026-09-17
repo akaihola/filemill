@@ -39,7 +39,7 @@
        pages      total server listing pages
        total      total server listing entries
        previewFormat string; requested preview format
-       csv        boolean; this node is a CSV virtual directory
+       csv        boolean; this node is a CSV virtual directory or a row in one
        jsonl      boolean; this node is a JSONL virtual directory
        json       boolean; this node is a JSON virtual directory or value
        headers    parsed CSV column names

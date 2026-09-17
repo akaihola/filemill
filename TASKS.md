@@ -4,9 +4,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Unverified proposals
 
-- [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an unverified
-  architecture proposal, conditional on a fourth provider or a pagination bug.
-
 ## Ordered backlog
 
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
@@ -115,10 +112,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
   what it means.
 
-- [34] Make the SQLite provider return JSON only. The client renders tables and rows
-  with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close [9].
-    - Depends on: [19]
-
 - [32] Render Markdown and `.docx` in the browser in the server edition too. Serve the
   pinned renderer modules from `ui/vendor/`. Then delete `rendering.py` and its deps.
     - Depends on: [19]
@@ -139,6 +132,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+- [34] Make the SQLite provider return JSON only. The client renders tables and rows
+  with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close [9].
+    - Depends on: [19]
+
 - [*] Each row of a JSONL file must be presented exactly like a hierarchical nested view
   of a JSON file. Depends on [5].
 
@@ -353,6 +350,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an unverified
+  architecture proposal, conditional on a fourth provider or a pagination bug.
 
 - [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both editions
   fill it from the same core list plus their own adapters.

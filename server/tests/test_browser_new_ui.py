@@ -898,15 +898,20 @@ def test_a_table_opens_as_a_column_of_rows(page):
     assert page.locator('.col[data-i="2"] .row').count() == 3
 
 
-def test_a_row_previews_through_the_provider(page):
+def test_a_row_previews_through_the_json_hierarchical_view(page):
+    """The server sends the row's cells as JSON on the listing; the client
+    browses the row like a JSONL record and never asks /api/preview."""
+    seen: list[str] = []
+    page.on("request", lambda r: seen.append(r.url))
     page.open()
     page.click('.col[data-i="0"] .row:has-text("sample.db")')
     page.wait_for_selector('.col[data-i="1"] .row', timeout=15000)
     page.click('.col[data-i="1"] .row:has-text("users")')
     page.wait_for_selector('.col[data-i="2"] .row', timeout=15000)
     page.click('.col[data-i="2"] .row >> nth=0')
-    page.wait_for_selector("#preview .pv-rich", timeout=15000)
-    assert "User1" in page.inner_text("#preview .pv-rich")
+    page.wait_for_selector("#preview .pv-json", timeout=15000)
+    assert "User1" in page.inner_text("#preview .pv-json")
+    assert [u for u in seen if "/api/preview" in u] == []
 
 
 def test_virtual_nodes_keep_the_real_path_and_descend_by_vpath(page):
@@ -935,7 +940,7 @@ def test_a_row_shows_no_invented_size_or_date(page):
     """A row inside a database is not a file. Zeroed metadata would print
     "0 B · modified 1 Jan 1970", which is worse than nothing."""
     page.open("sample.db/users/1")
-    page.wait_for_selector("#preview .pv-rich", timeout=15000)
+    page.wait_for_selector("#preview .pv-json", timeout=15000)
     assert page.inner_text("#pv-sub").strip() == ""
 
 
@@ -1037,8 +1042,8 @@ def test_hidden_show_starts_with_dotfiles_visible(page):
 def test_a_deep_link_into_a_database_restores_the_columns(page):
     page.open("sample.db/users/1")
     assert page.evaluate("sel")[-1] == "1"
-    page.wait_for_selector("#preview .pv-rich", timeout=15000)
-    assert "User1" in page.inner_text("#preview .pv-rich")
+    page.wait_for_selector("#preview .pv-json", timeout=15000)
+    assert "User1" in page.inner_text("#preview .pv-json")
 
 
 def test_a_jsonl_file_opens_as_a_column_of_rows(page):

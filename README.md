@@ -65,8 +65,9 @@ uv sync && uv run filemill [ROOT]
 #   localhost:8000/     ← the shared UI, and "Open local folder…"
 ```
 
-Python renders Markdown with plugins, Pygments, docx and the SQLite and JSON
-virtual filesystems. The result goes into the shared preview pane. A local
+Python renders Markdown with plugins, Pygments, docx and the JSON virtual
+filesystem. The result goes into the shared preview pane. SQLite rows arrive as
+JSON and the shared JSON view draws them. A local
 folder opened from the served page posts its bytes to `/api/render`, so the
 same renderers apply. PowerPoint files are the one exception: both editions
 open them in the browser with `pptx-vanilla-viewer` from the CDN.

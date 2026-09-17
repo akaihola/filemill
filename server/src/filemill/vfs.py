@@ -69,6 +69,7 @@ class VFSEntry:
     is_folder: bool  # True → opens a new column on click; False → updates preview
     icon: str  # emoji
     ordered: bool = False  # provider order must be preserved by the UI
+    record: dict[str, object] | None = None  # a row's cells; the client draws them
 
 
 @runtime_checkable
@@ -78,18 +79,6 @@ class VFSProvider(Protocol):
     def handles(self, path: Path) -> bool: ...
 
     def list_entries(self, path: Path, vpath: str) -> list[VFSEntry]: ...
-
-    def render_preview(
-        self,
-        path: Path,
-        vpath: str,
-        fmt: str,
-        page: int,
-        limit: int,
-        col: int = 0,
-    ) -> str: ...
-
-    def default_fmt(self, vpath: str) -> str: ...
 
 
 class VFSRegistry:

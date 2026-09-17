@@ -66,6 +66,7 @@ function csvRows(node, records, headers) {
     rel: node.rel,
     ordered: true,
     meta: { virtual: true },
+    csv: true,
     record,
   }));
 }
@@ -129,7 +130,9 @@ export const withCsvPreview = (provider) => ({
       }
       if (n.csvError) return provider.render(n);
     }
-    if (!n.record) return provider.render(n);
+    /* Only a row of this file: JSONL, JSON and SQLite rows carry a record
+       too, with values that are not all strings, and their own view draws them. */
+    if (!n.csv || !n.record) return provider.render(n);
     const rows = Object.entries(n.record).map(([k, v]) =>
       `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`
     ).join("");

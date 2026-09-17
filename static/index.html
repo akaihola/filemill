@@ -2245,7 +2245,7 @@ function measure(node) {
        pages      total server listing pages
        total      total server listing entries
        previewFormat string; requested preview format
-       csv        boolean; this node is a CSV virtual directory
+       csv        boolean; this node is a CSV virtual directory or a row in one
        jsonl      boolean; this node is a JSONL virtual directory
        json       boolean; this node is a JSON virtual directory or value
        headers    parsed CSV column names
@@ -4905,6 +4905,7 @@ function csvRows(node, records, headers) {
     rel: node.rel,
     ordered: true,
     meta: { virtual: true },
+    csv: true,
     record,
   }));
 }
@@ -4968,7 +4969,9 @@ const withCsvPreview = (provider) => ({
       }
       if (n.csvError) return provider.render(n);
     }
-    if (!n.record) return provider.render(n);
+    /* Only a row of this file: JSONL, JSON and SQLite rows carry a record
+       too, with values that are not all strings, and their own view draws them. */
+    if (!n.csv || !n.record) return provider.render(n);
     const rows = Object.entries(n.record).map(([k, v]) =>
       `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`
     ).join("");
