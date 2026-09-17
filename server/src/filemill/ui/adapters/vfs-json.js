@@ -15,6 +15,7 @@
 import { esc } from "../core/icons.js";
 import { render } from "../core/render.js";
 import { TEXT_MAX } from "../core/limits.js";
+import { classifyFile } from "../core/file-kind.js";
 
 const JSONL_MAX = TEXT_MAX;
 const JSONL_LABEL = 60; /* as the server's MAX_LABEL_LEN */
@@ -22,8 +23,8 @@ const JSONL_TEXT = ["title", "name", "description", "summary", "label"];
 const JSONL_SCALAR = ["timestamp", "time", "ts", "id", "uuid", "key"];
 const JSON_MAX = TEXT_MAX;
 
-const isJsonl = (n) => /\.jsonl$/i.test(n.name);
-const isJson = (n) => /\.jsonc?$/i.test(n.name);
+const isJsonl = (n) => classifyFile(n.name).preview === "jsonl";
+const isJson = (n) => classifyFile(n.name).preview === "text" && /\.jsonc?$/i.test(n.name);
 const jsonlLabel = (v) =>
   ((s) => s.length > JSONL_LABEL ? s.slice(0, JSONL_LABEL - 1) + "…" : s)(
     String(v),
@@ -111,6 +112,7 @@ export const withVirtual = (fs) => ({
             dir: true,
             kids: null,
             jsonl: true,
+            fileKind: classifyFile(k.name, { jsonl: true }),
             ordered: true,
           });
         }

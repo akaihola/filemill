@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 from urllib.parse import quote as urlquote
 
-IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
+from filemill.vfs import classify_path
 
 # Largest file Pygments is asked to colour, and largest one shown as plain <pre>.
 SYNTAX_SIZE_LIMIT = 512 * 1024  # 512 KB
@@ -56,20 +56,21 @@ def render_preview(path: Path, state=None, preview_url: str | None = None) -> st
     stays optional.
     """
     ext = path.suffix.lower()
+    preview = classify_path(path).preview
 
-    if ext == ".md":
+    if preview == "md":
         return _preview_md(path, state)
-    elif ext == ".rst":
+    elif preview == "rst":
         return _preview_rst(path)
-    elif ext == ".docx":
+    elif preview == "docx":
         return _preview_docx(path)
-    elif ext == ".pptx":
+    elif preview == "pptx":
         return _preview_pptx(path)
-    elif ext == ".pdf":
+    elif preview == "pdf":
         return _preview_pdf(path)
-    elif ext in (".html", ".htm"):
+    elif preview == "html":
         return _preview_html(path, preview_url)
-    elif ext in IMAGE_EXTS:
+    elif preview == "image":
         return _preview_image(path)
     else:
         # Try Pygments syntax highlighting (before raw text fallback)

@@ -3,6 +3,7 @@ import { FS } from "../core/ports.js";
 import { render } from "../core/render.js";
 
 import { TEXT_MAX } from "../core/limits.js";
+import { classifyFile } from "../core/file-kind.js";
 
 const CSV_MAX = TEXT_MAX;
 
@@ -38,7 +39,7 @@ function csvParse(text) {
   return { headers, records };
 }
 
-const isCsv = (n) => /\.csv$/i.test(n.name);
+const isCsv = (n) => classifyFile(n.name).preview === "csv";
 
 function csvLabels(records, key) {
   const seen = new Set();
@@ -76,7 +77,13 @@ export const withCsv = (fs) => ({
       await fs.ensureLoaded(node);
       for (const k of node.kids || []) {
         if (!k.dir && isCsv(k)) {
-          Object.assign(k, { dir: true, kids: null, csv: true, ordered: true });
+          Object.assign(k, {
+            dir: true,
+            kids: null,
+            csv: true,
+            fileKind: classifyFile(k.name, { csv: true }),
+            ordered: true,
+          });
         }
       }
       return;

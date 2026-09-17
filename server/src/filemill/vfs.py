@@ -12,6 +12,42 @@ from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 MAX_LABEL_LEN = 60
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
+RICH_EXTENSIONS = {".md", ".markdown", ".rst", ".docx", ".pptx"}
+
+
+@dataclass(frozen=True)
+class FileKind:
+    kind: str
+    preview: str
+    editable: bool
+
+
+def classify_path(path: Path, *, is_dir: bool = False, virtual: bool = False,
+                  provider: bool = False) -> FileKind:
+    """Return the shared filesystem, preview, and edit classification."""
+    if is_dir:
+        return FileKind("folder", "none", False)
+    if virtual:
+        return FileKind("vfs", "virtual", False)
+    if provider:
+        return FileKind("vfs", "virtual", False)
+    ext = path.suffix.lower()
+    if ext in IMAGE_EXTENSIONS:
+        return FileKind("file", "image", False)
+    if ext == ".pdf":
+        return FileKind("file", "pdf", False)
+    if ext in {".html", ".htm"}:
+        return FileKind("file", "html", False)
+    if ext == ".desktop":
+        return FileKind("link", "desktop", False)
+    if ext == ".vtt":
+        return FileKind("file", "vtt", True)
+    if ext in {".jsonl", ".csv"}:
+        return FileKind("file", ext[1:], True)
+    if ext in RICH_EXTENSIONS:
+        return FileKind("file", ext[1:], ext in {".md", ".markdown", ".rst"})
+    return FileKind("file", "text", True)
 
 
 def _truncate(s: str, n: int = MAX_LABEL_LEN) -> str:
