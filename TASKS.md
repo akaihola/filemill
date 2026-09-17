@@ -109,11 +109,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon for
   the whole file, and `{}` and `[]` icons for objects and arrays.
 
+## Scheduled
+
 - When an object or list is selected in a hierarchical nested view of JSON, show the
   child nodes in the column to the right, and a foldable highlighted and pretty-printed
   JSON preview of the selected item in the second column to the right.
-
-## Scheduled
 
 - The server browser suites show 11 failures on the branch, but a run against a clean
   main checkout produced exactly the same 11: two legacy-htmx tests that main
