@@ -294,6 +294,12 @@ def test_ui_path_that_does_not_exist_is_404(client, tmp_root: Path):
     assert client.get("/n/nope.md").status_code == 404
 
 
+def test_missing_favicon_is_404(client):
+    response = client.get("/favicon.ico")
+    assert response.status_code == 404
+    assert response.text == "Not found"
+
+
 def test_ui_path_cannot_escape_root(client, tmp_root: Path):
     (tmp_root.parent / "outside.txt").write_text("secret")
     assert client.get("/n/../outside.txt").status_code == 404
