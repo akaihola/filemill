@@ -112,10 +112,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
   what it means.
 
-- [32] Render Markdown and `.docx` in the browser in the server edition too. Serve the
-  pinned renderer modules from `ui/vendor/`. Then delete `rendering.py` and its deps.
-    - Depends on: [19]
-
 - [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
   Today `[text](~/note.md)` is a dead link although the file exists.
 
@@ -133,6 +129,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 - [*] Each row of a JSONL file must be presented exactly like a hierarchical nested view
+- [32] Render Markdown and `.docx` in the browser in the server edition too. Serve the
+  pinned renderer modules from `ui/vendor/`. Then delete `rendering.py` and its deps.
+    - Depends on: [19]
+
   of a JSON file. Depends on [5].
 
 - When an object or list is selected in a hierarchical nested view of JSON, show the
