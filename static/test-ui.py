@@ -104,7 +104,7 @@ window.__mk = (nbig) => {
                 D('site', [F('README.md','# site'), F('index.html','<h1>s</h1>')]),
                 D('web',  [F('index.html','<h1>w</h1>')]),
                 F('note.md','# note'), F('data.json','{}'),
-                F('nested.json', '{"name":"x","tags":["a","b"],"meta":{"n":1,"ok":true,"none":null}}'),
+                F('nested.json', '{"name":"x","tags":["a","b"],"items":[{"id":1,"name":"first"}],"meta":{"n":1,"ok":true,"none":null}}'),
                 F('bad.json', '{oops'),
                 F('deep.json', '['.repeat(200000) + ']'.repeat(200000)),
                 // Taller than any preview pane, so the pane has to say where a
@@ -1137,7 +1137,10 @@ async def main():
         await pg.click('.col[data-i="1"] .row:has-text("nested.json")')
         await pg.wait_for_timeout(400)
         check("Valid JSON opens as an ordered key column",
-              await pg.evaluate("__rows(2)") == ["name", "tags", "meta"])
+              await pg.evaluate("__rows(2)") == ["name", "tags", "items", "meta"])
+        check("Selected JSON object keeps its preview beside its children",
+              await pg.locator("#preview .pv-json").count() == 1 and
+              await pg.locator("#preview details").count() > 0)
         await pg.click('.col[data-i="2"] .row:has-text("tags")')
         await pg.wait_for_timeout(300)
         check("Nested arrays open as ordered index rows",
@@ -1150,6 +1153,15 @@ async def main():
         await pg.wait_for_timeout(300)
         check("Nested objects remain navigable",
               await pg.evaluate("__rows(3)") == ["n", "ok", "none"])
+        await pg.click('.col[data-i="2"] .row:has-text("items")')
+        await pg.wait_for_timeout(300)
+        check("Arrays expose object child nodes",
+              await pg.evaluate("__rows(3)") == ["0"] and
+              await pg.locator("#preview .pv-json").count() == 1)
+        await pg.click('.col[data-i="3"] .row:has-text("0")')
+        await pg.wait_for_timeout(300)
+        check("Array object children remain navigable",
+              await pg.evaluate("__rows(4)") == ["id", "name"])
         await pg.click('.col[data-i="1"] .row:has-text("bad.json")')
         await pg.wait_for_selector(".pv-text:not(.pv-json)")
         check("Invalid JSON keeps the coloured-source fallback",

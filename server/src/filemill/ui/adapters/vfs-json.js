@@ -16,6 +16,7 @@ import { esc } from "../core/icons.js";
 import { render } from "../core/render.js";
 import { TEXT_MAX } from "../core/limits.js";
 import { classifyFile } from "../core/file-kind.js";
+import { jsonHTML } from "../core/syntax.js";
 
 const JSONL_MAX = TEXT_MAX;
 const JSONL_LABEL = 60; /* as the server's MAX_LABEL_LEN */
@@ -202,7 +203,7 @@ export const withVirtualPreview = (provider) => ({
     const text = typeof n.value === "string" ? n.value : JSON.stringify(n.value);
     return Promise.resolve(
       n.value !== null && typeof n.value === "object"
-        ? null
+        ? `<pre class="pv-text pv-json">${jsonHTML(text)}</pre>`
         : `<pre class="pv-text pv-json-value">${esc(text)}</pre>`,
     );
   },
@@ -228,23 +229,6 @@ function jsonValue(parent, name, value, vpath) {
 }
 
 function jsonKids(node, value) {
-  if (
-    Array.isArray(value) && value.length &&
-    value.every((v) => v && typeof v === "object" && !Array.isArray(v))
-  ) {
-    const key = jsonlKey(value);
-    const labels = key && jsonlLabels(value, key);
-    return value.map((record, i) => ({
-      name: labels?.[i] || `item ${i + 1}`,
-      dir: false,
-      vpath: node.vpath ? `${node.vpath}/${i}` : String(i),
-      icon: "📋",
-      rel: node.rel,
-      ordered: true,
-      meta: { virtual: true },
-      record,
-    }));
-  }
   const entries = Array.isArray(value)
     ? value.map((v, i) => [String(i), v])
     : Object.entries(value);
