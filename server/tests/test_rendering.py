@@ -136,6 +136,31 @@ def test_find_file_for_href_relative_sibling(tmp_path):
     assert _find_file_for_href("other.md", src) == target.resolve()
 
 
+def test_find_file_for_href_home_relative(tmp_path, monkeypatch):
+    home = tmp_path / "home"
+    home.mkdir()
+    target = home / "note.md"
+    target.touch()
+    monkeypatch.setattr(Path, "home", lambda: home)
+    source = tmp_path / "source.md"
+    assert _find_file_for_href("~/note.md#part", source) == target
+    assert _find_file_for_href("~/note.md?download=1", source) == target
+
+
+def test_markdown_home_link_uses_home_mount(tmp_path, monkeypatch):
+    import filemill.app as app_module
+
+    home = tmp_path / "home"
+    home.mkdir()
+    (home / "note.md").touch()
+    source = tmp_path / "source.md"
+    source.touch()
+    monkeypatch.setattr(Path, "home", lambda: home)
+    monkeypatch.setattr(app_module, "ROOT", home)
+    rendered = md.render("[note](~/note.md)", env={"source_path": source})
+    assert 'href="/w/home/note.md?filemill=render"' in rendered
+
+
 def test_find_file_for_href_relative_subdir(tmp_path):
     """Resolves a subdirectory-relative href."""
     src = tmp_path / "note.md"

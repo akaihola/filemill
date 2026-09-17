@@ -37,12 +37,15 @@ def _find_file_for_href(href: str, source_path: Path) -> Path | None:
     """
     if not href:
         return None
+    clean = href.split("#")[0].split("?")[0]
+    if clean.startswith("~/"):
+        candidate = Path.home() / clean[2:]
+        return candidate.resolve() if candidate.is_file() else None
     # Skip non-relative hrefs (absolute URLs, anchors, root-relative paths)
     if href.startswith(("http://", "https://", "#", "/", "mailto:", "ftp://")):
         return None
 
     # Strip URL fragment and query string
-    clean = href.split("#")[0].split("?")[0]
     if not clean:
         return None
 
