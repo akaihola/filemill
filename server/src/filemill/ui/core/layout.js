@@ -178,5 +178,12 @@ export function revealRow(row) {
 
 export function initLayout(render) {
   finder.addEventListener("scroll", applyScroll, { passive: true });
+  /* Nothing may leave #stage scrolled — see applyScroll. A click that brings
+     its button into view drags the strip out through the left edge, and if the
+     dial is at rest no scroll or render follows to put it back. Undo it here,
+     when it happens, rather than at whatever event comes next. */
+  stage.addEventListener("scroll", () => {
+    if (stage.scrollLeft) stage.scrollLeft = 0;
+  }, { passive: true });
   addEventListener("resize", () => render());
 }

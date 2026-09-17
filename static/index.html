@@ -682,6 +682,8 @@ body {
   border: 1px solid transparent;
   position: relative;
 }
+.row-layer { position: relative; flex: 0 0 auto; }
+.row-layer > .row { position: absolute; left: 0; right: 0; }
 .row .label {
   display: flex;
   flex: 1;
@@ -2115,7 +2117,7 @@ const CODE_FONT_SIZE = 11.5; // Match the compact monospace preview typography.
    width measurement and every path walk comes through here, which is what keeps
    the rows and a restored chain agreeing on what row 4 is. */
 const visibleKids = (node) =>
-  ((kids) => node.ordered ? kids : sortOrder(kids))(
+  ((kids) => node.ordered && state.sort.key === "name" ? kids : sortOrder(kids))(
     (node.kids || []).filter((k) => state.dotfiles || !k.name.startsWith(".")),
   );
 
@@ -2148,6 +2150,8 @@ const splitName = (name) => {
 };
 
 const previewNode = () => {
+  const current = path[path.length - 1];
+  if (current?.json && current.value !== undefined) return current;
   const last = path[path.length - 1], s = sel[path.length - 1];
   const n = s && (last.kids || []).find((k) => k.name === s);
   return (n && !n.dir) ? n : null;
@@ -2239,7 +2243,7 @@ function measure(node) {
        file       cached File from handle.getFile()
        rel        server root-relative path
        vpath      virtual path inside rel (JSON key, table, or row)
-       ordered    boolean; preserve adapter child order when true
+       ordered    boolean; preserve the adapter's documented child order when true
        icon       string; explicit icon glyph
        page       one-based current server listing page
        pages      total server listing pages
@@ -3061,7 +3065,7 @@ const foldAll = () => {
   slideTail(1, 0, path.length);
 };
 
-function layout(keepScroll) {
+function layout(keepScroll, preserveFolded = false) {
   const stageW = finder.clientWidth;
   setVar(root, "--stage-w", stageW + "px");
   setVar(root, "--preview-w", previewTarget() + "px");
@@ -3082,6 +3086,10 @@ function layout(keepScroll) {
     k = Math.min(focusCol, Math.max(k, folded));
     if (root.dataset.layout === "compressed-columns") k = path.length;
     finder.scrollLeft = Math.round(k * foldUnit() * range());
+  } else if (preserveFolded) {
+    finder.scrollLeft = Math.round(
+      Math.min(folded, path.length) * foldUnit() * range(),
+    );
   }
   applyScroll();
 }
@@ -3191,6 +3199,13 @@ function revealRow(row) {
 
 function initLayout(render) {
   finder.addEventListener("scroll", applyScroll, { passive: true });
+  /* Nothing may leave #stage scrolled — see applyScroll. A click that brings
+     its button into view drags the strip out through the left edge, and if the
+     dial is at rest no scroll or render follows to put it back. Undo it here,
+     when it happens, rather than at whatever event comes next. */
+  stage.addEventListener("scroll", () => {
+    if (stage.scrollLeft) stage.scrollLeft = 0;
+  }, { passive: true });
   addEventListener("resize", () => render());
 }
 
@@ -3315,7 +3330,7 @@ function scrollCursorIntoView() {
   for (let i = 0; i < path.length; i++) {
     const c = columnCache.get(path[i]);
     const ri = rowIndex(path[i], sel[i]);
-    if (c && ri != null && c.rows[ri]) revealRow(c.rows[ri]);
+    if (c && ri >= 0) revealRow(c.ensureRow(ri));
   }
 }
 
@@ -3394,6 +3409,8 @@ const MAX_DEPTH = 5; // Keep depth styling within the available visual scale.
 const SCROLL_HINT_PADDING = 4; // Show the affordance only when content exceeds the viewport.
 const EDIT_MAX = TEXT_MAX;
 const EDIT_MAX_LINE = 10_000; // Avoid unusably wide editor lines.
+const VIRTUAL_ROWS = 1000;
+const ROW_STEP = 23; // 21px row plus its 1px vertical margins.
 
 /* Writing the value a property already holds still dirties it — and a width or
    custom-property write on a column relays out every row inside it. Guard the
@@ -3460,7 +3477,18 @@ function buildCol(node) {
     actions.refreshColumn(+el.dataset.i);
   };
 
-  const rows = kids.map((k, ri) => {
+  const virtual = kids.length >= VIRTUAL_ROWS;
+  const layer = virtual
+    ? Object.assign(document.createElement("div"), { className: "row-layer" })
+    : body;
+  if (virtual) {
+    layer.style.height = `${kids.length * ROW_STEP}px`;
+    body.appendChild(layer);
+  }
+  const rows = new Array(kids.length);
+  const makeRow = (ri) => {
+    if (rows[ri]) return rows[ri];
+    const k = kids[ri];
     const [stem, ext] = splitName(k.name);
     const row = document.createElement("div");
     row.className = "row" + (k.name.startsWith(".") ? " dotfile" : "");
@@ -3474,16 +3502,32 @@ function buildCol(node) {
     /* read the index off the element: the same node keeps its DOM across
        re-renders, and its column position is only known at render time */
     row.onclick = () => actions.choose(+el.dataset.i, k);
-    body.appendChild(row);
+    if (virtual) {
+      row.style.top = `${ri * ROW_STEP}px`;
+      layer.appendChild(row);
+    } else layer.appendChild(row);
+    rows[ri] = row;
     return row;
-  });
-  body.onscroll = paintTrail;
+  };
+  const paintRange = () => {
+    if (!virtual) return;
+    const first = Math.max(0, Math.floor(body.scrollTop / ROW_STEP) - 10);
+    const last = Math.min(
+      kids.length,
+      Math.ceil((body.scrollTop + body.clientHeight) / ROW_STEP) + 10,
+    );
+    for (let i = first; i < last; i++) makeRow(i);
+  };
+  if (virtual) paintRange();
+  else kids.forEach((_, i) => makeRow(i));
+  body.onscroll = () => { paintRange(); paintTrail(); };
 
   return {
     el,
     body,
     kids,
     rows,
+    ensureRow: makeRow,
     kidsRef: node.kids,
     metaRef: !!node.metaDone,
     dot: el.querySelector(".dot"),
@@ -3507,7 +3551,7 @@ function columnFor(node) {
   return c;
 }
 
-function render(keepScroll) {
+function render(keepScroll, preserveFolded = false) {
   if (!path.length) return;
   const sig =
     `${state.dotfiles}|${root.dataset.density}|${root.dataset.theme}` +
@@ -3596,7 +3640,7 @@ function render(keepScroll) {
   }
   actions.renderCrumbs();
   sortSay(sortStatus());
-  layout(keepScroll);
+  layout(keepScroll, preserveFolded);
   syncURL();
 }
 
@@ -4095,13 +4139,14 @@ function taType(key, c) {
 
   const name = c.kids[i].name;
   taUnmark(); /* before the click, so the row it re-selects is clean */
-  c.rows[i].click(); /* the ordinary selection path: preview, trail, URL */
-  revealRow(c.rows[i]);
+  const row = c.ensureRow(i);
+  row.click(); /* the ordinary selection path: preview, trail, URL */
+  revealRow(row);
   /* toLowerCase can change a string's length ("İ" → two characters), and then
      the hit positions no longer index the original name. Skip the marks rather
      than paint them one character off. */
   taMark(
-    c.rows[i],
+    row,
     name,
     lower[i].length === name.length ? taHits(lower[i], q) : null,
   );
@@ -4207,10 +4252,11 @@ function autoPreview(node) {
 
 async function choose(colIdx, node, keepScroll = false) {
   const seq = ++navSeq;
+  const preserveFolded = keepScroll && folded;
   setState({ path: path.slice(0, colIdx + 1), sel: sel.slice(0, colIdx) });
   sel[colIdx] = node.name;
   setState({ focusCol: colIdx });
-  if (!node.dir) return void render(keepScroll);
+  if (!node.dir) return void render(keepScroll, preserveFolded);
 
   const reading = node.kids === null ? FS.ensureLoaded(node) : null;
   if (reading) {
@@ -4219,24 +4265,25 @@ async function choose(colIdx, node, keepScroll = false) {
        measures empty — it would open at the minimum width and jump wider a
        frame later. Most directories arrive well inside the grace; a slower one
        opens on the spinner, which is honest about the wait. */
-    render(keepScroll);
+    render(keepScroll, preserveFolded);
     await Promise.race([
       reading,
       new Promise((r) => setTimeout(r, OPEN_GRACE)),
     ]);
     if (seq !== navSeq) return; /* selection moved on while it was read */
     if (!node.dir) {
-      return void render(keepScroll); /* a virtual wrapper declined the file */
+      /* a virtual wrapper declined the file */
+      return void render(keepScroll, preserveFolded);
     }
   }
   path.push(node);
   autoPreview(node); /* kids already in memory (revisit, fast read) */
-  render(keepScroll);
+  render(keepScroll, preserveFolded);
   if (reading) {
     await reading;
     if (seq !== navSeq || !path.includes(node)) return; /* still up? repaint */
     autoPreview(node); /* kids landed after the grace period */
-    render(keepScroll);
+    render(keepScroll, preserveFolded);
   }
 }
 
@@ -4431,8 +4478,9 @@ function enterColumn(i) {
   const remembered = sel[i];
   let ri = rowIndex(path[i], remembered);
   ri = Math.max(0, Math.min(c.rows.length - 1, ri < 0 ? 0 : ri));
-  c.rows[ri].click();
-  revealRow(c.rows[ri]);
+  const row = c.ensureRow(ri);
+  row.click();
+  revealRow(row);
 }
 
 /* Stepping right into a column that has no rows would move focus with nothing
@@ -4447,11 +4495,11 @@ function stepInto(node) {
 }
 
 function pageMove(c, dir, ci) {
-  const body = c.rows[0]?.parentElement;
+  const body = c.body;
   if (!body || !c.rows.length) return;
   const edge = () => {
     const b = body.getBoundingClientRect();
-    const visible = c.rows.filter((row) => {
+    const visible = c.rows.filter(Boolean).filter((row) => {
       const r = row.getBoundingClientRect();
       return r.bottom > b.top && r.top < b.bottom;
     });
@@ -4537,13 +4585,14 @@ document.addEventListener("keydown", (e) => {
       );
     }
     choose(focusCol, c.kids[ci], true);
-    revealRow(rows[ci]);
+    revealRow(c.ensureRow(ci));
   } else if (e.key === "Home" || e.key === "End") {
     e.preventDefault();
     if (!rows.length) return;
     const ri = e.key === "Home" ? 0 : rows.length - 1;
-    rows[ri].click();
-    revealRow(rows[ri]);
+    const row = c.ensureRow(ri);
+    row.click();
+    revealRow(row);
   } else if (e.key === "PageUp" || e.key === "PageDown") {
     e.preventDefault();
     pageMove(c, e.key === "PageUp" ? -1 : 1, ci);
@@ -4553,7 +4602,7 @@ document.addEventListener("keydown", (e) => {
     /* nothing open to the right: commit the row, which opens it when it
        is a directory — a second → then steps into that column */
     if (!next) {
-      const row = rows[ci];
+      const row = c.ensureRow(ci);
       row?.click();
       if (e.key === "ArrowRight" && c.kids[ci] && !c.kids[ci].dir) {
         foldAll();
@@ -4614,7 +4663,8 @@ const JSONL_SCALAR = ["timestamp", "time", "ts", "id", "uuid", "key"];
 const JSON_MAX = TEXT_MAX;
 
 const isJsonl = (n) => classifyFile(n.name).preview === "jsonl";
-const isJson = (n) => classifyFile(n.name).preview === "text" && /\.jsonc?$/i.test(n.name);
+const isJson = (n) =>
+  classifyFile(n.name).preview === "text" && /\.jsonc?$/i.test(n.name);
 const jsonlLabel = (v) =>
   ((s) => s.length > JSONL_LABEL ? s.slice(0, JSONL_LABEL - 1) + "…" : s)(
     String(v),
@@ -4660,16 +4710,9 @@ function jsonlRows(node, records) {
   const labels = key
     ? jsonlLabels(records, key)
     : records.map((_, i) => `line ${i + 1}`);
-  return records.map((record, i) => ({
-    name: labels[i],
-    dir: false,
-    vpath: String(i + 1),
-    icon: "📋",
-    rel: node.rel,
-    ordered: true,
-    meta: { virtual: true },
-    record,
-  }));
+  return records.map((record, i) =>
+    jsonValue(node, labels[i], record, String(i + 1))
+  );
 }
 
 function jsonlParse(text) {
@@ -4713,6 +4756,11 @@ const withVirtual = (fs) => ({
             json: true,
             ordered: true,
           });
+        }
+        /* A server-listed row (a SQLite table row) carries its cells as a
+           record; it browses like a JSONL record. CSV rows keep their own view. */
+        if (!k.dir && k.record && !k.csv) {
+          Object.assign(k, jsonValue(node, k.name, k.record, k.vpath));
         }
       }
       return;
@@ -4778,21 +4826,13 @@ const withVirtualPreview = (provider) => ({
     provider.revoke?.();
   },
   render(n) {
-    if (n.record) {
-      const cell = (v) =>
-        v !== null && typeof v === "object" ? JSON.stringify(v) : String(v);
-      const rows = Object.entries(n.record)
-        .map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(cell(v))}</td></tr>`)
-        .join("");
-      return Promise.resolve(
-        `<div class="pv-rich"><table class="pv-kv">${rows}</table></div>`,
-      );
-    }
     if (!n.json || n.value === undefined) return provider.render(n);
-    const text = typeof n.value === "string" ? n.value : JSON.stringify(n.value);
+    const text = typeof n.value === "string"
+      ? n.value
+      : JSON.stringify(n.value);
     return Promise.resolve(
       n.value !== null && typeof n.value === "object"
-        ? null
+        ? `<pre class="pv-text pv-json">${jsonHTML(text)}</pre>`
         : `<pre class="pv-text pv-json-value">${esc(text)}</pre>`,
     );
   },
@@ -4808,7 +4848,7 @@ function jsonValue(parent, name, value, vpath) {
     dir: container,
     kids: container ? null : undefined,
     vpath,
-    icon: container ? "📁" : "◻",
+    icon: container ? (Array.isArray(value) ? "[]" : "{}") : "◻",
     json: true,
     value,
     rel: parent.rel,
@@ -4818,23 +4858,6 @@ function jsonValue(parent, name, value, vpath) {
 }
 
 function jsonKids(node, value) {
-  if (
-    Array.isArray(value) && value.length &&
-    value.every((v) => v && typeof v === "object" && !Array.isArray(v))
-  ) {
-    const key = jsonlKey(value);
-    const labels = key && jsonlLabels(value, key);
-    return value.map((record, i) => ({
-      name: labels?.[i] || `item ${i + 1}`,
-      dir: false,
-      vpath: node.vpath ? `${node.vpath}/${i}` : String(i),
-      icon: "📋",
-      rel: node.rel,
-      ordered: true,
-      meta: { virtual: true },
-      record,
-    }));
-  }
   const entries = Array.isArray(value)
     ? value.map((v, i) => [String(i), v])
     : Object.entries(value);
@@ -5080,6 +5103,8 @@ async function mountRoot(node, title = node.name) {
    from; nothing else in the app ever touches it.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+const FSA_COLLATOR = new Intl.Collator(undefined, { numeric: true });
+
 const fsaNode = (name, handle, parent = null) => ({
   name,
   handle,
@@ -5106,7 +5131,11 @@ const FSA = {
           ? "No permission to read"
           : String(err.message || err);
       }
-      node.kids = kids;
+      node.kids = kids.sort((a, b) => {
+        const kind = !!b.dir - !!a.dir;
+        return kind || FSA_COLLATOR.compare(a.name, b.name);
+      });
+      node.ordered = true;
       node.loading = null;
     })();
     return node.loading;
@@ -5398,11 +5427,12 @@ const PreviewLocal = {
 /* ═══════════════════════════════════════════════════════════════════════════
    Preview provider — rich rendering, fetched on demand.
 
-   Markdown and .docx, to match what filemill's Python renderers produce, and
-   reStructuredText, which only Python renders well. The libraries are an order
-   of magnitude larger than this app, so they are not in the bundle: they are
-   imported from a CDN the first time a file that needs one is previewed, and
-   cached for the session.
+   Markdown, .docx, and reStructuredText, which only Python renders well. The
+   libraries are an order of magnitude larger than this app, so they are not in
+   the static bundle: they are imported from a CDN the first time a file that
+   needs one is previewed, and cached for the session. The server edition
+   serves the Markdown and .docx modules itself from ui/vendor/ and points
+   FILEMILL_CDN at them, so there nothing is fetched from a third party.
 
    Source files and fenced code are not on that list. They are coloured by
    core/syntax.js, in the page, with no download and no switch to find —
@@ -5460,6 +5490,19 @@ const CDN = {
 const cdn = (name) =>
   (globalThis.FILEMILL_CDN && globalThis.FILEMILL_CDN[name]) || CDN[name];
 
+/* A module served from this origin is not a download the visitor has to agree
+   to, so the rich switch below does not apply to it. */
+const vendored = (name) => cdn(name).startsWith("/");
+
+/* The module each kind needs first; the switch is asked about that one. */
+const NEEDS = {
+  md: "markdown-it",
+  markdown: "markdown-it",
+  rst: "pyodide",
+  docx: "mammoth",
+  pptx: "pptx-vanilla-viewer",
+};
+
 const RICH_KEY = "filemill.rich";
 const richEnabled = () => localStorage.getItem(RICH_KEY) !== "off";
 const setRich = (on) => {
@@ -5500,7 +5543,28 @@ function homeHref(href) {
   return mount && mount !== "/" ? `/w/${encodeURIComponent(mount)}/${href.slice(2)}` : href.slice(2);
 }
 
-async function markdown(text) {
+/* A relative link resolves against the document's own folder and becomes the
+   target's root-relative URL, so it lands on the file the author meant even
+   when the page is a deep link. A Markdown target gets ?filemill=render: a
+   link from one document to another should land on the rendered document,
+   not its bytes. Only a served node has a folder here (`node.rel`); the files
+   of a local or static folder have no URL, and their links stay as written. */
+function localHref(href, dir) {
+  if (dir === undefined || /^(?:[a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) {
+    return href;
+  }
+  const clean = href.split("#")[0].split("?")[0];
+  if (!clean) return href;
+  const parts = dir ? dir.split("/").map(encodeURIComponent) : [];
+  for (const p of clean.split("/")) {
+    if (p === "..") parts.pop();
+    else if (p && p !== ".") parts.push(p);
+  }
+  const url = "/" + parts.join("/");
+  return /\.md$/i.test(url) ? url + "?filemill=render" : url;
+}
+
+async function markdown(text, node) {
   if (!mdInstance) {
     const [MarkdownIt, footnote, deflist, tasklists, anchor] = await Promise
       .all([
@@ -5517,13 +5581,20 @@ async function markdown(text) {
       typographer: false,
       html: false,
     })
-      .use(footnote).use(deflist).use(tasklists).use(anchor);
+      .use(footnote).use(deflist).use(tasklists)
+      /* No tabindex on headings: markdown-it-py's anchors plugin never set
+         one, and a focusable heading landing in a fullscreen preview nudges
+         the stage sideways for a frame. Same ids as before, nothing else. */
+      .use(anchor, { tabIndex: false });
     const linkOpen = mdInstance.renderer.rules.link_open ||
       ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
     mdInstance.renderer.rules.link_open = (tokens, idx, options, env, self) => {
       const token = tokens[idx];
       const href = token.attrGet("href");
-      if (href) token.attrSet("href", homeHref(href));
+      if (href) {
+        const home = homeHref(href);
+        token.attrSet("href", home === href ? localHref(href, env.dir) : home);
+      }
       return linkOpen(tokens, idx, options, env, self);
     };
 
@@ -5549,7 +5620,10 @@ async function markdown(text) {
       }
     });
   }
-  return mdInstance.render(text);
+  const dir = typeof node.rel === "string"
+    ? node.rel.replace(/\/?[^/]*$/, "")
+    : undefined;
+  return mdInstance.render(text, { dir });
 }
 
 /* ── reStructuredText ────────────────────────────────────────────────────── */
@@ -5647,7 +5721,7 @@ const docxHTML = async (_node, blob) => {
 /* A text renderer: oversize files take the plain path, like the local one. */
 const richText = (convert) => async (node, blob) => {
   if (blob.size > TEXT_MAX) return renderNode(node, blob, "text");
-  return `<div class="pv-rich">${await convert(await blob.text())}</div>`;
+  return `<div class="pv-rich">${await convert(await blob.text(), node)}</div>`;
 };
 
 /* Offline, blocked, or the CDN moved. The file is still readable. */
@@ -5673,7 +5747,8 @@ const PreviewRich = {
 
   async render(node) {
     const kind = classifyFile(node.name, node).preview;
-    if (!richEnabled() || !RICH_RENDERERS.some((e) => e.kind === kind)) {
+    const need = NEEDS[kind];
+    if (!need || (!richEnabled() && !vendored(need))) {
       return PreviewLocal.render(node);
     }
     const blob = await FS.blob(node);
@@ -5681,18 +5756,6 @@ const PreviewRich = {
     return renderNode(node, blob, kind);
   },
 };
-
-const withPptxPreview = (provider) => ({
-  revoke() {
-    provider.revoke?.();
-    PreviewRich.revoke();
-  },
-  render(node) {
-    return classifyFile(node.name, node).preview === "pptx"
-      ? PreviewRich.render(node)
-      : provider.render(node);
-  },
-});
 
 /* A wikilink resolves against the folder being browsed, not the web — so it
    selects a row in the column the file itself is in, exactly as clicking that

@@ -289,8 +289,10 @@ def test_an_empty_directory_says_so(page):
     assert "Empty" in page.inner_text('.col[data-i="1"] .col-note')
 
 
-def test_the_preview_comes_from_the_python_renderer(page):
-    """The point of preview-http.js: markdown-it-py output, in filemill's pane."""
+def test_the_markdown_preview_is_rendered_in_the_browser(page):
+    """Markdown goes through preview-rich.js and the modules the shell serves
+    from /ui/vendor/; the output lands in the same pane preview-http.js fills
+    for everything the server still renders."""
     page.open("README.md")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     assert "Readme" in page.inner_text("#preview .pv-rich h1")
@@ -694,72 +696,46 @@ def test_a_local_folder_replaces_the_served_tree(page):
 
 
 def _click_local(page, name: str, selector: str) -> None:
-    """Click a local-folder entry, then hold the render it triggers to account.
+    """Click a local-folder entry and wait for the preview it draws.
 
-    `preview-upload.js` posts the bytes to `POST /api/render`, because the server
-    cannot read a file the browser granted through the File System Access API.
-    Two of its branches are silent by design, and from the outside they look
-    identical to each other and to a slow machine::
-
-        if (!r.ok) return PreviewLocal.render(node);   /* draws no .pv-rich */
-        return html.trim() ? `<div class="pv-rich">${html}</div>` : null;
-
-    A non-2xx falls back to a renderer that emits no ``.pv-rich`` at all, and an
-    empty body draws nothing. Either way the caller waits out its timeout for a
-    selector that will never exist, which is a symptom rather than a cause. A
-    peer agent hit exactly that on another host: the POST completed and
-    ``#preview .pv-rich h1`` never appeared, and the timeout said nothing about
-    why. So this reports the status, the first bytes, and whether ``.pv-rich``
-    reached the DOM, which separates a bad response from an error card that
-    simply has no heading in it.
+    Markdown and .docx from a granted folder render in the page, from the
+    modules the shell lists in FILEMILL_CDN; nothing is posted to the server
+    for them. A timeout therefore says what did reach the DOM, which separates
+    a renderer that threw (PreviewRich falls back to the source with a
+    ``.pv-note``) from one that drew something without the selector in it.
     """
-    with page.expect_response(
-        lambda r: r.url.endswith("/api/render") and r.request.method == "POST",
-        timeout=30000,
-    ) as caught:
-        page.click(f'.col[data-i="0"] .row:has-text("{name}")')
-    response = caught.value
-    body = response.text()
-    assert response.ok, (
-        f"POST /api/render answered {response.status} for {name}, so "
-        f"preview-upload.js fell back silently and drew no .pv-rich. "
-        f"First 300 bytes: {body[:300]!r}"
-    )
-    assert body.strip(), (
-        f"POST /api/render answered 200 with an empty body for {name}, so "
-        f"preview-upload.js returned null and drew nothing."
-    )
+    page.click(f'.col[data-i="0"] .row:has-text("{name}")')
     try:
         page.wait_for_selector(selector, timeout=15000)
     except PlaywrightTimeoutError as exc:
         raise AssertionError(
-            f"{selector} never appeared for {name}. POST /api/render answered "
-            f"{response.status} with {len(body)} bytes, and #preview .pv-rich "
-            f"count is {page.locator('#preview .pv-rich').count()}. A count of 0 "
-            f"means nothing was injected; a count of 1 means the server rendered "
-            f"something without that element in it. "
-            f"First 300 bytes: {body[:300]!r}"
+            f"{selector} never appeared for {name}. #preview .pv-rich count is "
+            f"{page.locator('#preview .pv-rich').count()}, .pv-note count is "
+            f"{page.locator('#preview .pv-note').count()}. First 300 chars: "
+            f"{page.inner_html('#preview')[:300]!r}"
         ) from exc
 
 
-def test_local_files_are_still_rendered_by_python(page):
-    """The point of POST /api/render: opening a local folder is not a downgrade.
-
-    markdown-it-py renders bytes the server has never had a path to.
-    """
+def test_local_markdown_is_rendered_in_the_browser(page):
+    """Opening a local folder is not a downgrade: the same markdown-it that
+    renders a served file renders bytes the server has never had a path to,
+    and nothing is posted to it on the way."""
     page.open()
     page.evaluate(FAKE_HANDLE)
     page.evaluate("mount(__local())")
     page.wait_for_timeout(300)
+    posts: list[str] = []
+    page.on("request", lambda r: posts.append(r.url) if r.method == "POST" else None)
     _click_local(page, "local.md", "#preview .pv-rich h1")
     assert "Local heading" in page.inner_text("#preview .pv-rich h1")
     assert page.locator("#preview .pv-rich strong").count() >= 1
+    assert [u for u in posts if u.endswith("/api/render")] == []
 
 
 def test_local_source_is_highlighted_without_asking_the_server(page):
     """The gain from moving highlighting into the page: a folder the server has
     no path to is coloured with no round-trip at all, so POST /api/render is
-    not reached for it the way local.md still reaches it."""
+    not reached for it either."""
     page.open()
     page.evaluate(FAKE_HANDLE)
     page.evaluate("mount(__local())")
@@ -814,11 +790,12 @@ def test_nothing_is_fetched_from_a_cdn(page):
     goes through preview-upload.js and `POST /api/render`, which is the path the
     docstring is actually about. Source files now go through neither — they are
     coloured in the page by core/syntax.js — so they are the easiest half to
-    keep honest and are checked here too. `ui/adapters/preview-rich.js` does lazy-load a
-    renderer from a CDN; the server edition asks it for one only for `.pptx`
-    (through `withPptxPreview`), which this test never opens, so nothing is
-    fetched. Any other preview that started to would break this test, which is
-    the point of the test.
+    keep honest and are checked here too. Markdown goes through
+    `ui/adapters/preview-rich.js` in both halves, which imports its renderer
+    from the URL the shell's FILEMILL_CDN names: `/ui/vendor/markdown-it.js`,
+    this origin. Only `.pptx` still asks a CDN for its viewer, and this test
+    never opens one. Any other preview that started to would break this test,
+    which is the point of the test.
     """
     external = []
     page.on(
@@ -836,16 +813,18 @@ def test_nothing_is_fetched_from_a_cdn(page):
     page.evaluate("mount(__local())")
     page.wait_for_timeout(300)
     _click_local(page, "local.md", "#preview .pv-rich")
-    # local.py takes neither path: core/syntax.js colours it in the page, so
-    # there is no response to wait for — only the absence of a request.
+    # local.py: core/syntax.js colours it in the page, so there is no response
+    # to wait for — only the absence of a request.
     page.click('.col[data-i="0"] .row:has-text("local.py")')
     page.wait_for_selector("#preview .pv-text .hl-kw", timeout=15000)
     assert external == []
 
 
-def test_the_server_edition_registers_core_and_pptx_renderers(page):
-    """core/renderers.js: the same core table as the static build, and of the
-    rich entries only .pptx, because everything else is rendered by Python."""
+def test_the_server_edition_registers_core_and_browser_rich_renderers(page):
+    """core/renderers.js: the same core table as the static build, plus the
+    rich entries the browser draws here — Markdown and .docx from /ui/vendor/,
+    .pptx from its viewer, and the offline fallback they name. reStructuredText
+    is the one rich kind left to Python."""
     page.open("")
     assert page.evaluate("RENDERERS.map(e => e.kind)") == [
         "image",
@@ -854,7 +833,11 @@ def test_the_server_edition_registers_core_and_pptx_renderers(page):
         "desktop",
         "vtt",
         "text",
+        "md",
+        "markdown",
+        "docx",
         "pptx",
+        "offline",
     ]
 
 

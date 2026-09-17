@@ -1,16 +1,12 @@
 import subprocess
-import sys
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 
 from filemill.preview import (
     _preview_desktop,
-    _preview_docx,
     _preview_html,
     _preview_image,
-    _preview_md,
     _preview_pdf,
     _preview_pptx,
     render_preview,
@@ -37,16 +33,6 @@ def _make_pptx(
     prs.save(str(path))
 
 
-def _fake_mammoth(monkeypatch, html_value: str = "<p>Hello</p>", raises=None):
-    """Patch sys.modules['mammoth'] with a mock. Call before _preview_docx."""
-    m = MagicMock()
-    if raises:
-        m.convert_to_html.side_effect = raises
-    else:
-        m.convert_to_html.return_value = MagicMock(value=html_value)
-    monkeypatch.setitem(sys.modules, "mammoth", m)
-    return m
-
 
 # ── render_preview dispatch ───────────────────────────────────────────────────
 
@@ -57,10 +43,13 @@ def test_dispatch_desktop(tmp_path):
     assert "preview-desktop-link" in render_preview(f)
 
 
-def test_dispatch_md(tmp_path):
+def test_dispatch_md_falls_through_to_coloured_source(tmp_path):
+    """The browser renders Markdown; the server only ever shows its source."""
     f = tmp_path / "note.md"
-    f.write_text("# Hi")
-    assert "preview-md" in render_preview(f)
+    f.write_text("# Hi\n**bold**\n")
+    html = render_preview(f)
+    assert "preview-code" in html
+    assert "<strong>" not in html
 
 
 def test_dispatch_rst(tmp_path):
@@ -93,11 +82,11 @@ def test_binary_and_insanely_wide_text_are_unsupported(tmp_path):
     assert "preview-raw" in render_preview(wide)
 
 
-def test_dispatch_docx(tmp_path, monkeypatch):
+def test_dispatch_docx_is_unsupported_on_the_server(tmp_path):
+    """The browser renders .docx with mammoth; the server has no renderer."""
     f = tmp_path / "doc.docx"
-    f.write_bytes(b"fake")
-    _fake_mammoth(monkeypatch)
-    assert "preview-docx" in render_preview(f)
+    f.write_bytes(b"PK\x03\x04\x00fake")
+    assert "preview-unsupported" in render_preview(f)
 
 
 def test_dispatch_pptx(tmp_path, monkeypatch):
@@ -136,48 +125,6 @@ def test_dispatch_no_ext(tmp_path):
     result = render_preview(f)
     assert "preview-unsupported" in result
     assert "(no extension)" in result
-
-
-# ── _preview_md ───────────────────────────────────────────────────────────────
-
-
-def test_preview_md_valid(tmp_path):
-    f = tmp_path / "note.md"
-    f.write_text("# Title\n**bold**\n")
-    html = _preview_md(f)
-    assert "preview-md" in html
-    assert "<h1" in html  # anchors_plugin adds id= attribute to headings
-
-
-def test_preview_md_exception(tmp_path, monkeypatch):
-    f = tmp_path / "note.md"
-    f.write_text("hi")
-    from filemill import rendering
-
-    def boom(text):
-        raise RuntimeError("render failure")
-
-    monkeypatch.setattr(rendering.md, "render", boom)
-    assert "preview-error" in _preview_md(f)
-
-
-# ── _preview_docx ─────────────────────────────────────────────────────────────
-
-
-def test_preview_docx_happy_path(tmp_path, monkeypatch):
-    f = tmp_path / "doc.docx"
-    f.write_bytes(b"fake")
-    _fake_mammoth(monkeypatch, html_value="<p>Hello docx</p>")
-    html = _preview_docx(f)
-    assert "preview-docx" in html
-    assert "<p>Hello docx</p>" in html
-
-
-def test_preview_docx_exception(tmp_path, monkeypatch):
-    f = tmp_path / "doc.docx"
-    f.write_bytes(b"fake")
-    _fake_mammoth(monkeypatch, raises=RuntimeError("bad docx"))
-    assert "preview-error" in _preview_docx(f)
 
 
 # ── _preview_pptx ─────────────────────────────────────────────────────────────

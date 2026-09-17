@@ -45,25 +45,21 @@ def read_text(path: Path, reject_wide: bool = True) -> str | None:
 def render_preview(path: Path, state=None, preview_url: str | None = None) -> str:
     """Return an HTML string (inner body fragment) for the given file path.
 
-    This is the *rendered* representation: it dispatches on suffix, so Markdown
-    arrives as HTML and a .docx as its text. ``render_source`` is the other side
-    of that same file — see ``filemill.urls`` for the contract they implement.
+    This is the *rendered* representation: it dispatches on suffix, so
+    reStructuredText arrives as HTML and a PDF as its viewer. ``render_source``
+    is the other side of that same file — see ``filemill.urls`` for the
+    contract they implement. Markdown and .docx are not dispatched here: the
+    browser renders them from the modules in ui/vendor/, so they fall through
+    to coloured or raw source like any other text.
 
-    *state* is the request's ``ViewState`` when the caller has one. It only
-    reaches the Markdown renderer, where it decides whether links keep the
-    reader's layout and dotfile choices. Callers with no request state pass
-    nothing and get the documented defaults, which is why the signature
-    stays optional.
+    *state* is accepted for callers that have a request's ``ViewState``; no
+    renderer reads it since the Markdown renderer moved to the browser.
     """
     ext = path.suffix.lower()
     preview = classify_path(path).preview
 
-    if preview == "md":
-        return _preview_md(path, state)
-    elif preview == "rst":
+    if preview == "rst":
         return _preview_rst(path)
-    elif preview == "docx":
-        return _preview_docx(path)
     elif preview == "pptx":
         return _preview_pptx(path)
     elif preview == "pdf":
@@ -162,21 +158,6 @@ def _raw_text(path: Path) -> str | None:
     return None
 
 
-def _preview_md(path: Path, state=None) -> str:
-    try:
-        from filemill.rendering import md as md_renderer
-
-        html_body = md_renderer.render(
-            path.read_text(encoding="utf-8"),
-            {"source_path": path, "view_state": state},
-        )
-        return f'<div class="preview-md">{html_body}</div>'
-    except Exception as e:
-        return (
-            f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'
-        )
-
-
 def _preview_rst(path: Path) -> str:
     try:
         from docutils.core import publish_parts
@@ -198,19 +179,6 @@ def _preview_rst(path: Path) -> str:
         )
         body = title + parts["body"]
         return f'<div class="preview-rst">{body}</div>'
-    except Exception as e:
-        return (
-            f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'
-        )
-
-
-def _preview_docx(path: Path) -> str:
-    try:
-        import mammoth
-
-        with open(path, "rb") as f:
-            result = mammoth.convert_to_html(f)
-        return f'<div class="preview-docx">{result.value}</div>'
     except Exception as e:
         return (
             f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'
