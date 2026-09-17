@@ -368,6 +368,8 @@ Rules for TASKS.md usage are at the bottom of the file.
   files. Current PPTX support was implemented in task
   38ab06e2-c607-4d4a-9978-67847e70d27d.
 
+## Accepted
+
 - [19] Move adapter code out of `ui/core/`: `jsonl.js`, the welcome screen, the local
   badge and `offerRichToggle` go to `ui/adapters/`.
     - Depends on: [17]
@@ -426,7 +428,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [5] Hierarchical nested view for JSON
 
-- [~] Back-navigation still often fails to unfold the newly focused column. For example,
+- [*] Back-navigation still often fails to unfold the newly focused column. For example,
   if I navigate using the keyboard to
   https://filemill.vempai.men/filemill/server/src/filemill/providers/__pycache__/__init__.cpython-313.pyc
   and then back left, the `server` column doesn't unfold.
@@ -574,6 +576,16 @@ Here are the rules for TASKS.md usage:
 - If any issue is missing a link:
     - Create the first missing numbered description file in
       docs/tasks/<N-issue-description>.md and add the link
+- Any completed tasks which haven't yet been moved from `## In Progress` to
+  `## Completed` should be moved there.
+- Any in progress tasks which haven't yet been moved from `## Ordered backlog` or
+  `## Scheduled` to `## In Progress` should be moved there.
+- Remove all issues the user has moved to the `## Accepted` section along with any
+  related description files in `docs/tasks/` and the reference-style links pointing to
+  them.
+- Ensure there are no duplicate sections, and that they are in the correct order:
+  `## Unverified proposals` -> `## Ordered backlog` -> `## Scheduled` ->
+  `## In Progress` -> `## Completed` -> `## Accepted` -> `## Rules`.
 
 ### Modifying issues
 
