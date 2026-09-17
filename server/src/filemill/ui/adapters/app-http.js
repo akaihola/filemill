@@ -79,7 +79,7 @@ const ROOT_NAME = document.documentElement.dataset.root || "/";
 
 /* Source files are coloured in the browser by core/syntax.js, not by Pygments
    on the way out — see that file for why. The server still renders everything
-   else it is better at (Markdown, .docx, database rows), so this wraps the
+   else it is better at (Markdown, .docx), so this wraps the
    provider rather than replacing it: a file with a language we know is read
    through FS.blob and highlighted here, and anything else goes on as before.
    A virtual path is never diverted, because only the server can read one. */

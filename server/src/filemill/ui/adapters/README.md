@@ -97,5 +97,5 @@ server-side provider in use, so a file with a known language is read through
 `FS.blob` and highlighted here. `hlFences` colours the
 `<pre><code class="language-x">` blocks that every Markdown renderer emits,
 after `fillPreview` puts them in the pane. The server keeps everything else it
-renders better: Markdown, `.docx`, database rows. A virtual path is never
+renders better: Markdown, `.docx`. A virtual path is never
 diverted, because only the server can read one.

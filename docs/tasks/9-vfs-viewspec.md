@@ -1,10 +1,12 @@
 ---
-status: unverified
+status: closed
 ---
 
 # Group VFS preview settings
 
 ## Proposal
+
+Closed by [34]: the six-argument `render_preview` interface no longer exists.
 
 Do this only if a fourth provider or a pagination bug shows that the current
 interface causes real problems. Put the preview settings in a

@@ -14,32 +14,36 @@ them with the same hierarchical view it uses for JSON files. Roadmap phase
 ## Steps
 
 1. Read `providers/sqlite.py`. `list_entries` already feeds `/api/dir` with
-   tables, rows and cells as entries. `render_preview`, `_render_spreadsheet`
-   and `_render_kv` build HTML for `/api/preview`.
-2. Add one JSON response for a row: `/api/dir?p=x.db&v=table/rowkey` already
-   lists the cells. Make each cell entry carry `value` and `type` fields.
-3. Add pagination as entries: when a table has more than 1 000 rows, the last
-   entry of a page is `{name: "next", kind: "page", vpath: ...}`. The client
-   opens it like a folder.
-4. In `ui/adapters/vfs-json.js`, make the JSON hierarchical view accept these
-   entries, so a table shows as a folder of rows and a row as a folder of
-   key/value pairs, with the pretty-printed preview from task [5].
-5. Delete `render_preview`, `_render_inner`, `_render_spreadsheet`,
-   `_render_kv`, `default_fmt` and `_cell_val` in `sqlite.py`. Delete
-   `render_preview` and `default_fmt` from the `VFSProvider` protocol in
-   `vfs.py`. Delete `vfs_preview` in `api.py`.
-6. Update `server/tests/test_providers_sqlite.py` and `test_api.py`: assert
-   on JSON, not on HTML.
-7. Move proposal [9] to `## Completed` in `TASKS.md`.
+   tables and rows as entries. `render_preview`, `_render_spreadsheet` and
+   `_render_kv` build HTML for `/api/preview`. The shared UI never previews
+   a directory node, so the spreadsheet is reachable only by a direct API
+   call.
+2. Give `VFSEntry` an optional `record`. In `_list_rows`, fill it with the
+   row's cells as JSON: `NULL` is `null`, a blob is a "binary data" note,
+   everything else travels as it is. `/api/dir` emits `record` when set.
+3. In `ui/adapters/http.js`, copy `record` onto the node. The JSON
+   hierarchical view in `ui/adapters/vfs-json.js` already draws any node
+   with a `record` as a key/value table, so a row previews with no new
+   client code.
+4. Delete `render_preview`, `_render_inner`, `_render_spreadsheet`,
+   `_render_kv`, `default_fmt` and `_cell_val` in `sqlite.py`, and the
+   `db-*` CSS in `styles.py`. Drop `render_preview` and `default_fmt` from
+   the `VFSProvider` protocol; `vfs_preview` in `api.py` answers 404 for a
+   provider without a renderer. VTT and JSON keep theirs until their own
+   issue deletes them.
+5. Update `server/tests/test_providers_sqlite.py` and `test_api.py`: assert
+   on `record`, not on HTML.
+6. Move proposal [9] to `## Completed` in `TASKS.md`.
 
 ## Done when
 
-- `grep -n "render_preview\|fmt" server/src/filemill/providers/sqlite.py` prints
-  nothing.
+- `grep -n "render_preview\|fmt\|html" server/src/filemill/providers/sqlite.py`
+  prints nothing.
 - A `.db` file opens as columns in the server edition, and a row shows a
-  key/value preview.
+  key/value table drawn by the client.
 - All server tests and static tests pass.
 
 ## Scope
 
-`providers/sqlite.py`, `vfs.py`, `api.py`, `ui/adapters/vfs-json.js`, tests.
+`providers/sqlite.py`, `vfs.py`, `api.py`, `styles.py`, `ui/adapters/http.js`,
+tests.
