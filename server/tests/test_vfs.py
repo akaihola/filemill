@@ -31,6 +31,16 @@ def test_truncate_exactly_60_unchanged():
 # ── VFSEntry ──────────────────────────────────────────────────────────────────
 
 
+def test_vfs_entry_record_defaults_to_none():
+    from filemill.vfs import VFSEntry
+
+    e = VFSEntry(name="1", vpath="users/1", is_folder=False, icon="📋")
+    assert e.record is None
+    assert VFSEntry(
+        name="1", vpath="users/1", is_folder=False, icon="📋", record={"id": 1}
+    ).record == {"id": 1}
+
+
 def test_vfs_entry_fields():
     from filemill.vfs import VFSEntry
 
@@ -140,6 +150,20 @@ def test_vfs_provider_protocol_is_runtime_checkable():
             return ""
 
     assert isinstance(FakeProvider(), VFSProvider)
+
+
+def test_vfs_provider_protocol_needs_no_renderer():
+    """A provider that only lists entries is complete; the client renders them."""
+    from filemill.vfs import VFSProvider
+
+    class ListOnly:
+        def handles(self, path: Path) -> bool:
+            return True
+
+        def list_entries(self, path, vpath):
+            return []
+
+    assert isinstance(ListOnly(), VFSProvider)
 
 
 # ── is_vfs_file ───────────────────────────────────────────────────────────────

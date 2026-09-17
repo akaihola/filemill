@@ -2,16 +2,13 @@
 
 Navigation levels:
   depth 0 (vpath=""):             list tables (skip schema level when only "main")
-  depth 1 (vpath="table"):        list rows as leaf entries  (folders mode default)
-  depth 2 (vpath="table/rowkey"): row KV detail via render_preview
+  depth 1 (vpath="table"):        list rows as leaf entries, each with its cells
 """
 
 from __future__ import annotations
 
-import html as html_lib
 import sqlite3
 from pathlib import Path
-from textwrap import dedent
 
 from filemill.vfs import REGISTRY, VFSEntry, _truncate
 
@@ -20,32 +17,17 @@ SCHEMA_ICON = "📁"
 ROW_ICON = "📋"
 
 MAX_ROW_ENTRIES = 500  # max rows shown in the folders/column view
-MAX_STR_LEN = 200  # strings longer than this are truncated in spreadsheet cells
 
 
 def _quote_identifier(identifier: str) -> str:
     return '"' + identifier.replace('"', '""') + '"'
 
 
-def _cell_val(v: object) -> str:
-    """Format a cell value for display in a spreadsheet (with truncation)."""
-    if v is None:
-        return ""
+def _json_val(v: object) -> object:
+    """A cell as JSON: only bytes cannot travel as they are."""
     if isinstance(v, bytes):
         return f"⟨binary data, {len(v)} bytes⟩"
-    s = str(v)
-    if len(s) > MAX_STR_LEN:
-        return s[:MAX_STR_LEN] + "…"
-    return s
-
-
-def _full_val(v: object) -> str:
-    """Format a cell value for KV detail (no string truncation)."""
-    if v is None:
-        return ""
-    if isinstance(v, bytes):
-        return f"⟨binary data, {len(v)} bytes⟩"
-    return str(v)
+    return v
 
 
 class SQLiteProvider:
@@ -55,11 +37,6 @@ class SQLiteProvider:
 
     def handles(self, path: Path) -> bool:
         return path.suffix.lower() == ".db"
-
-    # ── Protocol: default_fmt ─────────────────────────────────────────────────
-
-    def default_fmt(self, vpath: str) -> str:
-        return "folders"
 
     # ── Protocol: list_entries ────────────────────────────────────────────────
 
@@ -173,6 +150,11 @@ class SQLiteProvider:
                     is_folder=False,
                     icon=ROW_ICON,
                     ordered=True,
+                    record={
+                        k: _json_val(v)
+                        for k, v in zip(row.keys(), row, strict=True)
+                        if k != "_rowid_"
+                    },
                 )
             )
         if len(rows) == MAX_ROW_ENTRIES:
@@ -258,211 +240,6 @@ class SQLiteProvider:
             return f"row_{rowid}"
         except (IndexError, KeyError):
             return f"row_{idx + 1}"
-
-    # ── Protocol: render_preview ──────────────────────────────────────────────
-
-    def render_preview(
-        self,
-        path: Path,
-        vpath: str,
-        fmt: str,
-        page: int,
-        limit: int,
-        col: int = 0,
-    ) -> str:
-        try:
-            con = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
-            con.row_factory = sqlite3.Row
-            try:
-                return self._render_inner(con, path, vpath, fmt, page, limit, col)
-            finally:
-                con.close()
-        except Exception as exc:
-            return (
-                f'<div class="preview-error">'
-                f"DB preview error: {html_lib.escape(str(exc))}</div>"
-            )
-
-    def _render_inner(
-        self,
-        con: sqlite3.Connection,
-        path: Path,
-        vpath: str,
-        fmt: str,
-        page: int,
-        limit: int,
-        col: int,
-    ) -> str:
-        parts = [p for p in vpath.split("/") if p]
-
-        schemas = [
-            row["name"] for row in con.execute("PRAGMA database_list").fetchall()
-        ]
-        non_main = [s for s in schemas if s != "main"]
-        multi_schema = bool(non_main)
-
-        if multi_schema:
-            if len(parts) >= 3:
-                schema, table = parts[0], parts[1]
-                row_key = "/".join(parts[2:])
-                return self._render_kv(con, schema, table, row_key)
-            if len(parts) == 2:
-                schema, table = parts[0], parts[1]
-                return self._render_spreadsheet(
-                    con, path, vpath, schema, table, page, limit, col
-                )
-        else:
-            if len(parts) >= 2:
-                table = parts[0]
-                row_key = "/".join(parts[1:])
-                return self._render_kv(con, "main", table, row_key)
-            if len(parts) == 1:
-                table = parts[0]
-                return self._render_spreadsheet(
-                    con, path, vpath, "main", table, page, limit, col
-                )
-
-        return (
-            '<div class="preview-unsupported"><em>Select a table to preview.</em></div>'
-        )
-
-    # ── Spreadsheet renderer ──────────────────────────────────────────────────
-
-    def _render_spreadsheet(
-        self,
-        con: sqlite3.Connection,
-        path: Path,
-        vpath: str,
-        schema: str,
-        table: str,
-        page: int,
-        limit: int,
-        col: int,
-    ) -> str:
-        try:
-            rows = con.execute(
-                f"SELECT * FROM {_quote_identifier(schema)}.{_quote_identifier(table)} "
-                "LIMIT ? OFFSET ?",
-                (limit, (page - 1) * limit),
-            ).fetchall()
-            total = con.execute(
-                f"SELECT COUNT(*) FROM {_quote_identifier(schema)}.{_quote_identifier(table)}"
-            ).fetchone()[0]
-        except Exception as exc:
-            return (
-                f'<div class="preview-error">'
-                f"DB preview error: {html_lib.escape(str(exc))}</div>"
-            )
-
-        total_pages = max(1, -(-total // limit))  # ceiling division
-
-        # Column names
-        try:
-            col_names = [
-                desc[0]
-                for desc in con.execute(
-                    f"SELECT * FROM {_quote_identifier(schema)}.{_quote_identifier(table)} "
-                    "LIMIT 0"
-                ).description
-                or []
-            ]
-        except Exception:
-            col_names = list(rows[0].keys()) if rows else []
-
-        th_cells = "".join(f"<th>{html_lib.escape(c)}</th>" for c in col_names)
-        tr_rows = []
-        for row in rows:
-            cells = "".join(
-                f"<td>{html_lib.escape(_cell_val(row[c]))}</td>" for c in col_names
-            )
-            tr_rows.append(f"<tr>{cells}</tr>")
-
-        if total == 0:
-            body = '<p style="padding:1rem;color:#666;">Table is empty.</p>'
-        else:
-            table_html = dedent(f"""\
-                <table class="db-table">
-                  <thead><tr>{th_cells}</tr></thead>
-                  <tbody>{"".join(tr_rows)}</tbody>
-                </table>""")
-            body = f'<div class="db-table-wrap">{table_html}</div>'
-
-        page_info = f"Page {page} of {total_pages} ({total} rows)"
-
-        return dedent(f"""\
-            <div class="preview-db-spreadsheet">
-              {body}
-              <p class="db-page-info">{page_info}</p>
-            </div>""")
-
-    # ── KV row-detail renderer ────────────────────────────────────────────────
-
-    def _render_kv(
-        self,
-        con: sqlite3.Connection,
-        schema: str,
-        table: str,
-        row_key: str,
-    ) -> str:
-        # Try row_N pattern first (rowid-based lookup)
-        row = None
-        if row_key.startswith("row_"):
-            try:
-                rowid = int(row_key[4:])
-                row = con.execute(
-                    f"SELECT * FROM {_quote_identifier(schema)}.{_quote_identifier(table)} "
-                    "WHERE rowid = ?",
-                    (rowid,),
-                ).fetchone()
-            except Exception:  # noqa: S110 — rowid probing is best effort
-                pass
-
-        if row is None:
-            # PK-based: iterate rows and match by reconstructed display key.
-            # Use _rowid_ alias to avoid column-name collision with INTEGER PRIMARY KEY.
-            try:
-                all_rows = con.execute(
-                    f"SELECT rowid AS _rowid_, * FROM {_quote_identifier(schema)}."
-                    f"{_quote_identifier(table)} "
-                    f"LIMIT {MAX_ROW_ENTRIES}"
-                ).fetchall()
-                for idx, r in enumerate(all_rows):
-                    candidate = self._row_key(con, schema, table, r, idx)
-                    if candidate == row_key or _truncate(candidate) == row_key:
-                        rowid = r["_rowid_"]
-                        row = con.execute(
-                            f"SELECT * FROM {_quote_identifier(schema)}."
-                            f"{_quote_identifier(table)} WHERE rowid = ?",
-                            (rowid,),
-                        ).fetchone()
-                        break
-            except Exception:  # noqa: S110 — row lookup is best effort
-                pass
-
-        if row is None:
-            return (
-                f'<div class="preview-error">'
-                f"Row not found: {html_lib.escape(row_key)}</div>"
-            )
-
-        try:
-            col_names = list(row.keys())
-        except Exception:
-            col_names = []
-
-        rows_html = []
-        for col_name in col_names:
-            try:
-                v = row[col_name]
-            except (IndexError, KeyError):
-                v = None
-            display = html_lib.escape(_full_val(v))
-            rows_html.append(
-                f"<tr><th>{html_lib.escape(col_name)}</th><td>{display}</td></tr>"
-            )
-
-        table_html = f'<table class="db-kv-table">{"".join(rows_html)}</table>'
-        return f'<div class="preview-db-row">{table_html}</div>'
 
 
 REGISTRY.register(SQLiteProvider())

@@ -1,4 +1,4 @@
-"""Tests for filemill.providers.sqlite – SQLiteProvider enumeration + preview."""
+"""Tests for filemill.providers.sqlite – SQLiteProvider enumeration and row records."""
 
 from __future__ import annotations
 
@@ -95,7 +95,7 @@ def test_quoted_table_and_column_names_are_supported(tmp_path, provider):
 
     entries = provider.list_entries(db, 'user"s')
     assert entries[0].vpath == 'user"s/1'
-    assert "1" in provider.render_preview(db, 'user"s', "spreadsheet", 1, 1000, 0)
+    assert entries[0].record == {'id"x': 1}
 
 
 def test_injection_shaped_identifier_cannot_escape_quoting(single_schema_db, provider):
@@ -118,11 +118,6 @@ def test_list_entries_skips_sqlite_internal_tables(tmp_path, provider):
 def test_list_entries_returns_empty_list_on_bad_path(provider):
     entries = provider.list_entries(Path("/nonexistent/fake.db"), "")
     assert entries == []
-
-
-def test_default_fmt_returns_folders(provider):
-    assert provider.default_fmt("") == "folders"
-    assert provider.default_fmt("users") == "folders"
 
 
 # ── list_entries – row enumeration ────────────────────────────────────────────
@@ -232,99 +227,60 @@ def test_list_entries_row_vpath_format(single_schema_db, provider):
         assert e.vpath.startswith("users/")
 
 
-# ── render_preview – spreadsheet ─────────────────────────────────────────────
+# ── list_entries – row records ────────────────────────────────────────────────
 
 
-def test_render_preview_spreadsheet_has_db_table_class(single_schema_db, provider):
-    html = provider.render_preview(single_schema_db, "users", "spreadsheet", 1, 1000, 0)
-    assert "db-table" in html
+def test_table_entries_carry_no_record(single_schema_db, provider):
+    assert all(e.record is None for e in provider.list_entries(single_schema_db, ""))
 
 
-def test_render_preview_spreadsheet_has_column_headers(single_schema_db, provider):
-    html = provider.render_preview(single_schema_db, "users", "spreadsheet", 1, 1000, 0)
-    assert "id" in html
-    assert "name" in html
+def test_row_entry_carries_its_cells_as_a_record(single_schema_db, provider):
+    entries = provider.list_entries(single_schema_db, "users")
+    assert entries[0].record == {"id": 1, "name": "Alice"}
+    assert entries[1].record == {"id": 2, "name": "Bob"}
 
 
-def test_render_preview_spreadsheet_has_data(single_schema_db, provider):
-    html = provider.render_preview(single_schema_db, "users", "spreadsheet", 1, 1000, 0)
-    assert "Alice" in html
-    assert "Bob" in html
-
-
-def test_render_preview_spreadsheet_single_page_no_pagination_links(
-    single_schema_db, provider
-):
-    html = provider.render_preview(single_schema_db, "users", "spreadsheet", 1, 1000, 0)
-    assert "← Prev" not in html
-    assert "Next →" not in html
-
-
-def test_render_preview_spreadsheet_empty_table(tmp_path, provider):
-    db = tmp_path / "empty.db"
+def test_record_excludes_the_rowid_alias(tmp_path, provider):
+    db = tmp_path / "norowid.db"
     con = sqlite3.connect(str(db))
-    con.execute("CREATE TABLE t (id INTEGER PRIMARY KEY)")
+    con.execute("CREATE TABLE t (a TEXT, b TEXT)")
+    con.execute("INSERT INTO t VALUES ('x', 'y')")
     con.commit()
     con.close()
-    html = provider.render_preview(db, "t", "spreadsheet", 1, 1000, 0)
-    assert "empty" in html.lower()
+    assert provider.list_entries(db, "t")[0].record == {"a": "x", "b": "y"}
 
 
-# ── render_preview – KV row detail ───────────────────────────────────────────
+def test_record_null_cell_is_none(tmp_path, provider):
+    db = tmp_path / "null.db"
+    con = sqlite3.connect(str(db))
+    con.execute("CREATE TABLE t (id INTEGER PRIMARY KEY, note TEXT)")
+    con.execute("INSERT INTO t VALUES (1, NULL)")
+    con.commit()
+    con.close()
+    assert provider.list_entries(db, "t")[0].record == {"id": 1, "note": None}
 
 
-def test_render_preview_kv_has_kv_table_class(single_schema_db, provider):
-    html = provider.render_preview(single_schema_db, "users/1", "folders", 1, 1000, 0)
-    assert "db-kv-table" in html
-
-
-def test_render_preview_kv_shows_field_values(single_schema_db, provider):
-    html = provider.render_preview(single_schema_db, "users/1", "folders", 1, 1000, 0)
-    assert "Alice" in html
-
-
-def test_render_preview_kv_no_fmt_bar(single_schema_db, provider):
-    html = provider.render_preview(single_schema_db, "users/1", "folders", 1, 1000, 0)
-    assert "fmt-bar" not in html
-
-
-def test_render_preview_blob_shows_binary_note(tmp_path, provider):
+def test_record_blob_cell_becomes_a_binary_note(tmp_path, provider):
     db = tmp_path / "blob2.db"
     con = sqlite3.connect(str(db))
     con.execute("CREATE TABLE t (id INTEGER PRIMARY KEY, data BLOB)")
     con.execute("INSERT INTO t VALUES (1, ?)", (b"\x00\x01\x02",))
     con.commit()
     con.close()
-    html = provider.render_preview(db, "t/1", "folders", 1, 1000, 0)
-    assert "binary data" in html
-    assert "3 bytes" in html
+    record = provider.list_entries(db, "t")[0].record
+    assert record == {"id": 1, "data": "⟨binary data, 3 bytes⟩"}
 
 
-def test_render_preview_long_string_truncated_in_spreadsheet(tmp_path, provider):
+def test_record_long_string_is_not_truncated(tmp_path, provider):
     db = tmp_path / "long.db"
     con = sqlite3.connect(str(db))
     con.execute("CREATE TABLE t (id INTEGER PRIMARY KEY, note TEXT)")
     con.execute("INSERT INTO t VALUES (1, ?)", ("x" * 300,))
     con.commit()
     con.close()
-    html = provider.render_preview(db, "t", "spreadsheet", 1, 1000, 0)
-    assert "…" in html
+    assert provider.list_entries(db, "t")[0].record == {"id": 1, "note": "x" * 300}
 
 
-def test_render_preview_long_string_full_in_kv(tmp_path, provider):
-    db = tmp_path / "long2.db"
-    con = sqlite3.connect(str(db))
-    con.execute("CREATE TABLE t (id INTEGER PRIMARY KEY, note TEXT)")
-    con.execute("INSERT INTO t VALUES (1, ?)", ("x" * 300,))
-    con.commit()
-    con.close()
-    html = provider.render_preview(db, "t/1", "folders", 1, 1000, 0)
-    assert "x" * 300 in html
-
-
-def test_render_preview_unknown_vpath_returns_error_or_message(tmp_path, provider):
-    db = tmp_path / "x.db"
-    sqlite3.connect(str(db)).close()
-    html = provider.render_preview(db, "nonexistent_table", "spreadsheet", 1, 1000, 0)
-    # Should not crash; returns error div or empty message or db-table
-    assert "preview-error" in html or "empty" in html.lower() or "db-table" in html
+def test_provider_has_no_html_renderer(provider):
+    assert not hasattr(provider, "render_preview")
+    assert not hasattr(provider, "default_fmt")

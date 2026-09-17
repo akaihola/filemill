@@ -25,7 +25,8 @@ const JSONL_SCALAR = ["timestamp", "time", "ts", "id", "uuid", "key"];
 const JSON_MAX = TEXT_MAX;
 
 const isJsonl = (n) => classifyFile(n.name).preview === "jsonl";
-const isJson = (n) => classifyFile(n.name).preview === "text" && /\.jsonc?$/i.test(n.name);
+const isJson = (n) =>
+  classifyFile(n.name).preview === "text" && /\.jsonc?$/i.test(n.name);
 const jsonlLabel = (v) =>
   ((s) => s.length > JSONL_LABEL ? s.slice(0, JSONL_LABEL - 1) + "…" : s)(
     String(v),
@@ -118,6 +119,11 @@ export const withVirtual = (fs) => ({
             ordered: true,
           });
         }
+        /* A server-listed row (a SQLite table row) carries its cells as a
+           record; it browses like a JSONL record. CSV rows keep their own view. */
+        if (!k.dir && k.record && !k.csv) {
+          Object.assign(k, jsonValue(node, k.name, k.record, k.vpath));
+        }
       }
       return;
     }
@@ -183,7 +189,9 @@ export const withVirtualPreview = (provider) => ({
   },
   render(n) {
     if (!n.json || n.value === undefined) return provider.render(n);
-    const text = typeof n.value === "string" ? n.value : JSON.stringify(n.value);
+    const text = typeof n.value === "string"
+      ? n.value
+      : JSON.stringify(n.value);
     return Promise.resolve(
       n.value !== null && typeof n.value === "object"
         ? `<pre class="pv-text pv-json">${jsonHTML(text)}</pre>`

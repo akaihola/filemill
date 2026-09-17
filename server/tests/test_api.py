@@ -447,6 +447,7 @@ def test_dir_inside_a_database_lists_its_tables(db_client, db_root: Path):
     assert users["vpath"] == "users"
     assert users["icon"]
     assert users["ordered"] is True
+    assert "record" not in users
 
 
 def test_dir_inside_a_table_lists_its_rows(db_client, db_root: Path):
@@ -456,6 +457,7 @@ def test_dir_inside_a_table_lists_its_rows(db_client, db_root: Path):
     assert row["dir"] is False
     assert row["vpath"].startswith("users/")
     assert row["ordered"] is True
+    assert row["record"] == {"id": 1, "name": "User1", "bio": "Bio1"}
 
 
 def test_a_virtual_entry_carries_a_vpath_and_a_real_one_does_not(client, tmp_root):
@@ -464,14 +466,10 @@ def test_a_virtual_entry_carries_a_vpath_and_a_real_one_does_not(client, tmp_roo
     assert all("vpath" not in e for e in client.get("/api/dir?p=").json()["entries"])
 
 
-def test_preview_of_a_virtual_row_uses_the_provider(db_client, db_root: Path):
-    html = db_client.get("/api/preview?p=sample.db&v=users/1").text
-    assert "User1" in html
-
-
-def test_preview_of_a_table_uses_the_provider(db_client, db_root: Path):
-    html = db_client.get("/api/preview?p=sample.db&v=users&fmt=spreadsheet").text
-    assert "User1" in html
+def test_the_server_renders_no_database_html(db_client, db_root: Path):
+    """The row's cells travel on the /api/dir entry; the client draws them."""
+    assert db_client.get("/api/preview?p=sample.db&v=users/1").status_code == 404
+    assert db_client.get("/api/preview?p=sample.db&v=users").status_code == 404
 
 
 def test_vfs_paths_are_not_a_way_around_resolve_safe(db_client, db_root: Path):
