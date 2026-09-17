@@ -116,10 +116,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   to maximize the preview area width. A left arrow should return to the parent folder of
   the reviewed document and unfold that folder column (but no ancestor folder columns).
 
-- Task 04ce9574-92c8-4a4c-8148-32d2e827c13d didn't fix the erratic folding/unfolding of
-  the parent column. Hard rule: Up/down navigation must never change folding state of
-  ancestor folder columns.
-
 - Keyboard navigation using arrows still doesn't animate folding/unfolding/resizing of
   columns. Do systematic debugging to identify the cause, and fix it.
 
@@ -134,6 +130,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   JSON preview of the selected item in the second column to the right.
 
 ## Scheduled
+
+- Task 04ce9574-92c8-4a4c-8148-32d2e827c13d didn't fix the erratic folding/unfolding of
+  the parent column. Hard rule: Up/down navigation must never change folding state of
+  ancestor folder columns.
 
 - Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
   what it means.
