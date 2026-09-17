@@ -103,9 +103,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100 k-entry
   directory still builds 100 k DOM nodes. Do this only if such folders show up.
 
-- Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
-  what it means.
-
 - The server browser suites show 11 failures on the branch, but a run against a clean
   main checkout produced exactly the same 11: two legacy-htmx tests that main
   deliberately disabled, and nine mobile restore-scroll tests.
@@ -138,6 +135,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
+- Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
+  what it means.
+
 - [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both editions
   fill it from the same core list plus their own adapters.
     - Depends on: [19]
@@ -162,9 +162,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Add a PWA manifest and service worker to the static bundle so `static/index.html`
   installs as a standalone window. The server edition already serves `/manifest.json`.
 
-- [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
-  Today `[text](~/note.md)` is a dead link although the file exists.
-
 - [6] Centralize file-kind classification across filesystem producers and preview/edit consumers. Add one test table per language that both sides share.
     - Depends on: [19]
 
@@ -178,6 +175,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
+  Today `[text](~/note.md)` is a dead link although the file exists.
+
 - [6] Centralize file-kind classification across filesystem producers and preview/edit consumers. Add one test table per language that both sides share.
     - Depends on: [19]
 
