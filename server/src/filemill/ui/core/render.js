@@ -158,6 +158,7 @@ function buildCol(node) {
     for (let i = first; i < last; i++) makeRow(i);
   };
   if (virtual) paintRange();
+  else kids.forEach((_, i) => makeRow(i));
   body.onscroll = () => { paintRange(); paintTrail(); };
 
   return {
