@@ -188,12 +188,13 @@ Rules for TASKS.md usage are at the bottom of the file.
   different browser test setup.
 
 
+- [*] Treat `.py.j2` as Python.
+
+## In Progress
 - [*] Bug: after focusing the preview pane using the arrow right key, the arrow left key
   doesn't return back and focus the parent column. Instead, it scrolls the page
   horizontally to the left. Make sure the arrow left key returns to the parent column
   after focusing the preview pane.
-
-- [*] Treat `.py.j2` as Python.
 
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
   decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
