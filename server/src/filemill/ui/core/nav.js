@@ -270,8 +270,9 @@ function enterColumn(i) {
   const remembered = sel[i];
   let ri = rowIndex(path[i], remembered);
   ri = Math.max(0, Math.min(c.rows.length - 1, ri < 0 ? 0 : ri));
-  c.rows[ri].click();
-  revealRow(c.rows[ri]);
+  const row = c.ensureRow(ri);
+  row.click();
+  revealRow(row);
 }
 
 /* Stepping right into a column that has no rows would move focus with nothing
@@ -286,11 +287,11 @@ function stepInto(node) {
 }
 
 function pageMove(c, dir, ci) {
-  const body = c.rows[0]?.parentElement;
+  const body = c.body;
   if (!body || !c.rows.length) return;
   const edge = () => {
     const b = body.getBoundingClientRect();
-    const visible = c.rows.filter((row) => {
+    const visible = c.rows.filter(Boolean).filter((row) => {
       const r = row.getBoundingClientRect();
       return r.bottom > b.top && r.top < b.bottom;
     });
@@ -376,13 +377,14 @@ document.addEventListener("keydown", (e) => {
       );
     }
     choose(focusCol, c.kids[ci], true);
-    revealRow(rows[ci]);
+    revealRow(c.ensureRow(ci));
   } else if (e.key === "Home" || e.key === "End") {
     e.preventDefault();
     if (!rows.length) return;
     const ri = e.key === "Home" ? 0 : rows.length - 1;
-    rows[ri].click();
-    revealRow(rows[ri]);
+    const row = c.ensureRow(ri);
+    row.click();
+    revealRow(row);
   } else if (e.key === "PageUp" || e.key === "PageDown") {
     e.preventDefault();
     pageMove(c, e.key === "PageUp" ? -1 : 1, ci);
@@ -392,7 +394,7 @@ document.addEventListener("keydown", (e) => {
     /* nothing open to the right: commit the row, which opens it when it
        is a directory — a second → then steps into that column */
     if (!next) {
-      const row = rows[ci];
+      const row = c.ensureRow(ci);
       row?.click();
       if (e.key === "ArrowRight" && c.kids[ci] && !c.kids[ci].dir) {
         foldAll();

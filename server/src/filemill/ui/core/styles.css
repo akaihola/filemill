@@ -673,6 +673,8 @@ body {
   border: 1px solid transparent;
   position: relative;
 }
+.row-layer { position: relative; flex: 0 0 auto; }
+.row-layer > .row { position: absolute; left: 0; right: 0; }
 .row .label {
   display: flex;
   flex: 1;
