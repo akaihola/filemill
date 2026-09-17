@@ -25,7 +25,7 @@ const relOf = (parentRel, name) => (parentRel ? parentRel + "/" + name : name);
    the same one — and descends virtually instead. The server tells them apart by
    putting a `vpath` on the entries it returns; there is nothing to detect here,
    and core/ never learns that virtual nodes exist at all. */
-const httpNode = (name, rel, dir, meta, vpath, icon, ordered = false) => ({
+const httpNode = (name, rel, dir, meta, vpath, icon, ordered = true) => ({
   name,
   rel,
   dir,

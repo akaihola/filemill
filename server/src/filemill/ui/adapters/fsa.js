@@ -6,6 +6,8 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { classifyFile } from "../core/file-kind.js";
 
+const NAME_COLLATOR = new Intl.Collator(undefined, { numeric: true });
+
 const fsaNode = (name, handle, parent = null) => ({
   name,
   handle,
@@ -32,7 +34,11 @@ export const FSA = {
           ? "No permission to read"
           : String(err.message || err);
       }
-      node.kids = kids;
+      node.kids = kids.sort((a, b) => {
+        const kind = !!b.dir - !!a.dir;
+        return kind || NAME_COLLATOR.compare(a.name, b.name);
+      });
+      node.ordered = true;
       node.loading = null;
     })();
     return node.loading;

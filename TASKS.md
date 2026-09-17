@@ -124,9 +124,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   to maximize the preview area width. A left arrow should return to the parent folder of
   the reviewed document and unfold that folder column (but no ancestor folder columns).
 
-- [7] Make entry ordering an adapter-owned contract.
-    - Depends on: [6]
-
 - The server browser suites show 11 failures on the branch, but a run against a clean
   main checkout produced exactly the same 11: two legacy-htmx tests that main
   deliberately disabled, and nine mobile restore-scroll tests.
@@ -162,6 +159,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+- [7] Make entry ordering an adapter-owned contract.
+    - Depends on: [6]
+
 - Task 04ce9574-92c8-4a4c-8148-32d2e827c13d didn't fix the erratic folding/unfolding of
   the parent column. Hard rule: Up/down navigation must never change folding state of
   ancestor folder columns.

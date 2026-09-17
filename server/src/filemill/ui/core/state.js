@@ -62,7 +62,7 @@ const CODE_FONT_SIZE = 11.5; // Match the compact monospace preview typography.
    width measurement and every path walk comes through here, which is what keeps
    the rows and a restored chain agreeing on what row 4 is. */
 export const visibleKids = (node) =>
-  ((kids) => node.ordered ? kids : sortOrder(kids))(
+  ((kids) => node.ordered && state.sort.key === "name" ? kids : sortOrder(kids))(
     (node.kids || []).filter((k) => state.dotfiles || !k.name.startsWith(".")),
   );
 
