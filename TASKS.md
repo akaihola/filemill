@@ -68,10 +68,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done when
   `uv run pytest -n auto` passes at the repository root.
 
-- [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both editions
-  fill it from the same core list plus their own adapters.
-    - Depends on: [19]
-
 - [*] Implement CSV as a browser virtual filesystem in `ui/adapters/vfs-csv.js`, like
   JSONL: one entry per row, a key/value preview per row. No Python. Closes issue #49.
     - Depends on: [26]
@@ -141,6 +137,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   JSON preview of the selected item in the second column to the right.
 
 ## Scheduled
+
+- [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both editions
+  fill it from the same core list plus their own adapters.
+    - Depends on: [19]
 
 - [34] Make the SQLite provider return JSON only. The client renders tables and rows
   with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close [9].
