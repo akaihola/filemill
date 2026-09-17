@@ -7,48 +7,38 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an unverified
   architecture proposal, conditional on a fourth provider or a pagination bug.
 
-## In progress
-
-- [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into `withVirtual`,
-  and `withJsonlPreview` and `withJsonPreview` into `withVirtualPreview`.
-    - Depends on: [19]
-
-- [20] Create `ui/core/limits.js` with one `TEXT_MAX` and one image extension list.
-  Create one `mountRoot()` and one `currentPath()`. Delete the copies and `pathParts`.
-    - Depends on: [17]
-
-- [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
-  `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
-
-- [*] Give each magic number in `ui/core/state.js`, `layout.js`, `nav.js`, `render.js` a
-  name and a one-line comment that says why the value is what it is.
-
-- [21] Cache the preview element keyed on the previewed node and its `meta`, the same
-  way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
-
-- [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
-  and the `watchfiles` dependency. Delete their tests.
-
-## Scheduled
-
-
-- [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
-  decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
-
-- [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
-  registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
-
-- [*] Default `--bind` in `server/src/filemill/cli.py` to `127.0.0.1`. Document it in
- `SECURITY.md`.
-
-- [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
-  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
-
-- [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
-  `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
-
 ## Ordered backlog
 
+- [*] GET https://gogo.crane-boa.ts.net:8445/favicon.ico
+
+    ```
+    [HTTP/2 404  6ms]
+    Uncaught (in promise) TypeError: renderPage is not a function
+        applyPath https://gogo.crane-boa.ts.net:8445/ui/core/deeplink.js:123
+        mountServer https://gogo.crane-boa.ts.net:8445/ui/adapters/app-http.js:117
+        async* https://gogo.crane-boa.ts.net:8445/ui/adapters/app-http.js:201
+    deeplink.js:123:5
+    ```
+
+- [*] Bug: after focusing the preview pane using the arrow right key, the arrow left key
+  doesn't return back and focus the parent column. Instead, it scrolls the page
+  horizontally to the left. Make sure the arrow left key returns to the parent column
+  after focusing the preview pane.
+
+- [*] For user testing, document how to run on agent@gogo instances of Filemill that are
+  as close as possible to the browser test setup you have in the test suite. Put each
+  different browser test setup in its own HTTP port, and link them in
+  `/home/agent/index.html`. We will separately set up systemd user services for each
+  different browser test setup.
+
+- [*] Opening `https://gogo.crane-boa.ts.net:8445/<any path>` without query parameters
+  redirects to `https://gogo.crane-boa.ts.net:8445/` and spins `Reading...` for a very
+  long time (if not forever). It should instead return files raw with the correct
+  content type.
+
+- [*] `.rst` files still don't render or highlight at all even though task
+  63b87ad4-33c9-4f45-ae24-280034e8b0eb claims to have implemented and tested it. Do
+  red-green testing, investigate, and fix.
 
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
       now return the shared client shell.
@@ -61,12 +51,8 @@ Rules for TASKS.md usage are at the bottom of the file.
       `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
       `TASKS.md`.
 
-
-
-
-
 - [x] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
-  `panFocus` and `slideTail`. Each function is under 25 lines.
+      `panFocus` and `slideTail`. Each function is under 25 lines.
 
 - [6] Centralize file-kind classification across filesystem producers and preview/edit
   consumers. Add one test table per language that both sides share.
@@ -161,8 +147,8 @@ Rules for TASKS.md usage are at the bottom of the file.
   comparison in an ADR. Do not start a native toolkit before the ADR exists.
     - Depends on: [30]
 
-- [36] Decide how the installed PWA gets a running server: a systemd or launchd unit,
-  a launcher, a desktop shell, or only a better "server not running" page.
+- [36] Decide how the installed PWA gets a running server: a systemd or launchd unit, a
+  launcher, a desktop shell, or only a better "server not running" page.
 
 - [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
   Today `[text](~/note.md)` is a dead link although the file exists.
@@ -209,7 +195,30 @@ Rules for TASKS.md usage are at the bottom of the file.
 - The `Fullscreen` button in the preview pane doesn't do anything. No errors seen on the
   JavaScript console either.
 
+- [*] Task e02c3b0b-21a0-4be0-bcdd-bce0d99206f4 didn't fix file content search. It
+  either returns `Search error: search result too large` or `No matches`. Make sure
+  search only covers the current focused directory and its subdirectories recursively.
+  Do red-green testing: first reproduce, then investigate, plan, implement, and test.
+  Iterate until fixed.
+
 ## Scheduled
+
+- [*] Treat `.py.j2` as Python.
+
+- [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
+  decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
+
+- [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
+  registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
+
+- [*] Default `--bind` in `server/src/filemill/cli.py` to `127.0.0.1`. Document it in
+  `SECURITY.md`.
+
+- [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
+  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
+
+- [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
+  `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
 
 - [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
   identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
@@ -218,8 +227,8 @@ Rules for TASKS.md usage are at the bottom of the file.
   preview, but keeps linefeeds. Consecutive lines of text must be considered as a single
   paragraph. If this can't be changed by configuring the Markdown renderer currently in
   use, consider alternative renderers, check whether they support the other features
-  currently supported (e.g. checkboxes and wikilinks). Tradeoffs must be discussed with the
-  maintainer before implementing.
+  currently supported (e.g. checkboxes and wikilinks). Tradeoffs must be discussed with
+  the maintainer before implementing.
 
 - [~] Typing a right arrow when the rightmost column before the preview is focused
   should focus the preview and let the user scroll it up/down using the arrow and
@@ -237,6 +246,26 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into `withVirtual`,
+  and `withJsonlPreview` and `withJsonPreview` into `withVirtualPreview`.
+    - Depends on: [19]
+
+- [20] Create `ui/core/limits.js` with one `TEXT_MAX` and one image extension list.
+  Create one `mountRoot()` and one `currentPath()`. Delete the copies and `pathParts`.
+    - Depends on: [17]
+
+- [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
+  `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
+
+- [*] Give each magic number in `ui/core/state.js`, `layout.js`, `nav.js`, `render.js` a
+  name and a one-line comment that says why the value is what it is.
+
+- [21] Cache the preview element keyed on the previewed node and its `meta`, the same
+  way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
+
+- [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
+  and the `watchfiles` dependency. Delete their tests.
 
 - [22] Replace `cursor[i]`, `sel[i]` and `node.lastSel` with one selection model:
   `sel[i]` is the selected name. Derive the row index when needed.
@@ -269,7 +298,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - Feature: ability to delete a file or a directory from the file manager.
 
-- [~] Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight` view.
+- [~] Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight`
+  view.
 
 - Bug: After navigating from a directory url without query parameters (e.g.
   `/path/to/dir`) to a file (e.g. `file1.md`), and then another file (e.g. `file2.md`),
@@ -296,6 +326,8 @@ Rules for TASKS.md usage are at the bottom of the file.
   it's done in JSON. Also, currently if the first column is not unique, all identical
   values are selected together. This should be fixed for the case when no unique column
   is available. Original implementation in task 8038a32c-570b-45ed-b3ca-5834b3b8dc18.
+
+- [*] `.py` files are not highlighted at all.
 
 - [*] `.py.j2` are templates for Python files that are rendered by Jinja2. Does our
   highlighting library support syntax highlighting for such hybrid files? If so,
