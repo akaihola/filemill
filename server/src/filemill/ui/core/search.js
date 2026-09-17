@@ -1,5 +1,6 @@
 /* Server-only content search. The control stays hidden in local FSA mode. */
-import { path } from "./state.js";
+import { focusCol } from "./state.js";
+import { currentPath } from "./deeplink.js";
 
 /* The same attribute adapters/router-path.js reads; core must not import a
    server-only adapter, or the static bundle would carry it too. */
@@ -32,10 +33,14 @@ async function runSearch() {
   searchController = new AbortController();
   showSearch("Searching…");
   try {
-    const r = await fetch(`/api/search?q=${encodeURIComponent(q)}`, {
-      signal: searchController.signal,
-      headers: { Accept: "application/json" },
-    });
+    const focused = currentPath().slice(0, focusCol).join("/");
+    const r = await fetch(
+      `/api/search?q=${encodeURIComponent(q)}&p=${encodeURIComponent(focused)}`,
+      {
+        signal: searchController.signal,
+        headers: { Accept: "application/json" },
+      },
+    );
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || `${r.status} ${r.statusText}`);
     if (!data.matches.length) return showSearch("No matches");
