@@ -26,10 +26,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [7] Make entry ordering an adapter-owned contract.
     - Depends on: [6]
 
-- [32] Render Markdown and `.docx` in the browser in the server edition too. Serve the
-  pinned renderer modules from `ui/vendor/`. Then delete `rendering.py` and its deps.
-    - Depends on: [19]
-
 - [33] Keep the URL contract, drop the server-side representations: the server sends
   bytes for `?filemill=raw` and the shell for all else. The client renders the view.
     - Depends on: [32]
@@ -149,6 +145,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   JSON preview of the selected item in the second column to the right.
 
 ## Scheduled
+
+- [32] Render Markdown and `.docx` in the browser in the server edition too. Serve the
+  pinned renderer modules from `ui/vendor/`. Then delete `rendering.py` and its deps.
+    - Depends on: [19]
 
 - [*] Task e02c3b0b-21a0-4be0-bcdd-bce0d99206f4 didn't fix file content search. It
   either returns `Search error: search result too large` or `No matches`. Make sure
