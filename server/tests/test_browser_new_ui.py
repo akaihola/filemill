@@ -818,8 +818,7 @@ def test_missing_favicon_does_not_raise_in_the_browser(page):
     page.open()
     page.errors.clear()
     assert page.evaluate("fetch('/favicon.ico').then(r => r.status)") == 404
-    page.errors.clear()
-    assert page.errors == []
+    assert not any("renderPage is not a function" in error for error in page.errors)
 
 
 # ── virtual filesystems ──────────────────────────────────────────────────────
