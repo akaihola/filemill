@@ -115,11 +115,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- In keyboard navigation, parent folder columns currently unfold when selecting the next
-  item using the down arrow. Strangely, this doesn't happen when using the up arrow. I
-  haven't been able to understand what's special about the folders that cause this
-  behavior.
-
 - Navigating with the right arrow key to the preview area must fold all folder columns
   to maximize the preview area width. A left arrow should return to the parent folder of
   the reviewed document and unfold that folder column (but no ancestor folder columns).
@@ -159,6 +154,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+- In keyboard navigation, parent folder columns currently unfold when selecting the next
+  item using the down arrow. Strangely, this doesn't happen when using the up arrow. I
+  haven't been able to understand what's special about the folders that cause this
+  behavior.
+
 - [7] Make entry ordering an adapter-owned contract.
     - Depends on: [6]
 
