@@ -48,6 +48,8 @@ const MAX_DEPTH = 5; // Keep depth styling within the available visual scale.
 const SCROLL_HINT_PADDING = 4; // Show the affordance only when content exceeds the viewport.
 const EDIT_MAX = TEXT_MAX;
 const EDIT_MAX_LINE = 10_000; // Avoid unusably wide editor lines.
+const VIRTUAL_ROWS = 1000;
+const ROW_STEP = 23; // 21px row plus its 1px vertical margins.
 
 /* Writing the value a property already holds still dirties it — and a width or
    custom-property write on a column relays out every row inside it. Guard the
@@ -114,7 +116,18 @@ function buildCol(node) {
     actions.refreshColumn(+el.dataset.i);
   };
 
-  const rows = kids.map((k, ri) => {
+  const virtual = kids.length >= VIRTUAL_ROWS;
+  const layer = virtual
+    ? Object.assign(document.createElement("div"), { className: "row-layer" })
+    : body;
+  if (virtual) {
+    layer.style.height = `${kids.length * ROW_STEP}px`;
+    body.appendChild(layer);
+  }
+  const rows = new Array(kids.length);
+  const makeRow = (ri) => {
+    if (rows[ri]) return rows[ri];
+    const k = kids[ri];
     const [stem, ext] = splitName(k.name);
     const row = document.createElement("div");
     row.className = "row" + (k.name.startsWith(".") ? " dotfile" : "");
@@ -128,16 +141,31 @@ function buildCol(node) {
     /* read the index off the element: the same node keeps its DOM across
        re-renders, and its column position is only known at render time */
     row.onclick = () => actions.choose(+el.dataset.i, k);
-    body.appendChild(row);
+    if (virtual) {
+      row.style.top = `${ri * ROW_STEP}px`;
+      layer.appendChild(row);
+    } else layer.appendChild(row);
+    rows[ri] = row;
     return row;
-  });
-  body.onscroll = paintTrail;
+  };
+  const paintRange = () => {
+    if (!virtual) return;
+    const first = Math.max(0, Math.floor(body.scrollTop / ROW_STEP) - 10);
+    const last = Math.min(
+      kids.length,
+      Math.ceil((body.scrollTop + body.clientHeight) / ROW_STEP) + 10,
+    );
+    for (let i = first; i < last; i++) makeRow(i);
+  };
+  if (virtual) paintRange();
+  body.onscroll = () => { paintRange(); paintTrail(); };
 
   return {
     el,
     body,
     kids,
     rows,
+    ensureRow: makeRow,
     kidsRef: node.kids,
     metaRef: !!node.metaDone,
     dot: el.querySelector(".dot"),

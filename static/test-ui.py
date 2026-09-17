@@ -1868,6 +1868,10 @@ async def main():
             await pg.wait_for_function(
                 "colCache.get(path[1]) && colCache.get(path[1]).rows.length > 0", timeout=30_000)
             await pg.wait_for_timeout(300)
+            dom_rows = await pg.eval_on_selector_all('.col[data-i="1"] .row', "e=>e.length")
+            check(f"{n:,} entries: large columns keep only a viewport of rows in the DOM",
+                  dom_rows < n if n >= 1000 else dom_rows == n,
+                  f"{dom_rows} DOM rows")
             ms = await pg.evaluate("(() => { const t=performance.now(); render(true);"
                                    "return +(performance.now()-t).toFixed(1); })()")
             key = await pg.evaluate("__keybench(20)")
