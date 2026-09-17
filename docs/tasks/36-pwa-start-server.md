@@ -1,30 +1,28 @@
 # Start the Filemill server for the installed PWA
 
-## Problem
+The installed PWA uses the server on its own origin. Start it before opening
+the app:
 
-The installed PWA opens `http://localhost:8334/`. Nothing starts the server. If
-the user did not run `filemill` in a terminal, the PWA shows a connection error.
-A PWA is a browser sandbox. It cannot start a local process.
+```bash
+uv run filemill [ROOT]
+```
 
-## Options
+If the server is stopped, the server edition shows `Filemill server
+unavailable`, explains that the browser cannot start a native process, shows
+the command, and provides `Retry connection`. The service worker keeps the
+shell available so this recovery page can render even when API requests fail.
 
-1. **System service.** Ship a `filemill.service` unit for systemd (Linux) or a
-   launchd plist (macOS) that starts the server at login. The user must install
-   it one time outside the browser.
-2. **Launcher.** Ship a `.desktop` file (Linux) or an `.app` wrapper (macOS)
-   with `Exec=filemill --open`. It starts the server and opens the browser. One
-   click, but the PWA still does not start the server by itself.
-3. **Desktop shell.** Bundle the server in an Electron or Tauri app that owns
-   the process. Full native feel, heavy packaging. See [30] and [31].
-4. **Better failure.** Make `sw.js` cache the shell and show "server not
-   running, start it with `filemill`" instead of the browser error. Does not
-   solve the problem. Improves the failure mode.
+This is the supported recovery flow for every desktop platform. The default
+listener is `127.0.0.1:8000`; use `--bind` only when the server must be
+reachable from another device.
 
-## Done when
+Systemd and launchd units are rejected for this task because they require
+platform-specific installation and lifecycle configuration. A launcher still
+requires a separately installed native command and does not let a PWA start
+it. A desktop shell would own the process, but is a larger product and
+packaging project covered by [30] and [31].
 
-- One option, or a combination, is chosen and recorded as an ADR in
-  `docs/adr/`.
-- A follow-up bullet for the chosen implementation is in `TASKS.md`.
+The decision is recorded in [ADR 0063](../adr/0063-installed-pwa-server-recovery.md).
 
 [30]: 30-webview-shell.md
 [31]: 31-native-toolkit-evaluation.md
