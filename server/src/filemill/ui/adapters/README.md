@@ -19,6 +19,7 @@ the whole mechanism. There is no framework under it.
 | ---------- | ------------------------------------------------ | ---------------------------------------------------------- |
 | filesystem | `fsa.js` — File System Access API                | `http.js` — `GET /api/dir`                                 |
 | preview    | `preview-local.js` — the core renderer table     | `preview-http.js` — `GET /api/preview`, rendered by Python |
+|            |                                                  | `preview-rich.js` — Markdown, `.docx` from `ui/vendor/`     |
 | router     | `router-hash.js` — `#r=root&p=a/b.md`            | `router-path.js` — `/a/b.md`                               |
 | boot       | `app-fsa.js` — picker + welcome screen           | `app-http.js` — root comes from the server                 |
 | extra      | `preview-rich.js` — renderers fetched from a CDN | `preview-upload.js` — local bytes, Python renderer         |
@@ -67,10 +68,12 @@ transport differs.
 
 ## Why the renderers are not ported
 
-`preview-http.js` is the reason `preview.py`, `rendering.py`, `vfs.py` and
-`providers/` have no JavaScript port. markdown-it-py with its plugins, Pygments,
-mammoth and python-pptx keep running where they run, and their HTML lands in the
-same pane.
+`preview-http.js` is the reason `preview.py`, `vfs.py` and `providers/` have
+no JavaScript port. docutils, Pygments and the virtual filesystems keep running
+where they run, and their HTML lands in the same pane. Markdown and `.docx` are
+the exception: both editions render them with `preview-rich.js`, the server
+edition from the pinned modules in `ui/vendor/` (its shell sets `FILEMILL_CDN`
+to those paths), so `rendering.py` and mammoth are gone from the server.
 
 `preview-upload.js` closes the last gap. When the _server_ edition opens a local
 folder, the server cannot read it. The page posts the bytes to `/api/render`,
@@ -96,6 +99,6 @@ Both editions colour source files and fenced code the same way, in
 server-side provider in use, so a file with a known language is read through
 `FS.blob` and highlighted here. `hlFences` colours the
 `<pre><code class="language-x">` blocks that every Markdown renderer emits,
-after `fillPreview` puts them in the pane. The server keeps everything else it
-renders better: Markdown, `.docx`. A virtual path is never
-diverted, because only the server can read one.
+after `fillPreview` puts them in the pane. The server keeps what it renders
+better: reStructuredText. A virtual path is never diverted, because only the
+server can read one.

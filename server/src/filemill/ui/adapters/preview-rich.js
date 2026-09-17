@@ -1,11 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Preview provider — rich rendering, fetched on demand.
 
-   Markdown and .docx, to match what filemill's Python renderers produce, and
-   reStructuredText, which only Python renders well. The libraries are an order
-   of magnitude larger than this app, so they are not in the bundle: they are
-   imported from a CDN the first time a file that needs one is previewed, and
-   cached for the session.
+   Markdown, .docx, and reStructuredText, which only Python renders well. The
+   libraries are an order of magnitude larger than this app, so they are not in
+   the static bundle: they are imported from a CDN the first time a file that
+   needs one is previewed, and cached for the session. The server edition
+   serves the Markdown and .docx modules itself from ui/vendor/ and points
+   FILEMILL_CDN at them, so there nothing is fetched from a third party.
 
    Source files and fenced code are not on that list. They are coloured by
    core/syntax.js, in the page, with no download and no switch to find —
@@ -72,6 +73,19 @@ const CDN = {
 const cdn = (name) =>
   (globalThis.FILEMILL_CDN && globalThis.FILEMILL_CDN[name]) || CDN[name];
 
+/* A module served from this origin is not a download the visitor has to agree
+   to, so the rich switch below does not apply to it. */
+const vendored = (name) => cdn(name).startsWith("/");
+
+/* The module each kind needs first; the switch is asked about that one. */
+const NEEDS = {
+  md: "markdown-it",
+  markdown: "markdown-it",
+  rst: "pyodide",
+  docx: "mammoth",
+  pptx: "pptx-vanilla-viewer",
+};
+
 const RICH_KEY = "filemill.rich";
 const richEnabled = () => localStorage.getItem(RICH_KEY) !== "off";
 const setRich = (on) => {
@@ -112,7 +126,28 @@ function homeHref(href) {
   return mount && mount !== "/" ? `/w/${encodeURIComponent(mount)}/${href.slice(2)}` : href.slice(2);
 }
 
-async function markdown(text) {
+/* A relative link resolves against the document's own folder and becomes the
+   target's root-relative URL, so it lands on the file the author meant even
+   when the page is a deep link. A Markdown target gets ?filemill=render: a
+   link from one document to another should land on the rendered document,
+   not its bytes. Only a served node has a folder here (`node.rel`); the files
+   of a local or static folder have no URL, and their links stay as written. */
+function localHref(href, dir) {
+  if (dir === undefined || /^(?:[a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) {
+    return href;
+  }
+  const clean = href.split("#")[0].split("?")[0];
+  if (!clean) return href;
+  const parts = dir ? dir.split("/").map(encodeURIComponent) : [];
+  for (const p of clean.split("/")) {
+    if (p === "..") parts.pop();
+    else if (p && p !== ".") parts.push(p);
+  }
+  const url = "/" + parts.join("/");
+  return /\.md$/i.test(url) ? url + "?filemill=render" : url;
+}
+
+async function markdown(text, node) {
   if (!mdInstance) {
     const [MarkdownIt, footnote, deflist, tasklists, anchor] = await Promise
       .all([
@@ -135,7 +170,10 @@ async function markdown(text) {
     mdInstance.renderer.rules.link_open = (tokens, idx, options, env, self) => {
       const token = tokens[idx];
       const href = token.attrGet("href");
-      if (href) token.attrSet("href", homeHref(href));
+      if (href) {
+        const home = homeHref(href);
+        token.attrSet("href", home === href ? localHref(href, env.dir) : home);
+      }
       return linkOpen(tokens, idx, options, env, self);
     };
 
@@ -161,7 +199,10 @@ async function markdown(text) {
       }
     });
   }
-  return mdInstance.render(text);
+  const dir = typeof node.rel === "string"
+    ? node.rel.replace(/\/?[^/]*$/, "")
+    : undefined;
+  return mdInstance.render(text, { dir });
 }
 
 /* ── reStructuredText ────────────────────────────────────────────────────── */
@@ -259,7 +300,7 @@ const docxHTML = async (_node, blob) => {
 /* A text renderer: oversize files take the plain path, like the local one. */
 const richText = (convert) => async (node, blob) => {
   if (blob.size > TEXT_MAX) return renderNode(node, blob, "text");
-  return `<div class="pv-rich">${await convert(await blob.text())}</div>`;
+  return `<div class="pv-rich">${await convert(await blob.text(), node)}</div>`;
 };
 
 /* Offline, blocked, or the CDN moved. The file is still readable. */
@@ -285,7 +326,8 @@ export const PreviewRich = {
 
   async render(node) {
     const kind = classifyFile(node.name, node).preview;
-    if (!richEnabled() || !RICH_RENDERERS.some((e) => e.kind === kind)) {
+    const need = NEEDS[kind];
+    if (!need || (!richEnabled() && !vendored(need))) {
       return PreviewLocal.render(node);
     }
     const blob = await FS.blob(node);
@@ -293,18 +335,6 @@ export const PreviewRich = {
     return renderNode(node, blob, kind);
   },
 };
-
-export const withPptxPreview = (provider) => ({
-  revoke() {
-    provider.revoke?.();
-    PreviewRich.revoke();
-  },
-  render(node) {
-    return classifyFile(node.name, node).preview === "pptx"
-      ? PreviewRich.render(node)
-      : provider.render(node);
-  },
-});
 
 /* A wikilink resolves against the folder being browsed, not the web — so it
    selects a row in the column the file itself is in, exactly as clicking that

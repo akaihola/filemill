@@ -17,7 +17,7 @@ import { FSA } from "./fsa.js";
 import { API, HTTP } from "./http.js";
 import { PreviewHTTP } from "./preview-http.js";
 import { PreviewLocal } from "./preview-local.js";
-import { RICH_RENDERERS, withPptxPreview } from "./preview-rich.js";
+import { PreviewRich, RICH_RENDERERS } from "./preview-rich.js";
 import { PreviewUpload } from "./preview-upload.js";
 import { RouterPath } from "./router-path.js";
 import { rememberRoot } from "./storage.js";
@@ -41,6 +41,7 @@ import {
 } from "../core/nav.js";
 import { focusCol, path, sel, setSortKids, setState } from "../core/state.js";
 import { hlLang } from "../core/syntax.js";
+import { classifyFile } from "../core/file-kind.js";
 
 document.getElementById("bar").insertAdjacentHTML(
   "beforeend",
@@ -62,12 +63,16 @@ setDeepLinkActions({ render, colCache });
 initLayout(render);
 initSettings();
 
-/* The renderer table, core first. Of the rich kinds only .pptx is drawn in the
-   browser here; Markdown, .docx and .rst stay with the Python renderers, so
-   nothing else is fetched from a CDN. */
+/* The renderer table, core first. Markdown, .docx and .pptx are drawn in the
+   browser here too — the first two from the modules the shell serves out of
+   /ui/vendor/ (see ui/vendor/README.md), .pptx from its CDN viewer. Only
+   reStructuredText stays with the Python renderer. `offline` is the fallback
+   the rich entries name when a module does not arrive. */
 addRenderers([
   ...CORE_RENDERERS,
-  ...RICH_RENDERERS.filter((e) => e.kind === "pptx"),
+  ...RICH_RENDERERS.filter((e) =>
+    ["md", "markdown", "docx", "pptx", "offline"].includes(e.kind)
+  ),
 ]);
 
 const ROOT_NAME = document.documentElement.dataset.root || "/";
@@ -78,11 +83,11 @@ const ROOT_NAME = document.documentElement.dataset.root || "/";
    hence useRouter(null) below, and the badge that says which side you are on. */
 
 /* Source files are coloured in the browser by core/syntax.js, not by Pygments
-   on the way out — see that file for why. The server still renders everything
-   else it is better at (Markdown, .docx), so this wraps the
-   provider rather than replacing it: a file with a language we know is read
-   through FS.blob and highlighted here, and anything else goes on as before.
-   A virtual path is never diverted, because only the server can read one. */
+   on the way out — see that file for why. The server still renders what it is
+   better at (reStructuredText), so this wraps the provider rather than
+   replacing it: a file with a language we know is read through FS.blob and
+   highlighted here, and anything else goes on as before. A virtual path is
+   never diverted, because only the server can read one. */
 const withHighlighting = (provider) => ({
   revoke() {
     provider.revoke?.();
@@ -95,12 +100,28 @@ const withHighlighting = (provider) => ({
       : provider).render(n),
 });
 
+/* Markdown, .docx and .pptx render in the browser in this edition too, from
+   the modules the shell lists in FILEMILL_CDN (Markdown and .docx are served
+   from /ui/vendor/, see ui/vendor/README.md). This sits inside withHighlighting
+   so that ?filemill=highlight still shows a Markdown file as coloured source. */
+const RICH = ["md", "markdown", "docx", "pptx"];
+const withRichPreview = (provider) => ({
+  revoke() {
+    provider.revoke?.();
+    PreviewRich.revoke();
+  },
+  render: (n) =>
+    (!n.vpath && RICH.includes(classifyFile(n.name, n).preview)
+      ? PreviewRich
+      : provider).render(n),
+});
+
 async function mountServer() {
   useFilesystem(withCsv(withVirtual(HTTP)));
   usePreview(
     withCsvPreview(
       withVirtualPreview(
-        withPptxPreview(withHighlighting(PreviewHTTP)),
+        withHighlighting(withRichPreview(PreviewHTTP)),
       ),
     ),
   );
@@ -144,15 +165,15 @@ function showServerUnavailable() {
   document.getElementById("w-recent").hidden = true;
 }
 
-/* The local-folder mode of the server build. Previews still come from the
-   Python renderers — see PreviewUpload — so switching sides costs no fidelity;
-   only the URL goes quiet. */
+/* The local-folder mode of the server build. Previews the browser cannot make
+   itself still come from the Python renderers — see PreviewUpload — so
+   switching sides costs no fidelity; only the URL goes quiet. */
 export async function mount(handle) {
   useFilesystem(withCsv(withVirtual(FSA)));
   usePreview(
     withCsvPreview(
       withVirtualPreview(
-        withPptxPreview(withHighlighting(PreviewUpload)),
+        withHighlighting(withRichPreview(PreviewUpload)),
       ),
     ),
   );

@@ -814,11 +814,12 @@ def test_nothing_is_fetched_from_a_cdn(page):
     goes through preview-upload.js and `POST /api/render`, which is the path the
     docstring is actually about. Source files now go through neither — they are
     coloured in the page by core/syntax.js — so they are the easiest half to
-    keep honest and are checked here too. `ui/adapters/preview-rich.js` does lazy-load a
-    renderer from a CDN; the server edition asks it for one only for `.pptx`
-    (through `withPptxPreview`), which this test never opens, so nothing is
-    fetched. Any other preview that started to would break this test, which is
-    the point of the test.
+    keep honest and are checked here too. Markdown goes through
+    `ui/adapters/preview-rich.js` in both halves, which imports its renderer
+    from the URL the shell's FILEMILL_CDN names: `/ui/vendor/markdown-it.js`,
+    this origin. Only `.pptx` still asks a CDN for its viewer, and this test
+    never opens one. Any other preview that started to would break this test,
+    which is the point of the test.
     """
     external = []
     page.on(
