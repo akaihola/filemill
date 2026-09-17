@@ -103,9 +103,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100 k-entry
   directory still builds 100 k DOM nodes. Do this only if such folders show up.
 
-- Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
-  what it means.
-
 - The server browser suites show 11 failures on the branch, but a run against a clean
   main checkout produced exactly the same 11: two legacy-htmx tests that main
   deliberately disabled, and nine mobile restore-scroll tests.
@@ -137,6 +134,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   JSON preview of the selected item in the second column to the right.
 
 ## Scheduled
+
+- Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
+  what it means.
 
 - [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both editions
   fill it from the same core list plus their own adapters.
