@@ -234,6 +234,7 @@ def vfs_dir_json(target: Path, vpath: str, page: int = 1) -> JSONResponse:
             "ordered": e.ordered,
             "size": 0,
             "mod": 0,
+            **({"record": e.record} if e.record is not None else {}),
         }
         for e in listed
     ]
@@ -256,13 +257,13 @@ def vfs_dir_json(target: Path, vpath: str, page: int = 1) -> JSONResponse:
 def vfs_preview(target: Path, vpath: str, fmt: str = "") -> Response:
     """Render the preview for one virtual entry."""
     provider = REGISTRY.get(target)
-    if provider is None:
+    render = getattr(provider, "render_preview", None)
+    default_fmt = getattr(provider, "default_fmt", None)
+    if render is None or default_fmt is None:
         return HTMLResponse("", status_code=404)
     try:
         return HTMLResponse(
-            provider.render_preview(
-                target, vpath, fmt or provider.default_fmt(vpath), page=1, limit=1000
-            ),
+            render(target, vpath, fmt or default_fmt(vpath), page=1, limit=1000),
             headers={"Cache-Control": "no-store"},
         )
     except Exception as exc:
