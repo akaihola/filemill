@@ -12,6 +12,8 @@ def test_manifest():
     assert manifest["scope"] == "./"
     for icon in manifest["icons"]:
         assert (ROOT / icon["src"][2:]).is_file()
+    for asset in ("manifest.json", "sw.js", "icon-192.png", "icon-512.png", "icon.svg"):
+        assert (ROOT / asset).is_file()
 
 
 def test_shell():

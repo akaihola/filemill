@@ -121,6 +121,7 @@ jobs:
         run: |
           mkdir -p _site
           cp static/index.html _site/index.html
+          cp static/manifest.json static/sw.js static/icon-192.png static/icon-512.png static/icon.svg _site/
 
       - uses: actions/upload-pages-artifact@v3
         with:
