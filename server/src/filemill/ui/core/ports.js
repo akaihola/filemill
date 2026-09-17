@@ -33,7 +33,7 @@
        file       cached File from handle.getFile()
        rel        server root-relative path
        vpath      virtual path inside rel (JSON key, table, or row)
-       ordered    boolean; preserve adapter child order when true
+       ordered    boolean; preserve the adapter's documented child order when true
        icon       string; explicit icon glyph
        page       one-based current server listing page
        pages      total server listing pages

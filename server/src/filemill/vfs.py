@@ -16,6 +16,11 @@ IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
 RICH_EXTENSIONS = {".md", ".markdown", ".rst", ".docx", ".pptx"}
 
 
+def entry_order_key(name: str, is_folder: bool) -> tuple[bool, str, str]:
+    """Directories first, then case-insensitive name order."""
+    return (not is_folder, name.casefold(), name)
+
+
 @dataclass(frozen=True)
 class FileKind:
     kind: str
