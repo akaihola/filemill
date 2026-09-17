@@ -8,7 +8,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   architecture proposal, conditional on a fourth provider or a pagination bug.
 
 ## Ordered backlog
-
 - [*] For user testing, document how to run on agent@gogo instances of Filemill that are
   as close as possible to the browser test setup you have in the test suite. Put each
   different browser test setup in its own HTTP port, and link them in
@@ -186,12 +185,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   Iterate until fixed.
 
 ## Scheduled
-
-- [*] Bug: after focusing the preview pane using the arrow right key, the arrow left key
-  doesn't return back and focus the parent column. Instead, it scrolls the page
-  horizontally to the left. Make sure the arrow left key returns to the parent column
-  after focusing the preview pane.
-
 - [*] GET https://gogo.crane-boa.ts.net:8445/favicon.ico
 
     ```
@@ -204,6 +197,12 @@ Rules for TASKS.md usage are at the bottom of the file.
     ```
 
 - [*] Treat `.py.j2` as Python.
+
+## In Progress
+- [*] Bug: after focusing the preview pane using the arrow right key, the arrow left key
+  doesn't return back and focus the parent column. Instead, it scrolls the page
+  horizontally to the left. Make sure the arrow left key returns to the parent column
+  after focusing the preview pane.
 
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
   decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
