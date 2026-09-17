@@ -164,7 +164,11 @@ async function markdown(text, node) {
       typographer: false,
       html: false,
     })
-      .use(footnote).use(deflist).use(tasklists).use(anchor);
+      .use(footnote).use(deflist).use(tasklists)
+      /* No tabindex on headings: markdown-it-py's anchors plugin never set
+         one, and a focusable heading landing in a fullscreen preview nudges
+         the stage sideways for a frame. Same ids as before, nothing else. */
+      .use(anchor, { tabIndex: false });
     const linkOpen = mdInstance.renderer.rules.link_open ||
       ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
     mdInstance.renderer.rules.link_open = (tokens, idx, options, env, self) => {
