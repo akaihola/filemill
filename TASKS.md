@@ -8,18 +8,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   architecture proposal, conditional on a fourth provider or a pagination bug.
 
 ## Ordered backlog
-
-- [*] GET https://gogo.crane-boa.ts.net:8445/favicon.ico
-
-    ```
-    [HTTP/2 404  6ms]
-    Uncaught (in promise) TypeError: renderPage is not a function
-        applyPath https://gogo.crane-boa.ts.net:8445/ui/core/deeplink.js:123
-        mountServer https://gogo.crane-boa.ts.net:8445/ui/adapters/app-http.js:117
-        async* https://gogo.crane-boa.ts.net:8445/ui/adapters/app-http.js:201
-    deeplink.js:123:5
-    ```
-
 - [*] Bug: after focusing the preview pane using the arrow right key, the arrow left key
   doesn't return back and focus the parent column. Instead, it scrolls the page
   horizontally to the left. Make sure the arrow left key returns to the parent column
@@ -202,6 +190,17 @@ Rules for TASKS.md usage are at the bottom of the file.
   Iterate until fixed.
 
 ## Scheduled
+
+- [*] GET https://gogo.crane-boa.ts.net:8445/favicon.ico
+
+    ```
+    [HTTP/2 404  6ms]
+    Uncaught (in promise) TypeError: renderPage is not a function
+        applyPath https://gogo.crane-boa.ts.net:8445/ui/core/deeplink.js:123
+        mountServer https://gogo.crane-boa.ts.net:8445/ui/adapters/app-http.js:117
+        async* https://gogo.crane-boa.ts.net:8445/ui/adapters/app-http.js:201
+    deeplink.js:123:5
+    ```
 
 - [*] Treat `.py.j2` as Python.
 
