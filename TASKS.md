@@ -132,10 +132,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
-- [34] Make the SQLite provider return JSON only. The client renders tables and rows
-  with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close [9].
-    - Depends on: [19]
-
 - [*] Each row of a JSONL file must be presented exactly like a hierarchical nested view
   of a JSON file. Depends on [5].
 
@@ -350,6 +346,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [34] Make the SQLite provider return JSON only. The client renders tables and rows
+  with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close [9].
+    - Depends on: [19]
 
 - [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an unverified
   architecture proposal, conditional on a fourth provider or a pagination bug.
