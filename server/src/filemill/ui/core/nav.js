@@ -315,6 +315,15 @@ document.addEventListener("keydown", (e) => {
   }
   if (!document.getElementById("welcome")?.hidden) return;
   if (e.target.closest?.("#preview")) {
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      if (focusCol > 0) {
+        setState({ focusCol: focusCol - 1 });
+        unfoldTo(focusCol);
+        render(true);
+      }
+      return;
+    }
     if (["ArrowUp", "ArrowDown", "PageUp", "PageDown"].includes(e.key)) {
       const body = document.querySelector("#preview .pv-body");
       e.preventDefault();

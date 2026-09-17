@@ -271,9 +271,11 @@ def test_the_keyboard_model_is_the_shared_one(page):
     page.keyboard.press("ArrowRight")
     page.wait_for_timeout(300)
     assert page.evaluate("focusCol") == 1
+    scroll = page.evaluate("window.scrollX")
     page.keyboard.press("ArrowLeft")
     page.wait_for_timeout(300)
     assert page.evaluate("focusCol") == 0
+    assert page.evaluate("window.scrollX") == scroll
 
 
 def test_an_empty_directory_says_so(page):
