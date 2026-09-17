@@ -115,10 +115,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
   what it means.
 
-- [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both editions
-  fill it from the same core list plus their own adapters.
-    - Depends on: [19]
-
 - [34] Make the SQLite provider return JSON only. The client renders tables and rows
   with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close [9].
     - Depends on: [19]
@@ -143,6 +139,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+- [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both editions
+  fill it from the same core list plus their own adapters.
+    - Depends on: [19]
+
 - [*] Each row of a JSONL file must be presented exactly like a hierarchical nested view
   of a JSON file. Depends on [5].
 
