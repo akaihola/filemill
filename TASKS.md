@@ -97,9 +97,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   comparison in an ADR. Do not start a native toolkit before the ADR exists.
     - Depends on: [30]
 
-- [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100 k-entry
-  directory still builds 100 k DOM nodes. Do this only if such folders show up.
-
 - Keyboard navigation using arrows still doesn't animate folding/unfolding/resizing of
   columns. Do systematic debugging to identify the cause, and fix it.
 
@@ -110,6 +107,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   the whole file, and `{}` and `[]` icons for objects and arrays.
 
 ## Scheduled
+
+- [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100 k-entry
+  directory still builds 100 k DOM nodes. Do this only if such folders show up.
 
 - When an object or list is selected in a hierarchical nested view of JSON, show the
   child nodes in the column to the right, and a foldable highlighted and pretty-printed
