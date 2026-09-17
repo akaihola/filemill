@@ -641,6 +641,11 @@ def test_vertical_navigation_preserves_folded_ancestor(live_server: str):
         assert page.locator('.col[data-i="0"]').evaluate(
             "el => el.classList.contains('spine')"
         )
+        page.keyboard.press("ArrowUp")
+        page.wait_for_function(
+            "() => document.querySelector('.col[data-i=\"0\"]')"
+            ".classList.contains('spine')"
+        )
 
 
 @pytest.mark.integration

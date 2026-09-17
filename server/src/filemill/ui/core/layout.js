@@ -44,7 +44,7 @@ export const foldAll = () => {
   slideTail(1, 0, path.length);
 };
 
-export function layout(keepScroll) {
+export function layout(keepScroll, preserveFolded = false) {
   const stageW = finder.clientWidth;
   setVar(root, "--stage-w", stageW + "px");
   setVar(root, "--preview-w", previewTarget() + "px");
@@ -65,6 +65,10 @@ export function layout(keepScroll) {
     k = Math.min(focusCol, Math.max(k, folded));
     if (root.dataset.layout === "compressed-columns") k = path.length;
     finder.scrollLeft = Math.round(k * foldUnit() * range());
+  } else if (preserveFolded) {
+    finder.scrollLeft = Math.round(
+      Math.min(folded, path.length) * foldUnit() * range(),
+    );
   }
   applyScroll();
 }

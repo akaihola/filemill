@@ -115,11 +115,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- In keyboard navigation, parent folder columns currently unfold when selecting the next
-  item using the down arrow. Strangely, this doesn't happen when using the up arrow. I
-  haven't been able to understand what's special about the folders that cause this
-  behavior.
-
 - The server browser suites show 11 failures on the branch, but a run against a clean
   main checkout produced exactly the same 11: two legacy-htmx tests that main
   deliberately disabled, and nine mobile restore-scroll tests.
@@ -155,6 +150,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+- In keyboard navigation, parent folder columns currently unfold when selecting the next
+  item using the down arrow. Strangely, this doesn't happen when using the up arrow. I
+  haven't been able to understand what's special about the folders that cause this
+  behavior.
+
 - [7] Make entry ordering an adapter-owned contract.
     - Depends on: [6]
 
