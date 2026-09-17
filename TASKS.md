@@ -344,9 +344,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Add `ruff` and `mypy` to the `dev` group in `server/pyproject.toml`. Add
   `[tool.ruff]` with `line-length = 88`. Fix all findings. Run `ruff format`.
 
-- [x] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT. Use
-      the current year and "Antti Kaihola" as the copyright holder.
-
 - [*] In the preview pane top bar, add buttons for viewing the raw file
   (`/path/to/file.ext` without query parameters), toggling highlighted source vs
   rendered preview (for file types in which applicable), and toggling fullscreen mode
@@ -363,6 +360,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [x] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT. Use
+      the current year and "Antti Kaihola" as the copyright holder.
 
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
   files. Current PPTX support was implemented in task
