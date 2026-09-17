@@ -100,11 +100,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100 k-entry
   directory still builds 100 k DOM nodes. Do this only if such folders show up.
 
-- In keyboard navigation, parent folder columns currently unfold when selecting the next
-  item using the down arrow. Strangely, this doesn't happen when using the up arrow. I
-  haven't been able to understand what's special about the folders that cause this
-  behavior.
-
 - Keyboard navigation using arrows still doesn't animate folding/unfolding/resizing of
   columns. Do systematic debugging to identify the cause, and fix it.
 
@@ -120,8 +115,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [7] Make entry ordering an adapter-owned contract.
-    - Depends on: [6]
+- In keyboard navigation, parent folder columns currently unfold when selecting the next
+  item using the down arrow. Strangely, this doesn't happen when using the up arrow. I
+  haven't been able to understand what's special about the folders that cause this
+  behavior.
 
 - The server browser suites show 11 failures on the branch, but a run against a clean
   main checkout produced exactly the same 11: two legacy-htmx tests that main
@@ -158,6 +155,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+- [7] Make entry ordering an adapter-owned contract.
+    - Depends on: [6]
+
 - Navigating with the right arrow key to the preview area must fold all folder columns
   to maximize the preview area width. A left arrow should return to the parent folder of
   the reviewed document and unfold that folder column (but no ancestor folder columns).
