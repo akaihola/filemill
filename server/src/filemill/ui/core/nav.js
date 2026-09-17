@@ -6,7 +6,7 @@
    keep walking the current column. → is what moves you in, ← what moves out.
    ═══════════════════════════════════════════════════════════════════════════ */
 import { applyPath, currentPath, scrollCursorIntoView } from "./deeplink.js";
-import { foldUnit, range, revealRow } from "./layout.js";
+import { foldAll, foldUnit, range, revealRow } from "./layout.js";
 import { FS } from "./ports.js";
 import { colCache, columnFor, render } from "./render.js";
 import { closeSettings } from "./settings.js";
@@ -392,6 +392,7 @@ document.addEventListener("keydown", (e) => {
       const row = rows[ci];
       row?.click();
       if (e.key === "ArrowRight" && c.kids[ci] && !c.kids[ci].dir) {
+        foldAll();
         document.getElementById("preview")?.focus();
       }
       return;

@@ -38,6 +38,11 @@ const FULL_FOLD_THRESHOLD = 0.99; // Treat the dial's first 99 percent as column
 const TAIL_RANGE = 0.01; // The final one percent slides the folded strip away.
 export const foldUnit = () => FOLD_RANGE / path.length;
 export const range = () => Math.max(MIN_SCROLL_RANGE, stripSpan(0) - GUTTER());
+export const foldAll = () => {
+  setState({ folded: path.length });
+  applyWidths(path.length, 0);
+  slideTail(1, 0, path.length);
+};
 
 export function layout(keepScroll) {
   const stageW = finder.clientWidth;
