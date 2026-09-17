@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Filemill</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0770C9">
 <link rel="stylesheet" href="../ui/core/styles.css">
 <script src="../ui/vendor/seti-map.js"></script>
 </head>
@@ -16,5 +18,9 @@
      adapters and imports the rest; ../ui/entry-server.js is what the server
      edition's page loads instead. build-index.py inlines the whole graph. -->
 <script type="module" src="../ui/entry-static.js"></script>
+<script>
+if ('serviceWorker' in navigator)
+  navigator.serviceWorker.register('./sw.js', {scope: './'});
+</script>
 </body>
 </html>
