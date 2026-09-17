@@ -10,8 +10,8 @@ CASES = [
     ("link.desktop", False, False, False, "link", "desktop", False),
     ("photo.png", False, False, False, "file", "image", False),
     ("doc.pdf", False, False, False, "file", "pdf", False),
-    ("note.md", False, False, False, "file", "md", False),
-    ("captions.vtt", False, False, False, "file", "vtt", False),
+    ("note.md", False, False, False, "file", "md", True),
+    ("captions.vtt", False, False, False, "file", "vtt", True),
     ("source.py", False, False, False, "file", "text", True),
 ]
 

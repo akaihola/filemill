@@ -367,8 +367,8 @@ async def main():
             ("link.desktop", {}, ("link", "desktop", False)),
             ("photo.png", {}, ("file", "image", False)),
             ("doc.pdf", {}, ("file", "pdf", False)),
-            ("note.md", {}, ("file", "md", False)),
-            ("captions.vtt", {}, ("file", "vtt", False)),
+            ("note.md", {}, ("file", "md", True)),
+            ("captions.vtt", {}, ("file", "vtt", True)),
             ("source.py", {}, ("file", "text", True)),
         ]
         got = await pg.evaluate(
