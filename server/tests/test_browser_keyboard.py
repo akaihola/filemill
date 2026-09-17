@@ -642,9 +642,9 @@ def test_vertical_navigation_preserves_folded_ancestor(live_server: str):
             "el => el.classList.contains('spine')"
         )
         page.keyboard.press("ArrowUp")
-        page.wait_for_timeout(300)
-        assert page.locator('.col[data-i="0"]').evaluate(
-            "el => el.classList.contains('spine')"
+        page.wait_for_function(
+            "() => document.querySelector('.col[data-i=\"0\"]')"
+            ".classList.contains('spine')"
         )
 
 
