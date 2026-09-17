@@ -23,9 +23,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
       `panFocus` and `slideTail`. Each function is under 25 lines.
 
-- [7] Make entry ordering an adapter-owned contract.
-    - Depends on: [6]
-
 - [33] Keep the URL contract, drop the server-side representations: the server sends
   bytes for `?filemill=raw` and the shell for all else. The client renders the view.
     - Depends on: [32]
@@ -130,6 +127,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   JSON preview of the selected item in the second column to the right.
 
 ## Scheduled
+
+- [7] Make entry ordering an adapter-owned contract.
+    - Depends on: [6]
 
 - The server browser suites show 11 failures on the branch, but a run against a clean
   main checkout produced exactly the same 11: two legacy-htmx tests that main
