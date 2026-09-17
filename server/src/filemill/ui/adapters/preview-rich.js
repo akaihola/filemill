@@ -105,6 +105,12 @@ const NOTE =
 /* ── Markdown ────────────────────────────────────────────────────────────── */
 let mdInstance = null;
 
+function homeHref(href) {
+  if (!href.startsWith("~/")) return href;
+  const mount = document.documentElement.dataset.root;
+  return mount && mount !== "/" ? `/w/${encodeURIComponent(mount)}/${href.slice(2)}` : href.slice(2);
+}
+
 async function markdown(text) {
   if (!mdInstance) {
     const [MarkdownIt, footnote, deflist, tasklists, anchor] = await Promise
@@ -123,6 +129,14 @@ async function markdown(text) {
       html: false,
     })
       .use(footnote).use(deflist).use(tasklists).use(anchor);
+    const linkOpen = mdInstance.renderer.rules.link_open ||
+      ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
+    mdInstance.renderer.rules.link_open = (tokens, idx, options, env, self) => {
+      const token = tokens[idx];
+      const href = token.attrGet("href");
+      if (href) token.attrSet("href", homeHref(href));
+      return linkOpen(tokens, idx, options, env, self);
+    };
 
     /* filemill renders [[PageName]]; markdown-it has no such plugin, and the
        rule is small enough that matching it is cheaper than finding one. The
