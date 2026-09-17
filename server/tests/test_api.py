@@ -28,6 +28,20 @@ def test_dir_marks_directories_and_carries_metadata(client, tmp_root: Path):
     assert by_name["readme.md"]["mod"] > 0
 
 
+def test_dir_owns_stable_entry_order(client, tmp_root: Path):
+    (tmp_root / "Zoo").mkdir()
+    (tmp_root / "alpha").mkdir()
+    (tmp_root / "10.txt").touch()
+    (tmp_root / "2.txt").touch()
+
+    entries = client.get("/api/dir?p=").json()["entries"]
+
+    assert [e["name"] for e in entries] == [
+        "alpha", "subdir", "Zoo", ".hidden", "10.txt", "2.txt", "readme.md"
+    ]
+    assert all(e["ordered"] for e in entries)
+
+
 def test_dir_lists_dotfiles(client, tmp_root: Path):
     """Hiding them is the client's job — a deep link to one must still resolve."""
     names = {e["name"] for e in client.get("/api/dir?p=").json()["entries"]}
