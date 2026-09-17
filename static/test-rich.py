@@ -18,8 +18,16 @@ from the same loopback server, which is the only way to reach it without the
 real CDN.
 
     uv run --with "playwright==1.61.0" python3 test-rich.py [--bundle|--dev]
+
+The server edition serves the Markdown and .docx modules itself from ui/vendor/
+and points FILEMILL_CDN at them; the last section here loads those real files
+over the same loopback server, which is also where the renderers' output is
+checked against what filemill's Python renderers used to produce.
 """
 import asyncio
+import base64
+import io
+import zipfile
 import functools
 import http.server
 import socketserver
@@ -34,16 +42,43 @@ from playwright.async_api import async_playwright
 ROOT = Path(__file__).parent.parent
 TARGET = "static/" + ("index-dev.html" if "--dev" in sys.argv else "index.html")
 
+# The smallest .docx mammoth accepts: the package relationship that names the
+# document part, and one paragraph in it.
+def _docx(text: str) -> str:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("[Content_Types].xml", (
+            '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.'
+            'openxmlformats.org/package/2006/content-types"><Default Extension="xml" '
+            'ContentType="application/xml"/><Override PartName="/word/document.xml" '
+            'ContentType="application/vnd.openxmlformats-officedocument.'
+            'wordprocessingml.document.main+xml"/></Types>'))
+        z.writestr("_rels/.rels", (
+            '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://'
+            'schemas.openxmlformats.org/package/2006/relationships"><Relationship '
+            'Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/'
+            'relationships/officeDocument" Target="word/document.xml"/></Relationships>'))
+        z.writestr("word/document.xml", (
+            '<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://'
+            'schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p>'
+            f'<w:r><w:t>{text}</w:t></w:r></w:p></w:body></w:document>'))
+    return base64.b64encode(buf.getvalue()).decode()
+
+
 FAKE = r"""
 window.__mk = () => {
   const F = (name, text) => ({kind:'file', name,
     getFile: async () => new File([text], name, {lastModified: Date.parse('2026-08-01')})});
+  const B = (name, b64) => F(name, Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
   const D = (name, kids) => ({kind:'directory', name,
     entries: async function*(){ for (const k of kids) yield [k.name, k]; }});
   return D('vault', [
     F('note.md', '# Heading\n\nSome **bold** text and a [[Other Note]] link.\n'),
     F('fence.md', '# Code\n\nline one\nline two\n\n```python\ndef f():\n    return 1\n```\n'),
     F('Other Note.md', '# Other\n'),
+    F('rich.md', '# Rich\n\n- [x] done\n\nText[^1] and [sib](sib.md) and [[Other Note]]\n\n' +
+      '```python\ndef f():\n    return 1\n```\n\n[^1]: a note\n'),
+    B('doc.docx', '%(docx)s'),
     F('doc.rst', 'Heading\n=======\n\nSome *rst* text.\n'),
     F('code.py', 'def f():\n    return 1\n'),
     F('plain.txt', 'just text'),
@@ -52,7 +87,7 @@ window.__mk = () => {
     F('broken.pptx', 'bad'),
   ]);
 };
-"""
+""" % {"docx": _docx("Hello docx")}
 
 # Enough of each library's shape to prove the plumbing: the loader, the plugin
 # chaining, the highlight hook, and where the output lands. Faithfulness to the
@@ -68,7 +103,7 @@ export function createPptxViewer(host, options) {
 """,
     "markdown-it.js": """
 export default class MarkdownIt {
-  constructor(o) { this.options = o; this.core = { ruler: { push: (n, f) => { this._rule = f; } } }; }
+  constructor(o) { this.options = o; this.renderer = { rules: {} }; this.core = { ruler: { push: (n, f) => { this._rule = f; } } }; }
   use() { return this; }
   render(src) {
     const first = src.split('\\n')[0].replace(/^#\\s*/, '');
@@ -146,7 +181,18 @@ window.FILEMILL_CDN = {
 """
 
 
-async def boot(pg, base, *, rich=True, stubs=False):
+# What server/src/filemill/app.py emits in its shell: the same names, served
+# from this origin. Files, not stubs — this is the renderer the server edition
+# ships, so its output is what gets checked.
+VENDOR_MAP = """
+window.FILEMILL_CDN = Object.fromEntries(
+  ["markdown-it", "markdown-it-footnote", "markdown-it-deflist",
+   "markdown-it-task-lists", "markdown-it-anchor", "mammoth"]
+    .map((n) => [n, `/ui/vendor/${n}.js`]));
+"""
+
+
+async def boot(pg, base, *, rich=True, stubs=False, vendored=False):
     """Load the app cold with the switch in a known state."""
     await pg.goto("about:blank")
     await pg.goto(base)
@@ -155,6 +201,8 @@ async def boot(pg, base, *, rich=True, stubs=False):
     )
     if stubs:
         await pg.evaluate(STUB_MAP % {"b": "/".join(base.split("/")[:3])})
+    if vendored:
+        await pg.evaluate(VENDOR_MAP)
     await pg.evaluate(FAKE)
     await pg.evaluate("mount(__mk())")
     await pg.wait_for_timeout(250)
@@ -290,6 +338,31 @@ async def main():
               str(await pg.evaluate("sel")))
         check("…without navigating the page away",
               (await pg.evaluate("location.href")).split("#")[0] == before.split("#")[0])
+
+        # ── the vendored modules the server edition serves ───────────────
+        # The switch is off: a module from this origin is not a download the
+        # visitor has to agree to, so it must render anyway.
+        await boot(pg, base, rich=False, vendored=True)
+        requests.clear()
+        html = await preview(pg, "rich.md", ready=".pv-rich")
+        check("A vendored renderer is used even with the switch off",
+              "<h1" in html and "pv-note" not in html, html[:120])
+        check("…and nothing is asked of a CDN for it",
+              not [u for u in requests if "esm.sh" in u or "jsdelivr" in u],
+              "; ".join(requests))
+        check("A task list renders as a checkbox",
+              'class="task-list-item-checkbox"' in html and 'checked' in html)
+        check("A footnote renders as a reference and a footnote list",
+              'class="footnote-ref"' in html and 'class="footnotes"' in html)
+        check("A fenced block is coloured by core/syntax.js",
+              'class="language-python"' in html and "hl-kw" in html, html[:300])
+        check("A wikilink renders as an in-app anchor",
+              'class="wikilink" href="#" data-wiki="Other Note"' in html)
+        check("A relative link in a browser-opened folder stays as written",
+              'href="sib.md"' in html, html[:300])
+        html = await preview(pg, "doc.docx", ready=".pv-rich")
+        check("A .docx renders through the vendored mammoth",
+              "<p>Hello docx</p>" in html and "pv-rich" in html, html[:120])
 
         # ── turning it back on retries ───────────────────────────────────
         await boot(pg, base, rich=False, stubs=True)

@@ -17,7 +17,7 @@ ports declared in [`ui/core/ports.js`](ui/core/ports.js):
 | | **static** | **server** |
 | --- | --- | --- |
 | filesystem | File System Access API | `GET /api/dir` |
-| preview | markdown-it / highlight.js, fetched on demand | `GET /api/preview` — Python renderers |
+| preview | markdown-it / mammoth, fetched on demand | the same, served from `ui/vendor/`; `GET /api/preview` for the rest |
 | router | `#r=root&p=a/b.md` | `/n/a/b.md` — the path *is* the file path |
 
 The ports also set the cost of each edition. A sort by size needs a size per
@@ -65,12 +65,15 @@ uv sync && uv run filemill [ROOT]
 #   localhost:8000/     ← the shared UI, and "Open local folder…"
 ```
 
-Python renders Markdown with plugins, Pygments, docx and the JSON virtual
-filesystem. The result goes into the shared preview pane. SQLite rows arrive as
-JSON and the shared JSON view draws them. A local
-folder opened from the served page posts its bytes to `/api/render`, so the
-same renderers apply. PowerPoint files are the one exception: both editions
-open them in the browser with `pptx-vanilla-viewer` from the CDN.
+Markdown and `.docx` render in the browser here too, from the pinned
+markdown-it and mammoth modules the server serves out of `ui/vendor/` — nothing
+is fetched from a CDN for them, and the ⚙ switch does not apply to them. Python
+renders reStructuredText, Pygments source and the JSON virtual filesystem. The
+result goes into the shared preview pane. SQLite rows arrive as JSON and the
+shared JSON view draws them. A local folder opened from the served page posts
+its bytes to `/api/render`, so the same renderers apply. PowerPoint files are
+the one exception: both editions open them in the browser with
+`pptx-vanilla-viewer` from the CDN.
 
 See [`server/CONTRIBUTING.md`](server/CONTRIBUTING.md).
 
