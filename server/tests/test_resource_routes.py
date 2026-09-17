@@ -59,6 +59,14 @@ def test_bare_path_serves_the_file_bytes(client):
     assert "<html" not in resp.text.lower()
 
 
+def test_bare_path_serves_bytes_for_browser_navigation(client):
+    resp = client.get("/docs/readme.md", headers={"accept": "text/html"})
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/markdown")
+    assert resp.content == MARKDOWN.encode()
+    assert resp.history == []
+
+
 def test_bare_path_serves_css_as_css(client):
     """The reason raw is the default: a stylesheet has to arrive as text/css."""
     resp = client.get("/site/main.css")
