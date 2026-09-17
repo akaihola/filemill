@@ -73,6 +73,8 @@
          chrome — header, hero, size/modified list — is core's, and so is the
          staleness guard: a provider may take as long as it likes.
      revoke()  → void                optional; release object URLs
+     A provider that holds the bytes draws them through the renderer table
+     in core/renderers.js — one entry per kind, shared by both editions.
 
    ── ROUTER ─ the address bar ───────────────────────────────────────────────
      read()          → {root, path:[names…]} | null    the location right now
