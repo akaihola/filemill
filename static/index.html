@@ -3733,9 +3733,17 @@ function setupPreviewActions(n) {
         )
       ) return;
       del.disabled = true;
+      const parent = path[path.length - 1];
+      const parentIndex = path.length - 1;
       try {
         await FS.remove(n);
-        await actions.refreshColumn(path.length - 1);
+        if (path[parentIndex] === parent && parent.kids) {
+          parent.kids = parent.kids.filter((kid) => kid.name !== n.name);
+          setState({ sel: sel.slice(0, parentIndex) });
+          actions.render();
+        } else if (path.includes(parent)) {
+          await actions.refreshColumn(path.indexOf(parent));
+        }
       } catch (err) {
         actions.saySt(
           "st-refresh",
