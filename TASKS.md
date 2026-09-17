@@ -68,10 +68,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done when
   `uv run pytest -n auto` passes at the repository root.
 
-- [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both editions
-  fill it from the same core list plus their own adapters.
-    - Depends on: [19]
-
 - [*] Implement CSV as a browser virtual filesystem in `ui/adapters/vfs-csv.js`, like
   JSONL: one entry per row, a key/value preview per row. No Python. Closes issue #49.
     - Depends on: [26]
@@ -107,9 +103,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100 k-entry
   directory still builds 100 k DOM nodes. Do this only if such folders show up.
 
-- Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
-  what it means.
-
 - The server browser suites show 11 failures on the branch, but a run against a clean
   main checkout produced exactly the same 11: two legacy-htmx tests that main
   deliberately disabled, and nine mobile restore-scroll tests.
@@ -122,10 +115,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Navigating with the right arrow key to the preview area must fold all folder columns
   to maximize the preview area width. A left arrow should return to the parent folder of
   the reviewed document and unfold that folder column (but no ancestor folder columns).
-
-- Task 04ce9574-92c8-4a4c-8148-32d2e827c13d didn't fix the erratic folding/unfolding of
-  the parent column. Hard rule: Up/down navigation must never change folding state of
-  ancestor folder columns.
 
 - Keyboard navigation using arrows still doesn't animate folding/unfolding/resizing of
   columns. Do systematic debugging to identify the cause, and fix it.
@@ -141,6 +130,17 @@ Rules for TASKS.md usage are at the bottom of the file.
   JSON preview of the selected item in the second column to the right.
 
 ## Scheduled
+
+- Task 04ce9574-92c8-4a4c-8148-32d2e827c13d didn't fix the erratic folding/unfolding of
+  the parent column. Hard rule: Up/down navigation must never change folding state of
+  ancestor folder columns.
+
+- Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
+  what it means.
+
+- [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both editions
+  fill it from the same core list plus their own adapters.
+    - Depends on: [19]
 
 - [34] Make the SQLite provider return JSON only. The client renders tables and rows
   with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close [9].
@@ -159,9 +159,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - The `Fullscreen` button in the preview pane doesn't do anything. No errors seen on the
   JavaScript console either.
 
-- [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
-  Today `[text](~/note.md)` is a dead link although the file exists.
-
 - [6] Centralize file-kind classification across filesystem producers and preview/edit consumers. Add one test table per language that both sides share.
     - Depends on: [19]
 
@@ -178,6 +175,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Add a PWA manifest and service worker to the static bundle so `static/index.html`
   installs as a standalone window. The server edition already serves `/manifest.json`.
 
+- [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
+  Today `[text](~/note.md)` is a dead link although the file exists.
 
 - [6] Centralize file-kind classification across filesystem producers and preview/edit consumers. Add one test table per language that both sides share.
     - Depends on: [19]
