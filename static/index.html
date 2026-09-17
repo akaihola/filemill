@@ -3357,6 +3357,9 @@ function classifyFile(name, { dir = false, vpath = "", csv = false,
   }
   if (ext === "desktop") return { kind: "link", preview: "desktop", editable: false };
   if (ext === "vtt") return { kind: "file", preview: "vtt", editable: true };
+  if (ext === "jsonl" || ext === "csv") {
+    return { kind: "file", preview: ext, editable: true };
+  }
   if (RICH.has(ext)) {
     return { kind: "file", preview: ext, editable: ["md", "markdown", "rst"].includes(ext) };
   }
@@ -3683,7 +3686,7 @@ function setupPreviewActions(n) {
   const name = String(n.name || "");
   const fileKind = n.fileKind || classifyFile(name, n);
   const markdown = fileKind.preview === "md" || fileKind.preview === "markdown";
-  const vtt = /\.vtt$/i.test(n.name);
+  const vtt = (n.fileKind || classifyFile(n.name, n)).preview === "vtt";
   const applicable = fileKind.preview !== "text";
   if (mdViews) {
     mdViews.hidden = !markdown;
@@ -3808,9 +3811,9 @@ async function fillPreview(n) {
 
   let html = null;
   try {
-    html = ["md", "markdown"].includes(classifyFile(n.name).preview) && markdownView === "raw"
+    html = ["md", "markdown"].includes((n.fileKind || classifyFile(n.name, n)).preview) && markdownView === "raw"
       ? (await rawMarkdown(n) || await PREVIEW.render(n))
-      : /\.vtt$/i.test(n.name) && previewView() !== "highlight"
+      : (n.fileKind || classifyFile(n.name, n)).preview === "vtt" && previewView() !== "highlight"
       ? await PREVIEW.render({ ...n, previewFormat: vttView })
       : await PREVIEW.render(n);
   } catch (err) {
@@ -4576,8 +4579,8 @@ const JSONL_TEXT = ["title", "name", "description", "summary", "label"];
 const JSONL_SCALAR = ["timestamp", "time", "ts", "id", "uuid", "key"];
 const JSON_MAX = TEXT_MAX;
 
-const isJsonl = (n) => classifyFile(n.name).preview === "text" && /\.jsonl$/i.test(n.name);
-const isJson = (n) => /\.jsonc?$/i.test(n.name);
+const isJsonl = (n) => classifyFile(n.name).preview === "jsonl";
+const isJson = (n) => classifyFile(n.name).preview === "text" && /\.jsonc?$/i.test(n.name);
 const jsonlLabel = (v) =>
   ((s) => s.length > JSONL_LABEL ? s.slice(0, JSONL_LABEL - 1) + "…" : s)(
     String(v),
@@ -4841,7 +4844,7 @@ function csvParse(text) {
   return { headers, records };
 }
 
-const isCsv = (n) => classifyFile(n.name).preview === "text" && /\.csv$/i.test(n.name);
+const isCsv = (n) => classifyFile(n.name).preview === "csv";
 
 function csvLabels(records, key) {
   const seen = new Set();

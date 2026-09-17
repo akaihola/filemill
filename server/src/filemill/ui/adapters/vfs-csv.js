@@ -39,7 +39,7 @@ function csvParse(text) {
   return { headers, records };
 }
 
-const isCsv = (n) => classifyFile(n.name).preview === "text" && /\.csv$/i.test(n.name);
+const isCsv = (n) => classifyFile(n.name).preview === "csv";
 
 function csvLabels(records, key) {
   const seen = new Set();

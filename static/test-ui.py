@@ -363,12 +363,14 @@ async def main():
         await pg.wait_for_timeout(400)
         cases = [
             ("folder", {"dir": True}, ("folder", "none", False)),
-            ("data.db", {"provider": True}, ("vfs", "virtual", False)),
+            ("data.db", {"vpath": "table"}, ("vfs", "virtual", False)),
             ("link.desktop", {}, ("link", "desktop", False)),
             ("photo.png", {}, ("file", "image", False)),
             ("doc.pdf", {}, ("file", "pdf", False)),
             ("note.md", {}, ("file", "md", True)),
             ("captions.vtt", {}, ("file", "vtt", True)),
+            ("rows.jsonl", {}, ("file", "jsonl", True)),
+            ("rows.csv", {}, ("file", "csv", True)),
             ("source.py", {}, ("file", "text", True)),
         ]
         got = await pg.evaluate(

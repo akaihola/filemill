@@ -12,6 +12,8 @@ CASES = [
     ("doc.pdf", False, False, False, "file", "pdf", False),
     ("note.md", False, False, False, "file", "md", True),
     ("captions.vtt", False, False, False, "file", "vtt", True),
+    ("rows.jsonl", False, False, False, "file", "jsonl", True),
+    ("rows.csv", False, False, False, "file", "csv", True),
     ("source.py", False, False, False, "file", "text", True),
 ]
 

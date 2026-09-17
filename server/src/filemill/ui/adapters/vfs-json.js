@@ -23,8 +23,8 @@ const JSONL_TEXT = ["title", "name", "description", "summary", "label"];
 const JSONL_SCALAR = ["timestamp", "time", "ts", "id", "uuid", "key"];
 const JSON_MAX = TEXT_MAX;
 
-const isJsonl = (n) => classifyFile(n.name).preview === "text" && /\.jsonl$/i.test(n.name);
-const isJson = (n) => /\.jsonc?$/i.test(n.name);
+const isJsonl = (n) => classifyFile(n.name).preview === "jsonl";
+const isJson = (n) => classifyFile(n.name).preview === "text" && /\.jsonc?$/i.test(n.name);
 const jsonlLabel = (v) =>
   ((s) => s.length > JSONL_LABEL ? s.slice(0, JSONL_LABEL - 1) + "…" : s)(
     String(v),
