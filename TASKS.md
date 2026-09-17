@@ -30,10 +30,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   bytes for `?filemill=raw` and the shell for all else. The client renders the view.
     - Depends on: [32]
 
-- [34] Make the SQLite provider return JSON only. The client renders tables and rows
-  with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close [9].
-    - Depends on: [19]
-
 - [*] Delete `/api/render` in `app.py`, `render_upload` in `api.py` and
   `ui/adapters/preview-upload.js`. Local folders in the server edition use PreviewRich.
     - Depends on: [32], [34]
@@ -145,6 +141,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   JSON preview of the selected item in the second column to the right.
 
 ## Scheduled
+
+- [34] Make the SQLite provider return JSON only. The client renders tables and rows
+  with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close [9].
+    - Depends on: [19]
 
 - [32] Render Markdown and `.docx` in the browser in the server edition too. Serve the
   pinned renderer modules from `ui/vendor/`. Then delete `rendering.py` and its deps.
