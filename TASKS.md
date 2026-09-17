@@ -234,11 +234,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   should focus the preview and let the user scroll it up/down using the arrow and
   PgUp/PgDn keys.
 
-- [*] Using the `Search file contents` input always causes the error
-  `Search error: Search timed out` to display. JavaScript console:
-  `XHR GET https://gogo.crane-boa.ts.net:8445/api/search?q=development [HTTP/2 503  2020ms]`.
-  Originally implemented in task 456736f9-7242-40d0-894d-d5e1db50c0de.
-
 - [x] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
       `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in
       `server/src/filemill/styles.py`.
@@ -344,9 +339,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Add `ruff` and `mypy` to the `dev` group in `server/pyproject.toml`. Add
   `[tool.ruff]` with `line-length = 88`. Fix all findings. Run `ruff format`.
 
-- [x] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT. Use
-      the current year and "Antti Kaihola" as the copyright holder.
-
 - [*] In the preview pane top bar, add buttons for viewing the raw file
   (`/path/to/file.ext` without query parameters), toggling highlighted source vs
   rendered preview (for file types in which applicable), and toggling fullscreen mode
@@ -363,6 +355,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [x] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT. Use
+      the current year and "Antti Kaihola" as the copyright holder.
 
 - Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
   files. Current PPTX support was implemented in task
