@@ -24,6 +24,14 @@ use the same table. Roadmap phase 8, step 1.
    entry, calls it, and follows `fallback` on error.
 5. Add one test per entry in `static/test-ui.py`.
 
+## Notes from the implementation
+
+- `render(node, blob)` returns an HTML string, not an element, to match the
+  `PREVIEW` port in `ui/core/ports.js`.
+- The app modules register, not the adapters. `app-fsa.js` adds the core list
+  and every `preview-rich.js` entry. `app-http.js` adds the core list and only
+  `.pptx`, so the server edition fetches nothing else from a CDN.
+
 ## Done when
 
 - `grep -n "else if" ui/adapters/preview-*.js` prints no kind selection.
