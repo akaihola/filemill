@@ -196,12 +196,12 @@ def test_raw_on_a_directory_is_404(client, tmp_root: Path):
 # ── /api/preview ─────────────────────────────────────────────────────────────
 
 
-def test_preview_uses_the_python_markdown_pipeline(client, tmp_root: Path):
-    """The whole reason the renderers were not ported to JavaScript."""
+def test_preview_of_markdown_is_its_source(client, tmp_root: Path):
+    """Markdown renders in the browser; the server only ever shows the source."""
     r = client.get("/api/preview?p=readme.md")
     html = r.text
-    assert "<h1" in html
-    assert "<strong>world</strong>" in html
+    assert "preview-code" in html
+    assert "<strong>world</strong>" not in html
     assert r.headers["cache-control"] == "no-store"
 
 
@@ -236,9 +236,10 @@ def test_preview_serves_the_source_when_the_page_asked_for_highlight(
 
 def test_preview_renders_the_document_for_every_other_view(client, tmp_root: Path):
     """render and raw both mean "the document" once a preview pane is asking."""
+    (tmp_root / "page.html").write_text("<h1>Hi</h1>")
     for query in ("", "&filemill=render", "&filemill=raw", "&filemill=nonsense"):
-        html = client.get(f"/api/preview?p=readme.md{query}").text
-        assert "<h1" in html, query
+        html = client.get(f"/api/preview?p=page.html{query}").text
+        assert "<iframe" in html, query
 
 
 def test_preview_renders_a_desktop_link(client, tmp_root: Path):
@@ -257,11 +258,11 @@ def test_render_renders_posted_bytes(client, tmp_root: Path):
     """A file the server has never seen still gets the Python renderers."""
     r = client.post(
         "/api/render",
-        files={"file": ("note.md", b"# Posted\n**bold**\n", "text/markdown")},
+        files={"file": ("note.rst", b"Posted\n======\n\n*em*\n", "text/x-rst")},
     )
     assert r.status_code == 200
     assert "<h1" in r.text
-    assert "<strong>bold</strong>" in r.text
+    assert "<em>em</em>" in r.text
 
 
 def test_render_dispatches_on_the_uploaded_name(client, tmp_root: Path):
