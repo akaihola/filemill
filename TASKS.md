@@ -100,13 +100,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Keyboard navigation using arrows still doesn't animate folding/unfolding/resizing of
   columns. Do systematic debugging to identify the cause, and fix it.
 
-- [*] Each row of a JSONL file must be presented exactly like a hierarchical nested view
-  of a JSON file. Depends on [5].
-
 - For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon for
   the whole file, and `{}` and `[]` icons for objects and arrays.
 
 ## Scheduled
+
+- [*] Each row of a JSONL file must be presented exactly like a hierarchical nested view
+  of a JSON file. Depends on [5].
 
 - [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100 k-entry
   directory still builds 100 k DOM nodes. Do this only if such folders show up.
