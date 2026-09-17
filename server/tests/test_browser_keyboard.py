@@ -1010,7 +1010,10 @@ def test_mobile_fullscreen_preview_touch_handling(
             f" === '{touch_action}'"
         )
         assert page.evaluate("finder.scrollLeft") > 0
-        assert page.evaluate("stage.scrollLeft") == 0
+        # The click scrolled its button into view, dragging #stage sideways;
+        # applyScroll puts it back at the next repaint (see layout.js), so wait
+        # for that frame instead of racing it.
+        page.wait_for_function("stage.scrollLeft === 0", timeout=2000)
 
 
 @pytest.mark.integration
