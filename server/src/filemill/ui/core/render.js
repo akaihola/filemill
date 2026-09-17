@@ -315,6 +315,21 @@ function renderPreview() {
 let markdownView = "rendered";
 let vttView = "transcript";
 
+function applyFullscreen(value) {
+  setState({ pvFullscreen: value });
+  root.classList.toggle("pv-fullscreen", value);
+  const full = document.getElementById("pv-fullscreen");
+  if (full) {
+    full.setAttribute("aria-pressed", value);
+    full.textContent = value ? "Exit fullscreen" : "Fullscreen";
+    full.title = full.textContent;
+  }
+}
+
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement && pvFullscreen) applyFullscreen(false);
+});
+
 async function rawMarkdown(node) {
   try {
     const blob = await FS.blob(node);
@@ -406,12 +421,21 @@ function setupPreviewActions(n) {
   }
   const full = document.getElementById("pv-fullscreen");
   if (full) {
-    full.onclick = () => {
-      setState({ pvFullscreen: !pvFullscreen });
-      root.classList.toggle("pv-fullscreen", pvFullscreen);
-      full.setAttribute("aria-pressed", pvFullscreen);
-      full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
-      full.title = full.textContent;
+    full.onclick = async () => {
+      const preview = document.getElementById("preview");
+      if (pvFullscreen) {
+        if (document.fullscreenElement) await document.exitFullscreen();
+        applyFullscreen(false);
+        return;
+      }
+      applyFullscreen(true);
+      if (preview?.requestFullscreen) {
+        try {
+          await preview.requestFullscreen();
+        } catch (_) {
+          /* Keep the layout fallback when browser fullscreen is unavailable. */
+        }
+      }
     };
     full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
   }
