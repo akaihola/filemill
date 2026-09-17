@@ -9,10 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [*] `.rst` files still don't render or highlight at all even though task
-  63b87ad4-33c9-4f45-ae24-280034e8b0eb claims to have implemented and tested it. Do
-  red-green testing, investigate, and fix.
-
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
       now return the shared client shell.
 
@@ -175,6 +171,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   Iterate until fixed.
 
 ## Scheduled
+
+- [*] `.rst` files still don't render or highlight at all even though task
+  63b87ad4-33c9-4f45-ae24-280034e8b0eb claims to have implemented and tested it. Do
+  red-green testing, investigate, and fix.
 
 - [*] Opening `https://gogo.crane-boa.ts.net:8445/<any path>` without query parameters
   redirects to `https://gogo.crane-boa.ts.net:8445/` and spins `Reading...` for a very
