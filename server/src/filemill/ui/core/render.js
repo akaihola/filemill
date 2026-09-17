@@ -349,7 +349,7 @@ function setupPreviewActions(n) {
   const name = String(n.name || "");
   const fileKind = n.fileKind || classifyFile(name, n);
   const markdown = fileKind.preview === "md" || fileKind.preview === "markdown";
-  const vtt = /\.vtt$/i.test(n.name);
+  const vtt = (n.fileKind || classifyFile(n.name, n)).preview === "vtt";
   const applicable = fileKind.preview !== "text";
   if (mdViews) {
     mdViews.hidden = !markdown;
@@ -474,9 +474,9 @@ async function fillPreview(n) {
 
   let html = null;
   try {
-    html = ["md", "markdown"].includes(classifyFile(n.name).preview) && markdownView === "raw"
+    html = ["md", "markdown"].includes((n.fileKind || classifyFile(n.name, n)).preview) && markdownView === "raw"
       ? (await rawMarkdown(n) || await PREVIEW.render(n))
-      : /\.vtt$/i.test(n.name) && previewView() !== "highlight"
+      : (n.fileKind || classifyFile(n.name, n)).preview === "vtt" && previewView() !== "highlight"
       ? await PREVIEW.render({ ...n, previewFormat: vttView })
       : await PREVIEW.render(n);
   } catch (err) {

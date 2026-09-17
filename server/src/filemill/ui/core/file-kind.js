@@ -18,6 +18,9 @@ export function classifyFile(name, { dir = false, vpath = "", csv = false,
   }
   if (ext === "desktop") return { kind: "link", preview: "desktop", editable: false };
   if (ext === "vtt") return { kind: "file", preview: "vtt", editable: true };
+  if (ext === "jsonl" || ext === "csv") {
+    return { kind: "file", preview: ext, editable: true };
+  }
   if (RICH.has(ext)) {
     return { kind: "file", preview: ext, editable: ["md", "markdown", "rst"].includes(ext) };
   }

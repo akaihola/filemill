@@ -8,8 +8,6 @@ from urllib.parse import quote as urlquote
 
 from filemill.vfs import classify_path
 
-IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
-
 # Largest file Pygments is asked to colour, and largest one shown as plain <pre>.
 SYNTAX_SIZE_LIMIT = 512 * 1024  # 512 KB
 RAW_SIZE_LIMIT = SYNTAX_SIZE_LIMIT
