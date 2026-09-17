@@ -150,7 +150,7 @@ window.__mk = (nbig) => {
     // repeat the id has to carry the column; a bad line or an oversized file
     // must land on the denied note, not a broken column.
     D('tables', [
-      F('log.jsonl', '{"id":2,"title":"Second","ts":"2026-01-02","tags":[]}\n'
+      F('log.jsonl', '{"id":2,"title":"Second","ts":"2026-01-02","tags":["a",{"ok":true}]}\n'
                    + '{"id":1,"title":"First","ts":"2026-01-01","tags":["a"]}\n'
                    + '{"id":3,"title":"Third","ts":"2026-01-03","tags":null}\n'),
       F('dup.jsonl', '{"id":10,"title":"Same"}\n{"id":11,"title":"Same"}\n'),
@@ -1038,7 +1038,13 @@ async def main():
         await pg.click('.col[data-i="3"] .row:has-text("tags")')
         await pg.wait_for_timeout(300)
         check("A JSONL row's nested array remains navigable",
-              await pg.evaluate("__rows(4)") == [])
+              await pg.evaluate("__rows(4)") == ["0", "1"])
+        await pg.click('.col[data-i="4"] .row:has-text("1")')
+        await pg.wait_for_timeout(300)
+        check("A JSONL array object remains navigable",
+              await pg.evaluate("__rows(5)") == ["ok"])
+        await pg.evaluate("applyPath(['tables', 'log.jsonl', 'Second'])")
+        await pg.wait_for_timeout(300)
         await pg.click('.col[data-i="3"] .row:has-text("title")')
         await pg.wait_for_timeout(300)
         check("A JSONL scalar keeps the JSON scalar preview",
