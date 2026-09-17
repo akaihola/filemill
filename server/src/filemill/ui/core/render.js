@@ -161,7 +161,7 @@ export function columnFor(node) {
   return c;
 }
 
-export function render(keepScroll) {
+export function render(keepScroll, preserveFolded = false) {
   if (!path.length) return;
   const sig =
     `${state.dotfiles}|${root.dataset.density}|${root.dataset.theme}` +
@@ -250,7 +250,7 @@ export function render(keepScroll) {
   }
   actions.renderCrumbs();
   sortSay(sortStatus());
-  layout(keepScroll);
+  layout(keepScroll, preserveFolded);
   syncURL();
 }
 
