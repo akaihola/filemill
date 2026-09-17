@@ -843,6 +843,21 @@ def test_nothing_is_fetched_from_a_cdn(page):
     assert external == []
 
 
+def test_the_server_edition_registers_core_and_pptx_renderers(page):
+    """core/renderers.js: the same core table as the static build, and of the
+    rich entries only .pptx, because everything else is rendered by Python."""
+    page.open("")
+    assert page.evaluate("RENDERERS.map(e => e.kind)") == [
+        "image",
+        "pdf",
+        "html",
+        "desktop",
+        "vtt",
+        "text",
+        "pptx",
+    ]
+
+
 def test_no_console_errors(page):
     page.open("notes/deep/leaf.md")
     page.click('.col[data-i="0"] .row:has-text("code")')
