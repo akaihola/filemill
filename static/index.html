@@ -2412,6 +2412,7 @@ const K_SQL =
    without a second mechanism. `n: false` turns the number class off. */
 const HL_SPECS = {
   markdown: { c: HL_HASH, s: HL_TICK, k: hlWords("true false") },
+  rst: { c: "\\.\\.[^\\n]*", s: HL_TICK, k: hlWords("attention code-block note warning") },
   js: { c: HL_SLASH, s: HL_TICK, k: hlWords(K_JS) },
   ts: { c: HL_SLASH, s: HL_TICK, k: hlWords(K_TS) },
   py: { c: HL_HASH, s: HL_TRIPLE, k: hlWords(K_PY) },
@@ -2535,6 +2536,7 @@ const HL_SPECS = {
 const HL_ALIAS = {
   md: "markdown",
   markdown: "markdown",
+  rst: "rst",
   html: "xml",
   htm: "xml",
   mjs: "js",
@@ -3210,7 +3212,7 @@ let applying = false;
 let renderPage, columnCache;
 const setDeepLinkActions = (
   actions,
-) => ({ renderPage, colCache: columnCache } = actions);
+) => ({ render: renderPage, colCache: columnCache } = actions);
 
 function currentPath() {
   const names = path.slice(1).map((p) => p.name);
@@ -4422,6 +4424,15 @@ document.addEventListener("keydown", (e) => {
   }
   if (!document.getElementById("welcome")?.hidden) return;
   if (e.target.closest?.("#preview")) {
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      if (focusCol > 0) {
+        setState({ focusCol: focusCol - 1 });
+        unfoldTo(focusCol);
+        render(true);
+      }
+      return;
+    }
     if (["ArrowUp", "ArrowDown", "PageUp", "PageDown"].includes(e.key)) {
       const body = document.querySelector("#preview .pv-body");
       e.preventDefault();

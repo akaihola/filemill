@@ -74,6 +74,7 @@ const K_SQL =
    without a second mechanism. `n: false` turns the number class off. */
 const HL_SPECS = {
   markdown: { c: HL_HASH, s: HL_TICK, k: hlWords("true false") },
+  rst: { c: "\\.\\.[^\\n]*", s: HL_TICK, k: hlWords("attention code-block note warning") },
   js: { c: HL_SLASH, s: HL_TICK, k: hlWords(K_JS) },
   ts: { c: HL_SLASH, s: HL_TICK, k: hlWords(K_TS) },
   py: { c: HL_HASH, s: HL_TRIPLE, k: hlWords(K_PY) },
@@ -197,6 +198,7 @@ const HL_SPECS = {
 const HL_ALIAS = {
   md: "markdown",
   markdown: "markdown",
+  rst: "rst",
   html: "xml",
   htm: "xml",
   mjs: "js",

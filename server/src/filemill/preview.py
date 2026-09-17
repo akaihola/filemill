@@ -59,6 +59,8 @@ def render_preview(path: Path, state=None, preview_url: str | None = None) -> st
 
     if ext == ".md":
         return _preview_md(path, state)
+    elif ext == ".rst":
+        return _preview_rst(path)
     elif ext == ".docx":
         return _preview_docx(path)
     elif ext == ".pptx":
@@ -168,6 +170,33 @@ def _preview_md(path: Path, state=None) -> str:
             {"source_path": path, "view_state": state},
         )
         return f'<div class="preview-md">{html_body}</div>'
+    except Exception as e:
+        return (
+            f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'
+        )
+
+
+def _preview_rst(path: Path) -> str:
+    try:
+        from docutils.core import publish_parts
+
+        parts = publish_parts(
+            path.read_text(encoding="utf-8"),
+            writer_name="html5",
+            settings_overrides={
+                "raw_enabled": False,
+                "file_insertion_enabled": False,
+                "report_level": 5,
+                "embed_stylesheet": False,
+            },
+        )
+        title = (
+            f'<h1>{html_lib.escape(parts["title"])}</h1>'
+            if parts.get("title")
+            else ""
+        )
+        body = title + parts["body"]
+        return f'<div class="preview-rst">{body}</div>'
     except Exception as e:
         return (
             f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'
