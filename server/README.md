@@ -61,6 +61,34 @@ expose the server beyond loopback.
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for the development rules.
 
+### Browser test setups on gogo
+
+Run these as `agent@gogo`. Create the fixture roots once, then keep one
+foreground process per setup. The ports are reserved for the matching user
+services that will be added separately.
+
+```bash
+ssh agent@gogo
+mkdir -p ~/filemill-browser/{ui,keyboard-desktop,keyboard-mobile}
+printf '# Browser UI\n' > ~/filemill-browser/ui/README.md
+mkdir -p ~/filemill-browser/keyboard-desktop/my-knowledge/docs/subdir
+printf '# Topic\n' > ~/filemill-browser/keyboard-desktop/my-knowledge/docs/topic.md
+printf '# Next\n' > ~/filemill-browser/keyboard-desktop/my-knowledge/docs/subdir/next.md
+printf '# Root\n' > ~/filemill-browser/keyboard-desktop/root-note.md
+cp -a ~/filemill-browser/keyboard-desktop/. ~/filemill-browser/keyboard-mobile/
+
+cd ~/prg/filemill/server
+uv run filemill ~/filemill-browser/ui --bind 0.0.0.0 --port 8452
+uv run filemill ~/filemill-browser/keyboard-desktop --bind 0.0.0.0 --port 8453
+uv run filemill ~/filemill-browser/keyboard-mobile --bind 0.0.0.0 --port 8454
+```
+
+Use `:8452` for `test_browser_new_ui.py`, `:8453` for the desktop viewport in
+`test_browser_keyboard.py`, and `:8454` for its touch-sized portrait or
+landscape viewport. Select the viewport in the browser; the HTTP setup is the
+same. Stop foreground processes with Ctrl-C. Use `127.0.0.1` instead of
+`0.0.0.0` for local-only testing on gogo.
+
 Quick start:
 
 ```bash
