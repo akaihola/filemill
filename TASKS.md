@@ -8,11 +8,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   architecture proposal, conditional on a fourth provider or a pagination bug.
 
 ## Ordered backlog
-- [*] For user testing, document how to run on agent@gogo instances of Filemill that are
-  as close as possible to the browser test setup you have in the test suite. Put each
-  different browser test setup in its own HTTP port, and link them in
-  `/home/agent/index.html`. We will separately set up systemd user services for each
-  different browser test setup.
 
 - [*] Opening `https://gogo.crane-boa.ts.net:8445/<any path>` without query parameters
   redirects to `https://gogo.crane-boa.ts.net:8445/` and spins `Reading...` for a very
@@ -185,6 +180,14 @@ Rules for TASKS.md usage are at the bottom of the file.
   Iterate until fixed.
 
 ## Scheduled
+
+- [*] For user testing, document how to run on agent@gogo instances of Filemill that are
+  as close as possible to the browser test setup you have in the test suite. Put each
+  different browser test setup in its own HTTP port, and link them in
+  `/home/agent/index.html`. We will separately set up systemd user services for each
+  different browser test setup.
+
+
 - [*] GET https://gogo.crane-boa.ts.net:8445/favicon.ico
 
     ```
