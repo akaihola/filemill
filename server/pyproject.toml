@@ -9,6 +9,7 @@ dependencies = [
     "mdit-py-plugins",
     "pygments",
     "mammoth",
+    "docutils",
     "python-pptx",
     "typer",
     "linkify-it-py>=2.1.0",
