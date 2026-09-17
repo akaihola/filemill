@@ -8,10 +8,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   architecture proposal, conditional on a fourth provider or a pagination bug.
 
 ## Ordered backlog
-- [*] Bug: after focusing the preview pane using the arrow right key, the arrow left key
-  doesn't return back and focus the parent column. Instead, it scrolls the page
-  horizontally to the left. Make sure the arrow left key returns to the parent column
-  after focusing the preview pane.
 
 - [*] For user testing, document how to run on agent@gogo instances of Filemill that are
   as close as possible to the browser test setup you have in the test suite. Put each
@@ -190,6 +186,11 @@ Rules for TASKS.md usage are at the bottom of the file.
   Iterate until fixed.
 
 ## Scheduled
+
+- [*] Bug: after focusing the preview pane using the arrow right key, the arrow left key
+  doesn't return back and focus the parent column. Instead, it scrolls the page
+  horizontally to the left. Make sure the arrow left key returns to the parent column
+  after focusing the preview pane.
 
 - [*] GET https://gogo.crane-boa.ts.net:8445/favicon.ico
 
