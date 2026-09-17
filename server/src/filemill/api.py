@@ -44,7 +44,6 @@ from filemill.vfs import REGISTRY, classify_path
 RENDER_MAX = 8 * 1024 * 1024
 SEARCH_QUERY_MAX = 200
 SEARCH_MATCH_MAX = 100
-SEARCH_OUTPUT_MAX = 256 * 1024
 # The demo proxy allows more than the old two-second subprocess limit.
 SEARCH_TIMEOUT = 10
 DIR_PAGE_SIZE = 500
@@ -54,8 +53,8 @@ class SearchError(Exception):
     """A search could not be completed by the server."""
 
 
-def search_root(root: Path, query: str) -> list[dict]:
-    """Find bounded fixed-string matches below *root* with ripgrep."""
+def search_root(root: Path, query: str, focused: str = "") -> list[dict]:
+    """Find bounded fixed-string matches below the focused directory."""
     query = query.strip()
     if not query:
         raise SearchError("Search query is empty")
@@ -70,7 +69,7 @@ def search_root(root: Path, query: str) -> list[dict]:
                 "--line-number",
                 "--column",
                 "--max-count",
-                str(SEARCH_MATCH_MAX),
+                "1",
                 "--max-columns",
                 "240",
                 "--max-columns-preview",
@@ -86,7 +85,7 @@ def search_root(root: Path, query: str) -> list[dict]:
                 "!.cache/**",
                 "--",
                 query,
-                ".",
+                focused or ".",
             ],
             cwd=root,
             capture_output=True,
@@ -98,8 +97,6 @@ def search_root(root: Path, query: str) -> list[dict]:
         raise SearchError("Search is unavailable: ripgrep is not installed") from exc
     except subprocess.TimeoutExpired as exc:
         raise SearchError("Search timed out") from exc
-    if len(result.stdout.encode()) > SEARCH_OUTPUT_MAX:
-        raise SearchError("Search results are too large")
     if result.returncode not in (0, 1):
         raise SearchError("Search failed")
     matches = []
@@ -120,6 +117,8 @@ def search_root(root: Path, query: str) -> list[dict]:
                 "context": data["lines"]["text"].rstrip("\n"),
             }
         )
+        if len(matches) == SEARCH_MATCH_MAX:
+            break
     return matches
 
 

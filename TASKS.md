@@ -150,12 +150,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   pinned renderer modules from `ui/vendor/`. Then delete `rendering.py` and its deps.
     - Depends on: [19]
 
-- [*] Task e02c3b0b-21a0-4be0-bcdd-bce0d99206f4 didn't fix file content search. It
-  either returns `Search error: search result too large` or `No matches`. Make sure
-  search only covers the current focused directory and its subdirectories recursively.
-  Do red-green testing: first reproduce, then investigate, plan, implement, and test.
-  Iterate until fixed.
-
 - [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
   Today `[text](~/note.md)` is a dead link although the file exists.
 
@@ -174,6 +168,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## In Progress
 - [*] Add a PWA manifest and service worker to the static bundle so `static/index.html`
   installs as a standalone window. The server edition already serves `/manifest.json`.
+
+- [*] Task e02c3b0b-21a0-4be0-bcdd-bce0d99206f4 didn't fix file content search. It
+  either returns `Search error: search result too large` or `No matches`. Make sure
+  search only covers the current focused directory and its subdirectories recursively.
+  Do red-green testing: first reproduce, then investigate, plan, implement, and test.
+  Iterate until fixed.
 
 
 - The `Fullscreen` button in the preview pane doesn't do anything. No errors seen on the
