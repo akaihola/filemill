@@ -31,6 +31,14 @@ the whole mechanism. There is no framework under it.
 yet" and puts a spinner in the column. Nothing else is required. That is why a
 SQLite table or a JSON document can be a directory for the UI.
 
+Directory adapters own entry order. The contract is directories first, then
+case-insensitive names, with the adapter's tie-breaker. An adapter sets
+`ordered` when its loaded children follow that order; shared sorting preserves
+that order for the default name view. Selecting size or modified still applies
+the shared metadata sort. The HTTP adapter applies name order on the server,
+and the File System Access adapter applies equivalent browser collation while
+loading.
+
 **`PREVIEW`** — `render(node) → Promise<string|null>`, plus an optional
 `revoke()`. It returns the HTML for the preview _body_ only. The pane's header,
 hero and size/modified list belong to core, and so does the staleness guard. A

@@ -36,7 +36,7 @@ from pathlib import Path
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
 from filemill.preview import read_text, valid_text
-from filemill.vfs import REGISTRY, classify_path
+from filemill.vfs import REGISTRY, classify_path, entry_order_key
 
 # Largest body /api/render will render and /api/save will write. Generous for
 # text, small enough that a stray multi-gigabyte file cannot be turned into a
@@ -151,7 +151,7 @@ def dir_json(target: Path, page: int = 1) -> JSONResponse:
         for child in target.iterdir():
             try:
                 is_dir = child.is_dir()
-                e = {"name": child.name, "dir": is_dir}
+                e = {"name": child.name, "dir": is_dir, "ordered": True}
                 if not is_dir:
                     st = child.stat()
                     e["size"] = st.st_size
@@ -162,12 +162,20 @@ def dir_json(target: Path, page: int = 1) -> JSONResponse:
             except OSError:
                 # A broken symlink is an entry that exists and cannot be
                 # stat()ed; showing it as an unreadable file beats dropping it.
-                entries.append({"name": child.name, "dir": False, "size": 0, "mod": 0})
+                entries.append(
+                    {
+                        "name": child.name,
+                        "dir": False,
+                        "size": 0,
+                        "mod": 0,
+                        "ordered": True,
+                    }
+                )
     except PermissionError:
         denied = "No permission to read"
     except OSError as exc:
         denied = str(exc)
-    entries.sort(key=lambda e: (not e["dir"], e["name"].lower(), e["name"]))
+    entries.sort(key=lambda e: entry_order_key(e["name"], e["dir"]))
     total = len(entries)
     if total > DIR_PAGE_SIZE:
         pages = math.ceil(total / DIR_PAGE_SIZE)
