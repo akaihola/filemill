@@ -28,6 +28,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { PreviewLocal } from "./preview-local.js";
 import { TEXT_MAX } from "../core/limits.js";
+import { classifyFile } from "../core/file-kind.js";
 import { esc } from "../core/icons.js";
 import { choose } from "../core/nav.js";
 import { FS } from "../core/ports.js";
@@ -96,11 +97,6 @@ function load(name) {
 }
 
 offerRichToggle(richEnabled, setRich);
-
-const MD_RE = /\.(md|markdown)$/i;
-const DOCX_RE = /\.docx$/i;
-const RST_RE = /\.rst$/i;
-const PPTX_RE = /\.pptx$/i;
 
 const NOTE =
   `<p class="pv-note">Offline — showing the source. Rich rendering ` +
@@ -212,8 +208,9 @@ export const PreviewRich = {
     if (!richEnabled()) return PreviewLocal.render(node);
 
     if (
-      !MD_RE.test(node.name) && !DOCX_RE.test(node.name) &&
-      !RST_RE.test(node.name) && !PPTX_RE.test(node.name)
+      !["md", "markdown", "rst", "docx", "pptx"].includes(
+        classifyFile(node.name, node).preview,
+      )
     ) {
       return PreviewLocal.render(node);
     }
@@ -222,7 +219,7 @@ export const PreviewRich = {
     if (!blob) return PreviewLocal.render(node);
 
     try {
-      if (PPTX_RE.test(node.name)) {
+      if (classifyFile(node.name, node).preview === "pptx") {
         const { createPptxViewer } = await load("pptx-vanilla-viewer");
         const id = `pptx-${crypto.randomUUID()}`;
         /* The viewer draws into a live element, and the pane only receives
@@ -251,7 +248,7 @@ export const PreviewRich = {
         });
         return `<div id="${id}" class="pv-pptx" aria-live="polite">Loading PowerPoint preview…</div>`;
       }
-      if (DOCX_RE.test(node.name)) {
+      if (classifyFile(node.name, node).preview === "docx") {
         const mammoth = await load("mammoth");
         const { value } = await mammoth.convertToHtml(
           { arrayBuffer: await blob.arrayBuffer() },
@@ -262,13 +259,13 @@ export const PreviewRich = {
       if (blob.size > TEXT_MAX) return PreviewLocal.render(node);
       const text = await blob.text();
 
-      if (RST_RE.test(node.name)) {
+      if (classifyFile(node.name, node).preview === "rst") {
         return `<div class="pv-rich">${await rst(text)}</div>`;
       }
       return `<div class="pv-rich">${await markdown(text)}</div>`;
     } catch (err) {
       /* Offline, blocked, or the CDN moved. The file is still readable. */
-      if (PPTX_RE.test(node.name)) {
+      if (classifyFile(node.name, node).preview === "pptx") {
         return `<div class="preview-error">PowerPoint preview unavailable: ${
           esc(String(err.message || err))
         }</div>`;
@@ -285,7 +282,7 @@ export const withPptxPreview = (provider) => ({
     PreviewRich.revoke();
   },
   render(node) {
-    return PPTX_RE.test(node.name)
+    return classifyFile(node.name, node).preview === "pptx"
       ? PreviewRich.render(node)
       : provider.render(node);
   },

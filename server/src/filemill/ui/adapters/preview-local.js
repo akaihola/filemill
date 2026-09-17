@@ -21,6 +21,7 @@ import { FS } from "../core/ports.js";
 import { render } from "../core/render.js";
 import { hlHTML, hlLang, jsonHTML } from "../core/syntax.js";
 import { IMAGE_EXTENSIONS, TEXT_MAX } from "../core/limits.js";
+import { classifyFile } from "../core/file-kind.js";
 
 const IMG_RE = new RegExp(`\\.(${IMAGE_EXTENSIONS.join("|")})$`, "i");
 
@@ -118,23 +119,24 @@ export const PreviewLocal = {
     const blob = await FS.blob(node);
     if (!blob) return null;
 
-    if (IMG_RE.test(node.name)) {
+    const kind = classifyFile(node.name, node);
+    if (kind.preview === "image") {
       pvURL = URL.createObjectURL(blob);
       return `<img class="pv-img" src="${pvURL}" alt="">`;
     }
-    if (/\.pdf$/i.test(node.name)) {
+    if (kind.preview === "pdf") {
       pvURL = URL.createObjectURL(blob.slice(0, blob.size, "application/pdf"));
       return `<iframe class="pv-pdf" src="${pvURL}" title="${
         esc(node.name)
       }"></iframe>`;
     }
-    if (/\.html?$/i.test(node.name)) {
+    if (kind.preview === "html") {
       pvURL = URL.createObjectURL(blob.slice(0, blob.size, "text/html"));
       return `<iframe class="pv-html" src="${pvURL}" title="${
         esc(node.name)
       }"></iframe>`;
     }
-    if (/\.desktop$/i.test(node.name) && blob.size <= TEXT_MAX) {
+    if (kind.preview === "desktop" && blob.size <= TEXT_MAX) {
       return desktopCard(await blob.text()) ?? null;
     }
 

@@ -361,6 +361,27 @@ async def main():
         # covers both sides of that switch deliberately.
         await pg.evaluate("localStorage.setItem('filemill.rich','off')")
         await pg.wait_for_timeout(400)
+        cases = [
+            ("folder", {"dir": True}, ("folder", "none", False)),
+            ("data.db", {"provider": True}, ("vfs", "virtual", False)),
+            ("link.desktop", {}, ("link", "desktop", False)),
+            ("photo.png", {}, ("file", "image", False)),
+            ("doc.pdf", {}, ("file", "pdf", False)),
+            ("note.md", {}, ("file", "md", False)),
+            ("captions.vtt", {}, ("file", "vtt", False)),
+            ("source.py", {}, ("file", "text", True)),
+        ]
+        got = await pg.evaluate(
+            "cases => cases.map(([name, opts]) => [name, classifyFile(name, opts)])",
+            cases,
+        )
+        check(
+            "File-kind table matches the shared UI contract",
+            all(
+                (row[1]["kind"], row[1]["preview"], row[1]["editable"]) == expected
+                for row, (_, _, expected) in zip(got, cases)
+            ),
+        )
         check("file:// shows the localhost hint, not a dead picker",
               "file://" in await pg.inner_text("#w-msg"))
         await pg.evaluate(FAKE)
