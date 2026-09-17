@@ -6,7 +6,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { classifyFile } from "../core/file-kind.js";
 
-const NAME_COLLATOR = new Intl.Collator(undefined, { numeric: true });
+const FSA_COLLATOR = new Intl.Collator(undefined, { numeric: true });
 
 const fsaNode = (name, handle, parent = null) => ({
   name,
@@ -36,7 +36,7 @@ export const FSA = {
       }
       node.kids = kids.sort((a, b) => {
         const kind = !!b.dir - !!a.dir;
-        return kind || NAME_COLLATOR.compare(a.name, b.name);
+        return kind || FSA_COLLATOR.compare(a.name, b.name);
       });
       node.ordered = true;
       node.loading = null;
