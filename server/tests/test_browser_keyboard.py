@@ -621,6 +621,29 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
 
 
 @pytest.mark.integration
+def test_vertical_navigation_preserves_folded_ancestor(live_server: str):
+    with _ui_page(live_server) as page:
+        page.keyboard.press("ArrowDown")
+        page.keyboard.press("ArrowRight")
+        page.wait_for_timeout(500)
+        page.keyboard.press("ArrowRight")
+        page.wait_for_timeout(500)
+
+        page.evaluate("""() => {
+            const finder = document.getElementById("finder");
+            finder.scrollLeft = finder.scrollWidth;
+        }""")
+        page.wait_for_function(
+            "() => document.querySelector('.col[data-i=\"0\"]').classList.contains('spine')"
+        )
+        page.keyboard.press("ArrowDown")
+        page.wait_for_timeout(300)
+        assert page.locator('.col[data-i="0"]').evaluate(
+            "el => el.classList.contains('spine')"
+        )
+
+
+@pytest.mark.integration
 def test_mobile_folder_click_reveals_new_column_without_flushing_left(
     live_server: str,
 ):

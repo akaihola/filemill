@@ -41,12 +41,12 @@ function autoPreview(node) {
   if (pick) sel[i] = pick.name;
 }
 
-export async function choose(colIdx, node) {
+export async function choose(colIdx, node, keepScroll = false) {
   const seq = ++navSeq;
   setState({ path: path.slice(0, colIdx + 1), sel: sel.slice(0, colIdx) });
   sel[colIdx] = node.name;
   setState({ focusCol: colIdx });
-  if (!node.dir) return void render();
+  if (!node.dir) return void render(keepScroll);
 
   const reading = node.kids === null ? FS.ensureLoaded(node) : null;
   if (reading) {
@@ -55,24 +55,24 @@ export async function choose(colIdx, node) {
        measures empty — it would open at the minimum width and jump wider a
        frame later. Most directories arrive well inside the grace; a slower one
        opens on the spinner, which is honest about the wait. */
-    render();
+    render(keepScroll);
     await Promise.race([
       reading,
       new Promise((r) => setTimeout(r, OPEN_GRACE)),
     ]);
     if (seq !== navSeq) return; /* selection moved on while it was read */
     if (!node.dir) {
-      return void render(); /* a virtual wrapper declined the file */
+      return void render(keepScroll); /* a virtual wrapper declined the file */
     }
   }
   path.push(node);
   autoPreview(node); /* kids already in memory (revisit, fast read) */
-  render();
+  render(keepScroll);
   if (reading) {
     await reading;
     if (seq !== navSeq || !path.includes(node)) return; /* still up? repaint */
     autoPreview(node); /* kids landed after the grace period */
-    render();
+    render(keepScroll);
   }
 }
 
@@ -372,7 +372,7 @@ document.addEventListener("keydown", (e) => {
         Math.min(rows.length - 1, ci + (e.key === "ArrowDown" ? 1 : -1)),
       );
     }
-    rows[ci].click();
+    choose(focusCol, c.kids[ci], true);
     revealRow(rows[ci]);
   } else if (e.key === "Home" || e.key === "End") {
     e.preventDefault();
