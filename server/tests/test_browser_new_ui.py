@@ -574,6 +574,20 @@ def test_arrow_left_unfolds_each_focused_ancestor(page):
         assert page.evaluate("sel") == selected
 
 
+def test_preview_arrows_fold_all_then_restore_only_document_parent(page):
+    page.set_viewport_size({"width": 760, "height": 700})
+    page.open("notes/deep/leaf.md")
+    page.keyboard.press("ArrowRight")
+    _scroll_settled(page)
+    assert page.evaluate("document.activeElement.id") == "preview"
+    assert page.evaluate("folded") == page.evaluate("path.length")
+
+    page.keyboard.press("ArrowLeft")
+    _scroll_settled(page)
+    state = page.evaluate("({focusCol, folded, spines: [...document.querySelectorAll('.col.spine')].map(c => +c.dataset.i)})")
+    assert state == {"focusCol": 1, "folded": 1, "spines": [0]}
+
+
 def test_back_steps_out_of_the_folder_it_entered(page):
     page.open()
     page.click('.col[data-i="0"] .row:has-text("notes")')
