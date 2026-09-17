@@ -129,10 +129,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 - [*] Each row of a JSONL file must be presented exactly like a hierarchical nested view
-- [32] Render Markdown and `.docx` in the browser in the server edition too. Serve the
-  pinned renderer modules from `ui/vendor/`. Then delete `rendering.py` and its deps.
-    - Depends on: [19]
-
   of a JSON file. Depends on [5].
 
 - When an object or list is selected in a hierarchical nested view of JSON, show the
@@ -346,6 +342,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [32] Render Markdown and `.docx` in the browser in the server edition too. Serve the
+  pinned renderer modules from `ui/vendor/`. Then delete `rendering.py` and its deps.
+    - Depends on: [19]
 
 - [34] Make the SQLite provider return JSON only. The client renders tables and rows
   with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close [9].
