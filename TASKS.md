@@ -165,9 +165,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
   Today `[text](~/note.md)` is a dead link although the file exists.
 
-- [36] Decide how the installed PWA gets a running server: a systemd or launchd unit, a
-  launcher, a desktop shell, or only a better "server not running" page.
-
 - [6] Centralize file-kind classification across filesystem producers and preview/edit consumers. Add one test table per language that both sides share.
     - Depends on: [19]
 
@@ -181,6 +178,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [36] Decide how the installed PWA gets a running server: a systemd or launchd unit, a
+  launcher, a desktop shell, or only a better "server not running" page.
+
 - [*] `.rst` files still don't render or highlight at all even though task
   63b87ad4-33c9-4f45-ae24-280034e8b0eb claims to have implemented and tested it. Do
   red-green testing, investigate, and fix.
