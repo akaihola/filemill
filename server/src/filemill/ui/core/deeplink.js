@@ -37,7 +37,7 @@ let applying = false;
 let renderPage, columnCache;
 export const setDeepLinkActions = (
   actions,
-) => ({ renderPage, colCache: columnCache } = actions);
+) => ({ render: renderPage, colCache: columnCache } = actions);
 
 export function currentPath() {
   const names = path.slice(1).map((p) => p.name);

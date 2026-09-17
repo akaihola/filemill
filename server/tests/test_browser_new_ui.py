@@ -814,6 +814,13 @@ def test_no_console_errors(page):
     assert page.errors == []
 
 
+def test_missing_favicon_does_not_raise_in_the_browser(page):
+    page.open()
+    page.errors.clear()
+    assert page.evaluate("fetch('/favicon.ico').then(r => r.status)") == 404
+    assert not any("renderPage is not a function" in error for error in page.errors)
+
+
 # ── virtual filesystems ──────────────────────────────────────────────────────
 #
 # The claim in ui/src/core/ports.js is that a node only needs name/dir/kids, so a
