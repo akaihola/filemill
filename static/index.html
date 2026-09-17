@@ -3338,6 +3338,29 @@ const IMAGE_EXTENSIONS = [
   "svg",
 ];
 
+/* ═══ core/file-kind.js ═══ */
+const RICH = new Set(["md", "markdown", "rst", "docx", "pptx"]);
+const image = new RegExp(`^(?:${IMAGE_EXTENSIONS.join("|")})$`, "i");
+
+function classifyFile(name, { dir = false, vpath = "", csv = false,
+  jsonl = false } = {}) {
+  if (dir) return { kind: "folder", preview: "none", editable: false };
+  if (vpath || csv || jsonl) {
+    return { kind: "vfs", preview: "virtual", editable: false };
+  }
+  const match = String(name || "").toLowerCase().match(/\.([^.]+)$/);
+  const ext = match?.[1] || "";
+  if (image.test(ext)) return { kind: "file", preview: "image", editable: false };
+  if (ext === "pdf") return { kind: "file", preview: "pdf", editable: false };
+  if (ext === "html" || ext === "htm") {
+    return { kind: "file", preview: "html", editable: false };
+  }
+  if (ext === "desktop") return { kind: "link", preview: "desktop", editable: false };
+  if (ext === "vtt") return { kind: "file", preview: "vtt", editable: false };
+  if (RICH.has(ext)) return { kind: "file", preview: ext, editable: false };
+  return { kind: "file", preview: "text", editable: true };
+}
+
 /* ═══ core/render.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Render
@@ -3621,8 +3644,6 @@ function renderPreview() {
   return pv;
 }
 
-const RENDERED_RE = /\.(md|markdown|rst|docx|pptx|html?|desktop)$/i;
-const MARKDOWN_RE = /\.(md|markdown)$/i;
 let markdownView = "rendered";
 let vttView = "transcript";
 
@@ -3658,9 +3679,10 @@ function setupPreviewActions(n) {
   const mdViews = document.getElementById("pv-md-views");
   const vttViews = document.getElementById("pv-vtt-views");
   const name = String(n.name || "");
-  const markdown = MARKDOWN_RE.test(name);
+  const fileKind = n.fileKind || classifyFile(name, n);
+  const markdown = fileKind.preview === "md" || fileKind.preview === "markdown";
   const vtt = /\.vtt$/i.test(n.name);
-  const applicable = RENDERED_RE.test(name);
+  const applicable = fileKind.preview !== "text";
   if (mdViews) {
     mdViews.hidden = !markdown;
     for (
@@ -3784,7 +3806,7 @@ async function fillPreview(n) {
 
   let html = null;
   try {
-    html = MARKDOWN_RE.test(n.name) && markdownView === "raw"
+    html = ["md", "markdown"].includes(classifyFile(n.name).preview) && markdownView === "raw"
       ? (await rawMarkdown(n) || await PREVIEW.render(n))
       : /\.vtt$/i.test(n.name) && previewView() !== "highlight"
       ? await PREVIEW.render({ ...n, previewFormat: vttView })
@@ -3815,14 +3837,9 @@ async function fillPreview(n) {
    preview in adapters/preview-local.js (same extensions, same cap), but it is
    core's own copy: a build picks its preview provider freely, and Edit has to
    work with any of them. Keep the two lists in step. */
-const NON_EDIT_RE = new RegExp(
-  `\\.(desktop|docx|pptx|pdf|html?|${IMAGE_EXTENSIONS.join("|")})$`,
-  "i",
-);
-
 async function editableText(n) {
   if (
-    !FS.write || n.dir || n.vpath || NON_EDIT_RE.test(n.name) ||
+    !FS.write || !classifyFile(n.name, n).editable ||
     (n.meta?.size ?? 0) > EDIT_MAX
   ) return null;
   const blob = await FS.blob(n);
@@ -4557,7 +4574,7 @@ const JSONL_TEXT = ["title", "name", "description", "summary", "label"];
 const JSONL_SCALAR = ["timestamp", "time", "ts", "id", "uuid", "key"];
 const JSON_MAX = TEXT_MAX;
 
-const isJsonl = (n) => /\.jsonl$/i.test(n.name);
+const isJsonl = (n) => classifyFile(n.name).preview === "text" && /\.jsonl$/i.test(n.name);
 const isJson = (n) => /\.jsonc?$/i.test(n.name);
 const jsonlLabel = (v) =>
   ((s) => s.length > JSONL_LABEL ? s.slice(0, JSONL_LABEL - 1) + "…" : s)(
@@ -4646,6 +4663,7 @@ const withVirtual = (fs) => ({
             dir: true,
             kids: null,
             jsonl: true,
+            fileKind: classifyFile(k.name, { jsonl: true }),
             ordered: true,
           });
         }
@@ -4821,7 +4839,7 @@ function csvParse(text) {
   return { headers, records };
 }
 
-const isCsv = (n) => /\.csv$/i.test(n.name);
+const isCsv = (n) => classifyFile(n.name).preview === "text" && /\.csv$/i.test(n.name);
 
 function csvLabels(records, key) {
   const seen = new Set();
@@ -4859,7 +4877,13 @@ const withCsv = (fs) => ({
       await fs.ensureLoaded(node);
       for (const k of node.kids || []) {
         if (!k.dir && isCsv(k)) {
-          Object.assign(k, { dir: true, kids: null, csv: true, ordered: true });
+          Object.assign(k, {
+            dir: true,
+            kids: null,
+            csv: true,
+            fileKind: classifyFile(k.name, { csv: true }),
+            ordered: true,
+          });
         }
       }
       return;
@@ -5009,12 +5033,14 @@ async function mountRoot(node, title = node.name) {
    Fills the FS port (see core/ports.js). Nodes carry the handle they came
    from; nothing else in the app ever touches it.
    ═══════════════════════════════════════════════════════════════════════════ */
+
 const fsaNode = (name, handle, parent = null) => ({
   name,
   handle,
   parent,
   dir: handle.kind === "directory",
   kids: handle.kind === "directory" ? null : undefined,
+  fileKind: classifyFile(name, { dir: handle.kind === "directory" }),
 });
 
 const FSA = {
@@ -5203,23 +5229,24 @@ const PreviewLocal = {
     const blob = await FS.blob(node);
     if (!blob) return null;
 
-    if (IMG_RE.test(node.name)) {
+    const kind = classifyFile(node.name, node);
+    if (kind.preview === "image") {
       pvURL = URL.createObjectURL(blob);
       return `<img class="pv-img" src="${pvURL}" alt="">`;
     }
-    if (/\.pdf$/i.test(node.name)) {
+    if (kind.preview === "pdf") {
       pvURL = URL.createObjectURL(blob.slice(0, blob.size, "application/pdf"));
       return `<iframe class="pv-pdf" src="${pvURL}" title="${
         esc(node.name)
       }"></iframe>`;
     }
-    if (/\.html?$/i.test(node.name)) {
+    if (kind.preview === "html") {
       pvURL = URL.createObjectURL(blob.slice(0, blob.size, "text/html"));
       return `<iframe class="pv-html" src="${pvURL}" title="${
         esc(node.name)
       }"></iframe>`;
     }
-    if (/\.desktop$/i.test(node.name) && blob.size <= TEXT_MAX) {
+    if (kind.preview === "desktop" && blob.size <= TEXT_MAX) {
       return desktopCard(await blob.text()) ?? null;
     }
 
@@ -5352,11 +5379,6 @@ function load(name) {
 
 offerRichToggle(richEnabled, setRich);
 
-const MD_RE = /\.(md|markdown)$/i;
-const DOCX_RE = /\.docx$/i;
-const RST_RE = /\.rst$/i;
-const PPTX_RE = /\.pptx$/i;
-
 const NOTE =
   `<p class="pv-note">Offline — showing the source. Rich rendering ` +
   `needs a one-time download.</p>`;
@@ -5467,8 +5489,9 @@ const PreviewRich = {
     if (!richEnabled()) return PreviewLocal.render(node);
 
     if (
-      !MD_RE.test(node.name) && !DOCX_RE.test(node.name) &&
-      !RST_RE.test(node.name) && !PPTX_RE.test(node.name)
+      !["md", "markdown", "rst", "docx", "pptx"].includes(
+        classifyFile(node.name, node).preview,
+      )
     ) {
       return PreviewLocal.render(node);
     }
@@ -5477,7 +5500,7 @@ const PreviewRich = {
     if (!blob) return PreviewLocal.render(node);
 
     try {
-      if (PPTX_RE.test(node.name)) {
+      if (classifyFile(node.name, node).preview === "pptx") {
         const { createPptxViewer } = await load("pptx-vanilla-viewer");
         const id = `pptx-${crypto.randomUUID()}`;
         /* The viewer draws into a live element, and the pane only receives
@@ -5506,7 +5529,7 @@ const PreviewRich = {
         });
         return `<div id="${id}" class="pv-pptx" aria-live="polite">Loading PowerPoint preview…</div>`;
       }
-      if (DOCX_RE.test(node.name)) {
+      if (classifyFile(node.name, node).preview === "docx") {
         const mammoth = await load("mammoth");
         const { value } = await mammoth.convertToHtml(
           { arrayBuffer: await blob.arrayBuffer() },
@@ -5517,13 +5540,13 @@ const PreviewRich = {
       if (blob.size > TEXT_MAX) return PreviewLocal.render(node);
       const text = await blob.text();
 
-      if (RST_RE.test(node.name)) {
+      if (classifyFile(node.name, node).preview === "rst") {
         return `<div class="pv-rich">${await rst(text)}</div>`;
       }
       return `<div class="pv-rich">${await markdown(text)}</div>`;
     } catch (err) {
       /* Offline, blocked, or the CDN moved. The file is still readable. */
-      if (PPTX_RE.test(node.name)) {
+      if (classifyFile(node.name, node).preview === "pptx") {
         return `<div class="preview-error">PowerPoint preview unavailable: ${
           esc(String(err.message || err))
         }</div>`;
@@ -5540,7 +5563,7 @@ const withPptxPreview = (provider) => ({
     PreviewRich.revoke();
   },
   render(node) {
-    return PPTX_RE.test(node.name)
+    return classifyFile(node.name, node).preview === "pptx"
       ? PreviewRich.render(node)
       : provider.render(node);
   },
@@ -6011,6 +6034,7 @@ exposeCore();
 expose({
   mount: () => mount,
   FSA: () => FSA,
+  classifyFile: () => classifyFile,
   recallRoots: () => recallRoots,
   recallView: () => recallView,
   rememberRoot: () => rememberRoot,

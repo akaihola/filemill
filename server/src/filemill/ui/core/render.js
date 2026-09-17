@@ -31,6 +31,7 @@ import {
 } from "./state.js";
 import { hlFences } from "./syntax.js";
 import { IMAGE_EXTENSIONS, TEXT_MAX } from "./limits.js";
+import { classifyFile } from "./file-kind.js";
 import { paintTrail } from "./trail.js";
 
 /* Building a column is O(entries), and real directories hold thousands of them
@@ -311,8 +312,6 @@ function renderPreview() {
   return pv;
 }
 
-const RENDERED_RE = /\.(md|markdown|rst|docx|pptx|html?|desktop)$/i;
-const MARKDOWN_RE = /\.(md|markdown)$/i;
 let markdownView = "rendered";
 let vttView = "transcript";
 
@@ -348,9 +347,10 @@ function setupPreviewActions(n) {
   const mdViews = document.getElementById("pv-md-views");
   const vttViews = document.getElementById("pv-vtt-views");
   const name = String(n.name || "");
-  const markdown = MARKDOWN_RE.test(name);
+  const fileKind = n.fileKind || classifyFile(name, n);
+  const markdown = fileKind.preview === "md" || fileKind.preview === "markdown";
   const vtt = /\.vtt$/i.test(n.name);
-  const applicable = RENDERED_RE.test(name);
+  const applicable = fileKind.preview !== "text";
   if (mdViews) {
     mdViews.hidden = !markdown;
     for (
@@ -474,7 +474,7 @@ async function fillPreview(n) {
 
   let html = null;
   try {
-    html = MARKDOWN_RE.test(n.name) && markdownView === "raw"
+    html = ["md", "markdown"].includes(classifyFile(n.name).preview) && markdownView === "raw"
       ? (await rawMarkdown(n) || await PREVIEW.render(n))
       : /\.vtt$/i.test(n.name) && previewView() !== "highlight"
       ? await PREVIEW.render({ ...n, previewFormat: vttView })
@@ -505,14 +505,9 @@ async function fillPreview(n) {
    preview in adapters/preview-local.js (same extensions, same cap), but it is
    core's own copy: a build picks its preview provider freely, and Edit has to
    work with any of them. Keep the two lists in step. */
-const NON_EDIT_RE = new RegExp(
-  `\\.(desktop|docx|pptx|pdf|html?|${IMAGE_EXTENSIONS.join("|")})$`,
-  "i",
-);
-
 async function editableText(n) {
   if (
-    !FS.write || n.dir || n.vpath || NON_EDIT_RE.test(n.name) ||
+    !FS.write || !classifyFile(n.name, n).editable ||
     (n.meta?.size ?? 0) > EDIT_MAX
   ) return null;
   const blob = await FS.blob(n);

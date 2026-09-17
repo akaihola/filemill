@@ -10,6 +10,7 @@
    date affordable, where the local build would need a getFile() sweep.
    ═══════════════════════════════════════════════════════════════════════════ */
 import { render } from "../core/render.js";
+import { classifyFile } from "../core/file-kind.js";
 import { focusCol, path, sel, setState } from "../core/state.js";
 
 export const API = document.documentElement.dataset.api || "/api";
@@ -33,6 +34,7 @@ const httpNode = (name, rel, dir, meta, vpath, icon, ordered = false) => ({
   icon: icon || undefined,
   kids: dir ? null : undefined,
   meta: meta || undefined,
+  fileKind: classifyFile(name, { dir, vpath }),
 });
 
 const q = (rel, vpath) =>

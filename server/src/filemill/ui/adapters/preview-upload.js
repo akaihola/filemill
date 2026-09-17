@@ -20,6 +20,7 @@ import { PreviewLocal } from "./preview-local.js";
 import { FS } from "../core/ports.js";
 import { render } from "../core/render.js";
 import { IMAGE_EXTENSIONS } from "../core/limits.js";
+import { classifyFile } from "../core/file-kind.js";
 
 const UPLOAD_MAX = 4 * 1024 * 1024;
 const IMAGE_RE = new RegExp(`\\.(${IMAGE_EXTENSIONS.join("|")}|pdf)$`, "i");
@@ -30,10 +31,10 @@ export const PreviewUpload = {
   },
 
   async render(node) {
-    if (/\.vtt$/i.test(node.name)) return PreviewLocal.render(node);
+    if (classifyFile(node.name, node).preview === "vtt") return PreviewLocal.render(node);
     /* object-URL cases, and the ones too big to be worth sending */
     if (
-      IMAGE_RE.test(node.name) ||
+      ["image", "pdf"].includes(classifyFile(node.name, node).preview) ||
       (node.meta?.size ?? 0) > UPLOAD_MAX
     ) {
       return PreviewLocal.render(node);

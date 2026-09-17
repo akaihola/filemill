@@ -4,12 +4,15 @@
    Fills the FS port (see core/ports.js). Nodes carry the handle they came
    from; nothing else in the app ever touches it.
    ═══════════════════════════════════════════════════════════════════════════ */
+import { classifyFile } from "../core/file-kind.js";
+
 const fsaNode = (name, handle, parent = null) => ({
   name,
   handle,
   parent,
   dir: handle.kind === "directory",
   kids: handle.kind === "directory" ? null : undefined,
+  fileKind: classifyFile(name, { dir: handle.kind === "directory" }),
 });
 
 export const FSA = {

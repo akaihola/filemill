@@ -36,7 +36,7 @@ from pathlib import Path
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
 from filemill.preview import read_text, valid_text
-from filemill.vfs import REGISTRY
+from filemill.vfs import REGISTRY, classify_path
 
 # Largest body /api/render will render and /api/save will write. Generous for
 # text, small enough that a stray multi-gigabyte file cannot be turned into a
@@ -198,7 +198,9 @@ def _opens_as_folder(path: Path) -> bool:
     if provider is None:
         return False
     try:
-        return bool(provider.list_entries(path, ""))
+        return bool(provider.list_entries(path, "")) and classify_path(
+            path, provider=True
+        ).kind == "vfs"
     except Exception:
         return False
 
