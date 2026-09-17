@@ -178,10 +178,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
-
-- [36] Decide how the installed PWA gets a running server: a systemd or launchd unit, a
-  launcher, a desktop shell, or only a better "server not running" page.
-
 - [*] `.rst` files still don't render or highlight at all even though task
   63b87ad4-33c9-4f45-ae24-280034e8b0eb claims to have implemented and tested it. Do
   red-green testing, investigate, and fix.
@@ -357,6 +353,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [36] Decide how the installed PWA gets a running server: a systemd or launchd unit, a
+  launcher, a desktop shell, or only a better "server not running" page.
 
 - [x] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT. Use
       the current year and "Antti Kaihola" as the copyright holder.
