@@ -23,9 +23,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
       `panFocus` and `slideTail`. Each function is under 25 lines.
 
-- [7] Make entry ordering an adapter-owned contract.
-    - Depends on: [6]
-
 - [33] Keep the URL contract, drop the server-side representations: the server sends
   bytes for `?filemill=raw` and the shell for all else. The client renders the view.
     - Depends on: [32]
@@ -131,6 +128,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
+- [7] Make entry ordering an adapter-owned contract.
+    - Depends on: [6]
+
 - The server browser suites show 11 failures on the branch, but a run against a clean
   main checkout produced exactly the same 11: two legacy-htmx tests that main
   deliberately disabled, and nine mobile restore-scroll tests.
@@ -150,9 +150,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   pinned renderer modules from `ui/vendor/`. Then delete `rendering.py` and its deps.
     - Depends on: [19]
 
-- [*] Add a PWA manifest and service worker to the static bundle so `static/index.html`
-  installs as a standalone window. The server edition already serves `/manifest.json`.
-
 - [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
   Today `[text](~/note.md)` is a dead link although the file exists.
 
@@ -169,6 +166,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+- [*] Add a PWA manifest and service worker to the static bundle so `static/index.html`
+  installs as a standalone window. The server edition already serves `/manifest.json`.
 
 - [*] Task e02c3b0b-21a0-4be0-bcdd-bce0d99206f4 didn't fix file content search. It
   either returns `Search error: search result too large` or `No matches`. Make sure

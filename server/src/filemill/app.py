@@ -414,10 +414,13 @@ def api_dir(p: str = "", v: str = "", page: int = 1):
 
 
 @rt("/api/search")
-def api_search(q: str = ""):
+def api_search(q: str = "", p: str = ""):
     """Search file contents below ROOT with the bounded ripgrep operation."""
     try:
-        return JSONResponse({"matches": api.search_root(ROOT, q)})
+        focused = _api_target(p)
+        if focused is None or not focused.is_dir():
+            return JSONResponse({"error": "Not found"}, status_code=404)
+        return JSONResponse({"matches": api.search_root(ROOT, q, p)})
     except api.SearchError as exc:
         status = 400 if "query" in str(exc).lower() else 503
         return JSONResponse({"error": str(exc)}, status_code=status)
