@@ -57,6 +57,10 @@ def ui_root(tmp_path: Path) -> Path:
     (tmp_path / "notes" / "short.txt").write_text("short")
     (tmp_path / "code").mkdir()
     (tmp_path / "code" / "sample.py").write_text(SOURCE)
+    (tmp_path / "code" / "guide.rst").write_text(
+        "Guide\n=====\n\nSome *rst* text.\n\n"
+        ".. code-block:: python\n\n   return 1\n"
+    )
     (tmp_path / "code" / "nested.json").write_text('{"tags":["a","b"],"n":1}')
     # 11 700 chars: more than the 8 000 the preview used to clip at.
     (tmp_path / "code" / "long.py").write_text(SOURCE * 300)
@@ -965,6 +969,15 @@ def test_highlight_shows_the_source_in_the_columns(page):
     page.wait_for_selector("#preview .pv-text .hl-kw", timeout=15000)
     assert page.text_content("#preview .pv-text") == "<h1>Hi</h1>\n"
     assert page.locator("iframe.pv-html").count() == 0
+
+
+def test_rst_renders_and_highlights_in_the_server_preview(page):
+    page.open_resource("code/guide.rst?filemill=render")
+    page.wait_for_selector("#preview .preview-rst h1", timeout=15000)
+    assert "Some rst text." in page.text_content("#preview .preview-rst")
+    page.open_resource("code/guide.rst?filemill=highlight")
+    page.wait_for_selector("#preview .pv-text .hl-com", timeout=15000)
+    assert ".. code-block:: python" in page.text_content("#preview .pv-text")
 
 
 def test_hidden_show_starts_with_dotfiles_visible(page):

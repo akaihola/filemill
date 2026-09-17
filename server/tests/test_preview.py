@@ -63,6 +63,21 @@ def test_dispatch_md(tmp_path):
     assert "preview-md" in render_preview(f)
 
 
+def test_dispatch_rst(tmp_path):
+    f = tmp_path / "note.rst"
+    f.write_text("Heading\n=======\n\nSome *rst* text.\n")
+    html = render_preview(f)
+    assert "<h1" in html
+    assert "Some <em>rst</em> text." in html
+
+
+def test_source_rst_is_syntax_highlighted(tmp_path):
+    f = tmp_path / "note.rst"
+    f.write_text("Heading\n=======\n\n.. code-block:: python\n\n   return 1\n")
+    html = render_source(f)
+    assert "preview-code" in html
+
+
 def test_unknown_extension_utf8_is_plain_text(tmp_path):
     f = tmp_path / ".gitconfig"
     f.write_text("[user]\nname = Åsa\n")

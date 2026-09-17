@@ -302,6 +302,15 @@ wheels = [
 ]
 
 [[package]]
+name = "docutils"
+version = "0.23"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/39/a4/5180d9afc57e8fca05601dd652bdff19604c218814037fe90ffc7625a50a/docutils-0.23.tar.gz", hash = "sha256:746f5060322511280a1e50eb76846ed6bf2342984b2ac04dc42caa1a8d78799e", size = 2303823, upload-time = "2026-05-27T17:41:06.934Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/32/91/30151a39f7570f448ed84529390628a651d7f27c87d73c9b887f8189695e/docutils-0.23-py3-none-any.whl", hash = "sha256:25d013af9bf23bc1c7b2b093dff4208166c53a94786c9e447808335ef1185fea", size = 634701, upload-time = "2026-05-27T17:40:58.442Z" },
+]
+
+[[package]]
 name = "fastcore"
 version = "1.12.21"
 source = { registry = "https://pypi.org/simple" }
@@ -328,6 +337,7 @@ name = "filemill"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "docutils" },
     { name = "linkify-it-py" },
     { name = "mammoth" },
     { name = "markdown-it-py" },
@@ -350,6 +360,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "docutils" },
     { name = "linkify-it-py", specifier = ">=2.1.0" },
     { name = "mammoth" },
     { name = "markdown-it-py" },
