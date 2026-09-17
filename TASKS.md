@@ -4,9 +4,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Unverified proposals
 
-- [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an unverified
-  architecture proposal, conditional on a fourth provider or a pagination bug.
-
 ## Ordered backlog
 
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
@@ -353,6 +350,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an unverified
+  architecture proposal, conditional on a fourth provider or a pagination bug.
 
 - [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both editions
   fill it from the same core list plus their own adapters.
