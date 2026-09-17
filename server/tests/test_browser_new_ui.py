@@ -289,8 +289,10 @@ def test_an_empty_directory_says_so(page):
     assert "Empty" in page.inner_text('.col[data-i="1"] .col-note')
 
 
-def test_the_preview_comes_from_the_python_renderer(page):
-    """The point of preview-http.js: markdown-it-py output, in filemill's pane."""
+def test_the_markdown_preview_is_rendered_in_the_browser(page):
+    """Markdown goes through preview-rich.js and the modules the shell serves
+    from /ui/vendor/; the output lands in the same pane preview-http.js fills
+    for everything the server still renders."""
     page.open("README.md")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     assert "Readme" in page.inner_text("#preview .pv-rich h1")
@@ -818,9 +820,11 @@ def test_nothing_is_fetched_from_a_cdn(page):
     assert external == []
 
 
-def test_the_server_edition_registers_core_and_pptx_renderers(page):
-    """core/renderers.js: the same core table as the static build, and of the
-    rich entries only .pptx, because everything else is rendered by Python."""
+def test_the_server_edition_registers_core_and_browser_rich_renderers(page):
+    """core/renderers.js: the same core table as the static build, plus the
+    rich entries the browser draws here — Markdown and .docx from /ui/vendor/,
+    .pptx from its viewer, and the offline fallback they name. reStructuredText
+    is the one rich kind left to Python."""
     page.open("")
     assert page.evaluate("RENDERERS.map(e => e.kind)") == [
         "image",
@@ -829,7 +833,11 @@ def test_the_server_edition_registers_core_and_pptx_renderers(page):
         "desktop",
         "vtt",
         "text",
+        "md",
+        "markdown",
+        "docx",
         "pptx",
+        "offline",
     ]
 
 
