@@ -23,6 +23,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
       `panFocus` and `slideTail`. Each function is under 25 lines.
 
+- [6] Centralize file-kind classification across filesystem producers and preview/edit
+  consumers. Add one test table per language that both sides share.
+    - Depends on: [19]
+
 - [7] Make entry ordering an adapter-owned contract.
     - Depends on: [6]
 
@@ -168,13 +172,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [6] Centralize file-kind classification across filesystem producers and preview/edit consumers. Add one test table per language that both sides share.
-    - Depends on: [19]
-
-- [*] `.rst` files still don't render or highlight at all even though task
-  63b87ad4-33c9-4f45-ae24-280034e8b0eb claims to have implemented and tested it. Do
-  red-green testing, investigate, and fix.
-
 - [*] For user testing, document how to run on agent@gogo instances of Filemill that are
   as close as possible to the browser test setup you have in the test suite. Put each
   different browser test setup in its own HTTP port, and link them in
@@ -185,6 +182,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+- [*] `.rst` files still don't render or highlight at all even though task
+  63b87ad4-33c9-4f45-ae24-280034e8b0eb claims to have implemented and tested it. Do
+  red-green testing, investigate, and fix.
+
 - [*] Opening `https://gogo.crane-boa.ts.net:8445/<any path>` without query parameters
   redirects to `https://gogo.crane-boa.ts.net:8445/` and spins `Reading...` for a very
   long time (if not forever). It should instead return files raw with the correct
