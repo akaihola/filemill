@@ -21,11 +21,12 @@ them with the same hierarchical view it uses for JSON files. Roadmap phase
 2. Give `VFSEntry` an optional `record`. In `_list_rows`, fill it with the
    row's cells as JSON: `NULL` is `null`, a blob is a "binary data" note,
    everything else travels as it is. `/api/dir` emits `record` when set.
-3. In `ui/adapters/http.js`, copy `record` onto the node. The JSON
-   hierarchical view in `ui/adapters/vfs-json.js` already draws any node
-   with a `record` as a key/value table, so a row previews with no new
-   client code. The CSV wrapper in `vfs-csv.js` must draw only its own
-   rows: it escapes values as strings, and a SQLite `id` is a number.
+3. In `ui/adapters/http.js`, copy `record` onto the node. In
+   `ui/adapters/vfs-json.js`, turn a listed row that carries a `record` into
+   a JSON value node, so it browses like a JSONL record: the row opens as a
+   column of cells and previews as pretty-printed JSON. The CSV wrapper in
+   `vfs-csv.js` must draw only its own rows: it escapes values as strings,
+   and a SQLite `id` is a number.
 4. Delete `render_preview`, `_render_inner`, `_render_spreadsheet`,
    `_render_kv`, `default_fmt` and `_cell_val` in `sqlite.py`, and the
    `db-*` CSS in `styles.py`. Drop `render_preview` and `default_fmt` from
@@ -40,11 +41,11 @@ them with the same hierarchical view it uses for JSON files. Roadmap phase
 
 - `grep -n "render_preview\|fmt\|html" server/src/filemill/providers/sqlite.py`
   prints nothing.
-- A `.db` file opens as columns in the server edition, and a row shows a
-  key/value table drawn by the client.
+- A `.db` file opens as columns in the server edition, and a row previews
+  as JSON drawn by the client.
 - All server tests and static tests pass.
 
 ## Scope
 
 `providers/sqlite.py`, `vfs.py`, `api.py`, `styles.py`, `ui/adapters/http.js`,
-tests.
+`ui/adapters/vfs-json.js`, tests.
