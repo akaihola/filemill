@@ -17,7 +17,7 @@ import { FSA } from "./fsa.js";
 import { API, HTTP } from "./http.js";
 import { PreviewHTTP } from "./preview-http.js";
 import { PreviewLocal } from "./preview-local.js";
-import { withPptxPreview } from "./preview-rich.js";
+import { RICH_RENDERERS, withPptxPreview } from "./preview-rich.js";
 import { PreviewUpload } from "./preview-upload.js";
 import { RouterPath } from "./router-path.js";
 import { rememberRoot } from "./storage.js";
@@ -27,12 +27,10 @@ import {
   setDeepLinkActions,
   startRouting,
 } from "../core/deeplink.js";
-import {
-  withVirtual,
-  withVirtualPreview,
-} from "./vfs-json.js";
+import { withVirtual, withVirtualPreview } from "./vfs-json.js";
 import { FS, useFilesystem, usePreview, useRouter } from "../core/ports.js";
 import { colCache, render, setActions } from "../core/render.js";
+import { addRenderers, CORE_RENDERERS } from "../core/renderers.js";
 import { mountRoot } from "../core/mount.js";
 import {
   choose,
@@ -63,6 +61,14 @@ setSortActions({ render });
 setDeepLinkActions({ render, colCache });
 initLayout(render);
 initSettings();
+
+/* The renderer table, core first. Of the rich kinds only .pptx is drawn in the
+   browser here; Markdown, .docx and .rst stay with the Python renderers, so
+   nothing else is fetched from a CDN. */
+addRenderers([
+  ...CORE_RENDERERS,
+  ...RICH_RENDERERS.filter((e) => e.kind === "pptx"),
+]);
 
 const ROOT_NAME = document.documentElement.dataset.root || "/";
 

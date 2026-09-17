@@ -43,6 +43,7 @@ context reset.
 │   │   ├── state.js        ← globals, visibleKids, measure, fmt*
 │   │   ├── sort.js         ← name/size/mtime order + the getFile() sweep
 │   │   ├── render.js       ← buildCol, columnFor, render, preview
+│   │   ├── renderers.js    ← the {kind, render, fallback} table; renderNode
 │   │   ├── layout.js       ← the fold dial: stripSpan, layout, applyScroll
 │   │   ├── trail.js        ← the SVG elbows between columns
 │   │   ├── typeahead.js    ← prefix → substring → fuzzy, <mark>, idle buffer

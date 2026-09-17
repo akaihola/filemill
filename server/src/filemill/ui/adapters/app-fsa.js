@@ -10,7 +10,7 @@ import { initSettings } from "../core/settings.js";
 import { initLayout } from "../core/layout.js";
 import { initSort, setSortActions, sortKids } from "../core/sort.js";
 import { FSA } from "./fsa.js";
-import { PreviewRich } from "./preview-rich.js";
+import { PreviewRich, RICH_RENDERERS } from "./preview-rich.js";
 import { RouterHash } from "./router-hash.js";
 import { recallRoots, recallView, rememberRoot } from "./storage.js";
 import { withCsv, withCsvPreview } from "./vfs-csv.js";
@@ -20,10 +20,7 @@ import {
   startRouting,
 } from "../core/deeplink.js";
 import { FOLDER_PATH } from "../core/icons.js";
-import {
-  withVirtual,
-  withVirtualPreview,
-} from "./vfs-json.js";
+import { withVirtual, withVirtualPreview } from "./vfs-json.js";
 import {
   FS,
   ROUTER,
@@ -32,6 +29,7 @@ import {
   useRouter,
 } from "../core/ports.js";
 import { colCache, render, setActions } from "../core/render.js";
+import { addRenderers, CORE_RENDERERS } from "../core/renderers.js";
 import { mountRoot } from "../core/mount.js";
 import {
   choose,
@@ -68,6 +66,10 @@ setSortActions({ render });
 setDeepLinkActions({ render, colCache });
 initLayout(render);
 initSettings();
+
+/* The renderer table, core first: this edition draws every rich kind in the
+   browser, from a CDN. */
+addRenderers([...CORE_RENDERERS, ...RICH_RENDERERS]);
 
 /* Adapters define themselves; the app entry is what chooses. Selecting here
    rather than at the bottom of each adapter file means a page may load more

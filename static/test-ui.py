@@ -384,6 +384,48 @@ async def main():
                 for row, (_, _, expected) in zip(got, cases)
             ),
         )
+        # ── Renderer registry — core/renderers.js. One check per core entry,
+        # driven straight through renderNode so the table is tested as a table:
+        # a new kind is one entry here and one line below.
+        print("\n── Renderer registry ────────────────────────────────────────")
+        check("Registry holds the core kinds plus this edition's rich ones",
+              await pg.evaluate("RENDERERS.map(e => e.kind)") ==
+              ["image", "pdf", "html", "desktop", "vtt", "text",
+               "md", "markdown", "rst", "docx", "pptx", "offline"])
+        RENDER = """([name, kind, body, extra]) =>
+            renderNode({name, ...(extra || {})}, new Blob([body]), kind)"""
+        entries = [
+            ("image", ["a.png", "image", "\x89PNG"], 'class="pv-img"'),
+            ("pdf", ["a.pdf", "pdf", "%PDF-1.4"], 'class="pv-pdf"'),
+            ("html", ["a.html", "html", "<p>hi</p>"], 'class="pv-html"'),
+            ("desktop", ["a.desktop", "desktop",
+                         "[Desktop Entry]\nType=Link\nName=Home\nURL=https://x.y/"],
+             'class="pv-link"'),
+            ("vtt", ["a.vtt", "vtt",
+                     "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHello"],
+             'class="preview-transcript"'),
+            ("text", ["a.txt", "text", "plain"], 'class="pv-text"'),
+        ]
+        for kind, args, marker in entries:
+            html = await pg.evaluate(RENDER, args) or ""
+            check(f"Entry {kind!r} renders its kind", marker in html, html[:80])
+        html = await pg.evaluate(RENDER, ["a.json", "text", '{"a": 1}']) or ""
+        check("Entry 'text' shows parsed JSON foldable", "pv-json" in html)
+        html = await pg.evaluate(RENDER, ["a.vtt", "vtt", "WEBVTT",
+                                          {"previewFormat": "raw"}]) or ""
+        check("Entry 'vtt' honours the raw view", "preview-raw" in html)
+        html = await pg.evaluate(RENDER, ["a.xyz", "no-such-kind", "plain"]) or ""
+        check("An unknown kind renders as text", 'class="pv-text"' in html)
+        await pg.evaluate("""addRenderers([
+            {kind: "boom", render() { throw new Error("boom"); }, fallback: "text"},
+            {kind: "dead", render() { throw new Error("dead"); }}])""")
+        html = await pg.evaluate(RENDER, ["a.txt", "boom", "plain"]) or ""
+        check("A throwing entry falls back to the kind it names",
+              'class="pv-text"' in html)
+        err = await pg.evaluate(RENDER + ".catch(e => e.message)",
+                                ["a.txt", "dead", "plain"])
+        check("A throwing entry with no fallback rejects", err == "dead", err)
+
         check("file:// shows the localhost hint, not a dead picker",
               "file://" in await pg.inner_text("#w-msg"))
         await pg.evaluate(FAKE)

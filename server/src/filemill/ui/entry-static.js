@@ -40,6 +40,7 @@ import { expose, exposeCore } from "./core/debug.js";
 import { mount, pendingLoc, setPendingLoc } from "./adapters/app-fsa.js";
 import { FSA } from "./adapters/fsa.js";
 import { classifyFile } from "./core/file-kind.js";
+import { addRenderers, RENDERERS, renderNode } from "./core/renderers.js";
 import { recallRoots, recallView, rememberRoot } from "./adapters/storage.js";
 
 exposeCore();
@@ -47,6 +48,9 @@ expose({
   mount: () => mount,
   FSA: () => FSA,
   classifyFile: () => classifyFile,
+  RENDERERS: () => RENDERERS,
+  addRenderers: () => addRenderers,
+  renderNode: () => renderNode,
   recallRoots: () => recallRoots,
   recallView: () => recallView,
   rememberRoot: () => rememberRoot,

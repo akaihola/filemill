@@ -15,14 +15,14 @@ symlink to it. Neither edition has its own version to drift.
 Pick a different set of adapters and the same UI browses something else. That is
 the whole mechanism. There is no framework under it.
 
-|            | **static** (one HTML file)                         | **server** (Python)                                        |
-| ---------- | -------------------------------------------------- | ---------------------------------------------------------- |
-| filesystem | `fsa.js` — File System Access API                  | `http.js` — `GET /api/dir`                                 |
-| preview    | `preview-local.js` — text, images, PDF, `.desktop` | `preview-http.js` — `GET /api/preview`, rendered by Python |
-| router     | `router-hash.js` — `#r=root&p=a/b.md`              | `router-path.js` — `/a/b.md`                               |
-| boot       | `app-fsa.js` — picker + welcome screen             | `app-http.js` — root comes from the server                 |
-| extra      | `preview-rich.js` — renderers fetched from a CDN   | `preview-upload.js` — local bytes, Python renderer         |
-|            | `storage.js` — remembered roots in IndexedDB       |                                                            |
+|            | **static** (one HTML file)                       | **server** (Python)                                        |
+| ---------- | ------------------------------------------------ | ---------------------------------------------------------- |
+| filesystem | `fsa.js` — File System Access API                | `http.js` — `GET /api/dir`                                 |
+| preview    | `preview-local.js` — the core renderer table     | `preview-http.js` — `GET /api/preview`, rendered by Python |
+| router     | `router-hash.js` — `#r=root&p=a/b.md`            | `router-path.js` — `/a/b.md`                               |
+| boot       | `app-fsa.js` — picker + welcome screen           | `app-http.js` — root comes from the server                 |
+| extra      | `preview-rich.js` — renderers fetched from a CDN | `preview-upload.js` — local bytes, Python renderer         |
+|            | `storage.js` — remembered roots in IndexedDB     |                                                            |
 
 ## The ports
 
@@ -43,6 +43,22 @@ loading.
 `revoke()`. It returns the HTML for the preview _body_ only. The pane's header,
 hero and size/modified list belong to core, and so does the staleness guard. A
 provider can take as long as it needs.
+
+## The renderer registry
+
+[`../core/renderers.js`](../core/renderers.js) is one table of
+`{kind, render, fallback}` entries. `kind` is the `preview` string from
+[`../core/file-kind.js`](../core/file-kind.js). `render(node, blob)` returns the
+HTML string for the preview body, or throws. `fallback` names the kind to render
+instead when it throws. `renderNode(node, blob)` finds the first entry for the
+node's kind and follows the chain.
+
+`CORE_RENDERERS` holds what the browser draws from the bytes alone: images, PDF,
+HTML, `.desktop`, WebVTT and coloured text. Each app module registers that list
+first and then its own adapters' entries. `app-fsa.js` adds every entry of
+`preview-rich.js`. `app-http.js` adds only `.pptx` from it, because the Python
+renderers keep Markdown, `.docx` and `.rst`. A new kind is one entry and one
+test in `static/test-ui.py`.
 
 **`ROUTER`** — `read()`, `write(state, replace)`, `onNavigate(cb)`, or `null`
 for no URL sync. Core owns the mapping between a path and the column chain
