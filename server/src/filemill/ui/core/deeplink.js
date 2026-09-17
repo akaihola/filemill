@@ -131,7 +131,7 @@ export function scrollCursorIntoView() {
   for (let i = 0; i < path.length; i++) {
     const c = columnCache.get(path[i]);
     const ri = rowIndex(path[i], sel[i]);
-    if (c && ri != null && c.rows[ri]) revealRow(c.rows[ri]);
+    if (c && ri >= 0) revealRow(c.ensureRow(ri));
   }
 }
 
