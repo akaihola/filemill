@@ -9,11 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [*] Opening `https://gogo.crane-boa.ts.net:8445/<any path>` without query parameters
-  redirects to `https://gogo.crane-boa.ts.net:8445/` and spins `Reading...` for a very
-  long time (if not forever). It should instead return files raw with the correct
-  content type.
-
 - [*] `.rst` files still don't render or highlight at all even though task
   63b87ad4-33c9-4f45-ae24-280034e8b0eb claims to have implemented and tested it. Do
   red-green testing, investigate, and fix.
@@ -180,6 +175,11 @@ Rules for TASKS.md usage are at the bottom of the file.
   Iterate until fixed.
 
 ## Scheduled
+
+- [*] Opening `https://gogo.crane-boa.ts.net:8445/<any path>` without query parameters
+  redirects to `https://gogo.crane-boa.ts.net:8445/` and spins `Reading...` for a very
+  long time (if not forever). It should instead return files raw with the correct
+  content type.
 
 - [*] For user testing, document how to run on agent@gogo instances of Filemill that are
   as close as possible to the browser test setup you have in the test suite. Put each
