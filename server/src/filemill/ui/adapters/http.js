@@ -25,7 +25,16 @@ const relOf = (parentRel, name) => (parentRel ? parentRel + "/" + name : name);
    the same one — and descends virtually instead. The server tells them apart by
    putting a `vpath` on the entries it returns; there is nothing to detect here,
    and core/ never learns that virtual nodes exist at all. */
-const httpNode = (name, rel, dir, meta, vpath, icon, ordered = true) => ({
+const httpNode = (
+  name,
+  rel,
+  dir,
+  meta,
+  vpath,
+  icon,
+  ordered = true,
+  record = undefined,
+) => ({
   name,
   rel,
   dir,
@@ -35,6 +44,7 @@ const httpNode = (name, rel, dir, meta, vpath, icon, ordered = true) => ({
   kids: dir ? null : undefined,
   meta: meta || undefined,
   fileKind: classifyFile(name, { dir, vpath }),
+  ...(record !== undefined && { record }),
 });
 
 const q = (rel, vpath) =>
@@ -71,6 +81,7 @@ export const HTTP = {
               e.vpath,
               e.icon,
               e.ordered,
+              e.record,
             )
             : httpNode(
               e.name,
@@ -114,6 +125,7 @@ export const HTTP = {
             e.vpath,
             e.icon,
             e.ordered,
+            e.record,
           )
           : httpNode(
             e.name,

@@ -898,15 +898,19 @@ def test_a_table_opens_as_a_column_of_rows(page):
     assert page.locator('.col[data-i="2"] .row').count() == 3
 
 
-def test_a_row_previews_through_the_provider(page):
+def test_a_row_previews_as_the_client_drawn_key_value_table(page):
     page.open()
     page.click('.col[data-i="0"] .row:has-text("sample.db")')
     page.wait_for_selector('.col[data-i="1"] .row', timeout=15000)
     page.click('.col[data-i="1"] .row:has-text("users")')
     page.wait_for_selector('.col[data-i="2"] .row', timeout=15000)
     page.click('.col[data-i="2"] .row >> nth=0')
-    page.wait_for_selector("#preview .pv-rich", timeout=15000)
-    assert "User1" in page.inner_text("#preview .pv-rich")
+    page.wait_for_selector("#preview .pv-kv", timeout=15000)
+    cells = page.eval_on_selector_all(
+        "#preview .pv-kv tr",
+        "rs => rs.map(r => [...r.children].map(c => c.textContent))",
+    )
+    assert ["name", "User1"] in cells
 
 
 def test_virtual_nodes_keep_the_real_path_and_descend_by_vpath(page):
