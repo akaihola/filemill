@@ -1032,12 +1032,17 @@ async def main():
               str(await pg.evaluate("__rows(2)")))
         await pg.click('.col[data-i="2"] .row:has-text("Second")')
         await pg.wait_for_timeout(400)
-        kv = await pg.evaluate(
-            "[...document.querySelectorAll('#pv-content .pv-kv tr')]"
-            ".map(r => [r.children[0].textContent, r.children[1].textContent])")
-        check("A row previews as a two-column key/value table",
-              kv == [["id", "2"], ["title", "Second"], ["ts", "2026-01-02"], ["tags", "[]"]],
-              str(kv))
+        check("A row opens as the JSON hierarchical view",
+              await pg.evaluate("__rows(3)") == ["id", "title", "ts", "tags"]
+              and await pg.locator("#preview .pv-json details").count() > 0)
+        await pg.click('.col[data-i="3"] .row:has-text("tags")')
+        await pg.wait_for_timeout(300)
+        check("A JSONL row's nested array remains navigable",
+              await pg.evaluate("__rows(4)") == [])
+        await pg.click('.col[data-i="3"] .row:has-text("title")')
+        await pg.wait_for_timeout(300)
+        check("A JSONL scalar keeps the JSON scalar preview",
+              (await pg.inner_text(".pv-content")).strip() == "Second")
         check("…with no invented size or date",
               await pg.inner_text("#pv-sub") == "")
         await pg.evaluate("applyPath(['tables', 'log.jsonl', 'Third'])")
