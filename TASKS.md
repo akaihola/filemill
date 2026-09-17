@@ -23,10 +23,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
       `panFocus` and `slideTail`. Each function is under 25 lines.
 
-- [6] Centralize file-kind classification across filesystem producers and preview/edit
-  consumers. Add one test table per language that both sides share.
-    - Depends on: [19]
-
 - [7] Make entry ordering an adapter-owned contract.
     - Depends on: [6]
 
@@ -171,6 +167,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   Iterate until fixed.
 
 ## Scheduled
+
+- [6] Centralize file-kind classification across filesystem producers and preview/edit consumers. Add one test table per language that both sides share.
+    - Depends on: [19]
 
 - [*] For user testing, document how to run on agent@gogo instances of Filemill that are
   as close as possible to the browser test setup you have in the test suite. Put each
