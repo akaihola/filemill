@@ -156,9 +156,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   Do red-green testing: first reproduce, then investigate, plan, implement, and test.
   Iterate until fixed.
 
-- The `Fullscreen` button in the preview pane doesn't do anything. No errors seen on the
-  JavaScript console either.
-
 - [*] Add a PWA manifest and service worker to the static bundle so `static/index.html`
   installs as a standalone window. The server edition already serves `/manifest.json`.
 
@@ -178,6 +175,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- The `Fullscreen` button in the preview pane doesn't do anything. No errors seen on the
+  JavaScript console either.
+
 - [6] Centralize file-kind classification across filesystem producers and preview/edit consumers. Add one test table per language that both sides share.
     - Depends on: [19]
 
