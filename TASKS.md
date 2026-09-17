@@ -116,6 +116,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   to maximize the preview area width. A left arrow should return to the parent folder of
   the reviewed document and unfold that folder column (but no ancestor folder columns).
 
+- Task 04ce9574-92c8-4a4c-8148-32d2e827c13d didn't fix the erratic folding/unfolding of
+  the parent column. Hard rule: Up/down navigation must never change folding state of
+  ancestor folder columns.
+
 - Keyboard navigation using arrows still doesn't animate folding/unfolding/resizing of
   columns. Do systematic debugging to identify the cause, and fix it.
 
@@ -130,10 +134,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   JSON preview of the selected item in the second column to the right.
 
 ## Scheduled
-
-- Task 04ce9574-92c8-4a4c-8148-32d2e827c13d didn't fix the erratic folding/unfolding of
-  the parent column. Hard rule: Up/down navigation must never change folding state of
-  ancestor folder columns.
 
 - Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
   what it means.
@@ -156,11 +156,11 @@ Rules for TASKS.md usage are at the bottom of the file.
   Do red-green testing: first reproduce, then investigate, plan, implement, and test.
   Iterate until fixed.
 
-- The `Fullscreen` button in the preview pane doesn't do anything. No errors seen on the
-  JavaScript console either.
-
 - [*] Add a PWA manifest and service worker to the static bundle so `static/index.html`
   installs as a standalone window. The server edition already serves `/manifest.json`.
+
+- [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
+  Today `[text](~/note.md)` is a dead link although the file exists.
 
 - [6] Centralize file-kind classification across filesystem producers and preview/edit consumers. Add one test table per language that both sides share.
     - Depends on: [19]
@@ -176,8 +176,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
-  Today `[text](~/note.md)` is a dead link although the file exists.
+- The `Fullscreen` button in the preview pane doesn't do anything. No errors seen on the
+  JavaScript console either.
 
 - [6] Centralize file-kind classification across filesystem producers and preview/edit consumers. Add one test table per language that both sides share.
     - Depends on: [19]

@@ -296,6 +296,22 @@ def test_the_preview_comes_from_the_python_renderer(page):
     assert "Readme" in page.inner_text("#preview .pv-rich h1")
 
 
+def test_preview_fullscreen_control_toggles_and_exits(page):
+    page.open("README.md")
+    page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
+    full = page.locator("#pv-fullscreen")
+
+    full.click()
+    page.wait_for_function("document.documentElement.classList.contains('pv-fullscreen')")
+    assert full.get_attribute("aria-pressed") == "true"
+    assert page.evaluate("getComputedStyle(document.getElementById('bar')).display") == "none"
+
+    full.click()
+    page.wait_for_function("!document.documentElement.classList.contains('pv-fullscreen')")
+    assert full.get_attribute("aria-pressed") == "false"
+    assert page.evaluate("getComputedStyle(document.getElementById('bar')).display") != "none"
+
+
 def test_markdown_rendered_raw_toggle_preserves_navigation(page):
     source = "# Readme\n\nline one\nline two\n\n```python\n" + SOURCE + "```\n"
     page.open("README.md")
