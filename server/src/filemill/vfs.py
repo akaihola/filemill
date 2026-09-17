@@ -42,9 +42,9 @@ def classify_path(path: Path, *, is_dir: bool = False, virtual: bool = False,
     if ext == ".desktop":
         return FileKind("link", "desktop", False)
     if ext == ".vtt":
-        return FileKind("file", "vtt", False)
+        return FileKind("file", "vtt", True)
     if ext in RICH_EXTENSIONS:
-        return FileKind("file", ext[1:], False)
+        return FileKind("file", ext[1:], ext in {".md", ".markdown", ".rst"})
     return FileKind("file", "text", True)
 
 
