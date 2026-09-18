@@ -57,10 +57,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   registry entry. Then delete `_preview_pptx`, `python-pptx` and `/api/preview`.
     - Depends on: [26]
 
-- [*] Implement CSV as a browser virtual filesystem in `ui/adapters/vfs-csv.js`, like
-  JSONL: one entry per row, a key/value preview per row. No Python. Closes issue #49.
-    - Depends on: [26]
-
 - [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done when
   `uv run pytest -n auto` passes at the repository root.
 
@@ -98,6 +94,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] Implement CSV as a browser virtual filesystem in `ui/adapters/vfs-csv.js`, like
+  JSONL: one entry per row, a key/value preview per row. No Python. Closes issue #49.
+    - Depends on: [26]
 
 - [*] Compute the symlink zone map one time per request in `paths.py`. Delete the three
   other walks of the root that build the same map.
