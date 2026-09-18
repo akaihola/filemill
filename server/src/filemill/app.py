@@ -18,7 +18,6 @@ from fasthtml.common import (
     Ul,
     fast_app,
 )
-from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import (
     FileResponse,
     HTMLResponse,
@@ -255,15 +254,6 @@ def _mounted_path_parts(p: Path) -> tuple[str, Path] | None:
         except ValueError:
             continue
     return None
-
-
-def _web_url(p: Path) -> str | None:
-    """Return a canonical ``/w/`` URL for *p*, or ``None`` if it is unreachable."""
-    mounted = _mounted_path_parts(p)
-    if mounted is None:
-        return None
-    mount_name, rel = mounted
-    return f"/w/{mount_name}/{rel}"
 
 
 @rt("/w/{path:path}")
@@ -658,31 +648,6 @@ def icon(name: str):
     if not icon_path.exists() or not icon_path.is_file():
         return HTMLResponse("Not found", status_code=404)
     return FileResponse(str(icon_path))
-
-
-# ── #38 CORS middleware (scoped to /w/) ──────────────────────────────────────
-
-_CORS_HEADERS: dict[str, str] = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "*",
-}
-
-
-class _WebStaticCORSMiddleware(BaseHTTPMiddleware):
-    """Add CORS headers to every /w/ response; handle OPTIONS preflight."""
-
-    async def dispatch(self, request, call_next):
-        if not request.url.path.startswith("/w/"):
-            return await call_next(request)
-        if request.method == "OPTIONS":
-            return Response(status_code=200, headers=_CORS_HEADERS)
-        response = await call_next(request)
-        response.headers.update(_CORS_HEADERS)
-        return response
-
-
-app.add_middleware(_WebStaticCORSMiddleware)
 
 
 # ── Route priority fix ────────────────────────────────────────────────────────
