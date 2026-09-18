@@ -51,6 +51,7 @@ const EDIT_MAX_LINE = 10_000; // Avoid unusably wide editor lines.
 const VIRTUAL_ROWS = 1000;
 const ROW_STEP = 23; // 21px row plus its 1px vertical margins.
 const LONG_PRESS_MS = 500;
+const touchUI = () => matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
 
 let longPressTimer;
 let suppressClick = false;
@@ -174,7 +175,7 @@ function buildCol(node) {
       actions.choose(+el.dataset.i, k);
     };
     row.onpointerdown = (event) => {
-      if (event.pointerType === "mouse" && event.button !== 0) return;
+      if (!touchUI() || (event.pointerType === "mouse" && event.button !== 0)) return;
       clearTimeout(longPressTimer);
       longPressTimer = setTimeout(() => {
         suppressClick = true;
@@ -182,7 +183,11 @@ function buildCol(node) {
       }, LONG_PRESS_MS);
     };
     row.onpointerup = row.onpointercancel = row.onpointerleave = () => clearTimeout(longPressTimer);
-    row.oncontextmenu = (event) => { event.preventDefault(); copyMenu(k, row, event); };
+    row.oncontextmenu = (event) => {
+      if (!touchUI()) return;
+      event.preventDefault();
+      copyMenu(k, row, event);
+    };
     if (virtual) {
       row.style.top = `${ri * ROW_STEP}px`;
       layer.appendChild(row);
