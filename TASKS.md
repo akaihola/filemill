@@ -64,10 +64,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done when
   `uv run pytest -n auto` passes at the repository root.
 
-- [*] Replace `python-fasthtml` with `starlette` and `uvicorn`. The shell becomes one
-  string template. Done when `dependencies` has starlette, uvicorn, typer, python-pptx.
-    - Depends on: [24]
-
 - [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=` URLs
   for images, PDF and HTML. Done when `grep -r raw?path server/src` prints nothing.
     - Depends on: [33]
@@ -106,6 +102,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
   `static/FSA-TEST-CHECKLIST.md`.
 
+- [*] Replace `python-fasthtml` with `starlette` and `uvicorn`. The shell becomes one
+  string template. Done when `dependencies` has starlette, uvicorn, typer, python-pptx.
+    - Depends on: [24]
 - [*] On mobile, long-pressing a file or directory should open a menu of actions to copy
   its base name, relative path or absolute path.
 
