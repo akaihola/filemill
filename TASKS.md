@@ -90,10 +90,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [33] Keep the URL contract, drop the server-side representations: the server sends
-  bytes for `?filemill=raw` and the shell for all else. The client renders the view.
-    - Depends on: [32]
-
 - [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100 k-entry
   directory still builds 100 k DOM nodes. Do this only if such folders show up.
 
@@ -217,6 +213,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - Back-navigation still often fails to unfold the newly focused column.
 
 ## In progress
+
+- [33] Keep the URL contract, drop the server-side representations: the server sends
+  bytes for `?filemill=raw` and the shell for all else. The client renders the view.
+    - Depends on: [32]
 
 - [*] GET https://gogo.crane-boa.ts.net:8445/favicon.ico
 
