@@ -3,6 +3,7 @@ import os
 import subprocess
 from pathlib import Path
 from textwrap import dedent
+from urllib.parse import quote as urlquote
 from urllib.parse import unquote as urlunquote
 
 from fasthtml.common import (
@@ -99,15 +100,6 @@ def _resolve_safe(path_str: str, root: Path | None = None) -> Path | None:
 def index(request):
     """Serve the root directory; ``resource`` holds the one directory rule."""
     return resource(request)
-
-
-@rt("/raw")
-def raw(path: str):
-    """Serve raw file bytes (used by PDF iframe)."""
-    p = _resolve_safe(path)
-    if p is None or not p.is_file():
-        return HTMLResponse("Not found", status_code=404)
-    return FileResponse(str(p))
 
 
 # ── #23 helpers + routes ──────────────────────────────────────────────────────
@@ -407,7 +399,8 @@ def api_preview(p: str = "", v: str = "", fmt: str = "", filemill: str = ""):
     elif target.suffix.lower() == ".vtt":
         return api.vfs_preview(target, "", fmt)
     else:
-        render = lambda path: render_preview(path, preview_url=urls.build_url(p))
+        raw_url = f"/api/raw?p={urlquote(p, safe='/')}"
+        render = lambda path: render_preview(path, preview_url=raw_url)
     return api.preview_fragment(target, render)
 
 
@@ -594,7 +587,7 @@ def icon(name: str):
 # order. Four bands, most specific first:
 #
 #   1. the named prefixes below            /w/, /api/, /n/, PWA files
-#   2. every other explicitly named route  /raw, /, …
+#   2. every other explicitly named route  /, …
 #   3. /{path:path}                        the file's own path under ROOT
 #   4. FastHTML's /{fname:path}.{ext:static}
 #

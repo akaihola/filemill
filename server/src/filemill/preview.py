@@ -63,11 +63,11 @@ def render_preview(path: Path, state=None, preview_url: str | None = None) -> st
     elif preview == "pptx":
         return _preview_pptx(path)
     elif preview == "pdf":
-        return _preview_pdf(path)
+        return _preview_pdf(path, preview_url)
     elif preview == "html":
         return _preview_html(path, preview_url)
     elif preview == "image":
-        return _preview_image(path)
+        return _preview_image(path, preview_url)
     else:
         # Try Pygments syntax highlighting (before raw text fallback)
         highlighted = _highlight_source(path, ext)
@@ -227,9 +227,9 @@ def _preview_pptx(path: Path) -> str:
         )
 
 
-def _preview_pdf(path: Path) -> str:
+def _preview_pdf(path: Path, preview_url: str | None = None) -> str:
     try:
-        src = f"/raw?path={urlquote(str(path))}"
+        src = preview_url or f"/api/raw?p={urlquote(path.name)}"
         return f'<div class="preview-pdf"><iframe src="{src}"></iframe></div>'
     except Exception as e:  # pragma: no cover
         return (
@@ -238,13 +238,13 @@ def _preview_pdf(path: Path) -> str:
 
 
 def _preview_html(path: Path, preview_url: str | None = None) -> str:
-    src = preview_url or f"/{urlquote(path.name)}"
+    src = preview_url or f"/api/raw?p={urlquote(path.name)}"
     return f'<div class="preview-html"><iframe src="{src}"></iframe></div>'
 
 
-def _preview_image(path: Path) -> str:
+def _preview_image(path: Path, preview_url: str | None = None) -> str:
     try:
-        src = f"/raw?path={urlquote(str(path))}"
+        src = preview_url or f"/api/raw?p={urlquote(path.name)}"
         safe_name = html_lib.escape(path.name)
         return f'<div class="preview-image"><img src="{src}" alt="{safe_name}"></div>'
     except Exception as e:  # pragma: no cover
