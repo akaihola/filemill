@@ -337,6 +337,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Completed
 
+- [*] Render `.pptx` in the browser: unzip the file and show the slide text, as one
+  registry entry. Then delete `_preview_pptx`, `python-pptx` and `/api/preview`.
+    - Depends on: [26]
+
 - [24] Reduce `app.py` to routing: move `_resolve_safe` and the symlink map to
   `paths.py` and the PWA routes to `pwa.py`. No imports inside functions.
     - Depends on: [33], [34]
