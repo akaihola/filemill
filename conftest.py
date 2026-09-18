@@ -22,7 +22,8 @@ def opfs_root():
 
 @pytest.fixture
 def playwright():
-    return pytest.importorskip("playwright.sync_api").sync_playwright
+    with pytest.importorskip("playwright.sync_api").sync_playwright() as p:
+        yield p
 
 
 @pytest.fixture()
