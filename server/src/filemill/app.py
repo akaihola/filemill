@@ -1,3 +1,4 @@
+import hashlib
 import inspect
 import json
 import subprocess
@@ -109,6 +110,18 @@ _UI_DIR: Path = Path(__file__).parent / "ui"
 # app-http.js is what selects. The static edition's entry-static.js names the
 # other set — see ui/adapters/README.md.
 _UI_ENTRY = "entry-server.js"
+# Version the complete import graph so a CDN cannot mix releases.
+_UI_ASSETS = {
+    f"/ui/{path.relative_to(_UI_DIR).as_posix()}": (
+        f"/ui/{path.relative_to(_UI_DIR).as_posix()}"
+        f"?v={hashlib.sha256(path.read_bytes()).hexdigest()[:12]}"
+    )
+    for path in sorted(_UI_DIR.rglob("*"))
+    if path.is_file() and path.suffix in {".js", ".css"}
+}
+_UI_IMPORTS = json.dumps(
+    {"imports": {path: url for path, url in _UI_ASSETS.items() if path.endswith(".js")}}
+)
 
 
 @rt("/ui/{path:path}")
@@ -151,7 +164,7 @@ _VENDOR_MAP_JS = (
     "window.FILEMILL_CDN = "
     + json.dumps(
         {
-            name: f"/ui/vendor/{name}.js"
+            name: _UI_ASSETS[f"/ui/vendor/{name}.js"]
             for name in (
                 "markdown-it",
                 "markdown-it-footnote",
@@ -192,9 +205,10 @@ def _ui_shell(state, base: str, hidden: bool = False):
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0770C9">
 <link rel="manifest" href="/manifest.json"><link rel="apple-touch-icon" href="/icons/icon-192.png">
-<link rel="stylesheet" href="/ui/core/styles.css"><script src="/ui/vendor/seti-map.js"></script>
+<link rel="stylesheet" href="{_UI_ASSETS["/ui/core/styles.css"]}"><script src="{_UI_ASSETS["/ui/vendor/seti-map.js"]}"></script>
+<script type="importmap">{_UI_IMPORTS}</script>
 <script>{_VENDOR_MAP_JS}</script><script>{pwa.SW_REGISTER_JS}</script><title>{title}</title>
-</head><body><script src="/ui/{_UI_ENTRY}" type="module"></script></body></html>''')
+</head><body><script src="{_UI_ASSETS[f"/ui/{_UI_ENTRY}"]}" type="module"></script></body></html>''')
 
 
 @rt(UI_BASE)
