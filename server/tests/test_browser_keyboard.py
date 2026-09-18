@@ -649,6 +649,27 @@ def test_vertical_navigation_preserves_folded_ancestor(live_server: str):
 
 
 @pytest.mark.integration
+def test_arrow_navigation_keeps_fold_animation_running(live_server: str):
+    with _ui_page(live_server, mobile=True) as page:
+        page.keyboard.press("ArrowDown")
+        page.keyboard.press("ArrowRight")
+        page.wait_for_timeout(500)
+        page.keyboard.press("ArrowRight")
+        page.wait_for_timeout(500)
+        page.evaluate("finder.scrollLeft = finder.scrollWidth")
+        page.wait_for_function("() => finder.scrollLeft > 0")
+
+        before = page.evaluate("finder.scrollLeft")
+        page.keyboard.press("ArrowLeft")
+        page.wait_for_timeout(50)
+        during = page.evaluate("finder.scrollLeft")
+        page.wait_for_timeout(350)
+        after = page.evaluate("finder.scrollLeft")
+
+        assert before > during > after
+
+
+@pytest.mark.integration
 def test_mobile_folder_click_reveals_new_column_without_flushing_left(
     live_server: str,
 ):
