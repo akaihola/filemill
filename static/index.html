@@ -3715,7 +3715,10 @@ function startRouting() {
     /* Only the path is honoured: a Back that lands on a different root cannot
        remount it without a user gesture, so it would silently walk the wrong
        tree. Leaving the columns where they are is the honest outcome. */
-    if (loc && (!loc.root || loc.root === path[0]?.name)) applyPath(loc.path);
+    if (loc && (!loc.root || loc.root === path[0]?.name)) {
+      if (loc.view) document.documentElement.dataset.filemill = loc.view;
+      applyPath(loc.path);
+    }
   });
 }
 
@@ -4122,10 +4125,14 @@ function previewView() {
 }
 
 function setPreviewView(view) {
-  if (!location.pathname) return;
-  const url = new URL(location.href);
-  url.searchParams.set("filemill", view);
-  location.href = url.pathname + url.search + url.hash;
+  if (!ROUTER) return;
+  document.documentElement.dataset.filemill = view;
+  ROUTER.write({ path: currentPath(), view }, false);
+  const n = previewNode();
+  if (n) {
+    fillPreview(n);
+    setupPreviewActions(n);
+  }
 }
 
 function setupPreviewActions(n) {
@@ -5550,6 +5557,7 @@ function vttHTML(source, mode = "transcript") {
   }
   const cues = [];
   let seenCue = false;
+  let pendingCue = null;
   for (const block of text.split(/\r?\n\s*\r?\n/).slice(1)) {
     const lines = block.split(/\r?\n/);
     if (["NOTE", "STYLE", "REGION"].includes(lines[0]?.trim())) continue;
@@ -5558,6 +5566,14 @@ function vttHTML(source, mode = "transcript") {
       if (
         !seenCue && block.trim() && lines.every((line) => line.includes(":"))
       ) continue;
+      if (pendingCue && block.trim()) {
+        const continuation = block.replace(/<[^>]+>/g, "").trim();
+        if (continuation) {
+          cues.push([...pendingCue, continuation]);
+          pendingCue = null;
+        }
+        continue;
+      }
       if (block.trim()) {
         return '<div class="preview-error">Malformed WebVTT: cue is missing a timestamp.</div>';
       }
@@ -5576,6 +5592,7 @@ function vttHTML(source, mode = "transcript") {
     if (voice) cue = voice[2];
     cue = cue.replace(/<[^>]+>/g, "").trim();
     if (cue) cues.push([m[1], m[2], speaker, cue]);
+    else pendingCue = [m[1], m[2], speaker];
   }
   if (!cues.length) {
     return '<div class="preview-empty">WebVTT file has no cues.</div>';
@@ -6165,13 +6182,15 @@ const RouterHash = {
     return {
       root: q.get("r") || null,
       path: p.split("/").filter(Boolean).map(decodeURIComponent),
+      view: q.get("v") || null,
     };
   },
 
-  write({ root, path }, replace) {
+  write({ root, path, view }, replace) {
     if (dead) return;
     const q = "#r=" + encSeg(root) +
-      (path.length ? "&p=" + path.map(encSeg).join("/") : "");
+      (path.length ? "&p=" + path.map(encSeg).join("/") : "") +
+      (view ? "&v=" + encSeg(view) : "");
     if (q === location.hash) return;
     /* history.*State, not an assignment to location.hash: assigning always
        pushes, and it fires hashchange, which would loop straight back in
@@ -6387,6 +6406,7 @@ async function mount(handle, loc) {
      deleted since the last visit lands them at the deepest part that is real
      rather than on a selection that is not. */
   const want = loc ?? takePending(handle.name) ?? await recallView(handle);
+  if (want?.view) document.documentElement.dataset.filemill = want.view;
   if (want && want.path.length) await applyPath(want.path);
   else render();
   mounted = handle;

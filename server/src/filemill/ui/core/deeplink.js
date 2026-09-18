@@ -146,6 +146,9 @@ export function startRouting() {
     /* Only the path is honoured: a Back that lands on a different root cannot
        remount it without a user gesture, so it would silently walk the wrong
        tree. Leaving the columns where they are is the honest outcome. */
-    if (loc && (!loc.root || loc.root === path[0]?.name)) applyPath(loc.path);
+    if (loc && (!loc.root || loc.root === path[0]?.name)) {
+      if (loc.view) document.documentElement.dataset.filemill = loc.view;
+      applyPath(loc.path);
+    }
   });
 }

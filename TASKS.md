@@ -41,10 +41,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- Toggling `Source` / `Rendered` reloads the whole page and causes an uncomfortable
-  blink and a delay. Just the preview pane should be reloaded, and the URL and history
-  updated.
-
 - [*] On portrait mobile, some `.md` files wrap at screen width, others run wider than
   the screen width. For example, in the filemill repository, `README.md` and
   `CHANGELOG.md`, `SECURITY.md`, and `TASKS.md` wrap at screen width, but
@@ -81,6 +77,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- Toggling `Source` / `Rendered` reloads the whole page and causes an uncomfortable
+  blink and a delay. Just the preview pane should be reloaded, and the URL and history
+  updated.
 
 - [*] Add a preview for `.mp4` files with a `<video controls>` element, as one registry
   entry plus one test.

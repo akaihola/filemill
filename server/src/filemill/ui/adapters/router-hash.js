@@ -35,13 +35,15 @@ export const RouterHash = {
     return {
       root: q.get("r") || null,
       path: p.split("/").filter(Boolean).map(decodeURIComponent),
+      view: q.get("v") || null,
     };
   },
 
-  write({ root, path }, replace) {
+  write({ root, path, view }, replace) {
     if (dead) return;
     const q = "#r=" + encSeg(root) +
-      (path.length ? "&p=" + path.map(encSeg).join("/") : "");
+      (path.length ? "&p=" + path.map(encSeg).join("/") : "") +
+      (view ? "&v=" + encSeg(view) : "");
     if (q === location.hash) return;
     /* history.*State, not an assignment to location.hash: assigning always
        pushes, and it fires hashchange, which would loop straight back in
