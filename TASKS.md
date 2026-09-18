@@ -71,6 +71,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   string template. Done when `dependencies` has starlette, uvicorn, typer, python-pptx.
     - Depends on: [24]
 
+- [*] Compute the symlink zone map one time per request in `paths.py`. Delete the three
+  other walks of the root that build the same map.
+    - Depends on: [24]
+
 - [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=` URLs
   for images, PDF and HTML. Done when `grep -r raw?path server/src` prints nothing.
     - Depends on: [33]
@@ -101,10 +105,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
-
-- [*] Compute the symlink zone map one time per request in `paths.py`. Delete the three
-  other walks of the root that build the same map.
-    - Depends on: [24]
 
 - [*] On mobile, long-pressing a file or directory should open a menu of actions to copy
   its base name, relative path or absolute path.
