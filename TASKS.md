@@ -20,10 +20,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
       `panFocus` and `slideTail`. Each function is under 25 lines.
 
-- [*] Delete `server/src/filemill/styles.py`. The shell links `/ui/core/styles.css`, and
-  no other server route emits HTML. Delete the tests that pin `APP_CSS`.
-    - Depends on: [33], [34]
-
 - [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=` URLs
   for images, PDF and HTML. Done when `grep -r raw?path server/src` prints nothing.
     - Depends on: [33]
@@ -89,6 +85,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   its base name, relative path or absolute path.
 
 ## Scheduled
+
+- [*] Delete `server/src/filemill/styles.py`. The shell links `/ui/core/styles.css`, and
+  no other server route emits HTML. Delete the tests that pin `APP_CSS`.
+    - Depends on: [33], [34]
 
 - [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100 k-entry
   directory still builds 100 k DOM nodes. Do this only if such folders show up.
