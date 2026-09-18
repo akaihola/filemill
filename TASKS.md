@@ -54,6 +54,12 @@ Rules for TASKS.md usage are at the bottom of the file.
   containing folder of the previewed file. Instead, the containing folder column should
   be focused with the previewed file highlighted.
 
+- [*] Bug: Task c37c152d-177e-44f1-a643-9ab96d37b75a failed to implement
+  reStructuredText rendering. In the preview pane, `.rst` files appear as identical
+  plain unhighlighted text both in `Source` (`?filemill=highlight`) and `Rendered`
+  (`filemill=render`) modes. Use red-green TDD and a strong model to investigate and fix
+  this.
+
 ## Scheduled
 
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
