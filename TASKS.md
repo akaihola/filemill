@@ -64,9 +64,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done when
   `uv run pytest -n auto` passes at the repository root.
 
-- [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
-  `static/FSA-TEST-CHECKLIST.md`.
-
 - [*] Replace `python-fasthtml` with `starlette` and `uvicorn`. The shell becomes one
   string template. Done when `dependencies` has starlette, uvicorn, typer, python-pptx.
     - Depends on: [24]
@@ -105,6 +102,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
+  `static/FSA-TEST-CHECKLIST.md`.
 
 - [*] On mobile, long-pressing a file or directory should open a menu of actions to copy
   its base name, relative path or absolute path.
