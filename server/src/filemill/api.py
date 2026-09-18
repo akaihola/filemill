@@ -6,7 +6,6 @@ three small ports; this module fills the two that need a server:
     GET  /api/dir?p=<rel>      → {"entries": [{name, dir, size, mod}], "denied"}
     GET  /api/raw?p=<rel>      → the bytes, with a detected media type
     GET  /api/preview?p=<rel>  → an HTML fragment from ``preview.render_preview``
-    POST /api/render           → the same, for bytes the server cannot read
     POST /api/save?p=<rel>     → overwrite the file with the request body
 
 ``p`` is always **relative to ROOT** — that is the whole point of the new URL
@@ -15,11 +14,8 @@ shape that names an absolute filesystem path, so there is nothing to smuggle.
 Every path still goes through ``_resolve_safe`` afterwards, because a relative
 path can still climb with ``..`` and ROOT can still contain symlinks.
 
-``POST /api/render`` is what keeps "Open local folder…" from being a downgrade.
-When the browser has granted a folder the server cannot see, the UI posts the
-file's bytes and gets back a fragment rendered by the same Pygments and
-docutils pipeline as everything else. Markdown and .docx never arrive here:
-the browser renders them itself.
+When the browser has granted a folder the server cannot see, the UI renders the
+file in the browser through the same PreviewRich provider as the static edition.
 """
 
 from __future__ import annotations
@@ -31,7 +27,6 @@ import mimetypes
 import os
 import shutil
 import subprocess
-import tempfile
 from pathlib import Path
 
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, Response
@@ -39,9 +34,7 @@ from starlette.responses import FileResponse, HTMLResponse, JSONResponse, Respon
 from filemill.preview import read_text, valid_text
 from filemill.vfs import REGISTRY, classify_path, entry_order_key
 
-# Largest body /api/render will render and /api/save will write. Generous for
-# text, small enough that a stray multi-gigabyte file cannot be turned into a
-# memory exhaustion bug.
+# Largest body /api/save will write.
 RENDER_MAX = 8 * 1024 * 1024
 SEARCH_QUERY_MAX = 200
 SEARCH_MATCH_MAX = 100
@@ -361,41 +354,3 @@ def preview_fragment(target: Path, render) -> Response:
             f"{html_lib.escape(str(exc))}</div>",
             headers={"Cache-Control": "no-store"},
         )
-
-
-async def render_upload(request, render) -> Response:
-    """Render posted bytes through the server-side pipeline.
-
-    The renderers dispatch on suffix and take a path, so the upload is spooled
-    to a temp file with the original name's suffix and removed straight after.
-    Nothing in the response can outlive it: the providers that emit a URL to
-    their source (images, PDF) are handled in the browser and never posted here.
-    """
-    form = await request.form()
-    upload = form.get("file")
-    if upload is None or not hasattr(upload, "read"):
-        return HTMLResponse("", status_code=400)
-
-    data = await upload.read()
-    if len(data) > RENDER_MAX:
-        return HTMLResponse(
-            '<div class="preview-unsupported"><em>Too large to render '
-            "remotely.</em></div>"
-        )
-
-    name = Path(getattr(upload, "filename", "") or "upload").name
-    tmp = None
-    try:
-        with tempfile.NamedTemporaryFile(suffix=Path(name).suffix, delete=False) as fh:
-            fh.write(data)
-            tmp = Path(fh.name)
-        return HTMLResponse(render(tmp))
-    # Same, for arbitrary uploaded bytes.
-    except Exception as exc:
-        return HTMLResponse(
-            f'<div class="preview-error">Preview error: '
-            f"{html_lib.escape(str(exc))}</div>"
-        )
-    finally:
-        if tmp is not None:
-            tmp.unlink(missing_ok=True)
