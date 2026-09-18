@@ -69,6 +69,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
+- [*] Default `--bind` in `server/src/filemill/cli.py` to `127.0.0.1`. Document it in
+ `SECURITY.md`.
+
 - For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon for
   the whole file, and `{}` and `[]` icons for objects and arrays.
 
