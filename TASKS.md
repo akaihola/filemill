@@ -27,6 +27,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
   `static/FSA-TEST-CHECKLIST.md`.
 
+- [*] Bug: PPTX preview only shows the text found on the slides, and omits spaces and
+  linefeeds between blocks of text. The preview looks identical in both `Source` and
+  `Rendered` views. Task c6f1a55d-3d5d-4259-823f-34ad83f18ef3 failed to implement proper
+  PPTX preview. This issue is probably complicated, so let's get help from a strong
+  language model and deep online research.
+
 ## Scheduled
 
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
