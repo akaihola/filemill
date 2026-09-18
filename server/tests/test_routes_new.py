@@ -108,6 +108,11 @@ def test_root_without_index_html_serves_shared_ui(tmp_path, monkeypatch):
     assert 'data-base="/"' in resp.text
 
 
+def test_api_query_parameters_reach_starlette_handlers(tmp_path, monkeypatch):
+    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+    assert _client(tmp_path).get("/api/dir?page=0").status_code == 400
+
+
 def test_directory_serves_its_index_html_as_is(tmp_path, monkeypatch):
     """A bare directory URL serves that directory's index.html as HTML."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
