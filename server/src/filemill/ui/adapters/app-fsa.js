@@ -145,6 +145,7 @@ export async function mount(handle, loc) {
      deleted since the last visit lands them at the deepest part that is real
      rather than on a selection that is not. */
   const want = loc ?? takePending(handle.name) ?? await recallView(handle);
+  if (want?.view) document.documentElement.dataset.filemill = want.view;
   if (want && want.path.length) await applyPath(want.path);
   else render();
   mounted = handle;
