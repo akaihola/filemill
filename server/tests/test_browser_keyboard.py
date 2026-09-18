@@ -256,7 +256,7 @@ def _wait_for_finder_scroll(page) -> None:
     """Wait until #finder exists, has scrolled right, and has stopped moving.
 
     Both shells move #finder.scrollLeft smoothly — `scrollFinderToReveal()` in
-    styles.py for the htmx one, `scroll-behavior: smooth` plus layout() for the
+    shared stylesheet for the htmx one, `scroll-behavior: smooth` plus layout() for the
     shared one — so the movement starts late and then takes time. A fixed sleep
     is a bet on how loaded the machine is, and one run of 29 lost it: it read
     `document.getElementById('finder')` as null 1100 ms after `goto` and failed
