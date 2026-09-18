@@ -10,25 +10,33 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] From documentation, docstrings and comments, remove references to specific
   development setups which include e.g. server names and local paths.
 
-## In progress
+## Ordered backlog
 
-- [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
-  `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
+- [x] Delete `_document_page` — document representations, including `layout=no-columns`,
+      now return the shared client shell.
 
-- [*] Give each magic number in `ui/core/state.js`, `layout.js`, `nav.js`, `render.js` a
-  name and a one-line comment that says why the value is what it is.
+- [x] Write `docs/adr/0001-one-finder.md` (context, decision, measurement, consequence).
+      The shared UI owns all interaction. The server renders documents. Proposal [8] is
+      closed.
 
-- [21] Cache the preview element keyed on the previewed node and its `meta`, the same
-  way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
+- [x] [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
+      `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
+      `TASKS.md`.
 
-- [~] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
-  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
+- [x] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
+      `panFocus` and `slideTail`. Each function is under 25 lines.
 
-- [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
-  and the `watchfiles` dependency. Delete their tests.
+- [29] Make `ui/core/` a model package with no DOM: nodes, selection, folding
+  arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
+    - Depends on: [18], [21]
 
-- [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
-  `static/FSA-TEST-CHECKLIST.md`.
+- [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
+  the three ports natively. Choose the smallest binary that passes `test-ui.py`.
+    - Depends on: [29]
+
+- [31] Evaluate AppKit, GTK and WinUI against the WebView prototype. Record the
+  comparison in an ADR. Do not start a native toolkit before the ADR exists.
+    - Depends on: [30]
 
 - [*] Bug: PPTX preview only shows the text found on the slides, and omits spaces and
   linefeeds between blocks of text. The preview looks identical in both `Source` and
@@ -58,40 +66,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
 
 - [*] Default `--bind` in `server/src/filemill/cli.py` to `127.0.0.1`. Document it in
- `SECURITY.md`.
+  `SECURITY.md`.
 
 - [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
   `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
-
-## Ordered backlog
-
-- [x] Delete `_document_page` — document representations, including `layout=no-columns`,
-      now return the shared client shell.
-
-- [x] Write `docs/adr/0001-one-finder.md` (context, decision, measurement, consequence).
-      The shared UI owns all interaction. The server renders documents. Proposal [8] is
-      closed.
-
-- [x] [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
-      `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
-      `TASKS.md`.
-
-- [x] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
-      `panFocus` and `slideTail`. Each function is under 25 lines.
-
-- [29] Make `ui/core/` a model package with no DOM: nodes, selection, folding
-  arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
-    - Depends on: [18], [21]
-
-- [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
-  the three ports natively. Choose the smallest binary that passes `test-ui.py`.
-    - Depends on: [29]
-
-- [31] Evaluate AppKit, GTK and WinUI against the WebView prototype. Record the
-  comparison in an ADR. Do not start a native toolkit before the ADR exists.
-    - Depends on: [30]
-
-## Scheduled
 
 - Toggling `Source` / `Rendered` reloads the whole page and causes an uncomfortable
   blink and a delay. Just the preview pane should be reloaded, and the URL and history
@@ -126,10 +104,28 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [*] Treat `.py.j2` as Python.
 
-## In Progress
+## In progress
+
+- [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
+  `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
+
+- [*] Give each magic number in `ui/core/state.js`, `layout.js`, `nav.js`, `render.js` a
+  name and a one-line comment that says why the value is what it is.
+
+- [21] Cache the preview element keyed on the previewed node and its `meta`, the same
+  way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
+
+- [~] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
+  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
+
+- [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
+  and the `watchfiles` dependency. Delete their tests.
+
+- [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
+  `static/FSA-TEST-CHECKLIST.md`.
 
 - [*] Default `--bind` in `server/src/filemill/cli.py` to `127.0.0.1`. Document it in
- `SECURITY.md`.
+  `SECURITY.md`.
 
 - For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon for
   the whole file, and `{}` and `[]` icons for objects and arrays.
@@ -263,13 +259,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - Back-navigation still often fails to unfold the newly focused column.
 
-## In progress
-
 - [*] On portrait mobile, some `.md` files wrap at screen width, others run wider than
   the screen width. For example, in the filemill repository, `README.md` and
   `CHANGELOG.md`, `SECURITY.md`, and `TASKS.md` wrap at screen width, but
-  `CONTRIBUTING.md` runs wider. All `.md` files should wrap at screen width on
-  portrait mobile.
+  `CONTRIBUTING.md` runs wider. All `.md` files should wrap at screen width on portrait
+  mobile.
 
 - [*] GET https://gogo.crane-boa.ts.net:8445/favicon.ico
 
