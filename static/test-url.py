@@ -26,7 +26,6 @@ import sys
 import threading
 from pathlib import Path
 
-from playwright.async_api import async_playwright
 
 # Serve the repository, not filemill/: the dev entry point references ../ui/,
 # which is the whole point of the shared directory.
@@ -134,13 +133,13 @@ def serve():
     return httpd, httpd.server_address[1]
 
 
-async def main(bundle, fake_handle, opfs_root):
+async def main(bundle, fake_handle, opfs_root, playwright):
     global TARGET, FAKE
     TARGET, FAKE = f"static/{bundle.name}", fake_handle
     httpd, port = serve()
     base = f"http://127.0.0.1:{port}/{TARGET}"
 
-    async with async_playwright() as p:
+    async with playwright.async_playwright() as p:
         b = await p.chromium.launch()
         pg = await b.new_page(viewport={"width": 1500, "height": 900})
         errs = []
@@ -284,5 +283,5 @@ async def main(bundle, fake_handle, opfs_root):
     sys.exit(1 if failed else 0)
 
 
-def test_url(bundle, fake_handle, opfs_root):
-    asyncio.run(main(bundle, fake_handle, opfs_root))
+def test_url(bundle, fake_handle, opfs_root, playwright):
+    asyncio.run(main(bundle, fake_handle, opfs_root, playwright))
