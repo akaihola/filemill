@@ -1,3 +1,4 @@
+import inspect
 import json
 import subprocess
 from html import escape
@@ -5,6 +6,7 @@ from pathlib import Path
 from urllib.parse import quote as urlquote
 
 from starlette.applications import Starlette
+from starlette.concurrency import run_in_threadpool
 from starlette.responses import (
     FileResponse,
     HTMLResponse,
@@ -28,7 +30,25 @@ app = Starlette()
 
 def rt(path: str, methods: list[str] | None = None):
     def register(endpoint):
-        app.router.routes.append(Route(path, endpoint, methods=methods or ["GET"]))
+        parameters = inspect.signature(endpoint).parameters
+
+        async def dispatch(request):
+            values = {}
+            for name, parameter in parameters.items():
+                if name == "request":
+                    values[name] = request
+                elif name in request.path_params:
+                    values[name] = request.path_params[name]
+                elif name in request.query_params:
+                    value = request.query_params[name]
+                    if parameter.annotation is int:
+                        value = int(value)
+                    values[name] = value
+            if inspect.iscoroutinefunction(endpoint):
+                return await endpoint(**values)
+            return await run_in_threadpool(endpoint, **values)
+
+        app.router.routes.append(Route(path, dispatch, methods=methods or ["GET"]))
         return endpoint
 
     return register
