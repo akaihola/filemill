@@ -103,7 +103,7 @@ Scheduled to In Progress. Do not change other issues or duplicate section headin
   `api.py:174` mypy argument-type errors, reproduced on untouched main. The full
   Deno formatter exceeded the bounded run; the remaining hooks ran separately.
 
-The task status remains In Progress for review. The implementation does not change
+The task remained In Progress during review. The implementation does not change
 unrelated issues to address these baseline failures.
 
 ## Implementation review
@@ -122,3 +122,28 @@ duplicate was introduced. A global uniqueness proof is blocked by existing issue
 [6], which appears under both Scheduled and In Progress on main and this branch.
 Removing either copy would violate this task's requirement to retain main's text
 for every other issue, so this review leaves both copies unchanged.
+
+
+## Deployment
+
+Merged into main with merge commits `05f44fc` (editor) and `b210f9a` (asset delivery).
+Both worktrees were clean before removing the merged feature worktree and branch.
+Issue [28] moved unchanged to Completed; every other tracker byte was preserved.
+The pre-existing issue [6] duplication described above remains unchanged.
+
+Restarted `filemill.service` (development tree, port 8334) and
+`filemill-public.service` (port 8336, https://filemill.vempai.men/).
+Both services are active. The seven changed editor/render/style assets match main
+on both origins and through the public domain. Live Chromium checks passed on the
+development and public deployments using in-memory files, including a save.
+
+The CDN initially served stale unversioned modules after restart. Commit `1b698a7`
+adds content-hashed script/style URLs and an import map for the complete server
+module graph. Refresh the browser to receive the new shell and editor. No cache
+purge was needed. The static bundle is unchanged by this server delivery fix.
+
+Deployment validation: 13 focused shell/editor tests pass, source lint passes,
+and the static bundle freshness check passes. The complete API suite reports
+55 passes and seven failures; unmodified main reproduces the identical failures.
+Logs: `/tmp/filemill-cache-tests.log`, `/tmp/filemill-cache-api.log`,
+`/tmp/filemill-cache-api-main.log`, and `/tmp/filemill-live-check.log`.
