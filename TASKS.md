@@ -144,6 +144,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   haven't been able to understand what's special about the folders that cause this
   behavior.
 
+- Keyboard navigation using arrows still doesn't animate folding/unfolding/resizing of
+  columns. Do systematic debugging to identify the cause, and fix it.
+
 - [7] Make entry ordering an adapter-owned contract.
     - Depends on: [6]
 
