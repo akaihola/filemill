@@ -65,10 +65,6 @@ export function layout(keepScroll, preserveFolded = false) {
     k = Math.min(focusCol, Math.max(k, folded));
     if (root.dataset.layout === "compressed-columns") k = path.length;
     finder.scrollLeft = Math.round(k * foldUnit() * range());
-  } else if (preserveFolded) {
-    finder.scrollLeft = Math.round(
-      Math.min(folded, path.length) * foldUnit() * range(),
-    );
   }
   applyScroll();
 }
