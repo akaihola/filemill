@@ -121,10 +121,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [35] Decide the fate of the `/w/` named mounts and their CORS middleware: delete them,
-  or make CORS opt-in and document it in `SECURITY.md`.
-    - Depends on: [32]
-
 - [*] Delete `/api/render` in `app.py`, `render_upload` in `api.py` and
   `ui/adapters/preview-upload.js`. Local folders in the server edition use PreviewRich.
     - Depends on: [32], [34]
@@ -346,6 +342,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [35] Decide the fate of the `/w/` named mounts and their CORS middleware: delete them,
+  or make CORS opt-in and document it in `SECURITY.md`.
+    - Depends on: [32]
 
 - [32] Render Markdown and `.docx` in the browser in the server edition too. Serve the
   pinned renderer modules from `ui/vendor/`. Then delete `rendering.py` and its deps.
