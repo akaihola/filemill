@@ -11,11 +11,13 @@ PDF, images, plain text, and code with syntax highlighting.
 
 ```
 src/filemill/
-├── app.py          # FastHTML app, routes, _resolve_safe()
+├── app.py          # FastHTML app and routes
 ├── api.py          # JSON/fragment API behind the shared UI (/api/*)
 ├── cli.py          # Typer CLI entry point
 ├── env.py          # FILEMILL_* variables, PYKOFINDER_* fallback
+├── paths.py        # resolve_safe() and the named-mount map
 ├── preview.py      # Preview dispatcher (md / docx / pptx / pdf / img / code / raw)
+├── pwa.py          # /manifest.json, /sw.js and /icons/ handlers
 ├── rendering.py    # markdown-it-py instance with plugins
 ├── urls.py         # View state and canonical URLs
 ├── vfs.py          # Virtual-filesystem registry + provider protocol
@@ -34,7 +36,7 @@ tests/
 ├── test_providers_sqlite.py  # SQLite VFS provider unit tests
 ├── test_pwa.py               # PWA assets (manifest, SW, icons, head tags)
 ├── test_rendering.py         # Markdown pipeline
-├── test_resolve_safe.py      # Path-safety logic (_resolve_safe)
+├── test_resolve_safe.py      # Path-safety logic (paths.resolve_safe)
 ├── test_resource_routes.py   # The one directory rule in resource()
 ├── test_resource_safety.py   # Path containment in resource()
 ├── test_routes_new.py        # Additional route coverage
@@ -95,14 +97,14 @@ one. `filemill=render` or `highlight` puts the shell around a file.
 
 ### Key invariants
 
-- All routes stay under a configurable `ROOT` directory. `_resolve_safe()` in
-  `app.py` refuses every path that escapes the root, symlinks included.
+- All routes stay under a configurable `ROOT` directory. `resolve_safe()` in
+  `paths.py` refuses every path that escapes the root, symlinks included.
 - Static `/w/` URLs use named mounts. The root directory is `/w/<ROOT.name>/...`.
   Each direct symlink child of ROOT is `/w/<symlink-name>/...`.
 - There is no JavaScript build step.
 - Every path in the `/api/*` and `/n/` routes is **relative to ROOT**.
   `api.rel_to_abs` refuses an absolute path, because `ROOT / "/etc/passwd"` is
-  `/etc/passwd`. `_resolve_safe()` then checks containment.
+  `/etc/passwd`. `resolve_safe()` then checks containment.
 - The shared UI fetches nothing from the network in this edition. `ui/` serves
   every asset, and Python renders the previews.
 - A keyboard handler that changes columns or the preview must update the
