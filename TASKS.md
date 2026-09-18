@@ -37,10 +37,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] Run the static and server browser tests through one root `conftest.py` and one
-  Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.
-    - Depends on: [25]
-
 - Toggling `Source` / `Rendered` reloads the whole page and causes an uncomfortable
   blink and a delay. Just the preview pane should be reloaded, and the URL and history
   updated.
@@ -75,6 +71,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] Run the static and server browser tests through one root `conftest.py` and one
+  Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.
+    - Depends on: [25]
 
 - Toggling `Source` / `Rendered` reloads the whole page and causes an uncomfortable
   blink and a delay. Just the preview pane should be reloaded, and the URL and history
