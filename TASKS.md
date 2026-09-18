@@ -33,6 +33,11 @@ Rules for TASKS.md usage are at the bottom of the file.
   PPTX preview. This issue is probably complicated, so let's get help from a strong
   language model and deep online research.
 
+- [*] Bug: Back and Forward navigation doesn't work correctly. Fix browser history
+  management so that navigating back and forward works as expected when moving between
+  folders and files and raw files. Also make sure `Alt`+`ArrowLeft`/`ArrowRight` works
+  as expected.
+
 ## Scheduled
 
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
