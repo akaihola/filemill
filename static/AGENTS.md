@@ -59,7 +59,7 @@ context reset.
 │   │   ├── preview-local.js  ← PREVIEW: coloured text, image, PDF, .desktop
 │   │   ├── preview-rich.js   ← PREVIEW: markdown-it/mammoth/docutils, on demand
 │   │   ├── preview-http.js   ← PREVIEW: GET /api/preview — the Python renderers
-│   │   ├── preview-upload.js ← PREVIEW: local bytes → POST /api/render
+│   │   ├── preview-rich.js ← PREVIEW: rich local bytes in the browser
 │   │   ├── router-hash.js  ← ROUTER: #r=root&p=a/b.md        (static)
 │   │   ├── router-path.js  ← ROUTER: /a/b.md                 (server)
 │   │   ├── storage.js      ← IndexedDB: remembered folders
