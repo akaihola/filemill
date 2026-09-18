@@ -24,9 +24,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.
     - Depends on: [25]
 
-- [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
-  `static/FSA-TEST-CHECKLIST.md`.
-
 - [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done when
   `uv run pytest -n auto` passes at the repository root.
 
@@ -66,6 +63,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   the whole file, and `{}` and `[]` icons for objects and arrays.
 
 ## Scheduled
+
+- [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
+  `static/FSA-TEST-CHECKLIST.md`.
 
 - [*] Replace `python-fasthtml` with `starlette` and `uvicorn`. The shell becomes one
   string template. Done when `dependencies` has starlette, uvicorn, typer, python-pptx.
