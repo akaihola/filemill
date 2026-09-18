@@ -29,7 +29,6 @@ import pytest
 
 pytest.importorskip("playwright")
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
-from playwright.sync_api import sync_playwright
 
 pytestmark = pytest.mark.integration
 
@@ -191,10 +190,11 @@ class Harness:
 
 
 @pytest.fixture()
-def page(server: str):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+def page(server: str, playwright):
+    browser = playwright.chromium.launch(headless=True)
+    try:
         yield Harness(browser.new_page(viewport={"width": 1500, "height": 900}), server)
+    finally:
         browser.close()
 
 
@@ -207,9 +207,9 @@ def test_the_root_column_lists_the_served_directory(page):
     assert ".hidden" not in names  # dotfiles off by default, as in filemill
 
 
-def test_theme_follows_os_colour_scheme_and_keeps_manual_control(server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+def test_theme_follows_os_colour_scheme_and_keeps_manual_control(server, playwright):
+    browser = playwright.chromium.launch(headless=True)
+    try:
         for scheme, expected in (("dark", "dark"), ("light", "light")):
             context = browser.new_context(color_scheme=scheme)
             themed = Harness(context.new_page(), server)
@@ -231,6 +231,7 @@ def test_theme_follows_os_colour_scheme_and_keeps_manual_control(server):
                 == str(manual == "dark").lower()
             )
             context.close()
+    finally:
         browser.close()
 
 
