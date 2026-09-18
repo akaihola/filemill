@@ -6,7 +6,9 @@ exercises every code path except the OS picker itself (that one needs
 test-e2e.py). Covers navigation, keyboard focus, folding, previews, the
 settings toggles, and the render-cost budget.
 
-    uv run --with "playwright==1.61.0" python3 test-ui.py [--bundle|--dev]
+    uv run --with "playwright==1.61.0" python3 test-ui.py [--bundle|--dev] [--editor]
+
+--editor runs only the focused editor checks.
 
 --bundle (default) tests the built index.html; --dev tests src/index.html, so
 the same suite guards both the bundle and the modular sources.
@@ -314,6 +316,126 @@ async def scroll_settled(pg, tries=40, step=100):
         prev = cur
         await pg.wait_for_timeout(step)
     return False
+
+
+async def editor_feature_checks(pg):
+    await pg.click("#pv-edit")
+    await pg.wait_for_selector("#pv-editor")
+    original = await pg.input_value("#pv-editor")
+    assert await pg.is_hidden("#pv-modified")
+    await pg.fill("#pv-editor", "alpha\nbeta alpha\n")
+    assert await pg.is_visible("#pv-modified")
+    assert await pg.inner_text("#pv-gutter") == "1\n2\n3"
+    await pg.press("#pv-editor", "Control+z")
+    assert await pg.input_value("#pv-editor") == original
+    assert await pg.is_hidden("#pv-modified")
+    await pg.press("#pv-editor", "Control+Shift+z")
+    assert await pg.input_value("#pv-editor") == "alpha\nbeta alpha\n"
+    assert await pg.is_visible("#pv-modified")
+    await pg.press("#pv-editor", "Control+f")
+    await pg.fill('input[aria-label="Find in file"]', "alpha")
+    for start in (0, 11, 0):
+        await pg.keyboard.press("Enter")
+        assert await pg.eval_on_selector("#pv-editor", "e => e.selectionStart") == start
+    await pg.fill('input[aria-label="Find in file"]', "absent")
+    await pg.press('input[aria-label="Find in file"]', "Enter")
+    assert await pg.inner_text(".pv-find output") == "No matches"
+    await pg.fill('input[aria-label="Find in file"]', "")
+    await pg.press('input[aria-label="Find in file"]', "Enter")
+    assert await pg.inner_text(".pv-find output") == ""
+    await pg.press('input[aria-label="Find in file"]', "Escape")
+    assert await pg.is_hidden(".pv-find")
+    assert await pg.evaluate("document.activeElement.id") == "pv-editor"
+    assert await pg.input_value("#pv-editor") == "alpha\nbeta alpha\n"
+    await pg.fill("#pv-editor", "needle" + "x" * 500 + "needle")
+    await pg.eval_on_selector("#pv-editor", "e => { e.setSelectionRange(0, 0); e.scrollLeft = 0; }")
+    await pg.press("#pv-editor", "Control+f")
+    search = pg.locator('input[aria-label="Find in file"]')
+    await search.fill("needle")
+    assert await search.evaluate("""e => e.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'Enter', bubbles: true, cancelable: true, isComposing: true
+    }))""")
+    assert await search.evaluate("e => document.activeElement === e")
+    await search.press("Enter")
+    await pg.keyboard.press("Enter")
+    assert await pg.eval_on_selector("#pv-editor", "e => e.selectionStart") == 506
+    assert await pg.eval_on_selector("#pv-editor", "e => e.scrollLeft > 0")
+    await pg.keyboard.press("Enter")
+    assert await pg.eval_on_selector("#pv-editor", "e => e.scrollLeft") == 0
+    await pg.keyboard.press("Escape")
+    await pg.press("#pv-editor", "Control+z")
+    assert await pg.input_value("#pv-editor") == "alpha\nbeta alpha\n"
+    await pg.evaluate("window.__editorBeforeResize = document.querySelector('#pv-editor')")
+    await pg.set_viewport_size({"width": 1100, "height": 700})
+    await pg.wait_for_function("finder.clientWidth < 1200")
+    assert await pg.evaluate("document.querySelector('#pv-editor') === __editorBeforeResize")
+    assert await pg.is_visible("#pv-modified")
+    await pg.press("#pv-editor", "Control+z")
+    assert await pg.input_value("#pv-editor") == original
+    assert await pg.is_hidden("#pv-modified")
+    # A new edit after undo discards the old redo branch.
+    await pg.fill("#pv-editor", "new branch")
+    await pg.press("#pv-editor", "Control+Shift+z")
+    assert await pg.input_value("#pv-editor") == "new branch"
+    await pg.fill("#pv-editor", "")
+    assert await pg.inner_text("#pv-gutter") == "1"
+    await pg.fill("#pv-editor", "line\n" * 100)
+    await pg.eval_on_selector("#pv-editor", "e => { e.scrollTop = e.scrollHeight; }")
+    await pg.wait_for_function("""() => {
+      const ta = document.querySelector('#pv-editor');
+      return document.querySelector('#pv-gutter').style.transform === `translateY(${-ta.scrollTop}px)`;
+    }""")
+    assert (await pg.inner_text("#pv-gutter")).splitlines()[-1] == "101"
+    # A failed port write leaves the editable text and modified mark intact.
+    await pg.evaluate("""() => {
+      window.__editorWrite = FS.write;
+      FS.write = async () => { throw new Error('test write denied'); };
+    }""")
+    await pg.click("#pv-save")
+    await pg.wait_for_function("document.querySelector('#pv-edit-err').textContent === 'test write denied'")
+    assert await pg.is_visible("#pv-modified")
+    assert not await pg.eval_on_selector("#pv-editor", "e => e.readOnly")
+    await pg.evaluate("() => { FS.write = window.__editorWrite; }")
+    await pg.fill("#pv-editor", original)
+    assert await pg.is_hidden("#pv-modified")
+    await pg.click("#pv-cancel")
+    await pg.wait_for_selector("#pv-edit", state="visible")
+    assert await pg.is_hidden("#pv-modified")
+    await pg.set_viewport_size({"width": 1500, "height": 900})
+
+
+async def editor_main():
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(args=["--allow-file-access-from-files"])
+        try:
+            pg = await browser.new_page(viewport={"width": 1500, "height": 900})
+            errors = []
+            pg.on("pageerror", lambda error: errors.append(str(error)))
+            # The file:// fixture cannot register a PWA service worker.
+            await pg.add_init_script("if ('serviceWorker' in navigator) navigator.serviceWorker.register = async () => ({})")
+            await pg.goto(TARGET.as_uri())
+            await pg.evaluate("localStorage.setItem('filemill.rich','off')")
+            await pg.evaluate(FAKE)
+            await pg.evaluate("mount(__mk(0))")
+            await pg.wait_for_function("path.length === 1 && colCache.get(path[0])")
+            await pg.click('.col[data-i="0"] .row:has-text("mixed")')
+            await pg.click('.col[data-i="1"] .row:has-text("note.md")')
+            await pg.wait_for_selector("#pv-edit", state="visible")
+            await editor_feature_checks(pg)
+            await pg.click("#pv-edit")
+            await pg.fill("#pv-editor", "saved editor text")
+            assert await pg.is_visible("#pv-modified")
+            await pg.click("#pv-save")
+            await pg.wait_for_function("document.querySelector('#pv-content').textContent.trim() === 'saved editor text'")
+            assert await pg.is_hidden("#pv-modified")
+            await pg.click("#pv-edit")
+            await pg.wait_for_selector("#pv-editor")
+            assert await pg.input_value("#pv-editor") == "saved editor text"
+            assert await pg.is_hidden("#pv-modified")
+            assert not errors, errors
+            print(f"Editor checks passed: {TARGET.name}")
+        finally:
+            await browser.close()
 
 
 async def main():
@@ -1179,8 +1301,11 @@ async def main():
         await pg.wait_for_timeout(300)
         await pg.click('.col[data-i="1"] .row:has-text("note.md")')
         await pg.wait_for_timeout(400)
+        check("Saved and reopened text is not modified", await pg.is_hidden("#pv-modified"))
         check("The change survives re-opening the file",
               (await pg.inner_text(".pv-text")).strip() == "# edited")
+        await editor_feature_checks(pg)
+        check("Editor undo, find, gutter, modified state and failed save", True)
         await pg.click('.col[data-i="1"] .row:has-text("page.html")')
         await pg.wait_for_timeout(400)
         check("A non-text preview offers no Edit button",
@@ -2047,4 +2172,4 @@ async def main():
     sys.exit(1 if failed else 0)
 
 
-asyncio.run(main())
+asyncio.run(editor_main() if "--editor" in sys.argv else main())
