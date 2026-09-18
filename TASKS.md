@@ -24,10 +24,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.
     - Depends on: [25]
 
-- [28] Grow the editor behind the `FS.write` port: undo, find, a line gutter and a
-  "modified" mark. Each addition is one file in `ui/editor/`.
-    - Depends on: [17]
-
 - [29] Make `ui/core/` a model package with no DOM: nodes, selection, folding
   arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
     - Depends on: [18], [21]
@@ -44,6 +40,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   the whole file, and `{}` and `[]` icons for objects and arrays.
 
 ## Scheduled
+
+- [28] Grow the editor behind the `FS.write` port: undo, find, a line gutter and a
+  "modified" mark. Each addition is one file in `ui/editor/`.
+    - Depends on: [17]
 
 - [27] Try reStructuredText rendering in the browser with Pyodide or a WASM tool, behind
   the rich renderer consent switch. Record size and first-load time in an ADR.
