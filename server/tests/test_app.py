@@ -1,30 +1,27 @@
 from unittest.mock import MagicMock
 
 import filemill.app as app_module
-from filemill.app import _resolve_safe
+from filemill.paths import resolve_safe
 
 # ── _resolve_safe ─────────────────────────────────────────────────────────────
 
 
-def test_resolve_safe_valid_path(tmp_path, monkeypatch):
-    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+def test_resolve_safe_valid_path(tmp_path):
     f = tmp_path / "file.txt"
     f.touch()
-    assert _resolve_safe(str(f)) == f.resolve()
+    assert resolve_safe(str(f), tmp_path) == f.resolve()
 
 
-def test_resolve_safe_traversal_returns_none(tmp_path, monkeypatch):
-    monkeypatch.setattr(app_module, "ROOT", tmp_path)
+def test_resolve_safe_traversal_returns_none(tmp_path):
     outside = str(tmp_path / ".." / "outside.txt")
-    assert _resolve_safe(outside) is None
+    assert resolve_safe(outside, tmp_path) is None
 
 
-def test_resolve_safe_exception_returns_none(tmp_path, monkeypatch):
-    """ROOT.resolve() raises → outer except catches it → returns None."""
+def test_resolve_safe_exception_returns_none():
+    """root.resolve() raises → outer except catches it → returns None."""
     mock_root = MagicMock()
     mock_root.resolve.side_effect = RuntimeError("bad root")
-    monkeypatch.setattr(app_module, "ROOT", mock_root)
-    assert _resolve_safe("/some/path") is None
+    assert resolve_safe("/some/path", mock_root) is None
 
 
 # ── GET / ─────────────────────────────────────────────────────────────────────
