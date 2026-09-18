@@ -54,9 +54,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   registry entry. Then delete `_preview_pptx`, `python-pptx` and `/api/preview`.
     - Depends on: [26]
 
-- [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done when
-  `uv run pytest -n auto` passes at the repository root.
-
 - [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=` URLs
   for images, PDF and HTML. Done when `grep -r raw?path server/src` prints nothing.
     - Depends on: [33]
@@ -99,6 +96,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Compute the symlink zone map one time per request in `paths.py`. Delete the three
   other walks of the root that build the same map.
     - Depends on: [24]
+
+- [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done when
+  `uv run pytest -n auto` passes at the repository root.
 
 - [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
   `static/FSA-TEST-CHECKLIST.md`.
