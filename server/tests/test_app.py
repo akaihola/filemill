@@ -1,5 +1,4 @@
 from unittest.mock import MagicMock
-from urllib.parse import quote
 
 import filemill.app as app_module
 from filemill.app import _resolve_safe
@@ -37,24 +36,8 @@ def test_index_returns_200_with_title(client):
     assert "filemill" in resp.text
 
 
-# ── GET /raw ──────────────────────────────────────────────────────────────────
-
-
-def test_raw_valid_file_returns_200(client, tmp_root):
-    md_file = tmp_root / "readme.md"
-    resp = client.get(f"/raw?path={quote(str(md_file))}")
-    assert resp.status_code == 200
-
-
-def test_raw_bad_path_returns_404(client):
-    resp = client.get(f"/raw?path={quote('/etc/shadow')}")
-    assert resp.status_code == 404
-
-
-def test_raw_directory_returns_404(client, tmp_root):
-    """p.is_file() is False for a directory → 404."""
-    resp = client.get(f"/raw?path={quote(str(tmp_root / 'subdir'))}")
-    assert resp.status_code == 404
+def test_obsolete_raw_route_is_removed(client):
+    assert client.get("/raw?path=readme.md").status_code == 404
 
 
 # ── settings-menu version ─────────────────────────────────────────────────────
