@@ -36,6 +36,7 @@ function vttHTML(source, mode = "transcript") {
   }
   const cues = [];
   let seenCue = false;
+  let pendingCue = null;
   for (const block of text.split(/\r?\n\s*\r?\n/).slice(1)) {
     const lines = block.split(/\r?\n/);
     if (["NOTE", "STYLE", "REGION"].includes(lines[0]?.trim())) continue;
@@ -44,6 +45,14 @@ function vttHTML(source, mode = "transcript") {
       if (
         !seenCue && block.trim() && lines.every((line) => line.includes(":"))
       ) continue;
+      if (pendingCue && block.trim()) {
+        const continuation = block.replace(/<[^>]+>/g, "").trim();
+        if (continuation) {
+          cues.push([...pendingCue, continuation]);
+          pendingCue = null;
+        }
+        continue;
+      }
       if (block.trim()) {
         return '<div class="preview-error">Malformed WebVTT: cue is missing a timestamp.</div>';
       }
@@ -62,6 +71,7 @@ function vttHTML(source, mode = "transcript") {
     if (voice) cue = voice[2];
     cue = cue.replace(/<[^>]+>/g, "").trim();
     if (cue) cues.push([m[1], m[2], speaker, cue]);
+    else pendingCue = [m[1], m[2], speaker];
   }
   if (!cues.length) {
     return '<div class="preview-empty">WebVTT file has no cues.</div>';
