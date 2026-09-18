@@ -728,6 +728,47 @@ def test_mobile_file_click_reveals_preview_without_flushing_left(
 
 
 @pytest.mark.integration
+def test_mobile_long_press_menu_copies_paths_for_files_and_directories(
+    live_server: str,
+):
+    with _ui_page(live_server, mobile=True) as page:
+        page.evaluate("""(() => {
+            let value = '';
+            Object.defineProperty(navigator, 'clipboard', {
+              configurable: true, value: {writeText: async v => value = v,
+              readText: async () => value}
+            });
+        })()""")
+        row = page.locator('.col[data-i="0"] .row:has-text("my-knowledge")')
+        row.dispatch_event(
+            "pointerdown", {"pointerType": "touch", "clientX": 20, "clientY": 20}
+        )
+        page.wait_for_timeout(550)
+        assert page.locator('#row-menu').is_visible()
+        await_copy = page.locator('#row-menu button', has_text="Copy name")
+        await_copy.click()
+        assert page.evaluate("navigator.clipboard.readText()") == "my-knowledge"
+
+        row.click()
+        file = page.locator('.col[data-i="1"] .row:has-text("AGENTS.md")')
+        file.dispatch_event(
+            "pointerdown", {"pointerType": "touch", "clientX": 20, "clientY": 20}
+        )
+        page.wait_for_timeout(550)
+        assert page.locator('#row-menu button', has_text="Copy relative path").is_visible()
+        page.locator('#row-menu button', has_text="Copy relative path").click()
+        assert page.evaluate("navigator.clipboard.readText()") == "my-knowledge/AGENTS.md"
+        file.dispatch_event(
+            "pointerdown", {"pointerType": "touch", "clientX": 20, "clientY": 20}
+        )
+        page.wait_for_timeout(550)
+        page.locator('#row-menu button', has_text="Copy absolute path").click()
+        assert page.evaluate("navigator.clipboard.readText()").endswith(
+            "/my-knowledge/AGENTS.md"
+        )
+
+
+@pytest.mark.integration
 def test_mobile_portrait_folder_tap_never_folds_touched_or_right_columns(
     live_server: str,
 ):

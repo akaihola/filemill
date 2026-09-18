@@ -50,6 +50,36 @@ const EDIT_MAX = TEXT_MAX;
 const EDIT_MAX_LINE = 10_000; // Avoid unusably wide editor lines.
 const VIRTUAL_ROWS = 1000;
 const ROW_STEP = 23; // 21px row plus its 1px vertical margins.
+const LONG_PRESS_MS = 500;
+const touchUI = () => matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+
+let longPressTimer;
+let suppressClick = false;
+
+function copyMenu(node, row, event) {
+  const rel = node.rel || path.slice(1).map((n) => n.name).concat(node.name).join("/");
+  const absolute = node.abs || "/" + rel;
+  const menu = document.getElementById("row-menu");
+  menu.innerHTML = [
+    ["Copy name", node.name], ["Copy relative path", rel],
+    ["Copy absolute path", absolute],
+  ].map(([label, text]) => `<button type="button" role="menuitem" data-copy="${esc(text)}">${label}</button>`).join("");
+  menu.hidden = false;
+  menu.style.left = `${Math.min(event.clientX, innerWidth - menu.offsetWidth - 8)}px`;
+  menu.style.top = `${Math.min(event.clientY, innerHeight - menu.offsetHeight - 8)}px`;
+  menu.querySelectorAll("button").forEach((button) => button.onclick = async () => {
+    suppressClick = false;
+    try {
+      await navigator.clipboard.writeText(button.dataset.copy);
+      menu.hidden = true;
+    } catch (err) {
+      const status = document.getElementById("st-copy");
+      status.textContent = `clipboard refused (${err.name || "error"})`;
+      status.classList.add("bad");
+    }
+  });
+  row.setAttribute("aria-expanded", "true");
+}
 
 /* Writing the value a property already holds still dirties it — and a width or
    custom-property write on a column relays out every row inside it. Guard the
@@ -140,7 +170,24 @@ function buildCol(node) {
       (k.dir ? `<span class="chev">›</span>` : "");
     /* read the index off the element: the same node keeps its DOM across
        re-renders, and its column position is only known at render time */
-    row.onclick = () => actions.choose(+el.dataset.i, k);
+    row.onclick = () => {
+      if (suppressClick) { suppressClick = false; return; }
+      actions.choose(+el.dataset.i, k);
+    };
+    row.onpointerdown = (event) => {
+      if (!touchUI() || (event.pointerType === "mouse" && event.button !== 0)) return;
+      clearTimeout(longPressTimer);
+      longPressTimer = setTimeout(() => {
+        suppressClick = true;
+        copyMenu(k, row, event);
+      }, LONG_PRESS_MS);
+    };
+    row.onpointerup = row.onpointercancel = row.onpointerleave = () => clearTimeout(longPressTimer);
+    row.oncontextmenu = (event) => {
+      if (!touchUI()) return;
+      event.preventDefault();
+      copyMenu(k, row, event);
+    };
     if (virtual) {
       row.style.top = `${ri * ROW_STEP}px`;
       layer.appendChild(row);
