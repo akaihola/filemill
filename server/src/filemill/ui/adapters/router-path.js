@@ -28,12 +28,13 @@ export const RouterPath = {
       root: null, /* the server decides the root; a URL cannot pick one */
       path: location.pathname.slice(BASE.length).split("/")
         .filter(Boolean).map(decodeURIComponent),
+      view: new URLSearchParams(location.search).get("filemill") || null,
     };
   },
 
   write({ path, view }, replace) {
     const search = new URLSearchParams(location.search);
-    if (view && !search.has("filemill")) search.set("filemill", view);
+    if (view) search.set("filemill", view);
     const query = search.toString();
     const url = BASE + path.map(encodeURIComponent).join("/") +
       (query ? `?${query}` : "") + location.hash;

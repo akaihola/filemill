@@ -438,10 +438,14 @@ function previewView() {
 }
 
 function setPreviewView(view) {
-  if (!location.pathname) return;
-  const url = new URL(location.href);
-  url.searchParams.set("filemill", view);
-  location.href = url.pathname + url.search + url.hash;
+  if (!ROUTER) return;
+  document.documentElement.dataset.filemill = view;
+  ROUTER.write({ path: currentPath(), view }, false);
+  const n = previewNode();
+  if (n) {
+    fillPreview(n);
+    setupPreviewActions(n);
+  }
 }
 
 function setupPreviewActions(n) {
