@@ -105,6 +105,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Replace `python-fasthtml` with `starlette` and `uvicorn`. The shell becomes one
   string template. Done when `dependencies` has starlette, uvicorn, typer, python-pptx.
     - Depends on: [24]
+
 - [*] On mobile, long-pressing a file or directory should open a menu of actions to copy
   its base name, relative path or absolute path.
 
