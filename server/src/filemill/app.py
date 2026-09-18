@@ -37,9 +37,15 @@ app, rt = fast_app(
 )
 
 
-def _resolve(path_str: str) -> Path | None:
+def _resolve(path_str: str, zones=None) -> Path | None:
     """``paths.resolve_safe`` bound to the configured ROOT."""
-    return paths.resolve_safe(path_str, ROOT)
+    return paths.resolve_safe(path_str, ROOT, zones)
+
+
+def _zones(request):
+    if not hasattr(request.state, "path_zones"):
+        request.state.path_zones = paths.symlink_zones(ROOT)
+    return request.state.path_zones
 
 
 @rt("/")
@@ -52,9 +58,9 @@ def index(request):
 
 
 @rt("/w/{path:path}")
-def web_static(path: str):
+def web_static(request, path: str):
     """Serve a named-mount ``/w/<mount>/...`` file with the correct Content-Type."""
-    p = paths.resolve_web_mount(path, ROOT)
+    p = paths.resolve_web_mount(path, ROOT, _zones(request))
     if p is None or not p.is_file():
         return HTMLResponse("Not found", status_code=404)
     return FileResponse(str(p))
@@ -180,7 +186,7 @@ def _ui_shell(state, base: str, hidden: bool = False):
 
 @rt(UI_BASE)
 @rt(UI_BASE + "{path:path}")
-def ui_view(path: str = ""):
+def ui_view(request, path: str = ""):
     """Serve the shell for any path under the UI base.
 
     The path is validated but not otherwise used: the client walks down to it
@@ -190,7 +196,8 @@ def ui_view(path: str = ""):
     Validation goes through ``split_vfs`` because ``/n/sample.db/users/42`` is a
     real file plus a key inside it — the joined form exists only in the URL.
     """
-    if path and api.split_vfs(path, ROOT, _resolve) is None:
+    zones = _zones(request)
+    if path and api.split_vfs(path, ROOT, lambda p: _resolve(p, zones)) is None:
         return HTMLResponse("Not found", status_code=404)
     return _ui_shell(urls.ViewState(), UI_BASE)
 
@@ -198,16 +205,16 @@ def ui_view(path: str = ""):
 # ── JSON/fragment API behind the shared UI ───────────────────────────────────
 
 
-def _api_target(p: str) -> Path | None:
+def _api_target(p: str, zones=None) -> Path | None:
     """Root-relative request path → a safe absolute path, or None."""
     candidate = api.rel_to_abs(p, ROOT)
     if candidate is None:
         return None
-    return _resolve(str(candidate))
+    return _resolve(str(candidate), zones)
 
 
 @rt("/api/dir")
-def api_dir(p: str = "", v: str = "", page: int = 1):
+def api_dir(request, p: str = "", v: str = "", page: int = 1):
     """List a directory — or one level inside a virtual filesystem.
 
     ``v`` is the virtual path *within* the file named by ``p``. Keeping the two
@@ -216,7 +223,7 @@ def api_dir(p: str = "", v: str = "", page: int = 1):
     """
     if page < 1:
         return JSONResponse({"entries": [], "denied": "Invalid page"}, status_code=400)
-    target = _api_target(p)
+    target = _api_target(p, _zones(request))
     if target is None:
         return JSONResponse({"entries": [], "denied": "Not found"}, status_code=404)
     if target.is_file():
@@ -227,10 +234,10 @@ def api_dir(p: str = "", v: str = "", page: int = 1):
 
 
 @rt("/api/search")
-def api_search(q: str = "", p: str = ""):
+def api_search(request, q: str = "", p: str = ""):
     """Search file contents below ROOT with the bounded ripgrep operation."""
     try:
-        focused = _api_target(p)
+        focused = _api_target(p, _zones(request))
         if focused is None or not focused.is_dir():
             return JSONResponse({"error": "Not found"}, status_code=404)
         return JSONResponse({"matches": api.search_root(ROOT, q, p)})
@@ -240,23 +247,23 @@ def api_search(q: str = "", p: str = ""):
 
 
 @rt("/api/raw")
-def api_raw(p: str = ""):
+def api_raw(request, p: str = ""):
     """Serve a file's bytes."""
-    target = _api_target(p)
+    target = _api_target(p, _zones(request))
     if target is None:
         return HTMLResponse("Not found", status_code=404)
     return api.raw_response(target)
 
 
 @rt("/api/preview")
-def api_preview(p: str = "", v: str = "", fmt: str = "", filemill: str = ""):
+def api_preview(request, p: str = "", v: str = "", fmt: str = "", filemill: str = ""):
     """Render a preview body with the existing Python pipeline.
 
     ``filemill`` is the view from the page's own URL, forwarded by
     ui/adapters/preview-http.js. It picks the renderer and nothing else, so
     ``highlight`` means the same coloured source here as on the embedded page.
     """
-    target = _api_target(p)
+    target = _api_target(p, _zones(request))
     if target is None:
         return HTMLResponse("", status_code=404)
     if v:
@@ -274,17 +281,17 @@ def api_preview(p: str = "", v: str = "", fmt: str = "", filemill: str = ""):
 @rt("/api/save", methods=["POST"])
 async def api_save(request, p: str = ""):
     """Overwrite a text file — the preview pane's Edit → Save."""
-    target = _api_target(p)
+    target = _api_target(p, _zones(request))
     if target is None:
         return JSONResponse({"error": "Not found"}, status_code=404)
     return api.save_file(target, await request.body())
 
 
 @rt("/api/delete", methods=["DELETE"])
-def api_delete(p: str = ""):
+def api_delete(request, p: str = ""):
     """Delete one real file or directory after the normal root check."""
     candidate = api.rel_to_abs(p, ROOT)
-    if candidate is None or _resolve(str(candidate)) is None:
+    if candidate is None or _resolve(str(candidate), _zones(request)) is None:
         return JSONResponse({"error": "Not found"}, status_code=404)
     if candidate.resolve() == ROOT.resolve():
         return JSONResponse({"error": "Not found"}, status_code=404)
@@ -307,7 +314,7 @@ def api_delete(p: str = ""):
 _RESOURCE_ROUTE = "/{path:path}"
 
 
-def _resource_target(rel: str) -> tuple[Path, str, str] | None:
+def _resource_target(rel: str, zones=None) -> tuple[Path, str, str] | None:
     """Root-relative URL path → (safe absolute path, real part, virtual part).
 
     ``sample.db/users/42`` is one URL naming two things: a file on disk and a key
@@ -317,14 +324,15 @@ def _resource_target(rel: str) -> tuple[Path, str, str] | None:
     Returns None when nothing safe is addressed. Every path still goes through
     ``paths.resolve_safe``, and the query never takes part in that decision.
     """
-    split = api.split_vfs(rel, ROOT, _resolve)
+    zones = zones or paths.symlink_zones(ROOT)
+    split = api.split_vfs(rel, ROOT, lambda p: _resolve(p, zones))
     if split is None:
         return None
     real_rel, vpath = split
     candidate = api.rel_to_abs(real_rel, ROOT)
     if candidate is None:
         return None
-    target = _resolve(str(candidate))
+    target = _resolve(str(candidate), zones)
     if target is None or not target.exists():
         return None
     return target, real_rel, vpath
@@ -346,7 +354,7 @@ def resource(request, path: str = ""):
     Filemill never writes a file under any route.
     """
     state = urls.parse_state(request.query_params)
-    found = _resource_target(path)
+    found = _resource_target(path, _zones(request))
     if found is None:
         # One 404 for "outside ROOT", "denied", and "missing" alike, so a probe
         # cannot learn from the status code whether an outside file exists.
