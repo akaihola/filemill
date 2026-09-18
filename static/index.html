@@ -3114,6 +3114,7 @@ function editorUndo(ta, changed) {
     changed();
   });
   ta.addEventListener("keydown", (e) => {
+    if (e.isComposing) return;
     if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "z") {
       e.preventDefault();
       restore(e.shiftKey);
@@ -3142,7 +3143,23 @@ function editorFind(host, ta) {
       ta.focus();
       ta.setSelectionRange(start, start + query.length);
       const line = ta.value.slice(0, start).split("\n").length - 1;
-      ta.scrollTop = line * parseFloat(getComputedStyle(ta).lineHeight);
+      const style = getComputedStyle(ta);
+      ta.scrollTop = line * parseFloat(style.lineHeight);
+      // Measure with the browser so tabs and Unicode use the textarea's layout.
+      const ruler = document.createElement("span");
+      Object.assign(ruler.style, {
+        position: "absolute",
+        visibility: "hidden",
+        whiteSpace: "pre",
+        font: style.font,
+        tabSize: style.tabSize,
+        letterSpacing: style.letterSpacing,
+      });
+      const lineStart = ta.value.lastIndexOf("\n", start - 1) + 1;
+      ruler.textContent = ta.value.slice(lineStart, start);
+      host.append(ruler);
+      ta.scrollLeft = ruler.getBoundingClientRect().width;
+      ruler.remove();
     } else input.focus();
   };
   const close = () => {
@@ -3160,6 +3177,7 @@ function editorFind(host, ta) {
     status.textContent = "";
   });
   host.addEventListener("keydown", (e) => {
+    if (e.isComposing) return;
     if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "f") {
       e.preventDefault();
       host.querySelector("#pv-find-open").click();

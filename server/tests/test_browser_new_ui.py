@@ -1286,6 +1286,9 @@ def test_editor_normalizes_newlines_and_undoes_replacements_and_composition(page
         "#pv-editor",
         """e => {
       e.dispatchEvent(new CompositionEvent('compositionstart', {bubbles: true}));
+      if (!e.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'z', ctrlKey: true, bubbles: true, cancelable: true, isComposing: true
+      }))) throw new Error('Editor intercepted composition undo');
       for (const text of ['a', 'あ']) {
         e.setRangeText(text, 0, e.selectionEnd, 'select');
         e.dispatchEvent(new InputEvent('input', {bubbles: true, isComposing: true}));
@@ -1297,3 +1300,29 @@ def test_editor_normalizes_newlines_and_undoes_replacements_and_composition(page
     page.press("#pv-editor", "Control+z")
     assert page.input_value("#pv-editor") == "alpha\nbeta\n"
     assert page.is_hidden("#pv-modified")
+
+
+def test_editor_find_reveals_long_lines_and_keeps_composition_input(page):
+    page.open("notes/plain.txt")
+    page.click("#pv-edit")
+    page.fill("#pv-editor", "needle" + "x" * 500 + "needle")
+    page.eval_on_selector(
+        "#pv-editor", "e => { e.setSelectionRange(0, 0); e.scrollLeft = 0; }"
+    )
+    page.press("#pv-editor", "Control+f")
+    search = page.locator('input[aria-label="Find in file"]')
+    search.fill("needle")
+    # Enter belongs to the IME while it is composing a search query.
+    assert search.evaluate("""e => e.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'Enter', bubbles: true, cancelable: true, isComposing: true
+    }))""")
+    assert search.evaluate("e => document.activeElement === e")
+    search.press("Enter")
+    page.keyboard.press("Enter")
+    assert page.eval_on_selector("#pv-editor", "e => e.selectionStart") == 506
+    assert page.eval_on_selector("#pv-editor", "e => e.scrollLeft > 0")
+    page.keyboard.press("Enter")
+    assert page.eval_on_selector("#pv-editor", "e => e.selectionStart") == 0
+    assert page.eval_on_selector("#pv-editor", "e => e.scrollLeft") == 0
+    page.keyboard.press("Escape")
+    assert page.is_hidden(".pv-find")

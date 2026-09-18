@@ -61,6 +61,7 @@ export function editorUndo(ta, changed) {
     changed();
   });
   ta.addEventListener("keydown", (e) => {
+    if (e.isComposing) return;
     if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "z") {
       e.preventDefault();
       restore(e.shiftKey);
