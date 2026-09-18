@@ -88,6 +88,12 @@ and 5,505.2 ms, a **6,110.7 ms median**. Warm selections took 62.6, 59.7 and
 browser suites. The difference from the earlier run illustrates uncontrolled
 host/network variance; it does not establish a renderer speed improvement.
 
+The final review on main `05f44fc`, after its editor changes, measured a
+**238,914-byte** bundle with unchanged runtime asset sizes. Cold
+selections took 9,035.8, 6,471.6, 6,586.1 ms, median
+**6,586.1 ms**; warm selections took 67.0, 58.6, 57.3 ms.
+All real-runtime safety and concurrent-source checks passed again.
+
 ### Reproduce
 
 From the repository root, with the pinned Playwright Chromium installed:
