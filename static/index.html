@@ -1035,7 +1035,7 @@ body {
   color: var(--ink-3);
 }
 /* edit mode — a textarea in the same footprint as .pv-text */
-#pv-edit, .pv-edit-bar button {
+#pv-edit, .pv-edit-bar button, .pv-find button {
   font: inherit;
   font-size: var(--fs-meta);
   color: var(--ink-2);
@@ -1045,25 +1045,60 @@ body {
   background: none;
   cursor: pointer;
 }
-#pv-edit:hover, .pv-edit-bar button:hover {
+#pv-edit:hover, .pv-edit-bar button:hover, .pv-find button:hover {
   background: var(--hover);
 }
 #pv-edit {
   margin-left: auto;
 }
-#pv-editor {
+#pv-modified {
+  color: var(--ink-2);
+  margin-left: 6px;
+}
+.pv-editor-lines {
+  display: flex;
+  height: 46vh;
+  min-height: 160px;
+}
+#pv-editor, #pv-gutter {
   box-sizing: border-box;
-  width: 100%;
-  min-height: 46vh;
-  resize: vertical;
-  font-family: var(--mono);
-  font-size: 11.5px;
-  line-height: 1.55;
+  margin: 0;
+  font: 11.5px/1.55 var(--mono);
+  padding: 12px 14px;
+  color: var(--ink-2);
+  background: var(--hover);
+}
+#pv-editor {
+  border: 1px solid var(--hairline);
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  border-radius: 0 8px 8px 0;
+}
+.pv-gutter-clip {
+  flex: none;
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-right: 0;
+  border-radius: 8px 0 0 8px;
+  background: var(--hover);
+}
+#pv-gutter {
+  text-align: right;
+  user-select: none;
+}
+.pv-find:not([hidden]) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.pv-find input {
+  max-width: 100%;
   color: var(--ink-2);
   background: var(--hover);
   border: 1px solid var(--hairline);
-  border-radius: 8px;
-  padding: 12px 14px;
 }
 .pv-edit-bar {
   display: flex;
@@ -2973,6 +3008,322 @@ function initSort() {
   syncSortMenu();
 }
 
+/* ═══ core/limits.js ═══ */
+const TEXT_MAX = 512 * 1024;
+const IMAGE_EXTENSIONS = [
+  "png",
+  "jpe?g",
+  "gif",
+  "webp",
+  "avif",
+  "bmp",
+  "ico",
+  "svg",
+];
+
+/* ═══ core/file-kind.js ═══ */
+const RICH = new Set(["md", "markdown", "rst", "docx", "pptx"]);
+const image = new RegExp(`^(?:${IMAGE_EXTENSIONS.join("|")})$`, "i");
+
+function classifyFile(name, { dir = false, vpath = "", csv = false,
+  jsonl = false } = {}) {
+  if (dir) return { kind: "folder", preview: "none", editable: false };
+  if (vpath || csv || jsonl) {
+    return { kind: "vfs", preview: "virtual", editable: false };
+  }
+  const match = String(name || "").toLowerCase().match(/\.([^.]+)$/);
+  const ext = match?.[1] || "";
+  if (image.test(ext)) return { kind: "file", preview: "image", editable: false };
+  if (ext === "mp4") return { kind: "file", preview: "video", editable: false };
+  if (ext === "pdf") return { kind: "file", preview: "pdf", editable: false };
+  if (ext === "html" || ext === "htm") {
+    return { kind: "file", preview: "html", editable: false };
+  }
+  if (ext === "desktop") return { kind: "link", preview: "desktop", editable: false };
+  if (ext === "vtt") return { kind: "file", preview: "vtt", editable: true };
+  if (ext === "jsonl" || ext === "csv") {
+    return { kind: "file", preview: ext, editable: true };
+  }
+  if (RICH.has(ext)) {
+    return { kind: "file", preview: ext, editable: ["md", "markdown", "rst"].includes(ext) };
+  }
+  return { kind: "file", preview: "text", editable: true };
+}
+
+/* ═══ editor/undo.js ═══ */
+function editorUndo(ta, changed) {
+  const past = [], future = [];
+  let previous = ta.value;
+  let selection = [ta.selectionStart, ta.selectionEnd];
+  let composing = false;
+  const remember = () => {
+    const text = ta.value;
+    if (text === previous) return;
+    let start = 0, end = previous.length, nextEnd = text.length;
+    while (start < end && start < nextEnd && previous[start] === text[start]) {
+      start++;
+    }
+    while (
+      end > start && nextEnd > start && previous[end - 1] === text[nextEnd - 1]
+    ) {
+      end--;
+      nextEnd--;
+    }
+    past.push({
+      start,
+      removed: previous.slice(start, end),
+      text: text.slice(start, nextEnd),
+      before: selection,
+      after: [ta.selectionStart, ta.selectionEnd],
+    });
+    future.length = 0;
+    previous = text;
+    selection = [ta.selectionStart, ta.selectionEnd];
+  };
+  const restore = (redo) => {
+    if (ta.readOnly || composing) return;
+    const from = redo ? future : past, to = redo ? past : future;
+    const change = from.pop();
+    if (!change) return;
+    const remove = redo ? change.removed : change.text;
+    const insert = redo ? change.text : change.removed;
+    ta.setRangeText(insert, change.start, change.start + remove.length);
+    selection = redo ? change.after : change.before;
+    ta.setSelectionRange(...selection);
+    previous = ta.value;
+    to.push(change);
+    changed();
+  };
+  ta.addEventListener("beforeinput", (e) => {
+    if (e.inputType === "historyUndo" || e.inputType === "historyRedo") {
+      e.preventDefault();
+      restore(e.inputType === "historyRedo");
+    } else if (!composing) selection = [ta.selectionStart, ta.selectionEnd];
+  });
+  ta.addEventListener("compositionstart", () => {
+    selection = [ta.selectionStart, ta.selectionEnd];
+    composing = true;
+  });
+  ta.addEventListener("compositionend", () => {
+    composing = false;
+    remember();
+    changed();
+  });
+  ta.addEventListener("input", () => {
+    if (!composing) remember();
+    changed();
+  });
+  ta.addEventListener("keydown", (e) => {
+    if (e.isComposing) return;
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "z") {
+      e.preventDefault();
+      restore(e.shiftKey);
+    }
+  });
+}
+
+/* ═══ editor/find.js ═══ */
+function editorFind(host, ta) {
+  const bar = host.querySelector(".pv-find");
+  const input = bar.querySelector("input");
+  const status = bar.querySelector("output");
+  let last = -1;
+  const next = () => {
+    const query = input.value;
+    if (!query) {
+      status.textContent = "";
+      last = -1;
+      return;
+    }
+    let start = ta.value.indexOf(query, last + 1);
+    if (start < 0) start = ta.value.indexOf(query);
+    last = start;
+    status.textContent = start < 0 ? "No matches" : "Match found";
+    if (start >= 0) {
+      ta.focus();
+      ta.setSelectionRange(start, start + query.length);
+      const line = ta.value.slice(0, start).split("\n").length - 1;
+      const style = getComputedStyle(ta);
+      ta.scrollTop = line * parseFloat(style.lineHeight);
+      // Measure with the browser so tabs and Unicode use the textarea's layout.
+      const ruler = document.createElement("span");
+      Object.assign(ruler.style, {
+        position: "absolute",
+        visibility: "hidden",
+        whiteSpace: "pre",
+        font: style.font,
+        tabSize: style.tabSize,
+        letterSpacing: style.letterSpacing,
+      });
+      const lineStart = ta.value.lastIndexOf("\n", start - 1) + 1;
+      ruler.textContent = ta.value.slice(lineStart, start);
+      host.append(ruler);
+      ta.scrollLeft = ruler.getBoundingClientRect().width;
+      ruler.remove();
+    } else input.focus();
+  };
+  const close = () => {
+    bar.hidden = true;
+    ta.focus();
+  };
+  host.querySelector("#pv-find-open").onclick = () => {
+    bar.hidden = false;
+    input.focus();
+    input.select();
+  };
+  bar.querySelector("button").onclick = next;
+  input.addEventListener("input", () => {
+    last = -1;
+    status.textContent = "";
+  });
+  host.addEventListener("keydown", (e) => {
+    if (e.isComposing) return;
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "f") {
+      e.preventDefault();
+      host.querySelector("#pv-find-open").click();
+    } else if (
+      !bar.hidden && (e.target === input || e.target === ta) &&
+      e.key === "Enter"
+    ) {
+      e.preventDefault();
+      next();
+    } else if (!bar.hidden && e.key === "Escape") {
+      e.preventDefault();
+      close();
+    }
+  });
+}
+
+/* ═══ editor/gutter.js ═══ */
+function editorGutter(ta, gutter) {
+  let count = 0;
+  const sync = () => {
+    gutter.style.transform = `translateY(${-ta.scrollTop}px)`;
+  };
+  ta.addEventListener("scroll", sync);
+  return () => {
+    const lines = ta.value.split("\n").length;
+    if (lines !== count) {
+      gutter.textContent = Array.from({ length: lines }, (_, i) => i + 1).join(
+        "\n",
+      );
+      count = lines;
+    }
+    sync();
+  };
+}
+
+/* ═══ editor/modified.js ═══ */
+function editorModified(ta, mark) {
+  const saved = ta.value;
+  return () => {
+    mark.hidden = ta.value === saved;
+  };
+}
+
+/* ═══ editor/editor.js ═══ */
+const EDIT_MAX_LINE = 10_000; // Avoid unusably wide editor lines.
+let activeEditor = null;
+
+function closeEditor() {
+  if (activeEditor) activeEditor.mark.hidden = true;
+  activeEditor = null;
+}
+
+function editingPreview(node) {
+  if (activeEditor?.node === node && activeEditor.pane.isConnected) {
+    return activeEditor.pane;
+  }
+  closeEditor();
+  return null;
+}
+
+async function editableText(node) {
+  if (
+    !FS.write || !classifyFile(node.name, node).editable ||
+    (node.meta?.size ?? 0) > TEXT_MAX
+  ) return null;
+  try {
+    const blob = await FS.blob(node);
+    if (!blob || blob.size > TEXT_MAX) return null;
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(
+      await blob.arrayBuffer(),
+    );
+    return !text.includes("\0") &&
+        text.split(/\r?\n/).every((line) => line.length <= EDIT_MAX_LINE)
+      ? text
+      : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function openEditor(node, current, refresh) {
+  if (!current()) return;
+  const edit = document.getElementById("pv-edit");
+  if (edit.disabled) return;
+  edit.disabled = true;
+  const text = await editableText(node);
+  edit.disabled = false;
+  if (!current() || text === null) return;
+  const pane = document.getElementById("preview");
+  const host = pane.querySelector("#pv-content");
+  const mark = pane.querySelector("#pv-modified");
+  pane.querySelector("#pv-edit").hidden = true;
+  host.innerHTML = `
+    <div class="pv-find" hidden>
+      <label>Find <input type="search" aria-label="Find in file"></label>
+      <button type="button">Next</button><output aria-live="polite"></output>
+    </div>
+    <div class="pv-editor-lines">
+      <div class="pv-gutter-clip" aria-hidden="true"><pre id="pv-gutter"></pre></div>
+      <textarea id="pv-editor" wrap="off" spellcheck="false" aria-label="Edit ${
+    esc(node.name)
+  }"></textarea>
+    </div>
+    <div class="pv-edit-bar">
+      <button id="pv-save">Save</button><button id="pv-cancel">Cancel</button>
+      <button id="pv-find-open">Find</button>
+      <span class="pv-err" id="pv-edit-err" role="alert"></span>
+    </div>`;
+  const ta = host.querySelector("textarea");
+  ta.value = text;
+  const session = { node, pane, mark };
+  activeEditor = session;
+  const live = () => current() && activeEditor === session && ta.isConnected;
+  const updateModified = editorModified(ta, mark);
+  const updateGutter = editorGutter(ta, host.querySelector("#pv-gutter"));
+  const changed = () => {
+    updateModified();
+    updateGutter();
+  };
+  editorUndo(ta, changed);
+  editorFind(host, ta);
+  changed();
+  ta.focus();
+  ta.setSelectionRange(0, 0);
+  ta.scrollTop = 0;
+  host.querySelector("#pv-cancel").onclick = () => {
+    if (live()) refresh();
+  };
+  const save = host.querySelector("#pv-save");
+  const error = host.querySelector("#pv-edit-err");
+  save.onclick = async () => {
+    if (!live() || save.disabled) return;
+    const submitted = ta.value;
+    save.disabled = ta.readOnly = true;
+    error.textContent = "";
+    try {
+      await FS.write(node, submitted);
+      if (live()) refresh();
+    } catch (err) {
+      if (!live()) return;
+      error.textContent = String(err.message || err);
+      save.disabled = ta.readOnly = false;
+    }
+  };
+}
+
 /* ═══ core/dom.js ═══ */
 const set = (obj, key, value) => {
   if (obj[key] !== value) obj[key] = value;
@@ -3368,48 +3719,6 @@ function startRouting() {
   });
 }
 
-/* ═══ core/limits.js ═══ */
-const TEXT_MAX = 512 * 1024;
-const IMAGE_EXTENSIONS = [
-  "png",
-  "jpe?g",
-  "gif",
-  "webp",
-  "avif",
-  "bmp",
-  "ico",
-  "svg",
-];
-
-/* ═══ core/file-kind.js ═══ */
-const RICH = new Set(["md", "markdown", "rst", "docx", "pptx"]);
-const image = new RegExp(`^(?:${IMAGE_EXTENSIONS.join("|")})$`, "i");
-
-function classifyFile(name, { dir = false, vpath = "", csv = false,
-  jsonl = false } = {}) {
-  if (dir) return { kind: "folder", preview: "none", editable: false };
-  if (vpath || csv || jsonl) {
-    return { kind: "vfs", preview: "virtual", editable: false };
-  }
-  const match = String(name || "").toLowerCase().match(/\.([^.]+)$/);
-  const ext = match?.[1] || "";
-  if (image.test(ext)) return { kind: "file", preview: "image", editable: false };
-  if (ext === "mp4") return { kind: "file", preview: "video", editable: false };
-  if (ext === "pdf") return { kind: "file", preview: "pdf", editable: false };
-  if (ext === "html" || ext === "htm") {
-    return { kind: "file", preview: "html", editable: false };
-  }
-  if (ext === "desktop") return { kind: "link", preview: "desktop", editable: false };
-  if (ext === "vtt") return { kind: "file", preview: "vtt", editable: true };
-  if (ext === "jsonl" || ext === "csv") {
-    return { kind: "file", preview: ext, editable: true };
-  }
-  if (RICH.has(ext)) {
-    return { kind: "file", preview: ext, editable: ["md", "markdown", "rst"].includes(ext) };
-  }
-  return { kind: "file", preview: "text", editable: true };
-}
-
 /* ═══ core/render.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Render
@@ -3427,8 +3736,6 @@ const CACHE_MAX = 24; // Retain enough nearby columns without growing memory unb
 const COLUMN_WIDTH_RATIO = 2 / 3; // Leave room for adjacent columns on narrow screens.
 const MAX_DEPTH = 5; // Keep depth styling within the available visual scale.
 const SCROLL_HINT_PADDING = 4; // Show the affordance only when content exceeds the viewport.
-const EDIT_MAX = TEXT_MAX;
-const EDIT_MAX_LINE = 10_000; // Avoid unusably wide editor lines.
 const VIRTUAL_ROWS = 1000;
 const ROW_STEP = 23; // 21px row plus its 1px vertical margins.
 const LONG_PRESS_MS = 500;
@@ -3720,6 +4027,8 @@ function render(keepScroll) {
 function renderPreview() {
   const n = previewNode();
   const selected = selectedNode();
+  const editing = editingPreview(n);
+  if (editing) return editing;
   const pv = document.createElement("div");
   pv.id = "preview";
   pv.tabIndex = 0;
@@ -3737,7 +4046,7 @@ function renderPreview() {
   pv.innerHTML = `
     <div class="col-head pv-head"><span class="name"><span>${
     esc(target.name)
-  }</span></span>
+  }</span><span id="pv-modified" hidden role="img" aria-label="Modified" title="Unsaved changes">●</span></span>
       <span class="pv-actions">
         ${
     ROUTER
@@ -3940,6 +4249,7 @@ function setupPreviewActions(n) {
    dropped. That guard lives here, not in the provider, so a provider is free to
    be as slow as it needs to be — a server round-trip, a WASM highlighter. */
 async function fillPreview(n) {
+  closeEditor();
   const token = nextPvToken();
   await FS.loadMeta(n);
   if (token !== pvToken) return;
@@ -3979,78 +4289,19 @@ async function fillPreview(n) {
   const btn = document.getElementById("pv-edit");
   if (btn) {
     btn.hidden = true;
-    if (await editableText(n) !== null) {
+    if (
+      await editableText(n) !== null && token === pvToken && btn.isConnected
+    ) {
       btn.hidden = false;
-      btn.onclick = () => openEditor(n);
+      btn.onclick = () =>
+        openEditor(
+          n,
+          () => token === pvToken && btn.isConnected,
+          () => fillPreview(n),
+        );
     }
   }
   paintTrail();
-}
-
-/* ── Edit mode ──────────────────────────────────────────────────────────────
-   A plain textarea over FS.write — see ports.js. The gate mirrors the text
-   preview in adapters/preview-local.js (same extensions, same cap), but it is
-   core's own copy: a build picks its preview provider freely, and Edit has to
-   work with any of them. Keep the two lists in step. */
-async function editableText(n) {
-  if (
-    !FS.write || !classifyFile(n.name, n).editable ||
-    (n.meta?.size ?? 0) > EDIT_MAX
-  ) return null;
-  const blob = await FS.blob(n);
-  if (!blob || blob.size > EDIT_MAX) return null;
-  try {
-    const text = new TextDecoder("utf-8", { fatal: true }).decode(
-      await blob.arrayBuffer(),
-    );
-    return !text.includes("\0") &&
-        Math.max(...text.split(/\r?\n/).map((line) => line.length), 0) <=
-          EDIT_MAX_LINE
-      ? text
-      : null;
-  } catch (_) {
-    return null;
-  }
-}
-
-async function openEditor(n) {
-  const token = pvToken;
-  const blob = await FS.blob(n);
-  if (token !== pvToken || !blob) return;
-  /* Read again rather than lifting the text out of the pane: the preview is
-     HTML by then, coloured and escaped, and un-escaping it back into source
-     is a round trip that can only lose. Same bytes either way — EDIT_MAX and
-     the provider's TEXT_MAX are the same 512 KB. */
-  const text = await blob.text();
-  const host = document.getElementById("pv-content");
-  if (token !== pvToken || !host) return;
-  document.getElementById("pv-edit").hidden = true;
-  host.innerHTML = `
-    <textarea id="pv-editor" spellcheck="false" aria-label="Edit ${
-    esc(n.name)
-  }"></textarea>
-    <div class="pv-edit-bar">
-      <button id="pv-save">Save</button>
-      <button id="pv-cancel">Cancel</button>
-      <span class="pv-err" id="pv-edit-err"></span>
-    </div>`;
-  const ta = document.getElementById("pv-editor");
-  ta.value = text;
-  ta.focus();
-  ta.setSelectionRange(0, 0);
-  ta.scrollTop = 0;
-  document.getElementById("pv-cancel").onclick = () => fillPreview(n);
-  document.getElementById("pv-save").onclick = async () => {
-    try {
-      await FS.write(n, ta.value);
-    } catch (err) {
-      const box = document.getElementById("pv-edit-err");
-      if (box) box.textContent = String(err.message || err);
-      return;
-    }
-    /* the pane may have moved on while the write was in flight */
-    if (ta.isConnected) fillPreview(n);
-  };
 }
 
 /* ═══ core/typeahead.js ═══ */

@@ -1,6 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Render
    ═══════════════════════════════════════════════════════════════════════════ */
+import {
+  closeEditor,
+  editableText,
+  editingPreview,
+  openEditor,
+} from "../editor/editor.js";
 import { currentPath, syncURL } from "./deeplink.js";
 import { esc, iconHTML } from "./icons.js";
 import { layout } from "./layout.js";
@@ -30,7 +36,7 @@ import {
   widths,
 } from "./state.js";
 import { hlFences } from "./syntax.js";
-import { IMAGE_EXTENSIONS, TEXT_MAX } from "./limits.js";
+import { IMAGE_EXTENSIONS } from "./limits.js";
 import { classifyFile } from "./file-kind.js";
 import { paintTrail } from "./trail.js";
 
@@ -46,8 +52,6 @@ const CACHE_MAX = 24; // Retain enough nearby columns without growing memory unb
 const COLUMN_WIDTH_RATIO = 2 / 3; // Leave room for adjacent columns on narrow screens.
 const MAX_DEPTH = 5; // Keep depth styling within the available visual scale.
 const SCROLL_HINT_PADDING = 4; // Show the affordance only when content exceeds the viewport.
-const EDIT_MAX = TEXT_MAX;
-const EDIT_MAX_LINE = 10_000; // Avoid unusably wide editor lines.
 const VIRTUAL_ROWS = 1000;
 const ROW_STEP = 23; // 21px row plus its 1px vertical margins.
 const LONG_PRESS_MS = 500;
@@ -339,6 +343,8 @@ export function render(keepScroll) {
 function renderPreview() {
   const n = previewNode();
   const selected = selectedNode();
+  const editing = editingPreview(n);
+  if (editing) return editing;
   const pv = document.createElement("div");
   pv.id = "preview";
   pv.tabIndex = 0;
@@ -356,7 +362,7 @@ function renderPreview() {
   pv.innerHTML = `
     <div class="col-head pv-head"><span class="name"><span>${
     esc(target.name)
-  }</span></span>
+  }</span><span id="pv-modified" hidden role="img" aria-label="Modified" title="Unsaved changes">●</span></span>
       <span class="pv-actions">
         ${
     ROUTER
@@ -559,6 +565,7 @@ function setupPreviewActions(n) {
    dropped. That guard lives here, not in the provider, so a provider is free to
    be as slow as it needs to be — a server round-trip, a WASM highlighter. */
 async function fillPreview(n) {
+  closeEditor();
   const token = nextPvToken();
   await FS.loadMeta(n);
   if (token !== pvToken) return;
@@ -598,76 +605,17 @@ async function fillPreview(n) {
   const btn = document.getElementById("pv-edit");
   if (btn) {
     btn.hidden = true;
-    if (await editableText(n) !== null) {
+    if (
+      await editableText(n) !== null && token === pvToken && btn.isConnected
+    ) {
       btn.hidden = false;
-      btn.onclick = () => openEditor(n);
+      btn.onclick = () =>
+        openEditor(
+          n,
+          () => token === pvToken && btn.isConnected,
+          () => fillPreview(n),
+        );
     }
   }
   paintTrail();
-}
-
-/* ── Edit mode ──────────────────────────────────────────────────────────────
-   A plain textarea over FS.write — see ports.js. The gate mirrors the text
-   preview in adapters/preview-local.js (same extensions, same cap), but it is
-   core's own copy: a build picks its preview provider freely, and Edit has to
-   work with any of them. Keep the two lists in step. */
-async function editableText(n) {
-  if (
-    !FS.write || !classifyFile(n.name, n).editable ||
-    (n.meta?.size ?? 0) > EDIT_MAX
-  ) return null;
-  const blob = await FS.blob(n);
-  if (!blob || blob.size > EDIT_MAX) return null;
-  try {
-    const text = new TextDecoder("utf-8", { fatal: true }).decode(
-      await blob.arrayBuffer(),
-    );
-    return !text.includes("\0") &&
-        Math.max(...text.split(/\r?\n/).map((line) => line.length), 0) <=
-          EDIT_MAX_LINE
-      ? text
-      : null;
-  } catch (_) {
-    return null;
-  }
-}
-
-async function openEditor(n) {
-  const token = pvToken;
-  const blob = await FS.blob(n);
-  if (token !== pvToken || !blob) return;
-  /* Read again rather than lifting the text out of the pane: the preview is
-     HTML by then, coloured and escaped, and un-escaping it back into source
-     is a round trip that can only lose. Same bytes either way — EDIT_MAX and
-     the provider's TEXT_MAX are the same 512 KB. */
-  const text = await blob.text();
-  const host = document.getElementById("pv-content");
-  if (token !== pvToken || !host) return;
-  document.getElementById("pv-edit").hidden = true;
-  host.innerHTML = `
-    <textarea id="pv-editor" spellcheck="false" aria-label="Edit ${
-    esc(n.name)
-  }"></textarea>
-    <div class="pv-edit-bar">
-      <button id="pv-save">Save</button>
-      <button id="pv-cancel">Cancel</button>
-      <span class="pv-err" id="pv-edit-err"></span>
-    </div>`;
-  const ta = document.getElementById("pv-editor");
-  ta.value = text;
-  ta.focus();
-  ta.setSelectionRange(0, 0);
-  ta.scrollTop = 0;
-  document.getElementById("pv-cancel").onclick = () => fillPreview(n);
-  document.getElementById("pv-save").onclick = async () => {
-    try {
-      await FS.write(n, ta.value);
-    } catch (err) {
-      const box = document.getElementById("pv-edit-err");
-      if (box) box.textContent = String(err.message || err);
-      return;
-    }
-    /* the pane may have moved on while the write was in flight */
-    if (ta.isConnected) fillPreview(n);
-  };
 }
