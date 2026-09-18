@@ -47,6 +47,7 @@ def parse(text: str) -> list[tuple[str, str, str, str]]:
         raise ValueError("missing WEBVTT header")
     cues = []
     seen_cue = False
+    pending = None
     for block in re.split(r"\r?\n\s*\r?\n", source)[1:]:
         lines = block.splitlines()
         if not lines or lines[0].strip() in {"NOTE", "STYLE", "REGION"}:
@@ -55,6 +56,17 @@ def parse(text: str) -> list[tuple[str, str, str, str]]:
         if parsed is None and block.strip():
             if not seen_cue and all(":" in line for line in lines):
                 continue
+            if seen_cue and (cues or pending):
+                continuation = TAG.sub("", block).strip()
+                if continuation:
+                    if pending:
+                        start, end, speaker = pending
+                        cues.append((start, end, speaker, continuation))
+                        pending = None
+                    else:
+                        start, end, speaker, cue_text = cues[-1]
+                        cues[-1] = (start, end, speaker, cue_text + "\n" + continuation)
+                continue
             raise ValueError("cue is missing a timestamp")
         if parsed:
             seen_cue = True
@@ -62,6 +74,8 @@ def parse(text: str) -> list[tuple[str, str, str, str]]:
             speaker, cue_text = tagged.split("\x00", 1)
             if cue_text:
                 cues.append((start, end, speaker, cue_text))
+            else:
+                pending = (start, end, speaker)
     return cues
 
 
