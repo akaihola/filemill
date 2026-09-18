@@ -48,7 +48,6 @@ window.__mk = () => {
 };
 window.__state = () => ({path: path.map(p=>p.name), sel, focusCol});
 """
-HANDLE = FAKE
 
 # A real directory, built inside the origin private file system. Sizes run
 # 1…13 bytes and disagree with the names, so an order by size cannot be the
@@ -113,7 +112,7 @@ async def open_at(pg, base, frag=""):
     # Rich previews reach for a CDN and log two console errors when it is not
     # reachable; both sides of that are test-rich.py's job, not this suite's.
     await pg.evaluate("localStorage.setItem('filemill.rich','off')")
-    await pg.evaluate(HANDLE)
+    await pg.evaluate(FAKE)
     await pg.evaluate("mount(__mk())")
     await pg.wait_for_timeout(250)
 
@@ -135,11 +134,11 @@ def serve():
     return httpd, httpd.server_address[1]
 
 
-async def run_suite(bundle, fake_handle, opfs_root):
-    global HANDLE
-    HANDLE = fake_handle
+async def main(bundle, fake_handle, opfs_root):
+    global TARGET, FAKE
+    TARGET, FAKE = f"static/{bundle.name}", fake_handle
     httpd, port = serve()
-    base = f"http://127.0.0.1:{port}/static/{bundle.name}"
+    base = f"http://127.0.0.1:{port}/{TARGET}"
 
     async with async_playwright() as p:
         b = await p.chromium.launch()
@@ -238,10 +237,8 @@ async def run_suite(bundle, fake_handle, opfs_root):
         print("\n── A real filesystem, through OPFS ──────────────────────────")
         N = 3000
         await open_at(pg, base)
-        built = await pg.evaluate(OPFS_BUILD.replace(
-            "navigator.storage.getDirectory()", opfs_root), N)
-        r = await pg.evaluate(OPFS_SWEEP.replace(
-            "navigator.storage.getDirectory()", opfs_root))
+        built = await pg.evaluate(OPFS_BUILD, N)
+        r = await pg.evaluate(OPFS_SWEEP)
         per = r["sweepMs"] / max(r["rows"], 1) * 1000
         check(f"{N:,} real files: entries() costs {r['listMs']} ms, the getFile() "
               f"sweep a size sort adds costs {r['sweepMs']} ms "
@@ -262,7 +259,7 @@ async def run_suite(bundle, fake_handle, opfs_root):
         # End to end, on real files: mount the folder, ask for biggest first.
         await pg.evaluate("setSort('size', true)")
         await pg.evaluate(
-            "(async () => mount(await (await navigator.storage.getDirectory())"
+            f"(async () => mount(await (await {opfs_root})"
             ".getDirectoryHandle('bench')))()")
         await pg.wait_for_function(
             "path.length && path[0].metaDone && colCache.get(path[0])", timeout=60_000)
@@ -284,8 +281,8 @@ async def run_suite(bundle, fake_handle, opfs_root):
     if failed:
         print("  Failed: " + ", ".join(failed))
     print("═" * 62)
-    assert not failed, "; ".join(failed)
+    sys.exit(1 if failed else 0)
 
 
 def test_url(bundle, fake_handle, opfs_root):
-    asyncio.run(run_suite(bundle, fake_handle, opfs_root))
+    asyncio.run(main(bundle, fake_handle, opfs_root))

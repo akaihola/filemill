@@ -6,7 +6,9 @@ exercises every code path except the OS picker itself (that one needs
 test-e2e.py). Covers navigation, keyboard focus, folding, previews, the
 settings toggles, and the render-cost budget.
 
-    uv run --with "playwright==1.61.0" python3 test-ui.py [--bundle|--dev]
+    uv run --with "playwright==1.61.0" python3 test-ui.py [--bundle|--dev] [--editor]
+
+--editor runs only the focused editor checks.
 
 --bundle (default) tests the built index.html; --dev tests src/index.html, so
 the same suite guards both the bundle and the modular sources.
@@ -104,7 +106,7 @@ window.__mk = (nbig) => {
                 D('site', [F('README.md','# site'), F('index.html','<h1>s</h1>')]),
                 D('web',  [F('index.html','<h1>w</h1>')]),
                 F('note.md','# note'), F('data.json','{}'),
-                F('nested.json', '{"name":"x","tags":["a","b"],"meta":{"n":1,"ok":true,"none":null}}'),
+                F('nested.json', '{"name":"x","tags":["a","b"],"items":[{"id":1,"name":"first"}],"meta":{"n":1,"ok":true,"none":null}}'),
                 F('bad.json', '{oops'),
                 F('deep.json', '['.repeat(200000) + ']'.repeat(200000)),
                 // Taller than any preview pane, so the pane has to say where a
@@ -150,7 +152,7 @@ window.__mk = (nbig) => {
     // repeat the id has to carry the column; a bad line or an oversized file
     // must land on the denied note, not a broken column.
     D('tables', [
-      F('log.jsonl', '{"id":2,"title":"Second","ts":"2026-01-02","tags":[]}\n'
+      F('log.jsonl', '{"id":2,"title":"Second","ts":"2026-01-02","tags":["a",{"ok":true}]}\n'
                    + '{"id":1,"title":"First","ts":"2026-01-01","tags":["a"]}\n'
                    + '{"id":3,"title":"Third","ts":"2026-01-03","tags":null}\n'),
       F('dup.jsonl', '{"id":10,"title":"Same"}\n{"id":11,"title":"Same"}\n'),
@@ -316,13 +318,139 @@ async def scroll_settled(pg, tries=40, step=100):
     return False
 
 
-async def run_suite(bundle, fake_handle):
+async def editor_feature_checks(pg):
+    await pg.click("#pv-edit")
+    await pg.wait_for_selector("#pv-editor")
+    original = await pg.input_value("#pv-editor")
+    assert await pg.is_hidden("#pv-modified")
+    await pg.fill("#pv-editor", "alpha\nbeta alpha\n")
+    assert await pg.is_visible("#pv-modified")
+    assert await pg.inner_text("#pv-gutter") == "1\n2\n3"
+    await pg.press("#pv-editor", "Control+z")
+    assert await pg.input_value("#pv-editor") == original
+    assert await pg.is_hidden("#pv-modified")
+    await pg.press("#pv-editor", "Control+Shift+z")
+    assert await pg.input_value("#pv-editor") == "alpha\nbeta alpha\n"
+    assert await pg.is_visible("#pv-modified")
+    await pg.press("#pv-editor", "Control+f")
+    await pg.fill('input[aria-label="Find in file"]', "alpha")
+    for start in (0, 11, 0):
+        await pg.keyboard.press("Enter")
+        assert await pg.eval_on_selector("#pv-editor", "e => e.selectionStart") == start
+    await pg.fill('input[aria-label="Find in file"]', "absent")
+    await pg.press('input[aria-label="Find in file"]', "Enter")
+    assert await pg.inner_text(".pv-find output") == "No matches"
+    await pg.fill('input[aria-label="Find in file"]', "")
+    await pg.press('input[aria-label="Find in file"]', "Enter")
+    assert await pg.inner_text(".pv-find output") == ""
+    await pg.press('input[aria-label="Find in file"]', "Escape")
+    assert await pg.is_hidden(".pv-find")
+    assert await pg.evaluate("document.activeElement.id") == "pv-editor"
+    assert await pg.input_value("#pv-editor") == "alpha\nbeta alpha\n"
+    await pg.fill("#pv-editor", "needle" + "x" * 500 + "needle")
+    await pg.eval_on_selector("#pv-editor", "e => { e.setSelectionRange(0, 0); e.scrollLeft = 0; }")
+    await pg.press("#pv-editor", "Control+f")
+    search = pg.locator('input[aria-label="Find in file"]')
+    await search.fill("needle")
+    assert await search.evaluate("""e => e.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'Enter', bubbles: true, cancelable: true, isComposing: true
+    }))""")
+    assert await search.evaluate("e => document.activeElement === e")
+    await search.press("Enter")
+    await pg.keyboard.press("Enter")
+    assert await pg.eval_on_selector("#pv-editor", "e => e.selectionStart") == 506
+    assert await pg.eval_on_selector("#pv-editor", "e => e.scrollLeft > 0")
+    await pg.keyboard.press("Enter")
+    assert await pg.eval_on_selector("#pv-editor", "e => e.scrollLeft") == 0
+    await pg.keyboard.press("Escape")
+    await pg.press("#pv-editor", "Control+z")
+    assert await pg.input_value("#pv-editor") == "alpha\nbeta alpha\n"
+    await pg.evaluate("window.__editorBeforeResize = document.querySelector('#pv-editor')")
+    await pg.set_viewport_size({"width": 1100, "height": 700})
+    await pg.wait_for_function("finder.clientWidth < 1200")
+    assert await pg.evaluate("document.querySelector('#pv-editor') === __editorBeforeResize")
+    assert await pg.is_visible("#pv-modified")
+    await pg.press("#pv-editor", "Control+z")
+    assert await pg.input_value("#pv-editor") == original
+    assert await pg.is_hidden("#pv-modified")
+    # A new edit after undo discards the old redo branch.
+    await pg.fill("#pv-editor", "new branch")
+    await pg.press("#pv-editor", "Control+Shift+z")
+    assert await pg.input_value("#pv-editor") == "new branch"
+    await pg.fill("#pv-editor", "")
+    assert await pg.inner_text("#pv-gutter") == "1"
+    await pg.fill("#pv-editor", "line\n" * 100)
+    await pg.eval_on_selector("#pv-editor", "e => { e.scrollTop = e.scrollHeight; }")
+    await pg.wait_for_function("""() => {
+      const ta = document.querySelector('#pv-editor');
+      return document.querySelector('#pv-gutter').style.transform === `translateY(${-ta.scrollTop}px)`;
+    }""")
+    assert (await pg.inner_text("#pv-gutter")).splitlines()[-1] == "101"
+    # A failed port write leaves the editable text and modified mark intact.
+    await pg.evaluate("""() => {
+      window.__editorWrite = FS.write;
+      FS.write = async () => { throw new Error('test write denied'); };
+    }""")
+    await pg.click("#pv-save")
+    await pg.wait_for_function("document.querySelector('#pv-edit-err').textContent === 'test write denied'")
+    assert await pg.is_visible("#pv-modified")
+    assert not await pg.eval_on_selector("#pv-editor", "e => e.readOnly")
+    await pg.evaluate("() => { FS.write = window.__editorWrite; }")
+    await pg.fill("#pv-editor", original)
+    assert await pg.is_hidden("#pv-modified")
+    await pg.click("#pv-cancel")
+    await pg.wait_for_selector("#pv-edit", state="visible")
+    assert await pg.is_hidden("#pv-modified")
+    await pg.set_viewport_size({"width": 1500, "height": 900})
+
+
+async def editor_main(bundle, fake_handle):
+    global TARGET, FAKE
+    TARGET, FAKE = bundle, fake_handle
     async with async_playwright() as p:
-        b = await p.chromium.launch()
+        browser = await p.chromium.launch(args=["--allow-file-access-from-files"])
+        try:
+            pg = await browser.new_page(viewport={"width": 1500, "height": 900})
+            errors = []
+            pg.on("pageerror", lambda error: errors.append(str(error)))
+            # The file:// fixture cannot register a PWA service worker.
+            await pg.add_init_script("if ('serviceWorker' in navigator) navigator.serviceWorker.register = async () => ({})")
+            await pg.goto(TARGET.as_uri())
+            await pg.evaluate("localStorage.setItem('filemill.rich','off')")
+            await pg.evaluate(FAKE)
+            await pg.evaluate("mount(__mk(0))")
+            await pg.wait_for_function("path.length === 1 && colCache.get(path[0])")
+            await pg.click('.col[data-i="0"] .row:has-text("mixed")')
+            await pg.click('.col[data-i="1"] .row:has-text("note.md")')
+            await pg.wait_for_selector("#pv-edit", state="visible")
+            await editor_feature_checks(pg)
+            await pg.click("#pv-edit")
+            await pg.fill("#pv-editor", "saved editor text")
+            assert await pg.is_visible("#pv-modified")
+            await pg.click("#pv-save")
+            await pg.wait_for_function("document.querySelector('#pv-content').textContent.trim() === 'saved editor text'")
+            assert await pg.is_hidden("#pv-modified")
+            await pg.click("#pv-edit")
+            await pg.wait_for_selector("#pv-editor")
+            assert await pg.input_value("#pv-editor") == "saved editor text"
+            assert await pg.is_hidden("#pv-modified")
+            assert not errors, errors
+            print(f"Editor checks passed: {TARGET.name}")
+        finally:
+            await browser.close()
+
+
+async def main(bundle, fake_handle):
+    global TARGET, FAKE
+    TARGET, FAKE = bundle, fake_handle
+    async with async_playwright() as p:
+        # index-dev.html loads ../ui/entry-static.js as a module, which a file://
+        # page may not fetch without this; the bundle needs nothing.
+        b = await p.chromium.launch(args=["--allow-file-access-from-files"])
         for scheme, expected in (("dark", "dark"), ("light", "light")):
             ctx = await b.new_context(color_scheme=scheme)
             themed = await ctx.new_page()
-            await themed.goto(bundle.as_uri())
+            await themed.goto(TARGET.as_uri())
             check(f"OS {scheme} scheme selects {expected} theme",
                   await themed.evaluate("root.dataset.theme") == expected)
             check(f"OS {scheme} scheme updates theme accessibility state",
@@ -332,8 +460,10 @@ async def run_suite(bundle, fake_handle):
                   await themed.evaluate(
                       "getComputedStyle(document.documentElement).getPropertyValue('--chrome').trim()"
                   ) == ("#1b1d21" if expected == "dark" else "#e7e7ec"))
-            await themed.click("#gear")
-            await themed.click("#s-theme")
+            # No folder is mounted here, so #welcome covers the chrome and a
+            # pointer click never reaches the toolbar; dispatch it directly.
+            await themed.locator("#gear").dispatch_event("click")
+            await themed.locator("#s-theme").dispatch_event("click")
             check(f"Manual toggle overrides {scheme} scheme",
                   await themed.evaluate("root.dataset.theme") != expected)
             check("Manual toggle updates theme accessibility state",
@@ -350,16 +480,81 @@ async def run_suite(bundle, fake_handle):
         pg.on("pageerror", lambda e: errs.append(str(e)))
 
         print(f"\n── {TARGET.relative_to(ROOT)} ───────────────────────────────")
-        await pg.goto(bundle.as_uri())
+        await pg.goto(TARGET.as_uri())
         # This suite is about the UI, not the one feature that reaches the
         # network. Left on, every .md preview would try a CDN import, fail (no
         # network in CI), and log two console errors — see test-rich.py, which
         # covers both sides of that switch deliberately.
         await pg.evaluate("localStorage.setItem('filemill.rich','off')")
         await pg.wait_for_timeout(400)
+        cases = [
+            ("folder", {"dir": True}, ("folder", "none", False)),
+            ("data.db", {"vpath": "table"}, ("vfs", "virtual", False)),
+            ("link.desktop", {}, ("link", "desktop", False)),
+            ("photo.png", {}, ("file", "image", False)),
+            ("doc.pdf", {}, ("file", "pdf", False)),
+            ("note.md", {}, ("file", "md", True)),
+            ("captions.vtt", {}, ("file", "vtt", True)),
+            ("rows.jsonl", {}, ("file", "jsonl", True)),
+            ("rows.csv", {}, ("file", "csv", True)),
+            ("source.py", {}, ("file", "text", True)),
+        ]
+        got = await pg.evaluate(
+            "cases => cases.map(([name, opts]) => [name, classifyFile(name, opts)])",
+            cases,
+        )
+        check(
+            "File-kind table matches the shared UI contract",
+            all(
+                (row[1]["kind"], row[1]["preview"], row[1]["editable"]) == expected
+                for row, (_, _, expected) in zip(got, cases)
+            ),
+        )
+        # ── Renderer registry — core/renderers.js. One check per core entry,
+        # driven straight through renderNode so the table is tested as a table:
+        # a new kind is one entry here and one line below.
+        print("\n── Renderer registry ────────────────────────────────────────")
+        check("Registry holds the core kinds plus this edition's rich ones",
+              await pg.evaluate("RENDERERS.map(e => e.kind)") ==
+              ["image", "pdf", "html", "desktop", "vtt", "text",
+               "md", "markdown", "rst", "docx", "pptx", "offline"])
+        RENDER = """([name, kind, body, extra]) =>
+            renderNode({name, ...(extra || {})}, new Blob([body]), kind)"""
+        entries = [
+            ("image", ["a.png", "image", "\x89PNG"], 'class="pv-img"'),
+            ("pdf", ["a.pdf", "pdf", "%PDF-1.4"], 'class="pv-pdf"'),
+            ("html", ["a.html", "html", "<p>hi</p>"], 'class="pv-html"'),
+            ("desktop", ["a.desktop", "desktop",
+                         "[Desktop Entry]\nType=Link\nName=Home\nURL=https://x.y/"],
+             'class="pv-link"'),
+            ("vtt", ["a.vtt", "vtt",
+                     "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHello"],
+             'class="preview-transcript"'),
+            ("text", ["a.txt", "text", "plain"], 'class="pv-text"'),
+        ]
+        for kind, args, marker in entries:
+            html = await pg.evaluate(RENDER, args) or ""
+            check(f"Entry {kind!r} renders its kind", marker in html, html[:80])
+        html = await pg.evaluate(RENDER, ["a.json", "text", '{"a": 1}']) or ""
+        check("Entry 'text' shows parsed JSON foldable", "pv-json" in html)
+        html = await pg.evaluate(RENDER, ["a.vtt", "vtt", "WEBVTT",
+                                          {"previewFormat": "raw"}]) or ""
+        check("Entry 'vtt' honours the raw view", "preview-raw" in html)
+        html = await pg.evaluate(RENDER, ["a.xyz", "no-such-kind", "plain"]) or ""
+        check("An unknown kind renders as text", 'class="pv-text"' in html)
+        await pg.evaluate("""addRenderers([
+            {kind: "boom", render() { throw new Error("boom"); }, fallback: "text"},
+            {kind: "dead", render() { throw new Error("dead"); }}])""")
+        html = await pg.evaluate(RENDER, ["a.txt", "boom", "plain"]) or ""
+        check("A throwing entry falls back to the kind it names",
+              'class="pv-text"' in html)
+        err = await pg.evaluate(RENDER + ".catch(e => e.message)",
+                                ["a.txt", "dead", "plain"])
+        check("A throwing entry with no fallback rejects", err == "dead", err)
+
         check("file:// shows the localhost hint, not a dead picker",
               "file://" in await pg.inner_text("#w-msg"))
-        await pg.evaluate(fake_handle)
+        await pg.evaluate(FAKE)
         await mount(pg)
         check("Root folder mounts", await pg.evaluate("path[0].name") == "workspace")
         check("Welcome screen hidden after mount", await pg.evaluate("welcome.hidden"))
@@ -629,6 +824,55 @@ async def run_suite(bundle, fake_handle):
               "keep their natural width",
               desktop["pan"] == 0 and desktop["whole"]
               and desktop["natural"] <= desktop["cap"], json.dumps(desktop))
+
+        # The whole model, one check per device class (ADR 0062). Every
+        # viewport walks the same four folders at the width ceiling and asserts
+        # the same promises: the touched column and its row are whole, the
+        # column that tap opened starts on screen unless the pan had to give
+        # the touched column the whole width (ADR 0024), nothing right of focus
+        # is a spine, no column is wider than two thirds of the finder, and the
+        # strip moved by its own transform, never by scrolling #stage. Which
+        # mechanism got there differs — the phones fold and pan, the tablet and
+        # desktop fit — and the detail shows it.
+        for label, w, h in (("phone portrait", 390, 844),
+                            ("phone landscape", 844, 390),
+                            ("tablet", 1024, 768),
+                            ("desktop", 1440, 900)):
+            await mount(pg)
+            await pg.set_viewport_size({"width": w, "height": h})
+            await scroll_settled(pg)
+            await pg.click('.col[data-i="0"] .row:has-text("wide")')
+            await pg.wait_for_timeout(250)
+            for i in range(3):
+                await pg.click(f'.col[data-i="{i + 1}"] .row:has-text("level-{i}-")')
+                await pg.wait_for_timeout(250)
+            await scroll_settled(pg)
+            m = await pg.evaluate("""(() => {
+              const fr = finder.getBoundingClientRect();
+              const col = document.querySelector(`.col[data-i="${focusCol}"]`);
+              const opened = document.querySelector(`.col[data-i="${focusCol + 1}"]`);
+              const r = col.getBoundingClientRect();
+              const row = col.querySelector('.row.sel').getBoundingClientRect();
+              const o = opened.getBoundingClientRect();
+              const tf = getComputedStyle(strip).transform;
+              const pan = tf && tf !== 'none' ? -new DOMMatrix(tf).m41 : 0;
+              return {focusCol, folded, pan: Math.round(pan), stage: stage.scrollLeft,
+                      touchedWhole: r.left >= fr.left - 2 && r.right <= fr.right + 2,
+                      rowWhole: row.left >= fr.left - 2 && row.right <= fr.right + 2,
+                      openedStartsInside: o.left >= fr.left - 2 && o.left <= fr.right - 2,
+                      spinesAtOrRight: [...document.querySelectorAll('.col.spine')]
+                          .map(c => +c.dataset.i).filter(i => i >= focusCol),
+                      maxWidth: Math.max(...widths.map(Math.round)),
+                      cap: Math.floor(finder.clientWidth * 2 / 3)};
+            })()""")
+            check(f"{label} {w}x{h}: the touched column stays whole, the opened "
+                  "column starts on screen unless the pan took its room, nothing "
+                  "at or right of focus folds",
+                  m["focusCol"] == 3 and m["touchedWhole"] and m["rowWhole"]
+                  and (m["openedStartsInside"] or m["pan"] > 0)
+                  and not m["spinesAtOrRight"]
+                  and m["stage"] == 0 and m["maxWidth"] <= m["cap"],
+                  json.dumps(m))
 
         # Walking in on a narrow screen leaves the focused column reaching past
         # the right edge — 4 spines and a 148 px column need 334 of 320 — so
@@ -956,12 +1200,23 @@ async def run_suite(bundle, fake_handle):
               str(await pg.evaluate("__rows(2)")))
         await pg.click('.col[data-i="2"] .row:has-text("Second")')
         await pg.wait_for_timeout(400)
-        kv = await pg.evaluate(
-            "[...document.querySelectorAll('#pv-content .pv-kv tr')]"
-            ".map(r => [r.children[0].textContent, r.children[1].textContent])")
-        check("A row previews as a two-column key/value table",
-              kv == [["id", "2"], ["title", "Second"], ["ts", "2026-01-02"], ["tags", "[]"]],
-              str(kv))
+        check("A row opens as the JSON hierarchical view",
+              await pg.evaluate("__rows(3)") == ["id", "title", "ts", "tags"]
+              and await pg.locator("#preview .pv-json details").count() > 0)
+        await pg.click('.col[data-i="3"] .row:has-text("tags")')
+        await pg.wait_for_timeout(300)
+        check("A JSONL row's nested array remains navigable",
+              await pg.evaluate("__rows(4)") == ["0", "1"])
+        await pg.click('.col[data-i="4"] .row:has-text("1")')
+        await pg.wait_for_timeout(300)
+        check("A JSONL array object remains navigable",
+              await pg.evaluate("__rows(5)") == ["ok"])
+        await pg.evaluate("applyPath(['tables', 'log.jsonl', 'Second'])")
+        await pg.wait_for_timeout(300)
+        await pg.click('.col[data-i="3"] .row:has-text("title")')
+        await pg.wait_for_timeout(300)
+        check("A JSONL scalar keeps the JSON scalar preview",
+              (await pg.inner_text(".pv-content")).strip() == "Second")
         check("…with no invented size or date",
               await pg.inner_text("#pv-sub") == "")
         await pg.evaluate("applyPath(['tables', 'log.jsonl', 'Third'])")
@@ -1050,8 +1305,11 @@ async def run_suite(bundle, fake_handle):
         await pg.wait_for_timeout(300)
         await pg.click('.col[data-i="1"] .row:has-text("note.md")')
         await pg.wait_for_timeout(400)
+        check("Saved and reopened text is not modified", await pg.is_hidden("#pv-modified"))
         check("The change survives re-opening the file",
               (await pg.inner_text(".pv-text")).strip() == "# edited")
+        await editor_feature_checks(pg)
+        check("Editor undo, find, gutter, modified state and failed save", True)
         await pg.click('.col[data-i="1"] .row:has-text("page.html")')
         await pg.wait_for_timeout(400)
         check("A non-text preview offers no Edit button",
@@ -1061,7 +1319,10 @@ async def run_suite(bundle, fake_handle):
         await pg.click('.col[data-i="1"] .row:has-text("nested.json")')
         await pg.wait_for_timeout(400)
         check("Valid JSON opens as an ordered key column",
-              await pg.evaluate("__rows(2)") == ["name", "tags", "meta"])
+              await pg.evaluate("__rows(2)") == ["name", "tags", "items", "meta"])
+        check("Selected JSON object keeps its preview beside its children",
+              await pg.locator("#preview .pv-json").count() == 1 and
+              await pg.locator("#preview details").count() > 0)
         await pg.click('.col[data-i="2"] .row:has-text("tags")')
         await pg.wait_for_timeout(300)
         check("Nested arrays open as ordered index rows",
@@ -1074,6 +1335,15 @@ async def run_suite(bundle, fake_handle):
         await pg.wait_for_timeout(300)
         check("Nested objects remain navigable",
               await pg.evaluate("__rows(3)") == ["n", "ok", "none"])
+        await pg.click('.col[data-i="2"] .row:has-text("items")')
+        await pg.wait_for_timeout(300)
+        check("Arrays expose object child nodes",
+              await pg.evaluate("__rows(3)") == ["0"] and
+              await pg.locator("#preview .pv-json").count() == 1)
+        await pg.click('.col[data-i="3"] .row:has-text("0")')
+        await pg.wait_for_timeout(300)
+        check("Array object children remain navigable",
+              await pg.evaluate("__rows(4)") == ["id", "name"])
         await pg.click('.col[data-i="1"] .row:has-text("bad.json")')
         await pg.wait_for_selector(".pv-text:not(.pv-json)")
         check("Invalid JSON keeps the coloured-source fallback",
@@ -1792,6 +2062,10 @@ async def run_suite(bundle, fake_handle):
             await pg.wait_for_function(
                 "colCache.get(path[1]) && colCache.get(path[1]).rows.length > 0", timeout=30_000)
             await pg.wait_for_timeout(300)
+            dom_rows = await pg.eval_on_selector_all('.col[data-i="1"] .row', "e=>e.length")
+            check(f"{n:,} entries: large columns keep only a viewport of rows in the DOM",
+                  dom_rows < n if n >= 1000 else dom_rows == n,
+                  f"{dom_rows} DOM rows")
             ms = await pg.evaluate("(() => { const t=performance.now(); render(true);"
                                    "return +(performance.now()-t).toFixed(1); })()")
             key = await pg.evaluate("__keybench(20)")
@@ -1899,8 +2173,9 @@ async def run_suite(bundle, fake_handle):
     if failed:
         print("  Failed: " + ", ".join(failed))
     print("═" * 62)
-    assert not failed, "; ".join(failed)
+    sys.exit(1 if failed else 0)
 
 
 def test_ui(bundle, fake_handle):
-    asyncio.run(run_suite(bundle, fake_handle))
+    asyncio.run(editor_main(bundle, fake_handle) if "--editor" in sys.argv
+                else main(bundle, fake_handle))
