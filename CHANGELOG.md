@@ -11,6 +11,11 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Contribution, security, and release documents.
 
+### Removed
+
+- The `Access-Control-Allow-Origin: *` header on `/w/` named-mount responses.
+  Other origins can no longer read files through the server.
+
 ## [0.1.0] - 2026-09-15
 
 ### Added
