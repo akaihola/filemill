@@ -49,10 +49,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   the rich renderer consent switch. Record size and first-load time in an ADR.
     - Depends on: [26]
 
-- [*] Add a preview for `.mp4` files with a `<video controls>` element, as one registry
-  entry plus one test.
-    - Depends on: [26]
-
 - [*] Render `.pptx` in the browser: unzip the file and show the slide text, as one
   registry entry. Then delete `_preview_pptx`, `python-pptx` and `/api/preview`.
     - Depends on: [26]
@@ -98,6 +94,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] Add a preview for `.mp4` files with a `<video controls>` element, as one registry
+  entry plus one test.
+    - Depends on: [26]
 
 - [*] Compute the symlink zone map one time per request in `paths.py`. Delete the three
   other walks of the root that build the same map.
