@@ -39,6 +39,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon for
   the whole file, and `{}` and `[]` icons for objects and arrays.
 
+- Toggling `Source` / `Rendered` reloads the whole page and causes an uncomfortable
+  blink and a delay. Just the preview pane should be reloaded, and the URL and history
+  updated.
+
 ## Scheduled
 
 - [*] On portrait mobile, some `.md` files wrap at screen width, others run wider than
