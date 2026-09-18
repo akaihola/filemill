@@ -7,6 +7,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an unverified
   architecture proposal, conditional on a fourth provider or a pagination bug.
 
+- [*] From documentation, docstrings and comments, remove references to specific
+  development setups which include e.g. server names and local paths.
+
 ## In progress
 
 - [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
