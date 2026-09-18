@@ -20,10 +20,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
       `panFocus` and `slideTail`. Each function is under 25 lines.
 
-- [*] Replace `python-fasthtml` with `starlette` and `uvicorn`. The shell becomes one
-  string template. Done when `dependencies` has starlette, uvicorn, typer, python-pptx.
-    - Depends on: [24]
-
 - [*] Run the static and server browser tests through one root `conftest.py` and one
   Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.
     - Depends on: [25]
@@ -70,6 +66,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   the whole file, and `{}` and `[]` icons for objects and arrays.
 
 ## Scheduled
+
+- [*] Replace `python-fasthtml` with `starlette` and `uvicorn`. The shell becomes one
+  string template. Done when `dependencies` has starlette, uvicorn, typer, python-pptx.
+    - Depends on: [24]
 
 - [*] Compute the symlink zone map one time per request in `paths.py`. Delete the three
   other walks of the root that build the same map.
