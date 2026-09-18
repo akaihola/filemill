@@ -24,18 +24,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.
     - Depends on: [25]
 
-- [*] Add a preview for `.mp4` files with a `<video controls>` element, as one registry
-  entry plus one test.
-    - Depends on: [26]
-
-- [27] Try reStructuredText rendering in the browser with Pyodide or a WASM tool, behind
-  the rich renderer consent switch. Record size and first-load time in an ADR.
-    - Depends on: [26]
-
-- [28] Grow the editor behind the `FS.write` port: undo, find, a line gutter and a
-  "modified" mark. Each addition is one file in `ui/editor/`.
-    - Depends on: [17]
-
 - [29] Make `ui/core/` a model package with no DOM: nodes, selection, folding
   arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
     - Depends on: [18], [21]
@@ -53,23 +41,21 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
+- [28] Grow the editor behind the `FS.write` port: undo, find, a line gutter and a
+  "modified" mark. Each addition is one file in `ui/editor/`.
+    - Depends on: [17]
+
+- [27] Try reStructuredText rendering in the browser with Pyodide or a WASM tool, behind
+  the rich renderer consent switch. Record size and first-load time in an ADR.
+    - Depends on: [26]
+
+- [*] Add a preview for `.mp4` files with a `<video controls>` element, as one registry
+  entry plus one test.
+    - Depends on: [26]
+
 - [*] Render `.pptx` in the browser: unzip the file and show the slide text, as one
   registry entry. Then delete `_preview_pptx`, `python-pptx` and `/api/preview`.
     - Depends on: [26]
-
-- [*] Implement CSV as a browser virtual filesystem in `ui/adapters/vfs-csv.js`, like
-  JSONL: one entry per row, a key/value preview per row. No Python. Closes issue #49.
-    - Depends on: [26]
-
-- [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done when
-  `uv run pytest -n auto` passes at the repository root.
-
-- [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
-  `static/FSA-TEST-CHECKLIST.md`.
-
-- [*] Replace `python-fasthtml` with `starlette` and `uvicorn`. The shell becomes one
-  string template. Done when `dependencies` has starlette, uvicorn, typer, python-pptx.
-    - Depends on: [24]
 
 - [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=` URLs
   for images, PDF and HTML. Done when `grep -r raw?path server/src` prints nothing.
@@ -102,8 +88,22 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
+- [*] Implement CSV as a browser virtual filesystem in `ui/adapters/vfs-csv.js`, like
+  JSONL: one entry per row, a key/value preview per row. No Python. Closes issue #49.
+    - Depends on: [26]
+
 - [*] Compute the symlink zone map one time per request in `paths.py`. Delete the three
   other walks of the root that build the same map.
+    - Depends on: [24]
+
+- [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done when
+  `uv run pytest -n auto` passes at the repository root.
+
+- [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
+  `static/FSA-TEST-CHECKLIST.md`.
+
+- [*] Replace `python-fasthtml` with `starlette` and `uvicorn`. The shell becomes one
+  string template. Done when `dependencies` has starlette, uvicorn, typer, python-pptx.
     - Depends on: [24]
 
 - [*] On mobile, long-pressing a file or directory should open a menu of actions to copy
