@@ -139,6 +139,13 @@ export const CORE_RENDERERS = [
     },
   },
   {
+    kind: "video",
+    render(_node, blob) {
+      pvURL = URL.createObjectURL(blob);
+      return `<video class="pv-video" src="${pvURL}" controls></video>`;
+    },
+  },
+  {
     kind: "pdf",
     render(node, blob) {
       pvURL = URL.createObjectURL(blob.slice(0, blob.size, "application/pdf"));

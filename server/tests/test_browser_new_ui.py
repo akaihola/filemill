@@ -71,6 +71,7 @@ def ui_root(tmp_path: Path) -> Path:
         "# Readme\n\nline one\nline two\n\n```python\n" + SOURCE + "```\n"
     )
     (tmp_path / "page.html").write_text("<h1>Hi</h1>\n")
+    (tmp_path / "clip.mp4").write_bytes(b"not a playable video")
     (tmp_path / "soft-breaks.md").write_text("one\ntwo\n\nthree  \nfour\n")
     (tmp_path / "short.txt").write_text("short")
     (tmp_path / "README").write_text("readme")
@@ -296,6 +297,12 @@ def test_the_markdown_preview_is_rendered_in_the_browser(page):
     page.open("README.md")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     assert "Readme" in page.inner_text("#preview .pv-rich h1")
+
+
+def test_mp4_preview_uses_a_video_control(page):
+    page.open("clip.mp4")
+    page.wait_for_selector("#preview video.pv-video")
+    assert page.locator("#preview video[controls]").count() == 1
 
 
 def test_preview_fullscreen_control_toggles_and_exits(page):
@@ -824,6 +831,7 @@ def test_the_server_edition_registers_core_and_browser_rich_renderers(page):
     page.open("")
     assert page.evaluate("RENDERERS.map(e => e.kind)") == [
         "image",
+        "video",
         "pdf",
         "html",
         "desktop",
