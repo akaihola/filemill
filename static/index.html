@@ -404,6 +404,19 @@ body {
 .pv-fullscreen #bar, .pv-fullscreen #status {
   display: none;
 }
+/* ?layout=no-columns: no chrome, and no column but the one being looked at.
+   render.js adds .pv-only while a document is previewed, which hides that
+   last column too and lets #preview take the whole strip. */
+[data-layout="no-columns"] #bar,
+[data-layout="no-columns"] #status,
+[data-layout="no-columns"] #trail,
+[data-layout="no-columns"] #strip > .col:not(:nth-last-child(2)),
+[data-layout="no-columns"].pv-only #strip > .col {
+  display: none;
+}
+[data-layout="no-columns"].pv-only #preview {
+  flex: 1 1 auto;
+}
 .pv-head {
   gap: 8px;
 }
@@ -1254,6 +1267,15 @@ body {
   color: var(--accent);
   white-space: nowrap;
 }
+
+#row-menu {
+  position: fixed; z-index: 20; min-width: 190px; padding: 4px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--paper);
+  box-shadow: 0 4px 18px #0004;
+}
+#row-menu button { display: block; width: 100%; padding: 9px 12px; border: 0;
+  background: none; color: inherit; text-align: left; font: inherit; }
+#row-menu button:hover, #row-menu button:focus-visible { background: var(--accent); color: white; }
 #st-copy.bad, #st-refresh.bad {
   color: #d2544a;
 }
@@ -2044,6 +2066,7 @@ document.body.insertAdjacentHTML(
     </span>
     <span class="status-fold"><kbd>⇧</kbd>+wheel fold</span>
   </div>
+  <div id="row-menu" role="menu" hidden></div>
 </div>
 
 `,
@@ -3065,7 +3088,7 @@ const foldAll = () => {
   slideTail(1, 0, path.length);
 };
 
-function layout(keepScroll, preserveFolded = false) {
+function layout(keepScroll) {
   const stageW = finder.clientWidth;
   setVar(root, "--stage-w", stageW + "px");
   setVar(root, "--preview-w", previewTarget() + "px");
@@ -3086,10 +3109,6 @@ function layout(keepScroll, preserveFolded = false) {
     k = Math.min(focusCol, Math.max(k, folded));
     if (root.dataset.layout === "compressed-columns") k = path.length;
     finder.scrollLeft = Math.round(k * foldUnit() * range());
-  } else if (preserveFolded) {
-    finder.scrollLeft = Math.round(
-      Math.min(folded, path.length) * foldUnit() * range(),
-    );
   }
   applyScroll();
 }
@@ -3411,6 +3430,36 @@ const EDIT_MAX = TEXT_MAX;
 const EDIT_MAX_LINE = 10_000; // Avoid unusably wide editor lines.
 const VIRTUAL_ROWS = 1000;
 const ROW_STEP = 23; // 21px row plus its 1px vertical margins.
+const LONG_PRESS_MS = 500;
+const touchUI = () => matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+
+let longPressTimer;
+let suppressClick = false;
+
+function copyMenu(node, row, event) {
+  const rel = node.rel || path.slice(1).map((n) => n.name).concat(node.name).join("/");
+  const absolute = node.abs || "/" + rel;
+  const menu = document.getElementById("row-menu");
+  menu.innerHTML = [
+    ["Copy name", node.name], ["Copy relative path", rel],
+    ["Copy absolute path", absolute],
+  ].map(([label, text]) => `<button type="button" role="menuitem" data-copy="${esc(text)}">${label}</button>`).join("");
+  menu.hidden = false;
+  menu.style.left = `${Math.min(event.clientX, innerWidth - menu.offsetWidth - 8)}px`;
+  menu.style.top = `${Math.min(event.clientY, innerHeight - menu.offsetHeight - 8)}px`;
+  menu.querySelectorAll("button").forEach((button) => button.onclick = async () => {
+    suppressClick = false;
+    try {
+      await navigator.clipboard.writeText(button.dataset.copy);
+      menu.hidden = true;
+    } catch (err) {
+      const status = document.getElementById("st-copy");
+      status.textContent = `clipboard refused (${err.name || "error"})`;
+      status.classList.add("bad");
+    }
+  });
+  row.setAttribute("aria-expanded", "true");
+}
 
 /* Writing the value a property already holds still dirties it — and a width or
    custom-property write on a column relays out every row inside it. Guard the
@@ -3501,7 +3550,24 @@ function buildCol(node) {
       (k.dir ? `<span class="chev">›</span>` : "");
     /* read the index off the element: the same node keeps its DOM across
        re-renders, and its column position is only known at render time */
-    row.onclick = () => actions.choose(+el.dataset.i, k);
+    row.onclick = () => {
+      if (suppressClick) { suppressClick = false; return; }
+      actions.choose(+el.dataset.i, k);
+    };
+    row.onpointerdown = (event) => {
+      if (!touchUI() || (event.pointerType === "mouse" && event.button !== 0)) return;
+      clearTimeout(longPressTimer);
+      longPressTimer = setTimeout(() => {
+        suppressClick = true;
+        copyMenu(k, row, event);
+      }, LONG_PRESS_MS);
+    };
+    row.onpointerup = row.onpointercancel = row.onpointerleave = () => clearTimeout(longPressTimer);
+    row.oncontextmenu = (event) => {
+      if (!touchUI()) return;
+      event.preventDefault();
+      copyMenu(k, row, event);
+    };
     if (virtual) {
       row.style.top = `${ri * ROW_STEP}px`;
       layer.appendChild(row);
@@ -3551,7 +3617,7 @@ function columnFor(node) {
   return c;
 }
 
-function render(keepScroll, preserveFolded = false) {
+function render(keepScroll) {
   if (!path.length) return;
   const sig =
     `${state.dotfiles}|${root.dataset.density}|${root.dataset.theme}` +
@@ -3632,6 +3698,12 @@ function render(keepScroll, preserveFolded = false) {
   });
   while (strip.childNodes.length > want.length) strip.lastChild.remove();
   if (previewNode()) setupPreviewActions(previewNode());
+  /* ?layout=no-columns asks for the representation alone. The server puts
+     the value on <html>; a document then fills the pane and a directory shows
+     only its own listing. The static build never sets it. */
+  if (root.dataset.layout === "no-columns") {
+    root.classList.toggle("pv-only", !!previewNode());
+  }
   for (const c of cols) {
     c.el.classList.toggle(
       "scrollable-down",
@@ -3640,7 +3712,7 @@ function render(keepScroll, preserveFolded = false) {
   }
   actions.renderCrumbs();
   sortSay(sortStatus());
-  layout(keepScroll, preserveFolded);
+  layout(keepScroll);
   syncURL();
 }
 
@@ -4252,11 +4324,10 @@ function autoPreview(node) {
 
 async function choose(colIdx, node, keepScroll = false) {
   const seq = ++navSeq;
-  const preserveFolded = keepScroll && folded;
   setState({ path: path.slice(0, colIdx + 1), sel: sel.slice(0, colIdx) });
   sel[colIdx] = node.name;
   setState({ focusCol: colIdx });
-  if (!node.dir) return void render(keepScroll, preserveFolded);
+  if (!node.dir) return void render(keepScroll);
 
   const reading = node.kids === null ? FS.ensureLoaded(node) : null;
   if (reading) {
@@ -4265,7 +4336,7 @@ async function choose(colIdx, node, keepScroll = false) {
        measures empty — it would open at the minimum width and jump wider a
        frame later. Most directories arrive well inside the grace; a slower one
        opens on the spinner, which is honest about the wait. */
-    render(keepScroll, preserveFolded);
+    render(keepScroll);
     await Promise.race([
       reading,
       new Promise((r) => setTimeout(r, OPEN_GRACE)),
@@ -4273,17 +4344,17 @@ async function choose(colIdx, node, keepScroll = false) {
     if (seq !== navSeq) return; /* selection moved on while it was read */
     if (!node.dir) {
       /* a virtual wrapper declined the file */
-      return void render(keepScroll, preserveFolded);
+      return void render(keepScroll);
     }
   }
   path.push(node);
   autoPreview(node); /* kids already in memory (revisit, fast read) */
-  render(keepScroll, preserveFolded);
+  render(keepScroll);
   if (reading) {
     await reading;
     if (seq !== navSeq || !path.includes(node)) return; /* still up? repaint */
     autoPreview(node); /* kids landed after the grace period */
-    render(keepScroll, preserveFolded);
+    render(keepScroll);
   }
 }
 
@@ -4437,6 +4508,10 @@ function saySt(id, msg, ok) {
     el.classList.remove("bad");
   }, ok ? STATUS_OK_MS : STATUS_ERROR_MS);
 }
+
+document.addEventListener("pointerdown", (event) => {
+  if (!event.target.closest("#row-menu")) document.getElementById("row-menu").hidden = true;
+});
 
 const sayCopy = (msg, ok) => saySt("st-copy", msg, ok);
 

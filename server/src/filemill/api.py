@@ -145,7 +145,8 @@ def dir_json(target: Path, page: int = 1) -> JSONResponse:
         for child in target.iterdir():
             try:
                 is_dir = child.is_dir()
-                e = {"name": child.name, "dir": is_dir, "ordered": True}
+                e = {"name": child.name, "dir": is_dir, "ordered": True,
+                     "abs": child.resolve().as_posix()}
                 if not is_dir:
                     st = child.stat()
                     e["size"] = st.st_size
@@ -163,6 +164,7 @@ def dir_json(target: Path, page: int = 1) -> JSONResponse:
                         "size": 0,
                         "mod": 0,
                         "ordered": True,
+                        "abs": child.absolute().as_posix(),
                     }
                 )
     except PermissionError:
@@ -224,6 +226,7 @@ def vfs_dir_json(target: Path, vpath: str, page: int = 1) -> JSONResponse:
             "name": e.name,
             "dir": e.is_folder,
             "vpath": e.vpath,
+            "abs": (target / e.name).resolve().as_posix(),
             "icon": e.icon,
             "ordered": e.ordered,
             "size": 0,

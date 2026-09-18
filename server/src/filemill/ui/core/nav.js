@@ -228,6 +228,10 @@ export function saySt(id, msg, ok) {
   }, ok ? STATUS_OK_MS : STATUS_ERROR_MS);
 }
 
+document.addEventListener("pointerdown", (event) => {
+  if (!event.target.closest("#row-menu")) document.getElementById("row-menu").hidden = true;
+});
+
 const sayCopy = (msg, ok) => saySt("st-copy", msg, ok);
 
 function selectPath() {
