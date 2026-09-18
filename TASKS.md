@@ -78,10 +78,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [24] Reduce `app.py` to routing: move `_resolve_safe` and the symlink map to
-  `paths.py` and the PWA routes to `pwa.py`. No imports inside functions.
-    - Depends on: [33], [34]
-
 - [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=` URLs
   for images, PDF and HTML. Done when `grep -r raw?path server/src` prints nothing.
     - Depends on: [33]
@@ -112,6 +108,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [24] Reduce `app.py` to routing: move `_resolve_safe` and the symlink map to
+  `paths.py` and the PWA routes to `pwa.py`. No imports inside functions.
+    - Depends on: [33], [34]
 
 - [*] Delete `server/src/filemill/styles.py`. The shell links `/ui/core/styles.css`, and
   no other server route emits HTML. Delete the tests that pin `APP_CSS`.

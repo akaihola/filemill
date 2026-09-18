@@ -6,31 +6,33 @@ depends-on: [33, 34]
 
 ## Goal
 
-`server/src/filemill/app.py` contains the app object and its routes only.
-No module imports another module inside a function. Roadmap phase 6, step 5.
+`server/src/filemill/app.py` contains the app object, the shell and its routes
+only. No module imports another module inside a function. Roadmap phase 6,
+step 5.
 
 ## Steps
 
-1. Do this after tasks [32], [33] and [34] have deleted the server-side
-   renderers. What remains in `app.py` is: `_resolve_safe`, the symlink
-   mount map, the shell, `/api/dir`, `/api/raw`, `/api/save`,
-   `/api/preview` (pptx only), the resource route and the PWA routes.
-2. Create `server/src/filemill/paths.py`. Move `_resolve_safe`, the symlink
-   mount map and the root-relative URL helpers there.
-3. Create `pwa.py`. Move `/manifest.json`, `/sw.js` and `/icons/` there.
-4. Move the `/api/*` route functions into `api.py`, next to their helpers.
-5. In `app.py`, keep the app object, the shell and the resource route.
-6. Find imports inside functions:
-   `grep -n "^    \+import \|^    \+from .* import" server/src/filemill/*.py`.
-   Move each one to the top of its file. If that makes a cycle, move the
-   needed function to `paths.py`.
+1. Do this after tasks [33] and [34] have deleted the server-side renderers.
+2. Create `server/src/filemill/paths.py`. Move `_resolve_safe` and the symlink
+   mount map there as `resolve_safe`, `mount_targets` and `resolve_web_mount`.
+   Each takes the root explicitly; `app.py` keeps the `ROOT` global (tests and
+   `cli.py` set it there) and a one-argument `_resolve` adapter for the routes
+   and for `api.split_vfs`.
+3. Create `pwa.py` with `STATIC_DIR`, `SW_REGISTER_JS` and the handlers for
+   `/manifest.json`, `/sw.js` and `/icons/`. `app.py` registers them with
+   `rt(...)(handler)`, so `pwa.py` never imports the app.
+4. Delete `_mounted_path_parts` and `_rel_url_path`: nothing calls them.
+5. Find imports inside functions:
+   `grep -rn "^\s\+\(from\|import\) " server/src/filemill/ --include=*.py`.
+   Move each one to the top of its file.
 
 ## Done when
 
-- The grep in step 6 prints nothing.
+- The grep in step 5 prints nothing.
 - `cd server && uv run pytest` passes.
-- `wc -l server/src/filemill/app.py` is under 250.
 
 ## Scope
 
-`server/src/filemill/`: `app.py`, `paths.py`, `pwa.py`, `api.py`.
+`server/src/filemill/`: `app.py`, `paths.py`, `pwa.py`, `cli.py`,
+`preview.py`, `providers/json_provider.py`, and the server tests that import
+the moved names.

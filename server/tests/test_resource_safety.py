@@ -38,6 +38,7 @@ import pytest
 from starlette.testclient import TestClient
 
 import filemill.app as app_module
+import filemill.paths as paths_module
 from filemill.urls import LAYOUTS, VIEWS
 
 CANARY = "TOP-SECRET-CANARY"
@@ -95,21 +96,21 @@ def escape_tree(tmp_path, monkeypatch):
 
 @pytest.fixture()
 def recorder(escape_tree, monkeypatch):
-    """Wrap ``_resolve_safe`` so tests can assert on what it was asked and returned.
+    """Wrap ``resolve_safe`` so tests can assert on what it was asked and returned.
 
-    The wrapper records ``(path_str, result)`` for every call. ``_resource_target``
-    looks the name up on the module at call time, so patching the attribute
-    catches the calls made through ``api.split_vfs`` too.
+    The wrapper records ``(path_str, result)`` for every call. ``app._resolve``
+    looks the name up on ``filemill.paths`` at call time, so patching the
+    attribute catches the calls made through ``api.split_vfs`` too.
     """
     calls: list[tuple[str, Path | None]] = []
-    original = app_module._resolve_safe
+    original = paths_module.resolve_safe
 
-    def spy(path_str: str, root: Path | None = None):
-        result = original(path_str, root=root)
+    def spy(path_str: str, root: Path):
+        result = original(path_str, root)
         calls.append((path_str, result))
         return result
 
-    monkeypatch.setattr(app_module, "_resolve_safe", spy)
+    monkeypatch.setattr(paths_module, "resolve_safe", spy)
     return calls
 
 
@@ -188,27 +189,27 @@ def test_resolution_is_identical_across_every_view_and_layout(escape_tree, path)
     """The strongest form of the property: the query changes nothing that resolves.
 
     Each view/layout pair is driven through the same path and the arguments and
-    results of every ``_resolve_safe`` call are compared. Identical across all 20
+    results of every ``resolve_safe`` call are compared. Identical across all 20
     combinations means the new query dimension cannot participate in containment,
     rather than merely happening not to this time.
     """
-    original = app_module._resolve_safe
+    original = paths_module.resolve_safe
     seen: dict[tuple[str, str], list[tuple[str, str | None]]] = {}
 
     for view in VIEW_CASES:
         for layout in LAYOUT_CASES:
             calls: list[tuple[str, str | None]] = []
 
-            def spy(path_str, root=None, _calls=calls):
-                result = original(path_str, root=root)
+            def spy(path_str, root, _calls=calls):
+                result = original(path_str, root)
                 _calls.append((path_str, None if result is None else str(result)))
                 return result
 
-            app_module._resolve_safe = spy
+            paths_module.resolve_safe = spy
             try:
                 _client().get(f"{path}{_query(view, layout)}")
             finally:
-                app_module._resolve_safe = original
+                paths_module.resolve_safe = original
             seen[(view, layout)] = calls
 
     baseline = seen[("", "")]

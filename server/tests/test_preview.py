@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+import filemill.preview as preview_module
 from filemill.preview import (
     _preview_desktop,
     _preview_html,
@@ -421,12 +422,11 @@ def test_preview_guess_lexer_exception_falls_through(tmp_path, monkeypatch):
 
 def test_preview_pygments_outer_exception_falls_through(tmp_path, monkeypatch):
     """An exception from pyg_highlight() must be caught; file falls through to raw-text."""
-    import pygments
 
     def _raise(*_a, **_kw):
         raise RuntimeError("highlight broken")
 
-    monkeypatch.setattr(pygments, "highlight", _raise)
+    monkeypatch.setattr(preview_module, "pyg_highlight", _raise)
     f = tmp_path / "script.py"
     f.write_text("x = 1\n")
     result = render_preview(f)

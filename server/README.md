@@ -117,11 +117,13 @@ that matches them.
 
 ```
 src/filemill/
-├── app.py          # FastHTML app, routes, _resolve_safe()
+├── app.py          # FastHTML app and routes
 ├── api.py          # /api/dir, /api/search, /api/raw, /api/preview
 ├── cli.py          # Typer CLI entry point
 ├── env.py          # FILEMILL_* variables, PYKOFINDER_* fallback
+├── paths.py        # resolve_safe() and the named-mount map
 ├── preview.py      # Preview dispatcher (md / docx / pptx / pdf / img / code / raw)
+├── pwa.py          # /manifest.json, /sw.js and /icons/ handlers
 ├── rendering.py    # markdown-it-py instance with plugins
 ├── urls.py         # View state and canonical URLs
 ├── vfs.py          # Virtual-filesystem registry + provider protocol

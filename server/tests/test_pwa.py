@@ -1,5 +1,8 @@
 """Tests for PWA assets: manifest, service worker, icons, and head tags."""
 
+from pathlib import Path
+
+from filemill.pwa import STATIC_DIR
 
 # ── manifest.json ─────────────────────────────────────────────────────────────
 
@@ -106,13 +109,9 @@ def test_icon_traversal_blocked():
     # Starlette normalises "/icons/../manifest.json" → "/manifest.json" at the
     # routing layer, so the icon handler never receives ".." in `name` via HTTP.
     # The defence-in-depth is that Path(name).name strips any remaining slashes.
-    from pathlib import Path
-
-    from filemill.app import _STATIC_DIR
-
     # Simulate what the handler does with a worst-case name.
     safe = Path("../manifest.json").name  # → "manifest.json"
-    resolved = _STATIC_DIR / "icons" / safe
+    resolved = STATIC_DIR / "icons" / safe
     # "manifest.json" does not exist inside icons/, so the handler would 404.
     assert not resolved.exists()
 

@@ -2,7 +2,9 @@ import os
 from pathlib import Path
 
 import typer
+import uvicorn
 
+import filemill.app as app_module
 from filemill.env import env
 
 cli = typer.Typer(help="Filemill – a column-view file browser and previewer")
@@ -23,10 +25,6 @@ def main(
     ),
 ) -> None:
     """Start the Filemill web server."""
-    import uvicorn
-
-    import filemill.app as app_module
-
     resolved = (root or Path(".")).resolve()
     app_module.ROOT = resolved
 
