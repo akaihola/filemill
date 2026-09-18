@@ -53,8 +53,8 @@ Rules for TASKS.md usage are at the bottom of the file.
   entry plus one test.
     - Depends on: [26]
 
-- [*] Render `.pptx` in the browser: unzip the file and show the slide text, as one
-  registry entry. Then delete `_preview_pptx`, `python-pptx` and `/api/preview`.
+- [*] Implement CSV as a browser virtual filesystem in `ui/adapters/vfs-csv.js`, like
+  JSONL: one entry per row, a key/value preview per row. No Python. Closes issue #49.
     - Depends on: [26]
 
 - [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done when
@@ -105,7 +105,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
   `static/FSA-TEST-CHECKLIST.md`.
-
+- [*] Render `.pptx` in the browser: unzip the file and show the slide text, as one
+  registry entry. Then delete `_preview_pptx`, `python-pptx` and `/api/preview`.
+    - Depends on: [26]
 - [*] On mobile, long-pressing a file or directory should open a menu of actions to copy
   its base name, relative path or absolute path.
 
