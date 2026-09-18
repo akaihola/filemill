@@ -86,10 +86,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   for images, PDF and HTML. Done when `grep -r raw?path server/src` prints nothing.
     - Depends on: [33]
 
-- [*] Delete `server/src/filemill/styles.py`. The shell links `/ui/core/styles.css`, and
-  no other server route emits HTML. Delete the tests that pin `APP_CSS`.
-    - Depends on: [33], [34]
-
 - [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100 k-entry
   directory still builds 100 k DOM nodes. Do this only if such folders show up.
 
@@ -116,6 +112,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] Delete `server/src/filemill/styles.py`. The shell links `/ui/core/styles.css`, and
+  no other server route emits HTML. Delete the tests that pin `APP_CSS`.
+    - Depends on: [33], [34]
 
 - [*] Delete `/api/render` in `app.py`, `render_upload` in `api.py` and
   `ui/adapters/preview-upload.js`. Local folders in the server edition use PreviewRich.
