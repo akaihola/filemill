@@ -22,7 +22,7 @@ the whole mechanism. There is no framework under it.
 |            |                                                  | `preview-rich.js` — Markdown, `.docx` from `ui/vendor/`     |
 | router     | `router-hash.js` — `#r=root&p=a/b.md`            | `router-path.js` — `/a/b.md`                               |
 | boot       | `app-fsa.js` — picker + welcome screen           | `app-http.js` — root comes from the server                 |
-| extra      | `preview-rich.js` — renderers fetched from a CDN | `preview-upload.js` — local bytes, Python renderer         |
+| extra      | `preview-rich.js` — renderers fetched from a CDN | `preview-rich.js` — local bytes, browser renderer         |
 |            | `storage.js` — remembered roots in IndexedDB     |                                                            |
 
 ## The ports
@@ -75,10 +75,9 @@ the exception: both editions render them with `preview-rich.js`, the server
 edition from the pinned modules in `ui/vendor/` (its shell sets `FILEMILL_CDN`
 to those paths), so `rendering.py` and mammoth are gone from the server.
 
-`preview-upload.js` closes the last gap. When the _server_ edition opens a local
-folder, the server cannot read it. The page posts the bytes to `/api/render`,
-and the same Python pipeline renders them. Local-folder mode is therefore not a
-downgrade. Only the address bar goes quiet, because a URL path names a file
+When the _server_ edition opens a local folder, the server cannot read it.
+PreviewRich renders the bytes in the browser. Local-folder mode is therefore not
+a downgrade. Only the address bar goes quiet, because a URL path names a file
 under the server's root, and a granted folder is not under it.
 
 ## Rich rendering in the static build

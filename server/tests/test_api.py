@@ -251,47 +251,6 @@ def test_preview_of_a_missing_file_is_404(client, tmp_root: Path):
     assert client.get("/api/preview?p=gone.md").status_code == 404
 
 
-# ── /api/render — the local-folder case ──────────────────────────────────────
-
-
-def test_render_renders_posted_bytes(client, tmp_root: Path):
-    """A file the server has never seen still gets the Python renderers."""
-    r = client.post(
-        "/api/render",
-        files={"file": ("note.rst", b"Posted\n======\n\n*em*\n", "text/x-rst")},
-    )
-    assert r.status_code == 200
-    assert "<h1" in r.text
-    assert "<em>em</em>" in r.text
-
-
-def test_render_dispatches_on_the_uploaded_name(client, tmp_root: Path):
-    r = client.post(
-        "/api/render", files={"file": ("snippet.py", b"def f():\n    return 1\n")}
-    )
-    assert "preview-code" in r.text
-
-
-def test_render_leaves_no_temp_file_behind(client, tmp_root: Path, tmp_path: Path):
-    import tempfile
-
-    before = set(Path(tempfile.gettempdir()).glob("*"))
-    client.post("/api/render", files={"file": ("note.md", b"# hi\n")})
-    assert not set(Path(tempfile.gettempdir()).glob("*")) - before
-
-
-def test_render_refuses_an_oversized_upload(client, tmp_root: Path):
-    from filemill import api
-
-    big = b"x" * (api.RENDER_MAX + 1)
-    r = client.post("/api/render", files={"file": ("big.md", big)})
-    assert "Too large" in r.text
-
-
-def test_render_without_a_file_is_400(client, tmp_root: Path):
-    assert client.post("/api/render", data={"nope": "1"}).status_code == 400
-
-
 # ── the shell and its assets ─────────────────────────────────────────────────
 
 

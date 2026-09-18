@@ -18,7 +18,6 @@ import { API, HTTP } from "./http.js";
 import { PreviewHTTP } from "./preview-http.js";
 import { PreviewLocal } from "./preview-local.js";
 import { PreviewRich, RICH_RENDERERS } from "./preview-rich.js";
-import { PreviewUpload } from "./preview-upload.js";
 import { RouterPath } from "./router-path.js";
 import { rememberRoot } from "./storage.js";
 import { withCsv, withCsvPreview } from "./vfs-csv.js";
@@ -166,14 +165,14 @@ function showServerUnavailable() {
 }
 
 /* The local-folder mode of the server build. Previews the browser cannot make
-   itself still come from the Python renderers — see PreviewUpload — so
+   itself uses the same browser renderers as the served tree, so
    switching sides costs no fidelity; only the URL goes quiet. */
 export async function mount(handle) {
   useFilesystem(withCsv(withVirtual(FSA)));
   usePreview(
     withCsvPreview(
       withVirtualPreview(
-        withHighlighting(withRichPreview(PreviewUpload)),
+        withHighlighting(withRichPreview(PreviewRich)),
       ),
     ),
   );
