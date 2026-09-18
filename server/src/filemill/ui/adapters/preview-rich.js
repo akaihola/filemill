@@ -316,9 +316,9 @@ const docxHTML = async (_node, blob) => {
 };
 
 /* A text renderer: oversize files take the plain path, like the local one. */
-const richText = (convert) => async (node, blob) => {
+const richText = (convert, className = "") => async (node, blob) => {
   if (blob.size > TEXT_MAX) return renderNode(node, blob, "text");
-  return `<div class="pv-rich">${await convert(await blob.text(), node)}</div>`;
+  return `<div class="pv-rich${className ? ` ${className}` : ""}">${await convert(await blob.text(), node)}</div>`;
 };
 
 /* Offline, blocked, or the CDN moved. The file is still readable. */
@@ -328,8 +328,8 @@ const offlineHTML = async (node, blob) => {
 };
 
 export const RICH_RENDERERS = [
-  { kind: "md", render: richText(markdown), fallback: "offline" },
-  { kind: "markdown", render: richText(markdown), fallback: "offline" },
+  { kind: "md", render: richText(markdown, "pv-markdown"), fallback: "offline" },
+  { kind: "markdown", render: richText(markdown, "pv-markdown"), fallback: "offline" },
   { kind: "rst", render: richText(rst), fallback: "offline" },
   { kind: "docx", render: docxHTML, fallback: "offline" },
   { kind: "pptx", render: pptxHTML },
