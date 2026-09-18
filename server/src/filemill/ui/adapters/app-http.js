@@ -15,7 +15,6 @@ import { initLayout } from "../core/layout.js";
 import { initSort, setSortActions, sortKids } from "../core/sort.js";
 import { FSA } from "./fsa.js";
 import { API, HTTP } from "./http.js";
-import { PreviewHTTP } from "./preview-http.js";
 import { PreviewLocal } from "./preview-local.js";
 import { PreviewRich, RICH_RENDERERS } from "./preview-rich.js";
 import { RouterPath } from "./router-path.js";
@@ -122,7 +121,7 @@ async function mountServer() {
   usePreview(
     withCsvPreview(
       withVirtualPreview(
-        withHighlighting(withRichPreview(PreviewHTTP)),
+        withHighlighting(withRichPreview(PreviewLocal)),
       ),
     ),
   );

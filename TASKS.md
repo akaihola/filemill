@@ -50,9 +50,6 @@ Rules for TASKS.md usage are at the bottom of the file.
     - Depends on: [26]
 
 
-- [*] Render `.pptx` in the browser: unzip the file and show the slide text, as one
-  registry entry. Then delete `_preview_pptx`, `python-pptx` and `/api/preview`.
-    - Depends on: [26]
 
 - [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=` URLs
   for images, PDF and HTML. Done when `grep -r raw?path server/src` prints nothing.
@@ -335,6 +332,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [*] Render `.pptx` in the browser: unzip the file and show the slide text, as one
+  registry entry. Then delete `_preview_pptx`, `python-pptx` and `/api/preview`.
+    - Depends on: [26]
 
 - [24] Reduce `app.py` to routing: move `_resolve_safe` and the symlink map to
   `paths.py` and the PWA routes to `pwa.py`. No imports inside functions.

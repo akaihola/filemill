@@ -25,7 +25,6 @@ import "./core/search.js";
 import "./core/mount.js";
 
 import "./adapters/http.js";
-import "./adapters/preview-http.js";
 import "./adapters/preview-local.js";
 import "./adapters/preview-rich.js";
 import "./adapters/vfs-csv.js";

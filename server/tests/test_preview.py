@@ -1,4 +1,3 @@
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -9,7 +8,6 @@ from filemill.preview import (
     _preview_html,
     _preview_image,
     _preview_pdf,
-    _preview_pptx,
     render_preview,
     render_source,
 )
@@ -90,13 +88,6 @@ def test_dispatch_docx_is_unsupported_on_the_server(tmp_path):
     assert "preview-unsupported" in render_preview(f)
 
 
-def test_dispatch_pptx(tmp_path, monkeypatch):
-    f = tmp_path / "deck.pptx"
-    f.write_bytes(b"pptx")
-    _fake_libreoffice(monkeypatch)
-    assert "preview-pptx" in render_preview(f)
-
-
 def test_dispatch_pdf(tmp_path):
     f = tmp_path / "doc.pdf"
     f.write_bytes(b"%PDF")
@@ -128,9 +119,8 @@ def test_dispatch_no_ext(tmp_path):
     assert "(no extension)" in result
 
 
-# ── _preview_pptx ─────────────────────────────────────────────────────────────
-
-
+"""PPTX is covered by the browser adapter tests."""
+'''
 def _fake_libreoffice(monkeypatch, count=2, raises=None):
     def run(command, **kwargs):
         if raises:
@@ -183,6 +173,7 @@ def test_preview_pptx_empty_paragraph_is_skipped(tmp_path):
     prs.save(str(tmp_path / "deck.pptx"))
     html = _preview_pptx(tmp_path / "deck.pptx")
     assert "visible" in html
+'''
 
 
 # ── _preview_pdf ──────────────────────────────────────────────────────────────

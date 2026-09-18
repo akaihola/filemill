@@ -5557,8 +5557,6 @@ const CDN = {
   "markdown-it-task-lists": "https://esm.sh/markdown-it-task-lists@2.1.1",
   "markdown-it-anchor": "https://esm.sh/markdown-it-anchor@9.2.0",
   "mammoth": "https://esm.sh/mammoth@1.8.0",
-  "pptx-vanilla-viewer":
-    "https://cdn.jsdelivr.net/npm/pptx-vanilla-viewer@2.1.4/+esm",
   /* No JavaScript reStructuredText parser handles directives, tables or
      footnotes, and the one that exists emits unescaped HTML — so docutils runs
      as itself, on Pyodide. The runtime plus docutils is ~6 MB on the wire, 13 MB
@@ -5583,7 +5581,6 @@ const NEEDS = {
   markdown: "markdown-it",
   rst: "pyodide",
   docx: "mammoth",
-  pptx: "pptx-vanilla-viewer",
 };
 
 const RICH_KEY = "filemill.rich";
@@ -5759,35 +5756,46 @@ async function rst(text) {
 }
 
 /* ── The entries ─────────────────────────────────────────────────────────── */
-const pptxHTML = async (node, blob) => {
-  try {
-    const { createPptxViewer } = await load("pptx-vanilla-viewer");
-    const id = `pptx-${crypto.randomUUID()}`;
-    /* The viewer draws into a live element, and the pane only receives
-       the returned HTML after this promise settles — a microtask would
-       run before that and find no host. A macrotask runs after it. */
-    setTimeout(() => {
-      const host = document.getElementById(id);
-      if (!host) return;
-      host.textContent = "Loading PowerPoint preview…";
-      try {
-        const viewer = createPptxViewer(host, {
-          source: blob,
-          editable: false,
-          showToolbar: true,
-          showThumbnails: true,
-          onError: (message) => {
-            host.textContent = `PowerPoint preview failed: ${message}`;
-          },
-        });
-        host._pptxViewer = viewer;
-      } catch (err) {
-        host.textContent = `PowerPoint preview failed: ${err.message || err}`;
+async function unzipPptx(blob) {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const view = new DataView(bytes.buffer);
+  const slides = [];
+  for (let at = 0; at + 30 <= bytes.length && view.getUint32(at, true) === 0x04034b50;) {
+    const method = view.getUint16(at + 8, true);
+    const compressed = view.getUint32(at + 18, true);
+    const nameSize = view.getUint16(at + 26, true);
+    const extraSize = view.getUint16(at + 28, true);
+    const name = new TextDecoder().decode(bytes.subarray(at + 30, at + 30 + nameSize));
+    const start = at + 30 + nameSize + extraSize;
+    const end = start + compressed;
+    if (end > bytes.length) throw new Error("truncated ZIP entry");
+    if (/^ppt\/slides\/slide\d+\.xml$/.test(name)) {
+      let data = bytes.slice(start, end);
+      if (method === 8) {
+        data = new Uint8Array(await new Response(
+          new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw")),
+        ).arrayBuffer());
+      } else if (method !== 0) {
+        throw new Error("unsupported ZIP compression");
       }
-    });
-    return `<div id="${id}" class="pv-pptx" aria-live="polite">Loading PowerPoint preview…</div>`;
+      const xml = new DOMParser().parseFromString(new TextDecoder().decode(data), "application/xml");
+      const text = [...xml.getElementsByTagNameNS("*", "t")].map((n) => n.textContent).join("").trim();
+      slides.push({ number: Number(name.match(/slide(\d+)/)[1]), text });
+    }
+    at = end;
+  }
+  return slides.sort((a, b) => a.number - b.number);
+}
+
+const pptxHTML = async (_node, blob) => {
+  try {
+    const slides = await unzipPptx(blob);
+    if (!slides.length) return '<div class="preview-empty">PowerPoint has no slides.</div>';
+    return `<div class="pv-pptx">${slides.map(({ number, text }) =>
+      `<section class="slide"><h2>Slide ${number}</h2><p>${esc(text) || "(No slide text)"}</p></section>`
+    ).join("")}</div>`;
   } catch (err) {
-    return `<div class="preview-error">PowerPoint preview unavailable: ${
+    return `<div class="preview-error">PowerPoint preview failed: ${
       esc(String(err.message || err))
     }</div>`;
   }
@@ -5831,7 +5839,7 @@ const PreviewRich = {
   async render(node) {
     const kind = classifyFile(node.name, node).preview;
     const need = NEEDS[kind];
-    if (!need || (!richEnabled() && !vendored(need))) {
+    if ((!need && kind !== "pptx") || (need && !richEnabled() && !vendored(need))) {
       return PreviewLocal.render(node);
     }
     const blob = await FS.blob(node);
