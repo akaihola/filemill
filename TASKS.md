@@ -45,12 +45,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   blink and a delay. Just the preview pane should be reloaded, and the URL and history
   updated.
 
-- [*] On portrait mobile, some `.md` files wrap at screen width, others run wider than
-  the screen width. For example, in the filemill repository, `README.md` and
-  `CHANGELOG.md`, `SECURITY.md`, and `TASKS.md` wrap at screen width, but
-  `CONTRIBUTING.md` runs wider. All `.md` files should wrap at screen width on
-  portrait mobile.
-
 - [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=` URLs
   for images, PDF and HTML. Done when `grep -r raw?path server/src` prints nothing.
     - Depends on: [33]
