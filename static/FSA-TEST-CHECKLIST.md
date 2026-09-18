@@ -1,15 +1,34 @@
 # Manual test checklist
 
 `test-ui.py` covers everything a fake handle can reach. `test-e2e.py` covers a
-real folder. This file lists what is left: things you must *look at*, and
-things only a real browser session can produce.
+real folder and browser permissions. Use it when checking changes to the real
+File System Access API path, especially folder picking, persisted permissions,
+real file metadata, refreshes, and view-state restore. It is a manual check,
+not part of the automated test suite.
 
-Run both first:
+Run the checks from `static/` after starting from a clean browser profile when
+you need to exercise the first-run picker:
 
 ```bash
 uv run --with "playwright==1.61.0" python3 test-ui.py     # headless, ~30 s
-uv run --with "playwright==1.61.0" python3 test-e2e.py    # headed, one folder pick
+uv run --with "playwright==1.61.0" python3 test-e2e.py    # headed, manual picks
 ```
+
+`test-e2e.py` starts a local server on port `8787` and opens a headed Chromium
+window with a persistent profile in `/tmp/filemill-profile`. On the first run,
+click **Choose Folder…** and select any local folder. On later runs, the
+remembered folder should mount without a dialog, or appear under **Recently
+opened** for one click. The script then creates a throwaway folder under the
+system temporary directory and prints its path; click **Open Folder…** and pick
+that folder when prompted. The script changes and removes files only in this
+throwaway folder.
+
+Run the script twice to check both the initial picker and the remembered-folder
+path. Review the checks printed in the terminal, the browser window, and the
+screenshots in `/tmp/filemill-e2e`. A successful run ends with `passed, 0
+failed`; press Enter in the terminal to close the browser. If the script times
+out waiting for a pick, or reports a failed check or page error, investigate it
+before marking the manual check complete.
 
 ---
 
