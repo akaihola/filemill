@@ -657,7 +657,7 @@ def test_arrow_navigation_keeps_fold_animation_running(live_server: str):
         page.keyboard.press("ArrowRight")
         page.wait_for_timeout(500)
         page.evaluate("finder.scrollLeft = finder.scrollWidth")
-        page.wait_for_function("() => finder.scrollLeft > 0")
+        _wait_for_finder_scroll(page)
 
         before = page.evaluate("finder.scrollLeft")
         page.keyboard.press("ArrowLeft")
