@@ -678,7 +678,7 @@ def test_open_local_folder_is_offered(page):
     """The hybrid: the served page carries the FSA adapter too."""
     page.open()
     assert page.is_visible("#open")
-    assert page.evaluate("typeof FSA === 'object' && typeof PreviewUpload === 'object'")
+    assert page.evaluate("typeof FSA === 'object'")
     assert page.evaluate("typeof window.showDirectoryPicker === 'function'")
 
 
@@ -729,13 +729,11 @@ def test_local_markdown_is_rendered_in_the_browser(page):
     _click_local(page, "local.md", "#preview .pv-rich h1")
     assert "Local heading" in page.inner_text("#preview .pv-rich h1")
     assert page.locator("#preview .pv-rich strong").count() >= 1
-    assert [u for u in posts if u.endswith("/api/render")] == []
 
 
 def test_local_source_is_highlighted_without_asking_the_server(page):
     """The gain from moving highlighting into the page: a folder the server has
-    no path to is coloured with no round-trip at all, so POST /api/render is
-    not reached for it either."""
+    no path to is coloured with no round-trip at all."""
     page.open()
     page.evaluate(FAKE_HANDLE)
     page.evaluate("mount(__local())")
@@ -748,7 +746,6 @@ def test_local_source_is_highlighted_without_asking_the_server(page):
         page.eval_on_selector_all("#preview .pv-text span", TOKEN_CLASSES)
         == "hl-com,hl-kw,hl-num,hl-str"
     )
-    assert [u for u in posts if u.endswith("/api/render")] == []
 
 
 def test_local_mode_stops_writing_the_url(page):
@@ -787,8 +784,7 @@ def test_nothing_is_fetched_from_a_cdn(page):
 
     Both halves matter, and this test used to check only the first. The served
     half goes through preview-http.js and `/api/preview`; the local-folder half
-    goes through preview-upload.js and `POST /api/render`, which is the path the
-    docstring is actually about. Source files now go through neither — they are
+    goes through PreviewRich in the browser. Source files now go through neither — they are
     coloured in the page by core/syntax.js — so they are the easiest half to
     keep honest and are checked here too. Markdown goes through
     `ui/adapters/preview-rich.js` in both halves, which imports its renderer

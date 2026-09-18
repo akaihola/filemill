@@ -21,7 +21,7 @@ shared ports. This document covers the Python edition.
 - **Live reload** – the `--live` flag restarts the server on code changes
 - **`.desktop` files** – show as a link card
 - **Symlink bookmarks** – a direct symlink child of the root opens as a bookmark, and its target subtree is browsable
-- **Open local folder…** – the served page can browse a folder on your machine through the File System Access API. Python still renders the previews, because the page posts the bytes to `/api/render`
+- **Open local folder…** – the served page can browse a folder on your machine through the File System Access API. PreviewRich renders local previews in the browser.
 - **PWA** – installable. Includes a Web App Manifest, a service worker and an icon set. The worker caches the app shell (stale-while-revalidate) and never caches `/api/` responses
 
 ## Installation
@@ -118,7 +118,7 @@ that matches them.
 ```
 src/filemill/
 ├── app.py          # FastHTML app, routes, _resolve_safe()
-├── api.py          # /api/dir, /api/search, /api/raw, /api/preview, /api/render
+├── api.py          # /api/dir, /api/search, /api/raw, /api/preview
 ├── cli.py          # Typer CLI entry point
 ├── env.py          # FILEMILL_* variables, PYKOFINDER_* fallback
 ├── preview.py      # Preview dispatcher (md / docx / pptx / pdf / img / code / raw)

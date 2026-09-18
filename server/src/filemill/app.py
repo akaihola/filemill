@@ -484,12 +484,6 @@ def api_preview(p: str = "", v: str = "", fmt: str = "", filemill: str = ""):
     return api.preview_fragment(target, render)
 
 
-@rt("/api/render", methods=["POST"])
-async def api_render(request):
-    """Render posted bytes — the local-folder case, where the server has no path."""
-    return await api.render_upload(request, render_preview)
-
-
 @rt("/api/save", methods=["POST"])
 async def api_save(request, p: str = ""):
     """Overwrite a text file — the preview pane's Edit → Save."""
@@ -724,7 +718,6 @@ def _reorder_routes() -> None:
         "/api/dir",
         "/api/raw",
         "/api/preview",
-        "/api/render",
         "/api/save",
     }
     priority, rest, resource_route, static_fallback = [], [], [], []

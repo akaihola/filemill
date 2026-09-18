@@ -28,7 +28,6 @@ import "./adapters/http.js";
 import "./adapters/preview-http.js";
 import "./adapters/preview-local.js";
 import "./adapters/preview-rich.js";
-import "./adapters/preview-upload.js";
 import "./adapters/vfs-csv.js";
 import "./adapters/router-path.js";
 import "./adapters/fsa.js";
@@ -41,7 +40,6 @@ import { mount } from "./adapters/app-http.js";
 import { FSA } from "./adapters/fsa.js";
 import { classifyFile } from "./core/file-kind.js";
 import { addRenderers, RENDERERS, renderNode } from "./core/renderers.js";
-import { PreviewUpload } from "./adapters/preview-upload.js";
 import { recallRoots } from "./adapters/storage.js";
 
 exposeCore();
@@ -52,6 +50,5 @@ expose({
   RENDERERS: () => RENDERERS,
   addRenderers: () => addRenderers,
   renderNode: () => renderNode,
-  PreviewUpload: () => PreviewUpload,
   recallRoots: () => recallRoots,
 });
