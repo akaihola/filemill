@@ -19,8 +19,12 @@ export function iconHTML(node) {
   /* An adapter may name its own glyph — a virtual filesystem's tables and rows
      are not files and have no extension to look up. */
   if (node.icon) return `<span class="ico glyph">${esc(node.icon)}</span>`;
-  if (node.dir) return `<span class="ico dir">${FOLDER_SVG}</span>`;
   const lower = node.name.toLowerCase(), ext = lower.split(".").pop();
+  if (node.json && /\.jsonc?$/i.test(node.name)) {
+    const [glyph, color] = SETI.ext.json;
+    return `<span class="ico seti" style="color:${color}">&#x${glyph};</span>`;
+  }
+  if (node.dir) return `<span class="ico dir">${FOLDER_SVG}</span>`;
   const e = SETI.name[lower] || SETI.ext[ext] || SUPP[ext] || SETI.default;
   const color = (root.dataset.theme === "light" && SETI.light[ext]) || e[1];
   return `<span class="ico seti" style="color:${color}">&#x${e[0]};</span>`;

@@ -1317,8 +1317,12 @@ async def main(bundle, fake_handle, playwright):
         print("\n── JSON preview ─────────────────────────────────────────────")
         await pg.click('.col[data-i="1"] .row:has-text("nested.json")')
         await pg.wait_for_timeout(400)
+        check("Ordinary directories keep the folder icon",
+              await pg.locator('.col[data-i="1"] .row:has-text("docs") .ico.dir').count() == 1)
         check("Valid JSON opens as an ordered key column",
               await pg.evaluate("__rows(2)") == ["name", "tags", "items", "meta"])
+        check("JSON files use the JSON icon",
+              await pg.locator('.col[data-i="1"] .row:has-text("nested.json") .ico.seti').count() == 1)
         check("Selected JSON object keeps its preview beside its children",
               await pg.locator("#preview .pv-json").count() == 1 and
               await pg.locator("#preview details").count() > 0)
@@ -1326,6 +1330,9 @@ async def main(bundle, fake_handle, playwright):
         await pg.wait_for_timeout(300)
         check("Nested arrays open as ordered index rows",
               await pg.evaluate("__rows(3)") == ["0", "1"])
+        check("JSON arrays use the [] icon",
+              await pg.locator('.col[data-i="2"] .row:has-text("tags") .ico.glyph').count() == 1 and
+              await pg.locator('.col[data-i="2"] .row:has-text("tags") .ico.glyph').inner_text() == "[]")
         await pg.click('.col[data-i="3"] .row:has-text("0")')
         await pg.wait_for_timeout(300)
         check("Scalar JSON values preview in the pane",
@@ -1334,6 +1341,9 @@ async def main(bundle, fake_handle, playwright):
         await pg.wait_for_timeout(300)
         check("Nested objects remain navigable",
               await pg.evaluate("__rows(3)") == ["n", "ok", "none"])
+        check("JSON objects use the {} icon",
+              await pg.locator('.col[data-i="2"] .row:has-text("meta") .ico.glyph').count() == 1 and
+              await pg.locator('.col[data-i="2"] .row:has-text("meta") .ico.glyph').inner_text() == "{}")
         await pg.click('.col[data-i="2"] .row:has-text("items")')
         await pg.wait_for_timeout(300)
         check("Arrays expose object child nodes",
