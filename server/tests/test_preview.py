@@ -193,7 +193,12 @@ def test_preview_pdf_contains_iframe(tmp_path):
     html = _preview_pdf(f)
     assert "preview-pdf" in html
     assert "<iframe" in html
-    assert "/raw?path=" in html
+    assert "/api/raw?p=doc.pdf" in html
+
+
+def test_preview_pdf_uses_the_relative_url_when_provided(tmp_path):
+    html = _preview_pdf(tmp_path / "doc.pdf", "/api/raw?p=docs%2Fdoc.pdf")
+    assert 'src="/api/raw?p=docs%2Fdoc.pdf"' in html
 
 
 # ── _preview_html ─────────────────────────────────────────────────────────────
@@ -211,8 +216,7 @@ def test_preview_html_contains_iframe(tmp_path):
     html = _preview_html(f)
     assert "preview-html" in html
     assert "<iframe" in html
-    assert 'src="/page.htm"' in html
-    assert "/raw?path=" not in html
+    assert 'src="/api/raw?p=page.htm"' in html
 
 
 def test_source_view_html_stays_source(tmp_path):
@@ -231,7 +235,12 @@ def test_preview_image_contains_img_tag(tmp_path):
     html = _preview_image(f)
     assert "preview-image" in html
     assert "<img" in html
-    assert "/raw?path=" in html
+    assert "/api/raw?p=img.png" in html
+
+
+def test_preview_image_uses_the_relative_url_when_provided(tmp_path):
+    html = _preview_image(tmp_path / "img.png", "/api/raw?p=images%2Fimg.png")
+    assert 'src="/api/raw?p=images%2Fimg.png"' in html
 
 
 def test_preview_image_alt_is_filename(tmp_path):
