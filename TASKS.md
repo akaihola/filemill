@@ -24,6 +24,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   no other server route emits HTML. Delete the tests that pin `APP_CSS`.
     - Depends on: [33], [34]
 
+- [35] Decide the fate of the `/w/` named mounts and their CORS middleware: delete them,
+  or make CORS opt-in and document it in `SECURITY.md`.
+    - Depends on: [32]
+
 - [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=` URLs
   for images, PDF and HTML. Done when `grep -r raw?path server/src` prints nothing.
     - Depends on: [33]
@@ -90,14 +94,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [35] Decide the fate of the `/w/` named mounts and their CORS middleware: delete them,
-  or make CORS opt-in and document it in `SECURITY.md`.
-    - Depends on: [32]
-
-- [*] Delete `/api/render` in `app.py`, `render_upload` in `api.py` and
-  `ui/adapters/preview-upload.js`. Local folders in the server edition use PreviewRich.
-    - Depends on: [32], [34]
-
 - [33] Keep the URL contract, drop the server-side representations: the server sends
   bytes for `?filemill=raw` and the shell for all else. The client renders the view.
     - Depends on: [32]
@@ -128,6 +124,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] Delete `/api/render` in `app.py`, `render_upload` in `api.py` and
+  `ui/adapters/preview-upload.js`. Local folders in the server edition use PreviewRich.
+    - Depends on: [32], [34]
 
 - [*] Each row of a JSONL file must be presented exactly like a hierarchical nested view
   of a JSON file. Depends on [5].
