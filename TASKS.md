@@ -32,9 +32,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
   decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
 
-- [17] Convert `ui/core/` and `ui/adapters/` to ES modules with one entry module per
-  edition. Make `static/build-index.py` inline the module graph.
-
 - [23] Write the narrow-screen layout model as an ADR: what folds, what pans, what stays
   on screen. Add one test each for phone portrait, phone landscape, tablet and desktop.
 
