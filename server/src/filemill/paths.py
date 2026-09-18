@@ -11,7 +11,21 @@ from pathlib import Path
 from urllib.parse import unquote as urlunquote
 
 
-def resolve_safe(path_str: str, root: Path) -> Path | None:
+def symlink_zones(root: Path) -> dict[str, Path]:
+    """Return the root and direct symlink targets by mount name."""
+    return {
+        root.name: root.resolve(),
+        **{
+            child.name: child.resolve()
+            for child in root.iterdir()
+            if child.is_symlink()
+        },
+    }
+
+
+def resolve_safe(
+    path_str: str, root: Path, zones: dict[str, Path] | None = None
+) -> Path | None:
     """Resolve a user-supplied path and verify it falls within an allowed zone.
 
     Allowed zones
@@ -29,7 +43,8 @@ def resolve_safe(path_str: str, root: Path) -> Path | None:
     operates on the fully-resolved path, not the raw string.
     """
     try:
-        resolved_root = root.resolve()
+        zones = zones or symlink_zones(root)
+        resolved_root = zones[root.name]
         resolved = Path(os.path.normpath(urlunquote(path_str))).resolve()
 
         # Zone 1: within root
@@ -40,34 +55,30 @@ def resolve_safe(path_str: str, root: Path) -> Path | None:
             pass
 
         # Zone 2: within the resolved target of a direct symlink child of root
-        for child in root.iterdir():
-            if child.is_symlink():
-                target = child.resolve()
-                try:
-                    resolved.relative_to(target)
-                    return resolved
-                except ValueError:
-                    continue
+        for target in zones.values():
+            try:
+                resolved.relative_to(target)
+                return resolved
+            except ValueError:
+                continue
 
         return None
     except Exception:
         return None
 
 
-def mount_targets(root: Path) -> dict[str, Path]:
+def mount_targets(root: Path, zones: dict[str, Path] | None = None) -> dict[str, Path]:
     """Return named mounts exposed under ``/w/<mount>/...``.
 
     The root directory itself is always mounted under ``root.name``. Each direct
     symlink child of *root* is also mounted under the symlink name.
     """
-    mounts = {root.name: root.resolve()}
-    for child in root.iterdir():
-        if child.is_symlink():
-            mounts[child.name] = child.resolve()
-    return mounts
+    return zones or symlink_zones(root)
 
 
-def resolve_web_mount(path: str, root: Path) -> Path | None:
+def resolve_web_mount(
+    path: str, root: Path, zones: dict[str, Path] | None = None
+) -> Path | None:
     """Resolve a ``/w/`` path using named mounts.
 
     The first path segment names either the root mount (``root.name``) or one of
@@ -79,9 +90,10 @@ def resolve_web_mount(path: str, root: Path) -> Path | None:
         return None
 
     mount_name, _, remainder = stripped.partition("/")
-    target_root = mount_targets(root).get(mount_name)
+    zones = zones or symlink_zones(root)
+    target_root = mount_targets(root, zones).get(mount_name)
     if target_root is None:
         return None
 
     candidate = target_root / remainder if remainder else target_root
-    return resolve_safe(str(candidate), root)
+    return resolve_safe(str(candidate), root, zones)
