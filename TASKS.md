@@ -57,10 +57,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] Implement CSV as a browser virtual filesystem in `ui/adapters/vfs-csv.js`, like
-  JSONL: one entry per row, a key/value preview per row. No Python. Closes issue #49.
-    - Depends on: [26]
-
 - [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done when
   `uv run pytest -n auto` passes at the repository root.
 
@@ -105,6 +101,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] Implement CSV as a browser virtual filesystem in `ui/adapters/vfs-csv.js`, like
+  JSONL: one entry per row, a key/value preview per row. No Python. Closes issue #49.
+    - Depends on: [26]
 
 - [*] On mobile, long-pressing a file or directory should open a menu of actions to copy
   its base name, relative path or absolute path.
