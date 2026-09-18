@@ -4,6 +4,49 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Unverified proposals
 
+- [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an unverified
+  architecture proposal, conditional on a fourth provider or a pagination bug.
+
+## In progress
+
+- [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
+  `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
+
+- [*] Give each magic number in `ui/core/state.js`, `layout.js`, `nav.js`, `render.js` a
+  name and a one-line comment that says why the value is what it is.
+
+- [21] Cache the preview element keyed on the previewed node and its `meta`, the same
+  way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
+
+- [~] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
+  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
+
+- [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
+  and the `watchfiles` dependency. Delete their tests.
+
+## Scheduled
+
+- [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
+  decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
+
+- [16] Rewrite all remaining Markdown files in Simplified Technical English. Done when
+  the Markdown line count is below the line count of `*.py`, `*.js` and `*.css`.
+
+- [17] Convert `ui/core/` and `ui/adapters/` to ES modules with one entry module per
+  edition. Make `static/build-index.py` inline the module graph.
+
+- [23] Write the narrow-screen layout model as an ADR: what folds, what pans, what stays
+  on screen. Add one test each for phone portrait, phone landscape, tablet and desktop.
+
+- [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
+  registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
+
+- [*] Default `--bind` in `server/src/filemill/cli.py` to `127.0.0.1`. Document it in
+ `SECURITY.md`.
+
+- [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
+  `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
+
 ## Ordered backlog
 
 - [x] Delete `_document_page` — document representations, including `layout=no-columns`,
