@@ -1,10 +1,7 @@
 import json
-import os
 import subprocess
 from pathlib import Path
-from textwrap import dedent
 from urllib.parse import quote as urlquote
-from urllib.parse import unquote as urlunquote
 
 from fasthtml.common import (
     Body,
@@ -21,23 +18,11 @@ from starlette.responses import (
     HTMLResponse,
     JSONResponse,
     RedirectResponse,
-    Response,
 )
 
-from filemill import api, urls
+from filemill import api, paths, pwa, urls
 from filemill.env import env
 from filemill.preview import render_preview, render_source
-
-# CDN URL for mermaid.js (UMD build – sets window.mermaid on load)
-# Static files bundled with the package (PWA manifest, service worker, icons)
-_STATIC_DIR: Path = Path(__file__).parent / "static"
-
-# Inline JS injected into every page to register the service worker
-_SW_REGISTER_JS: str = dedent("""\
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js', {scope: '/'});
-    }
-""")
 
 # HTML file extensions that get a "View as web page" button in the preview
 _HTML_EXTS = {".html", ".htm"}
@@ -52,48 +37,9 @@ app, rt = fast_app(
 )
 
 
-def _resolve_safe(path_str: str, root: Path | None = None) -> Path | None:
-    """Resolve a user-supplied path and verify it falls within an allowed zone.
-
-    Allowed zones
-    -------------
-    1. ROOT itself – any real file or directory that lives under ROOT.
-    2. The resolved target of any *direct* symlink child of ROOT – lets
-       directory symlinks placed in ROOT act as bookmarks whose subtrees are
-       fully browsable.
-
-    Symlinks *within* a bookmark subtree are only allowed when their resolved
-    target falls inside zone 1 or the same zone-2 directory (or another
-    bookmark target).  Symlinks that escape all allowed zones are denied.
-
-    Path-traversal via ``..`` is defeated because the containment check
-    operates on the fully-resolved path, not the raw string.
-    """
-    effective_root = root if root is not None else ROOT
-    try:
-        resolved_root = effective_root.resolve()
-        resolved = Path(os.path.normpath(urlunquote(path_str))).resolve()
-
-        # Zone 1: within ROOT
-        try:
-            resolved.relative_to(resolved_root)
-            return resolved
-        except ValueError:
-            pass
-
-        # Zone 2: within the resolved target of a direct symlink child of ROOT
-        for child in effective_root.iterdir():
-            if child.is_symlink():
-                target = child.resolve()
-                try:
-                    resolved.relative_to(target)
-                    return resolved
-                except ValueError:
-                    continue
-
-        return None
-    except Exception:
-        return None
+def _resolve(path_str: str) -> Path | None:
+    """``paths.resolve_safe`` bound to the configured ROOT."""
+    return paths.resolve_safe(path_str, ROOT)
 
 
 @rt("/")
@@ -102,93 +48,13 @@ def index(request):
     return resource(request)
 
 
-# ── #23 helpers + routes ──────────────────────────────────────────────────────
-
-
-def _mount_targets() -> dict[str, Path]:
-    """Return named mounts exposed under ``/w/<mount>/...``.
-
-    The root directory itself is always mounted under ``ROOT.name``. Each direct
-    symlink child of ``ROOT`` is also mounted under the symlink name.
-    """
-    mounts = {ROOT.name: ROOT.resolve()}
-    for child in ROOT.iterdir():
-        if child.is_symlink():
-            mounts[child.name] = child.resolve()
-    return mounts
-
-
-def _resolve_web_mount(path: str) -> Path | None:
-    """Resolve a ``/w/`` path using named mounts.
-
-    The first path segment names either the root mount (``ROOT.name``) or one of
-    ROOT's direct symlink children. The remainder is resolved relative to that
-    mount target and still validated through ``_resolve_safe()``.
-    """
-    stripped = path.lstrip("/")
-    if not stripped:
-        return None
-
-    mount_name, _, remainder = stripped.partition("/")
-    target_root = _mount_targets().get(mount_name)
-    if target_root is None:
-        return None
-
-    candidate = target_root / remainder if remainder else target_root
-    return _resolve_safe(str(candidate))
-
-
-def _mounted_path_parts(p: Path) -> tuple[str, Path] | None:
-    """Return ``(mount_name, relative_path)`` for a resolved path, or ``None``.
-
-    Canonical URL generation for both ``/w/`` and ``/f/`` shares the same named-mount
-    mapping. Prefer the visible ROOT tree, including descendants reached through direct
-    symlink children, then fall back to standalone bookmark mounts.
-    """
-    effective_root = ROOT
-    mounts = _mount_targets()
-    root_mount = ROOT.name
-    resolved_root = mounts[root_mount]
-
-    try:
-        rel_from_root = p.relative_to(resolved_root)
-        visible_candidate = effective_root / rel_from_root
-        if (
-            visible_candidate.exists()
-            and (visible_candidate == p or visible_candidate.resolve() == p)
-        ) or not rel_from_root.parts:
-            return root_mount, rel_from_root
-    except ValueError:
-        pass
-
-    for child in effective_root.iterdir():
-        if not child.is_symlink():
-            continue
-        try:
-            rel_from_child = p.relative_to(child.resolve())
-        except ValueError:
-            continue
-        visible_rel = (
-            Path(child.name) / rel_from_child
-            if rel_from_child.parts
-            else Path(child.name)
-        )
-        return root_mount, visible_rel
-
-    for mount_name, target in mounts.items():
-        if mount_name == root_mount:
-            continue
-        try:
-            return mount_name, p.relative_to(target)
-        except ValueError:
-            continue
-    return None
+# ── Named mounts ─────────────────────────────────────────────────────────────
 
 
 @rt("/w/{path:path}")
 def web_static(path: str):
     """Serve a named-mount ``/w/<mount>/...`` file with the correct Content-Type."""
-    p = _resolve_web_mount(path)
+    p = paths.resolve_web_mount(path, ROOT)
     if p is None or not p.is_file():
         return HTMLResponse("Not found", status_code=404)
     return FileResponse(str(p))
@@ -296,7 +162,7 @@ def _ui_shell(state, base: str, hidden: bool = False):
             Link(rel="stylesheet", href="/ui/core/styles.css"),
             Script(src="/ui/vendor/seti-map.js"),
             Script(_VENDOR_MAP_JS),
-            Script(_SW_REGISTER_JS),
+            Script(pwa.SW_REGISTER_JS),
         ),
         Body(Script(src=f"/ui/{_UI_ENTRY}", type="module")),
         lang="en",
@@ -323,7 +189,7 @@ def ui_view(path: str = ""):
     Validation goes through ``split_vfs`` because ``/n/sample.db/users/42`` is a
     real file plus a key inside it — the joined form exists only in the URL.
     """
-    if path and api.split_vfs(path, ROOT, _resolve_safe) is None:
+    if path and api.split_vfs(path, ROOT, _resolve) is None:
         return HTMLResponse("Not found", status_code=404)
     return _ui_shell(urls.ViewState(), UI_BASE)
 
@@ -336,7 +202,7 @@ def _api_target(p: str) -> Path | None:
     candidate = api.rel_to_abs(p, ROOT)
     if candidate is None:
         return None
-    return _resolve_safe(str(candidate))
+    return _resolve(str(candidate))
 
 
 @rt("/api/dir")
@@ -345,7 +211,7 @@ def api_dir(p: str = "", v: str = "", page: int = 1):
 
     ``v`` is the virtual path *within* the file named by ``p``. Keeping the two
     apart is what lets a `.db` be a directory of tables to the UI while staying
-    one file to ``_resolve_safe``.
+    one file to ``paths.resolve_safe``.
     """
     if page < 1:
         return JSONResponse({"entries": [], "denied": "Invalid page"}, status_code=400)
@@ -417,7 +283,7 @@ async def api_save(request, p: str = ""):
 def api_delete(p: str = ""):
     """Delete one real file or directory after the normal root check."""
     candidate = api.rel_to_abs(p, ROOT)
-    if candidate is None or _resolve_safe(str(candidate)) is None:
+    if candidate is None or _resolve(str(candidate)) is None:
         return JSONResponse({"error": "Not found"}, status_code=404)
     if candidate.resolve() == ROOT.resolve():
         return JSONResponse({"error": "Not found"}, status_code=404)
@@ -440,24 +306,6 @@ def api_delete(p: str = ""):
 _RESOURCE_ROUTE = "/{path:path}"
 
 
-def _rel_url_path(p: Path) -> str | None:
-    """Return *p* as a ROOT-relative URL path, or None when it has no such path.
-
-    Shares ``_mounted_path_parts`` with the ``/f/`` and ``/w/`` URL builders, so
-    a bookmark symlink in ROOT keeps producing the visible path a reader expects
-    (``bookmark/sub/file``) rather than the target's real location on disk.
-    A standalone bookmark mount that is *not* reachable through the visible tree
-    has no root-relative address at all, and says so with None.
-    """
-    mounted = _mounted_path_parts(p)
-    if mounted is None:
-        return None
-    mount_name, rel = mounted
-    if mount_name != ROOT.name:
-        return None
-    return rel.as_posix() if rel.parts else ""
-
-
 def _resource_target(rel: str) -> tuple[Path, str, str] | None:
     """Root-relative URL path → (safe absolute path, real part, virtual part).
 
@@ -466,16 +314,16 @@ def _resource_target(rel: str) -> tuple[Path, str, str] | None:
     part is a filesystem path — hence ``api.split_vfs`` rather than a plain join.
 
     Returns None when nothing safe is addressed. Every path still goes through
-    ``_resolve_safe``, and the query never takes part in that decision.
+    ``paths.resolve_safe``, and the query never takes part in that decision.
     """
-    split = api.split_vfs(rel, ROOT, _resolve_safe)
+    split = api.split_vfs(rel, ROOT, _resolve)
     if split is None:
         return None
     real_rel, vpath = split
     candidate = api.rel_to_abs(real_rel, ROOT)
     if candidate is None:
         return None
-    target = _resolve_safe(str(candidate))
+    target = _resolve(str(candidate))
     if target is None or not target.exists():
         return None
     return target, real_rel, vpath
@@ -546,34 +394,9 @@ def resource(request, path: str = ""):
 
 # ── PWA static files ─────────────────────────────────────────────────────────
 
-
-@rt("/manifest.json")
-def manifest():
-    """Serve the Web App Manifest."""
-    return FileResponse(
-        str(_STATIC_DIR / "manifest.json"), media_type="application/manifest+json"
-    )
-
-
-@rt("/sw.js")
-def service_worker():
-    """Serve the service worker with the required Service-Worker-Allowed header."""
-    data = (_STATIC_DIR / "sw.js").read_bytes()
-    return Response(
-        content=data,
-        media_type="application/javascript",
-        headers={"Service-Worker-Allowed": "/"},
-    )
-
-
-@rt("/icons/{name}")
-def icon(name: str):
-    """Serve a named icon from the bundled static/icons/ directory."""
-    safe_name = Path(name).name  # strip any directory traversal
-    icon_path = _STATIC_DIR / "icons" / safe_name
-    if not icon_path.exists() or not icon_path.is_file():
-        return HTMLResponse("Not found", status_code=404)
-    return FileResponse(str(icon_path))
+rt("/manifest.json")(pwa.manifest)
+rt("/sw.js")(pwa.service_worker)
+rt("/icons/{name}")(pwa.icon)
 
 
 # ── Route priority fix ────────────────────────────────────────────────────────

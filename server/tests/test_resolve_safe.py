@@ -21,7 +21,7 @@ Directory layout created per test (via tmp_path):
 
 import pytest
 
-from filemill.app import _resolve_safe
+from filemill.paths import resolve_safe
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -30,7 +30,7 @@ from filemill.app import _resolve_safe
 
 def resolve(root, path_str):
     """Convenience wrapper that injects a custom root."""
-    return _resolve_safe(path_str, root=root)
+    return resolve_safe(path_str, root)
 
 
 # ---------------------------------------------------------------------------

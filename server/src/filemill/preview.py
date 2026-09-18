@@ -6,6 +6,16 @@ import tempfile
 from pathlib import Path
 from urllib.parse import quote as urlquote
 
+from docutils.core import publish_parts
+from pygments import highlight as pyg_highlight
+from pygments.formatters import HtmlFormatter as PygHtmlFormatter
+from pygments.lexers import (
+    ClassNotFound,
+    TextLexer,
+    get_lexer_by_name,
+    guess_lexer,
+)
+
 from filemill.vfs import classify_path
 
 # Largest file Pygments is asked to colour, and largest one shown as plain <pre>.
@@ -116,15 +126,6 @@ def _highlight_source(path: Path, ext: str) -> str | None:
     through to ``_raw_text`` rather than being wrapped in a pointless colour div.
     """
     try:
-        from pygments import highlight as pyg_highlight
-        from pygments.formatters import HtmlFormatter as PygHtmlFormatter
-        from pygments.lexers import (
-            ClassNotFound,
-            TextLexer,
-            get_lexer_by_name,
-            guess_lexer,
-        )
-
         if path.stat().st_size <= SYNTAX_SIZE_LIMIT:
             content = read_text(path, reject_wide=False)
             if content is not None:
@@ -160,8 +161,6 @@ def _raw_text(path: Path) -> str | None:
 
 def _preview_rst(path: Path) -> str:
     try:
-        from docutils.core import publish_parts
-
         parts = publish_parts(
             path.read_text(encoding="utf-8"),
             writer_name="html5",
@@ -173,9 +172,7 @@ def _preview_rst(path: Path) -> str:
             },
         )
         title = (
-            f'<h1>{html_lib.escape(parts["title"])}</h1>'
-            if parts.get("title")
-            else ""
+            f"<h1>{html_lib.escape(parts['title'])}</h1>" if parts.get("title") else ""
         )
         body = title + parts["body"]
         return f'<div class="preview-rst">{body}</div>'

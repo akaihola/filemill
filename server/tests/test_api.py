@@ -37,7 +37,13 @@ def test_dir_owns_stable_entry_order(client, tmp_root: Path):
     entries = client.get("/api/dir?p=").json()["entries"]
 
     assert [e["name"] for e in entries] == [
-        "alpha", "subdir", "Zoo", ".hidden", "10.txt", "2.txt", "readme.md"
+        "alpha",
+        "subdir",
+        "Zoo",
+        ".hidden",
+        "10.txt",
+        "2.txt",
+        "readme.md",
     ]
     assert all(e["ordered"] for e in entries)
 
@@ -443,7 +449,7 @@ def test_vfs_paths_are_not_a_way_around_resolve_safe(db_client, db_root: Path):
 def test_split_vfs_separates_the_real_path_from_the_virtual_one(db_root: Path):
     from filemill.api import split_vfs
 
-    resolve = app_module._resolve_safe
+    resolve = app_module._resolve
     assert split_vfs("sample.db/users/1", db_root, resolve) == ("sample.db", "users/1")
     assert split_vfs("sample.db", db_root, resolve) == ("sample.db", "")
     # browsed on the client, so the server only has to let the row URL through
@@ -457,8 +463,8 @@ def test_split_vfs_refuses_a_path_that_is_not_virtual(tmp_root: Path):
     """readme.md has no provider, so readme.md/anything is simply not a path."""
     from filemill.api import split_vfs
 
-    assert split_vfs("readme.md/nope", tmp_root, app_module._resolve_safe) is None
-    assert split_vfs("nope/at/all", tmp_root, app_module._resolve_safe) is None
+    assert split_vfs("readme.md/nope", tmp_root, app_module._resolve) is None
+    assert split_vfs("nope/at/all", tmp_root, app_module._resolve) is None
 
 
 def test_a_url_can_name_a_row_inside_a_database(db_client, db_root: Path):
