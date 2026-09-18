@@ -109,10 +109,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [24] Reduce `app.py` to routing: move `_resolve_safe` and the symlink map to
-  `paths.py` and the PWA routes to `pwa.py`. No imports inside functions.
-    - Depends on: [33], [34]
-
 - [*] Delete `server/src/filemill/styles.py`. The shell links `/ui/core/styles.css`, and
   no other server route emits HTML. Delete the tests that pin `APP_CSS`.
     - Depends on: [33], [34]
@@ -338,6 +334,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [24] Reduce `app.py` to routing: move `_resolve_safe` and the symlink map to
+  `paths.py` and the PWA routes to `pwa.py`. No imports inside functions.
+    - Depends on: [33], [34]
 
 - [33] Keep the URL contract, drop the server-side representations: the server sends
   bytes for `?filemill=raw` and the shell for all else. The client renders the view.
