@@ -17,7 +17,7 @@ networkless hosts. The *loaded* path is exercised against stub modules served
 from the same loopback server, which is the only way to reach it without the
 real CDN.
 
-    uv run --with "playwright==1.61.0" python3 test-rich.py [--bundle|--dev]
+    uv run --with "playwright==1.61.0" python3 test-rich.py [--bundle|--dev] [--rst]
 
 The server edition serves the Markdown and .docx modules itself from ui/vendor/
 and points FILEMILL_CDN at them; the last section here loads those real files
@@ -230,6 +230,88 @@ async def preview(pg, name, timeout=4000, ready=None):
     return await pg.inner_html("#pv-content")
 
 
+async def rst_checks(pg, base):
+    await boot(pg, base, rich=True)
+    html = await preview(pg, "doc.rst", ready=".pv-note")
+    check("RST offline fallback keeps readable source", "Heading" in html and "pv-text" in html)
+    requests = []
+    def record(request):
+        if '/pyodide/' in request.url:
+            requests.append(request.url)
+    pg.on('request', record)
+    await boot(pg, base, rich=False)
+    html = await preview(pg, "doc.rst")
+    check("RST consent off requests no runtime assets", not requests and "pv-note" not in html)
+    pg.remove_listener('request', record)
+    await pg.reload()
+    check("RST consent survives reload", await pg.evaluate("localStorage.getItem('filemill.rich')") == "off")
+    # RST registry failures and interpreter lifetime, without a real CDN.
+    for failure in ('boot', 'package', 'render'):
+        await boot(pg, base, rich=True, stubs=True)
+        await pg.evaluate("failure => window.__pyFail = failure", failure)
+        html = await preview(pg, "doc.rst", ready=".pv-note")
+        check(f"RST {failure} failure falls back to source",
+              "pv-text" in html and "Heading" in html)
+        if failure == 'render':
+            check("Failed RST conversion releases Python globals",
+                  await pg.evaluate("window.__pyStats.destroyed") == 1)
+        await pg.evaluate("window.__pyFail = null")
+        await preview(pg, "plain.txt")
+        html = await preview(pg, "doc.rst", ready=".pv-rich")
+        check(f"RST retries after {failure} failure", "<em>rst</em>" in html)
+
+    await boot(pg, base, rich=True, stubs=True)
+    result = await pg.evaluate("""async () => {
+      const outputs = await Promise.all(['first document', 'second document'].map(
+        text => renderNode({name: 'doc.rst'}, new Blob([text]), 'rst')));
+      return {outputs, stats: window.__pyStats};
+    }""")
+    check("Concurrent RST previews keep their own source",
+          'first document' in result['outputs'][0]
+          and 'second document' not in result['outputs'][0]
+          and 'second document' in result['outputs'][1])
+    check("Concurrent RST previews share initialization",
+          result['stats']['boots'] == result['stats']['packages'] == 1)
+    check("RST releases per-render Python globals",
+          result['stats']['destroyed'] == 2)
+
+    await boot(pg, base, rich=True, stubs=True)
+    result = await pg.evaluate("""async () => ({
+      html: await renderNode({name: 'large.rst'}, new Blob(['x'.repeat(512*1024+1)]), 'rst'),
+      loaded: !!window.__pyStats
+    })""")
+    check("Oversize RST preserves the absent-preview limit without loading Python",
+          result['html'] is None and not result['loaded'])
+
+    await boot(pg, base, rich=False, stubs=True)
+    await preview(pg, "doc.rst")
+    check("RST consent off does not initialize the runtime",
+          not await pg.evaluate("!!window.__pyStats"))
+    await pg.click("#gear")
+    await pg.click("#s-rich")
+    await pg.wait_for_selector(".pv-rich em")
+    check("Enabling RST consent renders the selected source",
+          await pg.inner_text(".pv-rich em") == "rst")
+    await pg.click("#s-rich")
+    await pg.wait_for_selector(".pv-text")
+    check("Disabling RST consent restores source", not await pg.locator(".pv-rich").count())
+
+
+async def rst_main():
+    httpd, port = serve()
+    try:
+        async with async_playwright() as p:
+            async with await p.chromium.launch() as browser:
+                pg = await browser.new_page(viewport={"width": 1500, "height": 900})
+                await pg.route("https://cdn.jsdelivr.net/**", lambda r: r.abort())
+                await rst_checks(pg, f"http://127.0.0.1:{port}/{TARGET}")
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+    print(f"{len(passed)} passed, {len(failed)} failed")
+    sys.exit(1 if failed else 0)
+
+
 async def main():
     httpd, port = serve()
     base = f"http://127.0.0.1:{port}/{TARGET}"
@@ -378,53 +460,7 @@ async def main():
         check("A .docx renders through the vendored mammoth",
               "<p>Hello docx</p>" in html and "pv-rich" in html, html[:120])
 
-        # RST registry failures and interpreter lifetime, without a real CDN.
-        for failure in ('boot', 'package', 'render'):
-            await boot(pg, base, rich=True, stubs=True)
-            await pg.evaluate("failure => window.__pyFail = failure", failure)
-            html = await preview(pg, "doc.rst", ready=".pv-note")
-            check(f"RST {failure} failure falls back to source",
-                  "pv-text" in html and "Heading" in html)
-            await pg.evaluate("window.__pyFail = null")
-            await preview(pg, "plain.txt")
-            html = await preview(pg, "doc.rst", ready=".pv-rich")
-            check(f"RST retries after {failure} failure", "<em>rst</em>" in html)
-
-        await boot(pg, base, rich=True, stubs=True)
-        result = await pg.evaluate("""async () => {
-          const outputs = await Promise.all(['first document', 'second document'].map(
-            text => renderNode({name: 'doc.rst'}, new Blob([text]), 'rst')));
-          return {outputs, stats: window.__pyStats};
-        }""")
-        check("Concurrent RST previews keep their own source",
-              'first document' in result['outputs'][0]
-              and 'second document' not in result['outputs'][0]
-              and 'second document' in result['outputs'][1])
-        check("Concurrent RST previews share initialization",
-              result['stats']['boots'] == result['stats']['packages'] == 1)
-        check("RST releases per-render Python globals",
-              result['stats']['destroyed'] == 2)
-
-        await boot(pg, base, rich=True, stubs=True)
-        result = await pg.evaluate("""async () => ({
-          html: await renderNode({name: 'large.rst'}, new Blob(['x'.repeat(512*1024+1)]), 'rst'),
-          loaded: !!window.__pyStats
-        })""")
-        check("Oversize RST preserves the absent-preview limit without loading Python",
-              result['html'] is None and not result['loaded'])
-
-        await boot(pg, base, rich=False, stubs=True)
-        await preview(pg, "doc.rst")
-        check("RST consent off does not initialize the runtime",
-              not await pg.evaluate("!!window.__pyStats"))
-        await pg.click("#gear")
-        await pg.click("#s-rich")
-        await pg.wait_for_selector(".pv-rich em")
-        check("Enabling RST consent renders the selected source",
-              await pg.inner_text(".pv-rich em") == "rst")
-        await pg.click("#s-rich")
-        await pg.wait_for_selector(".pv-text")
-        check("Disabling RST consent restores source", not await pg.locator(".pv-rich").count())
+        await rst_checks(pg, base)
 
         # ── turning it back on retries ───────────────────────────────────
         await boot(pg, base, rich=False, stubs=True)
@@ -448,4 +484,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(rst_main() if "--rst" in sys.argv else main())
