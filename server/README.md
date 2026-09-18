@@ -117,7 +117,7 @@ that matches them.
 
 ```
 src/filemill/
-├── app.py          # FastHTML app and routes
+├── app.py          # Starlette app and routes
 ├── api.py          # /api/dir, /api/search, /api/raw, /api/preview
 ├── cli.py          # Typer CLI entry point
 ├── env.py          # FILEMILL_* variables, PYKOFINDER_* fallback

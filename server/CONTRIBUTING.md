@@ -3,7 +3,7 @@
 ## Project context
 
 Filemill is a column-view file browser and previewer in the style of macOS
-Finder. The server edition serves it as a FastHTML web application. Click a
+Finder. The server edition serves it as a Starlette web application. Click a
 column entry to open a directory. Files preview inline: Markdown, DOCX, PPTX,
 PDF, images, plain text, and code with syntax highlighting.
 
@@ -11,7 +11,7 @@ PDF, images, plain text, and code with syntax highlighting.
 
 ```
 src/filemill/
-├── app.py          # FastHTML app and routes
+├── app.py          # Starlette app and routes
 ├── api.py          # JSON/fragment API behind the shared UI (/api/*)
 ├── cli.py          # Typer CLI entry point
 ├── env.py          # FILEMILL_* variables, PYKOFINDER_* fallback
@@ -111,7 +111,7 @@ one. `filemill=render` or `highlight` puts the shell around a file.
   browser URL. The URL and the visible Finder state must agree.
 - `src/filemill/static/` holds the PWA assets `/manifest.json`, `/sw.js` and
   `/icons/*`. `_reorder_routes()` puts them, `/ui/`, `/n/` and `/api/*` before
-  FastHTML's static catch-all route. Without that, the catch-all swallows
+  The static catch-all route. Without that, the catch-all swallows
   every `.js` and `.css` the shared UI asks for, and the page is blank.
 - The UI shell registers the service worker. The worker bypasses non-GET
   requests and `/api/*`, so it cannot cache file data or intercept local-file
