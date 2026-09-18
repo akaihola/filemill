@@ -31,6 +31,24 @@ Navigation and explicit preview replacement end that editor session. Late reads
 and write results cannot replace another file's editor or display errors in it.
 The editor uses callbacks to the renderer and adds no import cycle.
 
+## Manual checks
+
+Open a disposable plain-text file and select Edit. In the public demo, you can use
+Open local folder to choose a test file on your own computer.
+
+1. Type text, then press Ctrl+Z. The edit should disappear. Press Ctrl+Shift+Z to
+   restore it. Use Cmd instead of Ctrl on macOS.
+2. Put the same word on two lines. Press Ctrl+F or Cmd+F and enter that word.
+   Press Enter to select each match and wrap to the first. Escape closes Find.
+   Try a match near the end of a long line; it should scroll into view.
+3. Add and remove line breaks. The gutter should add and remove line numbers.
+   Paste enough lines to scroll; numbers and text should stay aligned.
+4. Make an edit and check the dot beside the file name. Undo back to the original
+   text; the dot should disappear. Edit again and Save. Reopen the editor or reload
+   the page; the saved text should remain and the dot should be absent.
+5. Edit, then resize the window. The text, dot and undo history should survive.
+   To discard a test edit, select Cancel and check that the stored text returns.
+
 ## Checks
 
 From `static/`, run the focused checks against both builds:
