@@ -347,6 +347,24 @@ async def editor_feature_checks(pg):
     assert await pg.is_hidden(".pv-find")
     assert await pg.evaluate("document.activeElement.id") == "pv-editor"
     assert await pg.input_value("#pv-editor") == "alpha\nbeta alpha\n"
+    await pg.fill("#pv-editor", "needle" + "x" * 500 + "needle")
+    await pg.eval_on_selector("#pv-editor", "e => { e.setSelectionRange(0, 0); e.scrollLeft = 0; }")
+    await pg.press("#pv-editor", "Control+f")
+    search = pg.locator('input[aria-label="Find in file"]')
+    await search.fill("needle")
+    assert await search.evaluate("""e => e.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'Enter', bubbles: true, cancelable: true, isComposing: true
+    }))""")
+    assert await search.evaluate("e => document.activeElement === e")
+    await search.press("Enter")
+    await pg.keyboard.press("Enter")
+    assert await pg.eval_on_selector("#pv-editor", "e => e.selectionStart") == 506
+    assert await pg.eval_on_selector("#pv-editor", "e => e.scrollLeft > 0")
+    await pg.keyboard.press("Enter")
+    assert await pg.eval_on_selector("#pv-editor", "e => e.scrollLeft") == 0
+    await pg.keyboard.press("Escape")
+    await pg.press("#pv-editor", "Control+z")
+    assert await pg.input_value("#pv-editor") == "alpha\nbeta alpha\n"
     await pg.evaluate("window.__editorBeforeResize = document.querySelector('#pv-editor')")
     await pg.set_viewport_size({"width": 1100, "height": 700})
     await pg.wait_for_function("finder.clientWidth < 1200")
