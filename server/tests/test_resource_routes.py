@@ -99,6 +99,24 @@ def test_raw_view_is_identical_to_the_bare_path(client):
     assert named.headers["content-type"] == bare.headers["content-type"]
 
 
+@pytest.mark.parametrize(
+    ("path", "media"),
+    [
+        ("docs/readme.md", "text/markdown"),
+        ("site/main.css", "text/css"),
+        ("photo.png", "image/png"),
+        ("page.html", "text/html"),
+    ],
+)
+def test_raw_view_serves_bytes_with_the_detected_media_type(client, site, path, media):
+    """filemill=raw is the file itself, whatever the page around it would be."""
+    resp = client.get(f"/{path}?filemill=raw")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith(media)
+    assert resp.content == (site / path).read_bytes()
+    assert "/ui/entry-server.js" not in resp.text
+
+
 def test_a_space_in_a_path_is_served(client):
     resp = client.get("/my%20notes/a%20b.md")
     assert resp.status_code == 200
@@ -230,11 +248,14 @@ def test_directory_serves_the_shared_ui(client):
     assert 'data-root="menu"' in resp.text
 
 
-def test_directory_with_no_columns_serves_one_listing(client):
+def test_directory_with_no_columns_serves_the_shell(client):
+    """The server renders no listing; the client shows the one column."""
     resp = client.get("/docs?layout=no-columns")
     assert resp.status_code == 200
-    assert "readme.md" in resp.text
-    assert 'id="breadcrumb"' not in resp.text
+    assert "/ui/entry-server.js" in resp.text
+    assert 'data-layout="no-columns"' in resp.text
+    assert "<ul" not in resp.text
+    assert "readme.md" not in resp.text
 
 
 def test_root_relative_directory_with_a_trailing_slash(client):
