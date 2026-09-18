@@ -271,6 +271,12 @@ export function render(keepScroll) {
   });
   while (strip.childNodes.length > want.length) strip.lastChild.remove();
   if (previewNode()) setupPreviewActions(previewNode());
+  /* ?layout=no-columns asks for the representation alone. The server puts
+     the value on <html>; a document then fills the pane and a directory shows
+     only its own listing. The static build never sets it. */
+  if (root.dataset.layout === "no-columns") {
+    root.classList.toggle("pv-only", !!previewNode());
+  }
   for (const c of cols) {
     c.el.classList.toggle(
       "scrollable-down",

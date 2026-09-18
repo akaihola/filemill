@@ -37,7 +37,8 @@ depends on being able to trust a green run.
    and `APP_CSS`.
 2. Fix or remove the `layout=no-columns` directory listing at `app.py:1073`.
    If a no-JavaScript listing is wanted, render a plain list of links to
-   root-relative URLs. If not, return the shared shell.
+   root-relative URLs. If not, return the shared shell. Done for issue 33: the
+   shell is returned.
 3. Write the decision as a one-page ADR in `docs/adr/0001-one-finder.md`:
    the shared UI owns all interaction; the server renders documents and JSON.
    This closes proposal [8] in `TASKS.md`.
