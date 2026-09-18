@@ -26,7 +26,6 @@ import sys
 import threading
 from pathlib import Path
 
-from playwright.async_api import async_playwright
 
 # Serve the repository, not filemill/: the dev entry point references ../ui/,
 # which is the whole point of the shared directory.
@@ -134,11 +133,13 @@ def serve():
     return httpd, httpd.server_address[1]
 
 
-async def main():
+async def main(bundle, fake_handle, opfs_root, playwright):
+    global TARGET, FAKE
+    TARGET, FAKE = f"static/{bundle.name}", fake_handle
     httpd, port = serve()
     base = f"http://127.0.0.1:{port}/{TARGET}"
 
-    async with async_playwright() as p:
+    async with playwright.async_playwright() as p:
         b = await p.chromium.launch()
         pg = await b.new_page(viewport={"width": 1500, "height": 900})
         errs = []
@@ -257,7 +258,7 @@ async def main():
         # End to end, on real files: mount the folder, ask for biggest first.
         await pg.evaluate("setSort('size', true)")
         await pg.evaluate(
-            "(async () => mount(await (await navigator.storage.getDirectory())"
+            f"(async () => mount(await (await {opfs_root})"
             ".getDirectoryHandle('bench')))()")
         await pg.wait_for_function(
             "path.length && path[0].metaDone && colCache.get(path[0])", timeout=60_000)
@@ -282,4 +283,5 @@ async def main():
     sys.exit(1 if failed else 0)
 
 
-asyncio.run(main())
+def test_url(bundle, fake_handle, opfs_root, playwright):
+    asyncio.run(main(bundle, fake_handle, opfs_root, playwright))
