@@ -17,7 +17,6 @@ src/filemill/
 ├── env.py          # FILEMILL_* variables, PYKOFINDER_* fallback
 ├── preview.py      # Preview dispatcher (md / docx / pptx / pdf / img / code / raw)
 ├── rendering.py    # markdown-it-py instance with plugins
-├── styles.py       # Pygments and app CSS
 ├── urls.py         # View state and canonical URLs
 ├── vfs.py          # Virtual-filesystem registry + provider protocol
 ├── providers/      # VFS backends (SQLite, JSON, VTT)

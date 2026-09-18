@@ -51,7 +51,7 @@ Keep these. They are the parts of the project that already meet the goals.
 **Server.** `cd server && uv run pytest -m "not integration" --no-cov` gives
 52 failed, 754 passed. Commit `0cae978` removed the route decorators of the
 HTMX user interface (`/f/`, `/click`, `/vpage`, `/restore`). It did not remove
-the handlers, `columns.py`, the 548-line `COLUMN_JS` string in `styles.py`, or
+the handlers, `columns.py`, or the obsolete 548-line `COLUMN_JS` string, or
 the tests that call those routes. Every failure is a test that expects 200
 and receives 404.
 
@@ -79,7 +79,7 @@ documents wrong: `docs/tasks/2-fix-all-test-failures.md` says 870 passed, and
 The routes are gone. The code is not. `server/src/filemill/app.py` keeps
 `click` (233-352), `_finder_fragment` (409-530), `vpage`, `restore`,
 `finder_root`, `finder_view`, `_build_prune_js`, `_make_bc_oob` and
-`_finder_url`. `columns.py` (346 lines) and `styles.py:COLUMN_JS` exist only
+`_finder_url`. `columns.py` (346 lines) and `COLUMN_JS` exist only
 for them. `providers/sqlite.py:378-419` renders HTMX pagination bars nobody
 can reach. This is about 1 500 lines of Python and 1 500 lines of tests.
 
@@ -210,8 +210,8 @@ Cycles are hidden by function-local imports. `columns.py:86` imports from
 `_rel_url_path` and `_web_url`. `preview.py:157` imports `rendering` lazily.
 Three modules therefore form a ring that only import order keeps alive.
 
-`styles.py:4-5` defines `HIGHLIGHT_CSS` and `FRIENDLY_CSS` with identical
-values and emits both. `styles.py:3 PYGMENTS_FORMATTER` is never used.
+The deleted stylesheet module defined duplicate friendly CSS and an unused
+Pygments formatter.
 The `<div class="preview-error">` fragment is built by hand in nine places
 across `app.py`, `api.py`, `preview.py` and `sqlite.py`.
 
