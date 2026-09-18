@@ -20,10 +20,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
       `panFocus` and `slideTail`. Each function is under 25 lines.
 
-- [*] Run the static and server browser tests through one root `conftest.py` and one
-  Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.
-    - Depends on: [25]
-
 - [29] Make `ui/core/` a model package with no DOM: nodes, selection, folding
   arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
     - Depends on: [18], [21]
@@ -40,6 +36,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   the whole file, and `{}` and `[]` icons for objects and arrays.
 
 ## Scheduled
+
+- [*] Run the static and server browser tests through one root `conftest.py` and one
+  Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.
+    - Depends on: [25]
 
 - Toggling `Source` / `Rendered` reloads the whole page and causes an uncomfortable
   blink and a delay. Just the preview pane should be reloaded, and the URL and history
