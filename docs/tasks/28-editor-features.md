@@ -87,3 +87,20 @@ Scheduled to In Progress. Do not change other issues or duplicate section headin
 
 The task status remains In Progress for review. The implementation does not change
 unrelated issues to address these baseline failures.
+
+## Implementation review
+
+Review reproduced and fixed two find-mode defects. Composition keys now stay with
+the input method in both Find and Undo. Find measures the line prefix with browser
+text layout to scroll off-screen matches into view, including horizontal scrolling.
+Regression checks cover composition Enter, composition undo, long-line matches and
+wraparound. The focused server set now has seven cases; both static modes include
+the new Find checks.
+
+The tracker audit compared complete issue blocks and their headings against main.
+Issue [28] occurs once, under In Progress. Removing its unchanged block and the
+separating blank line makes the two tracker files byte-identical. No cross-heading
+duplicate was introduced. A global uniqueness proof is blocked by existing issue
+[6], which appears under both Scheduled and In Progress on main and this branch.
+Removing either copy would violate this task's requirement to retain main's text
+for every other issue, so this review leaves both copies unchanged.
