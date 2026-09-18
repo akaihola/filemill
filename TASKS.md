@@ -20,10 +20,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
       `panFocus` and `slideTail`. Each function is under 25 lines.
 
-- [33] Keep the URL contract, drop the server-side representations: the server sends
-  bytes for `?filemill=raw` and the shell for all else. The client renders the view.
-    - Depends on: [32]
-
 - [*] Delete `/api/render` in `app.py`, `render_upload` in `api.py` and
   `ui/adapters/preview-upload.js`. Local folders in the server edition use PreviewRich.
     - Depends on: [32], [34]
@@ -101,6 +97,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   its base name, relative path or absolute path.
 
 ## Scheduled
+
+- [33] Keep the URL contract, drop the server-side representations: the server sends
+  bytes for `?filemill=raw` and the shell for all else. The client renders the view.
+    - Depends on: [32]
 
 - [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100 k-entry
   directory still builds 100 k DOM nodes. Do this only if such folders show up.
