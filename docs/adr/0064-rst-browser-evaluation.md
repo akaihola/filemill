@@ -11,9 +11,11 @@ never imports the rich adapter are obsolete. This evaluation verifies the
 current browser bundle and supplies a repeatable measurement command.
 
 The static edition registers the RST renderer. The server imports the shared
-rich adapter but excludes RST from its registry; served RST continues through
-`PreviewHTTP`. Its browser-local folder mode retains its existing plain-text
-RST fallback. Neither preview contract changes here.
+rich adapter but excludes RST from its registry. At the original measurement
+baseline, served RST used `PreviewHTTP`. Main's subsequent PPTX change removed
+that adapter; both served and browser-local RST now fall back to plain text.
+This task preserves the rebased main behavior rather than restoring a removed
+server preview route.
 
 ## Decision
 
@@ -45,7 +47,8 @@ throttling. No proxy environment variables were present. Upstream CDN caches
 were not cleared. Other browser test suites were stopped for this run; shared
 host load and public network latency remain uncontrolled.
 
-The committed single-file app is **231,465 bytes**, versus 231,303 before the
+The first measured bundle, based on main `048b2ed`, was **231,465 bytes**,
+versus 231,303 before the
 per-render globals fix, an increase of 162 bytes. Runtime assets remain lazy.
 Sizes below come from Chromium Resource Timing. Encoded body sizes exclude
 HTTP headers; decoded sizes are asset bytes after HTTP decompression, not
@@ -77,6 +80,13 @@ conversion, DOM insertion and browser-automation detection of the table. It
 excludes initial app navigation and folder mounting. Warm selections reuse the
 interpreter, with no additional runtime asset requests. These are observed
 end-to-end times, not a benchmark threshold or pure conversion timings.
+
+A review repeat after rebasing onto main `abcab66` measured a **232,097-byte**
+bundle. Runtime sizes were unchanged. Cold selections took 7,547.5, 6,110.7
+and 5,505.2 ms, a **6,110.7 ms median**. Warm selections took 62.6, 59.7 and
+60.9 ms. The same Chromium version and command were used without concurrent
+browser suites. The difference from the earlier run illustrates uncontrolled
+host/network variance; it does not establish a renderer speed improvement.
 
 ### Reproduce
 
@@ -114,9 +124,11 @@ Pinned assets reduce version drift but still require CDN availability on a
 cold load. Browser caching can improve later visits without being assumed in
 the measurements above.
 
-Focused rich-preview checks pass in dev and bundle modes, including failures,
-retry, consent changes, initialization reuse, source isolation and size limits.
-The served RST/highlight and server no-CDN checks also pass. The generated
-bundle freshness check and changed-renderer lint pass. Broader pre-existing
-UI/formatting failures are recorded in the implementation handoff rather than
-being repaired as part of this experiment.
+Run the focused checks with `static/test-rich.py --dev --rst` and
+`static/test-rich.py --bundle --rst`, using the same pinned Playwright command
+above. They cover failures, retry, consent changes, initialization reuse,
+source isolation and size limits. The generated bundle freshness check and
+changed-renderer lint also pass. The full rich suite still expects main's
+removed PPTX viewer; the server RST test still expects the removed server
+renderer. These upstream failures, and broader UI/formatting failures, are
+recorded in the review handoff rather than changing unrelated contracts.
