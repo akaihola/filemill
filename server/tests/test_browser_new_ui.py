@@ -73,6 +73,9 @@ def ui_root(tmp_path: Path) -> Path:
     (tmp_path / "page.html").write_text("<h1>Hi</h1>\n")
     (tmp_path / "clip.mp4").write_bytes(b"not a playable video")
     (tmp_path / "soft-breaks.md").write_text("one\ntwo\n\nthree  \nfour\n")
+    (tmp_path / "wide.md").write_text(
+        "# Wide\n\n```bash\n" + "command-with-a-long-name " * 12 + "\n```\n"
+    )
     (tmp_path / "short.txt").write_text("short")
     (tmp_path / "README").write_text("readme")
     (tmp_path / ".hidden").write_text("h")
@@ -448,6 +451,18 @@ def test_markdown_soft_breaks_wrap_and_hard_breaks_remain(page):
         "one\ntwo",
         "three<br>\nfour",
     ]
+
+
+def test_markdown_code_wraps_within_portrait_preview(page):
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.open("wide.md")
+    page.wait_for_selector("#preview .pv-markdown pre", timeout=15000)
+    assert page.evaluate(
+        """() => {
+          const body = document.querySelector('#preview .pv-body');
+          return body.scrollWidth <= body.clientWidth;
+        }"""
+    )
 
 
 def test_source_is_highlighted_in_the_browser(page):

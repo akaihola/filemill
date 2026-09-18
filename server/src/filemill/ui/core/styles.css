@@ -1198,6 +1198,13 @@ body {
   background: var(--hover);
   overflow: auto;
 }
+@media (max-width: 600px) and (orientation: portrait) {
+  .pv-markdown pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    overflow: visible;
+  }
+}
 .pv-rich pre code {
   padding: 0;
   background: transparent;
