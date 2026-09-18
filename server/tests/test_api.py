@@ -278,7 +278,7 @@ def test_shell_configures_the_adapters(client, tmp_root: Path):
     html = client.get("/n/").text
     assert 'data-api="/api"' in html
     assert f'data-base="{app_module.UI_BASE}"' in html
-    assert f'data-root="{app_module.ROOT.name}"' in html
+    assert f'data-root="{tmp_root.name}"' in html
 
 
 def test_ui_path_mirrors_the_file_path(client, tmp_root: Path):

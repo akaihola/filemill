@@ -26,7 +26,7 @@ def main(
 ) -> None:
     """Start the Filemill web server."""
     resolved = (root or Path(".")).resolve()
-    app_module.ROOT = resolved
+    app_module.app.state.root = resolved
 
     if live:
         # uvicorn reload mode requires a string import path, so pass ROOT via env var
