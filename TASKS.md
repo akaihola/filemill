@@ -20,10 +20,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
       `panFocus` and `slideTail`. Each function is under 25 lines.
 
-- [*] Delete `/api/render` in `app.py`, `render_upload` in `api.py` and
-  `ui/adapters/preview-upload.js`. Local folders in the server edition use PreviewRich.
-    - Depends on: [32], [34]
-
 - [*] Delete `server/src/filemill/styles.py`. The shell links `/ui/core/styles.css`, and
   no other server route emits HTML. Delete the tests that pin `APP_CSS`.
     - Depends on: [33], [34]
@@ -97,6 +93,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   its base name, relative path or absolute path.
 
 ## Scheduled
+
+- [*] Delete `/api/render` in `app.py`, `render_upload` in `api.py` and
+  `ui/adapters/preview-upload.js`. Local folders in the server edition use PreviewRich.
+    - Depends on: [32], [34]
 
 - [33] Keep the URL contract, drop the server-side representations: the server sends
   bytes for `?filemill=raw` and the shell for all else. The client renders the view.
