@@ -35,7 +35,6 @@ import sys
 import threading
 from pathlib import Path
 
-from playwright.async_api import async_playwright
 
 # Serve the repository, not filemill/: the dev entry point references ../ui/,
 # which is the whole point of the shared directory.
@@ -297,12 +296,12 @@ async def rst_checks(pg, base):
     check("Disabling RST consent restores source", not await pg.locator(".pv-rich").count())
 
 
-async def rst_main(bundle, fake_handle):
+async def rst_main(bundle, fake_handle, playwright):
     global TARGET, FAKE
     TARGET, FAKE = f"static/{bundle.name}", fake_handle
     httpd, port = serve()
     try:
-        async with async_playwright() as p:
+        async with playwright.async_playwright() as p:
             async with await p.chromium.launch() as browser:
                 pg = await browser.new_page(viewport={"width": 1500, "height": 900})
                 await pg.route("https://cdn.jsdelivr.net/**", lambda r: r.abort())
@@ -314,13 +313,13 @@ async def rst_main(bundle, fake_handle):
     sys.exit(1 if failed else 0)
 
 
-async def main(bundle, fake_handle):
+async def main(bundle, fake_handle, playwright):
     global TARGET, FAKE
     TARGET, FAKE = f"static/{bundle.name}", fake_handle
     httpd, port = serve()
     base = f"http://127.0.0.1:{port}/{TARGET}"
 
-    async with async_playwright() as p:
+    async with playwright.async_playwright() as p:
         b = await p.chromium.launch()
         pg = await b.new_page(viewport={"width": 1500, "height": 900})
         # Block the real CDN so the offline path is tested on every host.
@@ -487,6 +486,6 @@ async def main(bundle, fake_handle):
     sys.exit(1 if failed else 0)
 
 
-def test_rich(bundle, fake_handle):
-    asyncio.run(rst_main(bundle, fake_handle) if "--rst" in sys.argv
-                else main(bundle, fake_handle))
+def test_rich(bundle, fake_handle, playwright):
+    asyncio.run(rst_main(bundle, fake_handle, playwright) if "--rst" in sys.argv
+                else main(bundle, fake_handle, playwright))

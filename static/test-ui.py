@@ -19,7 +19,6 @@ import sys
 from pathlib import Path
 
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
-from playwright.async_api import async_playwright
 
 ROOT = Path(__file__).parent
 TARGET = ROOT / ("index-dev.html" if "--dev" in sys.argv else "index.html")
@@ -404,10 +403,10 @@ async def editor_feature_checks(pg):
     await pg.set_viewport_size({"width": 1500, "height": 900})
 
 
-async def editor_main(bundle, fake_handle):
+async def editor_main(bundle, fake_handle, playwright):
     global TARGET, FAKE
     TARGET, FAKE = bundle, fake_handle
-    async with async_playwright() as p:
+    async with playwright.async_playwright() as p:
         browser = await p.chromium.launch(args=["--allow-file-access-from-files"])
         try:
             pg = await browser.new_page(viewport={"width": 1500, "height": 900})
@@ -440,10 +439,10 @@ async def editor_main(bundle, fake_handle):
             await browser.close()
 
 
-async def main(bundle, fake_handle):
+async def main(bundle, fake_handle, playwright):
     global TARGET, FAKE
     TARGET, FAKE = bundle, fake_handle
-    async with async_playwright() as p:
+    async with playwright.async_playwright() as p:
         # index-dev.html loads ../ui/entry-static.js as a module, which a file://
         # page may not fetch without this; the bundle needs nothing.
         b = await p.chromium.launch(args=["--allow-file-access-from-files"])
@@ -2176,6 +2175,6 @@ async def main(bundle, fake_handle):
     sys.exit(1 if failed else 0)
 
 
-def test_ui(bundle, fake_handle):
-    asyncio.run(editor_main(bundle, fake_handle) if "--editor" in sys.argv
-                else main(bundle, fake_handle))
+def test_ui(bundle, fake_handle, playwright):
+    asyncio.run(editor_main(bundle, fake_handle, playwright) if "--editor" in sys.argv
+                else main(bundle, fake_handle, playwright))

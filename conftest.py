@@ -4,6 +4,18 @@ from pathlib import Path
 import pytest
 
 
+class _Playwright:
+    def __init__(self, sync, asynchronous):
+        self._sync = sync
+        self._asynchronous = asynchronous
+
+    def __getattr__(self, name):
+        return getattr(self._sync, name)
+
+    def async_playwright(self):
+        return self._asynchronous()
+
+
 @pytest.fixture
 def bundle(request):
     name = "index-dev.html" if request.config.getoption("--dev") else "index.html"
@@ -22,8 +34,10 @@ def opfs_root():
 
 @pytest.fixture
 def playwright():
-    with pytest.importorskip("playwright.sync_api").sync_playwright() as p:
-        yield p
+    sync_playwright = pytest.importorskip("playwright.sync_api").sync_playwright
+    async_playwright = pytest.importorskip("playwright.async_api").async_playwright
+    with sync_playwright() as p:
+        yield _Playwright(p, async_playwright)
 
 
 @pytest.fixture()
