@@ -31,10 +31,10 @@ depends on being able to trust a green run.
    `server/src/filemill/app.py`: `click`, `vpage`, `restore`,
    `_finder_fragment`, `finder_root`, `finder_view`, `_build_prune_js`,
    `_make_bc_oob`, `_shell_html`, `_finder_url`. Delete `columns.py`. Delete
-   `COLUMN_JS` from `styles.py`, and every CSS rule in `APP_CSS` that only the
+   `COLUMN_JS` implementation, and every CSS rule that only the
    HTMX page used. Delete the HTMX fragments in `providers/sqlite.py:378-419`.
    Delete the 52 failing tests and the substring tests that pin `COLUMN_JS`
-   and `APP_CSS`.
+   implementation.
 2. Fix or remove the `layout=no-columns` directory listing at `app.py:1073`.
    If a no-JavaScript listing is wanted, render a plain list of links to
    root-relative URLs. If not, return the shared shell. Done for issue 33: the
@@ -54,7 +54,7 @@ depends on being able to trust a green run.
    editor cursor in root `TASKS.md`.
 6. Add `LICENSE` with the MIT text. `README.md` already claims it.
 7. Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`,
-   `PYGMENTS_FORMATTER` and the duplicate `FRIENDLY_CSS` in `styles.py`.
+   the unused Pygments formatter and duplicate friendly CSS definitions.
 
 **Done when.** `cd server && uv run pytest` passes. All of
 `static/test-ui.py`, `test-url.py` and `test-rich.py` pass in both `--dev`
@@ -246,7 +246,7 @@ static edition. Two render paths for one document drift apart.
    HTML renderers in `providers/sqlite.py`. This closes proposal [9].
 4. Delete what the browser already does: `/api/render` and
    `preview-upload.js`, `/sse/reload` and live reload,
-   `providers/json_provider.py`, `providers/csv_provider.py`, `styles.py`
+   `providers/json_provider.py`, `providers/csv_provider.py`
    and `/raw?path=`. Decide `/w/` and its CORS middleware with its consumer.
 5. Reduce `app.py` to routing. Move `_resolve_safe` and the symlink map to
    `paths.py` and the PWA routes to `pwa.py`. Compute the symlink zone map
