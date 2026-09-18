@@ -66,6 +66,8 @@ def render_preview(path: Path, state=None, preview_url: str | None = None) -> st
 
     if preview == "rst":
         return _preview_rst(path)
+    elif preview == "desktop":
+        return _preview_desktop(path)
     elif preview == "pdf":
         return _preview_pdf(path, preview_url)
     elif preview == "html":
