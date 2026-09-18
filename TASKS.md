@@ -68,6 +68,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   301fd540-e206-4306-b88f-5b3dbe1a15ec attempted but failed in making this link
   expansion correct.
 
+- [*] Feature: Clicking on a content search result now opens the raw file. Open the
+  rendered file in the UI preview pane instead.
+
 ## Scheduled
 
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
