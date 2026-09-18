@@ -9,13 +9,10 @@ from fasthtml.common import (
     Body,
     Head,
     Html,
-    Li,
     Link,
     Meta,
     Script,
-    Style,
     Title,
-    Ul,
     fast_app,
 )
 from starlette.responses import (
@@ -29,7 +26,6 @@ from starlette.responses import (
 from filemill import api, urls
 from filemill.env import env
 from filemill.preview import render_preview, render_source
-from filemill.styles import APP_CSS
 
 # CDN URL for mermaid.js (UMD build – sets window.mermaid on load)
 # Static files bundled with the package (PWA manifest, service worker, icons)
@@ -97,65 +93,6 @@ def _resolve_safe(path_str: str, root: Path | None = None) -> Path | None:
         return None
     except Exception:
         return None
-
-
-def _head_tags(*extra_head_scripts):
-    """Return the ``<head>`` every Filemill page shares."""
-    return Head(
-        Title("Filemill"),
-        Meta(name="viewport", content="width=device-width, initial-scale=1"),
-        Meta(name="theme-color", content="#0770C9"),
-        Meta(name="mobile-web-app-capable", content="yes"),
-        Meta(name="apple-mobile-web-app-capable", content="yes"),
-        Meta(
-            name="apple-mobile-web-app-status-bar-style",
-            content="black-translucent",
-        ),
-        Meta(name="apple-mobile-web-app-title", content="filemill"),
-        Link(rel="manifest", href="/manifest.json"),
-        Link(rel="apple-touch-icon", href="/icons/icon-192.png"),
-        Style(APP_CSS),
-        Script(_SW_REGISTER_JS),
-        *extra_head_scripts,
-    )
-
-
-def _plain_listing(path: Path) -> object:
-    """Return a plain ``<ul>`` of one directory's entries, no interaction.
-
-    ``layout=no-columns`` asks for the representation alone, so this list
-    carries no click handlers or scripts — the shared UI is where navigation
-    lives.
-    """
-    try:
-        entries = sorted(path.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower()))
-    except PermissionError:
-        entries = []
-    return Ul(*[Li(p.name + ("/" if p.is_dir() else "")) for p in entries])
-
-
-def _page_html(body_children, state, *extra_head_scripts):
-    """Wrap body content in a full page whose ``<body>`` carries the layout.
-
-    The layout is an attribute, not a second template. ``compressed-columns``
-    reuses the ``zoomed`` presentation the ⛶ button already toggles, and
-    The .* button and localStorage preference control dotfile visibility in the
-    browser; it is not part of the resource URL contract.
-
-    ``data-layout`` is set so the client can read the requested state back.
-    """
-    classes = []
-    if state.layout == urls.LAYOUT_COMPRESSED:
-        classes.append("zoomed")
-    attrs = {"cls": " ".join(classes)} if classes else {}
-    return Html(
-        _head_tags(*extra_head_scripts),
-        Body(
-            *body_children,
-            data_layout=state.layout,
-            **attrs,
-        ),
-    )
 
 
 @rt("/")
@@ -558,10 +495,10 @@ def resource(request, path: str = ""):
     The path names the resource; the query names the representation:
 
         /docs/readme.md                              the file's bytes
-        /docs/readme.md?filemill=render     Markdown as HTML
-        /docs/readme.md?filemill=highlight  the source, coloured
-        /docs/readme.md?filemill=raw          the bytes, said out loud
-        /docs/readme.md/                     redirects to filemill=render
+        /docs/readme.md?filemill=raw        the bytes, said out loud
+        /docs/readme.md?filemill=render     the shell; the client renders it
+        /docs/readme.md?filemill=highlight  the shell; the client shows source
+        /docs/readme.md/                    redirects to filemill=render
 
     GET only. PLAN-19 §3 makes the router-facing surface read-only, and
     Filemill never writes a file under any route.
@@ -593,10 +530,8 @@ def resource(request, path: str = ""):
         index_file = target / "index.html"
         if not request.query_params and index_file.is_file():
             return FileResponse(str(index_file), media_type="text/html")
-        # A directory has no bytes, so every view value renders its listing.
-        if state.wants_columns:
-            return _ui_shell(state, "/", request.query_params.get("hidden") == "show")
-        return _page_html([_plain_listing(target)], state)
+        # A directory has no bytes, so every view value opens the shell on it.
+        return _ui_shell(state, "/", request.query_params.get("hidden") == "show")
 
     if vpath:
         # A node inside a virtual filesystem has no bytes of its own, so `raw`
@@ -611,10 +546,8 @@ def resource(request, path: str = ""):
         # default: the bare path has to be the file itself.
         return api.raw_response(target)
 
-    if state.wants_columns:
-        # The client walks to this path and asks /api/preview for the
-        # representation, so the document is not rendered twice.
-        return _ui_shell(state, "/", request.query_params.get("hidden") == "show")
+    # Every other view is the shell. The client reads data-filemill and
+    # data-layout from <html> and renders the document itself.
     return _ui_shell(state, "/", request.query_params.get("hidden") == "show")
 
 

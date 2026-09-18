@@ -31,8 +31,9 @@ folding, breadcrumbs, previews and URL state in both editions.
 The server supplies directory data through `GET /api/dir`, previews through
 `GET /api/preview`, and rendering for local bytes through `POST /api/render`.
 The server still handles path safety, virtual filesystem providers and Python
-document renderers. The `layout=no-columns` document route uses the shared
-shell when a document needs the application view.
+document renderers. The resource route sends the file bytes for
+`?filemill=raw` and the shared shell for every other view and layout,
+including `layout=no-columns`; the client renders the view.
 
 ## Measurement
 
