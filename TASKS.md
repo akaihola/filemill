@@ -208,7 +208,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   `CONTRIBUTING.md` runs wider. All `.md` files should wrap at screen width on
   portrait mobile.
 
-
 - [*] GET https://gogo.crane-boa.ts.net:8445/favicon.ico
 
     ```
