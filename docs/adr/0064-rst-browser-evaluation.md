@@ -138,3 +138,25 @@ changed-renderer lint also pass. The full rich suite still expects main's
 removed PPTX viewer; the server RST test still expects the removed server
 renderer. These upstream failures, and broader UI/formatting failures, are
 recorded in the review handoff rather than changing unrelated contracts.
+
+## Manual acceptance check
+
+Serve the repository root with `python3 -m http.server 8000` and open
+`http://localhost:8000/static/index.html` in Chrome or Chromium. Use a local
+browser on that host, or forward port 8000 to your browser's localhost.
+Select a folder containing two `.rst` documents with different headings,
+a note directive and a table.
+
+- Leave Settings → Rich previews on and select an RST file. After the first
+  runtime download, its heading, directive and table should render.
+- Switch rapidly between the two files. The selected file must never show
+  the other file's text.
+- Turn Rich previews off. RST shows source, and the setting survives reload.
+  Turn it on again to restore rendering.
+- In a fresh browser context, block `cdn.jsdelivr.net` in developer tools,
+  then select RST with Rich previews on. The source remains readable with
+  an offline note. Remove the block and reload the page to retry.
+
+The server edition at `filemill.vempai.men` retains current main's source
+preview for RST; use the static edition above to test this renderer.
+Performance reproduction and interpretation are in Measurement above.
