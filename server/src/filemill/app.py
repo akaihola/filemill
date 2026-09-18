@@ -26,6 +26,7 @@ _HTML_EXTS = {".html", ".htm"}
 ROOT: Path = Path(env("ROOT", str(Path.home())))
 
 app = Starlette()
+app.state.root = None
 
 
 def rt(path: str, methods: list[str] | None = None):
@@ -56,13 +57,17 @@ def rt(path: str, methods: list[str] | None = None):
 
 def _resolve(path_str: str, zones=None) -> Path | None:
     """``paths.resolve_safe`` bound to the configured ROOT."""
-    return paths.resolve_safe(path_str, ROOT, zones)
+    return paths.resolve_safe(path_str, _root(), zones)
 
 
 def _zones(request):
     if not hasattr(request.state, "path_zones"):
-        request.state.path_zones = paths.symlink_zones(ROOT)
+        request.state.path_zones = paths.symlink_zones(_root())
     return request.state.path_zones
+
+
+def _root() -> Path:
+    return app.state.root or ROOT
 
 
 @rt("/")
@@ -77,7 +82,7 @@ def index(request):
 @rt("/w/{path:path}")
 def web_static(request, path: str):
     """Serve a named-mount ``/w/<mount>/...`` file with the correct Content-Type."""
-    p = paths.resolve_web_mount(path, ROOT, _zones(request))
+    p = paths.resolve_web_mount(path, _root(), _zones(request))
     if p is None or not p.is_file():
         return HTMLResponse("Not found", status_code=404)
     return FileResponse(str(p))
@@ -175,15 +180,15 @@ def _ui_shell(state, base: str, hidden: bool = False):
     prefix ui/adapters/router-path.js strips — ``/n/`` for the migration mount,
     ``/`` for the resource route, where the path already is the file path.
     """
-    attrs = {"lang": "en", "data-density": "compact", "data-root": ROOT.name or "/",
-             "data-absolute": ROOT.resolve().as_posix(), "data-api": "/api",
+    attrs = {"lang": "en", "data-density": "compact", "data-root": _root().name or "/",
+             "data-absolute": _root().resolve().as_posix(), "data-api": "/api",
              "data-base": base, "data-filemill": state.view, "data-layout": state.layout}
     if _COMMIT:
         attrs["data-commit"] = _COMMIT
     if hidden:
         attrs["data-hidden"] = "show"
     attr_text = " ".join(f'{key}="{escape(str(value), quote=True)}"' for key, value in attrs.items())
-    title = escape(ROOT.name or "Filemill")
+    title = escape(_root().name or "Filemill")
     return HTMLResponse(f'''<!doctype html>
 <html {attr_text}><head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -207,7 +212,7 @@ def ui_view(request, path: str = ""):
     real file plus a key inside it — the joined form exists only in the URL.
     """
     zones = _zones(request)
-    if path and api.split_vfs(path, ROOT, lambda p: _resolve(p, zones)) is None:
+    if path and api.split_vfs(path, _root(), lambda p: _resolve(p, zones)) is None:
         return HTMLResponse("Not found", status_code=404)
     return _ui_shell(urls.ViewState(), UI_BASE)
 
@@ -217,7 +222,7 @@ def ui_view(request, path: str = ""):
 
 def _api_target(p: str, zones=None) -> Path | None:
     """Root-relative request path → a safe absolute path, or None."""
-    candidate = api.rel_to_abs(p, ROOT)
+    candidate = api.rel_to_abs(p, _root())
     if candidate is None:
         return None
     return _resolve(str(candidate), zones)
@@ -250,7 +255,7 @@ def api_search(request, q: str = "", p: str = ""):
         focused = _api_target(p, _zones(request))
         if focused is None or not focused.is_dir():
             return JSONResponse({"error": "Not found"}, status_code=404)
-        return JSONResponse({"matches": api.search_root(ROOT, q, p)})
+        return JSONResponse({"matches": api.search_root(_root(), q, p)})
     except api.SearchError as exc:
         status = 400 if "query" in str(exc).lower() else 503
         return JSONResponse({"error": str(exc)}, status_code=status)
@@ -300,10 +305,10 @@ async def api_save(request, p: str = ""):
 @rt("/api/delete", methods=["DELETE"])
 def api_delete(request, p: str = ""):
     """Delete one real file or directory after the normal root check."""
-    candidate = api.rel_to_abs(p, ROOT)
+    candidate = api.rel_to_abs(p, _root())
     if candidate is None or _resolve(str(candidate), _zones(request)) is None:
         return JSONResponse({"error": "Not found"}, status_code=404)
-    if candidate.resolve() == ROOT.resolve():
+    if candidate.resolve() == _root().resolve():
         return JSONResponse({"error": "Not found"}, status_code=404)
     return api.delete_file(candidate)
 
@@ -334,12 +339,12 @@ def _resource_target(rel: str, zones=None) -> tuple[Path, str, str] | None:
     Returns None when nothing safe is addressed. Every path still goes through
     ``paths.resolve_safe``, and the query never takes part in that decision.
     """
-    zones = zones or paths.symlink_zones(ROOT)
-    split = api.split_vfs(rel, ROOT, lambda p: _resolve(p, zones))
+    zones = zones or paths.symlink_zones(_root())
+    split = api.split_vfs(rel, _root(), lambda p: _resolve(p, zones))
     if split is None:
         return None
     real_rel, vpath = split
-    candidate = api.rel_to_abs(real_rel, ROOT)
+    candidate = api.rel_to_abs(real_rel, _root())
     if candidate is None:
         return None
     target = _resolve(str(candidate), zones)
