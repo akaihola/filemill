@@ -5,6 +5,15 @@ from filemill.providers.vtt_provider import VTTProvider
 
 VALID = """WEBVTT\n\n1\n00:00:01.000 --> 00:00:03.500 align:start\n<v Alice>Hello <c.green>world</c>\nsecond line\n\n00:00:04.000 --> 00:00:05.000\nBye\n"""
 YOUTUBE = """WEBVTT\nKind: captions\nLanguage: en\n\n00:00:00.000 --> 00:00:02.000\nHello from YouTube\n"""
+YOUTUBE_BLANK_PAYLOAD = """WEBVTT\nKind: captions\nLanguage: en\n\n00:00:00.080 --> 00:00:02.470 align:start position:0%\n \nI'm<00:00:00.480><c> going</c> to show you\n\n00:00:02.470 --> 00:00:02.480 align:start position:0%\nI'm going to show you exactly how I'm\n \n"""
+
+
+def test_youtube_vtt_blank_payload_lines_are_preserved(tmp_path: Path):
+    path = tmp_path / "youtube-blank-payload.vtt"
+    path.write_text(YOUTUBE_BLANK_PAYLOAD, newline="")
+    html = VTTProvider().render_preview(path, "", "transcript", 1, 1000)
+    assert "Malformed WebVTT" not in html
+    assert "going to show you" in html
 
 
 def test_youtube_vtt_header_metadata_is_ignored(tmp_path: Path):
