@@ -214,10 +214,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
-- [33] Keep the URL contract, drop the server-side representations: the server sends
-  bytes for `?filemill=raw` and the shell for all else. The client renders the view.
-    - Depends on: [32]
-
 - [*] GET https://gogo.crane-boa.ts.net:8445/favicon.ico
 
     ```
@@ -342,6 +338,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [33] Keep the URL contract, drop the server-side representations: the server sends
+  bytes for `?filemill=raw` and the shell for all else. The client renders the view.
+    - Depends on: [32]
 
 - [35] Decide the fate of the `/w/` named mounts and their CORS middleware: delete them,
   or make CORS opt-in and document it in `SECURITY.md`.
