@@ -20,10 +20,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
       `panFocus` and `slideTail`. Each function is under 25 lines.
 
-- [*] Compute the symlink zone map one time per request in `paths.py`. Delete the three
-  other walks of the root that build the same map.
-    - Depends on: [24]
-
 - [*] Replace `python-fasthtml` with `starlette` and `uvicorn`. The shell becomes one
   string template. Done when `dependencies` has starlette, uvicorn, typer, python-pptx.
     - Depends on: [24]
@@ -74,6 +70,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   the whole file, and `{}` and `[]` icons for objects and arrays.
 
 ## Scheduled
+
+- [*] Compute the symlink zone map one time per request in `paths.py`. Delete the three
+  other walks of the root that build the same map.
+    - Depends on: [24]
 
 - [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=` URLs
   for images, PDF and HTML. Done when `grep -r raw?path server/src` prints nothing.
