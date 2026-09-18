@@ -100,6 +100,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon for
   the whole file, and `{}` and `[]` icons for objects and arrays.
 
+- [*] On mobile, long-pressing a file or directory should open a menu of actions to copy
+  its base name, relative path or absolute path.
+
 ## Scheduled
 
 - [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100 k-entry
@@ -115,7 +118,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
   Today `[text](~/note.md)` is a dead link although the file exists.
 
-- [6] Centralize file-kind classification across filesystem producers and preview/edit consumers. Add one test table per language that both sides share.
+- [6] Centralize file-kind classification across filesystem producers and preview/edit
+  consumers. Add one test table per language that both sides share.
     - Depends on: [19]
 
 - [*] For user testing, document how to run on agent@gogo instances of Filemill that are
@@ -124,10 +128,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   `/home/agent/index.html`. We will separately set up systemd user services for each
   different browser test setup.
 
-
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
 - [*] Each row of a JSONL file must be presented exactly like a hierarchical nested view
   of a JSON file. Depends on [5].
 
@@ -160,11 +164,11 @@ Rules for TASKS.md usage are at the bottom of the file.
   Do red-green testing: first reproduce, then investigate, plan, implement, and test.
   Iterate until fixed.
 
-
 - The `Fullscreen` button in the preview pane doesn't do anything. No errors seen on the
   JavaScript console either.
 
-- [6] Centralize file-kind classification across filesystem producers and preview/edit consumers. Add one test table per language that both sides share.
+- [6] Centralize file-kind classification across filesystem producers and preview/edit
+  consumers. Add one test table per language that both sides share.
     - Depends on: [19]
 
 - [*] `.rst` files still don't render or highlight at all even though task
