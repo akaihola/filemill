@@ -24,9 +24,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.
     - Depends on: [25]
 
-- [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done when
-  `uv run pytest -n auto` passes at the repository root.
-
 - [*] Implement CSV as a browser virtual filesystem in `ui/adapters/vfs-csv.js`, like
   JSONL: one entry per row, a key/value preview per row. No Python. Closes issue #49.
     - Depends on: [26]
@@ -63,6 +60,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   the whole file, and `{}` and `[]` icons for objects and arrays.
 
 ## Scheduled
+
+- [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done when
+  `uv run pytest -n auto` passes at the repository root.
 
 - [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
   `static/FSA-TEST-CHECKLIST.md`.
