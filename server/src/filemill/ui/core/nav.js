@@ -12,7 +12,6 @@ import { colCache, columnFor, render } from "./render.js";
 import { closeSettings } from "./settings.js";
 import {
   finder,
-  folded,
   focusCol,
   path,
   rowIndex,
@@ -44,11 +43,10 @@ function autoPreview(node) {
 
 export async function choose(colIdx, node, keepScroll = false) {
   const seq = ++navSeq;
-  const preserveFolded = keepScroll && folded;
   setState({ path: path.slice(0, colIdx + 1), sel: sel.slice(0, colIdx) });
   sel[colIdx] = node.name;
   setState({ focusCol: colIdx });
-  if (!node.dir) return void render(keepScroll, preserveFolded);
+  if (!node.dir) return void render(keepScroll);
 
   const reading = node.kids === null ? FS.ensureLoaded(node) : null;
   if (reading) {
@@ -57,7 +55,7 @@ export async function choose(colIdx, node, keepScroll = false) {
        measures empty — it would open at the minimum width and jump wider a
        frame later. Most directories arrive well inside the grace; a slower one
        opens on the spinner, which is honest about the wait. */
-    render(keepScroll, preserveFolded);
+    render(keepScroll);
     await Promise.race([
       reading,
       new Promise((r) => setTimeout(r, OPEN_GRACE)),
@@ -65,17 +63,17 @@ export async function choose(colIdx, node, keepScroll = false) {
     if (seq !== navSeq) return; /* selection moved on while it was read */
     if (!node.dir) {
       /* a virtual wrapper declined the file */
-      return void render(keepScroll, preserveFolded);
+      return void render(keepScroll);
     }
   }
   path.push(node);
   autoPreview(node); /* kids already in memory (revisit, fast read) */
-  render(keepScroll, preserveFolded);
+  render(keepScroll);
   if (reading) {
     await reading;
     if (seq !== navSeq || !path.includes(node)) return; /* still up? repaint */
     autoPreview(node); /* kids landed after the grace period */
-    render(keepScroll, preserveFolded);
+    render(keepScroll);
   }
 }
 

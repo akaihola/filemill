@@ -44,7 +44,7 @@ export const foldAll = () => {
   slideTail(1, 0, path.length);
 };
 
-export function layout(keepScroll, preserveFolded = false) {
+export function layout(keepScroll) {
   const stageW = finder.clientWidth;
   setVar(root, "--stage-w", stageW + "px");
   setVar(root, "--preview-w", previewTarget() + "px");
