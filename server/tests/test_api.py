@@ -4,6 +4,7 @@ The contract these tests pin down is the one in `src/filemill/api.py`: every
 request names a path *relative to ROOT*, and nothing may name an absolute one.
 """
 
+import json
 import re
 from pathlib import Path
 
@@ -262,8 +263,16 @@ def test_preview_of_a_missing_file_is_404(client, tmp_root: Path):
 
 def test_ui_root_serves_the_shell(client, tmp_root: Path):
     html = client.get("/n/").text
-    assert '<script src="/ui/entry-server.js" type="module">' in html
-    assert "/ui/adapters/" not in html  # one entry module, no script list
+    scripts = re.findall(r'<script src="([^"]+)" type="module">', html)
+    assert len(scripts) == 1
+    importmap = re.search(r'<script type="importmap">(.*?)</script>', html)
+    assert importmap is not None
+    imports = json.loads(importmap[1])["imports"]
+    assert scripts == [imports["/ui/entry-server.js"]]
+    for path in ("/ui/entry-server.js", "/ui/core/render.js", "/ui/editor/editor.js"):
+        assert imports[path].startswith(path + "?v=")
+        assert client.get(imports[path]).content == client.get(path).content
+    assert re.search(r'href="/ui/core/styles.css\?v=[a-f0-9]+"', html)
 
 
 def test_shell_carries_no_chrome_markup(client, tmp_root: Path):
