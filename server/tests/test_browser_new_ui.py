@@ -474,13 +474,21 @@ def test_saved_plaintext_preview_survives_reopen_and_reload(page):
         "document.querySelector('#pv-content')?.innerText.trim() === 'saved'"
     )
     assert page.inner_text("#pv-content").strip() == "saved"
+    assert page.is_hidden("#pv-modified")
     page.open("notes")
     page.click('.col[data-i="1"] .row:has-text("plain.txt")')
     page.wait_for_selector("#pv-edit")
     assert page.inner_text("#pv-content").strip() == "saved"
+    assert page.is_hidden("#pv-modified")
     page.reload()
     page.wait_for_selector("#pv-edit")
     assert page.inner_text("#pv-content").strip() == "saved"
+    assert page.is_hidden("#pv-modified")
+
+    page.click("#pv-edit")
+    page.wait_for_selector("#pv-editor")
+    assert page.input_value("#pv-editor") == "saved"
+    assert page.is_hidden("#pv-modified")
 
 
 def test_a_long_source_file_is_highlighted_whole(page):
@@ -1106,3 +1114,186 @@ def test_empty_and_malformed_csv_files_keep_safe_raw_fallback(page):
     assert "not yet" not in " ".join(page.errors)
     page.open("bad.csv")
     assert "not yet" not in " ".join(page.errors)
+
+
+def test_editor_features_and_failed_save(page):
+    pg = page
+    pg.open("notes/plain.txt")
+    pg.click("#pv-edit")
+    pg.wait_for_selector("#pv-editor")
+    original = pg.input_value("#pv-editor")
+    assert pg.is_hidden("#pv-modified")
+    pg.fill("#pv-editor", "alpha\nbeta alpha\n")
+    assert pg.is_visible("#pv-modified")
+    assert pg.inner_text("#pv-gutter") == "1\n2\n3"
+    pg.press("#pv-editor", "Control+z")
+    assert pg.input_value("#pv-editor") == original
+    assert pg.is_hidden("#pv-modified")
+    pg.press("#pv-editor", "Control+Shift+z")
+    assert pg.input_value("#pv-editor") == "alpha\nbeta alpha\n"
+    assert pg.is_visible("#pv-modified")
+    pg.press("#pv-editor", "Control+f")
+    pg.fill('input[aria-label="Find in file"]', "alpha")
+    for start in (0, 11, 0):
+        pg.keyboard.press("Enter")
+        assert pg.eval_on_selector("#pv-editor", "e => e.selectionStart") == start
+    pg.fill('input[aria-label="Find in file"]', "absent")
+    pg.press('input[aria-label="Find in file"]', "Enter")
+    assert pg.inner_text(".pv-find output") == "No matches"
+    pg.fill('input[aria-label="Find in file"]', "")
+    pg.press('input[aria-label="Find in file"]', "Enter")
+    assert pg.inner_text(".pv-find output") == ""
+    pg.press('input[aria-label="Find in file"]', "Escape")
+    assert pg.is_hidden(".pv-find")
+    assert pg.evaluate("document.activeElement.id") == "pv-editor"
+    assert pg.input_value("#pv-editor") == "alpha\nbeta alpha\n"
+    pg.evaluate("window.__editorBeforeResize = document.querySelector('#pv-editor')")
+    pg.set_viewport_size({"width": 1100, "height": 700})
+    pg.wait_for_function("finder.clientWidth < 1200")
+    assert pg.evaluate("document.querySelector('#pv-editor') === __editorBeforeResize")
+    assert pg.is_visible("#pv-modified")
+    pg.press("#pv-editor", "Control+z")
+    assert pg.input_value("#pv-editor") == original
+    assert pg.is_hidden("#pv-modified")
+    # A new edit after undo discards the old redo branch.
+    pg.fill("#pv-editor", "new branch")
+    pg.press("#pv-editor", "Control+Shift+z")
+    assert pg.input_value("#pv-editor") == "new branch"
+    pg.fill("#pv-editor", "")
+    assert pg.inner_text("#pv-gutter") == "1"
+    pg.fill("#pv-editor", "line\n" * 100)
+    pg.eval_on_selector("#pv-editor", "e => { e.scrollTop = e.scrollHeight; }")
+    pg.wait_for_function("""() => {
+      const ta = document.querySelector('#pv-editor');
+      return document.querySelector('#pv-gutter').style.transform === `translateY(${-ta.scrollTop}px)`;
+    }""")
+    assert (pg.inner_text("#pv-gutter")).splitlines()[-1] == "101"
+    # A failed port write leaves the editable text and modified mark intact.
+    pg.evaluate("""() => {
+      window.__editorWrite = FS.write;
+      FS.write = async () => { throw new Error('test write denied'); };
+    }""")
+    pg.click("#pv-save")
+    pg.wait_for_function(
+        "document.querySelector('#pv-edit-err').textContent === 'test write denied'"
+    )
+    assert pg.is_visible("#pv-modified")
+    assert not pg.eval_on_selector("#pv-editor", "e => e.readOnly")
+    pg.evaluate("() => { FS.write = window.__editorWrite; }")
+    pg.fill("#pv-editor", original)
+    assert pg.is_hidden("#pv-modified")
+    pg.click("#pv-cancel")
+    pg.wait_for_selector("#pv-edit", state="visible")
+    assert pg.is_hidden("#pv-modified")
+    pg.set_viewport_size({"width": 1500, "height": 900})
+
+
+@pytest.mark.parametrize("fails", [False, True])
+def test_editor_late_write_does_not_touch_next_file(page, fails):
+    page.open("notes/plain.txt")
+    page.click("#pv-edit")
+    page.fill("#pv-editor", "saved asynchronously")
+    page.evaluate("""() => {
+      const write = FS.write;
+      window.__writeCount = 0;
+      FS.write = async (node, text) => {
+        window.__writeCount++;
+        try {
+          await new Promise((resolve, reject) => {
+            window.__finishWrite = fails => fails ? reject(new Error('late failure')) : resolve();
+          });
+          await write(node, text);
+        } finally { window.__writeFinished = true; }
+      };
+    }""")
+    page.click("#pv-save")
+    page.wait_for_function("typeof window.__finishWrite === 'function'")
+    assert page.eval_on_selector("#pv-editor", "e => e.readOnly")
+    assert page.is_disabled("#pv-save")
+    page.press("#pv-editor", "Control+z")
+    assert page.input_value("#pv-editor") == "saved asynchronously"
+    assert page.evaluate("window.__writeCount") == 1
+    page.click('.col[data-i="1"] .row:has-text("short.txt")')
+    page.wait_for_selector("#pv-edit", state="visible")
+    page.click("#pv-edit")
+    page.wait_for_selector("#pv-editor")
+    page.evaluate("fails => window.__finishWrite(fails)", fails)
+    page.wait_for_function("window.__writeFinished === true")
+    assert page.input_value("#pv-editor") == "short"
+    assert page.inner_text("#pv-edit-err") == ""
+    assert page.is_hidden("#pv-modified")
+    page.click('.col[data-i="1"] .row:has-text("plain.txt")')
+    page.wait_for_selector("#pv-edit", state="visible")
+    page.click("#pv-edit")
+    page.wait_for_selector("#pv-editor")
+    assert page.input_value("#pv-editor") == (
+        "hello" if fails else "saved asynchronously"
+    )
+    assert page.is_hidden("#pv-modified")
+    assert not page.errors
+
+
+def test_editor_late_read_does_not_replace_next_editor(page):
+    page.open("notes/plain.txt")
+    page.wait_for_selector("#pv-edit", state="visible")
+    page.evaluate("""() => {
+      const blob = FS.blob;
+      FS.blob = async node => {
+        FS.blob = blob;
+        await new Promise(resolve => { window.__finishRead = resolve; });
+        const result = await blob(node);
+        window.__readFinished = true;
+        return result;
+      };
+    }""")
+    page.click("#pv-edit")
+    page.wait_for_function("typeof window.__finishRead === 'function'")
+    page.click('.col[data-i="1"] .row:has-text("short.txt")')
+    page.wait_for_selector("#pv-edit", state="visible")
+    page.click("#pv-edit")
+    page.wait_for_selector("#pv-editor")
+    page.evaluate("() => { window.__finishRead(); }")
+    page.wait_for_function("window.__readFinished === true")
+    assert page.input_value("#pv-editor") == "short"
+    assert page.is_hidden("#pv-modified")
+    assert not page.errors
+
+
+def test_editor_normalizes_newlines_and_undoes_replacements_and_composition(page):
+    page.open("notes/plain.txt")
+    page.wait_for_selector("#pv-edit", state="visible")
+    page.evaluate("""() => {
+      const blob = FS.blob;
+      FS.blob = async () => {
+        FS.blob = blob;
+        return new Blob(['alpha\\r\\nbeta\\r\\n']);
+      };
+    }""")
+    page.click("#pv-edit")
+    page.wait_for_selector("#pv-editor")
+    assert page.input_value("#pv-editor") == "alpha\nbeta\n"
+    assert page.is_hidden("#pv-modified")
+    page.eval_on_selector("#pv-editor", "e => e.setSelectionRange(0, 5)")
+    page.keyboard.insert_text("replaced")
+    assert page.input_value("#pv-editor") == "replaced\nbeta\n"
+    page.press("#pv-editor", "Control+z")
+    assert page.input_value("#pv-editor") == "alpha\nbeta\n"
+    assert page.eval_on_selector(
+        "#pv-editor", "e => [e.selectionStart, e.selectionEnd]"
+    ) == [0, 5]
+    assert page.is_hidden("#pv-modified")
+    page.eval_on_selector(
+        "#pv-editor",
+        """e => {
+      e.dispatchEvent(new CompositionEvent('compositionstart', {bubbles: true}));
+      for (const text of ['a', 'あ']) {
+        e.setRangeText(text, 0, e.selectionEnd, 'select');
+        e.dispatchEvent(new InputEvent('input', {bubbles: true, isComposing: true}));
+      }
+      e.dispatchEvent(new CompositionEvent('compositionend', {bubbles: true}));
+    }""",
+    )
+    assert page.is_visible("#pv-modified")
+    page.press("#pv-editor", "Control+z")
+    assert page.input_value("#pv-editor") == "alpha\nbeta\n"
+    assert page.is_hidden("#pv-modified")

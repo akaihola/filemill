@@ -1026,7 +1026,7 @@ body {
   color: var(--ink-3);
 }
 /* edit mode — a textarea in the same footprint as .pv-text */
-#pv-edit, .pv-edit-bar button {
+#pv-edit, .pv-edit-bar button, .pv-find button {
   font: inherit;
   font-size: var(--fs-meta);
   color: var(--ink-2);
@@ -1036,25 +1036,60 @@ body {
   background: none;
   cursor: pointer;
 }
-#pv-edit:hover, .pv-edit-bar button:hover {
+#pv-edit:hover, .pv-edit-bar button:hover, .pv-find button:hover {
   background: var(--hover);
 }
 #pv-edit {
   margin-left: auto;
 }
-#pv-editor {
+#pv-modified {
+  color: var(--ink-2);
+  margin-left: 6px;
+}
+.pv-editor-lines {
+  display: flex;
+  height: 46vh;
+  min-height: 160px;
+}
+#pv-editor, #pv-gutter {
   box-sizing: border-box;
-  width: 100%;
-  min-height: 46vh;
-  resize: vertical;
-  font-family: var(--mono);
-  font-size: 11.5px;
-  line-height: 1.55;
+  margin: 0;
+  font: 11.5px/1.55 var(--mono);
+  padding: 12px 14px;
+  color: var(--ink-2);
+  background: var(--hover);
+}
+#pv-editor {
+  border: 1px solid var(--hairline);
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  border-radius: 0 8px 8px 0;
+}
+.pv-gutter-clip {
+  flex: none;
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-right: 0;
+  border-radius: 8px 0 0 8px;
+  background: var(--hover);
+}
+#pv-gutter {
+  text-align: right;
+  user-select: none;
+}
+.pv-find:not([hidden]) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.pv-find input {
+  max-width: 100%;
   color: var(--ink-2);
   background: var(--hover);
   border: 1px solid var(--hairline);
-  border-radius: 8px;
-  padding: 12px 14px;
 }
 .pv-edit-bar {
   display: flex;
