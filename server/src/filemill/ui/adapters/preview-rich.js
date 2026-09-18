@@ -244,8 +244,14 @@ async function rst(text) {
       });
   }
   const py = await pyInstance;
-  py.globals.set("src", text);
-  const html = await py.runPythonAsync(RST_PY);
+  // Each asynchronous preview owns its source, even while another is rendering.
+  const globals = py.toPy({ src: text });
+  let html;
+  try {
+    html = await py.runPythonAsync(RST_PY, { globals });
+  } finally {
+    globals.destroy();
+  }
   /* docutils writes `.. code-block:: x` as <pre class="code x literal-block">
      <code>; hlFences looks for <pre><code class="language-x">, the shape the
      Markdown renderers emit. Same colours for the same fence, either syntax. */
