@@ -314,7 +314,7 @@ def api_delete(request, p: str = ""):
 _RESOURCE_ROUTE = "/{path:path}"
 
 
-def _resource_target(rel: str, zones) -> tuple[Path, str, str] | None:
+def _resource_target(rel: str, zones=None) -> tuple[Path, str, str] | None:
     """Root-relative URL path → (safe absolute path, real part, virtual part).
 
     ``sample.db/users/42`` is one URL naming two things: a file on disk and a key
@@ -324,6 +324,7 @@ def _resource_target(rel: str, zones) -> tuple[Path, str, str] | None:
     Returns None when nothing safe is addressed. Every path still goes through
     ``paths.resolve_safe``, and the query never takes part in that decision.
     """
+    zones = zones or paths.symlink_zones(ROOT)
     split = api.split_vfs(rel, ROOT, lambda p: _resolve(p, zones))
     if split is None:
         return None
