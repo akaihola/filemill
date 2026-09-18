@@ -6,6 +6,10 @@ import html as html_lib
 import json as json_module
 from pathlib import Path
 
+from pygments import highlight as pyg_highlight
+from pygments.formatters import HtmlFormatter as PygHtmlFormatter
+from pygments.lexers import get_lexer_by_name
+
 from filemill.vfs import REGISTRY, VFSEntry
 
 
@@ -41,10 +45,6 @@ class JSONProvider:
 
         # Pygments syntax highlighting for JSON
         try:
-            from pygments import highlight as pyg_highlight
-            from pygments.formatters import HtmlFormatter as PygHtmlFormatter
-            from pygments.lexers import get_lexer_by_name
-
             lexer = get_lexer_by_name("json")
             formatter = PygHtmlFormatter(style="friendly", nowrap=False)
             highlighted = pyg_highlight(pretty, lexer, formatter)
