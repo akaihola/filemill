@@ -32,10 +32,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   comparison in an ADR. Do not start a native toolkit before the ADR exists.
     - Depends on: [30]
 
+## Scheduled
+
 - For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon for
   the whole file, and `{}` and `[]` icons for objects and arrays.
-
-## Scheduled
 
 - Toggling `Source` / `Rendered` reloads the whole page and causes an uncomfortable
   blink and a delay. Just the preview pane should be reloaded, and the URL and history
