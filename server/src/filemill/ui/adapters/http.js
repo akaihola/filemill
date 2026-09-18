@@ -34,6 +34,7 @@ const httpNode = (
   icon,
   ordered = true,
   record = undefined,
+  abs = "",
 ) => ({
   name,
   rel,
@@ -41,6 +42,7 @@ const httpNode = (
   ordered,
   vpath: vpath || "",
   icon: icon || undefined,
+  abs,
   kids: dir ? null : undefined,
   meta: meta || undefined,
   fileKind: classifyFile(name, { dir, vpath }),
@@ -54,7 +56,8 @@ const q = (rel, vpath) =>
 const pageQ = (rel, vpath, page) => `${q(rel, vpath)}&page=${page}`;
 
 export const HTTP = {
-  node: (name, rel) => httpNode(name, rel || "", true),
+  node: (name, rel) => httpNode(name, rel || "", true, undefined, "", undefined, true, undefined,
+    document.documentElement.dataset.absolute || ""),
 
   async ensureLoaded(node) {
     if (!node.dir || node.kids !== null) return;
@@ -82,12 +85,18 @@ export const HTTP = {
               e.icon,
               e.ordered,
               e.record,
+              e.abs,
             )
             : httpNode(
               e.name,
               relOf(node.rel, e.name),
               e.dir,
               e.dir ? undefined : { size: e.size, mod: e.mod },
+              "",
+              "",
+              true,
+              undefined,
+              e.abs,
             )
         );
       } catch (err) {
@@ -126,12 +135,18 @@ export const HTTP = {
             e.icon,
             e.ordered,
             e.record,
+            e.abs,
           )
           : httpNode(
             e.name,
             relOf(node.rel, e.name),
             e.dir,
             e.dir ? undefined : { size: e.size, mod: e.mod },
+            "",
+            "",
+            true,
+            undefined,
+            e.abs,
           )
       );
       node.page = j.page;

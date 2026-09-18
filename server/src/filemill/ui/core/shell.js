@@ -84,6 +84,7 @@ document.body.insertAdjacentHTML(
     </span>
     <span class="status-fold"><kbd>⇧</kbd>+wheel fold</span>
   </div>
+  <div id="row-menu" role="menu" hidden></div>
 </div>
 
 `,

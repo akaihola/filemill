@@ -168,6 +168,7 @@ def _ui_shell(state, base: str, hidden: bool = False):
         lang="en",
         data_density="compact",
         data_root=ROOT.name or "/",
+        data_absolute=ROOT.resolve().as_posix(),
         data_api="/api",
         data_base=base,
         data_filemill=state.view,
