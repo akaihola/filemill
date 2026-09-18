@@ -60,6 +60,14 @@ Rules for TASKS.md usage are at the bottom of the file.
   (`filemill=render`) modes. Use red-green TDD and a strong model to investigate and fix
   this.
 
+- [*] Bug: `[](~/...)` links are rendered incorrectly. For example, the path in
+  `[pykoclaw-acp/backlog/004](~/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md#streaming-restore-plan-buffered-semantic-windows)`
+  is turned into the href
+  `/w/agent/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md#streaming-restore-plan-buffered-semantic-windows`
+  when rendered. It should omit the `/w/agent/` prefix. Task
+  301fd540-e206-4306-b88f-5b3dbe1a15ec attempted but failed in making this link
+  expansion correct.
+
 ## Scheduled
 
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
