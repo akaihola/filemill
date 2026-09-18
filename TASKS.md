@@ -20,10 +20,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
       `panFocus` and `slideTail`. Each function is under 25 lines.
 
-- [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=` URLs
-  for images, PDF and HTML. Done when `grep -r raw?path server/src` prints nothing.
-    - Depends on: [33]
-
 - [24] Reduce `app.py` to routing: move `_resolve_safe` and the symlink map to
   `paths.py` and the PWA routes to `pwa.py`. No imports inside functions.
     - Depends on: [33], [34]
@@ -85,6 +81,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   its base name, relative path or absolute path.
 
 ## Scheduled
+
+- [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=` URLs
+  for images, PDF and HTML. Done when `grep -r raw?path server/src` prints nothing.
+    - Depends on: [33]
 
 - [*] Delete `server/src/filemill/styles.py`. The shell links `/ui/core/styles.css`, and
   no other server route emits HTML. Delete the tests that pin `APP_CSS`.
