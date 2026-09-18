@@ -34,6 +34,16 @@ def test_vtt_malformed_pre_cue_block_is_rejected(tmp_path: Path):
     )
 
 
+def test_vtt_orphan_text_after_cue_is_rejected(tmp_path: Path):
+    path = tmp_path / "bad-after-cue.vtt"
+    path.write_text(
+        "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\ntext\n\norphan\n", newline=""
+    )
+    assert "cue is missing a timestamp" in VTTProvider().render_preview(
+        path, "", "transcript", 1, 1000
+    )
+
+
 def test_vtt_transcript_has_timing_text_tags_and_voice(tmp_path: Path):
     path = tmp_path / "captions.vtt"
     path.write_text(VALID, newline="")

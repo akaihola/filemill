@@ -45,13 +45,11 @@ function vttHTML(source, mode = "transcript") {
       if (
         !seenCue && block.trim() && lines.every((line) => line.includes(":"))
       ) continue;
-      if (seenCue && (cues.length || pendingCue) && block.trim()) {
+      if (pendingCue && block.trim()) {
         const continuation = block.replace(/<[^>]+>/g, "").trim();
         if (continuation) {
-          if (pendingCue) {
-            cues.push([...pendingCue, continuation]);
-            pendingCue = null;
-          } else cues[cues.length - 1][3] += `\n${continuation}`;
+          cues.push([...pendingCue, continuation]);
+          pendingCue = null;
         }
         continue;
       }

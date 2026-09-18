@@ -56,16 +56,12 @@ def parse(text: str) -> list[tuple[str, str, str, str]]:
         if parsed is None and block.strip():
             if not seen_cue and all(":" in line for line in lines):
                 continue
-            if seen_cue and (cues or pending):
+            if pending:
                 continuation = TAG.sub("", block).strip()
                 if continuation:
-                    if pending:
-                        start, end, speaker = pending
-                        cues.append((start, end, speaker, continuation))
-                        pending = None
-                    else:
-                        start, end, speaker, cue_text = cues[-1]
-                        cues[-1] = (start, end, speaker, cue_text + "\n" + continuation)
+                    start, end, speaker = pending
+                    cues.append((start, end, speaker, continuation))
+                    pending = None
                 continue
             raise ValueError("cue is missing a timestamp")
         if parsed:
