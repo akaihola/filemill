@@ -12,6 +12,7 @@ export function classifyFile(name, { dir = false, vpath = "", csv = false,
   const match = String(name || "").toLowerCase().match(/\.([^.]+)$/);
   const ext = match?.[1] || "";
   if (image.test(ext)) return { kind: "file", preview: "image", editable: false };
+  if (ext === "mp4") return { kind: "file", preview: "video", editable: false };
   if (ext === "pdf") return { kind: "file", preview: "pdf", editable: false };
   if (ext === "html" || ext === "htm") {
     return { kind: "file", preview: "html", editable: false };

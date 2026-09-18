@@ -110,7 +110,9 @@ const withRichPreview = (provider) => ({
     PreviewRich.revoke();
   },
   render: (n) =>
-    (!n.vpath && RICH.includes(classifyFile(n.name, n).preview)
+    (!n.vpath && classifyFile(n.name, n).preview === "video"
+      ? PreviewLocal
+      : !n.vpath && RICH.includes(classifyFile(n.name, n).preview)
       ? PreviewRich
       : provider).render(n),
 });
