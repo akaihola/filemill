@@ -74,10 +74,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [28] Grow the editor behind the `FS.write` port: undo, find, a line gutter and a
-  "modified" mark. Each addition is one file in `ui/editor/`.
-    - Depends on: [17]
-
 - [*] Add a preview for `.mp4` files with a `<video controls>` element, as one registry
   entry plus one test.
     - Depends on: [26]
@@ -328,6 +324,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 ## Completed
+
+- [28] Grow the editor behind the `FS.write` port: undo, find, a line gutter and a
+  "modified" mark. Each addition is one file in `ui/editor/`.
+    - Depends on: [17]
 
 - [27] Try reStructuredText rendering in the browser with Pyodide or a WASM tool, behind
   the rich renderer consent switch. Record size and first-load time in an ADR.
