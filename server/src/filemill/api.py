@@ -5,7 +5,6 @@ three small ports; this module fills the two that need a server:
 
     GET  /api/dir?p=<rel>      → {"entries": [{name, dir, size, mod}], "denied"}
     GET  /api/raw?p=<rel>      → the bytes, with a detected media type
-    GET  /api/preview?p=<rel>  → an HTML fragment from ``preview.render_preview``
     POST /api/save?p=<rel>     → overwrite the file with the request body
 
 ``p`` is always **relative to ROOT** — that is the whole point of the new URL

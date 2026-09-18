@@ -18,8 +18,7 @@ the whole mechanism. There is no framework under it.
 |            | **static** (one HTML file)                       | **server** (Python)                                        |
 | ---------- | ------------------------------------------------ | ---------------------------------------------------------- |
 | filesystem | `fsa.js` — File System Access API                | `http.js` — `GET /api/dir`                                 |
-| preview    | `preview-local.js` — the core renderer table     | `preview-http.js` — `GET /api/preview`, rendered by Python |
-|            |                                                  | `preview-rich.js` — Markdown, `.docx` from `ui/vendor/`     |
+| preview    | `preview-local.js` — the core renderer table     | `preview-local.js` + `preview-rich.js` — browser renderers |
 | router     | `router-hash.js` — `#r=root&p=a/b.md`            | `router-path.js` — `/a/b.md`                               |
 | boot       | `app-fsa.js` — picker + welcome screen           | `app-http.js` — root comes from the server                 |
 | extra      | `preview-rich.js` — renderers fetched from a CDN | `preview-rich.js` — local bytes, browser renderer         |

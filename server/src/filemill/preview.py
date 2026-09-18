@@ -1,8 +1,5 @@
-import base64
 import configparser
 import html as html_lib
-import subprocess
-import tempfile
 from pathlib import Path
 from urllib.parse import quote as urlquote
 
@@ -22,7 +19,6 @@ from filemill.vfs import classify_path
 SYNTAX_SIZE_LIMIT = 512 * 1024  # 512 KB
 RAW_SIZE_LIMIT = SYNTAX_SIZE_LIMIT
 MAX_LINE_LENGTH = 10_000
-PPTX_CONVERSION_TIMEOUT = 30
 
 
 def valid_text(data: bytes, reject_wide: bool = True) -> str | None:
@@ -70,8 +66,8 @@ def render_preview(path: Path, state=None, preview_url: str | None = None) -> st
 
     if preview == "rst":
         return _preview_rst(path)
-    elif preview == "pptx":
-        return _preview_pptx(path)
+    elif preview == "desktop":
+        return _preview_desktop(path)
     elif preview == "pdf":
         return _preview_pdf(path, preview_url)
     elif preview == "html":
@@ -176,48 +172,6 @@ def _preview_rst(path: Path) -> str:
         )
         body = title + parts["body"]
         return f'<div class="preview-rst">{body}</div>'
-    except Exception as e:
-        return (
-            f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'
-        )
-
-
-def _preview_pptx(path: Path) -> str:
-    try:
-        with tempfile.TemporaryDirectory() as tmp:
-            output = Path(tmp)
-            subprocess.run(
-                [
-                    "libreoffice",
-                    "--headless",
-                    "--convert-to",
-                    "pdf",
-                    "--outdir",
-                    str(output),
-                    str(path),
-                ],
-                capture_output=True,
-                check=True,
-                timeout=PPTX_CONVERSION_TIMEOUT,
-            )
-            pdf = output / f"{path.stem}.pdf"
-            if not pdf.is_file():
-                raise RuntimeError("LibreOffice produced no PDF")
-            prefix = output / "slide"
-            subprocess.run(
-                ["pdftoppm", "-png", str(pdf), str(prefix)],
-                capture_output=True,
-                check=True,
-                timeout=PPTX_CONVERSION_TIMEOUT,
-            )
-            slides = sorted(output.glob("slide-*.png"))
-            if not slides:
-                raise RuntimeError("PDF produced no slide images")
-            slides_html = [
-                f'<div class="slide"><img src="data:image/png;base64,{base64.b64encode(slide.read_bytes()).decode("ascii")}" alt="Slide {i}"></div>'
-                for i, slide in enumerate(slides, 1)
-            ]
-        return f'<div class="preview-pptx">{"".join(slides_html)}</div>'
     except Exception as e:
         return (
             f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'

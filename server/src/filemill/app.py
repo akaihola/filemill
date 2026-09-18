@@ -3,7 +3,6 @@ import json
 import subprocess
 from html import escape
 from pathlib import Path
-from urllib.parse import quote as urlquote
 
 from starlette.applications import Starlette
 from starlette.concurrency import run_in_threadpool
@@ -17,7 +16,6 @@ from starlette.routing import Route
 
 from filemill import api, paths, pwa, urls
 from filemill.env import env
-from filemill.preview import render_preview, render_source
 
 # HTML file extensions that get a "View as web page" button in the preview
 _HTML_EXTS = {".html", ".htm"}
@@ -270,29 +268,6 @@ def api_raw(request, p: str = ""):
     return api.raw_response(target)
 
 
-@rt("/api/preview")
-def api_preview(request, p: str = "", v: str = "", fmt: str = "", filemill: str = ""):
-    """Render a preview body with the existing Python pipeline.
-
-    ``filemill`` is the view from the page's own URL, forwarded by
-    ui/adapters/preview-http.js. It picks the renderer and nothing else, so
-    ``highlight`` means the same coloured source here as on the embedded page.
-    """
-    target = _api_target(p, _zones(request))
-    if target is None:
-        return HTMLResponse("", status_code=404)
-    if v:
-        return api.vfs_preview(target, v, fmt)
-    if filemill == urls.VIEW_HIGHLIGHT:
-        render = render_source
-    elif target.suffix.lower() == ".vtt":
-        return api.vfs_preview(target, "", fmt)
-    else:
-        raw_url = f"/api/raw?p={urlquote(p, safe='/')}"
-        render = lambda path: render_preview(path, preview_url=raw_url)
-    return api.preview_fragment(target, render)
-
-
 @rt("/api/save", methods=["POST"])
 async def api_save(request, p: str = ""):
     """Overwrite a text file — the preview pane's Edit → Save."""
@@ -453,7 +428,6 @@ def _reorder_routes() -> None:
         UI_BASE + "{path:path}",
         "/api/dir",
         "/api/raw",
-        "/api/preview",
         "/api/save",
     }
     priority, rest, resource_route, static_fallback = [], [], [], []

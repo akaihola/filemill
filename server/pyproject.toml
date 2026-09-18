@@ -8,7 +8,6 @@ dependencies = [
     "uvicorn",
     "pygments",
     "docutils",
-    "python-pptx",
     "typer",
 ]
 
@@ -25,7 +24,7 @@ build-backend = "uv_build"
 # wheel; everything ui/entry-server.js reaches must be in it, because one
 # missing module fails the whole import graph. preview-rich.js renders Markdown
 # and .docx in this edition too, from the pinned modules in ui/vendor/, which
-# therefore ship as well; its only CDN fetch is the .pptx viewer.
+# therefore ship as well for browser-side rich previews.
 # tests/test_browser_new_ui.py::test_nothing_is_fetched_from_a_cdn checks that
 # every other preview stays local.
 # The excluded files remain in the sdist, which is the whole source tree.
