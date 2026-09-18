@@ -67,43 +67,25 @@ def test_web_static_traversal_denied(tmp_path, monkeypatch):
     assert _client(tmp_path).get(f"/w/{tmp_path.name}/../etc/passwd").status_code == 404
 
 
-# ── #38 CORS on /w/ ──────────────────────────────────────────────────────────
+# ── #35 no CORS on /w/ ───────────────────────────────────────────────────────
 
 
-def test_web_static_cors_header_present(tmp_path, monkeypatch):
-    """/w/{mount}/{path} GET response carries Access-Control-Allow-Origin: *."""
+def test_web_static_sends_no_cors_header(tmp_path, monkeypatch):
+    """/w/{mount}/{path} GET serves the file without Access-Control-Allow-Origin."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     (tmp_path / "photo.png").write_bytes(b"\x89PNG\r\n\x1a\n")
     resp = _client(tmp_path).get(f"/w/{tmp_path.name}/photo.png")
     assert resp.status_code == 200
-    assert resp.headers.get("access-control-allow-origin") == "*"
+    assert "access-control-allow-origin" not in resp.headers
 
 
-def test_web_static_cors_methods_header(tmp_path, monkeypatch):
-    """/w/ GET response advertises GET and OPTIONS in Access-Control-Allow-Methods."""
-    monkeypatch.setattr(app_module, "ROOT", tmp_path)
-    (tmp_path / "doc.txt").write_text("hi")
-    resp = _client(tmp_path).get(f"/w/{tmp_path.name}/doc.txt")
-    methods = resp.headers.get("access-control-allow-methods", "")
-    assert "GET" in methods
-    assert "OPTIONS" in methods
-
-
-def test_web_static_options_preflight_200(tmp_path, monkeypatch):
-    """/w/ OPTIONS preflight returns 200 with CORS headers."""
+def test_web_static_options_is_not_a_cors_preflight(tmp_path, monkeypatch):
+    """/w/ OPTIONS gets no CORS headers, so another origin cannot read files."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     (tmp_path / "photo.png").write_bytes(b"\x89PNG\r\n\x1a\n")
     resp = _client(tmp_path).options(f"/w/{tmp_path.name}/photo.png")
-    assert resp.status_code == 200
-    assert resp.headers.get("access-control-allow-origin") == "*"
-
-
-def test_web_static_options_allow_headers(tmp_path, monkeypatch):
-    """/w/ OPTIONS preflight echoes Access-Control-Allow-Headers: *."""
-    monkeypatch.setattr(app_module, "ROOT", tmp_path)
-    (tmp_path / "photo.png").write_bytes(b"\x89PNG\r\n\x1a\n")
-    resp = _client(tmp_path).options(f"/w/{tmp_path.name}/photo.png")
-    assert resp.headers.get("access-control-allow-headers") == "*"
+    assert "access-control-allow-origin" not in resp.headers
+    assert "access-control-allow-methods" not in resp.headers
 
 
 def test_root_serves_index_html_as_is(tmp_path, monkeypatch):
