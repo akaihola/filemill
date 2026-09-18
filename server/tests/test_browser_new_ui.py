@@ -132,7 +132,7 @@ def server(ui_root: Path, tmp_path_factory):
             stderr=fh,
         )
     base = f"http://127.0.0.1:{port}"
-    # Importing FastHTML takes a couple of seconds, and every test in this
+    # Importing the application takes a couple of seconds, and every test in this
     # module pays it in a fresh process — on a loaded machine ten seconds was
     # not enough, which read as a flake.
     deadline = time.monotonic() + 60

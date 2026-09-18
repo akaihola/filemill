@@ -1,24 +1,17 @@
 import json
 import subprocess
+from html import escape
 from pathlib import Path
 from urllib.parse import quote as urlquote
 
-from fasthtml.common import (
-    Body,
-    Head,
-    Html,
-    Link,
-    Meta,
-    Script,
-    Title,
-    fast_app,
-)
+from starlette.applications import Starlette
 from starlette.responses import (
     FileResponse,
     HTMLResponse,
     JSONResponse,
     RedirectResponse,
 )
+from starlette.routing import Route
 
 from filemill import api, paths, pwa, urls
 from filemill.env import env
@@ -30,11 +23,15 @@ _HTML_EXTS = {".html", ".htm"}
 # Overridden by cli.py before serve() is called.
 ROOT: Path = Path(env("ROOT", str(Path.home())))
 
-app, rt = fast_app(
-    hdrs=(),
-    pico=False,
-    live=False,
-)
+app = Starlette()
+
+
+def rt(path: str, methods: list[str] | None = None):
+    def register(endpoint):
+        app.router.routes.append(Route(path, endpoint, methods=methods or ["GET"]))
+        return endpoint
+
+    return register
 
 
 def _resolve(path_str: str, zones=None) -> Path | None:
@@ -158,30 +155,23 @@ def _ui_shell(state, base: str, hidden: bool = False):
     prefix ui/adapters/router-path.js strips — ``/n/`` for the migration mount,
     ``/`` for the resource route, where the path already is the file path.
     """
-    return Html(
-        Head(
-            Title(ROOT.name or "Filemill"),
-            Meta(name="viewport", content="width=device-width, initial-scale=1"),
-            Meta(name="theme-color", content="#0770C9"),
-            Link(rel="manifest", href="/manifest.json"),
-            Link(rel="apple-touch-icon", href="/icons/icon-192.png"),
-            Link(rel="stylesheet", href="/ui/core/styles.css"),
-            Script(src="/ui/vendor/seti-map.js"),
-            Script(_VENDOR_MAP_JS),
-            Script(pwa.SW_REGISTER_JS),
-        ),
-        Body(Script(src=f"/ui/{_UI_ENTRY}", type="module")),
-        lang="en",
-        data_density="compact",
-        data_root=ROOT.name or "/",
-        data_absolute=ROOT.resolve().as_posix(),
-        data_api="/api",
-        data_base=base,
-        data_filemill=state.view,
-        data_layout=state.layout,
-        **({"data_commit": _COMMIT} if _COMMIT else {}),
-        **({"data_hidden": "show"} if hidden else {}),
-    )
+    attrs = {"lang": "en", "data-density": "compact", "data-root": ROOT.name or "/",
+             "data-absolute": ROOT.resolve().as_posix(), "data-api": "/api",
+             "data-base": base, "data-filemill": state.view, "data-layout": state.layout}
+    if _COMMIT:
+        attrs["data-commit"] = _COMMIT
+    if hidden:
+        attrs["data-hidden"] = "show"
+    attr_text = " ".join(f'{key}="{escape(str(value), quote=True)}"' for key, value in attrs.items())
+    title = escape(ROOT.name or "Filemill")
+    return HTMLResponse(f'''<!doctype html>
+<html {attr_text}><head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0770C9">
+<link rel="manifest" href="/manifest.json"><link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="stylesheet" href="/ui/core/styles.css"><script src="/ui/vendor/seti-map.js"></script>
+<script>{_VENDOR_MAP_JS}</script><script>{pwa.SW_REGISTER_JS}</script><title>{title}</title>
+</head><body><script src="/ui/{_UI_ENTRY}" type="module"></script></body></html>''')
 
 
 @rt(UI_BASE)
@@ -409,10 +399,8 @@ rt("/icons/{name}")(pwa.icon)
 
 
 # ── Route priority fix ────────────────────────────────────────────────────────
-# FastHTML registers a catch-all /{fname:path}.{ext:static} at index 0 that
-# intercepts any path with a known static extension (including .html, .txt, …)
-# and serves it from the *working directory*. Move /w/ in front of it so
-# it is matched first.
+# A catch-all route for known static extensions would intercept resource paths
+# and serve them from the working directory. Keep the explicit routes first.
 #
 # The root-relative resource route is a catch-all too, so ordering decides the
 # whole contract and is stated in one place rather than left to registration
@@ -421,7 +409,7 @@ rt("/icons/{name}")(pwa.icon)
 #   1. the named prefixes below            /w/, /api/, /n/, PWA files
 #   2. every other explicitly named route  /, …
 #   3. /{path:path}                        the file's own path under ROOT
-#   4. FastHTML's /{fname:path}.{ext:static}
+#   4. any static fallback
 #
 # Band 3 answers before band 4, so a request for /notes/todo.txt now serves
 # ROOT/notes/todo.txt rather than ./notes/todo.txt from the working directory.
