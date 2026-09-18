@@ -7,8 +7,7 @@ a poor trade for a nicer prefix, so ``FILEMILL_ROOT`` wins and
 names.
 
 Its own module because ``cli.py`` needs it at import time — a Typer option
-default is evaluated then — and importing ``app`` that early would drag in
-FastHTML for the sake of one string.
+default is evaluated then — without importing the application.
 """
 
 from __future__ import annotations
