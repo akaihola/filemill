@@ -208,6 +208,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In progress
 
+- [*] On portrait mobile, some `.md` files wrap at screen width, others run wider than
+  the screen width. For example, in the filemill repository, `README.md` and
+  `CHANGELOG.md`, `SECURITY.md`, and `TASKS.md` wrap at screen width, but
+  `CONTRIBUTING.md` runs wider. All `.md` files should wrap at screen width on
+  portrait mobile.
+
+
 - [*] GET https://gogo.crane-boa.ts.net:8445/favicon.ico
 
     ```
