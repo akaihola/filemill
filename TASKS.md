@@ -73,10 +73,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon for
   the whole file, and `{}` and `[]` icons for objects and arrays.
 
+## Scheduled
+
 - [*] On mobile, long-pressing a file or directory should open a menu of actions to copy
   its base name, relative path or absolute path.
-
-## Scheduled
 
 - [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=` URLs
   for images, PDF and HTML. Done when `grep -r raw?path server/src` prints nothing.
