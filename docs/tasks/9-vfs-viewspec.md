@@ -31,3 +31,5 @@ idea as speculative. Do not start it without the stated trigger.
 
 `server/src/filemill/{vfs.py,api.py,app.py,columns.py}`, provider modules, and
 VFS route/protocol tests.
+
+[34]: 34-sqlite-json-only.md

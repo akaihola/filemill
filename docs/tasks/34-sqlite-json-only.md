@@ -49,3 +49,5 @@ them with the same hierarchical view it uses for JSON files. Roadmap phase
 
 `providers/sqlite.py`, `vfs.py`, `api.py`, `styles.py`, `ui/adapters/http.js`,
 `ui/adapters/vfs-json.js`, tests.
+
+[9]: 9-vfs-viewspec.md

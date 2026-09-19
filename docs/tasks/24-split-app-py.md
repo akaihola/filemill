@@ -36,3 +36,6 @@ step 5.
 `server/src/filemill/`: `app.py`, `paths.py`, `pwa.py`, `cli.py`,
 `preview.py`, `providers/json_provider.py`, and the server tests that import
 the moved names.
+
+[33]: 33-shell-for-every-representation.md
+[34]: 34-sqlite-json-only.md
