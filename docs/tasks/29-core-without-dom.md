@@ -121,3 +121,21 @@ navigation and layout decisions can be tested without a browser.
    restored. Existing history failures listed above are not fixed by this change.
 6. Repeat the folder, keyboard, folding and sort checks in the static edition
    after granting a test folder through its folder picker.
+
+## Deployment
+
+Merged into main with `--no-ff` in `ac44066`. Both worktrees were clean after
+the merge. Issue [29] moved unchanged to Completed; removing its block from
+the before/after tracker leaves identical text. The four pre-existing
+duplicates recorded above remain unchanged.
+
+Restarted `filemill.service` and `filemill-public.service`; both are active.
+The development server, public origin and https://filemill.vempai.men/ serve
+the merged shell and all nine checked model, renderer and entry assets.
+Live Chromium checks passed on all three endpoints for keyboard navigation,
+text preview, shared model identity, deep-link state and selection after
+resize, using synthetic files without changing served data. The first
+Python HTTP request received 403 from the public endpoint; curl asset checks
+and Chromium both succeeded.
+
+The focused checks and baseline suite limitations remain as recorded above.
