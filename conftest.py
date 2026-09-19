@@ -49,6 +49,7 @@ def tmp_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     (tmp_path / ".hidden").write_text("hidden")
     (tmp_path / "link.desktop").write_text("[Desktop Entry]\nType=Link\nURL=https://example.com\nName=Example\n")
     (tmp_path / "image.png").write_bytes(b"\x89PNG\r\n")
+    (tmp_path / "image.jpg").write_bytes(b"\xff\xd8\xff")
     (tmp_path / "doc.pdf").write_bytes(b"%PDF-1.4")
     monkeypatch.setattr(app_module.app.state, "root", tmp_path)
     yield tmp_path
