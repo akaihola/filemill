@@ -9,10 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [29] Make `ui/core/` a model package with no DOM: nodes, selection, folding
-  arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
-    - Depends on: [21]
-
 - [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
     - Depends on: [29]
@@ -52,6 +48,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [40] Return preview focus to the containing folder and selected file.
 
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
+
 
 - [38] Fix PPTX previews that show unspaced slide text in both modes.
 
