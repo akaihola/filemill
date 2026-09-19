@@ -36,9 +36,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   column, especially not below the folding transition width range.
 
 ## Scheduled
-- [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
-  `No inline preview for this file type.` is displayed instead of the image.
-
 - [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
 - [40] Return preview focus to the containing folder and selected file.
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
