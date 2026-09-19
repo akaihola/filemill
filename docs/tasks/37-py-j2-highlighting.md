@@ -1,5 +1,11 @@
 # `.py.j2` highlighting
 
+## Original request
+
+`.py.j2` are templates for Python files that are rendered by Jinja2. Does our
+highlighting library support syntax highlighting for such hybrid files? If so,
+implement that. If not, consider alternatives and write a report.
+
 ## Finding
 
 Filemill does not currently support hybrid `.py.j2` highlighting.
