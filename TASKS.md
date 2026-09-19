@@ -17,12 +17,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   comparison in an ADR. Do not start a native toolkit before the ADR exists.
     - Depends on: [30]
 
-- [*] Arrow Down to focus the next folder sometimes half-folds the column, dims the
-  text, and shows a semi-transparent vertical folder name on top of the contents. The
-  same doesn't happen when navigating by clicking the next folder using the mouse
-  instead. Ensure navigating up/down using the keyboard never resizes the focused
-  column, especially not below the folding transition width range.
-
 ## Scheduled
 - [*] Feature: Clicking on a content search result now opens the raw file. Open the
   rendered file in the UI preview pane instead.
@@ -30,6 +24,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Bug: Arrow Right into the preview pane works inconasistently. Sometimes it focuses
   the preview pane without changing the layout. Sometimes it hides the folder columns
   and stretches the preview pane to full width.
+
+- [*] Arrow Down to focus the next folder sometimes half-folds the column, dims the
+  text, and shows a semi-transparent vertical folder name on top of the contents. The
+  same doesn't happen when navigating by clicking the next folder using the mouse
+  instead. Ensure navigating up/down using the keyboard never resizes the focused
+  column, especially not below the folding transition width range.
 
 - [29] Make `ui/core/` a model package with no DOM: nodes, selection, folding
   arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
