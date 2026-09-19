@@ -250,26 +250,6 @@ def vfs_dir_json(target: Path, vpath: str, page: int = 1) -> JSONResponse:
     )
 
 
-def vfs_preview(target: Path, vpath: str, fmt: str = "") -> Response:
-    """Render the preview for one virtual entry."""
-    provider = REGISTRY.get(target)
-    render = getattr(provider, "render_preview", None)
-    default_fmt = getattr(provider, "default_fmt", None)
-    if render is None or default_fmt is None:
-        return HTMLResponse("", status_code=404)
-    try:
-        return HTMLResponse(
-            render(target, vpath, fmt or default_fmt(vpath), page=1, limit=1000),
-            headers={"Cache-Control": "no-store"},
-        )
-    except Exception as exc:
-        return HTMLResponse(
-            f'<div class="preview-error">Preview error: '
-            f"{html_lib.escape(str(exc))}</div>",
-            headers={"Cache-Control": "no-store"},
-        )
-
-
 def split_vfs(rel: str, root: Path, resolve) -> tuple[str, str] | None:
     """Split a root-relative path into its real part and its virtual remainder.
 
