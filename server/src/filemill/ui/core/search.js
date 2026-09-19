@@ -3,6 +3,7 @@ import { focusCol } from "./model/state.js";
 import { currentPath } from "./model/deeplink.js";
 import { applyPath } from "./deeplink.js";
 import { ROUTER } from "./ports.js";
+import { resetPreviewModes } from "./render.js";
 
 const searchForm = document.getElementById("search-form");
 const searchInput = document.getElementById("search-bar");
@@ -56,6 +57,7 @@ async function runSearch() {
       };
       button.onclick = async () => {
         const names = button.dataset.path.split("/");
+        resetPreviewModes();
         document.documentElement.dataset.filemill = "render";
         ROUTER.write({ path: names, view: "render" }, false);
         showSearch("");

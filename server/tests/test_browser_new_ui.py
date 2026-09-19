@@ -442,6 +442,24 @@ def test_content_search_opens_a_matching_file(page, start, activation):
     assert page.request.get(f"{page.base}{raw_action}").body() == raw.body()
 
 
+@pytest.mark.parametrize(
+    "filename,query,raw_button,rendered",
+    [
+        ("notes/deep/leaf.md", "Leaf", "#pv-md-raw", "#preview .pv-rich h1"),
+        ("captions.vtt", "Hello", "#pv-vtt-raw", ".preview-transcript .preview-cue"),
+    ],
+)
+def test_content_search_resets_raw_preview_mode(
+    page, filename, query, raw_button, rendered
+):
+    page.open_resource(f"{filename}?filemill=render")
+    page.click(raw_button)
+    page.fill("#search-bar", query)
+    page.locator(f'.search-result[data-path="{filename}"]').first.press("Space")
+    page.wait_for_selector(rendered, timeout=15000)
+    assert page.locator(raw_button).get_attribute("aria-pressed") == "false"
+
+
 def test_fenced_code_is_highlighted_in_the_browser(page):
     """The fence arrives as <pre><code class="language-python"> from Python and
     core/syntax.js colours it — the same classes as a source file, in both
