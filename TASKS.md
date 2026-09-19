@@ -47,6 +47,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
+- [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
+  `No inline preview for this file type.` is displayed instead of the image.
+
 - [64] Keep subfolder and folded parent widths stable during Up/Down navigation.
 
 - [40] Return preview focus to the containing folder and selected file.
