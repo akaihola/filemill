@@ -21,43 +21,20 @@ Rules for TASKS.md usage are at the bottom of the file.
   comparison in an ADR. Do not start a native toolkit before the ADR exists.
     - Depends on: [30]
 
-- [*] Bug: PPTX preview only shows the text found on the slides, and omits spaces and
-  linefeeds between blocks of text. The preview looks identical in both `Source` and
-  `Rendered` views. Task c6f1a55d-3d5d-4259-823f-34ad83f18ef3 failed to implement proper
-  PPTX preview. This issue is probably complicated, so let's get help from a strong
-  language model and deep online research.
+- [38] Fix PPTX previews that show unspaced slide text in both modes.
 
-- [*] Bug: Back and Forward navigation doesn't work correctly. Fix browser history
-  management so that navigating back and forward works as expected when moving between
-  folders and files and raw files. Also make sure `Alt`+`ArrowLeft`/`ArrowRight` works
-  as expected.
+- [39] Fix Back/Forward navigation across folders, previews and raw files.
 
-- [*] Bug: Task bf3498e4-4824-4c34-b7f4-25f7efe8fef7 fixed the `ArrowLeft` navigation
-  out from the preview pane incorrectly. Focus now moves to the parent folder of the
-  containing folder of the previewed file. Instead, the containing folder column should
-  be focused with the previewed file highlighted.
+- [40] Return preview focus to the containing folder and selected file.
 
-- [*] Bug: Task c37c152d-177e-44f1-a643-9ab96d37b75a failed to implement
-  reStructuredText rendering. In the preview pane, `.rst` files appear as identical
-  plain unhighlighted text both in `Source` (`?filemill=highlight`) and `Rendered`
-  (`filemill=render`) modes. Use red-green TDD and a strong model to investigate and fix
-  this.
+- [41] Fix plain-text reStructuredText previews in Source and Rendered modes.
 
-- [*] Bug: `[](~/...)` links are rendered incorrectly. For example, the path in
-  `[pykoclaw-acp/backlog/004](~/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md#streaming-restore-plan-buffered-semantic-windows)`
-  is turned into the href
-  `/w/agent/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md#streaming-restore-plan-buffered-semantic-windows`
-  when rendered. It should omit the `/w/agent/` prefix. Task
-  301fd540-e206-4306-b88f-5b3dbe1a15ec attempted but failed in making this link
-  expansion correct.
+- [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
 
 - [*] Feature: Clicking on a content search result now opens the raw file. Open the
   rendered file in the UI preview pane instead.
 
-- [*] Moving up and down in a folder column using the arrow keys still often causes the
-  subfolder column to the right to change its width. A bit more seldom but regularly
-  does the folded width of the parent column change. Let's still aim for complete
-  stability like described in task 3cf8ab6d-f2b0-4438-bfe1-58870f487bec.
+- [64] Keep subfolder and folded parent widths stable during Up/Down navigation.
 
 ## Scheduled
 
@@ -74,9 +51,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
   `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
 
-- [*] The server browser suites show 11 failures on the branch, but a run against a clean
-  main checkout produced exactly the same 11: two legacy-htmx tests that main
-  deliberately disabled, and nine mobile restore-scroll tests.
+- [43] Investigate the 11 server browser failures also reproduced on main.
 
 - [*] Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
   what it means.
@@ -122,11 +97,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [6] Centralize file-kind classification across filesystem producers and preview/edit
   consumers. Add one test table per language that both sides share.
 
-- [*] For user testing, document how to run on agent@gogo instances of Filemill that are
-  as close as possible to the browser test setup you have in the test suite. Put each
-  different browser test setup in its own HTTP port, and link them in
-  `/home/agent/index.html`. We will separately set up systemd user services for each
-  different browser test setup.
+- [44] Document demo instances matching each browser test setup.
 
 - [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
   `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
@@ -152,7 +123,8 @@ Rules for TASKS.md usage are at the bottom of the file.
     - Depends on: [26]
 
 - [*] Implement CSV as a browser virtual filesystem in `ui/adapters/vfs-csv.js`, like
-  JSONL: one entry per row, a key/value preview per row. No Python. Closes issue #49.
+  JSONL: one entry per row, a key/value preview per row. No Python.
+  Closes legacy server issue #49.
     - Depends on: [26]
 
 - [*] Compute the symlink zone map one time per request in `paths.py`. Delete the three
@@ -180,14 +152,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Each row of a JSONL file must be presented exactly like a hierarchical nested view
   of a JSON file.
 
-- [*] When an object or list is selected in a hierarchical nested view of JSON, show the
-  child nodes in the column to the right, and a foldable highlighted and pretty-printed
-  JSON preview of the selected item in the second column to the right.
+- [45] Show JSON children beside a foldable preview of the selected value.
 
-- [*] In keyboard navigation, parent folder columns currently unfold when selecting the next
-  item using the down arrow. Strangely, this doesn't happen when using the up arrow. I
-  haven't been able to understand what's special about the folders that cause this
-  behavior.
+- [46] Fix ancestor columns unfolding during down-arrow navigation.
 
 - [*] Keyboard navigation using arrows still doesn't animate folding/unfolding/resizing of
   columns. Do systematic debugging to identify the cause, and fix it.
@@ -195,49 +162,30 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [7] Make entry ordering an adapter-owned contract.
     - Depends on: [6]
 
-- [*] Navigating with the right arrow key to the preview area must fold all folder columns
-  to maximize the preview area width. A left arrow should return to the parent folder of
-  the reviewed document and unfold that folder column (but no ancestor folder columns).
+- [47] Fold folder columns on preview entry and restore the containing column on exit.
 
-- [*] Task 04ce9574-92c8-4a4c-8148-32d2e827c13d didn't fix the erratic folding/unfolding of
-  the parent column. Hard rule: Up/down navigation must never change folding state of
-  ancestor folder columns.
+- [48] Keep ancestor folding unchanged during Up/Down navigation.
 
 - [*] Add a PWA manifest and service worker to the static bundle so `static/index.html`
   installs as a standalone window. The server edition already serves `/manifest.json`.
 
-- [*] Task e02c3b0b-21a0-4be0-bcdd-bce0d99206f4 didn't fix file content search. It
-  either returns `Search error: search result too large` or `No matches`. Make sure
-  search only covers the current focused directory and its subdirectories recursively.
-  Do red-green testing: first reproduce, then investigate, plan, implement, and test.
-  Iterate until fixed.
+- [49] Fix content search errors and restrict search to the focused directory tree.
 
 - [*] The `Fullscreen` button in the preview pane doesn't do anything. No errors seen on the
   JavaScript console either.
 
-- [*] `.rst` files still don't render or highlight at all even though task
-  63b87ad4-33c9-4f45-ae24-280034e8b0eb claims to have implemented and tested it. Do
-  red-green testing, investigate, and fix.
+- [50] Fix missing reStructuredText rendering and highlighting after the initial
+  implementation.
 
-- [*] Opening `https://gogo.crane-boa.ts.net:8445/<any path>` without query parameters
-  redirects to `https://gogo.crane-boa.ts.net:8445/` and spins `Reading...` for a very
-  long time (if not forever). It should instead return files raw with the correct
-  content type.
+- [51] Return raw file bytes for URLs without query parameters.
 
-- [*] Bug: after focusing the preview pane using the arrow right key, the arrow left key
-  doesn't return back and focus the parent column. Instead, it scrolls the page
-  horizontally to the left. Make sure the arrow left key returns to the parent column
-  after focusing the preview pane.
+- [52] Return focus to the parent column when leaving the preview with ArrowLeft.
 
 - [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
   identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
 
-- [*] Bug: Markdown preview doesn't fill and wrap paragraphs at the width of the
-  preview, but keeps linefeeds. Consecutive lines of text must be considered as a single
-  paragraph. If this can't be changed by configuring the Markdown renderer currently in
-  use, consider alternative renderers, check whether they support the other features
-  currently supported (e.g. checkboxes and wikilinks). Tradeoffs must be discussed with
-  the maintainer before implementing.
+- [53] Let Markdown paragraphs wrap to the preview width instead of preserving
+  linefeeds.
 
 - [*] Typing a right arrow when the rightmost column before the preview is focused
   should focus the preview and let the user scroll it up/down using the arrow and
@@ -247,22 +195,9 @@ Rules for TASKS.md usage are at the bottom of the file.
       `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in
       `server/src/filemill/styles.py`.
 
-- [*] On portrait mobile, some `.md` files wrap at screen width, others run wider than
-  the screen width. For example, in the filemill repository, `README.md` and
-  `CHANGELOG.md`, `SECURITY.md`, and `TASKS.md` wrap at screen width, but
-  `CONTRIBUTING.md` runs wider. All `.md` files should wrap at screen width on portrait
-  mobile.
+- [54] Keep all Markdown previews within the portrait screen width.
 
-- [*] GET https://gogo.crane-boa.ts.net:8445/favicon.ico
-
-    ```
-    [HTTP/2 404  6ms]
-    Uncaught (in promise) TypeError: renderPage is not a function
-        applyPath https://gogo.crane-boa.ts.net:8445/ui/core/deeplink.js:123
-        mountServer https://gogo.crane-boa.ts.net:8445/ui/adapters/app-http.js:117
-        async* https://gogo.crane-boa.ts.net:8445/ui/adapters/app-http.js:201
-    deeplink.js:123:5
-    ```
+- [55] Fix the favicon 404 and `renderPage is not a function` error.
 
 - [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into `withVirtual`,
   and `withJsonlPreview` and `withJsonPreview` into `withVirtualPreview`.
@@ -288,56 +223,33 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Delete `server/.pi/settings.json`, `server/mobile-narrow-preview.png`,
   `server/.claude/commands/` and `architecture-review-20260904.html`.
 
-- [*] Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
-  between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
-  viewing the source with syntax highlighting.
+- [56] Add a Rendered / highlighted Source toggle beside Raw and Fullscreen.
 
 - [*] Add `.pre-commit-config.yaml` with ruff, ruff-format, mypy, deno fmt, deno lint
   and `static/build-index.py --check`. Run `pre-commit run --all-files` until it passes.
 
-- [*] Bug: Task 511f90cc-2725-4ef1-a8d8-ed67c4eddb0f failed to fix the portrait mobile
-  scroll to the right problem. I suspect the extra space at the right side of the page
-  is caused by the `⇧+wheel fold` label flowing outside the right edge of the page.
+- [57] Fix portrait horizontal overflow potentially caused by the fold hint.
 
 - [*] Feature: ability to delete a file or a directory from the file manager.
 
 - [*] Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight`
   view.
 
-- [*] Bug: After navigating from a directory url without query parameters (e.g.
-  `/path/to/dir`) to a file (e.g. `file1.md`), and then another file (e.g. `file2.md`),
-  and then opening file2 using the `Raw` button, and navigating back using the browser's
-  back button, in some situations the file manager view isn't displayed. Instead, the
-  raw view of file1 is shown. Navigating to files needs to always include the
-  `?filemill=render` or `?filemill=highlight` query parameter (whichever mode was last
-  active) to prevent this behavior.
+- [58] Preserve preview mode in file URLs so Back from Raw restores the finder.
 
-- [*] Bug: For `.vtt` files from YouTube, this error is always displayed instead of the
-  content: `Malformed WebVTT: cue is missing a timestamp`. You may test using `.vtt`
-  files found on the filesystem.
+- [59] Fix the missing-timestamp error for YouTube WebVTT files.
 
 - [*] In an installed PWA, there is no way to get back from raw file view to the file
   manager view.
 
-- [*] Using the `Search file contents` input always causes the error
-  `Search error: Search timed out` to display. JavaScript console:
-  `XHR GET https://gogo.crane-boa.ts.net:8445/api/search?q=development [HTTP/2 503  2020ms]`.
-  Originally implemented in task 456736f9-7242-40d0-894d-d5e1db50c0de.
+- [60] Fix content searches failing with `Search timed out`.
 
-- [*] In the CSV hierarchical preview, there are two problems. The first column is
-  always selected as the key. Instead, a unique column should be selected similar to how
-  it's done in JSON. Also, currently if the first column is not unique, all identical
-  values are selected together. This should be fixed for the case when no unique column
-  is available. Original implementation in task 8038a32c-570b-45ed-b3ca-5834b3b8dc18.
+- [61] Choose unique CSV row keys and keep duplicate values independently selectable.
 
-- [37] `.py.j2` are templates for Python files that are rendered by Jinja2. Does our
-  highlighting library support syntax highlighting for such hybrid files? If so,
-  implement that. If not, consider alternatives and write a report.
+- [37] Evaluate hybrid Python/Jinja highlighting and report supported alternatives.
 
-- [*] On portrait mobile, a horizontal left swipe now eventually shows the preview which
-  fills the screen. Good. But an additional left swipe on the screen-filling preview
-  scrolls the entire page about 1/12th width and leaves an empty margin at the right
-  edge.
+- [62] Prevent further left swipes from exposing a margin beside a fullscreen portrait
+  preview.
 
 - [*] Add `deno fmt` and `deno lint` for `ui/` (one pinned binary, no Node project).
   Format `ui/` one time and commit the result as its own commit.
@@ -345,17 +257,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Add `ruff` and `mypy` to the `dev` group in `server/pyproject.toml`. Add
   `[tool.ruff]` with `line-length = 88`. Fix all findings. Run `ruff format`.
 
-- [*] In the preview pane top bar, add buttons for viewing the raw file
-  (`/path/to/file.ext` without query parameters), toggling highlighted source vs
-  rendered preview (for file types in which applicable), and toggling fullscreen mode
-  (hide `div#bar` and `div#status` and filling `div#strip` with only the `div#preview`
-  without borders and padding).
+- [63] Add Raw, Source / Rendered and Fullscreen controls to the preview toolbar.
 
 - [12] Make `static/test-ui.py` run to its end, then fix the three checks that fail: the
   `.pv-content` timeout and the two "edit starts at the top" checks.
-
-- [*] Markdown preview now preserves line breaks. It should instead let the browser handle
-  line breaks and consider a multi-line Markdown paragraph as a single line.
 
 - [*] In `ui/core/state.js`, replace `node.jsonl ? kids : sortKids(kids)` with a
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
@@ -389,8 +294,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [34] Make the SQLite provider return JSON only. The client renders tables and rows
   with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close [9].
 
-- [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an unverified
-  architecture proposal, conditional on a fourth provider or a pagination bug.
+- [9] Close the conditional `ViewSpec` proposal: [34] removed the six-argument interface.
 
 - [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both editions
   fill it from the same core list plus their own adapters.
@@ -430,7 +334,34 @@ Rules for TASKS.md usage are at the bottom of the file.
 [34]: docs/tasks/34-sqlite-json-only.md
 [35]: docs/tasks/35-decide-web-mounts.md
 [36]: docs/tasks/36-pwa-start-server.md
-[37]: docs/tasks/py-j2-highlighting.md
+[37]: docs/tasks/37-py-j2-highlighting.md
+[38]: docs/tasks/38-pptx-rendered-preview.md
+[39]: docs/tasks/39-browser-history-navigation.md
+[40]: docs/tasks/40-preview-return-containing-folder.md
+[41]: docs/tasks/41-rst-rendering-regression.md
+[42]: docs/tasks/42-tilde-link-mount-prefix.md
+[43]: docs/tasks/43-server-browser-baseline-failures.md
+[44]: docs/tasks/44-browser-test-demo-instances.md
+[45]: docs/tasks/45-json-selected-value-preview.md
+[46]: docs/tasks/46-down-arrow-ancestor-unfolding.md
+[47]: docs/tasks/47-preview-focus-folding.md
+[48]: docs/tasks/48-preserve-ancestor-fold-state.md
+[49]: docs/tasks/49-content-search-scope.md
+[50]: docs/tasks/50-rst-rendering-first-regression.md
+[51]: docs/tasks/51-raw-url-redirect.md
+[52]: docs/tasks/52-preview-left-arrow-focus.md
+[53]: docs/tasks/53-markdown-paragraph-wrapping.md
+[54]: docs/tasks/54-portrait-markdown-width.md
+[55]: docs/tasks/55-favicon-deeplink-error.md
+[56]: docs/tasks/56-rendered-source-toggle.md
+[57]: docs/tasks/57-portrait-fold-hint-overflow.md
+[58]: docs/tasks/58-raw-history-preview-mode.md
+[59]: docs/tasks/59-youtube-webvtt-timestamps.md
+[60]: docs/tasks/60-content-search-timeout.md
+[61]: docs/tasks/61-csv-unique-row-keys.md
+[62]: docs/tasks/62-portrait-preview-swipe-overflow.md
+[63]: docs/tasks/63-preview-toolbar-controls.md
+[64]: docs/tasks/64-column-width-stability.md
 [*]: TASKS.md
 
 ---
@@ -445,9 +376,14 @@ Here are the rules for TASKS.md usage:
     - a numbered reference-style link (e.g. `[1]`) to a description file, or
     - `[*]` to indicate no description file is needed for a simple task.
 - Link references are listed between `## Completed` and `## Rules`.
-- If any issue is missing a link:
-    - Create the first missing numbered description file in
-      docs/tasks/<N-issue-description>.md and add the link
+- Keep summaries concise. Move detailed requirements, rationale, examples and
+  acceptance criteria into `docs/tasks/N-issue-description.md`; preserve simple
+  tasks inline. Reuse an existing description for the same issue.
+- For a new description, use the first unused number, checking both this file and
+  description filenames in Git history. Do not reuse numbers of accepted issues.
+- The section in this file records status. Completed descriptions retain historical
+  requirements, paths and validation results; they are not current implementation
+  instructions. Date later corrections and distinguish regressions from earlier work.
 - Any completed tasks which haven't yet been moved from `## In Progress` to
   `## Completed` should be moved there.
 - Any in progress tasks which haven't yet been moved from `## Ordered backlog` or
@@ -480,7 +416,7 @@ Here are the rules for TASKS.md usage:
 
 2. Work on the issue (typically by a task workflow)
 
-- Move the issue under `## In progress` in `TASKS.md` in the worktree branch, ensure
+- Move the issue under `## In Progress` in `TASKS.md` in the worktree branch, ensure
   it's not in `## Ordered backlog`, and commit.
 - Create or update, review and refine a plan in docs/tasks/<N-issue-description>.md in
   `main` if more description is needed than nicely fits in a bullet point. If you
@@ -494,5 +430,5 @@ Here are the rules for TASKS.md usage:
 3. Merge and deploy (typically by last steps of a task workflow)
 
 - Merge the rebased branch on `main`, and remove the worktree and branch.
-- Move the issue from `## In progress` to `## Completed` in TASKS.md and commit.
+- Move the issue from `## In Progress` to `## Completed` in TASKS.md and commit.
 - Do any deployment steps if defined in the general development worklow.

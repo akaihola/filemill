@@ -4,6 +4,16 @@ depends-on: []
 
 # Correct the stale claims in the documents
 
+## Historical scope
+
+The file list below records the original review targets. `server/TASKS.md` and
+`server/ISSUES.md` have since been removed. The current tracker is
+[TASKS.md](../../TASKS.md); both the [root contribution guide](../../CONTRIBUTING.md)
+and [server contribution guide](../../server/CONTRIBUTING.md) still exist.
+The accepted task 2 description was
+removed by `32a5a6c`; retrieve it with
+`git show 32a5a6c^:docs/tasks/2-fix-all-test-failures.md`.
+
 ## Goal
 
 Every document describes the code as it is. `docs/ARCHITECTURE-REVIEW.md`,
