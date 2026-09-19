@@ -1123,6 +1123,18 @@ def test_rst_renders_and_highlights_in_the_server_preview(page):
     assert ".. code-block:: python" in page.text_content("#preview .pv-text")
 
 
+def test_rst_source_and_rendered_modes_switch_without_losing_the_preview(page):
+    page.open_resource("code/guide.rst?filemill=render")
+    page.wait_for_selector("#preview .preview-rst h1", timeout=15000)
+    page.click("#pv-view")
+    page.wait_for_selector("#preview .pv-text", timeout=15000)
+    assert "Guide" in page.text_content("#preview .pv-text")
+    assert page.url.endswith("/code/guide.rst?filemill=highlight")
+    page.click("#pv-view")
+    page.wait_for_selector("#preview .preview-rst h1", timeout=15000)
+    assert "Some rst text." in page.text_content("#preview .preview-rst")
+
+
 def test_hidden_show_starts_with_dotfiles_visible(page):
     """ui/core/state.js seeds state.dotfiles from the URL."""
     page.open_resource("README.md?filemill=render&hidden=show")
