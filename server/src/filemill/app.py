@@ -251,23 +251,21 @@ def _api_target(p: str, zones=None) -> Path | None:
 
 
 @rt("/api/dir")
-def api_dir(request, p: str = "", v: str = "", page: int = 1):
+def api_dir(request, p: str = "", v: str = ""):
     """List a directory — or one level inside a virtual filesystem.
 
     ``v`` is the virtual path *within* the file named by ``p``. Keeping the two
     apart is what lets a `.db` be a directory of tables to the UI while staying
     one file to ``paths.resolve_safe``.
     """
-    if page < 1:
-        return JSONResponse({"entries": [], "denied": "Invalid page"}, status_code=400)
     target = _api_target(p, _zones(request))
     if target is None:
         return JSONResponse({"entries": [], "denied": "Not found"}, status_code=404)
     if target.is_file():
-        return api.vfs_dir_json(target, v, page)
+        return api.vfs_dir_json(target, v)
     if not target.is_dir():
         return JSONResponse({"entries": [], "denied": "Not found"}, status_code=404)
-    return api.dir_json(target, page)
+    return api.dir_json(target)
 
 
 @rt("/api/search")

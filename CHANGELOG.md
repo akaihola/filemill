@@ -13,6 +13,10 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Browsing of `.jsonl` files over 512 KB. Rows are indexed by line and parsed
   one at a time when opened.
 
+### Changed
+
+- Large directories scroll in one virtualized column instead of paging.
+
 ### Removed
 
 - The `Access-Control-Allow-Origin: *` header on `/w/` named-mount responses.
