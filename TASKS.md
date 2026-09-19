@@ -17,17 +17,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
     - Depends on: [29]
 
-- [*] In hierarchical navigation of `.json`, `.jsonl`, and SQLite `.db` files, when the
-  key of a scalar value is highlighted, show its value in the preview pane instead of
-  rendering the parent JSON structure. If the value is a string and has `\n` characters,
-  display it with line breaks.
-
-- [*] When object hierarchies are collapsed by the user in a JSON object preview,
-  remember the paths of collapsed objects (built all the way from the root), and also
-  collapse the same objects when viewing similar objects anywhere at the same depth. For
-  example, if I'm viewing `a.b.foo` and collapse `a.b.foo.c.bar`, then when I view any
-  `*.*.*` or `*.*.*.c` path, `*.*.*.c.bar` should be collapsed.
-
 - [*] `<file>.md?filemill=highlight` doesn't highlight Markdown files correctly.
   Headings and URLs are not highlighted, apostrophes cause highlighting of everything
   between them, even if they're just part of a word. Links are not highlighted. Also,
@@ -53,7 +42,28 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Fix all remaining red tests (listed in project memory), including the one-line
   cause of the newest root-column regression.
 
+- [*] reStructuredText paragraphs are rendered very narrow. For example in`/home/agent/prg/feedtask/README.rst`, a the source for a paragraph is:
+    ```rst
+    A command-line tool to capture stdin and command output for AI tools
+    (like `Roo Code`_, an AI-powered coding assistant for VSCode).
+    ```
+    and it's rendered as
+    ```
+    A command-line tool to capture stdin and command output for AI tools (like Roo Code, an AI-powered coding assistant for VSCode).
+```
+
 ## Scheduled
+
+- [*] In hierarchical navigation of `.json`, `.jsonl`, and SQLite `.db` files, when the
+  key of a scalar value is highlighted, show its value in the preview pane instead of
+  rendering the parent JSON structure. If the value is a string and has `\n` characters,
+  display it with line breaks.
+
+- [*] When object hierarchies are collapsed by the user in a JSON object preview,
+  remember the paths of collapsed objects (built all the way from the root), and also
+  collapse the same objects when viewing similar objects anywhere at the same depth. For
+  example, if I'm viewing `a.b.foo` and collapse `a.b.foo.c.bar`, then when I view any
+  `*.*.*` or `*.*.*.c` path, `*.*.*.c.bar` should be collapsed.
 
 - [*] Large directories now partition their contents into multiple lists that the user
   can browse using a `< Page N of NN >` control. This is not acceptable. The vertical
