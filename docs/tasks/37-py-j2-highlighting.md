@@ -8,9 +8,10 @@ implement that. If not, consider alternatives and write a report.
 
 ## Finding on 2026-09-14
 
-This report from `21fd4db` predates removal of the server's Pygments path and
-relocation of the shared UI to `ui/`. Paths and commands below record the
-original investigation. The separate scheduled task "Treat `.py.j2` as Python"
+This report from `21fd4db` predates removal of the server's Pygments path.
+The root `ui/` is a symlink to `server/src/filemill/ui/`; both paths still
+refer to the same shared frontend. Commands below record the original
+investigation. The separate scheduled task "Treat `.py.j2` as Python"
 in [TASKS.md](../../TASKS.md) selects the Python-only fallback, not a hybrid lexer.
 
 At the time of the investigation, Filemill did not support hybrid `.py.j2` highlighting.
