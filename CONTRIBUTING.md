@@ -15,6 +15,15 @@ uv sync
 Edit shared UI files through `ui/`. The root `ui/` path is a symlink into the
 server package.
 
+## Model boundary
+
+Keep browser APIs out of `ui/core/model/`, including its imports. Pass measured
+sizes and plain key data into model functions. Keep element creation, event
+listeners and rendering effects in the browser modules beside it. Both entry
+points use the same model. Run its dependency-free checks with
+`node ui/core/model/test.mjs` or
+`deno run --allow-read=ui/core/model ui/core/model/test.mjs`.
+
 ## Tests
 
 Run the server tests:

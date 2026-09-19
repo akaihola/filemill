@@ -16,7 +16,8 @@
    directories on your disk. Folder *names* are what is matched, so two
    different folders with the same basename resolve to the more recent one.
    ═══════════════════════════════════════════════════════════════════════════ */
-import { path, root } from "../core/state.js";
+import { path } from "../core/model/state.js";
+import { root } from "../core/dom-renderer.js";
 
 const encSeg = (s) => encodeURIComponent(s).replace(/%2F/gi, "%2F");
 

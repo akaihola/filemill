@@ -1,6 +1,6 @@
 import { FS } from "./ports.js";
 import { colCache, render } from "./render.js";
-import { setState } from "./state.js";
+import { setState } from "./model/state.js";
 
 export async function mountRoot(node, title = node.name) {
   colCache.clear();

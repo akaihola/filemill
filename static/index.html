@@ -2118,17 +2118,16 @@ document.body.insertAdjacentHTML(
    marks the file as a module, which is what lets the entry import it for
    its effect alone. */
 
-/* ═══ core/state.js ═══ */
-/* ═══════════════════════════════════════════════════════════════════════════
-   State
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-const root = document.documentElement;
-const finder = document.getElementById("finder");
-const rail = document.getElementById("rail");
-const stage = document.getElementById("stage");
-const strip = document.getElementById("strip");
-const trail = document.getElementById("trail");
+/* ═══ core/model/state.js ═══ */
+/* Nodes are plain {name, dir, kids} objects. null kids means unread.
+   Adapters retain source-specific fields; this module owns the column state. */
+const BYTE_BASE = 1024; // File sizes use binary units.
+const KB_DECIMAL_LIMIT = 10; // Small KB values keep one decimal place.
+const KB_DECIMAL_DIGITS = 1; // One decimal keeps small sizes readable.
+const KB_DIGITS = 0; // Larger KB values do not need fractional precision.
+const MB_DECIMAL_DIGITS = 1; // MB values retain one decimal for useful precision.
+const GB_DECIMAL_DIGITS = 2; // GB values retain two decimals for useful precision.
+const DATE_PART_DIGITS = "2-digit"; // Clock fields align consistently in the metadata line.
 
 let path = []; // node chain, [0] = root
 let sel = []; // per-column selected name
@@ -2149,42 +2148,22 @@ function setState(patch) {
 }
 const nextPvToken = () => ++pvToken;
 const state = {
-  dotfiles: root.dataset.hidden === "show",
+  dotfiles: false,
   sort: { key: "name", desc: false },
 };
 let sortOrder = (kids) => kids;
 const setSortKids = (value) => sortOrder = value;
 
-const GUTTER = () =>
-  parseInt(getComputedStyle(root).getPropertyValue("--gutter"));
-const SPINE = () =>
-  parseInt(getComputedStyle(root).getPropertyValue("--spine-w"));
-
-const COL_MIN = 148; // Keep columns wide enough for readable rows and controls.
-const COL_MAX = 380; // Fit long page titles while folding columns outside focus.
-const BYTE_BASE = 1024; // File sizes use binary units.
-const KB_DECIMAL_LIMIT = 10; // Small KB values keep one decimal place.
-const KB_DECIMAL_DIGITS = 1; // One decimal keeps small sizes readable.
-const KB_DIGITS = 0; // Larger KB values do not need fractional precision.
-const MB_DECIMAL_DIGITS = 1; // MB values retain one decimal for useful precision.
-const GB_DECIMAL_DIGITS = 2; // GB values retain two decimals for useful precision.
-const DATE_PART_DIGITS = "2-digit"; // Clock fields align consistently in the metadata line.
-const CODE_COLUMNS = 88; // Preview text targets an 88-character reading width.
-const CODE_HORIZONTAL_PADDING = 82; // Preview padding is 30px plus 52px.
-const PREVIEW_MAX_WIDTH = 760; // Keep the preview from becoming too wide to read.
-const PREVIEW_MIN_RATIO = 0.45; // Preserve nearly half the stage for preview content.
-const EMPTY_PREVIEW_WIDTH = 300; // Keep the empty preview stable before a file is selected.
-const HEADER_HORIZONTAL_PADDING = 34; // Reserve space for the column heading chrome.
-const COLUMN_HORIZONTAL_PADDING = 58; // Reserve space for row padding and scrollbar.
-const CODE_FONT_SIZE = 11.5; // Match the compact monospace preview typography.
-
-/* One filtered copy per call, ordered by core/sort.js. Every column build, every
+/* One filtered copy per call, ordered by model/sort.js. Every column build, every
    width measurement and every path walk comes through here, which is what keeps
    the rows and a restored chain agreeing on what row 4 is. */
 const visibleKids = (node) =>
-  ((kids) => node.ordered && state.sort.key === "name" ? kids : sortOrder(kids))(
-    (node.kids || []).filter((k) => state.dotfiles || !k.name.startsWith(".")),
-  );
+  ((kids) =>
+    node.ordered && state.sort.key === "name" ? kids : sortOrder(kids))(
+      (node.kids || []).filter((k) =>
+        state.dotfiles || !k.name.startsWith(".")
+      ),
+    );
 
 const rowIndex = (node, name) =>
   visibleKids(node).findIndex((k) => k.name === name);
@@ -2226,6 +2205,35 @@ const selectedNode = () => {
   const last = path[path.length - 1], s = sel[path.length - 1];
   return s && (last.kids || []).find((k) => k.name === s) || null;
 };
+
+/* ═══ core/dom-renderer.js ═══ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   DOM handles and measurements for the browser renderer
+   ═══════════════════════════════════════════════════════════════════════════ */
+state.dotfiles = document.documentElement.dataset.hidden === "show";
+
+const root = document.documentElement;
+const finder = document.getElementById("finder");
+const rail = document.getElementById("rail");
+const stage = document.getElementById("stage");
+const strip = document.getElementById("strip");
+const trail = document.getElementById("trail");
+
+const GUTTER = () =>
+  parseInt(getComputedStyle(root).getPropertyValue("--gutter"));
+const SPINE = () =>
+  parseInt(getComputedStyle(root).getPropertyValue("--spine-w"));
+
+const COL_MIN = 148; // Keep columns wide enough for readable rows and controls.
+const COL_MAX = 380; // Fit long page titles while folding columns outside focus.
+const CODE_COLUMNS = 88; // Preview text targets an 88-character reading width.
+const CODE_HORIZONTAL_PADDING = 82; // Preview padding is 30px plus 52px.
+const PREVIEW_MAX_WIDTH = 760; // Keep the preview from becoming too wide to read.
+const PREVIEW_MIN_RATIO = 0.45; // Preserve nearly half the stage for preview content.
+const EMPTY_PREVIEW_WIDTH = 300; // Keep the empty preview stable before a file is selected.
+const HEADER_HORIZONTAL_PADDING = 34; // Reserve space for the column heading chrome.
+const COLUMN_HORIZONTAL_PADDING = 58; // Reserve space for row padding and scrollbar.
+const CODE_FONT_SIZE = 11.5; // Match the compact monospace preview typography.
 
 /* 88 columns of .pv-text plus its and .pv-body's horizontal padding (30 + 52),
    measured from the real monospace font so it agrees with the CSS min-width */
@@ -2786,61 +2794,9 @@ let repaint;
 const setSortActions = ({ render }) => repaint = render;
 
 const SORT_KEYS = ["name", "size", "mtime"];
-const SORT_FIELD = { size: "size", mtime: "mod" }; /* node.meta field per key */
 const SORT_LABEL = { name: "name", size: "size", mtime: "modified" };
 
 const sortNeedsMeta = () => state.sort.key !== "name";
-
-/* One collator, reused. `"a".localeCompare(b, undefined, {numeric: true})` has
-   to resolve those options on every call, and this comparator runs n log n
-   times per column build — about 35 000 times at 3 000 entries. */
-const NAME_COLLATOR = new Intl.Collator(undefined, { numeric: true });
-const byName = (a, b) => NAME_COLLATOR.compare(a.name, b.name);
-
-/* The number to order on, or null for "this row has none". A file the port
-   could not open carries `meta.error`; a row inside a database carries
-   `meta.virtual` and no size at all. Both are honestly unknown. */
-const sortValue = (k, field) => {
-  const v = k.meta && !k.meta.error ? k.meta[field] : undefined;
-  return typeof v === "number" ? v : null;
-};
-
-/* Directories first, then the chosen key, then the name to break ties.
-   `kids` is already the filtered copy visibleKids made, so sorting it in place
-   never touches node.kids.
-
-   Directories are never ordered by size or time. Neither port can give a
-   directory either number: the File System Access API has no `getFile()` for a
-   directory handle, and the server build's listing sends metadata for files
-   only. A folder ordered by an invented 0 would sit at one end of every size
-   sort and mean nothing there, so folders keep the one order that is real for
-   them.
-
-   A file whose metadata could not be read sorts last, in name order, in *both*
-   directions. Sorting by size descending asks "what is biggest here"; a file
-   the app could not open is not the answer, and putting one at the top is how a
-   permission error gets read as a result. Last either way keeps the end the
-   user is looking at meaningful. The row is never dropped — an unreadable file
-   is still a file in that folder, and hiding the rows it failed to stat would
-   make the app lie about the directory. */
-function sortKids(kids) {
-  const { key, desc } = state.sort;
-  const dir = desc ? -1 : 1;
-  const field = SORT_FIELD[key];
-  return kids.sort((a, b) => {
-    const kind = !!b.dir - !!a.dir;
-    if (kind) return kind;
-    if (field && !a.dir) {
-      const av = sortValue(a, field), bv = sortValue(b, field);
-      if (av === null || bv === null) {
-        if (av !== bv) return av === null ? 1 : -1; /* unknown sinks */
-      } else if (av !== bv) {
-        return (av < bv ? -1 : 1) * dir;
-      }
-    }
-    return byName(a, b) * (field ? 1 : dir);
-  });
-}
 
 /* ── The sweep ──────────────────────────────────────────────────────────────
    One sweep per directory, one in-flight promise held on the node, one writer
@@ -3336,6 +3292,126 @@ async function openEditor(node, current, refresh) {
   };
 }
 
+/* ═══ core/model/deeplink.js ═══ */
+function currentPath() {
+  const names = path.slice(1).map((p) => p.name);
+  const leaf = sel[path.length - 1];
+  if (leaf !== undefined) names.push(leaf);
+  return names;
+}
+
+// History is grouped by the open directory chain, as in the browser editions.
+function locationState(viewMode, previousKey) {
+  const key = path.map((p) => p.name).join("/");
+  const node = previewNode();
+  const view = node && !node.dir
+    ? (viewMode === "highlight" ? "highlight" : "render")
+    : undefined;
+  return {
+    key,
+    replace: previousKey === key,
+    location: { root: path[0].name, path: currentPath(), view },
+  };
+}
+async function walkPath(names, ensureLoaded, wantFocus) {
+  if (!path.length) return false;
+  names = (names || []).filter(Boolean);
+
+  /* a link to a dotfile has to reveal dotfiles, or visibleKids would hide the
+     very thing the URL asked for */
+  if (!state.dotfiles && names.some((n) => n.startsWith("."))) {
+    state.dotfiles = true;
+  }
+
+  try {
+    const rootNode = path[0];
+    setState({ path: [rootNode], sel: [], focusCol: 0 });
+    await ensureLoaded(rootNode);
+    let complete = true;
+
+    for (let i = 0; i < names.length; i++) {
+      const parent = path[i];
+      const kids = visibleKids(parent);
+      const ri = kids.findIndex((k) => k.name === names[i]);
+      if (ri < 0) {
+        complete = false;
+        break;
+      }
+
+      const node = kids[ri];
+      sel[i] = node.name;
+      setState({ focusCol: i }); /* focus stays on the column holding it */
+      if (!node.dir) break;
+      await ensureLoaded(node);
+      path.push(node);
+    }
+    return complete;
+  } finally {
+    /* clamped: the chain may have come back shorter than the column that had
+       focus, and focusing a column that is no longer open kills ↑/↓ */
+    if (wantFocus != null) {
+      setState({ focusCol: Math.max(0, Math.min(wantFocus, path.length - 1)) });
+    }
+  }
+}
+
+/* ═══ core/model/folding.js ═══ */
+const FOLD_RANGE = 0.99; // The last percent slides the folded strip away.
+const foldStep = (count) => FOLD_RANGE / count;
+const columnSpan = (sizes, count, gutter, spine) =>
+  sizes.reduce((sum, width, i) => sum + (i < count ? spine : width), 0) +
+  gutter * (sizes.length + 1);
+const scrollRange = (sizes, gutter, spine) =>
+  Math.max(1, columnSpan(sizes, 0, gutter, spine) - gutter);
+function automaticFold(
+  sizes,
+  gutter,
+  spine,
+  preview,
+  viewport,
+  focus,
+  previous,
+  compressed,
+) {
+  let count = 0;
+  while (
+    count < sizes.length &&
+    columnSpan(sizes, count, gutter, spine) + preview > viewport
+  ) count++;
+  return compressed ? sizes.length : Math.min(focus, Math.max(count, previous));
+}
+function foldingAt(scroll, maximum, count) {
+  if (!count) return { raw: 0, folded: 0, t: 0 };
+  // Half a pixel compensates for rounded scroll positions at fold boundaries.
+  const raw = Math.min(1, (scroll + 0.5) / maximum) / foldStep(count);
+  const folded = Math.min(count, Math.floor(raw));
+  return { raw, folded, t: Math.min(1, Math.max(0, raw - folded)) };
+}
+const columnWidth = (width, index, count, progress, spine) =>
+  index < count
+    ? spine
+    : index === count
+    ? Math.round(width + (spine - width) * progress)
+    : width;
+const focusPan = (raw, focus, left, right, viewport, gutter) =>
+  Math.min(1, Math.max(0, raw - focus + 1)) *
+  Math.min(Math.max(0, right - viewport), Math.max(0, left - gutter));
+const tailShift = (progress, pan, count, spine, gutter) =>
+  (progress > FOLD_RANGE ? (progress - FOLD_RANGE) / 0.01 : 0) * count *
+    (spine + gutter) + pan;
+
+function columnMetrics(sizes, count, progress, focus, gutter, spine) {
+  const rendered = sizes.map((width, index) =>
+    columnWidth(width, index, count, progress, spine)
+  );
+  let left = gutter, focusLeft = 0, focusRight = 0;
+  rendered.forEach((width, index) => {
+    if (index === focus) [focusLeft, focusRight] = [left, left + width];
+    left += width + gutter;
+  });
+  return { sizes: rendered, focusLeft, focusRight };
+}
+
 /* ═══ core/dom.js ═══ */
 const set = (obj, key, value) => {
   if (obj[key] !== value) obj[key] = value;
@@ -3432,22 +3508,12 @@ function paintTrail() {
      99–100%  the spine strip itself slides away; at 100% the preview is alone
    ═══════════════════════════════════════════════════════════════════════════ */
 
-function stripSpan(k) {
-  /* width of the column strip with k folded */
-  const g = GUTTER(), n = path.length;
-  const cols = widths.reduce((a, w, i) => a + (i < k ? SPINE() : w), 0);
-  return cols + g * (n + 1); /* padding either side + inter-column gaps */
-}
-const FOLD_RANGE = 0.99; // Reserve the final one percent for sliding the spine strip.
-const MIN_SCROLL_RANGE = 1; // Keep division and scroll arithmetic valid before layout settles.
-const BOUNDARY_SLACK = 0.5; // Absorb rounding that can otherwise land one column short.
-const FULL_FOLD_THRESHOLD = 0.99; // Treat the dial's first 99 percent as column folding.
-const TAIL_RANGE = 0.01; // The final one percent slides the folded strip away.
-const foldUnit = () => FOLD_RANGE / path.length;
-const range = () => Math.max(MIN_SCROLL_RANGE, stripSpan(0) - GUTTER());
+const stripSpan = (k) => columnSpan(widths, k, GUTTER(), SPINE());
+const foldUnit = () => foldStep(path.length);
+const range = () => scrollRange(widths, GUTTER(), SPINE());
 const foldAll = () => {
   setState({ folded: path.length });
-  applyWidths(path.length, 0);
+  applyWidths(0);
   slideTail(1, 0, path.length);
 };
 
@@ -3458,19 +3524,16 @@ function layout(keepScroll) {
   rail.style.width = (stageW + range()) + "px";
 
   if (!keepScroll) {
-    /* default: the least folding that still gives the preview its full width.
-       ?layout=compressed-columns asks for every column folded instead, which is
-       the dial at 99% and the one thing the HTMX shell could never do. */
-    let k = 0;
-    while (k < path.length && stripSpan(k) + previewTarget() > stageW) k++;
-    /* Fold more when the new contents need it, but never past the focused
-       column: that is the one under the user's finger, and the column to its
-       right is what opening it just produced — answering a tap by hiding
-       either is not condensing, it is discarding the answer. What is left of
-       focus has been walked past and may condense; folding further than this
-       is a user action: scroll, spine, ←. */
-    k = Math.min(focusCol, Math.max(k, folded));
-    if (root.dataset.layout === "compressed-columns") k = path.length;
+    const k = automaticFold(
+      widths,
+      GUTTER(),
+      SPINE(),
+      previewTarget(),
+      stageW,
+      focusCol,
+      folded,
+      root.dataset.layout === "compressed-columns",
+    );
     finder.scrollLeft = Math.round(k * foldUnit() * range());
   }
   applyScroll();
@@ -3487,12 +3550,12 @@ function applyScroll() {
      app's own row reveals from doing it; this undoes whatever else did, at the
      next repaint. */
   if (stage.scrollLeft) stage.scrollLeft = 0;
-  const max = Math.max(MIN_SCROLL_RANGE, rail.clientWidth - finder.clientWidth);
+  const max = Math.max(1, rail.clientWidth - finder.clientWidth);
   const p = Math.min(1, finder.scrollLeft / max);
   const n = path.length;
 
   const { raw, t } = foldFromScroll(max);
-  const { focusLeft, focusRight } = applyWidths(raw, t);
+  const { focusLeft, focusRight } = applyWidths(t);
   const pan = panFocus(raw, focusLeft, focusRight);
   slideTail(p, pan, n);
 
@@ -3503,32 +3566,18 @@ function applyScroll() {
 }
 
 function foldFromScroll(max) {
-  /* Half a pixel of slack, in pixels: layout() and unfoldTo() write
-     round(k·unit·range), which can fall up to 0.5 px short of the boundary. A
-     fixed 0.002 units was only 0.3 px once seven columns made a unit 160 px
-     wide, and a landing read one column short paints the column ← just
-     reached as a spine, with folded === focusCol so the next ← never scrolls. */
-  const raw = Math.min(1, (finder.scrollLeft + BOUNDARY_SLACK) / max) /
-    foldUnit();
-  setState({ folded: Math.min(path.length, Math.floor(raw)) });
-  /* how far into folding the next column is — 0 = full width, 1 = a spine */
-  const t = Math.min(1, Math.max(0, raw - folded));
-  return { raw, t };
+  const result = foldingAt(finder.scrollLeft, max, path.length);
+  setState({ folded: result.folded });
+  return result;
 }
 
-function applyWidths(raw, t) {
+function applyWidths(t) {
   const g = GUTTER(), sp = SPINE(), n = path.length;
-  let x = g, focusLeft = 0, focusRight = 0;
+  const metrics = columnMetrics(widths, folded, t, focusCol, g, sp);
   [...strip.querySelectorAll(".col")].forEach((col, i) => {
     col.classList.toggle("spine", i < folded);
     col.classList.toggle("folding", i === folded && folded < n);
-    const w = i < folded
-      ? sp
-      : i === folded
-      ? Math.round(widths[i] + (sp - widths[i]) * t)
-      : widths[i];
-    if (i === focusCol) [focusLeft, focusRight] = [x, x + w];
-    x += w + g;
+    const w = metrics.sizes[i];
     if (i < folded) {
       set(col.style, "width", "");
       return;
@@ -3537,26 +3586,22 @@ function applyWidths(raw, t) {
     setVar(col, "--fold", col.dataset.fold); /* custom props need setProperty */
     set(col.style, "width", w + "px");
   });
-  return { focusLeft, focusRight };
+  return metrics;
 }
 
 function panFocus(raw, focusLeft, focusRight) {
-  const g = GUTTER();
-  const reach = Math.min(1, Math.max(0, raw - focusCol + 1));
-  const pan = reach *
-    Math.min(
-      Math.max(0, focusRight - finder.clientWidth),
-      Math.max(0, focusLeft - g),
-    );
-  return pan;
+  return focusPan(
+    raw,
+    focusCol,
+    focusLeft,
+    focusRight,
+    finder.clientWidth,
+    GUTTER(),
+  );
 }
 
 function slideTail(p, pan, n) {
-  const sp = SPINE(), g = GUTTER();
-  const tail = p > FULL_FOLD_THRESHOLD
-    ? (p - FULL_FOLD_THRESHOLD) / TAIL_RANGE
-    : 0;
-  const shift = tail * n * (sp + g) + pan;
+  const shift = tailShift(p, pan, n, SPINE(), GUTTER());
   set(strip.style, "minWidth", (finder.clientWidth + shift) + "px");
   set(strip.style, "transform", `translateX(${-shift}px)`);
 }
@@ -3620,34 +3665,16 @@ const setDeepLinkActions = (
   actions,
 ) => ({ render: renderPage, colCache: columnCache } = actions);
 
-function currentPath() {
-  const names = path.slice(1).map((p) => p.name);
-  const leaf = sel[path.length - 1];
-  if (leaf !== undefined) names.push(leaf);
-  return names;
-}
-
-/* Walking a column with ↑/↓ is one selection change per keystroke — pushing a
-   history entry for each would make Back useless. What counts as a navigation
-   is *entering* a column, not opening one: selecting a folder opens its column
-   without moving focus (that is the whole focus model), and ↑/↓ down a list of
-   folders would otherwise push an entry per row. So the history key is the
-   chain up to the focused column, and everything else rewrites in place.
-   Back then steps back out of folders, which is what it looks like it does. */
 let lastKey = null;
 
 function syncURL() {
   if (applying || !ROUTER || !path.length) return;
-  const key = path.map((p) => p.name).join("/");
-  const names = currentPath();
-  const node = previewNode();
-  const view = node && !node.dir
-    ? document.documentElement.dataset.filemill === "highlight"
-      ? "highlight"
-      : "render"
-    : undefined;
-  ROUTER.write({ root: path[0].name, path: names, view }, lastKey === key);
-  lastKey = key;
+  const result = locationState(
+    document.documentElement.dataset.filemill,
+    lastKey,
+  );
+  ROUTER.write(result.location, result.replace);
+  lastKey = result.key;
 }
 
 /* Walk down from the root, opening each directory in turn. Stops at the first
@@ -3660,47 +3687,14 @@ function syncURL() {
    the chain to get there. A link has no such opinion and omits it. */
 async function applyPath(names, wantFocus) {
   if (!path.length) return false;
-  names = (names || []).filter(Boolean);
-
-  /* a link to a dotfile has to reveal dotfiles, or visibleKids would hide the
-     very thing the URL asked for */
-  if (!state.dotfiles && names.some((n) => n.startsWith("."))) {
-    state.dotfiles = true;
-    const b = document.getElementById("s-dot");
-    if (b) b.setAttribute("aria-checked", "true");
-  }
-
   applying = true;
   try {
-    const rootNode = path[0];
-    setState({ path: [rootNode], sel: [], focusCol: 0 });
-    await FS.ensureLoaded(rootNode);
-    let complete = true;
-
-    for (let i = 0; i < names.length; i++) {
-      const parent = path[i];
-      const kids = visibleKids(parent);
-      const ri = kids.findIndex((k) => k.name === names[i]);
-      if (ri < 0) {
-        complete = false;
-        break;
-      }
-
-      const node = kids[ri];
-      sel[i] = node.name;
-      setState({ focusCol: i }); /* focus stays on the column holding it */
-      if (!node.dir) break;
-      await FS.ensureLoaded(node);
-      path.push(node);
-    }
-    return complete;
+    const walking = walkPath(names, (node) => FS.ensureLoaded(node), wantFocus);
+    const button = document.getElementById("s-dot");
+    if (button) button.setAttribute("aria-checked", String(state.dotfiles));
+    return await walking;
   } finally {
     applying = false;
-    /* clamped: the chain may have come back shorter than the column that had
-       focus, and focusing a column that is no longer open kills ↑/↓ */
-    if (wantFocus != null) {
-      setState({ focusCol: Math.max(0, Math.min(wantFocus, path.length - 1)) });
-    }
     renderPage();
     scrollCursorIntoView();
   }
@@ -4325,6 +4319,26 @@ async function fillPreview(n) {
   paintTrail();
 }
 
+/* ═══ core/model/typeahead.js ═══ */
+/* All of `q` in `n`, in order, gaps allowed. No allocation: this runs once per
+   entry per keystroke, and a column can hold thousands. */
+const taFuzzy = (n, q) => {
+  let qi = 0;
+  for (let i = 0; i < n.length && qi < q.length; i++) if (n[i] === q[qi]) qi++;
+  return qi === q.length;
+};
+
+/* Row index of the winner, or -1. Three passes, each stopping at its own first
+   hit — a prefix match on row 2 never looks at rows 3…3000. A prefix match on
+   row 2 800 still beats a substring match on row 3, which is the point of
+   separate passes rather than one scan that scores. */
+function taSearch(lower, q) {
+  let i = lower.findIndex((n) => n.startsWith(q));
+  if (i < 0) i = lower.findIndex((n) => n.includes(q));
+  if (i < 0) i = lower.findIndex((n) => taFuzzy(n, q));
+  return i;
+}
+
 /* ═══ core/typeahead.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Type-ahead
@@ -4356,34 +4370,6 @@ let taRow = null; /* the row wearing <mark> right now, so it can be undone */
 let taName = ""; /* its plain name, to rebuild the label from */
 
 const taLive = () => taBuf !== "";
-
-/* A letter with Ctrl, ⌘ or Alt held belongs to the browser or to a command —
-   ⌘C copies the path, ⌘R reloads. Swallowing those into a search is the kind
-   of bug you notice only when reload stops working. Shift does not disqualify:
-   capital letters are part of file names. Backspace counts only while a search
-   is live, so it stays free for anything else to claim later. */
-const taWants = (e) =>
-  !e.ctrlKey && !e.metaKey && !e.altKey &&
-  (e.key.length === 1 || (e.key === "Backspace" && taLive()));
-
-/* All of `q` in `n`, in order, gaps allowed. No allocation: this runs once per
-   entry per keystroke, and a column can hold thousands. */
-const taFuzzy = (n, q) => {
-  let qi = 0;
-  for (let i = 0; i < n.length && qi < q.length; i++) if (n[i] === q[qi]) qi++;
-  return qi === q.length;
-};
-
-/* Row index of the winner, or -1. Three passes, each stopping at its own first
-   hit — a prefix match on row 2 never looks at rows 3…3000. A prefix match on
-   row 2 800 still beats a substring match on row 3, which is the point of
-   separate passes rather than one scan that scores. */
-function taSearch(lower, q) {
-  let i = lower.findIndex((n) => n.startsWith(q));
-  if (i < 0) i = lower.findIndex((n) => n.includes(q));
-  if (i < 0) i = lower.findIndex((n) => taFuzzy(n, q));
-  return i;
-}
 
 /* Which characters of `lower` the query landed on: a contiguous run for prefix
    and substring, scattered ones for fuzzy. Runs once, on the winner only. */
@@ -4504,6 +4490,80 @@ document.addEventListener("click", (e) => {
   if (e.isTrusted) taCancel();
 });
 
+/* ═══ core/model/keyboard.js ═══ */
+const typeaheadKey = (event, live) =>
+  !event.ctrlKey && !event.metaKey && !event.altKey &&
+  (event.key.length === 1 || (event.key === "Backspace" && live));
+
+function keyAction(event, context) {
+  if (context.editable || context.welcome) return null;
+  const key = event.key;
+  if (context.preview) {
+    if (key === "ArrowLeft") return "preview-back";
+    return ["ArrowUp", "ArrowDown", "PageUp", "PageDown"].includes(key)
+      ? "preview-scroll"
+      : null;
+  }
+  if (
+    key === "c" && (event.metaKey || event.ctrlKey) && !context.textSelected
+  ) return "copy";
+  if (typeaheadKey(event, context.typeahead)) return "type";
+  if (
+    [
+      "ArrowDown",
+      "ArrowUp",
+      "Home",
+      "End",
+      "PageUp",
+      "PageDown",
+      "ArrowRight",
+      "Enter",
+      "ArrowLeft",
+      "Escape",
+    ].includes(key)
+  ) return key;
+  if (key === "F5" && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+    return "refresh";
+  }
+  return null;
+}
+const nextRow = (index, selected, direction, count) =>
+  selected ? Math.max(0, Math.min(count - 1, index + direction)) : index;
+const entryRow = (index, count) =>
+  Math.max(0, Math.min(count - 1, index < 0 ? 0 : index));
+function pageSelection(visible, selected, direction, height) {
+  const edge = direction < 0 ? visible[0] : visible.at(-1);
+  const index = edge?.index;
+  const rowHeight = edge?.height || 0;
+  const lines = rowHeight ? Math.max(1, Math.floor(height / rowHeight)) : 1;
+  return {
+    index,
+    scroll: index !== undefined && index === selected
+      ? direction * lines * rowHeight
+      : 0,
+  };
+}
+
+/* ═══ core/model/selection.js ═══ */
+function autoPreview(node) {
+  const i = path.length - 1;
+  if (path[i] !== node || sel[i] !== undefined) return;
+  const files = visibleKids(node).filter((k) => !k.dir);
+  const pick = files.find((k) => k.name === "README") ||
+    files.find((k) => k.name.startsWith("README.")) ||
+    files.find((k) => k.name === "index.html");
+  if (pick) sel[i] = pick.name;
+}
+
+function selectNode(colIdx, node) {
+  setState({
+    path: path.slice(0, colIdx + 1),
+    sel: sel.slice(0, colIdx),
+    focusCol: colIdx,
+  });
+  sel[colIdx] = node.name;
+}
+
 /* ═══ core/settings.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Settings popover
@@ -4582,24 +4642,9 @@ const PREVIEW_SCROLL_STEP = 40; // Arrow keys move the preview by a small readab
 
 let navSeq = 0; /* a read that outlives its selection must not repaint */
 
-/* When a folder opens with nothing chosen inside it, dash-select its README
-   (exact name first, then README.*, then index.html) so the preview shows it.
-   Focus stays where it is — this is a preview, not a navigation. */
-function autoPreview(node) {
-  const i = path.length - 1;
-  if (path[i] !== node || sel[i] !== undefined) return;
-  const files = visibleKids(node).filter((k) => !k.dir);
-  const pick = files.find((k) => k.name === "README") ||
-    files.find((k) => k.name.startsWith("README.")) ||
-    files.find((k) => k.name === "index.html");
-  if (pick) sel[i] = pick.name;
-}
-
 async function choose(colIdx, node, keepScroll = false) {
   const seq = ++navSeq;
-  setState({ path: path.slice(0, colIdx + 1), sel: sel.slice(0, colIdx) });
-  sel[colIdx] = node.name;
-  setState({ focusCol: colIdx });
+  selectNode(colIdx, node);
   if (!node.dir) return void render(keepScroll);
 
   const reading = node.kids === null ? FS.ensureLoaded(node) : null;
@@ -4783,7 +4828,9 @@ function saySt(id, msg, ok) {
 }
 
 document.addEventListener("pointerdown", (event) => {
-  if (!event.target.closest("#row-menu")) document.getElementById("row-menu").hidden = true;
+  if (!event.target.closest("#row-menu")) {
+    document.getElementById("row-menu").hidden = true;
+  }
 });
 
 const sayCopy = (msg, ok) => saySt("st-copy", msg, ok);
@@ -4825,7 +4872,7 @@ function enterColumn(i) {
   if (!c || !c.rows.length) return;
   const remembered = sel[i];
   let ri = rowIndex(path[i], remembered);
-  ri = Math.max(0, Math.min(c.rows.length - 1, ri < 0 ? 0 : ri));
+  ri = entryRow(ri, c.rows.length);
   const row = c.ensureRow(ri);
   row.click();
   revealRow(row);
@@ -4845,43 +4892,45 @@ function stepInto(node) {
 function pageMove(c, dir, ci) {
   const body = c.body;
   if (!body || !c.rows.length) return;
-  const edge = () => {
-    const b = body.getBoundingClientRect();
-    const visible = c.rows.filter(Boolean).filter((row) => {
-      const r = row.getBoundingClientRect();
-      return r.bottom > b.top && r.top < b.bottom;
+  const visible = () => {
+    const bounds = body.getBoundingClientRect();
+    return c.rows.flatMap((row, index) => {
+      if (!row) return [];
+      const rect = row.getBoundingClientRect();
+      return rect.bottom > bounds.top && rect.top < bounds.bottom
+        ? [{ index, height: row.offsetHeight }]
+        : [];
     });
-    return dir < 0 ? visible[0] : visible.at(-1);
   };
-  let row = edge();
-  if (!row) return;
-  if (c.rows[ci] === row) {
-    const h = row.offsetHeight;
-    const lines = h ? Math.max(1, Math.floor(body.clientHeight / h)) : 1;
-    body.scrollTop += dir * lines * h;
-    row = edge();
+  let decision = pageSelection(visible(), ci, dir, body.clientHeight);
+  if (decision.scroll) {
+    body.scrollTop += decision.scroll;
+    decision = pageSelection(visible(), undefined, dir, body.clientHeight);
   }
+  const row = c.rows[decision.index];
   row?.click();
   if (row) revealRow(row);
 }
 
 document.addEventListener("keydown", (e) => {
-  /* a keystroke inside a form field (the preview editor) is typing, not
-     navigation — leave it alone */
-  if (
-    e.target.matches?.("input, textarea, select") || e.target.isContentEditable
-  ) {
-    return;
-  }
-  if (!document.getElementById("welcome")?.hidden) return;
-  if (e.target.closest?.("#preview")) {
-    if (e.key === "ArrowLeft") {
+  const context = {
+    editable: e.target.matches?.("input, textarea, select") ||
+      e.target.isContentEditable,
+    welcome: !document.getElementById("welcome")?.hidden,
+    preview: !!e.target.closest?.("#preview"),
+    textSelected: !!getSelection().toString(),
+    typeahead: taLive(),
+  };
+  const action = keyAction(e, context);
+  if (context.editable || context.welcome) return;
+  if (context.preview) {
+    if (action === "preview-back") {
       e.preventDefault();
       unfoldTo(focusCol);
       render(true);
       return;
     }
-    if (["ArrowUp", "ArrowDown", "PageUp", "PageDown"].includes(e.key)) {
+    if (action === "preview-scroll") {
       const body = document.querySelector("#preview .pv-body");
       e.preventDefault();
       body?.scrollBy({
@@ -4905,43 +4954,43 @@ document.addEventListener("keydown", (e) => {
   /* ⌘C / Ctrl+C. A live text selection wins: the user highlighted something and
      asked for *that*, and after a refused copy the selected path is exactly
      what the second press has to reach. */
-  if (e.key === "c" && (e.metaKey || e.ctrlKey) && !getSelection().toString()) {
+  if (action === "copy") {
     e.preventDefault();
     return void copyPath();
   }
   /* Letters go to the search unless an arrow, Home/End or Escape claimed the
      keystroke first — those four are the navigation model and type-ahead does
      not get to argue with them. Each of them also ends a live search. */
-  if (taWants(e)) {
+  if (action === "type") {
     e.preventDefault();
     return void taType(e.key, c);
   }
   if (e.key !== "Escape") taCancel();
 
-  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+  if (action === "ArrowDown" || action === "ArrowUp") {
     e.preventDefault();
     if (!rows.length) return;
     /* a freshly entered column has no selection yet — the first
        press should commit that row, not skip past it */
-    if (sel[focusCol] !== undefined) {
-      ci = Math.max(
-        0,
-        Math.min(rows.length - 1, ci + (e.key === "ArrowDown" ? 1 : -1)),
-      );
-    }
+    ci = nextRow(
+      ci,
+      sel[focusCol] !== undefined,
+      e.key === "ArrowDown" ? 1 : -1,
+      rows.length,
+    );
     choose(focusCol, c.kids[ci], true);
     revealRow(c.ensureRow(ci));
-  } else if (e.key === "Home" || e.key === "End") {
+  } else if (action === "Home" || action === "End") {
     e.preventDefault();
     if (!rows.length) return;
     const ri = e.key === "Home" ? 0 : rows.length - 1;
     const row = c.ensureRow(ri);
     row.click();
     revealRow(row);
-  } else if (e.key === "PageUp" || e.key === "PageDown") {
+  } else if (action === "PageUp" || action === "PageDown") {
     e.preventDefault();
     pageMove(c, e.key === "PageUp" ? -1 : 1, ci);
-  } else if (e.key === "ArrowRight" || e.key === "Enter") {
+  } else if (action === "ArrowRight" || action === "Enter") {
     e.preventDefault();
     const next = path[focusCol + 1];
     /* nothing open to the right: commit the row, which opens it when it
@@ -4961,14 +5010,14 @@ document.addEventListener("keydown", (e) => {
         stepInto(next);
       });
     } else stepInto(next);
-  } else if (e.key === "ArrowLeft") {
+  } else if (action === "ArrowLeft") {
     e.preventDefault();
     if (focusCol > 0) {
       setState({ focusCol: focusCol - 1 });
       unfoldTo(focusCol);
       render(true);
     }
-  } else if (e.key === "F5" && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+  } else if (action === "refresh") {
     /* Every desktop file manager reads F5 as "re-read this folder", and here a
        page reload is a far worse trade: it drops the mounted root, the whole
        column chain and the scroll position, then asks the browser for the
@@ -4976,7 +5025,7 @@ document.addEventListener("keydown", (e) => {
        still one keystroke away — the same rule type-ahead follows for ⌘R. */
     e.preventDefault();
     refreshColumn(focusCol);
-  } else if (e.key === "Escape") {
+  } else if (action === "Escape") {
     /* one Escape does one thing: abandon the search if there is one, otherwise
        close the popover. Both at once would make it impossible to tell which
        one the key just did. */
@@ -6322,6 +6371,56 @@ async function recallView(handle) {
   return null;
 }
 
+/* ═══ core/model/sort.js ═══ */
+const SORT_FIELD = { size: "size", mtime: "mod" };
+const NAME_COLLATOR = new Intl.Collator(undefined, { numeric: true });
+const byName = (a, b) => NAME_COLLATOR.compare(a.name, b.name);
+
+/* The number to order on, or null for "this row has none". A file the port
+   could not open carries `meta.error`; a row inside a database carries
+   `meta.virtual` and no size at all. Both are honestly unknown. */
+const sortValue = (k, field) => {
+  const v = k.meta && !k.meta.error ? k.meta[field] : undefined;
+  return typeof v === "number" ? v : null;
+};
+
+/* Directories first, then the chosen key, then the name to break ties.
+   `kids` is already the filtered copy visibleKids made, so sorting it in place
+   never touches node.kids.
+
+   Directories are never ordered by size or time. Neither port can give a
+   directory either number: the File System Access API has no `getFile()` for a
+   directory handle, and the server build's listing sends metadata for files
+   only. A folder ordered by an invented 0 would sit at one end of every size
+   sort and mean nothing there, so folders keep the one order that is real for
+   them.
+
+   A file whose metadata could not be read sorts last, in name order, in *both*
+   directions. Sorting by size descending asks "what is biggest here"; a file
+   the app could not open is not the answer, and putting one at the top is how a
+   permission error gets read as a result. Last either way keeps the end the
+   user is looking at meaningful. The row is never dropped — an unreadable file
+   is still a file in that folder, and hiding the rows it failed to stat would
+   make the app lie about the directory. */
+function sortKids(kids) {
+  const { key, desc } = state.sort;
+  const dir = desc ? -1 : 1;
+  const field = SORT_FIELD[key];
+  return kids.sort((a, b) => {
+    const kind = !!b.dir - !!a.dir;
+    if (kind) return kind;
+    if (field && !a.dir) {
+      const av = sortValue(a, field), bv = sortValue(b, field);
+      if (av === null || bv === null) {
+        if (av !== bv) return av === null ? 1 : -1; /* unknown sinks */
+      } else if (av !== bv) {
+        return (av < bv ? -1 : 1) * dir;
+      }
+    }
+    return byName(a, b) * (field ? 1 : dir);
+  });
+}
+
 /* ═══ adapters/app-fsa.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Static build — boot, folder picker, welcome screen.
@@ -6606,7 +6705,7 @@ function exposeCore() {
    and the app module that wires them (app-fsa.js), which is the only module
    that runs anything at load time. entry-server.js is the counterpart.
 
-   Import order is evaluation order. state.js first: it pulls in shell.js (the
+   Import order is evaluation order. dom-renderer.js first: it pulls in shell.js (the
    markup every other module queries) and, through the core cycle, the rest.
    static/build-index.py walks this graph and inlines it in the same order.
    ═══════════════════════════════════════════════════════════════════════════ */

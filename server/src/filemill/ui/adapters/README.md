@@ -1,8 +1,10 @@
 # Adapters — how one UI serves two apps
 
-`../core/` is the Miller-columns app: columns, folding, the trail, the keyboard
-model, the preview pane, deep links. It knows **nodes** and nothing about their
-source. Everything source-specific is here, behind the three ports declared in
+`../core/model/` owns nodes and column state, selection, sorting, folding
+arithmetic, keyboard actions and deep links. It has no browser dependencies.
+`../core/dom-renderer.js` holds element handles and measurements. The adjacent
+render, layout and navigation modules apply model decisions to the DOM.
+Adapters keep source-specific loading and browser URL transport. Everything source-specific is here, behind the three ports declared in
 [`../core/ports.js`](../core/ports.js).
 
 Both editions load these files from here, through one entry module each:
@@ -62,7 +64,7 @@ test in `static/test-ui.py`.
 
 **`ROUTER`** — `read()`, `write(state, replace)`, `onNavigate(cb)`, or `null`
 for no URL sync. Core owns the mapping between a path and the column chain
-([`../core/deeplink.js`](../core/deeplink.js)). Both editions share it. Only the
+([`../core/model/deeplink.js`](../core/model/deeplink.js)). Both editions share it. Only the
 transport differs.
 
 ## Why the renderers are not ported

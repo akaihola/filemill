@@ -1,3 +1,4 @@
+import { locationState, walkPath } from "./model/deeplink.js";
 /* ═══════════════════════════════════════════════════════════════════════════
    Deep links — turning the selection into a path and back.
 
@@ -14,17 +15,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { revealRow } from "./layout.js";
 import { FS, ROUTER } from "./ports.js";
-import {
-  focusCol,
-  path,
-  previewNode,
-  root,
-  rowIndex,
-  sel,
-  setState,
-  state,
-  visibleKids,
-} from "./state.js";
+import { path, rowIndex, sel, state } from "./model/state.js";
 
 /* render() runs on resize and on every keystroke, so writing the URL from it is
    only safe if an unchanged location is left alone — otherwise Back fills up
@@ -39,34 +30,16 @@ export const setDeepLinkActions = (
   actions,
 ) => ({ render: renderPage, colCache: columnCache } = actions);
 
-export function currentPath() {
-  const names = path.slice(1).map((p) => p.name);
-  const leaf = sel[path.length - 1];
-  if (leaf !== undefined) names.push(leaf);
-  return names;
-}
-
-/* Walking a column with ↑/↓ is one selection change per keystroke — pushing a
-   history entry for each would make Back useless. What counts as a navigation
-   is *entering* a column, not opening one: selecting a folder opens its column
-   without moving focus (that is the whole focus model), and ↑/↓ down a list of
-   folders would otherwise push an entry per row. So the history key is the
-   chain up to the focused column, and everything else rewrites in place.
-   Back then steps back out of folders, which is what it looks like it does. */
 let lastKey = null;
 
 export function syncURL() {
   if (applying || !ROUTER || !path.length) return;
-  const key = path.map((p) => p.name).join("/");
-  const names = currentPath();
-  const node = previewNode();
-  const view = node && !node.dir
-    ? document.documentElement.dataset.filemill === "highlight"
-      ? "highlight"
-      : "render"
-    : undefined;
-  ROUTER.write({ root: path[0].name, path: names, view }, lastKey === key);
-  lastKey = key;
+  const result = locationState(
+    document.documentElement.dataset.filemill,
+    lastKey,
+  );
+  ROUTER.write(result.location, result.replace);
+  lastKey = result.key;
 }
 
 /* Walk down from the root, opening each directory in turn. Stops at the first
@@ -79,47 +52,14 @@ export function syncURL() {
    the chain to get there. A link has no such opinion and omits it. */
 export async function applyPath(names, wantFocus) {
   if (!path.length) return false;
-  names = (names || []).filter(Boolean);
-
-  /* a link to a dotfile has to reveal dotfiles, or visibleKids would hide the
-     very thing the URL asked for */
-  if (!state.dotfiles && names.some((n) => n.startsWith("."))) {
-    state.dotfiles = true;
-    const b = document.getElementById("s-dot");
-    if (b) b.setAttribute("aria-checked", "true");
-  }
-
   applying = true;
   try {
-    const rootNode = path[0];
-    setState({ path: [rootNode], sel: [], focusCol: 0 });
-    await FS.ensureLoaded(rootNode);
-    let complete = true;
-
-    for (let i = 0; i < names.length; i++) {
-      const parent = path[i];
-      const kids = visibleKids(parent);
-      const ri = kids.findIndex((k) => k.name === names[i]);
-      if (ri < 0) {
-        complete = false;
-        break;
-      }
-
-      const node = kids[ri];
-      sel[i] = node.name;
-      setState({ focusCol: i }); /* focus stays on the column holding it */
-      if (!node.dir) break;
-      await FS.ensureLoaded(node);
-      path.push(node);
-    }
-    return complete;
+    const walking = walkPath(names, (node) => FS.ensureLoaded(node), wantFocus);
+    const button = document.getElementById("s-dot");
+    if (button) button.setAttribute("aria-checked", String(state.dotfiles));
+    return await walking;
   } finally {
     applying = false;
-    /* clamped: the chain may have come back shorter than the column that had
-       focus, and focusing a column that is no longer open kills ↑/↓ */
-    if (wantFocus != null) {
-      setState({ focusCol: Math.max(0, Math.min(wantFocus, path.length - 1)) });
-    }
     renderPage();
     scrollCursorIntoView();
   }

@@ -35,7 +35,7 @@ import { choose } from "../core/nav.js";
 import { FS } from "../core/ports.js";
 import { render } from "../core/render.js";
 import { renderNode } from "../core/renderers.js";
-import { path, splitName, state, visibleKids } from "../core/state.js";
+import { path, splitName, state, visibleKids } from "../core/model/state.js";
 
 const offerRichToggle = (get, set) => {
   document.getElementById("s-previews").hidden = false;

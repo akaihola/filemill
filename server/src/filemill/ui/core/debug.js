@@ -15,21 +15,18 @@ import { colCache, render } from "./render.js";
 import { gear } from "./settings.js";
 import { ensureMeta, loadSort, setSort } from "./sort.js";
 import {
-  finder,
   focusCol,
   folded,
   path,
-  previewTarget,
   pvToken,
-  root,
   sel,
-  stage,
   state,
-  strip,
   visibleKids,
   widths,
-} from "./state.js";
-import { TA_IDLE, taSearch } from "./typeahead.js";
+} from "./model/state.js";
+import { finder, previewTarget, root, stage, strip } from "./dom-renderer.js";
+import { TA_IDLE } from "./typeahead.js";
+import { taSearch } from "./model/typeahead.js";
 
 /* Each value is a getter, or a property descriptor when a test also assigns. */
 export function expose(bindings) {
