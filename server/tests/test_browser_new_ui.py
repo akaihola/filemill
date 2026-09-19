@@ -1526,7 +1526,7 @@ def test_a_malformed_line_in_a_large_jsonl_file_fails_on_its_own_row(page):
     page.open("big.jsonl/line 7")
     page.wait_for_selector("#preview .pv-err", timeout=15000)
     assert "Not valid JSONL: line 7" in page.inner_text("#preview .pv-err")
-    assert "Not valid JSONL: line 7" in page.inner_text('.col[data-i="2"] .col-note')
+    assert page.evaluate("sel")[-1] == "line 7"
     assert page.locator('.col[data-i="1"] .row[title="line 8"]').count() == 1
 
 
