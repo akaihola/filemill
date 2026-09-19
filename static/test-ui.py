@@ -1315,11 +1315,11 @@ async def main(bundle, fake_handle, playwright):
               await pg.inner_text("#pv-content"))
         await pg.evaluate("applyPath(['tables', 'huge.jsonl', 'line 7'])")
         await pg.wait_for_selector("#preview .pv-err", timeout=15000)
-        note = await pg.inner_text('.col[data-i="3"]')
+        err = await pg.inner_text("#preview .pv-err")
         check("A malformed line in a large file fails on its own row only",
-              "Not valid JSONL: line 7" in await pg.inner_text("#preview .pv-err")
-              and "Not valid JSONL: line 7" in note
-              and "line 8" in await pg.evaluate("__rows(2)"), note)
+              "Not valid JSONL: line 7" in err
+              and (await pg.evaluate("sel"))[-1] == "line 7"
+              and "line 8" in await pg.evaluate("__rows(2)"), err)
         # back where the sections below expect to find note.md
         await click_row(pg, 0, "mixed")
         await pg.wait_for_timeout(300)
