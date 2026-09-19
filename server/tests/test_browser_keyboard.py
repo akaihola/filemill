@@ -45,15 +45,9 @@ def browser_root(tmp_path: Path) -> Path:
     return tmp_path
 
 
-# Long enough that measure() returns its 380 px ceiling for every column, which
-# is the content browser_root deliberately does not have: its 271, 176 and 148 px
-# columns are what makes the peek in
-# test_mobile_folder_tap_keeps_the_touched_column_whole_and_peeks_the_new_one
-# reachable at all, and widening them would delete a contract that is still
-# right. Wide content therefore gets a fixture of its own. Six levels because
-# landscape needs the depth: at 568 px the strip only reaches past the touched
-# column once five ancestors have folded to spines.
-_WIDE_NAMES = [f"level-{i}-" + "w" * 36 for i in range(6)]
+# Deep, long-named folders exercise panning after folded spines consume the
+# space left beside a fixed-width column, including phone landscape.
+_WIDE_NAMES = [f"level-{i}-" + "w" * 36 for i in range(12)]
 
 
 @pytest.fixture()
@@ -936,26 +930,22 @@ def test_mobile_portrait_folder_tap_never_folds_touched_or_right_columns(
 
 @pytest.mark.integration
 def test_mobile_landscape_folder_tap_never_folds_touched_column(live_server: str):
-    """The same rule with the phone turned sideways.
-
-    Here the fold reached the *parent* — the column holding the row that was
-    tapped — rather than the one it opened, which is the second half of the
-    same report. One tap is enough to show it: at 568 px the root column plus
-    the preview already overflow.
-    """
+    """A quarter-width chain must overflow before the focus cap is exercised."""
     with _ui_page(live_server, mobile=True, viewport=MOBILE_LANDSCAPE) as page:
         _ui_tap(page, 0, "my-knowledge")
-        _expect_ui_column(page, 1)
+        _ui_tap(page, 1, "docs")
+        _ui_tap(page, 2, "subdir")
+        _expect_ui_column(page, 3)
         _dial_settled(page)
 
         m = page.evaluate(_FOLD_METRICS)
-        assert m["focusCol"] == 0
+        assert m["focusCol"] == 2
         assert m["uncapped"] > m["focusCol"], (
             "the dial had no reason to fold past focus here — the check is "
             f"vacuous (uncapped {m['uncapped']}, focus {m['focusCol']})"
         )
-        assert m["folded"] == 0, (
-            f"{m['folded']} columns folded with the root column touched"
+        assert m["folded"] <= m["focusCol"], (
+            f"{m['folded']} columns folded past the touched column"
         )
         assert m["spinesAtOrRight"] == [], (
             f"columns {m['spinesAtOrRight']} folded at or right of the touched one"
@@ -987,10 +977,10 @@ def test_mobile_portrait_wide_folder_tap_keeps_the_touched_row_on_screen(
     to 116 px of the column at six.
     """
     with _ui_page(wide_live_server, mobile=True) as page:
-        _tap_wide_chain(page, 3)
+        _tap_wide_chain(page, 6)
 
         m = page.evaluate(_TOUCHED_METRICS)
-        assert m["focusCol"] == 2
+        assert m["focusCol"] == 5
         assert m["unpannedOverflow"] > 0, (
             "the touched column fits here unaided — the check is vacuous "
             f"(overflow {m['unpannedOverflow']}px, pan {m['pan']}px)"
@@ -1152,7 +1142,7 @@ def test_mobile_preview_scroll_position_is_not_zero_after_navigation(
 
 @pytest.mark.integration
 @pytest.mark.parametrize("viewport", [MOBILE_VIEWPORT, MOBILE_LANDSCAPE])
-def test_mobile_preview_fills_stage_and_leaves_scroll_hint(
+def test_mobile_preview_fills_remaining_space(
     live_server: str,
     viewport: dict,
 ):
@@ -1170,6 +1160,8 @@ def test_mobile_preview_fills_stage_and_leaves_scroll_hint(
                     .getBoundingClientRect();
                 return {
                     stageWidth: stageBox.width,
+                    remaining: finderBox.right - previewBox.left - parseFloat(getComputedStyle(strip).gap),
+                    visible: Math.min(previewBox.right, finderBox.right) - Math.max(previewBox.left, finderBox.left),
                     finderLeft: finderBox.left,
                     previewWidth: previewBox.width,
                     previewLeft: previewBox.left,
@@ -1178,7 +1170,12 @@ def test_mobile_preview_fills_stage_and_leaves_scroll_hint(
                 };
             }"""
         )
-        assert geometry["previewWidth"] >= geometry["stageWidth"] - 2
+        assert geometry["previewWidth"] == pytest.approx(
+            max(geometry["stageWidth"] / 3, geometry["remaining"]), abs=1
+        )
+        assert geometry["visible"] >= min(
+            geometry["stageWidth"] / 3, geometry["remaining"]
+        ) - 1
         assert geometry["previewLeft"] >= geometry["finderLeft"] - 2
         assert geometry["previewStartVisible"]
 
@@ -1199,7 +1196,10 @@ def test_mobile_fullscreen_preview_touch_handling(
             "getComputedStyle(document.getElementById('preview')).touchAction"
             f" === '{touch_action}'"
         )
-        assert page.evaluate("finder.scrollLeft") > 0
+        page.wait_for_function("root.classList.contains('pv-fullscreen')")
+        assert page.locator('#preview').bounding_box()['width'] == pytest.approx(
+            viewport['width'], abs=1
+        )
         # The click scrolled its button into view, dragging #stage sideways;
         # applyScroll puts it back at the next repaint (see layout.js), so wait
         # for that frame instead of racing it.

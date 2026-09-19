@@ -43,11 +43,7 @@ export async function choose(colIdx, node, keepScroll = false) {
 
   const reading = node.kids === null ? FS.ensureLoaded(node) : null;
   if (reading) {
-    /* Highlight the row at once, but hold its column back for a moment: a
-       column measures the names it holds, and one built before the read lands
-       measures empty — it would open at the minimum width and jump wider a
-       frame later. Most directories arrive well inside the grace; a slower one
-       opens on the spinner, which is honest about the wait. */
+    /* Highlight immediately, but avoid flashing a spinner for fast reads. */
     render(keepScroll);
     await Promise.race([
       reading,

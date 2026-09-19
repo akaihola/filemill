@@ -48,10 +48,9 @@ export function layout(keepScroll) {
   rail.style.width = (stageW + range()) + "px";
 
   const nextStep = foldUnit() * range();
-  if (
-    keepScroll && scrollStep &&
-    (nextStep !== scrollStep || path.length !== scrollColumns)
-  ) {
+  const geometryChanged = nextStep !== scrollStep ||
+    path.length !== scrollColumns;
+  if (keepScroll && scrollStep && geometryChanged) {
     const nextPosition = position > scrollColumns
       ? path.length * position / scrollColumns
       : position;
@@ -63,7 +62,12 @@ export function layout(keepScroll) {
   scrollStep = nextStep;
   scrollColumns = path.length;
 
-  if (!keepScroll) {
+  // A new column or density can consume the preview reserve even during ↑/↓.
+  // Keep deliberate partial folds and the fully folded preview position intact.
+  if (
+    !keepScroll ||
+    (geometryChanged && Number.isInteger(position) && position <= focusCol)
+  ) {
     const k = automaticFold(
       widths,
       GUTTER(),
@@ -71,7 +75,7 @@ export function layout(keepScroll) {
       previewTarget(),
       stageW,
       focusCol,
-      folded,
+      keepScroll ? position : folded,
       root.dataset.layout === "compressed-columns",
     );
     finder.scrollLeft = Math.round(k * foldUnit() * range());

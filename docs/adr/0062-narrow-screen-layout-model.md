@@ -1,39 +1,63 @@
-# ADR 0062: The narrow-screen layout model: what folds, what pans, what stays
+# ADR 0062: Stable folder widths and preview space
 
-Date: 2026-09-15
+Date: 2026-09-19
 
 ## Context
 
-ADRs 0021 to 0028 each record one rule of the column strip on a narrow screen.
-This ADR collects them in one place. The code of record is `layout()`,
-`applyScroll()` and `panFocus()` in `ui/core/layout.js`, the width clamp in
-`ui/core/render.js`, and `previewTarget()` in `ui/core/state.js`.
+Folder-name measurements and content-dependent preview targets changed column
+widths and automatic folding during navigation. The shared static and server UI
+needs the same width rules before and after folder contents arrive.
 
 ## Decision
 
-- **What folds.** Only columns left of the focused column fold, and only the
-  fewest that let the strip plus `previewTarget()` fit `#finder`. A scroll, a
-  spine click and `?layout=compressed-columns` may fold every column.
-- **What pans.** When the focused column would still overflow, `#strip` slides
-  left by exactly the overflow and never past the focused column's left edge.
-  `#stage` never scrolls.
-- **What stays.** The focused column and its selected row are whole. The
-  column a tap just opened starts inside `#finder` when no pan was needed;
-  when the pan engages, the focused column wins and the opened column waits
-  past the right edge. No column is wider than two thirds of `#finder`.
-- **The preview.** Its target width is `previewTarget()`. It grows when the
-  strip fits, keeps its left edge on screen when the strip does not, and
-  `.pv-fullscreen` hides the columns.
+- Desktop folders are `20em` wide, using the inherited column font. At the default
+  12px density this is 240px, one sixth of a 1440px laptop viewport. Comfortable
+  density uses 13px text and 260px columns. Viewport width and names do not change
+  this desktop width.
+- Phone portrait uses half the viewport width when viewport width is at most
+  600px. Phone landscape uses a quarter when viewport height is at most 600px.
+  These are viewport rules, not device detection. A short desktop window also
+  uses the landscape rule. A square viewport uses the portrait rule.
+- The preview fills the remaining strip width and reserves one third of the live
+  finder width, whether empty or showing a file. The finder spans the viewport.
+  Preview content scrolls inside its pane; an 88ch source line does not widen it.
+  Preview controls wrap so that narrow panes do not hide their actions.
+- Automatic folding starts at the left and folds the fewest ancestors needed
+  when the remainder is strictly less than one third. Equality does not fold.
+  The calculation includes both outside paddings, all gaps and folded spines.
+  Tests allow 1px for browser geometry rounding, not an earlier fold threshold.
+- Automatic folding never folds the focused column or columns to its right.
+  Existing folds remain until the user unfolds them. Manual scrolling, spine
+  clicks, compressed layout, no-columns layout and fullscreen keep their roles.
+- If protected columns and spines leave too little room, the preview can extend
+  beyond the finder. This can occur even on a shallow portrait path. Keeping the
+  touched column whole takes priority over the preview minimum. When that column
+  overflows, the strip pans left only far enough to reveal it. The stage never
+  scrolls.
+- Selection changes preserve logical fold position rather than a pixel offset
+  with a new meaning. A manual partial fold remains partial. Preview focus alone
+  does not resize or fold columns. Left returns to the containing column.
+  When a new column or density consumes the preview reserve, keyboard selection
+  adds the necessary ancestor folds just as mouse selection does. This applies
+  at whole-column dial positions; manual partial folds remain authoritative.
+
+The rules live in `ui/core/styles.css`, `folderWidth()` and `previewTarget()` in
+`ui/core/dom-renderer.js`, and `automaticFold()` in `ui/core/model/folding.js`.
+`render()` uses the live width for every node. `layout()` preserves fold position
+when the path or viewport changes. DOM column caching remains in place.
 
 ## Measurement
 
-`static/test-ui.py` walks four folders at the 380 px ceiling on 390 x 844,
-844 x 390, 1024 x 768 and 1440 x 900. Three ancestors fold on each. At 390 px
-the columns clamp to 260 px and the strip pans 11 px, so the opened column
-starts off screen. At 844 px and wider nothing pans and the opened column
-peeks. On every viewport the checks assert the same promises.
+Model tests cover the folding threshold below, at and above equality, multiple
+folds, focus protection and retained folds. Browser tests cover 1440×900,
+1024×768, 390×844 and 844×390, the 600px boundary, rotation and both densities.
+They compare long and short names, empty and file previews, delayed directory
+loads, mouse selection and keyboard navigation. Frame sampling checks that
+loading and selection do not partially fold the focused column.
 
 ## Consequences
 
-Each promise above has one check per device class. A change to the fold
-count, the pan, the clamp or the preview target must update this ADR.
+Long names truncate instead of widening columns. More ancestors can remain
+visible on desktop than with the old content-based preview target. Deep-spine
+panning tests need longer paths because phone columns are narrower. Changes to
+these rules must update this ADR and both editions' geometry checks.
