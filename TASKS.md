@@ -17,13 +17,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
     - Depends on: [29]
 
-- [*] There's no way to access the file context menu on desktop browsers. On touch
-  devices, a long touch does show it. Also, the context menu is transparent and very
-  hard to read. And the `Delete` item is missing from the menu.
-
-- [*] Fix all remaining red tests (listed in project memory), including the one-line
-  cause of the newest root-column regression.
-
 - [*] reStructuredText paragraphs are rendered very narrow. For example in`/home/agent/prg/feedtask/README.rst`, a the source for a paragraph is:
     ```rst
     A command-line tool to capture stdin and command output for AI tools
@@ -35,6 +28,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 ```
 
 ## Scheduled
+
+- [*] There's no way to access the file context menu on desktop browsers. On touch
+  devices, a long touch does show it. Also, the context menu is transparent and very
+  hard to read. And the `Delete` item is missing from the menu.
+
+- [*] Fix all remaining red tests (listed in project memory), including the one-line
+  cause of the newest root-column regression.
 
 - [*] If I exit a fullscreen preview on a mobile phone using the browser's Back button,
   I get an empty screen with the label `Select a file to preview`, and the only way to
