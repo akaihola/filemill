@@ -620,6 +620,7 @@ async def main(bundle, fake_handle, playwright):
         st = await pg.evaluate("__state()")
         check("↓ onto a folder opens its column but keeps focus",
               st["focusCol"] == 0 and st["path"] == ["workspace", "big"], json.dumps(st))
+        stable = await pg.evaluate("[...document.querySelectorAll('.col')].map(c=>Math.round(c.getBoundingClientRect().width))")
         names = []
         for _ in range(4):
             await pg.keyboard.press("ArrowDown")
@@ -634,6 +635,9 @@ async def main(bundle, fake_handle, playwright):
         check("↑ walks back up the same column",
               (await pg.evaluate("sel[0]")) == "locked" and
               (await pg.evaluate("focusCol")) == 0)
+        check("↑/↓ keep parent and subfolder widths stable",
+              await pg.evaluate("[...document.querySelectorAll('.col')].map(c=>Math.round(c.getBoundingClientRect().width))") == stable,
+              json.dumps({"before": stable, "after": await pg.evaluate("[...document.querySelectorAll('.col')].map(c=>Math.round(c.getBoundingClientRect().width))")}))
         await pg.keyboard.press("End")
         await pg.wait_for_timeout(120)
         check("End jumps to the last row", (await pg.evaluate("sel[0]")) == "README.md")
