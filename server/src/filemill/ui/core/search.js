@@ -1,13 +1,10 @@
 /* Server-only content search. The control stays hidden in local FSA mode. */
 import { focusCol } from "./model/state.js";
 import { currentPath } from "./model/deeplink.js";
+import { applyPath } from "./deeplink.js";
+import { ROUTER } from "./ports.js";
+import { resetPreviewModes } from "./render.js";
 
-/* The same attribute adapters/router-path.js reads; core must not import a
-   server-only adapter, or the static bundle would carry it too. */
-const SEARCH_BASE = (document.documentElement.dataset.base || "/").replace(
-  /\/*$/,
-  "/",
-);
 const searchForm = document.getElementById("search-form");
 const searchInput = document.getElementById("search-bar");
 const searchResults = document.getElementById("search-results");
@@ -55,10 +52,16 @@ async function runSearch() {
       true,
     );
     searchResults.querySelectorAll(".search-result").forEach((button) => {
-      button.onclick = () => {
-        location.href = `${SEARCH_BASE}${
-          button.dataset.path.split("/").map(encodeURIComponent).join("/")
-        }`;
+      button.onkeydown = (event) => {
+        if (event.key === "Enter" || event.key === " ") event.stopPropagation();
+      };
+      button.onclick = async () => {
+        const names = button.dataset.path.split("/");
+        resetPreviewModes();
+        document.documentElement.dataset.filemill = "render";
+        ROUTER.write({ path: names, view: "render" }, false);
+        showSearch("");
+        await applyPath(names);
       };
     });
   } catch (err) {
