@@ -29,9 +29,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Feature: Clicking on a content search result now opens the raw file. Open the
   rendered file in the UI preview pane instead.
 
-- [64] Keep subfolder and folded parent widths stable during Up/Down navigation.
 
 ## Scheduled
+- [64] Keep subfolder and folded parent widths stable during Up/Down navigation.
 - [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
 - [41] Fix plain-text reStructuredText previews in Source and Rendered modes.
 - [40] Return preview focus to the containing folder and selected file.
