@@ -21,7 +21,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   comparison in an ADR. Do not start a native toolkit before the ADR exists.
     - Depends on: [30]
 
-- [38] Fix PPTX previews that show unspaced slide text in both modes.
 
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
 
@@ -37,6 +36,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [64] Keep subfolder and folded parent widths stable during Up/Down navigation.
 
 ## Scheduled
+- [38] Fix PPTX previews that show unspaced slide text in both modes.
 
 - [*] Treat `.py.j2` as Python.
 
