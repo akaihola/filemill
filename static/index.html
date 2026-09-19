@@ -4905,6 +4905,9 @@ document.addEventListener("keydown", (e) => {
       e.preventDefault();
       unfoldTo(focusCol);
       render(true);
+      const parent = colCache.get(path[focusCol]);
+      const ri = rowIndex(path[focusCol], sel[focusCol]);
+      if (parent && ri >= 0) revealRow(parent.ensureRow(ri));
       return;
     }
     if (action === "preview-scroll") {
@@ -4993,6 +4996,9 @@ document.addEventListener("keydown", (e) => {
       setState({ focusCol: focusCol - 1 });
       unfoldTo(focusCol);
       render(true);
+      const parent = colCache.get(path[focusCol]);
+      const ri = rowIndex(path[focusCol], sel[focusCol]);
+      if (parent && ri >= 0) revealRow(parent.ensureRow(ri));
     }
   } else if (action === "refresh") {
     /* Every desktop file manager reads F5 as "re-read this folder", and here a
