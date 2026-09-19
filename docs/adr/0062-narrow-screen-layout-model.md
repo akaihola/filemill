@@ -21,6 +21,7 @@ needs the same width rules before and after folder contents arrive.
 - The preview fills the remaining strip width and reserves one third of the live
   finder width, whether empty or showing a file. The finder spans the viewport.
   Preview content scrolls inside its pane; an 88ch source line does not widen it.
+  Preview controls wrap so that narrow panes do not hide their actions.
 - Automatic folding starts at the left and folds the fewest ancestors needed
   when the remainder is strictly less than one third. Equality does not fold.
   The calculation includes both outside paddings, all gaps and folded spines.
