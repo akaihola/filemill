@@ -403,6 +403,11 @@ function renderPreview() {
 let markdownView = "rendered";
 let vttView = "transcript";
 
+export function resetPreviewModes() {
+  markdownView = "rendered";
+  vttView = "transcript";
+}
+
 function applyFullscreen(value) {
   setState({ pvFullscreen: value });
   root.classList.toggle("pv-fullscreen", value);
