@@ -32,7 +32,7 @@ import {
   visibleKids,
   widths,
 } from "./model/state.js";
-import { finder, measure, root, strip } from "./dom-renderer.js";
+import { folderWidth, root, strip } from "./dom-renderer.js";
 import { hlFences } from "./syntax.js";
 import { IMAGE_EXTENSIONS } from "./limits.js";
 import { classifyFile } from "./file-kind.js";
@@ -45,10 +45,8 @@ import { paintTrail } from "./trail.js";
    Anything that alters how a row *looks* (dotfile filter, density, theme icon
    colours) is part of the signature and drops the whole cache. */
 export const colCache = new Map();
-const navWidths = new WeakMap();
 let cacheSig = null;
 const CACHE_MAX = 24; // Retain enough nearby columns without growing memory unbounded.
-const COLUMN_WIDTH_RATIO = 2 / 3; // Leave room for adjacent columns on narrow screens.
 const MAX_DEPTH = 5; // Keep depth styling within the available visual scale.
 const SCROLL_HINT_PADDING = 4; // Show the affordance only when content exceeds the viewport.
 const VIRTUAL_ROWS = 1000;
@@ -220,7 +218,6 @@ function buildCol(node) {
     kidsRef: node.kids,
     metaRef: !!node.metaDone,
     dot: el.querySelector(".dot"),
-    width: measure(node),
   };
 }
 
@@ -250,6 +247,7 @@ export function render(keepScroll) {
     cacheSig = sig;
   }
 
+  const w = folderWidth();
   setState({ widths: [] });
   const cols = path.map((node, i) => {
     /* Before columnFor, so a directory that needs no fetch — the server build,
@@ -258,27 +256,6 @@ export function render(keepScroll) {
     sweepMeta(node);
     const c = columnFor(node);
     const selectedRow = rowIndex(node, sel[i]);
-    /* No column may be wider than two-thirds of the live finder. The fold cap keeps the
-       touched column unfolded and applyScroll's pan slides it into view, but
-       neither can show a full-width column on a narrow phone —
-       the row would still lose its right edge. Clamped here rather than in
-       measure() because columnFor caches the built column: a width measured
-       against the old viewport would survive a rotation, while `widths` is
-       rebuilt by every render, including the one `resize` fires.
-
-       Measured against #finder, not #stage, because the stage is one render
-       behind: its width is `--stage-w`, which layout() writes *after* this
-       loop has already chosen the widths. Turning a phone from 568 px to 375
-       therefore clamped this render against 568 — oversized columns on a 375 px
-       screen, and the pan can only choose which edge to lose, so the tapped
-       row sat 10 px past the right one until the next render healed it.
-       #finder is `flex: 1` in the viewport, so it is the live number, and it
-       is the one layout() reads to set --stage-w in the first place. */
-    const cap = Math.floor(finder.clientWidth * COLUMN_WIDTH_RATIO);
-    const w = keepScroll && navWidths.has(node)
-      ? Math.min(navWidths.get(node), cap)
-      : Math.min(c.width, cap);
-    navWidths.set(node, Math.min(w, cap));
     widths.push(w);
 
     /* `sorting` goes in the class string rather than on classList, because this

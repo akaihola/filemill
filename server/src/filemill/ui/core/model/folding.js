@@ -18,7 +18,7 @@ export function automaticFold(
   let count = 0;
   while (
     count < sizes.length &&
-    columnSpan(sizes, count, gutter, spine) + preview > viewport
+    columnSpan(sizes, count, gutter, spine) + gutter + preview > viewport
   ) count++;
   return compressed ? sizes.length : Math.min(focus, Math.max(count, previous));
 }

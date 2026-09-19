@@ -1467,3 +1467,36 @@ def test_editor_find_reveals_long_lines_and_keeps_composition_input(page):
     assert page.eval_on_selector("#pv-editor", "e => e.scrollLeft") == 0
     page.keyboard.press("Escape")
     assert page.is_hidden(".pv-find")
+
+
+@pytest.mark.parametrize(
+    "width,height,expected",
+    [
+        (1440, 900, 240),
+        (1024, 768, 240),
+        (390, 844, 195),
+        (844, 390, 211),
+    ],
+)
+def test_responsive_widths_survive_keyboard_and_mouse(page, width, height, expected):
+    page.set_viewport_size({"width": width, "height": height})
+    page.open()
+    page.evaluate("finder.style.scrollBehavior = 'auto'")
+    for name in ["notes", "empty", "README.md"]:
+        page.locator('.col[data-i="0"] .row').filter(has_text=name).first.click()
+        page.wait_for_function("name => sel[0] === name", arg=name)
+        assert page.evaluate(
+            "expected => widths.every(w => Math.abs(w - expected) < 0.1)", expected
+        )
+        assert page.locator(".col").first.bounding_box()["width"] == pytest.approx(
+            expected
+        )
+    for key in ["ArrowDown", "ArrowUp", "Home", "End", "PageUp", "PageDown"]:
+        page.keyboard.press(key)
+        assert page.locator(".col").first.bounding_box()["width"] == pytest.approx(
+            expected
+        )
+    page.locator('.col[data-i="0"] .row').filter(has_text="README.md").first.click()
+    box = page.locator("#preview").bounding_box()
+    assert min(box["x"] + box["width"], width) - max(box["x"], 0) >= width / 3 - 1
+    assert not page.errors

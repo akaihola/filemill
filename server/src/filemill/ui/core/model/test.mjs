@@ -207,4 +207,18 @@ assert.deepEqual(columnMetrics([200, 300, 100], 1, 0.5, 2, 10, 20), {
   focusRight: 310,
 });
 
+// Three 240px columns, three gaps and two outside paddings leave exactly W/3.
+for (const [viewport, expected] of [[1154, 1], [1155, 0], [1156, 0]]) {
+  assert.equal(
+    automaticFold([240, 240, 240], 10, 34, viewport / 3, viewport, 2, 0, false),
+    expected,
+  );
+}
+assert.equal(
+  automaticFold([240, 240, 240, 240, 240], 10, 34, 480, 1440, 4, 0, false),
+  2,
+);
+assert.equal(automaticFold([240, 240], 10, 34, 480, 1440, 1, 1, false), 1);
+assert.equal(automaticFold([195, 195], 10, 34, 130, 390, 0, 0, false), 0);
+
 console.log("Model checks passed");
