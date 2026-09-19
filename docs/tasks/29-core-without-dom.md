@@ -69,8 +69,8 @@ The full-suite acceptance criterion is blocked by existing failures:
   branch and main. No dependency changes were made.
 - `pre-commit` is absent from PATH, so the checks were invoked through
   `uv run --project server --with pre-commit pre-commit run --all-files`.
-  Ruff passes. Formatting reports seven unchanged Python files; mypy reports
-  two existing argument-type errors in `server/src/filemill/api.py:173`.
+  Ruff passes. Formatting reports pre-existing code in seven Python files.
+  Mypy reports two existing argument-type errors in `server/src/filemill/api.py:173`.
   The full run times out after 180 seconds in Deno formatting of vendor code.
   Whole-UI Deno lint also reports unchanged vendor code. Application-source
   lint and focused model/renderer formatting pass.
@@ -79,3 +79,23 @@ Issue [21] is marked completed, but both main and this branch create a fresh
 preview on resize. A browser measurement records one `PREVIEW.render` call and
 an unchanged selection on each. This refactor preserves that baseline; it does
 not implement a second cache fix.
+
+## AI review
+
+The focused model checks pass in Node and Deno. Bundled static and server
+browser checks pass, 2 tests total. The modular static check passes, 1 test.
+Source lint, focused formatting and bundle consistency checks pass. The review
+found no behavior defect introduced by this extraction.
+
+The recorded non-browser server failures were checked against the saved main
+run. All 224 failed test IDs match. Main's application and test sources still
+match the baseline revision used for those comparisons.
+
+The tracker audit compares every line against main after removing the single
+[29] block. The remaining text matches exactly. Issue [29] occurs once, under
+In Progress. A whole-tracker uniqueness claim is blocked: [38], [39], [40] and
+[42] each occur under both Scheduled and In Progress on main and this branch.
+The audit of numbered IDs and repeated issue titles found no other duplicates
+across headings. These pre-existing entries are preserved because this task
+requires every other issue to keep main's text. Removing them would be
+unrelated tracker maintenance.
