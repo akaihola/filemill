@@ -17,15 +17,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
     - Depends on: [29]
 
-- [*] If I exit a fullscreen preview on a mobile phone using the browser's Back button,
-  I get an empty screen with the label `Select a file to preview`, and the only way to
-  get out is to use the browser's forward button. After entering fullscreen mode, the
-  Back button should behave identically to the `Exit fullscreen` button.
-
-- [*] The `Delete` button in the preview pane gives the red error
-  `Delete failed: actions.render is not a function` on the bottom status line (after
-  confirming deletion).
-
 - [*] There's no way to access the file context menu on desktop browsers. On touch
   devices, a long touch does show it. Also, the context menu is transparent and very
   hard to read. And the `Delete` item is missing from the menu.
@@ -44,6 +35,15 @@ Rules for TASKS.md usage are at the bottom of the file.
 ```
 
 ## Scheduled
+
+- [*] If I exit a fullscreen preview on a mobile phone using the browser's Back button,
+  I get an empty screen with the label `Select a file to preview`, and the only way to
+  get out is to use the browser's forward button. After entering fullscreen mode, the
+  Back button should behave identically to the `Exit fullscreen` button.
+
+- [*] The `Delete` button in the preview pane gives the red error
+  `Delete failed: actions.render is not a function` on the bottom status line (after
+  confirming deletion).
 
 - [*] `<file>.md?filemill=highlight` doesn't highlight Markdown files correctly.
   Headings and URLs are not highlighted, apostrophes cause highlighting of everything
