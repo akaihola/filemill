@@ -17,9 +17,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
     - Depends on: [29]
 
-- [*] When navigating to the parent directory using the left arrow key, make sure the
-  highlighted file or directory is scrolled into view.
-
 - [*] Large directories now partition their contents into multiple lists that the user
   can browse using a `< Page N of NN >` control. This is not acceptable. The vertical
   scrollbar should be used to navigate through the directory contents. Task
@@ -70,6 +67,12 @@ Rules for TASKS.md usage are at the bottom of the file.
   cause of the newest root-column regression.
 
 ## Scheduled
+
+- [*] Bug: The `Fullscreen` button causes a full screen view of the file to briefly
+  flash, and then immediately returns to the main Filemill UI.
+
+- [*] When navigating to the parent directory using the left arrow key, make sure the
+  highlighted file or directory is scrolled into view.
 
 - [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
 - [40] Return preview focus to the containing folder and selected file.
