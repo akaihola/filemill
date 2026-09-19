@@ -36,10 +36,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] Bug: Arrow Right into the preview pane works inconasistently. Sometimes it focuses
-  the preview pane without changing the layout. Sometimes it hides the folder columns
-  and stretches the preview pane to full width.
-
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
 
@@ -79,6 +75,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [*] Bug: Arrow Right into the preview pane works inconasistently. Sometimes it focuses
+  the preview pane without changing the layout. Sometimes it hides the folder columns
+  and stretches the preview pane to full width.
 
 - [*] Arrow Down to focus the next folder sometimes half-folds the column, dims the
   text, and shows a semi-transparent vertical folder name on top of the contents. The
