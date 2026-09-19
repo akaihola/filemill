@@ -4,31 +4,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Unverified proposals
 
-- [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an unverified
-  architecture proposal, conditional on a fourth provider or a pagination bug.
-
 - [*] From documentation, docstrings and comments, remove references to specific
   development setups which include e.g. server names and local paths.
 
 ## Ordered backlog
 
-- [x] Delete `_document_page` — document representations, including `layout=no-columns`,
-      now return the shared client shell.
-
-- [x] Write `docs/adr/0001-one-finder.md` (context, decision, measurement, consequence).
-      The shared UI owns all interaction. The server renders documents. Proposal [8] is
-      closed.
-
-- [x] [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
-      `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
-      `TASKS.md`.
-
-- [x] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
-      `panFocus` and `slideTail`. Each function is under 25 lines.
-
 - [29] Make `ui/core/` a model package with no DOM: nodes, selection, folding
   arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
-    - Depends on: [18], [21]
+    - Depends on: [21]
 
 - [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
@@ -73,11 +56,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
-  decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
+- [*] Treat `.py.j2` as Python.
 
-- [23] Write the narrow-screen layout model as an ADR: what folds, what pans, what stays
-  on screen. Add one test each for phone portrait, phone landscape, tablet and desktop.
+## In Progress
 
 - [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
   registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
@@ -88,7 +69,38 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
   `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
 
-- Toggling `Source` / `Rendered` reloads the whole page and causes an uncomfortable
+- [*] The server browser suites show 11 failures on the branch, but a run against a clean
+  main checkout produced exactly the same 11: two legacy-htmx tests that main
+  deliberately disabled, and nine mobile restore-scroll tests.
+
+- [*] Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
+  what it means.
+
+- [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
+  `static/FSA-TEST-CHECKLIST.md`.
+
+- [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
+  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
+    - Depends on: [12]
+
+- [*] `.py` files are not highlighted at all.
+
+## Completed
+
+- [*] Delete `_document_page` — document representations, including `layout=no-columns`,
+      now return the shared client shell.
+
+- [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
+      `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
+      `TASKS.md`.
+
+- [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
+      `panFocus` and `slideTail`. Each function is under 25 lines.
+
+- [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
+  decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
+
+- [10] Toggling `Source` / `Rendered` reloads the whole page and causes an uncomfortable
   blink and a delay. Just the preview pane should be reloaded, and the URL and history
   updated.
 
@@ -99,29 +111,17 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100 k-entry
   directory still builds 100 k DOM nodes. Do this only if such folders show up.
 
-- The server browser suites show 11 failures on the branch, but a run against a clean
-  main checkout produced exactly the same 11: two legacy-htmx tests that main
-  deliberately disabled, and nine mobile restore-scroll tests.
-
-- Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
-  what it means.
-
 - [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
   Today `[text](~/note.md)` is a dead link although the file exists.
 
 - [6] Centralize file-kind classification across filesystem producers and preview/edit
   consumers. Add one test table per language that both sides share.
-    - Depends on: [19]
 
 - [*] For user testing, document how to run on agent@gogo instances of Filemill that are
   as close as possible to the browser test setup you have in the test suite. Put each
   different browser test setup in its own HTTP port, and link them in
   `/home/agent/index.html`. We will separately set up systemd user services for each
   different browser test setup.
-
-- [*] Treat `.py.j2` as Python.
-
-## In progress
 
 - [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
   `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
@@ -132,28 +132,15 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [21] Cache the preview element keyed on the previewed node and its `meta`, the same
   way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
 
-- [~] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
-  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
-
 - [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
   and the `watchfiles` dependency. Delete their tests.
 
-- [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
-  `static/FSA-TEST-CHECKLIST.md`.
-
-- [*] Default `--bind` in `server/src/filemill/cli.py` to `127.0.0.1`. Document it in
-  `SECURITY.md`.
-
-- For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon for
+- [*] For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon for
   the whole file, and `{}` and `[]` icons for objects and arrays.
 
 - [*] Run the static and server browser tests through one root `conftest.py` and one
   Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.
     - Depends on: [25]
-
-- Toggling `Source` / `Rendered` reloads the whole page and causes an uncomfortable
-  blink and a delay. Just the preview pane should be reloaded, and the URL and history
-  updated.
 
 - [*] Add a preview for `.mp4` files with a `<video controls>` element, as one registry
   entry plus one test.
@@ -186,28 +173,28 @@ Rules for TASKS.md usage are at the bottom of the file.
     - Depends on: [32], [34]
 
 - [*] Each row of a JSONL file must be presented exactly like a hierarchical nested view
-  of a JSON file. Depends on [5].
+  of a JSON file.
 
-- When an object or list is selected in a hierarchical nested view of JSON, show the
+- [*] When an object or list is selected in a hierarchical nested view of JSON, show the
   child nodes in the column to the right, and a foldable highlighted and pretty-printed
   JSON preview of the selected item in the second column to the right.
 
-- In keyboard navigation, parent folder columns currently unfold when selecting the next
+- [*] In keyboard navigation, parent folder columns currently unfold when selecting the next
   item using the down arrow. Strangely, this doesn't happen when using the up arrow. I
   haven't been able to understand what's special about the folders that cause this
   behavior.
 
-- Keyboard navigation using arrows still doesn't animate folding/unfolding/resizing of
+- [*] Keyboard navigation using arrows still doesn't animate folding/unfolding/resizing of
   columns. Do systematic debugging to identify the cause, and fix it.
 
 - [7] Make entry ordering an adapter-owned contract.
     - Depends on: [6]
 
-- Navigating with the right arrow key to the preview area must fold all folder columns
+- [*] Navigating with the right arrow key to the preview area must fold all folder columns
   to maximize the preview area width. A left arrow should return to the parent folder of
   the reviewed document and unfold that folder column (but no ancestor folder columns).
 
-- Task 04ce9574-92c8-4a4c-8148-32d2e827c13d didn't fix the erratic folding/unfolding of
+- [*] Task 04ce9574-92c8-4a4c-8148-32d2e827c13d didn't fix the erratic folding/unfolding of
   the parent column. Hard rule: Up/down navigation must never change folding state of
   ancestor folder columns.
 
@@ -220,12 +207,8 @@ Rules for TASKS.md usage are at the bottom of the file.
   Do red-green testing: first reproduce, then investigate, plan, implement, and test.
   Iterate until fixed.
 
-- The `Fullscreen` button in the preview pane doesn't do anything. No errors seen on the
+- [*] The `Fullscreen` button in the preview pane doesn't do anything. No errors seen on the
   JavaScript console either.
-
-- [6] Centralize file-kind classification across filesystem producers and preview/edit
-  consumers. Add one test table per language that both sides share.
-    - Depends on: [19]
 
 - [*] `.rst` files still don't render or highlight at all even though task
   63b87ad4-33c9-4f45-ae24-280034e8b0eb claims to have implemented and tested it. Do
@@ -241,21 +224,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   horizontally to the left. Make sure the arrow left key returns to the parent column
   after focusing the preview pane.
 
-- [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
-  decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
-
-- [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
-  registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
-
-- [*] Default `--bind` in `server/src/filemill/cli.py` to `127.0.0.1`. Document it in
-  `SECURITY.md`.
-
-- [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
-  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
-
-- [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
-  `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
-
 - [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
   identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
 
@@ -266,15 +234,13 @@ Rules for TASKS.md usage are at the bottom of the file.
   currently supported (e.g. checkboxes and wikilinks). Tradeoffs must be discussed with
   the maintainer before implementing.
 
-- [~] Typing a right arrow when the rightmost column before the preview is focused
+- [*] Typing a right arrow when the rightmost column before the preview is focused
   should focus the preview and let the user scroll it up/down using the arrow and
   PgUp/PgDn keys.
 
-- [x] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
+- [*] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
       `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in
       `server/src/filemill/styles.py`.
-
-- Back-navigation still often fails to unfold the newly focused column.
 
 - [*] On portrait mobile, some `.md` files wrap at screen width, others run wider than
   the screen width. For example, in the filemill repository, `README.md` and
@@ -295,23 +261,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into `withVirtual`,
   and `withJsonlPreview` and `withJsonPreview` into `withVirtualPreview`.
-    - Depends on: [19]
 
 - [20] Create `ui/core/limits.js` with one `TEXT_MAX` and one image extension list.
   Create one `mountRoot()` and one `currentPath()`. Delete the copies and `pathParts`.
-    - Depends on: [17]
-
-- [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
-  `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
-
-- [*] Give each magic number in `ui/core/state.js`, `layout.js`, `nav.js`, `render.js` a
-  name and a one-line comment that says why the value is what it is.
-
-- [21] Cache the preview element keyed on the previewed node and its `meta`, the same
-  way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
-
-- [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
-  and the `watchfiles` dependency. Delete their tests.
 
 - [22] Replace `cursor[i]`, `sel[i]` and `node.lastSel` with one selection model:
   `sel[i]` is the selected name. Derive the row index when needed.
@@ -331,23 +283,23 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Delete `server/.pi/settings.json`, `server/mobile-narrow-preview.png`,
   `server/.claude/commands/` and `architecture-review-20260904.html`.
 
-- Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
+- [*] Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
   between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
   viewing the source with syntax highlighting.
 
 - [*] Add `.pre-commit-config.yaml` with ruff, ruff-format, mypy, deno fmt, deno lint
   and `static/build-index.py --check`. Run `pre-commit run --all-files` until it passes.
 
-- Bug: Task 511f90cc-2725-4ef1-a8d8-ed67c4eddb0f failed to fix the portrait mobile
+- [*] Bug: Task 511f90cc-2725-4ef1-a8d8-ed67c4eddb0f failed to fix the portrait mobile
   scroll to the right problem. I suspect the extra space at the right side of the page
   is caused by the `⇧+wheel fold` label flowing outside the right edge of the page.
 
-- Feature: ability to delete a file or a directory from the file manager.
+- [*] Feature: ability to delete a file or a directory from the file manager.
 
-- [~] Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight`
+- [*] Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight`
   view.
 
-- Bug: After navigating from a directory url without query parameters (e.g.
+- [*] Bug: After navigating from a directory url without query parameters (e.g.
   `/path/to/dir`) to a file (e.g. `file1.md`), and then another file (e.g. `file2.md`),
   and then opening file2 using the `Raw` button, and navigating back using the browser's
   back button, in some situations the file manager view isn't displayed. Instead, the
@@ -355,7 +307,7 @@ Rules for TASKS.md usage are at the bottom of the file.
   `?filemill=render` or `?filemill=highlight` query parameter (whichever mode was last
   active) to prevent this behavior.
 
-- Bug: For `.vtt` files from YouTube, this error is always displayed instead of the
+- [*] Bug: For `.vtt` files from YouTube, this error is always displayed instead of the
   content: `Malformed WebVTT: cue is missing a timestamp`. You may test using `.vtt`
   files found on the filesystem.
 
@@ -373,9 +325,7 @@ Rules for TASKS.md usage are at the bottom of the file.
   values are selected together. This should be fixed for the case when no unique column
   is available. Original implementation in task 8038a32c-570b-45ed-b3ca-5834b3b8dc18.
 
-- [*] `.py` files are not highlighted at all.
-
-- [*] `.py.j2` are templates for Python files that are rendered by Jinja2. Does our
+- [37] `.py.j2` are templates for Python files that are rendered by Jinja2. Does our
   highlighting library support syntax highlighting for such hybrid files? If so,
   implement that. If not, consider alternatives and write a report.
 
@@ -384,7 +334,7 @@ Rules for TASKS.md usage are at the bottom of the file.
   scrolls the entire page about 1/12th width and leaves an empty margin at the right
   edge.
 
-- [~] Add `deno fmt` and `deno lint` for `ui/` (one pinned binary, no Node project).
+- [*] Add `deno fmt` and `deno lint` for `ui/` (one pinned binary, no Node project).
   Format `ui/` one time and commit the result as its own commit.
 
 - [*] Add `ruff` and `mypy` to the `dev` group in `server/pyproject.toml`. Add
@@ -399,17 +349,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [12] Make `static/test-ui.py` run to its end, then fix the three checks that fail: the
   `.pv-content` timeout and the two "edit starts at the top" checks.
 
-- Markdown preview now preserves line breaks. It should instead let the browser handle
+- [*] Markdown preview now preserves line breaks. It should instead let the browser handle
   line breaks and consider a multi-line Markdown paragraph as a single line.
 
 - [*] In `ui/core/state.js`, replace `node.jsonl ? kids : sortKids(kids)` with a
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
-## Completed
-
 - [28] Grow the editor behind the `FS.write` port: undo, find, a line gutter and a
   "modified" mark. Each addition is one file in `ui/editor/`.
-    - Depends on: [17]
 
 - [27] Try reStructuredText rendering in the browser with Pyodide or a WASM tool, behind
   the rich renderer consent switch. Record size and first-load time in an ADR.
@@ -433,210 +380,38 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [32] Render Markdown and `.docx` in the browser in the server edition too. Serve the
   pinned renderer modules from `ui/vendor/`. Then delete `rendering.py` and its deps.
-    - Depends on: [19]
 
 - [34] Make the SQLite provider return JSON only. The client renders tables and rows
   with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close [9].
-    - Depends on: [19]
 
 - [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an unverified
   architecture proposal, conditional on a fourth provider or a pagination bug.
 
 - [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both editions
   fill it from the same core list plus their own adapters.
-    - Depends on: [19]
 
 - [36] Decide how the installed PWA gets a running server: a systemd or launchd unit, a
   launcher, a desktop shell, or only a better "server not running" page.
 
-- [36] Decide how the installed PWA gets a running server: a systemd or launchd unit, a
-  launcher, a desktop shell, or only a better "server not running" page.
-
-- [x] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT. Use
+- [*] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT. Use
       the current year and "Antti Kaihola" as the copyright holder.
 
-- Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
+- [*] Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
   files. Current PPTX support was implemented in task
   38ab06e2-c607-4d4a-9978-67847e70d27d.
 
 ## Accepted
 
-- [19] Move adapter code out of `ui/core/`: `jsonl.js`, the welcome screen, the local
-  badge and `offerRichToggle` go to `ui/adapters/`.
-    - Depends on: [17]
-
-- [18] Break the import cycles in `ui/core/`: `render.js` gets its callbacks as one
-  `actions` object at boot; `layout.js` gets `set` and `setVar` from a new `dom.js`.
-    - Depends on: [17]
-
-- [23] Write the narrow-screen layout model as an ADR: what folds, what pans, what stays
-  on screen. Add one test each for phone portrait, phone landscape, tablet and desktop.
-
-- [17] Convert `ui/core/` and `ui/adapters/` to ES modules with one entry module per
-  edition. Make `static/build-index.py` inline the module graph.
-
-- [16] Rewrite all remaining Markdown files in Simplified Technical English. Done when
-  the Markdown line count is below the line count of `*.py`, `*.js` and `*.css`.
-
-- [14] Merge `server/TASKS.md`, `server/ISSUES.md` and `static/TASKS.md` into root
-  `TASKS.md` and `docs/tasks/`. Keep open items. Delete closed items and the files.
-
-- [*] Add a `lint` job to `.github/workflows/publish.yml` that runs
-  `pre-commit run --all-files`. Make the `test` job need the `lint` job.
-
-- [x] Remove the `--cov*` options from `addopts` in `server/pyproject.toml`. Pass them
-      on the `pytest` command line in the CI `test` job. A single-test run must be fast.
-
-- [*] Rendering if reStructuredText (`.rst`) isn't currently supported. Investigate how
-  to implement it on the client side. Prefer readily available 3rd party client-side
-  solutions, or pre-packaged Python solutions to run on the browser, and just implement
-  whatever best solution you find. If those solutions aren't available, plan a fallback
-  solution for how to run the Python code on the browser by ourselves, but write a plan
-  first without implementing it yet.
-
-- [x] Use `/path/to/file.html` instead of `/raw?path=/path/to/file.html` for HTML
-      previews. Server HTML iframes now use canonical root-relative file paths.
-
-- [8] One shared JavaScript finder owns interaction. The server supplies API data and
-  document previews. Decision recorded in `docs/adr/0001-one-finder.md`.
-
-- [11] Delete the HTMX finder from the server: its Python code, its CSS, its JavaScript
-  and its tests. Roadmap phase 0, step 1. Done: the `/click`, `/vpage`, `/restore`,
-  `/f/` route handlers and `columns.py` were already unregistered dead code; deleted
-  them plus `COLUMN_JS`, the HTMX-only `APP_CSS` rules, the sqlite pagination/format
-  HTML, and every test that pinned that stack. The `layout=no-columns` directory listing
-  (the one live `columns.py` caller) now uses a small non-HTMX helper.
-
-- [*] Rebuild the static bundle: run `cd static && ./build-index.py` and commit
-  `static/index.html`. Roadmap phase 0, step 0.
-
-- [~] Text file editing shows the original version of the file after saving changes.
-  Force reloading the page doesn't change that.
-
-- [*] Truncate too wide file names in the middle just before the file extension
-
-- [*] Text file editing should start with the cursor at the top of the file
-
-- [5] Hierarchical nested view for JSON
-
-- [*] Back-navigation still often fails to unfold the newly focused column. For example,
-  if I navigate using the keyboard to
-  https://filemill.vempai.men/filemill/server/src/filemill/providers/__pycache__/__init__.cpython-313.pyc
-  and then back left, the `server` column doesn't unfold.
-
-- [*] Make the static/test-rich.py offline checks deterministic
-
-- [5] Hierarchical nested view for JSON — shared client-side hierarchical JSON view with
-  nested navigation and scalar previews.
-
-- [*] Get rid of HTMX based routes. We now have enough feature parity in the stand-alone
-  client side UI and the server-based implementation which shares the same client side
-  implementation so we can start removing the legacy implementation.
-
-- [*] Allow editing any plaintext file, e.g. `.gitconfig`. Detect editable files by file
-  extension **and** contents. If it's plain ASCII or UTF-8 text, it's editable, unless
-  it's single line and insanely wide.
-
-- [*] For highlighted text files (e.g. `.py`, `.js`), the minimum preview width isn't
-  currently defined as a static number of characters. So at browser zooms above 100%,
-  lines are wrapped. Ensure the minimum preview width is 88 characters.
-
-- [*] If I navigate deep into `~/.bun/install/cache/@agegr/pi-web/0.8.8@@@1/README.md`
-  and return back column by column using the left arrow key, the `.bun` column doesn't
-  expand when I reach it. It does expand if I navigate to it using the mouse instead.
-
-- [*] make PDF previews full frame just like HTML and Markdown rendered previews
-
-- [*] The maximum column width must be 2/3 of available space. This ensures that the
-  left edge of inner folders and previewed files is always visible.
-
-- [*] Rendering of fenced blocks in Markdown has two unwanted artifacts:
-    - the first line is indented about 0.7 character widths
-    - text has a slightly darker background color than the gray surrounding box
-
-- [*] JSONL hierarchical view must be in original file order, not sorted by key.
-
-- [*] Page Up and Page Down keys should move the selection to the topmost/bottommost
-  visible item in the focused column, or if already selected, scroll up/down as many
-  lines as fit in the column, and then move to the topmost/bottommost visible item.
-
-- [4] Use one shared client side implementation for rendering Markdown fenced code
-  blocks. Make sure the implementation flows line-wrapped paragraphs correctly, i.e.
-  doesn't insert line feeds in the rendered HTML at each newline in the source.
-
-- [*] Hierarchical view for `.jsonl` files: first level column is a listing showing for
-  each line the value of a key which is unique across all lines, preferring short or
-  moderate width text values (e.g. `title`, `description`) but using scalar values (e.g.
-  `timestamp`, `id`) if none are available. The second column is a two-column table view
-  of `(key, value)` pairs for each line. Do this entirely on the client side, but
-  following the example of how `.sqlite` files are rendered.
-
-- [*] Migrate the 19 legacy htmx browser tests in server/tests/test_browser_keyboard.py
-  to the shared UI. Ported in e89f974; the file's 31 tests all pass. Details in
-  docs/tasks/2-fix-all-test-failures.md.
-
-- [3] Get rid of duplicate vendored code. Simply use the same source files for ui/ and
-  server/.
-
-- [*] Full file highlighting: don't clip at 8000 chars. Answered: no slicing — a text
-  preview is whole or absent, bounded by the 512 KB read gate that was always there.
-  Rationale in static/AGENTS.md.
-
-- [*] On mobile, tapping a folder still hid the tapped row when the column held wide
-  content. The fold cap kept that column unfolded but not on screen: each folded
-  ancestor costs a spine and a gutter, so at 390 px two levels in left 292 px of a 376
-  px column inside the viewport. applyScroll now pans the strip left by exactly the
-  overflow, and render clamps a column to the stage width.
-
-- [*] On mobile, opening a folder causes the opened folder in the next column to fold
-  (when vertical) or the parent folder to fold (when horizontal). Touching folders
-  should never cause folding of the touched column or columns to the right. Only columns
-  to the left of the touched column may fold.
-
-- [*] The static/test-ui.py check "Scrolling right folds columns into spines" (expects 5
-  spines) fails or flakes, likely an animation-timing race.
-
-- [2] Fix all test failures. Split into multiple tasks if necessary.
-
-- [1] Show version and Git commit hash (if available) via an option in the settings
-  menu.
-
-- [*] Plaintext preview doesn't use all vertical space in preview column. The whole
-  column should scroll, not just the preview area.
-
-- [*] Syntax highlighting missing in preview pane. Use client side highlighting to
-  maximize shared code between ui/ and server/.
-
-- [*] Edit mode for text files in the preview pane
-
-- [*] Remove `dl.meta` section (Where/Size/Modified) from preview pane
-
-- [*] In the cogwheel menu, there's an empty `PREVIEWS` section
-
-- [*] Verify and refine TASKS.md rules
-
-[1]: docs/tasks/1-show-version-and-git.md
-[2]: docs/tasks/2-fix-all-test-failures.md
-[3]: docs/tasks/3-remove-duplicate-ui-source.md
-[4]: docs/tasks/4-share-markdown-code.md
-[5]: docs/tasks/5-hierarchical-json-view.md
 [6]: docs/tasks/6-file-kind-classification.md
 [7]: docs/tasks/7-adapter-owned-entry-order.md
-[8]: docs/tasks/8-consolidate-finder-stacks.md
 [9]: docs/tasks/9-vfs-viewspec.md
-[11]: docs/tasks/11-delete-htmx-finder.md
+[10]: docs/tasks/10-preview-mode-toggle.md
 [12]: docs/tasks/12-test-ui-runs-to-end.md
 [13]: docs/tasks/13-correct-stale-documents.md
-[14]: docs/tasks/14-merge-issue-trackers.md
 [15]: docs/tasks/15-split-decisions-into-adrs.md
-[16]: docs/tasks/16-rewrite-docs-in-ste.md
-[17]: docs/tasks/17-es-modules.md
-[18]: docs/tasks/18-break-import-cycles.md
-[19]: docs/tasks/19-adapter-code-out-of-core.md
 [20]: docs/tasks/20-one-limits-one-path.md
 [21]: docs/tasks/21-cache-preview-element.md
 [22]: docs/tasks/22-one-selection-model.md
-[23]: docs/tasks/23-narrow-screen-model.md
 [24]: docs/tasks/24-split-app-py.md
 [25]: docs/tasks/25-static-tests-under-pytest.md
 [26]: docs/tasks/26-renderer-registry.md
@@ -650,6 +425,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 [34]: docs/tasks/34-sqlite-json-only.md
 [35]: docs/tasks/35-decide-web-mounts.md
 [36]: docs/tasks/36-pwa-start-server.md
+[37]: docs/tasks/py-j2-highlighting.md
 [*]: TASKS.md
 
 ---

@@ -1,5 +1,5 @@
 ---
-depends-on: [18, 21]
+depends-on: [21]
 ---
 
 # Make ui/core/ a model package with no DOM
