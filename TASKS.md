@@ -23,12 +23,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   the preview pane without changing the layout. Sometimes it hides the folder columns
   and stretches the preview pane to full width.
 
-- [*] Arrow Down to focus the next folder sometimes half-folds the column, dims the
-  text, and shows a semi-transparent vertical folder name on top of the contents. The
-  same doesn't happen when navigating by clicking the next folder using the mouse
-  instead. Ensure navigating up/down using the keyboard never resizes the focused
-  column, especially not below the folding transition width range.
-
 - [*] Many of the unintended column width changes could probably be solved by using a
   constant column width. Choose a standard folder column width in `em` units such that
   on a normal laptop widescreen, one column wills 1/6 of a full screen width browser
@@ -45,6 +39,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] Arrow Down to focus the next folder sometimes half-folds the column, dims the
+  text, and shows a semi-transparent vertical folder name on top of the contents. The
+  same doesn't happen when navigating by clicking the next folder using the mouse
+  instead. Ensure navigating up/down using the keyboard never resizes the focused
+  column, especially not below the folding transition width range.
 
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
