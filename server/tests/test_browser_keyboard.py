@@ -645,6 +645,7 @@ def test_vertical_navigation_keeps_focused_column_whole(
     with _ui_page(live_server) as page:
         page.set_viewport_size({"width": viewport_width, "height": 900})
         page.keyboard.press("ArrowDown")
+        page.wait_for_function("path.length === 2 && path[1].kids !== null")
         page.keyboard.press("ArrowRight")
         page.wait_for_function("focusCol === 1 && path.length === 3")
         page.evaluate(
@@ -683,6 +684,54 @@ def test_vertical_navigation_keeps_focused_column_whole(
             )
             assert appearance == {"body": "1", "label": "0", "spine": False}
             assert page.evaluate("focusCol === 1 && folded === 1")
+
+
+@pytest.mark.integration
+def test_vertical_navigation_preserves_rounded_fold_boundary(live_server: str):
+    with _ui_page(live_server) as page:
+        page.keyboard.press("ArrowDown")
+        page.wait_for_function("path.length === 2 && path[1].kids !== null")
+        page.keyboard.press("ArrowRight")
+        page.wait_for_function("focusCol === 1 && path.length === 3")
+        page.evaluate("""async () => {
+            const { layout } = await import('/ui/core/layout.js');
+            const { GUTTER } = await import('/ui/core/dom-renderer.js');
+            // Ranges 528/529 land on opposite sides of a rounded fold boundary.
+            widths.splice(0, 3, 230 - 3 * GUTTER(), 148, 150);
+            layout(true);
+            finder.scrollTo({left: Math.round(foldUnit() * range()), behavior: 'instant'});
+        }""")
+        page.wait_for_function("folded === 1")
+        page.evaluate("""async () => {
+            const { layout } = await import('/ui/core/layout.js');
+            widths[2] = 151;
+            layout(true);
+        }""")
+        assert page.evaluate("folded") == 1
+        assert page.locator('.col[data-i="0"]').evaluate(
+            "el => el.classList.contains('spine')"
+        )
+        assert page.locator('.col[data-i="1"]').evaluate("el => el.offsetWidth") == 148
+
+
+@pytest.mark.integration
+def test_vertical_navigation_preserves_full_fold_with_equal_widths(live_server: str):
+    with _ui_page(live_server) as page:
+        page.keyboard.press("ArrowDown")
+        page.wait_for_function("path.length === 2 && path[1].kids !== null")
+        page.keyboard.press("ArrowRight")
+        page.wait_for_function("focusCol === 1 && path.length === 3")
+        page.evaluate("""() => {
+            path.forEach(node => colCache.get(node).width = 150);
+            render();
+            finder.scrollTo({left: range(), behavior: 'instant'});
+        }""")
+        page.wait_for_function("folded === 3")
+        for key, count in [("ArrowDown", 2), ("ArrowUp", 3)]:
+            page.keyboard.press(key)
+            page.wait_for_function("count => path.length === count", arg=count)
+            assert page.evaluate("folded") == count
+            assert page.locator('.col.spine').count() == count
 
 
 @pytest.mark.integration
