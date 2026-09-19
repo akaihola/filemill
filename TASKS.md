@@ -89,9 +89,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] When navigating to the parent directory using the left arrow key, make sure the
-  highlighted file or directory is scrolled into view.
-
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
 
@@ -123,6 +120,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [*] When navigating to the parent directory using the left arrow key, make sure the
+  highlighted file or directory is scrolled into view.
 
 - [*] Many of the unintended column width changes could probably be solved by using a
   constant column width. Choose a standard folder column width in `em` units such that
