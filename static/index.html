@@ -5898,8 +5898,15 @@ let mdInstance = null;
 
 function homeHref(href) {
   if (!href.startsWith("~/")) return href;
-  const mount = document.documentElement.dataset.root;
-  return mount && mount !== "/" ? `/w/${encodeURIComponent(mount)}/${href.slice(2)}` : href.slice(2);
+  const root = document.documentElement;
+  const mounts = JSON.parse(root.dataset.mounts || "[]");
+  const path = href.slice(2);
+  const mount = mounts.includes(path.split("/", 1)[0])
+    ? path.split("/", 1)[0]
+    : root.dataset.root;
+  return mount && mount !== "/"
+    ? `/w/${encodeURIComponent(mount)}/${path}`
+    : path;
 }
 
 /* A relative link resolves against the document's own folder and becomes the
