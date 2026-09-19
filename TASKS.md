@@ -19,10 +19,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] Bug: Arrow Right into the preview pane works inconasistently. Sometimes it focuses
-  the preview pane without changing the layout. Sometimes it hides the folder columns
-  and stretches the preview pane to full width.
-
 - [*] Many of the unintended column width changes could probably be solved by using a
   constant column width. Choose a standard folder column width in `em` units such that
   on a normal laptop widescreen, one column wills 1/6 of a full screen width browser
@@ -39,6 +35,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] Bug: Arrow Right into the preview pane works inconasistently. Sometimes it focuses
+  the preview pane without changing the layout. Sometimes it hides the folder columns
+  and stretches the preview pane to full width.
 
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
