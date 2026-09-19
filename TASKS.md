@@ -34,10 +34,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Feature: Clicking on a content search result now opens the raw file. Open the
   rendered file in the UI preview pane instead.
 
-- [*] Moving up and down in a folder column using the arrow keys still often causes the
-  subfolder column to the right to change its width. A bit more seldom but regularly
-  does the folded width of the parent column change. Let's still aim for complete
-  stability like described in task 3cf8ab6d-f2b0-4438-bfe1-58870f487bec.
+- [64] Keep subfolder and folded parent widths stable during Up/Down navigation.
 
 ## Scheduled
 
@@ -364,6 +361,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 [61]: docs/tasks/61-csv-unique-row-keys.md
 [62]: docs/tasks/62-portrait-preview-swipe-overflow.md
 [63]: docs/tasks/63-preview-toolbar-controls.md
+[64]: docs/tasks/64-column-width-stability.md
 [*]: TASKS.md
 
 ---
