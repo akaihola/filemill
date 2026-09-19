@@ -33,10 +33,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## Scheduled
 - [64] Keep subfolder and folded parent widths stable during Up/Down navigation.
 - [41] Fix plain-text reStructuredText previews in Source and Rendered modes.
-- [40] Return preview focus to the containing folder and selected file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [40] Return preview focus to the containing folder and selected file.
 
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
 
