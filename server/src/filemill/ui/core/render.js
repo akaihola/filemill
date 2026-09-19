@@ -47,6 +47,7 @@ import { paintTrail } from "./trail.js";
    Anything that alters how a row *looks* (dotfile filter, density, theme icon
    colours) is part of the signature and drops the whole cache. */
 export const colCache = new Map();
+const navWidths = new WeakMap();
 let cacheSig = null;
 const CACHE_MAX = 24; // Retain enough nearby columns without growing memory unbounded.
 const COLUMN_WIDTH_RATIO = 2 / 3; // Leave room for adjacent columns on narrow screens.
@@ -275,10 +276,11 @@ export function render(keepScroll) {
        row sat 10 px past the right one until the next render healed it.
        #finder is `flex: 1` in the viewport, so it is the live number, and it
        is the one layout() reads to set --stage-w in the first place. */
-    const w = Math.min(
-      c.width,
-      Math.floor(finder.clientWidth * COLUMN_WIDTH_RATIO),
-    );
+    const cap = Math.floor(finder.clientWidth * COLUMN_WIDTH_RATIO);
+    const w = keepScroll && navWidths.has(node)
+      ? navWidths.get(node)
+      : Math.min(c.width, cap);
+    navWidths.set(node, Math.min(w, cap));
     widths.push(w);
 
     /* `sorting` goes in the class string rather than on classList, because this
