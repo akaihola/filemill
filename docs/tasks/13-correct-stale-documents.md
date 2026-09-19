@@ -6,10 +6,11 @@ depends-on: []
 
 ## Historical scope
 
-The file list below records the original review targets. `server/TASKS.md`,
-`server/ISSUES.md` and `server/CONTRIBUTING.md` have since been removed; the
-current tracker and contribution guide are [TASKS.md](../../TASKS.md) and
-[CONTRIBUTING.md](../../CONTRIBUTING.md). The accepted task 2 description was
+The file list below records the original review targets. `server/TASKS.md` and
+`server/ISSUES.md` have since been removed. The current tracker is
+[TASKS.md](../../TASKS.md); both the [root contribution guide](../../CONTRIBUTING.md)
+and [server contribution guide](../../server/CONTRIBUTING.md) still exist.
+The accepted task 2 description was
 removed by `32a5a6c`; retrieve it with
 `git show 32a5a6c^:docs/tasks/2-fix-all-test-failures.md`.
 
