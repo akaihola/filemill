@@ -17,9 +17,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   comparison in an ADR. Do not start a native toolkit before the ADR exists.
     - Depends on: [30]
 
-- [*] Feature: Clicking on a content search result now opens the raw file. Open the
-  rendered file in the UI preview pane instead.
-
 - [*] Bug: Arrow Right into the preview pane works inconasistently. Sometimes it focuses
   the preview pane without changing the layout. Sometimes it hides the folder columns
   and stretches the preview pane to full width.
@@ -32,6 +29,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   column, especially not below the folding transition width range.
 
 ## Scheduled
+- [*] Feature: Clicking on a content search result now opens the raw file. Open the
+  rendered file in the UI preview pane instead.
+
 - [29] Make `ui/core/` a model package with no DOM: nodes, selection, folding
   arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
     - Depends on: [21]
