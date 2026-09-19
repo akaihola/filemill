@@ -13,15 +13,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   comparison in an ADR. Do not start a native toolkit before the ADR exists.
     - Depends on: [30]
 
-- [*] Many of the unintended column width changes could probably be solved by using a
-  constant column width. Choose a standard folder column width in `em` units such that
-  on a normal laptop widescreen, one column wills 1/6 of a full screen width browser
-  window. The preview pane should fill the remaining width. The leftmost column should
-  fold when that remaining width falls below 1/3 of the full screen width. On small
-  screens such as phone screens, the ratios should be different: for portrait mode,
-  column = 1/2 width, preview = at least 1/3 width, and for landscape mode, column = 1/4
-  width, preview = at least 1/3 width. We need to experiment with these.
-
 - [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
     - Depends on: [29]
@@ -40,6 +31,15 @@ Rules for TASKS.md usage are at the bottom of the file.
   same doesn't happen when navigating by clicking the next folder using the mouse
   instead. Ensure navigating up/down using the keyboard never resizes the focused
   column, especially not below the folding transition width range.
+
+- [*] Many of the unintended column width changes could probably be solved by using a
+  constant column width. Choose a standard folder column width in `em` units such that
+  on a normal laptop widescreen, one column wills 1/6 of a full screen width browser
+  window. The preview pane should fill the remaining width. The leftmost column should
+  fold when that remaining width falls below 1/3 of the full screen width. On small
+  screens such as phone screens, the ratios should be different: for portrait mode,
+  column = 1/2 width, preview = at least 1/3 width, and for landscape mode, column = 1/4
+  width, preview = at least 1/3 width. We need to experiment with these.
 
 - [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
 - [40] Return preview focus to the containing folder and selected file.
