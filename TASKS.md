@@ -40,12 +40,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] Arrow Down to focus the next folder sometimes half-folds the column, dims the
-  text, and shows a semi-transparent vertical folder name on top of the contents. The
-  same doesn't happen when navigating by clicking the next folder using the mouse
-  instead. Ensure navigating up/down using the keyboard never resizes the focused
-  column, especially not below the folding transition width range.
-
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
 
@@ -85,6 +79,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [*] Arrow Down to focus the next folder sometimes half-folds the column, dims the
+  text, and shows a semi-transparent vertical folder name on top of the contents. The
+  same doesn't happen when navigating by clicking the next folder using the mouse
+  instead. Ensure navigating up/down using the keyboard never resizes the focused
+  column, especially not below the folding transition width range.
 
 - [*] Feature: Clicking on a content search result now opens the raw file. Open the
   rendered file in the UI preview pane instead.
