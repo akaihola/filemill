@@ -1,8 +1,20 @@
 # `.py.j2` highlighting
 
-## Finding
+## Original request
 
-Filemill does not currently support hybrid `.py.j2` highlighting.
+`.py.j2` are templates for Python files that are rendered by Jinja2. Does our
+highlighting library support syntax highlighting for such hybrid files? If so,
+implement that. If not, consider alternatives and write a report.
+
+## Finding on 2026-09-14
+
+This report from `21fd4db` predates removal of the server's Pygments path.
+The root `ui/` is a symlink to `server/src/filemill/ui/`; both paths still
+refer to the same shared frontend. Commands below record the original
+investigation. The separate scheduled task "Treat `.py.j2` as Python"
+in [TASKS.md](../../TASKS.md) selects the Python-only fallback, not a hybrid lexer.
+
+At the time of the investigation, Filemill did not support hybrid `.py.j2` highlighting.
 
 The shared browser highlighter in `server/src/filemill/ui/core/syntax.js` selects a language from the final filename suffix. `x.py.j2` therefore resolves to `j2`, which is unknown and falls back to escaped plain text. The same source is used by the static build.
 

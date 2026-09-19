@@ -40,3 +40,8 @@ while another treats it as a file that can be previewed. Keep `.jsonl` and
 `server/src/filemill/{vfs.py,columns.py,api.py,preview.py}`,
 `server/src/filemill/ui/core/{render.js,jsonl.js}`, FSA/API producers, and
 their focused tests.
+
+## Tracker acceptance criterion
+
+Add one test table per language that filesystem producers and preview/edit
+consumers share.

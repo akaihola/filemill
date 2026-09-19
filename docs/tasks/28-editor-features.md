@@ -148,5 +148,11 @@ and the static bundle freshness check passes. The complete API suite reports
 Logs: `/tmp/filemill-cache-tests.log`, `/tmp/filemill-cache-api.log`,
 `/tmp/filemill-cache-api-main.log`, and `/tmp/filemill-live-check.log`.
 
+## Tracker maintenance on 2026-09-19
+
+Commit `d3de46c` removed the duplicate issue [6] and reconciled tracker statuses.
+The duplication and single-issue restrictions above describe the editor task's
+review and deployment snapshots, not the current backlog.
+
 [6]: 6-file-kind-classification.md
 [28]: 28-editor-features.md
