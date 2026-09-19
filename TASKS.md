@@ -22,25 +22,25 @@ Rules for TASKS.md usage are at the bottom of the file.
     - Depends on: [30]
 
 
+- [40] Return preview focus to the containing folder and selected file.
 
+- [41] Fix plain-text reStructuredText previews in Source and Rendered modes.
 
-
+- [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
 
 - [*] Feature: Clicking on a content search result now opens the raw file. Open the
   rendered file in the UI preview pane instead.
 
+- [64] Keep subfolder and folded parent widths stable during Up/Down navigation.
 
 ## Scheduled
-- [64] Keep subfolder and folded parent widths stable during Up/Down navigation.
-- [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
-- [41] Fix plain-text reStructuredText previews in Source and Rendered modes.
-- [40] Return preview focus to the containing folder and selected file.
-- [39] Fix Back/Forward navigation across folders, previews and raw files.
 - [38] Fix PPTX previews that show unspaced slide text in both modes.
 
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [39] Fix Back/Forward navigation across folders, previews and raw files.
 
 - [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
   registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
