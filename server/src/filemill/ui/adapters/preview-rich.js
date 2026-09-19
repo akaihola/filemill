@@ -287,7 +287,7 @@ async function unzipPptx(blob) {
       const xml = new DOMParser().parseFromString(new TextDecoder().decode(data), "application/xml");
       const text = [...xml.getElementsByTagNameNS("*", "p")]
         .map((paragraph) => [...paragraph.getElementsByTagNameNS("*", "t")]
-          .map((run) => run.textContent).join(""))
+          .map((run) => run.textContent).join(" "))
         .filter(Boolean).join("\n").trim();
       slides.push({ number: Number(name.match(/slide(\d+)/)[1]), text });
     }
