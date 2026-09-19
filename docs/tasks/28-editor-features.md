@@ -1,5 +1,5 @@
 ---
-depends-on: [17]
+depends-on: []
 ---
 
 # Browser text editor

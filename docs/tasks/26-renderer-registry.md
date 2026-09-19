@@ -1,5 +1,5 @@
 ---
-depends-on: [19]
+depends-on: []
 ---
 
 # One renderer registry
