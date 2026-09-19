@@ -634,6 +634,58 @@ def test_vertical_navigation_preserves_folded_ancestor(live_server: str):
 
 
 @pytest.mark.integration
+@pytest.mark.parametrize("viewport_width", [390, 568, 1400])
+@pytest.mark.parametrize("boundary_offset", [0, 1, 2])
+def test_vertical_navigation_keeps_focused_column_whole(
+    live_server: str, browser_root: Path, viewport_width: int, boundary_offset: int
+):
+    wide = browser_root / "my-knowledge" / "z-wide"
+    wide.mkdir()
+    (wide / ("w" * 70 + ".txt")).write_text("wide column")
+    with _ui_page(live_server) as page:
+        page.set_viewport_size({"width": viewport_width, "height": 900})
+        page.keyboard.press("ArrowDown")
+        page.keyboard.press("ArrowRight")
+        page.wait_for_function("focusCol === 1 && path.length === 3")
+        page.evaluate(
+            """offset => finder.scrollTo({
+                left: foldUnit() * range() + offset, behavior: "instant"
+            })""",
+            boundary_offset,
+        )
+        page.wait_for_function("folded === 1")
+        before = page.locator('.col[data-i="1"]').evaluate("el => el.offsetWidth")
+        for key, selected, count in [
+            ("ArrowDown", "z-wide", 3),
+            ("ArrowDown", "AGENTS.md", 2),
+            ("ArrowUp", "z-wide", 3),
+            ("ArrowUp", "docs", 3),
+        ]:
+            page.keyboard.press(key)
+            page.wait_for_function(
+                "([name, count]) => sel[1] === name && path.length === count",
+                arg=[selected, count],
+            )
+            page.wait_for_function(
+                """width => {
+                    const col = document.querySelector('.col[data-i="1"]');
+                    return Math.abs(col.getBoundingClientRect().width - width) <= 1;
+                }""",
+                arg=before,
+                timeout=2000,
+            )
+            appearance = page.locator('.col[data-i="1"]').evaluate(
+                """el => ({
+                    body: getComputedStyle(el.querySelector('.col-body')).opacity,
+                    label: getComputedStyle(el.querySelector('.spine-label')).opacity,
+                    spine: el.classList.contains('spine')
+                })"""
+            )
+            assert appearance == {"body": "1", "label": "0", "spine": False}
+            assert page.evaluate("focusCol === 1 && folded === 1")
+
+
+@pytest.mark.integration
 def test_arrow_navigation_keeps_fold_animation_running(live_server: str):
     with _ui_page(live_server, mobile=True) as page:
         page.keyboard.press("ArrowDown")
