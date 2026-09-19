@@ -4874,11 +4874,8 @@ document.addEventListener("keydown", (e) => {
   if (e.target.closest?.("#preview")) {
     if (e.key === "ArrowLeft") {
       e.preventDefault();
-      if (focusCol > 0) {
-        setState({ focusCol: focusCol - 1 });
-        unfoldTo(focusCol);
-        render(true);
-      }
+      unfoldTo(focusCol);
+      render(true);
       return;
     }
     if (["ArrowUp", "ArrowDown", "PageUp", "PageDown"].includes(e.key)) {
