@@ -28,6 +28,10 @@ and handles only, so the static edition calls `getFile()` one time per entry.
 Each call takes about 300 µs, so 3 000 entries take about one second.
 `ui/core/sort.js` is one implementation with two prices.
 
+The preview toolbar has a Fullscreen button. The preview stays in fullscreen
+when the browser resizes. Use Exit fullscreen or the browser fullscreen exit
+control to return to the file browser.
+
 One repository holds both editions. Two copies of one UI drift apart one bug
 fix at a time. A fix to `ui/` is a fix to both editions in one commit.
 
