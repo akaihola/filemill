@@ -67,37 +67,16 @@ def test_dir_descends_a_relative_path(client, tmp_root: Path):
     assert [e["name"] for e in j["entries"]] == ["inner.txt"]
 
 
-def test_large_directory_is_paginated_in_stable_order(client, tmp_root: Path):
+def test_large_directory_lists_every_entry_in_one_response(client, tmp_root: Path):
+    """The column scrolls; the server never splits a listing into pages."""
     folder = tmp_root / "subdir"
     for i in range(501):
         (folder / f"item-{i:03d}").write_text(str(i))
 
-    first = client.get("/api/dir?p=subdir&page=1").json()
-    second = client.get("/api/dir?p=subdir&page=2").json()
+    data = client.get("/api/dir?p=subdir").json()
 
-    assert len(first["entries"]) == 500
-    assert len(second["entries"]) == 1
-    assert first["total"] == 501
-    assert first["pages"] == second["pages"] == 2
-    assert first["page"] == 1
-    assert second["page"] == 2
-    assert first["entries"][-1]["name"] == "item-499"
-    assert second["entries"][0]["name"] == "item-500"
-
-
-def test_directory_at_page_limit_keeps_small_response(client, tmp_root: Path):
-    folder = tmp_root / "subdir"
-    for i in range(500):
-        (folder / f"item-{i:03d}").write_text(str(i))
-
-    data = client.get("/api/dir?p=subdir&page=1").json()
-
-    assert len(data["entries"]) == 500
-    assert "pages" not in data
-
-
-def test_directory_rejects_invalid_page(client, tmp_root: Path):
-    assert client.get("/api/dir?p=&page=0").status_code == 400
+    assert [e["name"] for e in data["entries"]] == [f"item-{i:03d}" for i in range(501)]
+    assert not {"page", "pages", "total"} & data.keys()
 
 
 def test_dir_on_a_file_is_404(client, tmp_root: Path):
