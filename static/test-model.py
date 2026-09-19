@@ -103,6 +103,13 @@ def test_responsive_column_widths(bundle, playwright, width, height, expected):
         assert geometry["right"] == pytest.approx(
             geometry["edge"] - geometry["gutter"], abs=1
         )
+        assert page.evaluate("""() => {
+            const pane = document.getElementById('preview').getBoundingClientRect();
+            return [...document.querySelectorAll('.pv-actions button, .pv-actions a')]
+                .filter(el => el.getClientRects().length)
+                .every(el => {const box = el.getBoundingClientRect();
+                    return box.left >= pane.left && box.right <= pane.right;});
+        }""")
         # Rotation and density use live measurements, not a cached node width.
         page.set_viewport_size({"width": 1440, "height": 900})
         page.wait_for_function("widths[0] === 240")

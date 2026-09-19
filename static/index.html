@@ -430,11 +430,17 @@ body {
 [data-layout="no-columns"].pv-only #preview {
   flex: 1 1 auto;
 }
-.pv-head {
+.col-head.pv-head {
   gap: 8px;
+  height: auto;
+  min-height: var(--head-h);
+  flex-wrap: wrap;
 }
 .pv-actions {
   display: flex;
+  flex-wrap: wrap;
+  max-width: 100%;
+  white-space: normal;
   gap: 5px;
   margin-left: auto;
 }

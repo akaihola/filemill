@@ -1499,4 +1499,11 @@ def test_responsive_widths_survive_keyboard_and_mouse(page, width, height, expec
     page.locator('.col[data-i="0"] .row').filter(has_text="README.md").first.click()
     box = page.locator("#preview").bounding_box()
     assert min(box["x"] + box["width"], width) - max(box["x"], 0) >= width / 3 - 1
+    assert page.evaluate("""() => {
+        const pane = document.getElementById('preview').getBoundingClientRect();
+        return [...document.querySelectorAll('.pv-actions button, .pv-actions a')]
+            .filter(el => el.getClientRects().length)
+            .every(el => {const box = el.getBoundingClientRect();
+                return box.left >= pane.left && box.right <= pane.right;});
+    }""")
     assert not page.errors
