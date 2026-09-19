@@ -17,19 +17,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
     - Depends on: [29]
 
-- [*] Large directories now partition their contents into multiple lists that the user
-  can browse using a `< Page N of NN >` control. This is not acceptable. The vertical
-  scrollbar should be used to navigate through the directory contents. Task
-  0b1a0f79-4a08-4b1e-a820-27242fdda812 tried to virtualize the directory contents but
-  failed (or was reverted with another task). Use Fable Medium to solve this. Make the
-  code elegant and efficient. Use a 3rd party library to virtualize the directory
-  contents if that helps.
-
-- [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
-  column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
-  column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
-  3rd party libraries if that helps.
-
 - [*] In hierarchical navigation of `.json`, `.jsonl`, and SQLite `.db` files, when the
   key of a scalar value is highlighted, show its value in the preview pane instead of
   rendering the parent JSON structure. If the value is a string and has `\n` characters,
@@ -67,6 +54,19 @@ Rules for TASKS.md usage are at the bottom of the file.
   cause of the newest root-column regression.
 
 ## Scheduled
+
+- [*] Large directories now partition their contents into multiple lists that the user
+  can browse using a `< Page N of NN >` control. This is not acceptable. The vertical
+  scrollbar should be used to navigate through the directory contents. Task
+  0b1a0f79-4a08-4b1e-a820-27242fdda812 tried to virtualize the directory contents but
+  failed (or was reverted with another task). Use Fable Medium to solve this. Make the
+  code elegant and efficient. Use a 3rd party library to virtualize the directory
+  contents if that helps.
+
+- [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
+  column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
+  column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
+  3rd party libraries if that helps.
 
 - [*] Bug: The `Fullscreen` button causes a full screen view of the file to briefly
   flash, and then immediately returns to the main Filemill UI.
