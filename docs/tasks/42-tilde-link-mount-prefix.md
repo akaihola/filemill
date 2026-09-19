@@ -13,3 +13,11 @@ is turned into the href
 when rendered. It should omit the `/w/agent/` prefix. Task
 301fd540-e206-4306-b88f-5b3dbe1a15ec attempted but failed in making this link
 expansion correct.
+
+## Related work
+
+The completed home-link expansion and [mount decision][35] are earlier work.
+This report specifically rejects the resulting `/w/agent/` prefix and remains
+open independently of those completed tasks.
+
+[35]: 35-decide-web-mounts.md
