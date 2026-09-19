@@ -86,9 +86,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] Bug: The `Fullscreen` button causes a full screen view of the file to briefly
-  flash, and then immediately returns to the main Filemill UI.
-
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
 
@@ -120,6 +117,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [*] Bug: The `Fullscreen` button causes a full screen view of the file to briefly
+  flash, and then immediately returns to the main Filemill UI.
 
 - [*] When navigating to the parent directory using the left arrow key, make sure the
   highlighted file or directory is scrolled into view.
