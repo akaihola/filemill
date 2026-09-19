@@ -32,6 +32,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   column, especially not below the folding transition width range.
 
 ## Scheduled
+- [29] Make `ui/core/` a model package with no DOM: nodes, selection, folding
+  arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
+    - Depends on: [21]
+
 - [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
 - [40] Return preview focus to the containing folder and selected file.
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
@@ -82,13 +86,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## Completed
 
 - [*] Delete `_document_page` — document representations, including `layout=no-columns`,
-  now return the shared client shell.
+      now return the shared client shell.
 
 - [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
-  `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root `TASKS.md`.
+      `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
+      `TASKS.md`.
 
 - [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
-  `panFocus` and `slideTail`. Each function is under 25 lines.
+      `panFocus` and `slideTail`. Each function is under 25 lines.
 
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
   decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
