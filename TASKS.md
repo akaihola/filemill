@@ -9,15 +9,25 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
-  the three ports natively. Choose the smallest binary that passes `test-ui.py`.
-    - Depends on: [29]
-
 - [31] Evaluate AppKit, GTK and WinUI against the WebView prototype. Record the
   comparison in an ADR. Do not start a native toolkit before the ADR exists.
     - Depends on: [30]
 
+- [*] Many of the unintended column width changes could probably be solved by using a
+  constant column width. Choose a standard folder column width in `em` units such that
+  on a normal laptop widescreen, one column wills 1/6 of a full screen width browser
+  window. The preview pane should fill the remaining width. The leftmost column should
+  fold when that remaining width falls below 1/3 of the full screen width. On small
+  screens such as phone screens, the ratios should be different: for portrait mode,
+  column = 1/2 width, preview = at least 1/3 width, and for landscape mode, column = 1/4
+  width, preview = at least 1/3 width. We need to experiment with these.
+
+- [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
+  the three ports natively. Choose the smallest binary that passes `test-ui.py`.
+    - Depends on: [29]
+
 ## Scheduled
+
 - [*] Feature: Clicking on a content search result now opens the raw file. Open the
   rendered file in the UI preview pane instead.
 
@@ -52,7 +62,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
 
-
 - [38] Fix PPTX previews that show unspaced slide text in both modes.
 
 - [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
@@ -85,14 +94,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## Completed
 
 - [*] Delete `_document_page` — document representations, including `layout=no-columns`,
-      now return the shared client shell.
+  now return the shared client shell.
 
 - [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
-      `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
-      `TASKS.md`.
+  `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root `TASKS.md`.
 
 - [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
-      `panFocus` and `slideTail`. Each function is under 25 lines.
+  `panFocus` and `slideTail`. Each function is under 25 lines.
 
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
   decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
