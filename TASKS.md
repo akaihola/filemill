@@ -49,10 +49,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [29] Make `ui/core/` a model package with no DOM: nodes, selection, folding
-  arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
-    - Depends on: [21]
-
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
 
@@ -92,6 +88,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [29] Make `ui/core/` a model package with no DOM: nodes, selection, folding
+  arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
+    - Depends on: [21]
 
 - [*] Delete `_document_page` — document representations, including `layout=no-columns`,
   now return the shared client shell.
