@@ -36,6 +36,9 @@ needs the same width rules before and after folder contents arrive.
 - Selection changes preserve logical fold position rather than a pixel offset
   with a new meaning. A manual partial fold remains partial. Preview focus alone
   does not resize or fold columns. Left returns to the containing column.
+  When a new column or density consumes the preview reserve, keyboard selection
+  adds the necessary ancestor folds just as mouse selection does. This applies
+  at whole-column dial positions; manual partial folds remain authoritative.
 
 The rules live in `ui/core/styles.css`, `folderWidth()` and `previewTarget()` in
 `ui/core/dom-renderer.js`, and `automaticFold()` in `ui/core/model/folding.js`.
