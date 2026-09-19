@@ -98,11 +98,19 @@ const withHighlighting = (provider) => ({
       : provider).render(n),
 });
 
+const PreviewHTTP = {
+  revoke() {},
+  async render(n) {
+    const response = await fetch(`${API}/preview?p=${encodeURIComponent(n.rel)}`);
+    return response.ok ? response.text() : PreviewLocal.render(n);
+  },
+};
+
 /* Markdown, .docx and .pptx render in the browser in this edition too, from
    the modules the shell lists in FILEMILL_CDN (Markdown and .docx are served
    from /ui/vendor/, see ui/vendor/README.md). This sits inside withHighlighting
    so that ?filemill=highlight still shows a Markdown file as coloured source. */
-const RICH = ["md", "markdown", "docx", "pptx"];
+const RICH = ["md", "markdown", "rst", "docx", "pptx"];
 const withRichPreview = (provider) => ({
   revoke() {
     provider.revoke?.();
@@ -111,6 +119,8 @@ const withRichPreview = (provider) => ({
   render: (n) =>
     (!n.vpath && classifyFile(n.name, n).preview === "video"
       ? PreviewLocal
+      : !n.vpath && classifyFile(n.name, n).preview === "rst"
+      ? PreviewHTTP
       : !n.vpath && RICH.includes(classifyFile(n.name, n).preview)
       ? PreviewRich
       : provider).render(n),
