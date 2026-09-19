@@ -24,6 +24,8 @@
     sans-serif;
   --mono: "SF Mono", "JetBrains Mono", "Fira Code", ui-monospace, monospace;
 
+  --column-width: 20em; /* 240px at default density: 1/6 of a 1440px laptop. */
+  --column-ratio: 0;
   --fs-row: 12px;
   --fs-head: 12px;
   --fs-meta: 11px;
@@ -55,6 +57,17 @@
   --shadow-col: 0 0 0 0.5px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.05);
   --recede: #000; /* what ancestors fade toward */
   --recede-amt: 3.2%; /* per-level recession */
+}
+
+@media (max-width: 600px) and (orientation: portrait) {
+  :root {
+    --column-ratio: 0.5;
+  }
+}
+@media (max-height: 600px) and (orientation: landscape) {
+  :root {
+    --column-ratio: 0.25;
+  }
 }
 
 :root[data-density="comfortable"] {
@@ -397,7 +410,7 @@ body {
   padding: var(--gutter);
   /* overflow the stage when the columns don't fit, stretch to it when they do
      — the latter is what lets #preview's flex-grow claim the spare space */
-  width: max-content;
+  width: 100%;
   min-width: 100%;
   will-change: transform;
 }
@@ -417,11 +430,17 @@ body {
 [data-layout="no-columns"].pv-only #preview {
   flex: 1 1 auto;
 }
-.pv-head {
+.col-head.pv-head {
   gap: 8px;
+  height: auto;
+  min-height: var(--head-h);
+  flex-wrap: wrap;
 }
 .pv-actions {
   display: flex;
+  flex-wrap: wrap;
+  max-width: 100%;
+  white-space: normal;
   gap: 5px;
   margin-left: auto;
 }
@@ -864,7 +883,7 @@ body {
 }
 
 /* ── Preview pane ──────────────────────────────────────────────────────── */
-/* grow into spare space, never shrink below the target reading width */
+/* Fill the remainder; reserve one third of the viewport when focus permits. */
 #preview {
   flex: 1 0 var(--preview-w, 520px);
   border-radius: 10px;
@@ -874,11 +893,6 @@ body {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-}
-@media (max-width: 600px) {
-  #preview {
-    margin-left: calc(-1 * var(--gutter));
-  }
 }
 @media (max-width: 600px) and (orientation: portrait) {
   .pv-fullscreen #preview {
@@ -894,6 +908,7 @@ body {
 } /* what .pv-html's 100cqh resolves against */
 .pv-hero {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 14px;
   margin-bottom: 18px;
@@ -972,8 +987,7 @@ body {
   word-break: break-word;
   /* never wrap before column 88 (border-box, so add the 14 px paddings and
      2 px so an integer-rounded box cannot fall short): a zoomed-in pane
-     scrolls .pv-body sideways instead, and previewTarget() asks for the
-     same width in px */
+     scrolls .pv-body sideways without widening the pane. */
   min-width: calc(88ch + 30px);
   margin: 0 0 18px;
   padding: 12px 14px;
@@ -2224,61 +2238,18 @@ const GUTTER = () =>
 const SPINE = () =>
   parseInt(getComputedStyle(root).getPropertyValue("--spine-w"));
 
-const COL_MIN = 148; // Keep columns wide enough for readable rows and controls.
-const COL_MAX = 380; // Fit long page titles while folding columns outside focus.
-const CODE_COLUMNS = 88; // Preview text targets an 88-character reading width.
-const CODE_HORIZONTAL_PADDING = 82; // Preview padding is 30px plus 52px.
-const PREVIEW_MAX_WIDTH = 760; // Keep the preview from becoming too wide to read.
-const PREVIEW_MIN_RATIO = 0.45; // Preserve nearly half the stage for preview content.
-const EMPTY_PREVIEW_WIDTH = 300; // Keep the empty preview stable before a file is selected.
-const HEADER_HORIZONTAL_PADDING = 34; // Reserve space for the column heading chrome.
-const COLUMN_HORIZONTAL_PADDING = 58; // Reserve space for row padding and scrollbar.
-const CODE_FONT_SIZE = 11.5; // Match the compact monospace preview typography.
-
-/* 88 columns of .pv-text plus its and .pv-body's horizontal padding (30 + 52),
-   measured from the real monospace font so it agrees with the CSS min-width */
-const codeMin = () =>
-  codeMin._w ||= (() => {
-    const c = document.createElement("canvas").getContext("2d");
-    const cs = getComputedStyle(root);
-    c.font = `${CODE_FONT_SIZE}px ${cs.getPropertyValue("--mono")}`;
-    return Math.ceil(c.measureText("0").width * CODE_COLUMNS) +
-      CODE_HORIZONTAL_PADDING;
-  })();
-
-/* target reading width for the preview — the thing scrolling tries to protect.
-   Never wider than the stage itself: a phone cannot show 88 columns, and a
-   pane that runs past the right edge is clipped, not scrollable — so there
-   the pane fits and .pv-body pans over the code instead. */
-const previewTarget = () =>
-  previewNode()
-    ? Math.min(
-      PREVIEW_MAX_WIDTH,
-      stage.clientWidth,
-      Math.max(codeMin(), Math.round(stage.clientWidth * PREVIEW_MIN_RATIO)),
-    )
-    : EMPTY_PREVIEW_WIDTH;
-
-function measure(node) {
-  /* content-driven width, clamped — no manual resizing, no wasted space */
-  const c = (measure._c ||= document.createElement("canvas").getContext("2d"));
-  const cs = getComputedStyle(root);
-  c.font = `${cs.getPropertyValue("--fs-row").trim()} ${
-    cs.getPropertyValue("--font")
-  }`;
-  let w = 0;
-  for (const k of visibleKids(node)) {
-    w = Math.max(w, c.measureText(k.name).width);
-  }
-  c.font = `600 ${cs.getPropertyValue("--fs-head").trim()} ${
-    cs.getPropertyValue("--font")
-  }`;
-  w = Math.max(w, c.measureText(node.name).width + HEADER_HORIZONTAL_PADDING);
-  return Math.min(
-    COL_MAX,
-    Math.max(COL_MIN, Math.ceil(w) + COLUMN_HORIZONTAL_PADDING),
-  );
+// --column-width is in em, resolved against the inherited column font.
+function folderWidth() {
+  const cs = getComputedStyle(strip);
+  const ratio = parseFloat(cs.getPropertyValue("--column-ratio"));
+  return ratio
+    ? finder.clientWidth * ratio
+    : parseFloat(cs.getPropertyValue("--column-width")) *
+      parseFloat(cs.fontSize);
 }
+
+// Reserve the same space for empty, source and rendered previews.
+const previewTarget = () => finder.clientWidth / 3;
 
 /* ═══ core/ports.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -3376,7 +3347,7 @@ function automaticFold(
   let count = 0;
   while (
     count < sizes.length &&
-    columnSpan(sizes, count, gutter, spine) + preview > viewport
+    columnSpan(sizes, count, gutter, spine) + gutter + preview > viewport
   ) count++;
   return compressed ? sizes.length : Math.min(focus, Math.max(count, previous));
 }
@@ -3532,10 +3503,9 @@ function layout(keepScroll) {
   rail.style.width = (stageW + range()) + "px";
 
   const nextStep = foldUnit() * range();
-  if (
-    keepScroll && scrollStep &&
-    (nextStep !== scrollStep || path.length !== scrollColumns)
-  ) {
+  const geometryChanged = nextStep !== scrollStep ||
+    path.length !== scrollColumns;
+  if (keepScroll && scrollStep && geometryChanged) {
     const nextPosition = position > scrollColumns
       ? path.length * position / scrollColumns
       : position;
@@ -3547,7 +3517,12 @@ function layout(keepScroll) {
   scrollStep = nextStep;
   scrollColumns = path.length;
 
-  if (!keepScroll) {
+  // A new column or density can consume the preview reserve even during ↑/↓.
+  // Keep deliberate partial folds and the fully folded preview position intact.
+  if (
+    !keepScroll ||
+    (geometryChanged && Number.isInteger(position) && position <= focusCol)
+  ) {
     const k = automaticFold(
       widths,
       GUTTER(),
@@ -3555,7 +3530,7 @@ function layout(keepScroll) {
       previewTarget(),
       stageW,
       focusCol,
-      folded,
+      keepScroll ? position : folded,
       root.dataset.layout === "compressed-columns",
     );
     finder.scrollLeft = Math.round(k * foldUnit() * range());
@@ -3764,10 +3739,8 @@ function startRouting() {
    Anything that alters how a row *looks* (dotfile filter, density, theme icon
    colours) is part of the signature and drops the whole cache. */
 const colCache = new Map();
-const navWidths = new WeakMap();
 let cacheSig = null;
 const CACHE_MAX = 24; // Retain enough nearby columns without growing memory unbounded.
-const COLUMN_WIDTH_RATIO = 2 / 3; // Leave room for adjacent columns on narrow screens.
 const MAX_DEPTH = 5; // Keep depth styling within the available visual scale.
 const SCROLL_HINT_PADDING = 4; // Show the affordance only when content exceeds the viewport.
 const VIRTUAL_ROWS = 1000;
@@ -3939,7 +3912,6 @@ function buildCol(node) {
     kidsRef: node.kids,
     metaRef: !!node.metaDone,
     dot: el.querySelector(".dot"),
-    width: measure(node),
   };
 }
 
@@ -3969,6 +3941,7 @@ function render(keepScroll) {
     cacheSig = sig;
   }
 
+  const w = folderWidth();
   setState({ widths: [] });
   const cols = path.map((node, i) => {
     /* Before columnFor, so a directory that needs no fetch — the server build,
@@ -3977,27 +3950,6 @@ function render(keepScroll) {
     sweepMeta(node);
     const c = columnFor(node);
     const selectedRow = rowIndex(node, sel[i]);
-    /* No column may be wider than two-thirds of the live finder. The fold cap keeps the
-       touched column unfolded and applyScroll's pan slides it into view, but
-       neither can show a full-width column on a narrow phone —
-       the row would still lose its right edge. Clamped here rather than in
-       measure() because columnFor caches the built column: a width measured
-       against the old viewport would survive a rotation, while `widths` is
-       rebuilt by every render, including the one `resize` fires.
-
-       Measured against #finder, not #stage, because the stage is one render
-       behind: its width is `--stage-w`, which layout() writes *after* this
-       loop has already chosen the widths. Turning a phone from 568 px to 375
-       therefore clamped this render against 568 — oversized columns on a 375 px
-       screen, and the pan can only choose which edge to lose, so the tapped
-       row sat 10 px past the right one until the next render healed it.
-       #finder is `flex: 1` in the viewport, so it is the live number, and it
-       is the one layout() reads to set --stage-w in the first place. */
-    const cap = Math.floor(finder.clientWidth * COLUMN_WIDTH_RATIO);
-    const w = keepScroll && navWidths.has(node)
-      ? Math.min(navWidths.get(node), cap)
-      : Math.min(c.width, cap);
-    navWidths.set(node, Math.min(w, cap));
     widths.push(w);
 
     /* `sorting` goes in the class string rather than on classList, because this
@@ -4678,11 +4630,7 @@ async function choose(colIdx, node, keepScroll = false) {
 
   const reading = node.kids === null ? FS.ensureLoaded(node) : null;
   if (reading) {
-    /* Highlight the row at once, but hold its column back for a moment: a
-       column measures the names it holds, and one built before the read lands
-       measures empty — it would open at the minimum width and jump wider a
-       frame later. Most directories arrive well inside the grace; a slower one
-       opens on the spinner, which is honest about the wait. */
+    /* Highlight immediately, but avoid flashing a spinner for fast reads. */
     render(keepScroll);
     await Promise.race([
       reading,
