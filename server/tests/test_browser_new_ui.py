@@ -328,7 +328,14 @@ def test_preview_fullscreen_control_toggles_and_exits(page):
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     full = page.locator("#pv-fullscreen")
 
+    url = page.url
+    history_length = page.evaluate("history.length")
     full.click()
+    page.wait_for_function("document.fullscreenElement !== null")
+    page.evaluate("window.dispatchEvent(new Event('resize'))")
+    assert page.evaluate("document.fullscreenElement !== null")
+    assert page.url == url
+    assert page.evaluate("history.length") == history_length
     page.wait_for_function("document.documentElement.classList.contains('pv-fullscreen')")
     assert full.get_attribute("aria-pressed") == "true"
     assert page.evaluate("getComputedStyle(document.getElementById('bar')).display") == "none"
@@ -337,6 +344,30 @@ def test_preview_fullscreen_control_toggles_and_exits(page):
     page.wait_for_function("!document.documentElement.classList.contains('pv-fullscreen')")
     assert full.get_attribute("aria-pressed") == "false"
     assert page.evaluate("getComputedStyle(document.getElementById('bar')).display") != "none"
+
+    full.click()
+    page.wait_for_function("document.fullscreenElement !== null")
+    page.evaluate("document.exitFullscreen()")
+    page.wait_for_function("!document.documentElement.classList.contains('pv-fullscreen')")
+    assert full.get_attribute("aria-pressed") == "false"
+    assert page.url == url
+    assert page.evaluate("history.length") == history_length
+
+
+def test_preview_fullscreen_falls_back_when_browser_denies_it(page):
+    page.open("README.md")
+    page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
+    page.evaluate("""() => {
+        Element.prototype.requestFullscreen = async () => {
+            throw new Error('Fullscreen unavailable');
+        };
+    }""")
+    full = page.locator("#pv-fullscreen")
+    full.click()
+    assert full.get_attribute("aria-pressed") == "true"
+    assert page.evaluate("document.fullscreenElement === null")
+    full.click()
+    assert full.get_attribute("aria-pressed") == "false"
 
 
 def test_markdown_rendered_raw_toggle_preserves_navigation(page):
