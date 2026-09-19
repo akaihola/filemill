@@ -285,3 +285,32 @@ async def main(bundle, fake_handle, opfs_root, playwright):
 
 def test_url(bundle, fake_handle, opfs_root, playwright):
     asyncio.run(main(bundle, fake_handle, opfs_root, playwright))
+
+
+def test_fullscreen_survives_resize(bundle, playwright):
+    httpd, port = serve()
+    try:
+        with playwright.chromium.launch() as browser:
+            pg = browser.new_page()
+            pg.goto(f"http://127.0.0.1:{port}/static/{bundle.name}")
+            pg.evaluate("localStorage.setItem('filemill.rich','off')")
+            pg.evaluate(FAKE)
+            pg.evaluate("mount(__mk())")
+            pg.click('.col[data-i="0"] .row:has-text("README.md")')
+            pg.wait_for_selector("#preview .pv-text")
+            url = pg.url
+            history_length = pg.evaluate("history.length")
+            pg.focus("#pv-fullscreen")
+            pg.keyboard.press("Enter")
+            pg.wait_for_function("document.fullscreenElement !== null")
+            pg.evaluate("window.dispatchEvent(new Event('resize'))")
+            assert pg.evaluate("document.fullscreenElement !== null")
+            assert pg.url == url
+            assert pg.evaluate("history.length") == history_length
+            assert pg.evaluate("document.activeElement.id") == "pv-fullscreen"
+            pg.keyboard.press("Enter")
+            pg.wait_for_function("document.fullscreenElement === null")
+            assert pg.get_attribute("#pv-fullscreen", "aria-pressed") == "false"
+    finally:
+        httpd.shutdown()
+        httpd.server_close()

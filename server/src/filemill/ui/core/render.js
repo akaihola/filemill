@@ -239,6 +239,7 @@ export function columnFor(node) {
 
 export function render(keepScroll) {
   if (!path.length) return;
+  const fullscreenFocused = document.activeElement?.id === "pv-fullscreen";
   const sig =
     `${state.dotfiles}|${root.dataset.density}|${root.dataset.theme}` +
     `|${state.sort.key}|${state.sort.desc}`;
@@ -299,6 +300,9 @@ export function render(keepScroll) {
   });
   while (strip.childNodes.length > want.length) strip.lastChild.remove();
   if (previewNode()) setupPreviewActions(previewNode());
+  if (fullscreenFocused) {
+    document.getElementById("pv-fullscreen")?.focus({ preventScroll: true });
+  }
   /* ?layout=no-columns asks for the representation alone. The server puts
      the value on <html>; a document then fills the pane and a directory shows
      only its own listing. The static build never sets it. */
@@ -496,16 +500,16 @@ function setupPreviewActions(n) {
   const full = document.getElementById("pv-fullscreen");
   if (full) {
     full.onclick = async () => {
-      const preview = document.getElementById("preview");
       if (pvFullscreen) {
         if (document.fullscreenElement) await document.exitFullscreen();
         applyFullscreen(false);
         return;
       }
       applyFullscreen(true);
-      if (preview?.requestFullscreen) {
+      // Resize rebuilds the preview, so fullscreen must use the stable root.
+      if (root.requestFullscreen) {
         try {
-          await preview.requestFullscreen();
+          await root.requestFullscreen();
         } catch (_) {
           /* Keep the layout fallback when browser fullscreen is unavailable. */
         }
