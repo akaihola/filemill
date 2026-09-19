@@ -78,9 +78,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
   3rd party libraries if that helps.
 
-- [*] Bug: The `Fullscreen` button causes a full screen view of the file to briefly
-  flash, and then immediately returns to the main Filemill UI.
-
 - [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
 - [40] Return preview focus to the containing folder and selected file.
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
@@ -88,6 +85,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] Bug: The `Fullscreen` button causes a full screen view of the file to briefly
+  flash, and then immediately returns to the main Filemill UI.
 
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
