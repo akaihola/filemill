@@ -21,16 +21,24 @@ Rules for TASKS.md usage are at the bottom of the file.
   comparison in an ADR. Do not start a native toolkit before the ADR exists.
     - Depends on: [30]
 
-
-
-
-
-
 - [*] Feature: Clicking on a content search result now opens the raw file. Open the
   rendered file in the UI preview pane instead.
 
+- [*] Bug: Arrow Right into the preview pane works inconasistently. Sometimes it focuses
+  the preview pane without changing the layout. Sometimes it hides the folder columns
+  and stretches the preview pane to full width.
+
+
+- [*] Arrow Down to focus the next folder sometimes half-folds the column, dims the
+  text, and shows a semi-transparent vertical folder name on top of the contents. The
+  same doesn't happen when navigating by clicking the next folder using the mouse
+  instead. Ensure navigating up/down using the keyboard never resizes the focused
+  column, especially not below the folding transition width range.
 
 ## Scheduled
+- [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
+  `No inline preview for this file type.` is displayed instead of the image.
+
 - [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
 - [40] Return preview focus to the containing folder and selected file.
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
@@ -45,11 +53,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
 
-
 - [38] Fix PPTX previews that show unspaced slide text in both modes.
 
 - [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
- 
+
 - [41] Fix plain-text reStructuredText previews in Source and Rendered modes.
 
 - [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
@@ -78,14 +85,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## Completed
 
 - [*] Delete `_document_page` — document representations, including `layout=no-columns`,
-      now return the shared client shell.
+  now return the shared client shell.
 
 - [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
-      `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
-      `TASKS.md`.
+  `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root `TASKS.md`.
 
 - [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
-      `panFocus` and `slideTail`. Each function is under 25 lines.
+  `panFocus` and `slideTail`. Each function is under 25 lines.
 
 - [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
   decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
@@ -121,8 +127,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
   and the `watchfiles` dependency. Delete their tests.
 
-- [*] For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon for
-  the whole file, and `{}` and `[]` icons for objects and arrays.
+- [*] For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon
+  for the whole file, and `{}` and `[]` icons for objects and arrays.
 
 - [*] Run the static and server browser tests through one root `conftest.py` and one
   Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.
@@ -133,8 +139,8 @@ Rules for TASKS.md usage are at the bottom of the file.
     - Depends on: [26]
 
 - [*] Implement CSV as a browser virtual filesystem in `ui/adapters/vfs-csv.js`, like
-  JSONL: one entry per row, a key/value preview per row. No Python.
-  Closes legacy server issue #49.
+  JSONL: one entry per row, a key/value preview per row. No Python. Closes legacy server
+  issue #49.
     - Depends on: [26]
 
 - [*] Compute the symlink zone map one time per request in `paths.py`. Delete the three
@@ -166,8 +172,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [46] Fix ancestor columns unfolding during down-arrow navigation.
 
-- [*] Keyboard navigation using arrows still doesn't animate folding/unfolding/resizing of
-  columns. Do systematic debugging to identify the cause, and fix it.
+- [*] Keyboard navigation using arrows still doesn't animate folding/unfolding/resizing
+  of columns. Do systematic debugging to identify the cause, and fix it.
 
 - [7] Make entry ordering an adapter-owned contract.
     - Depends on: [6]
@@ -181,8 +187,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [49] Fix content search errors and restrict search to the focused directory tree.
 
-- [*] The `Fullscreen` button in the preview pane doesn't do anything. No errors seen on the
-  JavaScript console either.
+- [*] The `Fullscreen` button in the preview pane doesn't do anything. No errors seen on
+  the JavaScript console either.
 
 - [50] Fix missing reStructuredText rendering and highlighting after the initial
   implementation.
@@ -202,8 +208,7 @@ Rules for TASKS.md usage are at the bottom of the file.
   PgUp/PgDn keys.
 
 - [*] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
-      `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in
-      `server/src/filemill/styles.py`.
+  `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in `server/src/filemill/styles.py`.
 
 - [54] Keep all Markdown previews within the portrait screen width.
 
@@ -304,7 +309,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [34] Make the SQLite provider return JSON only. The client renders tables and rows
   with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close [9].
 
-- [9] Close the conditional `ViewSpec` proposal: [34] removed the six-argument interface.
+- [9] Close the conditional `ViewSpec` proposal: [34] removed the six-argument
+  interface.
 
 - [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both editions
   fill it from the same core list plus their own adapters.
@@ -313,7 +319,7 @@ Rules for TASKS.md usage are at the bottom of the file.
   launcher, a desktop shell, or only a better "server not running" page.
 
 - [*] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT. Use
-      the current year and "Antti Kaihola" as the copyright holder.
+  the current year and "Antti Kaihola" as the copyright holder.
 
 - [*] Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
   files. Current PPTX support was implemented in task
@@ -386,9 +392,9 @@ Here are the rules for TASKS.md usage:
     - a numbered reference-style link (e.g. `[1]`) to a description file, or
     - `[*]` to indicate no description file is needed for a simple task.
 - Link references are listed between `## Completed` and `## Rules`.
-- Keep summaries concise. Move detailed requirements, rationale, examples and
-  acceptance criteria into `docs/tasks/N-issue-description.md`; preserve simple
-  tasks inline. Reuse an existing description for the same issue.
+- Keep summaries concise. Move detailed requirements, rationale, examples and acceptance
+  criteria into `docs/tasks/N-issue-description.md`; preserve simple tasks inline. Reuse
+  an existing description for the same issue.
 - For a new description, use the first unused number, checking both this file and
   description filenames in Git history. Do not reuse numbers of accepted issues.
 - The section in this file records status. Completed descriptions retain historical
