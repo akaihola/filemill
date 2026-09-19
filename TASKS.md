@@ -126,7 +126,8 @@ Rules for TASKS.md usage are at the bottom of the file.
     - Depends on: [26]
 
 - [*] Implement CSV as a browser virtual filesystem in `ui/adapters/vfs-csv.js`, like
-  JSONL: one entry per row, a key/value preview per row. No Python. Closes issue #49.
+  JSONL: one entry per row, a key/value preview per row. No Python.
+  Closes legacy server issue #49.
     - Depends on: [26]
 
 - [*] Compute the symlink zone map one time per request in `paths.py`. Delete the three
@@ -296,8 +297,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [34] Make the SQLite provider return JSON only. The client renders tables and rows
   with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close [9].
 
-- [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an unverified
-  architecture proposal, conditional on a fourth provider or a pagination bug.
+- [9] Close the conditional `ViewSpec` proposal: [34] removed the six-argument interface.
 
 - [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both editions
   fill it from the same core list plus their own adapters.
@@ -378,9 +378,14 @@ Here are the rules for TASKS.md usage:
     - a numbered reference-style link (e.g. `[1]`) to a description file, or
     - `[*]` to indicate no description file is needed for a simple task.
 - Link references are listed between `## Completed` and `## Rules`.
-- If any issue is missing a link:
-    - Create the first missing numbered description file in
-      docs/tasks/<N-issue-description>.md and add the link
+- Keep summaries concise. Move detailed requirements, rationale, examples and
+  acceptance criteria into `docs/tasks/N-issue-description.md`; preserve simple
+  tasks inline. Reuse an existing description for the same issue.
+- For a new description, use the first unused number, checking both this file and
+  description filenames in Git history. Do not reuse numbers of accepted issues.
+- The section in this file records status. Completed descriptions retain historical
+  requirements, paths and validation results; they are not current implementation
+  instructions. Date later corrections and distinguish regressions from earlier work.
 - Any completed tasks which haven't yet been moved from `## In Progress` to
   `## Completed` should be moved there.
 - Any in progress tasks which haven't yet been moved from `## Ordered backlog` or
@@ -413,7 +418,7 @@ Here are the rules for TASKS.md usage:
 
 2. Work on the issue (typically by a task workflow)
 
-- Move the issue under `## In progress` in `TASKS.md` in the worktree branch, ensure
+- Move the issue under `## In Progress` in `TASKS.md` in the worktree branch, ensure
   it's not in `## Ordered backlog`, and commit.
 - Create or update, review and refine a plan in docs/tasks/<N-issue-description>.md in
   `main` if more description is needed than nicely fits in a bullet point. If you
@@ -427,5 +432,5 @@ Here are the rules for TASKS.md usage:
 3. Merge and deploy (typically by last steps of a task workflow)
 
 - Merge the rebased branch on `main`, and remove the worktree and branch.
-- Move the issue from `## In progress` to `## Completed` in TASKS.md and commit.
+- Move the issue from `## In Progress` to `## Completed` in TASKS.md and commit.
 - Do any deployment steps if defined in the general development worklow.

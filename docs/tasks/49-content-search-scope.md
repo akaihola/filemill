@@ -11,3 +11,11 @@ either returns `Search error: search result too large` or `No matches`. Make sur
 search only covers the current focused directory and its subdirectories recursively.
 Do red-green testing: first reproduce, then investigate, plan, implement, and test.
 Iterate until fixed.
+
+## Related work
+
+[60] covers the earlier timeout failure. This follow-up covers oversized results,
+empty results and directory scope; opening results in the preview is a separate
+backlog task in [TASKS.md](../../TASKS.md).
+
+[60]: 60-content-search-timeout.md

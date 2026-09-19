@@ -17,3 +17,11 @@ the maintainer before implementing.
 
 Markdown preview now preserves line breaks. It should instead let the browser handle
 line breaks and consider a multi-line Markdown paragraph as a single line.
+
+## Consolidation
+
+Both reports describe the same paragraph-wrapping requirement and are retained
+here. The completed fix is recorded in `3470ea9` and `effac31`. Portrait overflow
+in [54] is a separate layout defect.
+
+[54]: 54-portrait-markdown-width.md
