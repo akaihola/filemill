@@ -17,6 +17,7 @@ from starlette.routing import Route
 
 from filemill import api, paths, pwa, urls
 from filemill.env import env
+from filemill.preview import render_preview
 
 # HTML file extensions that get a "View as web page" button in the preview
 _HTML_EXTS = {".html", ".htm"}
@@ -280,6 +281,14 @@ def api_raw(request, p: str = ""):
     if target is None:
         return HTMLResponse("Not found", status_code=404)
     return api.raw_response(target)
+
+
+@rt("/api/preview")
+def api_preview(request, p: str = ""):
+    target = _api_target(p, _zones(request))
+    if target is None or not target.is_file():
+        return HTMLResponse("Not found", status_code=404)
+    return HTMLResponse(render_preview(target), headers={"Cache-Control": "no-store"})
 
 
 @rt("/api/save", methods=["POST"])
