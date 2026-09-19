@@ -22,7 +22,6 @@ Rules for TASKS.md usage are at the bottom of the file.
     - Depends on: [30]
 
 
-- [39] Fix Back/Forward navigation across folders, previews and raw files.
 
 - [40] Return preview focus to the containing folder and selected file.
 
@@ -36,6 +35,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [64] Keep subfolder and folded parent widths stable during Up/Down navigation.
 
 ## Scheduled
+- [39] Fix Back/Forward navigation across folders, previews and raw files.
 - [38] Fix PPTX previews that show unspaced slide text in both modes.
 
 - [*] Treat `.py.j2` as Python.
