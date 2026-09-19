@@ -3617,7 +3617,7 @@ function slideTail(p, pan, n) {
    `block: "nearest"`: nothing if the row is already inside, otherwise the
    shorter of the two edges — the same numbers scrollIntoView produced. */
 function revealRow(row) {
-  const body = row.parentElement; /* .col-body scrolls */
+  const body = row.closest(".col-body");
   const r = row.getBoundingClientRect(), b = body.getBoundingClientRect();
   if (r.top < b.top) body.scrollTop += r.top - b.top;
   else if (r.bottom > b.bottom) body.scrollTop += r.bottom - b.bottom;
@@ -4905,6 +4905,9 @@ document.addEventListener("keydown", (e) => {
       e.preventDefault();
       unfoldTo(focusCol);
       render(true);
+      const parent = colCache.get(path[focusCol]);
+      const ri = rowIndex(path[focusCol], sel[focusCol]);
+      if (parent && ri >= 0) revealRow(parent.ensureRow(ri));
       return;
     }
     if (action === "preview-scroll") {
@@ -4993,6 +4996,9 @@ document.addEventListener("keydown", (e) => {
       setState({ focusCol: focusCol - 1 });
       unfoldTo(focusCol);
       render(true);
+      const parent = colCache.get(path[focusCol]);
+      const ri = rowIndex(path[focusCol], sel[focusCol]);
+      if (parent && ri >= 0) revealRow(parent.ensureRow(ri));
     }
   } else if (action === "refresh") {
     /* Every desktop file manager reads F5 as "re-read this folder", and here a
