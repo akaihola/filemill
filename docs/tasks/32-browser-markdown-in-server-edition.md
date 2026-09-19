@@ -1,5 +1,5 @@
 ---
-depends-on: [19]
+depends-on: []
 ---
 
 # Render Markdown and .docx in the browser in both editions

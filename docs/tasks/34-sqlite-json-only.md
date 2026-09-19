@@ -1,5 +1,5 @@
 ---
-depends-on: [19]
+depends-on: []
 ---
 
 # Make the SQLite provider return JSON only
