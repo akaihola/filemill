@@ -111,7 +111,9 @@ window.__mk = (nbig) => {
                 // Taller than any preview pane, so the pane has to say where a
                 // long text scrolls: the column itself, not a box inside it.
                 F('long.txt', 'a line of plain text\n'.repeat(400)),
-                F('page.html','<h1>Hi</h1>'), F('doc.pdf','%PDF-1.4')]),
+                F('page.html','<h1>Hi</h1>'), F('doc.pdf','%PDF-1.4'),
+                F('large.png', 'x'.repeat(512 * 1024 + 1)),
+                F('large.jpeg', 'x'.repeat(512 * 1024 + 1))]),
     D('empty', []),
     DENIED('locked'),
     SLOW('slow', [F('one.txt','1'), F('two.txt','2')]),
@@ -1194,6 +1196,14 @@ async def main(bundle, fake_handle, playwright):
         check("One byte over TEXT_MAX is declined, not rendered",
               not await pg.is_visible(".pv-text")
               and "No inline preview" in body, body[:80])
+        await pg.click('.col[data-i="2"] .row:has-text("large.png")')
+        await pg.wait_for_timeout(500)
+        check("Oversized PNG still uses the image renderer",
+              await pg.is_visible(".pv-img"), await pg.inner_text("#pv-content"))
+        await pg.click('.col[data-i="2"] .row:has-text("large.jpeg")')
+        await pg.wait_for_timeout(500)
+        check("Oversized JPEG still uses the image renderer",
+              await pg.is_visible(".pv-img"), await pg.inner_text("#pv-content"))
         # The phone pass above folded two columns, and a fold outlives the
         # resize back: unfolding is a user action, so make it one.
         if await pg.eval_on_selector_all('.col[data-i="1"].spine', "e=>e.length"):
