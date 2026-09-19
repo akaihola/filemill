@@ -186,3 +186,52 @@ def test_preview_threshold_folds_only_below_one_third(bundle, playwright, width,
         assert box["x"] + box["width"] == pytest.approx(width - 10, abs=1)
     finally:
         browser.close()
+
+
+@pytest.mark.parametrize("activation", ["keyboard", "mouse", "partial", "density"])
+def test_geometry_changes_preserve_preview_rules(bundle, playwright, activation):
+    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
+    try:
+        width = 1155 if activation == "density" else 1440
+        page = browser.new_page(viewport={"width": width, "height": 900})
+        page.goto(bundle.as_uri())
+        page.wait_for_function("typeof mount === 'function'")
+        page.evaluate("""async () => {
+            const dir = (name, kids) => ({kind: 'directory', name,
+                async *entries() {for (const child of kids) yield [child.name, child];}});
+            const file = {kind: 'file', name: 'z.txt',
+                async getFile() {return new File(['hello'], this.name);}};
+            await mount(dir('root', [dir('a', [dir('b', [dir('c', [file]), file])])]));
+            finder.style.scrollBehavior = 'auto';
+            await applyPath(['a', 'b', 'z.txt'], 2);
+        }""")
+        page.wait_for_function("focusCol === 2 && path.length === 3")
+        assert page.evaluate("folded") == 0
+        if activation == "partial":
+            page.evaluate(
+                "finder.scrollTo({left: 0.25 * foldUnit() * range(), behavior: 'instant'})"
+            )
+        if activation in ["keyboard", "partial"]:
+            page.keyboard.press("ArrowUp")
+        elif activation == "density":
+            page.evaluate("root.dataset.density = 'comfortable'; render(true)")
+        else:
+            page.locator('.col[data-i="2"] .row[title="c"]').click()
+        count = 3 if activation == "density" else 4
+        page.wait_for_function("count => path.length === count", arg=count)
+        position = 0.25 if activation == "partial" else 1
+        page.wait_for_function(
+            "position => Math.abs(finder.scrollLeft / (foldUnit() * range()) - position) < 0.005",
+            arg=position,
+            timeout=2000,
+        )
+        assert page.locator(".col.focus").bounding_box()["width"] == pytest.approx(
+            260 if activation == "density" else 240
+        )
+        if activation != "partial":
+            box = page.locator("#preview").bounding_box()
+            assert (
+                min(box["x"] + box["width"], width) - max(box["x"], 0) >= width / 3 - 1
+            )
+    finally:
+        browser.close()
