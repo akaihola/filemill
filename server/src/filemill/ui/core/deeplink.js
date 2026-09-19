@@ -57,7 +57,7 @@ let lastKey = null;
 
 export function syncURL() {
   if (applying || !ROUTER || !path.length) return;
-  const key = path.slice(0, focusCol + 1).map((p) => p.name).join("/");
+  const key = path.map((p) => p.name).join("/");
   const names = currentPath();
   const node = previewNode();
   const view = node && !node.dir
@@ -147,7 +147,7 @@ export function startRouting() {
        remount it without a user gesture, so it would silently walk the wrong
        tree. Leaving the columns where they are is the honest outcome. */
     if (loc && (!loc.root || loc.root === path[0]?.name)) {
-      if (loc.view) document.documentElement.dataset.filemill = loc.view;
+      document.documentElement.dataset.filemill = loc.view || "render";
       applyPath(loc.path);
     }
   });
