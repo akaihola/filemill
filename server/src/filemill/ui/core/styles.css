@@ -15,6 +15,8 @@
     sans-serif;
   --mono: "SF Mono", "JetBrains Mono", "Fira Code", ui-monospace, monospace;
 
+  --column-width: 20em; /* 240px at default density: 1/6 of a 1440px laptop. */
+  --column-ratio: 0;
   --fs-row: 12px;
   --fs-head: 12px;
   --fs-meta: 11px;
@@ -46,6 +48,17 @@
   --shadow-col: 0 0 0 0.5px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.05);
   --recede: #000; /* what ancestors fade toward */
   --recede-amt: 3.2%; /* per-level recession */
+}
+
+@media (max-width: 600px) and (orientation: portrait) {
+  :root {
+    --column-ratio: 0.5;
+  }
+}
+@media (max-height: 600px) and (orientation: landscape) {
+  :root {
+    --column-ratio: 0.25;
+  }
 }
 
 :root[data-density="comfortable"] {
@@ -388,7 +401,7 @@ body {
   padding: var(--gutter);
   /* overflow the stage when the columns don't fit, stretch to it when they do
      — the latter is what lets #preview's flex-grow claim the spare space */
-  width: max-content;
+  width: 100%;
   min-width: 100%;
   will-change: transform;
 }
@@ -855,7 +868,7 @@ body {
 }
 
 /* ── Preview pane ──────────────────────────────────────────────────────── */
-/* grow into spare space, never shrink below the target reading width */
+/* Fill the remainder; reserve one third of the viewport when focus permits. */
 #preview {
   flex: 1 0 var(--preview-w, 520px);
   border-radius: 10px;
@@ -865,11 +878,6 @@ body {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-}
-@media (max-width: 600px) {
-  #preview {
-    margin-left: calc(-1 * var(--gutter));
-  }
 }
 @media (max-width: 600px) and (orientation: portrait) {
   .pv-fullscreen #preview {
@@ -885,6 +893,7 @@ body {
 } /* what .pv-html's 100cqh resolves against */
 .pv-hero {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 14px;
   margin-bottom: 18px;
@@ -963,8 +972,7 @@ body {
   word-break: break-word;
   /* never wrap before column 88 (border-box, so add the 14 px paddings and
      2 px so an integer-rounded box cannot fall short): a zoomed-in pane
-     scrolls .pv-body sideways instead, and previewTarget() asks for the
-     same width in px */
+     scrolls .pv-body sideways without widening the pane. */
   min-width: calc(88ch + 30px);
   margin: 0 0 18px;
   padding: 12px 14px;

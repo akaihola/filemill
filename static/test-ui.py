@@ -66,7 +66,7 @@ window.__mk = (nbig) => {
       throw Object.assign(new Error('no'), {name:'NotAllowedError'}); }});
   const D = (name, kids) => ({kind:'directory', name,
     entries: async function*(){ for (const k of kids) yield [k.name, k]; }});
-  /* long enough that measure() returns its 380 px ceiling for the column */
+  /* Long names must not affect the fixed column width. */
   const LONG = i => `level-${i}-` + 'w'.repeat(36);
   const DENIED = (name) => ({kind:'directory', name,
     entries: async function*(){ throw Object.assign(new Error('no'), {name:'NotAllowedError'}); }});
@@ -134,7 +134,7 @@ window.__mk = (nbig) => {
     // finger is then wider than the stage has left once its ancestors have
     // folded to spines, and #stage clips what runs past the right edge.
     D('wide', [F('a-quite-long-file-name-1.txt'), F('a-quite-long-file-name-2.txt'),
-               D(LONG(0), [D(LONG(1), [D(LONG(2), [F('leaf.md', '# leaf')])])])]),
+               D(LONG(0), [D(LONG(1), [D(LONG(2), [D(LONG(3), [D(LONG(4), [F('leaf.md', '# leaf')])])])])])]),
     // Names chosen so each type-ahead rung is the *only* one that can explain
     // the answer. Sorted: Alpha Report.txt, beta-notes.md, changelog.md,
     // notes.txt, readme.md, release-notes.md.
@@ -624,8 +624,8 @@ async def main(bundle, fake_handle, playwright):
         await pg.click('.col[data-i="0"] .row:has-text("wide")')
         await pg.wait_for_timeout(400)
         widths = [w.split(":")[1] for w in await pg.evaluate("__w") if w.startswith("wide:")]
-        check("A column opens at its content width, without a narrow first frame",
-              len(set(widths)) == 1 and widths[0] != "148px", ", ".join(widths) or "never sized")
+        check("A column opens at its standard width, without a narrow first frame",
+              set(widths) == {"240px"}, ", ".join(widths) or "never sized")
 
         print("\n── Keyboard: ↑/↓ stay in the column ─────────────────────────")
         # sorted order is folders first, alphabetically:
@@ -765,7 +765,7 @@ async def main(bundle, fake_handle, playwright):
         await scroll_settled(pg)
         await pg.click('.col[data-i="0"] .row:has-text("wide")')
         await pg.wait_for_timeout(250)
-        for i in range(3):
+        for i in range(5):
             await pg.click(f'.col[data-i="{i + 1}"] .row:has-text("level-{i}-")')
             await pg.wait_for_timeout(250)
         await scroll_settled(pg)
