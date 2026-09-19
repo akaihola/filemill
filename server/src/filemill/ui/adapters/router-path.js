@@ -35,6 +35,7 @@ export const RouterPath = {
   write({ path, view }, replace) {
     const search = new URLSearchParams(location.search);
     if (view) search.set("filemill", view);
+    else search.delete("filemill");
     const query = search.toString();
     const url = BASE + path.map(encodeURIComponent).join("/") +
       (query ? `?${query}` : "") + location.hash;

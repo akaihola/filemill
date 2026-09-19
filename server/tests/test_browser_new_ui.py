@@ -1059,6 +1059,31 @@ def test_back_from_raw_restores_the_previous_rendered_file(page):
     assert page.evaluate("sel")[-1] == "short.txt"
 
 
+def test_back_and_forward_restore_folder_preview_and_raw_states(page):
+    page.open("notes")
+    page.click('.col[data-i="0"] .row:has-text("deep")')
+    page.click('.col[data-i="1"] .row:has-text("leaf.md")')
+    page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
+    assert page.url.endswith("/notes/deep/leaf.md?filemill=render")
+
+    page.click("#pv-raw")
+    page.wait_for_selector("#preview .pv-content", timeout=15000)
+    assert page.url.endswith("/notes/deep/leaf.md?filemill=raw")
+
+    page.go_back()
+    page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
+    assert page.url.endswith("/notes/deep/leaf.md?filemill=render")
+    page.go_back()
+    assert page.url.endswith("/notes/deep")
+    assert page.evaluate("sel")[-1] == "deep"
+
+    page.go_forward()
+    page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
+    page.go_forward()
+    page.wait_for_selector("#preview .pv-content", timeout=15000)
+    assert page.url.endswith("/notes/deep/leaf.md?filemill=raw")
+
+
 def test_no_columns_shows_a_document_without_the_finder(page):
     """?layout=no-columns is the client's job now: the shell hides the chrome."""
     page.open_resource("notes/deep/leaf.md?filemill=render&layout=no-columns")
