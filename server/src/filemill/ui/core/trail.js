@@ -2,7 +2,8 @@
    The trail: an elbow from each selected row into the next column's header.
    The vertical run sits on the centre line of the gutter between the columns.
    ═══════════════════════════════════════════════════════════════════════════ */
-import { focusCol, path, stage, trail } from "./state.js";
+import { focusCol, path } from "./model/state.js";
+import { stage, trail } from "./dom-renderer.js";
 
 export function paintTrail() {
   const fr = stage.getBoundingClientRect();

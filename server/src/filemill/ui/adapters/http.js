@@ -11,7 +11,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { render } from "../core/render.js";
 import { classifyFile } from "../core/file-kind.js";
-import { focusCol, path, sel, setState } from "../core/state.js";
+import { focusCol, path, sel, setState } from "../core/model/state.js";
 
 export const API = document.documentElement.dataset.api || "/api";
 

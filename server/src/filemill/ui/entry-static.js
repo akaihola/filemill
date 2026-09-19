@@ -6,12 +6,12 @@
    and the app module that wires them (app-fsa.js), which is the only module
    that runs anything at load time. entry-server.js is the counterpart.
 
-   Import order is evaluation order. state.js first: it pulls in shell.js (the
+   Import order is evaluation order. dom-renderer.js first: it pulls in shell.js (the
    markup every other module queries) and, through the core cycle, the rest.
    static/build-index.py walks this graph and inlines it in the same order.
    ═══════════════════════════════════════════════════════════════════════════ */
 import "./core/shell.js";
-import "./core/state.js";
+import "./core/dom-renderer.js";
 import "./core/ports.js";
 import "./core/icons.js";
 import "./core/syntax.js";

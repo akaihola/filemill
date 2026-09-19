@@ -16,7 +16,8 @@
    a read that has not happened yet when the page loads, and a name survives
    anything. It is the same list a deep link carries, so one walk restores both.
    ═══════════════════════════════════════════════════════════════════════════ */
-import { path, root } from "../core/state.js";
+import { path } from "../core/model/state.js";
+import { root } from "../core/dom-renderer.js";
 
 const RECENT_MAX = 8;
 

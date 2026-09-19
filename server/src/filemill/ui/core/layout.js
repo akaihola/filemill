@@ -1,3 +1,13 @@
+import {
+  automaticFold,
+  columnMetrics,
+  columnSpan,
+  focusPan,
+  foldingAt,
+  foldStep,
+  scrollRange,
+  tailShift,
+} from "./model/folding.js";
 /* ═══════════════════════════════════════════════════════════════════════════
    Layout + the scroll dial
 
@@ -8,39 +18,25 @@
      99–100%  the spine strip itself slides away; at 100% the preview is alone
    ═══════════════════════════════════════════════════════════════════════════ */
 import { set, setVar } from "./dom.js";
+import { focusCol, folded, path, setState, widths } from "./model/state.js";
 import {
   finder,
-  focusCol,
-  folded,
   GUTTER,
-  path,
   previewTarget,
   rail,
   root,
-  setState,
   SPINE,
   stage,
   strip,
-  widths,
-} from "./state.js";
+} from "./dom-renderer.js";
 import { paintTrail } from "./trail.js";
 
-export function stripSpan(k) {
-  /* width of the column strip with k folded */
-  const g = GUTTER(), n = path.length;
-  const cols = widths.reduce((a, w, i) => a + (i < k ? SPINE() : w), 0);
-  return cols + g * (n + 1); /* padding either side + inter-column gaps */
-}
-const FOLD_RANGE = 0.99; // Reserve the final one percent for sliding the spine strip.
-const MIN_SCROLL_RANGE = 1; // Keep division and scroll arithmetic valid before layout settles.
-const BOUNDARY_SLACK = 0.5; // Absorb rounding that can otherwise land one column short.
-const FULL_FOLD_THRESHOLD = 0.99; // Treat the dial's first 99 percent as column folding.
-const TAIL_RANGE = 0.01; // The final one percent slides the folded strip away.
-export const foldUnit = () => FOLD_RANGE / path.length;
-export const range = () => Math.max(MIN_SCROLL_RANGE, stripSpan(0) - GUTTER());
+export const stripSpan = (k) => columnSpan(widths, k, GUTTER(), SPINE());
+export const foldUnit = () => foldStep(path.length);
+export const range = () => scrollRange(widths, GUTTER(), SPINE());
 export const foldAll = () => {
   setState({ folded: path.length });
-  applyWidths(path.length, 0);
+  applyWidths(0);
   slideTail(1, 0, path.length);
 };
 
@@ -51,19 +47,16 @@ export function layout(keepScroll) {
   rail.style.width = (stageW + range()) + "px";
 
   if (!keepScroll) {
-    /* default: the least folding that still gives the preview its full width.
-       ?layout=compressed-columns asks for every column folded instead, which is
-       the dial at 99% and the one thing the HTMX shell could never do. */
-    let k = 0;
-    while (k < path.length && stripSpan(k) + previewTarget() > stageW) k++;
-    /* Fold more when the new contents need it, but never past the focused
-       column: that is the one under the user's finger, and the column to its
-       right is what opening it just produced — answering a tap by hiding
-       either is not condensing, it is discarding the answer. What is left of
-       focus has been walked past and may condense; folding further than this
-       is a user action: scroll, spine, ←. */
-    k = Math.min(focusCol, Math.max(k, folded));
-    if (root.dataset.layout === "compressed-columns") k = path.length;
+    const k = automaticFold(
+      widths,
+      GUTTER(),
+      SPINE(),
+      previewTarget(),
+      stageW,
+      focusCol,
+      folded,
+      root.dataset.layout === "compressed-columns",
+    );
     finder.scrollLeft = Math.round(k * foldUnit() * range());
   }
   applyScroll();
@@ -80,12 +73,12 @@ function applyScroll() {
      app's own row reveals from doing it; this undoes whatever else did, at the
      next repaint. */
   if (stage.scrollLeft) stage.scrollLeft = 0;
-  const max = Math.max(MIN_SCROLL_RANGE, rail.clientWidth - finder.clientWidth);
+  const max = Math.max(1, rail.clientWidth - finder.clientWidth);
   const p = Math.min(1, finder.scrollLeft / max);
   const n = path.length;
 
   const { raw, t } = foldFromScroll(max);
-  const { focusLeft, focusRight } = applyWidths(raw, t);
+  const { focusLeft, focusRight } = applyWidths(t);
   const pan = panFocus(raw, focusLeft, focusRight);
   slideTail(p, pan, n);
 
@@ -96,32 +89,18 @@ function applyScroll() {
 }
 
 function foldFromScroll(max) {
-  /* Half a pixel of slack, in pixels: layout() and unfoldTo() write
-     round(k·unit·range), which can fall up to 0.5 px short of the boundary. A
-     fixed 0.002 units was only 0.3 px once seven columns made a unit 160 px
-     wide, and a landing read one column short paints the column ← just
-     reached as a spine, with folded === focusCol so the next ← never scrolls. */
-  const raw = Math.min(1, (finder.scrollLeft + BOUNDARY_SLACK) / max) /
-    foldUnit();
-  setState({ folded: Math.min(path.length, Math.floor(raw)) });
-  /* how far into folding the next column is — 0 = full width, 1 = a spine */
-  const t = Math.min(1, Math.max(0, raw - folded));
-  return { raw, t };
+  const result = foldingAt(finder.scrollLeft, max, path.length);
+  setState({ folded: result.folded });
+  return result;
 }
 
-function applyWidths(raw, t) {
+function applyWidths(t) {
   const g = GUTTER(), sp = SPINE(), n = path.length;
-  let x = g, focusLeft = 0, focusRight = 0;
+  const metrics = columnMetrics(widths, folded, t, focusCol, g, sp);
   [...strip.querySelectorAll(".col")].forEach((col, i) => {
     col.classList.toggle("spine", i < folded);
     col.classList.toggle("folding", i === folded && folded < n);
-    const w = i < folded
-      ? sp
-      : i === folded
-      ? Math.round(widths[i] + (sp - widths[i]) * t)
-      : widths[i];
-    if (i === focusCol) [focusLeft, focusRight] = [x, x + w];
-    x += w + g;
+    const w = metrics.sizes[i];
     if (i < folded) {
       set(col.style, "width", "");
       return;
@@ -130,26 +109,22 @@ function applyWidths(raw, t) {
     setVar(col, "--fold", col.dataset.fold); /* custom props need setProperty */
     set(col.style, "width", w + "px");
   });
-  return { focusLeft, focusRight };
+  return metrics;
 }
 
 function panFocus(raw, focusLeft, focusRight) {
-  const g = GUTTER();
-  const reach = Math.min(1, Math.max(0, raw - focusCol + 1));
-  const pan = reach *
-    Math.min(
-      Math.max(0, focusRight - finder.clientWidth),
-      Math.max(0, focusLeft - g),
-    );
-  return pan;
+  return focusPan(
+    raw,
+    focusCol,
+    focusLeft,
+    focusRight,
+    finder.clientWidth,
+    GUTTER(),
+  );
 }
 
 function slideTail(p, pan, n) {
-  const sp = SPINE(), g = GUTTER();
-  const tail = p > FULL_FOLD_THRESHOLD
-    ? (p - FULL_FOLD_THRESHOLD) / TAIL_RANGE
-    : 0;
-  const shift = tail * n * (sp + g) + pan;
+  const shift = tailShift(p, pan, n, SPINE(), GUTTER());
   set(strip.style, "minWidth", (finder.clientWidth + shift) + "px");
   set(strip.style, "transform", `translateX(${-shift}px)`);
 }
