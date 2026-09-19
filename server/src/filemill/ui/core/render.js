@@ -278,7 +278,7 @@ export function render(keepScroll) {
        is the one layout() reads to set --stage-w in the first place. */
     const cap = Math.floor(finder.clientWidth * COLUMN_WIDTH_RATIO);
     const w = keepScroll && navWidths.has(node)
-      ? navWidths.get(node)
+      ? Math.min(navWidths.get(node), cap)
       : Math.min(c.width, cap);
     navWidths.set(node, Math.min(w, cap));
     widths.push(w);
