@@ -4,23 +4,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Unverified proposals
 
-- [9] Consider bundling VFS preview parameters in `ViewSpec`. This is an unverified
-  architecture proposal, conditional on a fourth provider or a pagination bug.
-
 - [*] From documentation, docstrings and comments, remove references to specific
   development setups which include e.g. server names and local paths.
 
 ## Ordered backlog
-
-- [x] Delete `_document_page` — document representations, including `layout=no-columns`,
-      now return the shared client shell.
-
-- [x] [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
-      `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
-      `TASKS.md`.
-
-- [x] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
-      `panFocus` and `slideTail`. Each function is under 25 lines.
 
 - [29] Make `ui/core/` a model package with no DOM: nodes, selection, folding
   arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
@@ -69,8 +56,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
-  decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
+- [*] Treat `.py.j2` as Python.
+
+## In Progress
 
 - [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
   registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
@@ -81,7 +69,38 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
   `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
 
-- Toggling `Source` / `Rendered` reloads the whole page and causes an uncomfortable
+- [*] The server browser suites show 11 failures on the branch, but a run against a clean
+  main checkout produced exactly the same 11: two legacy-htmx tests that main
+  deliberately disabled, and nine mobile restore-scroll tests.
+
+- [*] Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
+  what it means.
+
+- [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
+  `static/FSA-TEST-CHECKLIST.md`.
+
+- [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
+  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
+    - Depends on: [12]
+
+- [*] `.py` files are not highlighted at all.
+
+## Completed
+
+- [*] Delete `_document_page` — document representations, including `layout=no-columns`,
+      now return the shared client shell.
+
+- [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
+      `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
+      `TASKS.md`.
+
+- [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
+      `panFocus` and `slideTail`. Each function is under 25 lines.
+
+- [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
+  decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
+
+- [10] Toggling `Source` / `Rendered` reloads the whole page and causes an uncomfortable
   blink and a delay. Just the preview pane should be reloaded, and the URL and history
   updated.
 
@@ -91,13 +110,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100 k-entry
   directory still builds 100 k DOM nodes. Do this only if such folders show up.
-
-- The server browser suites show 11 failures on the branch, but a run against a clean
-  main checkout produced exactly the same 11: two legacy-htmx tests that main
-  deliberately disabled, and nine mobile restore-scroll tests.
-
-- Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
-  what it means.
 
 - [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
   Today `[text](~/note.md)` is a dead link although the file exists.
@@ -111,10 +123,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   `/home/agent/index.html`. We will separately set up systemd user services for each
   different browser test setup.
 
-- [*] Treat `.py.j2` as Python.
-
-## In progress
-
 - [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
   `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
 
@@ -124,28 +132,15 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [21] Cache the preview element keyed on the previewed node and its `meta`, the same
   way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
 
-- [~] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
-  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
-
 - [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
   and the `watchfiles` dependency. Delete their tests.
 
-- [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
-  `static/FSA-TEST-CHECKLIST.md`.
-
-- [*] Default `--bind` in `server/src/filemill/cli.py` to `127.0.0.1`. Document it in
-  `SECURITY.md`.
-
-- For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon for
+- [*] For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon for
   the whole file, and `{}` and `[]` icons for objects and arrays.
 
 - [*] Run the static and server browser tests through one root `conftest.py` and one
   Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.
     - Depends on: [25]
-
-- Toggling `Source` / `Rendered` reloads the whole page and causes an uncomfortable
-  blink and a delay. Just the preview pane should be reloaded, and the URL and history
-  updated.
 
 - [*] Add a preview for `.mp4` files with a `<video controls>` element, as one registry
   entry plus one test.
@@ -180,26 +175,26 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Each row of a JSONL file must be presented exactly like a hierarchical nested view
   of a JSON file.
 
-- When an object or list is selected in a hierarchical nested view of JSON, show the
+- [*] When an object or list is selected in a hierarchical nested view of JSON, show the
   child nodes in the column to the right, and a foldable highlighted and pretty-printed
   JSON preview of the selected item in the second column to the right.
 
-- In keyboard navigation, parent folder columns currently unfold when selecting the next
+- [*] In keyboard navigation, parent folder columns currently unfold when selecting the next
   item using the down arrow. Strangely, this doesn't happen when using the up arrow. I
   haven't been able to understand what's special about the folders that cause this
   behavior.
 
-- Keyboard navigation using arrows still doesn't animate folding/unfolding/resizing of
+- [*] Keyboard navigation using arrows still doesn't animate folding/unfolding/resizing of
   columns. Do systematic debugging to identify the cause, and fix it.
 
 - [7] Make entry ordering an adapter-owned contract.
     - Depends on: [6]
 
-- Navigating with the right arrow key to the preview area must fold all folder columns
+- [*] Navigating with the right arrow key to the preview area must fold all folder columns
   to maximize the preview area width. A left arrow should return to the parent folder of
   the reviewed document and unfold that folder column (but no ancestor folder columns).
 
-- Task 04ce9574-92c8-4a4c-8148-32d2e827c13d didn't fix the erratic folding/unfolding of
+- [*] Task 04ce9574-92c8-4a4c-8148-32d2e827c13d didn't fix the erratic folding/unfolding of
   the parent column. Hard rule: Up/down navigation must never change folding state of
   ancestor folder columns.
 
@@ -212,11 +207,8 @@ Rules for TASKS.md usage are at the bottom of the file.
   Do red-green testing: first reproduce, then investigate, plan, implement, and test.
   Iterate until fixed.
 
-- The `Fullscreen` button in the preview pane doesn't do anything. No errors seen on the
+- [*] The `Fullscreen` button in the preview pane doesn't do anything. No errors seen on the
   JavaScript console either.
-
-- [6] Centralize file-kind classification across filesystem producers and preview/edit
-  consumers. Add one test table per language that both sides share.
 
 - [*] `.rst` files still don't render or highlight at all even though task
   63b87ad4-33c9-4f45-ae24-280034e8b0eb claims to have implemented and tested it. Do
@@ -232,21 +224,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   horizontally to the left. Make sure the arrow left key returns to the parent column
   after focusing the preview pane.
 
-- [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
-  decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
-
-- [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
-  registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
-
-- [*] Default `--bind` in `server/src/filemill/cli.py` to `127.0.0.1`. Document it in
-  `SECURITY.md`.
-
-- [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
-  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
-
-- [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
-  `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
-
 - [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
   identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
 
@@ -257,11 +234,11 @@ Rules for TASKS.md usage are at the bottom of the file.
   currently supported (e.g. checkboxes and wikilinks). Tradeoffs must be discussed with
   the maintainer before implementing.
 
-- [~] Typing a right arrow when the rightmost column before the preview is focused
+- [*] Typing a right arrow when the rightmost column before the preview is focused
   should focus the preview and let the user scroll it up/down using the arrow and
   PgUp/PgDn keys.
 
-- [x] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
+- [*] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
       `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in
       `server/src/filemill/styles.py`.
 
@@ -288,18 +265,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [20] Create `ui/core/limits.js` with one `TEXT_MAX` and one image extension list.
   Create one `mountRoot()` and one `currentPath()`. Delete the copies and `pathParts`.
 
-- [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
-  `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
-
-- [*] Give each magic number in `ui/core/state.js`, `layout.js`, `nav.js`, `render.js` a
-  name and a one-line comment that says why the value is what it is.
-
-- [21] Cache the preview element keyed on the previewed node and its `meta`, the same
-  way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
-
-- [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
-  and the `watchfiles` dependency. Delete their tests.
-
 - [22] Replace `cursor[i]`, `sel[i]` and `node.lastSel` with one selection model:
   `sel[i]` is the selected name. Derive the row index when needed.
 
@@ -318,23 +283,23 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Delete `server/.pi/settings.json`, `server/mobile-narrow-preview.png`,
   `server/.claude/commands/` and `architecture-review-20260904.html`.
 
-- Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
+- [*] Feature: In addition to the `Raw` and `Fullscreen` buttons, there needs to be a toggle
   between viewing the document rendered (e.g. HTML, Markdown, reStructuredText) and
   viewing the source with syntax highlighting.
 
 - [*] Add `.pre-commit-config.yaml` with ruff, ruff-format, mypy, deno fmt, deno lint
   and `static/build-index.py --check`. Run `pre-commit run --all-files` until it passes.
 
-- Bug: Task 511f90cc-2725-4ef1-a8d8-ed67c4eddb0f failed to fix the portrait mobile
+- [*] Bug: Task 511f90cc-2725-4ef1-a8d8-ed67c4eddb0f failed to fix the portrait mobile
   scroll to the right problem. I suspect the extra space at the right side of the page
   is caused by the `⇧+wheel fold` label flowing outside the right edge of the page.
 
-- Feature: ability to delete a file or a directory from the file manager.
+- [*] Feature: ability to delete a file or a directory from the file manager.
 
-- [~] Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight`
+- [*] Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight`
   view.
 
-- Bug: After navigating from a directory url without query parameters (e.g.
+- [*] Bug: After navigating from a directory url without query parameters (e.g.
   `/path/to/dir`) to a file (e.g. `file1.md`), and then another file (e.g. `file2.md`),
   and then opening file2 using the `Raw` button, and navigating back using the browser's
   back button, in some situations the file manager view isn't displayed. Instead, the
@@ -342,7 +307,7 @@ Rules for TASKS.md usage are at the bottom of the file.
   `?filemill=render` or `?filemill=highlight` query parameter (whichever mode was last
   active) to prevent this behavior.
 
-- Bug: For `.vtt` files from YouTube, this error is always displayed instead of the
+- [*] Bug: For `.vtt` files from YouTube, this error is always displayed instead of the
   content: `Malformed WebVTT: cue is missing a timestamp`. You may test using `.vtt`
   files found on the filesystem.
 
@@ -360,9 +325,7 @@ Rules for TASKS.md usage are at the bottom of the file.
   values are selected together. This should be fixed for the case when no unique column
   is available. Original implementation in task 8038a32c-570b-45ed-b3ca-5834b3b8dc18.
 
-- [*] `.py` files are not highlighted at all.
-
-- [*] `.py.j2` are templates for Python files that are rendered by Jinja2. Does our
+- [37] `.py.j2` are templates for Python files that are rendered by Jinja2. Does our
   highlighting library support syntax highlighting for such hybrid files? If so,
   implement that. If not, consider alternatives and write a report.
 
@@ -371,7 +334,7 @@ Rules for TASKS.md usage are at the bottom of the file.
   scrolls the entire page about 1/12th width and leaves an empty margin at the right
   edge.
 
-- [~] Add `deno fmt` and `deno lint` for `ui/` (one pinned binary, no Node project).
+- [*] Add `deno fmt` and `deno lint` for `ui/` (one pinned binary, no Node project).
   Format `ui/` one time and commit the result as its own commit.
 
 - [*] Add `ruff` and `mypy` to the `dev` group in `server/pyproject.toml`. Add
@@ -386,13 +349,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [12] Make `static/test-ui.py` run to its end, then fix the three checks that fail: the
   `.pv-content` timeout and the two "edit starts at the top" checks.
 
-- Markdown preview now preserves line breaks. It should instead let the browser handle
+- [*] Markdown preview now preserves line breaks. It should instead let the browser handle
   line breaks and consider a multi-line Markdown paragraph as a single line.
 
 - [*] In `ui/core/state.js`, replace `node.jsonl ? kids : sortKids(kids)` with a
   `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
-
-## Completed
 
 - [28] Grow the editor behind the `FS.write` port: undo, find, a line gutter and a
   "modified" mark. Each addition is one file in `ui/editor/`.
@@ -432,13 +393,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [36] Decide how the installed PWA gets a running server: a systemd or launchd unit, a
   launcher, a desktop shell, or only a better "server not running" page.
 
-- [36] Decide how the installed PWA gets a running server: a systemd or launchd unit, a
-  launcher, a desktop shell, or only a better "server not running" page.
-
-- [x] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT. Use
+- [*] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT. Use
       the current year and "Antti Kaihola" as the copyright holder.
 
-- Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
+- [*] Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
   files. Current PPTX support was implemented in task
   38ab06e2-c607-4d4a-9978-67847e70d27d.
 
@@ -447,6 +405,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 [6]: docs/tasks/6-file-kind-classification.md
 [7]: docs/tasks/7-adapter-owned-entry-order.md
 [9]: docs/tasks/9-vfs-viewspec.md
+[10]: docs/tasks/10-preview-mode-toggle.md
 [12]: docs/tasks/12-test-ui-runs-to-end.md
 [13]: docs/tasks/13-correct-stale-documents.md
 [15]: docs/tasks/15-split-decisions-into-adrs.md
@@ -466,6 +425,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 [34]: docs/tasks/34-sqlite-json-only.md
 [35]: docs/tasks/35-decide-web-mounts.md
 [36]: docs/tasks/36-pwa-start-server.md
+[37]: docs/tasks/py-j2-highlighting.md
 [*]: TASKS.md
 
 ---

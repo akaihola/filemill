@@ -40,3 +40,5 @@ use the same table. Roadmap phase 8, step 1.
 ## Scope
 
 `ui/core/renderers.js`, `ui/adapters/preview-*.js`, `static/test-ui.py`.
+
+[6]: 6-file-kind-classification.md
