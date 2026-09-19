@@ -4,6 +4,7 @@ import {
   columnSpan,
   focusPan,
   foldingAt,
+  foldPosition,
   foldStep,
   scrollRange,
   tailShift,
@@ -40,11 +41,32 @@ export const foldAll = () => {
   slideTail(1, 0, path.length);
 };
 
+let scrollStep = 0;
+let scrollColumns = 0;
+
 export function layout(keepScroll) {
+  // Preserve the fold position, not pixels whose meaning changes with the path.
+  const position = scrollStep ? foldPosition(finder.scrollLeft, scrollStep) : 0;
   const stageW = finder.clientWidth;
   setVar(root, "--stage-w", stageW + "px");
   setVar(root, "--preview-w", previewTarget() + "px");
   rail.style.width = (stageW + range()) + "px";
+
+  const nextStep = foldUnit() * range();
+  if (
+    keepScroll && scrollStep &&
+    (nextStep !== scrollStep || path.length !== scrollColumns)
+  ) {
+    const nextPosition = position > scrollColumns
+      ? path.length * position / scrollColumns
+      : position;
+    finder.scrollTo({
+      left: Math.round(nextPosition * nextStep),
+      behavior: "instant",
+    });
+  }
+  scrollStep = nextStep;
+  scrollColumns = path.length;
 
   if (!keepScroll) {
     const k = automaticFold(
