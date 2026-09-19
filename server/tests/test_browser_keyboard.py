@@ -1347,3 +1347,20 @@ def test_mobile_scroll_runtime_minimal_reveal_assertion(live_server: str):
         )
         assert metrics["everyColStartsInside"], "a column starts past the right edge"
         assert metrics["firstColVisible"], "the root column was flushed off-screen"
+
+
+def test_renderer_uses_model_state(browser_root, playwright):
+    with _serve(browser_root) as base:
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            page = browser.new_page()
+            page.goto(f"{base}/n/my-knowledge/AGENTS.md")
+            page.wait_for_function("typeof path !== 'undefined' && path.length === 2")
+            assert page.evaluate("""async () => {
+                const model = await import('/ui/core/model/state.js');
+                const links = await import('/ui/core/model/deeplink.js');
+                return model.path === path && model.sel === sel &&
+                    links.currentPath().join('/') === 'my-knowledge/AGENTS.md';
+            }""")
+        finally:
+            browser.close()

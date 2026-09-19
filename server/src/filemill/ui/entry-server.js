@@ -8,7 +8,7 @@
    this file and nothing else.
    ═══════════════════════════════════════════════════════════════════════════ */
 import "./core/shell.js";
-import "./core/state.js";
+import "./core/dom-renderer.js";
 import "./core/ports.js";
 import "./core/icons.js";
 import "./core/syntax.js";

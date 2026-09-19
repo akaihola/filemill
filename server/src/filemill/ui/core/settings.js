@@ -3,7 +3,8 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { render } from "./render.js";
 import { setSort, SORT_KEYS } from "./sort.js";
-import { root, state } from "./state.js";
+import { state } from "./model/state.js";
+import { root } from "./dom-renderer.js";
 
 export const gear = document.getElementById("gear"),
   panel = document.getElementById("settings");
