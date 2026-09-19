@@ -24,6 +24,15 @@ def test_model_renderer_selection(bundle, playwright):
         page.wait_for_function("focusCol === 1 && sel[1] === 'note.txt'")
         page.wait_for_selector('#preview .pv-text')
         assert page.evaluate('path.map(n => n.name)') == ['model-test', 'folder']
+        geometry = """() => [...document.querySelectorAll('.col, #preview')]
+            .map(el => el.offsetWidth)"""
+        widths = page.evaluate(geometry)
+        page.keyboard.press('ArrowRight')
+        page.wait_for_function("document.activeElement.id === 'preview'")
+        assert page.evaluate(geometry) == widths
+        page.keyboard.press('ArrowLeft')
+        page.wait_for_function("!document.activeElement.closest('#preview')")
+        assert page.evaluate("focusCol === 1 && sel[1] === 'note.txt'")
         if bundle.name == 'index-dev.html':
             assert page.evaluate("""async () => {
                 const model = await import('../ui/core/model/state.js');
