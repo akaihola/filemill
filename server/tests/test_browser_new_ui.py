@@ -401,14 +401,63 @@ def test_vtt_highlight_view_keeps_the_source_fallback(page):
     assert page.locator("#pv-vtt-views").is_hidden()
 
 
-def test_content_search_opens_a_matching_file(page):
-    page.open()
+@pytest.mark.parametrize("start", ["", "notes/plain.txt?filemill=highlight"])
+@pytest.mark.parametrize("activation", ["click", "Enter"])
+def test_content_search_opens_a_matching_file(page, start, activation):
+    page.open_resource(start)
+    previous_url = page.url
+    page.evaluate("window.searchNavigationMarker = true")
     page.fill("#search-bar", "Leaf")
-    page.wait_for_selector('.search-result[data-path="notes/deep/leaf.md"]')
-    assert "# Leaf" in page.inner_text(".search-result")
-    page.click('.search-result[data-path="notes/deep/leaf.md"]')
+    result = page.locator('.search-result[data-path="notes/deep/leaf.md"]')
+    result.wait_for()
+    assert "# Leaf" in result.inner_text()
+    if activation == "click":
+        result.click()
+    else:
+        result.press("Enter")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
-    assert "Leaf" in page.inner_text("#preview .pv-rich h1")
+    assert page.url.endswith("/notes/deep/leaf.md?filemill=render")
+    assert page.inner_text("#preview .pv-rich h1") == "Leaf"
+    assert page.evaluate("window.searchNavigationMarker") is True
+    assert page.locator("#search-results").is_hidden()
+    assert page.evaluate("path.slice(1).map(n => n.name)") == ["notes", "deep"]
+    assert page.evaluate("sel") == ["notes", "deep", "leaf.md"]
+    assert page.evaluate("focusCol") == 2
+
+    page.go_back()
+    page.wait_for_url(previous_url)
+    page.go_forward()
+    page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
+    page.keyboard.press("ArrowRight")
+    page.wait_for_function("document.activeElement.id === 'preview'")
+    page.keyboard.press("ArrowLeft")
+    assert page.evaluate("focusCol") == 2
+    assert page.evaluate("sel[2]") == "leaf.md"
+
+    raw = page.request.get(f"{page.base}/notes/deep/leaf.md")
+    assert raw.text() == "# Leaf\n**bold** text\n"
+    assert "text/markdown" in raw.headers["content-type"]
+    raw_action = page.locator("#pv-raw").get_attribute("href")
+    assert raw_action == "/notes/deep/leaf.md?filemill=raw"
+    assert page.request.get(f"{page.base}{raw_action}").body() == raw.body()
+
+
+@pytest.mark.parametrize(
+    "filename,query,raw_button,rendered",
+    [
+        ("notes/deep/leaf.md", "Leaf", "#pv-md-raw", "#preview .pv-rich h1"),
+        ("captions.vtt", "Hello", "#pv-vtt-raw", ".preview-transcript .preview-cue"),
+    ],
+)
+def test_content_search_resets_raw_preview_mode(
+    page, filename, query, raw_button, rendered
+):
+    page.open_resource(f"{filename}?filemill=render")
+    page.click(raw_button)
+    page.fill("#search-bar", query)
+    page.locator(f'.search-result[data-path="{filename}"]').first.press("Space")
+    page.wait_for_selector(rendered, timeout=15000)
+    assert page.locator(raw_button).get_attribute("aria-pressed") == "false"
 
 
 def test_fenced_code_is_highlighted_in_the_browser(page):

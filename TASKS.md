@@ -19,9 +19,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] Feature: Clicking on a content search result now opens the raw file. Open the
-  rendered file in the UI preview pane instead.
-
 - [*] Bug: Arrow Right into the preview pane works inconasistently. Sometimes it focuses
   the preview pane without changing the layout. Sometimes it hides the folder columns
   and stretches the preview pane to full width.
@@ -48,6 +45,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] Feature: Clicking on a content search result now opens the raw file. Open the
+  rendered file in the UI preview pane instead.
 
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.

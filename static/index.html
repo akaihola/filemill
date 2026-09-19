@@ -4098,6 +4098,11 @@ function renderPreview() {
 let markdownView = "rendered";
 let vttView = "transcript";
 
+function resetPreviewModes() {
+  markdownView = "rendered";
+  vttView = "transcript";
+}
+
 function applyFullscreen(value) {
   setState({ pvFullscreen: value });
   root.classList.toggle("pv-fullscreen", value);
@@ -5401,12 +5406,6 @@ const withCsvPreview = (provider) => ({
 /* ═══ core/search.js ═══ */
 /* Server-only content search. The control stays hidden in local FSA mode. */
 
-/* The same attribute adapters/router-path.js reads; core must not import a
-   server-only adapter, or the static bundle would carry it too. */
-const SEARCH_BASE = (document.documentElement.dataset.base || "/").replace(
-  /\/*$/,
-  "/",
-);
 const searchForm = document.getElementById("search-form");
 const searchInput = document.getElementById("search-bar");
 const searchResults = document.getElementById("search-results");
@@ -5454,10 +5453,16 @@ async function runSearch() {
       true,
     );
     searchResults.querySelectorAll(".search-result").forEach((button) => {
-      button.onclick = () => {
-        location.href = `${SEARCH_BASE}${
-          button.dataset.path.split("/").map(encodeURIComponent).join("/")
-        }`;
+      button.onkeydown = (event) => {
+        if (event.key === "Enter" || event.key === " ") event.stopPropagation();
+      };
+      button.onclick = async () => {
+        const names = button.dataset.path.split("/");
+        resetPreviewModes();
+        document.documentElement.dataset.filemill = "render";
+        ROUTER.write({ path: names, view: "render" }, false);
+        showSearch("");
+        await applyPath(names);
       };
     });
   } catch (err) {
