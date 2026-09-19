@@ -17,6 +17,7 @@ CONTRIBUTING.md, "Do Not Pass `--with playwright==…`".
 
 from __future__ import annotations
 
+import json
 import shutil
 import socket
 import sqlite3
@@ -1538,3 +1539,59 @@ def test_responsive_widths_survive_keyboard_and_mouse(page, width, height, expec
                 return box.left >= pane.left && box.right <= pane.right;});
     }""")
     assert not page.errors
+
+
+@pytest.fixture()
+def scalar_files(ui_root):
+    record = {
+        "name": "Row",
+        "text": "first\n<b>second</b>",
+        "zero": 0,
+        "empty": "",
+        "none": None,
+    }
+    (ui_root / "scalar.json").write_text(json.dumps(record))
+    (ui_root / "scalar.jsonl").write_text(json.dumps(record) + "\n")
+    with sqlite3.connect(ui_root / "scalar.db") as db:
+        db.execute(
+            "CREATE TABLE cells (name TEXT, text TEXT, zero INTEGER, empty TEXT, none TEXT)"
+        )
+        db.execute("INSERT INTO cells VALUES (?, ?, ?, ?, ?)", tuple(record.values()))
+
+
+@pytest.mark.parametrize("source", ["scalar.json", "scalar.jsonl", "scalar.db"])
+def test_selected_scalar_preview(page, source, scalar_files):
+    page.open(source)
+    if source.endswith(".db"):
+        page.locator(".row .label").filter(has_text="cells").click()
+    if not source.endswith(".json"):
+        column = 2 if source.endswith(".db") else 1
+        page.locator(f'.col[data-i="{column}"] .row').first.click()
+    page.wait_for_selector("#preview .pv-json")
+    parent_url = page.url
+    page.locator(".row .label").filter(has_text="text").click()
+    page.wait_for_selector("#preview .pv-json-value", timeout=3000)
+    value = page.locator("#preview .pv-json-value")
+    assert value.text_content() == "first\n<b>second</b>"
+    assert value.locator("b").count() == 0
+    assert value.evaluate("e => getComputedStyle(e).whiteSpace") == "pre-wrap"
+    page.keyboard.press("ArrowDown")
+    page.wait_for_function(
+        "document.querySelector('.pv-json-value')?.textContent === '0'"
+    )
+    scalar_url = page.url
+    page.reload()
+    page.wait_for_function(
+        "document.querySelector('.pv-json-value')?.textContent === '0'"
+    )
+    assert page.url == scalar_url
+    page.keyboard.press("ArrowRight")
+    page.wait_for_function("document.activeElement.id === 'preview'")
+    page.keyboard.press("ArrowLeft")
+    page.wait_for_function("document.activeElement.id !== 'preview'")
+    page.goto(parent_url)
+    page.wait_for_selector("#preview .pv-json")
+    assert page.url == parent_url
+    page.reload()
+    page.wait_for_selector("#preview .pv-json")
+    assert page.url == parent_url

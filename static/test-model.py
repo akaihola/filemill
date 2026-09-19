@@ -295,3 +295,38 @@ def test_left_arrow_reveals_selection(bundle, playwright, count, last, kind):
         page.wait_for_function("name => sel[0] === name", arg=next_name)
     finally:
         browser.close()
+
+
+@pytest.mark.parametrize("source", ["scalar.json", "scalar.jsonl"])
+def test_selected_scalar_preview(bundle, playwright, source):
+    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
+    try:
+        page = browser.new_page()
+        page.goto(bundle.as_uri())
+        page.wait_for_function("typeof mount === 'function'")
+        page.evaluate(
+            r"""async source => {
+            const text = JSON.stringify({text: 'first\n<b>second</b>', zero: 0});
+            const file = {kind: 'file', name: source,
+                async getFile() {return new File([text], source);}};
+            await mount({kind: 'directory', name: 'scalars',
+                async *entries() {yield [source, file];}});
+        }""",
+            source,
+        )
+        page.locator('.col[data-i="0"] .row').first.click()
+        if source.endswith(".jsonl"):
+            page.locator('.col[data-i="1"] .row').first.click()
+        page.wait_for_selector("#preview .pv-json")
+        page.locator(".row .label").filter(has_text="text").click()
+        value = page.locator("#preview .pv-json-value")
+        value.wait_for(timeout=3000)
+        assert value.text_content() == "first\n<b>second</b>"
+        assert value.locator("b").count() == 0
+        assert value.evaluate("e => getComputedStyle(e).whiteSpace") == "pre-wrap"
+        page.keyboard.press("ArrowDown")
+        page.wait_for_function(
+            "document.querySelector('.pv-json-value')?.textContent === '0'"
+        )
+    finally:
+        browser.close()
