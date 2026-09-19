@@ -71,6 +71,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
+- [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
+- [40] Return preview focus to the containing folder and selected file.
+- [39] Fix Back/Forward navigation across folders, previews and raw files.
+- [38] Fix PPTX previews that show unspaced slide text in both modes.
+- [*] Treat `.py.j2` as Python.
+
+## In Progress
+
 - [*] Many of the unintended column width changes could probably be solved by using a
   constant column width. Choose a standard folder column width in `em` units such that
   on a normal laptop widescreen, one column wills 1/6 of a full screen width browser
@@ -79,14 +87,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   screens such as phone screens, the ratios should be different: for portrait mode,
   column = 1/2 width, preview = at least 1/3 width, and for landscape mode, column = 1/4
   width, preview = at least 1/3 width. We need to experiment with these.
-
-- [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
-- [40] Return preview focus to the containing folder and selected file.
-- [39] Fix Back/Forward navigation across folders, previews and raw files.
-- [38] Fix PPTX previews that show unspaced slide text in both modes.
-- [*] Treat `.py.j2` as Python.
-
-## In Progress
 
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
