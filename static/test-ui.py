@@ -171,15 +171,17 @@ window.__mk = (nbig) => {
                   F('medium.md', 'x'.repeat(100), '2026-01-03'),
                   FX('locked.txt')]),
     // JSONL rows: a unique short `title` beats the unique `id`; when titles
-    // repeat the id has to carry the column; a bad line or an oversized file
-    // must land on the denied note, not a broken column.
+    // repeat the id has to carry the column; a bad line must land on the
+    // denied note, not a broken column; a large file is browsed by line.
     D('tables', [
       F('log.jsonl', '{"id":2,"title":"Second","ts":"2026-01-02","tags":["a",{"ok":true}]}\n'
                    + '{"id":1,"title":"First","ts":"2026-01-01","tags":["a"]}\n'
                    + '{"id":3,"title":"Third","ts":"2026-01-03","tags":null}\n'),
       F('dup.jsonl', '{"id":10,"title":"Same"}\n{"id":11,"title":"Same"}\n'),
       F('bad.jsonl', '{"a":1}\nnope\n'),
-      F('huge.jsonl', 'x'.repeat(512 * 1024 + 1)),
+      // past the 512 KB text ceiling, with one bad line: browsed by line index
+      F('huge.jsonl', Array.from({length: 20000}, (_, i) =>
+        i === 6 ? 'nope' : `{"id":${i + 1},"title":"Row ${i + 1}"}`).join('\n') + '\n'),
     ]),
     F('README.md','# hi\n'),
   ]);
@@ -1300,10 +1302,24 @@ async def main(bundle, fake_handle, playwright):
         check("A malformed line lands on the denied note, not a column",
               "Not valid JSONL: line 2" in note and await pg.evaluate("__rows(2)") == [], note)
         await click_row(pg, 1, "huge.jsonl")
-        await pg.wait_for_timeout(400)
-        note = await pg.inner_text('.col[data-i="2"]')
-        check("One byte over the ceiling is declined the same way",
-              "Too large" in note and await pg.evaluate("__rows(2)") == [], note)
+        await pg.wait_for_selector('.col[data-i="2"] .row', timeout=15000)
+        rows = await pg.evaluate("__rows(2)")
+        check("A file past the text ceiling opens as a column of line-numbered rows",
+              rows[:2] == ["line 1", "line 2"]
+              and await pg.evaluate("path[2].kids.length") == 20000, str(rows[:3]))
+        await pg.evaluate("applyPath(['tables', 'huge.jsonl', 'line 3'])")
+        await pg.wait_for_selector("#preview .pv-json", timeout=15000)
+        check("A deep link names a line row and previews it",
+              (await pg.evaluate("sel"))[-1] == "line 3"
+              and '"id":3' in (await pg.inner_text("#pv-content")).replace(" ", ""),
+              await pg.inner_text("#pv-content"))
+        await pg.evaluate("applyPath(['tables', 'huge.jsonl', 'line 7'])")
+        await pg.wait_for_selector("#preview .pv-err", timeout=15000)
+        note = await pg.inner_text('.col[data-i="3"]')
+        check("A malformed line in a large file fails on its own row only",
+              "Not valid JSONL: line 7" in await pg.inner_text("#preview .pv-err")
+              and "Not valid JSONL: line 7" in note
+              and "line 8" in await pg.evaluate("__rows(2)"), note)
         # back where the sections below expect to find note.md
         await click_row(pg, 0, "mixed")
         await pg.wait_for_timeout(300)
