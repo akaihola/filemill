@@ -39,6 +39,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
+- [39] Fix Back/Forward navigation across folders, previews and raw files.
+
+
 - [38] Fix PPTX previews that show unspaced slide text in both modes.
 
 - [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
