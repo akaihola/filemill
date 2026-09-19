@@ -442,9 +442,17 @@ def test_a_virtual_entry_carries_a_vpath_and_a_real_one_does_not(client, tmp_roo
 
 
 def test_the_server_renders_no_database_html(db_client, db_root: Path):
-    """The row's cells travel on the /api/dir entry; the client draws them."""
-    assert db_client.get("/api/preview?p=sample.db&v=users/1").status_code == 404
-    assert db_client.get("/api/preview?p=sample.db&v=users").status_code == 404
+    """The row's cells travel as JSON on their /api/dir entry and the client
+    draws them, so no preview response carries a row or a table — whatever
+    shape the preview route itself has."""
+    assert db_client.get("/api/dir?p=sample.db&v=users").json()["entries"][0][
+        "record"
+    ] == {"id": 1, "name": "User1", "bio": "Bio1"}
+    for url in ("/api/preview?p=sample.db&v=users/1", "/api/preview?p=sample.db"):
+        body = db_client.get(url).text
+        assert "User1" not in body
+        assert "db-table" not in body
+        assert "db-kv-table" not in body
 
 
 def test_vfs_paths_are_not_a_way_around_resolve_safe(db_client, db_root: Path):
