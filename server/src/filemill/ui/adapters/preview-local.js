@@ -13,6 +13,7 @@
    the core table, so a switched-off rich renderer leaves a .md as text.
    ═══════════════════════════════════════════════════════════════════════════ */
 import { FS } from "../core/ports.js";
+import { classifyFile } from "../core/file-kind.js";
 import { TEXT_MAX } from "../core/limits.js";
 import {
   CORE_RENDERERS,
@@ -34,7 +35,10 @@ export const PreviewLocal = {
        leans on. The blob.size test in the text entry stays: this one is only
        as good as the listing's size, and the limit should not depend on that
        being right. */
-    if ((node.meta?.size ?? 0) > TEXT_MAX) return null;
+    if (
+      (node.meta?.size ?? 0) > TEXT_MAX &&
+      classifyFile(node.name, node).preview === "text"
+    ) return null;
     const blob = await FS.blob(node);
     if (!blob) return null;
     return renderNode(node, blob, undefined, CORE_RENDERERS);
