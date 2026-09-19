@@ -43,3 +43,6 @@ the `app.py` refactor in [24].
 ## Scope
 
 `app.py`, `SECURITY.md`, `CHANGELOG.md`, `server/tests/test_routes_new.py`.
+
+[24]: 24-split-app-py.md
+[32]: 32-browser-markdown-in-server-edition.md

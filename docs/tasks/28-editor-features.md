@@ -1,5 +1,5 @@
 ---
-depends-on: [17]
+depends-on: []
 ---
 
 # Browser text editor
@@ -147,3 +147,6 @@ and the static bundle freshness check passes. The complete API suite reports
 55 passes and seven failures; unmodified main reproduces the identical failures.
 Logs: `/tmp/filemill-cache-tests.log`, `/tmp/filemill-cache-api.log`,
 `/tmp/filemill-cache-api-main.log`, and `/tmp/filemill-live-check.log`.
+
+[6]: 6-file-kind-classification.md
+[28]: 28-editor-features.md
