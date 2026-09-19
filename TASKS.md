@@ -17,15 +17,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
     - Depends on: [29]
 
-- [*] `<file>.md?filemill=highlight` doesn't highlight Markdown files correctly.
-  Headings and URLs are not highlighted, apostrophes cause highlighting of everything
-  between them, even if they're just part of a word. Links are not highlighted. Also,
-  I'd like Markdown links to actually act as clickable links just like in the rendered
-  Markdown preview.
-
-- [*] On a portrait mobile phone, Markdown preview is wider than the screen. Contents
-  overflow horizontally both at the left and right edges.
-
 - [*] If I exit a fullscreen preview on a mobile phone using the browser's Back button,
   I get an empty screen with the label `Select a file to preview`, and the only way to
   get out is to use the browser's forward button. After entering fullscreen mode, the
@@ -53,6 +44,15 @@ Rules for TASKS.md usage are at the bottom of the file.
 ```
 
 ## Scheduled
+
+- [*] `<file>.md?filemill=highlight` doesn't highlight Markdown files correctly.
+  Headings and URLs are not highlighted, apostrophes cause highlighting of everything
+  between them, even if they're just part of a word. Links are not highlighted. Also,
+  I'd like Markdown links to actually act as clickable links just like in the rendered
+  Markdown preview.
+
+- [*] On a portrait mobile phone, Markdown preview is wider than the screen. Contents
+  overflow horizontally both at the left and right edges.
 
 - [*] In hierarchical navigation of `.json`, `.jsonl`, and SQLite `.db` files, when the
   key of a scalar value is highlighted, show its value in the preview pane instead of
