@@ -17,6 +17,58 @@ Rules for TASKS.md usage are at the bottom of the file.
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
     - Depends on: [29]
 
+- [*] When navigating to the parent directory using the left arrow key, make sure the
+  highlighted file or directory is scrolled into view.
+
+- [*] Large directories now partition their contents into multiple lists that the user
+  can browse using a `< Page N of NN >` control. This is not acceptable. The vertical
+  scrollbar should be used to navigate through the directory contents. Task
+  0b1a0f79-4a08-4b1e-a820-27242fdda812 tried to virtualize the directory contents but
+  failed (or was reverted with another task). Use Fable Medium to solve this. Make the
+  code elegant and efficient. Use a 3rd party library to virtualize the directory
+  contents if that helps.
+
+- [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
+  column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
+  column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
+  3rd party libraries if that helps.
+
+- [*] In hierarchical navigation of `.json`, `.jsonl`, and SQLite `.db` files, when the
+  key of a scalar value is highlighted, show its value in the preview pane instead of
+  rendering the parent JSON structure. If the value is a string and has `\n` characters,
+  display it with line breaks.
+
+- [*] When object hierarchies are collapsed by the user in a JSON object preview,
+  remember the paths of collapsed objects (built all the way from the root), and also
+  collapse the same objects when viewing similar objects anywhere at the same depth. For
+  example, if I'm viewing `a.b.foo` and collapse `a.b.foo.c.bar`, then when I view any
+  `*.*.*` or `*.*.*.c` path, `*.*.*.c.bar` should be collapsed.
+
+- [*] `<file>.md?filemill=highlight` doesn't highlight Markdown files correctly.
+  Headings and URLs are not highlighted, apostrophes cause highlighting of everything
+  between them, even if they're just part of a word. Links are not highlighted. Also,
+  I'd like Markdown links to actually act as clickable links just like in the rendered
+  Markdown preview.
+
+- [*] On a portrait mobile phone, Markdown preview is wider than the screen. Contents
+  overflow horizontally both at the left and right edges.
+
+- [*] If I exit a fullscreen preview on a mobile phone using the browser's Back button,
+  I get an empty screen with the label `Select a file to preview`, and the only way to
+  get out is to use the browser's forward button. After entering fullscreen mode, the
+  Back button should behave identically to the `Exit fullscreen` button.
+
+- [*] The `Delete` button in the preview pane gives the red error
+  `Delete failed: actions.render is not a function` on the bottom status line (after
+  confirming deletion).
+
+- [*] There's no way to access the file context menu on desktop browsers. On touch
+  devices, a long touch does show it. Also, the context menu is transparent and very
+  hard to read. And the `Delete` item is missing from the menu.
+
+- [*] Fix all remaining red tests (listed in project memory), including the one-line
+  cause of the newest root-column regression.
+
 ## Scheduled
 
 - [*] Many of the unintended column width changes could probably be solved by using a
@@ -40,14 +92,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   `No inline preview for this file type.` is displayed instead of the image.
 
 - [64] Keep subfolder and folded parent widths stable during Up/Down navigation.
-
-- [40] Return preview focus to the containing folder and selected file.
-
-- [39] Fix Back/Forward navigation across folders, previews and raw files.
-
-- [38] Fix PPTX previews that show unspaced slide text in both modes.
-
-- [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
 
 - [41] Fix plain-text reStructuredText previews in Source and Rendered modes.
 
