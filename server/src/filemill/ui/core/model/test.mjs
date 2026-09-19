@@ -165,6 +165,18 @@ await assert.rejects(
 );
 assert.deepEqual(path, [tree]);
 assert.equal((await import("./state.js")).focusCol, 0);
+/* A virtual wrapper may decline a row while reading it: the row becomes a
+   leaf and stays the selection in its column instead of opening as one. */
+const declined = { name: "bad", dir: true, kids: null };
+tree.kids.push(declined);
+await walkPath(["bad"], async (n) => {
+  if (n !== declined) return;
+  n.dir = false;
+  n.kids = undefined;
+});
+assert.deepEqual(path, [tree]);
+assert.equal(selectedNode(), declined);
+tree.kids.pop();
 setState({ path: [], sel: [] });
 assert.equal(await walkPath([], async () => {}), false);
 assert.equal(previewNode(), null);
