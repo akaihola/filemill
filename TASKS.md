@@ -54,6 +54,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Feature: Clicking on a content search result now opens the raw file. Open the
   rendered file in the UI preview pane instead.
 
+- [*] Moving up and down in a folder column using the arrow keys still often causes the
+  subfolder column to the right to change its width. A bit more seldom but regularly
+  does the folded width of the parent column change. Let's still aim for complete
+  stability like described in task 3cf8ab6d-f2b0-4438-bfe1-58870f487bec.
+
 ## Scheduled
 
 - [*] Treat `.py.j2` as Python.
