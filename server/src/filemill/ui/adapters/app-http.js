@@ -12,7 +12,8 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { initSettings } from "../core/settings.js";
 import { initLayout } from "../core/layout.js";
-import { initSort, setSortActions, sortKids } from "../core/sort.js";
+import { initSort, setSortActions } from "../core/sort.js";
+import { sortKids } from "../core/model/sort.js";
 import { FSA } from "./fsa.js";
 import { API, HTTP } from "./http.js";
 import { PreviewLocal } from "./preview-local.js";
@@ -37,7 +38,13 @@ import {
   saySt,
   unfoldTo,
 } from "../core/nav.js";
-import { focusCol, path, sel, setSortKids, setState } from "../core/state.js";
+import {
+  focusCol,
+  path,
+  sel,
+  setSortKids,
+  setState,
+} from "../core/model/state.js";
 import { hlLang } from "../core/syntax.js";
 import { classifyFile } from "../core/file-kind.js";
 

@@ -61,6 +61,7 @@ jobs:
           test "$(deno --version | head -1)" = "deno 2.6.8 (stable, release, x86_64-unknown-linux-gnu)"
           deno fmt --check ui/
           deno lint ui/
+          deno run --allow-read=ui/core/model ui/core/model/test.mjs
 
       - uses: actions/setup-python@v5
         with:

@@ -1,6 +1,6 @@
 /* Server-only content search. The control stays hidden in local FSA mode. */
-import { focusCol } from "./state.js";
-import { currentPath } from "./deeplink.js";
+import { focusCol } from "./model/state.js";
+import { currentPath } from "./model/deeplink.js";
 
 /* The same attribute adapters/router-path.js reads; core must not import a
    server-only adapter, or the static bundle would carry it too. */

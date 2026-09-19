@@ -40,7 +40,8 @@ context reset.
 │   │   ├── ports.js        ← the FS / PREVIEW / ROUTER seams
 │   │   ├── icons.js        ← Seti lookup, folder glyph, esc()
 │   │   ├── syntax.js       ← comment/string/number/keyword spans, per language
-│   │   ├── state.js        ← globals, visibleKids, measure, fmt*
+│   │   ├── model/          ← DOM-free state, selection, sort, folding, keyboard, links
+│   │   ├── dom-renderer.js ← DOM handles and font measurements
 │   │   ├── sort.js         ← name/size/mtime order + the getFile() sweep
 │   │   ├── render.js       ← buildCol, columnFor, render, preview
 │   │   ├── renderers.js    ← the {kind, render, fallback} table; renderNode

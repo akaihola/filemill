@@ -7,34 +7,32 @@ import {
   editingPreview,
   openEditor,
 } from "../editor/editor.js";
-import { currentPath, syncURL } from "./deeplink.js";
+import { syncURL } from "./deeplink.js";
+import { currentPath } from "./model/deeplink.js";
 import { esc, iconHTML } from "./icons.js";
 import { layout } from "./layout.js";
 import { set, setVar } from "./dom.js";
 import { FS, PREVIEW, ROUTER } from "./ports.js";
 import { sortSay, sortStatus, sweepMeta } from "./sort.js";
 import {
-  finder,
   fmtDate,
   fmtSize,
   focusCol,
-  measure,
   nextPvToken,
   path,
   previewNode,
   pvFullscreen,
   pvToken,
-  root,
   rowIndex,
   sel,
   selectedNode,
   setState,
   splitName,
   state,
-  strip,
   visibleKids,
   widths,
-} from "./state.js";
+} from "./model/state.js";
+import { finder, measure, root, strip } from "./dom-renderer.js";
 import { hlFences } from "./syntax.js";
 import { IMAGE_EXTENSIONS } from "./limits.js";
 import { classifyFile } from "./file-kind.js";

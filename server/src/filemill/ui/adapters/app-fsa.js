@@ -8,7 +8,8 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { initSettings } from "../core/settings.js";
 import { initLayout } from "../core/layout.js";
-import { initSort, setSortActions, sortKids } from "../core/sort.js";
+import { initSort, setSortActions } from "../core/sort.js";
+import { sortKids } from "../core/model/sort.js";
 import { FSA } from "./fsa.js";
 import { PreviewRich, RICH_RENDERERS } from "./preview-rich.js";
 import { RouterHash } from "./router-hash.js";
@@ -41,11 +42,11 @@ import {
 import {
   focusCol,
   path,
-  root,
   sel,
   setSortKids,
   setState,
-} from "../core/state.js";
+} from "../core/model/state.js";
+import { root } from "../core/dom-renderer.js";
 
 document.getElementById("bar").insertAdjacentHTML(
   "beforeend",

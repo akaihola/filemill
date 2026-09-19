@@ -10,8 +10,10 @@ static/    one portable index.html that browses a folder on your own machine
 server/    a local web app that browses a folder on the server, in Python
 ```
 
-`ui/core/` is the application. It knows **nodes** — `{name, dir, kids}` — and
-nothing about their source. `ui/adapters/` supplies the source through three
+`ui/core/model/` owns nodes, selection, sorting, folding arithmetic, keyboard
+actions and deep links. Its modules run without a DOM. Nodes are plain
+`{name, dir, kids}` objects. The browser renderer lives beside the model in
+`ui/core/`; `dom-renderer.js` owns element handles and font measurements. `ui/adapters/` supplies the source through three
 ports declared in [`ui/core/ports.js`](ui/core/ports.js):
 
 | | **static** | **server** |
