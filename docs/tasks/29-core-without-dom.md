@@ -4,6 +4,8 @@ depends-on: [21]
 
 # Make ui/core/ a model package with no DOM
 
+## Model boundary
+
 The shared model is in `ui/core/model/`. Both browser editions import it.
 
 - `state.js` owns the plain node chain, selection, focus and display state.
@@ -99,3 +101,23 @@ The audit of numbered IDs and repeated issue titles found no other duplicates
 across headings. These pre-existing entries are preserved because this task
 requires every other issue to keep main's text. Removing them would be
 unrelated tracker maintenance.
+
+
+## User verification
+
+This change adds no new controls. Both editions retain the same file browsing
+behavior. The change separates browser rendering from the shared model so that
+navigation and layout decisions can be tested without a browser.
+
+1. Refresh the development or public Filemill page. Click a folder, then a file.
+   The folder opens a column and the file opens its preview.
+2. Select a folder with Up or Down. Focus stays in its parent column. Use Right
+   to enter the opened column and Left to return. Repeat with an empty folder.
+3. Scroll the column strip horizontally. Older columns fold into narrow spines.
+   Click a spine to reopen it. Resize the window and check that selection stays.
+4. Change the sort key between name, size and modified. Toggle hidden files.
+   The displayed order and visible rows should follow those controls.
+5. Open a nested file, copy its address and reload it. The same path should be
+   restored. Existing history failures listed above are not fixed by this change.
+6. Repeat the folder, keyboard, folding and sort checks in the static edition
+   after granting a test folder through its folder picker.
