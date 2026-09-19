@@ -667,6 +667,15 @@ async def main(bundle, fake_handle, playwright):
         await pg.keyboard.press("ArrowRight")
         check("→ focuses the preview from the rightmost column",
               await pg.evaluate("document.activeElement?.id") == "preview")
+        await pg.keyboard.press("ArrowLeft")
+        await pg.wait_for_timeout(200)
+        st = await pg.evaluate("__state()")
+        check("← from preview restores its containing folder and file",
+              st["focusCol"] == 4 and st["sel"][-1] == "leaf.md" and
+              await pg.evaluate("document.querySelector('.col.focus .row.cursor')?.title") == "leaf.md",
+              json.dumps(st))
+        await pg.keyboard.press("ArrowRight")
+        await pg.wait_for_timeout(200)
         before = await pg.evaluate("document.querySelector('#preview .pv-body').scrollTop")
         await pg.keyboard.press("PageDown")
         after = await pg.evaluate("document.querySelector('#preview .pv-body').scrollTop")
