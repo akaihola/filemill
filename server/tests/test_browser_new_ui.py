@@ -70,6 +70,20 @@ def ui_root(tmp_path: Path) -> Path:
         "# Readme\n\nline one\nline two\n\n```python\n" + SOURCE + "```\n"
     )
     (tmp_path / "page.html").write_text("<h1>Hi</h1>\n")
+    from pptx import Presentation
+    from pptx.util import Inches
+    deck = Presentation()
+    slide = deck.slides.add_slide(deck.slide_layouts[6])
+    for y, lines in ((1, ("Hello world", "Second line")), (3, ("Another block",))):
+        box = slide.shapes.add_textbox(Inches(1), Inches(y), Inches(4), Inches(1))
+        frame = box.text_frame
+        paragraph = frame.paragraphs[0]
+        paragraph.text = "Hello" if y == 1 else lines[0]
+        if y == 1:
+            paragraph.add_run().text = "world"
+        for line in lines[1:]:
+            frame.add_paragraph().text = line
+    deck.save(str(tmp_path / "deck.pptx"))
     (tmp_path / "clip.mp4").write_bytes(b"not a playable video")
     (tmp_path / "soft-breaks.md").write_text("one\ntwo\n\nthree  \nfour\n")
     (tmp_path / "wide.md").write_text(
@@ -974,6 +988,15 @@ def test_the_resource_route_opens_this_ui_at_the_file(page):
     page.open_resource("notes/deep/leaf.md?filemill=render")
     assert page.evaluate("sel") == ["notes", "deep", "leaf.md"]
     assert "Leaf" in page.inner_text("#preview .pv-rich h1")
+
+
+@pytest.mark.parametrize("view", ["render", "highlight"])
+def test_pptx_preview_preserves_slide_text_spacing_in_both_views(page, view):
+    page.open_resource(f"deck.pptx?filemill={view}")
+    page.wait_for_selector("#preview .pv-pptx .slide", timeout=15000)
+    assert page.inner_text("#preview .pv-pptx .slide p") == (
+        "Hello world\nSecond line\nAnother block"
+    )
 
 
 def test_the_resource_route_keeps_the_query_while_you_browse(page):
