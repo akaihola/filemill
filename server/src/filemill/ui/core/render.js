@@ -52,10 +52,18 @@ const CACHE_MAX = 24; // Retain enough nearby columns without growing memory unb
 const MAX_DEPTH = 5; // Keep depth styling within the available visual scale.
 const SCROLL_HINT_PADDING = 4; // Show the affordance only when content exceeds the viewport.
 const VIRTUAL_ROWS = 1000;
-const ROW_STEP = 23; // 21px row plus its 1px vertical margins.
 const LONG_PRESS_MS = 500;
 const touchUI = () =>
   matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+
+/* A virtual row is positioned by arithmetic, so its pitch has to be the one
+   the stylesheet draws: row height plus the margin above and below it. Both
+   follow the density setting, which is part of the cache signature. */
+function rowStep() {
+  const css = getComputedStyle(document.documentElement);
+  return parseFloat(css.getPropertyValue("--row-h")) +
+    2 * parseFloat(css.getPropertyValue("--row-gap"));
+}
 
 let longPressTimer;
 let suppressClick = false;
@@ -254,6 +262,7 @@ function buildCol(node) {
   };
 
   const virtual = kids.length >= VIRTUAL_ROWS;
+  const ROW_STEP = rowStep();
   const layer = virtual
     ? Object.assign(document.createElement("div"), { className: "row-layer" })
     : body;
