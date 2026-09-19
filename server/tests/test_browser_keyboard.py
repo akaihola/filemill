@@ -38,6 +38,10 @@ def browser_root(tmp_path: Path) -> Path:
     subdir.mkdir()
     (subdir / "next.md").write_text("# Next\n")
     (tmp_path / "root-note.md").write_text("# Root\n")
+    (tmp_path / "prg").symlink_to(kb, target_is_directory=True)
+    (tmp_path / "home-link.md").write_text(
+        "[Next](~/prg/docs/subdir/next.md)\n"
+    )
     return tmp_path
 
 
@@ -519,6 +523,24 @@ def test_rendered_relative_markdown_link_uses_root_relative_url(
         _expect_url_ending(page, "/my-knowledge/docs/subdir/next.md?filemill=render")
         assert "Next" in page.locator("#preview").inner_text()
 
+        browser.close()
+
+
+@pytest.mark.integration
+def test_rendered_home_markdown_link_uses_the_symlink_mount_once(
+    live_server: str, browser_root: Path
+):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1400, "height": 900})
+        page.goto(f"{live_server}/home-link.md", wait_until="networkidle")
+        page.wait_for_selector(
+            '#preview a[href="/w/prg/docs/subdir/next.md?filemill=render"]',
+            timeout=15000,
+        )
+        assert page.locator(
+            '#preview a[href="/w/prg/docs/subdir/next.md?filemill=render"]'
+        ).count() == 1
         browser.close()
 
 
