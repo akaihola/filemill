@@ -244,27 +244,30 @@ def test_geometry_changes_preserve_preview_rules(bundle, playwright, activation)
         browser.close()
 
 
-@pytest.mark.parametrize("target", [0, 79])
+@pytest.mark.parametrize("count", [80, 1000])
+@pytest.mark.parametrize("last", [False, True])
 @pytest.mark.parametrize("kind", ["directory", "file"])
-def test_left_arrow_reveals_selection(bundle, playwright, target, kind):
+def test_left_arrow_reveals_selection(bundle, playwright, count, last, kind):
+    target = count - 1 if last else 0
     browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
     try:
         page = browser.new_page(viewport={"width": 1000, "height": 500})
         page.goto(bundle.as_uri())
         page.wait_for_function("typeof mount === 'function'")
-        page.evaluate("""async kind => {
+        page.evaluate("""async ([kind, count]) => {
             const dir = (name, kids) => ({kind: 'directory', name,
                 async *entries() {for (const child of kids) yield [child.name, child];}});
             const file = name => ({kind: 'file', name,
                 async getFile() {return new File(['hello'], name);}});
-            const kids = Array.from({length: 80}, (_, i) => {
+            const kids = Array.from({length: count}, (_, i) => {
                 const name = `item-${String(i).padStart(2, '0')}`;
                 return kind === 'directory' ? dir(name, [file('note.txt')]) : file(name + '.txt');
             });
             await mount(dir('root', kids));
-        }""", kind)
+        }""", [kind, count])
         name = f"item-{target:02}" + (".txt" if kind == "file" else "")
-        page.locator(f'.col[data-i="0"] .row[title="{name}"]').click()
+        page.keyboard.press("End" if last else "Home")
+        page.wait_for_function("name => sel[0] === name", arg=name)
         page.keyboard.press("ArrowRight")
         page.wait_for_function(
             "document.activeElement.id === 'preview'" if kind == "file"
@@ -278,7 +281,7 @@ def test_left_arrow_reveals_selection(bundle, playwright, target, kind):
         visible = """() => {
             const row = document.querySelector('.col[data-i="0"] .row.sel');
             if (!row) return false;
-            const r = row.getBoundingClientRect(), b = row.parentElement.getBoundingClientRect();
+            const r = row.getBoundingClientRect(), b = row.closest(".col-body").getBoundingClientRect();
             return r.top >= b.top - 1 && r.bottom <= b.bottom + 1;
         }"""
         assert not page.evaluate(visible)
@@ -288,7 +291,7 @@ def test_left_arrow_reveals_selection(bundle, playwright, target, kind):
         page.wait_for_function(visible, timeout=2000)
         assert page.evaluate("document.getElementById('stage').scrollLeft") == 0
         page.keyboard.press("ArrowDown" if target == 0 else "ArrowUp")
-        next_name = f"item-{1 if target == 0 else 78:02}" + (".txt" if kind == "file" else "")
+        next_name = f"item-{1 if target == 0 else target - 1:02}" + (".txt" if kind == "file" else "")
         page.wait_for_function("name => sel[0] === name", arg=next_name)
     finally:
         browser.close()

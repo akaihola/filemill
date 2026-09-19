@@ -162,7 +162,7 @@ function slideTail(p, pan, n) {
    `block: "nearest"`: nothing if the row is already inside, otherwise the
    shorter of the two edges — the same numbers scrollIntoView produced. */
 export function revealRow(row) {
-  const body = row.parentElement; /* .col-body scrolls */
+  const body = row.closest(".col-body");
   const r = row.getBoundingClientRect(), b = body.getBoundingClientRect();
   if (r.top < b.top) body.scrollTop += r.top - b.top;
   else if (r.bottom > b.bottom) body.scrollTop += r.bottom - b.bottom;
