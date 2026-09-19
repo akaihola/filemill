@@ -587,7 +587,7 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
         assert page.evaluate("focusCol") == 1
         assert page.evaluate("sel[1]") == "AGENTS.md"
         assert (
-            page.locator('.col[data-i="1"] .row.sel .label').inner_text() == "AGENTS.md"
+            page.locator('.col[data-i="1"] .row.sel .label').text_content() == "AGENTS.md"
         )
         assert page.url == file_url
         _expect_preview(page)
@@ -603,6 +603,48 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
         assert page.evaluate("sel[1]") == "AGENTS.md"
         _expect_ui_column(page, 1)
         _expect_preview(page)
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize(
+    "viewport",
+    [{"width": 1400, "height": 900}, MOBILE_VIEWPORT, MOBILE_LANDSCAPE],
+)
+@pytest.mark.parametrize("selection", ["click", "keyboard"])
+def test_arrowright_preview_preserves_layout(live_server, viewport, selection):
+    with _ui_page(live_server) as page:
+        page.set_viewport_size(viewport)
+        _ui_tap(page, 0, "my-knowledge")
+        if selection == "click":
+            _ui_tap(page, 1, "AGENTS.md")
+        else:
+            page.keyboard.press("ArrowRight")
+            page.keyboard.press("ArrowDown")
+        _expect_preview(page)
+        page.wait_for_function("focusCol === 1 && sel[1] === 'AGENTS.md'")
+        _dial_settled(page)
+        geometry = """() => ({
+            widths: [...document.querySelectorAll('.col')].map(c => c.offsetWidth),
+            preview: document.getElementById('preview').offsetWidth,
+            scroll: finder.scrollLeft,
+            stage: stage.scrollLeft,
+            history: history.length,
+        })"""
+        url = page.url
+        for _ in range(2):
+            page.wait_for_function(
+                "document.getElementById('pv-content')?.textContent.includes('Agent notes')"
+            )
+            before = page.evaluate(geometry)
+            page.keyboard.press("ArrowRight")
+            page.wait_for_function("document.activeElement.id === 'preview'")
+            _dial_settled(page)
+            assert page.evaluate(geometry) == before
+            assert page.url == url
+            page.keyboard.press("ArrowLeft")
+            page.wait_for_function("!document.activeElement.closest('#preview')")
+            _dial_settled(page)
+            assert page.evaluate("focusCol") == 1
 
 
 @pytest.mark.integration

@@ -35,11 +35,6 @@ import { paintTrail } from "./trail.js";
 export const stripSpan = (k) => columnSpan(widths, k, GUTTER(), SPINE());
 export const foldUnit = () => foldStep(path.length);
 export const range = () => scrollRange(widths, GUTTER(), SPINE());
-export const foldAll = () => {
-  setState({ folded: path.length });
-  applyWidths(0);
-  slideTail(1, 0, path.length);
-};
 
 let scrollStep = 0;
 let scrollColumns = 0;

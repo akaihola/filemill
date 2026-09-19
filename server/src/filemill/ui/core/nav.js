@@ -14,7 +14,7 @@ import { autoPreview, selectNode } from "./model/selection.js";
    ═══════════════════════════════════════════════════════════════════════════ */
 import { applyPath, scrollCursorIntoView } from "./deeplink.js";
 import { currentPath } from "./model/deeplink.js";
-import { foldAll, foldUnit, range, revealRow } from "./layout.js";
+import { foldUnit, range, revealRow } from "./layout.js";
 import { FS } from "./ports.js";
 import { colCache, columnFor, render } from "./render.js";
 import { closeSettings } from "./settings.js";
@@ -390,12 +390,12 @@ document.addEventListener("keydown", (e) => {
     /* nothing open to the right: commit the row, which opens it when it
        is a directory — a second → then steps into that column */
     if (!next) {
-      const row = c.ensureRow(ci);
-      row?.click();
       if (e.key === "ArrowRight" && c.kids[ci] && !c.kids[ci].dir) {
-        foldAll();
-        document.getElementById("preview")?.focus();
-      }
+        if (sel[focusCol] !== c.kids[ci].name) {
+          choose(focusCol, c.kids[ci], true);
+        }
+        document.getElementById("preview")?.focus({ preventScroll: true });
+      } else c.ensureRow(ci)?.click();
       return;
     }
     if (next.kids === null) {

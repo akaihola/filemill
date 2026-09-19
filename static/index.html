@@ -3519,11 +3519,6 @@ function paintTrail() {
 const stripSpan = (k) => columnSpan(widths, k, GUTTER(), SPINE());
 const foldUnit = () => foldStep(path.length);
 const range = () => scrollRange(widths, GUTTER(), SPINE());
-const foldAll = () => {
-  setState({ folded: path.length });
-  applyWidths(0);
-  slideTail(1, 0, path.length);
-};
 
 let scrollStep = 0;
 let scrollColumns = 0;
@@ -5030,12 +5025,12 @@ document.addEventListener("keydown", (e) => {
     /* nothing open to the right: commit the row, which opens it when it
        is a directory — a second → then steps into that column */
     if (!next) {
-      const row = c.ensureRow(ci);
-      row?.click();
       if (e.key === "ArrowRight" && c.kids[ci] && !c.kids[ci].dir) {
-        foldAll();
-        document.getElementById("preview")?.focus();
-      }
+        if (sel[focusCol] !== c.kids[ci].name) {
+          choose(focusCol, c.kids[ci], true);
+        }
+        document.getElementById("preview")?.focus({ preventScroll: true });
+      } else c.ensureRow(ci)?.click();
       return;
     }
     if (next.kids === null) {
