@@ -191,7 +191,9 @@ def _ui_shell(state, base: str, hidden: bool = False):
     prefix ui/adapters/router-path.js strips — ``/n/`` for the migration mount,
     ``/`` for the resource route, where the path already is the file path.
     """
+    mounts = paths.mount_targets(_root())
     attrs = {"lang": "en", "data-density": "compact", "data-root": _root().name or "/",
+             "data-mounts": json.dumps(list(mounts)),
              "data-absolute": _root().resolve().as_posix(), "data-api": "/api",
              "data-base": base, "data-filemill": state.view, "data-layout": state.layout}
     if _COMMIT:
