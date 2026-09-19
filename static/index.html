@@ -3023,7 +3023,8 @@ function initSort() {
 const TEXT_MAX = 512 * 1024;
 const IMAGE_EXTENSIONS = [
   "png",
-  "jpe?g",
+  "jpg",
+  "jpeg",
   "gif",
   "webp",
   "avif",
@@ -3637,7 +3638,7 @@ let lastKey = null;
 
 function syncURL() {
   if (applying || !ROUTER || !path.length) return;
-  const key = path.slice(0, focusCol + 1).map((p) => p.name).join("/");
+  const key = path.map((p) => p.name).join("/");
   const names = currentPath();
   const node = previewNode();
   const view = node && !node.dir
@@ -3727,7 +3728,7 @@ function startRouting() {
        remount it without a user gesture, so it would silently walk the wrong
        tree. Leaving the columns where they are is the honest outcome. */
     if (loc && (!loc.root || loc.root === path[0]?.name)) {
-      if (loc.view) document.documentElement.dataset.filemill = loc.view;
+      document.documentElement.dataset.filemill = loc.view || "render";
       applyPath(loc.path);
     }
   });
@@ -3745,6 +3746,7 @@ function startRouting() {
    Anything that alters how a row *looks* (dotfile filter, density, theme icon
    colours) is part of the signature and drops the whole cache. */
 const colCache = new Map();
+const navWidths = new WeakMap();
 let cacheSig = null;
 const CACHE_MAX = 24; // Retain enough nearby columns without growing memory unbounded.
 const COLUMN_WIDTH_RATIO = 2 / 3; // Leave room for adjacent columns on narrow screens.
@@ -3973,10 +3975,11 @@ function render(keepScroll) {
        row sat 10 px past the right one until the next render healed it.
        #finder is `flex: 1` in the viewport, so it is the live number, and it
        is the one layout() reads to set --stage-w in the first place. */
-    const w = Math.min(
-      c.width,
-      Math.floor(finder.clientWidth * COLUMN_WIDTH_RATIO),
-    );
+    const cap = Math.floor(finder.clientWidth * COLUMN_WIDTH_RATIO);
+    const w = keepScroll && navWidths.has(node)
+      ? Math.min(navWidths.get(node), cap)
+      : Math.min(c.width, cap);
+    navWidths.set(node, Math.min(w, cap));
     widths.push(w);
 
     /* `sorting` goes in the class string rather than on classList, because this
@@ -6068,7 +6071,10 @@ async function unzipPptx(blob) {
         throw new Error("unsupported ZIP compression");
       }
       const xml = new DOMParser().parseFromString(new TextDecoder().decode(data), "application/xml");
-      const text = [...xml.getElementsByTagNameNS("*", "t")].map((n) => n.textContent).join("").trim();
+      const text = [...xml.getElementsByTagNameNS("*", "p")]
+        .map((paragraph) => [...paragraph.getElementsByTagNameNS("*", "t")]
+          .map((run) => run.textContent).join(" "))
+        .filter(Boolean).join("\n").trim();
       slides.push({ number: Number(name.match(/slide(\d+)/)[1]), text });
     }
     at = end;

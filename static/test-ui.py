@@ -491,6 +491,8 @@ async def main(bundle, fake_handle, playwright):
             ("data.db", {"vpath": "table"}, ("vfs", "virtual", False)),
             ("link.desktop", {}, ("link", "desktop", False)),
             ("photo.png", {}, ("file", "image", False)),
+            ("photo.jpg", {}, ("file", "image", False)),
+            ("photo.jpeg", {}, ("file", "image", False)),
             ("doc.pdf", {}, ("file", "pdf", False)),
             ("note.md", {}, ("file", "md", True)),
             ("captions.vtt", {}, ("file", "vtt", True)),
@@ -521,6 +523,7 @@ async def main(bundle, fake_handle, playwright):
             renderNode({name, ...(extra || {})}, new Blob([body]), kind)"""
         entries = [
             ("image", ["a.png", "image", "\x89PNG"], 'class="pv-img"'),
+            ("image", ["a.jpg", "image", "\xff\xd8\xff"], 'class="pv-img"'),
             ("pdf", ["a.pdf", "pdf", "%PDF-1.4"], 'class="pv-pdf"'),
             ("html", ["a.html", "html", "<p>hi</p>"], 'class="pv-html"'),
             ("desktop", ["a.desktop", "desktop",
