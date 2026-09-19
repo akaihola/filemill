@@ -81,7 +81,7 @@ Keep these.
 | A3  | P1 | Save and delete accept unrelated origins                  | M / medium    | —          |
 | A4  | P1 | Saves are neither atomic nor conflict-checked             | M / medium    | A1, A3     |
 | A5  | P1 | Service workers cache file bytes and break offline misses | M / medium    | —          |
-| A6  | P2 | A listing page is treated as the whole directory          | M / medium    | —          |
+| A6  | P2 | Virtual rows are never evicted                            | M / medium    | —          |
 | A7  | P2 | SQLite labels double as identities; errors look empty     | M / medium    | A6         |
 | A8  | P2 | Preview routing and representation disagree across modes  | M / medium    | A2         |
 | A9  | P2 | The preview is rebuilt on every render                    | M / medium    | A8         |
@@ -165,22 +165,20 @@ Unrelated caches survive activation. A cold offline navigation gets a valid
 recovery response. An upgrade purges legacy `filemill-v1` entries without
 clearing remembered folder handles.
 
-### A6. A listing page is treated as the whole directory
+### A6. Virtual rows are never evicted
 
-`api.py:43,135-191` slices listings at 500 entries. `HTTP.ensureLoaded`
-(`ui/adapters/http.js`) loads page one. `applyPath` (`ui/core/deeplink.js:56`)
-walks only loaded children, so a deep link or refresh to a page-two entry fails.
-`HTTP.loadPage` builds entries separately, mutates core state and renders, and
-the JSON/CSV wrappers do not adapt page-two children. Sort and type-ahead see
-one page. `dir_json` re-lists and sorts the whole directory for every page. The
-scheduled issue on the `< Page N of NN >` control asks to replace paging with
-scrolling; row virtualisation (`ui/core/render.js:333-341`) adds rows but never
-evicts them.
+`/api/dir` returns the whole listing and the column scrolls ([ADR 0068]).
+Paging and `HTTP.loadPage` are gone, so deep links, refresh, sort and
+type-ahead reach every entry. Row virtualisation (`buildCol` in
+`ui/core/render.js`) creates rows near the viewport but never removes them.
+Scrolling through a large directory therefore leaves every row in the DOM, and
+each `render()` touches all of them.
 
-**Acceptance.** In a 1 001-entry fixture, first, last and page-two files and
-structured files reload and restore. Refresh keeps an existing selection. The
-stated sort scope holds. Paths with `%`, `/` in virtual keys, Unicode and empty
-keys round-trip. Related: [7], [22], [39], [45], [61].
+**Acceptance.** In a 1 200-entry fixture, the last file reloads and restores.
+After the column is scrolled end to end, the DOM holds about one viewport of
+rows and the selection stays highlighted. Paths with `%`, `/` in virtual keys,
+Unicode and empty keys round-trip; this change did not check that item.
+Related: [7], [22], [39], [45], [61].
 
 ### A7. SQLite labels double as identities; errors look empty
 
@@ -232,8 +230,7 @@ replace the current selection. Related: [39], [40], [64].
   `subprocess.run(capture_output=True)` and stops parsing at 100 matches only
   after the process ends. The client abort does not stop the subprocess.
 - `preview.py:read_text` and the RST path read whole files. PPTX and DOCX have
-  no archive expansion limit. Directory paging re-enumerates (A6). FSA metadata
-  sweeps use unbounded `Promise.all`.
+  no archive expansion limit. FSA metadata sweeps use unbounded `Promise.all`.
 
 No load benchmark exists; measure before adding pools or caches.
 
@@ -324,11 +321,9 @@ updates. Security steps can start at once. Never weaken a gate to pass it.
    network failure before choosing a recovery response. Version the cache name
    and delete only this app's old caches. Test an installed upgrade. Update
    [ADR 0063].
-5. **Make navigation independent of the listing page** (A6). Coordinate with the
-   scheduled large-directory issue: either list the whole directory with
-   evicting virtualisation, or add an adapter child lookup for deep links. Use
-   one entry-construction path; keep state changes in the navigator; apply
-   virtual wrappers to every page.
+5. **Evict virtual rows** (A6). The whole directory is listed and scrolled
+   ([ADR 0068]); keep the row DOM to about one viewport. Use one
+   entry-construction path; keep state changes in the navigator.
 6. **Separate SQLite identity from display text** (A7). Use step 5's address
    contract. Keep truncation presentational; support or reject WITHOUT ROWID
    explicitly; distinguish empty, inaccessible and corrupt.
@@ -354,4 +349,5 @@ A12 items can land at any time, each with a focused test.
 [ADR 0063]: adr/0063-installed-pwa-server-recovery.md
 [ADR 0066]: adr/0066-native-toolkits.md
 [ADR 0067]: adr/0067-drop-no-columns-layout.md
+[ADR 0068]: adr/0068-scroll-whole-directory-listings.md
 [remaining red tests]: testing/remaining-red-tests.md

@@ -35,9 +35,6 @@
        vpath      virtual path inside rel (JSON key, table, or row)
        ordered    boolean; preserve the adapter's documented child order when true
        icon       string; explicit icon glyph
-       page       one-based current server listing page
-       pages      total server listing pages
-       total      total server listing entries
        previewFormat string; requested preview format
        csv        boolean; this node is a CSV virtual directory or a row in one
        jsonl      boolean; this node is a JSONL virtual directory

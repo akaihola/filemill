@@ -9,9 +9,7 @@
    satisfied by the listing. That is what makes server-side sorting by size or
    date affordable, where the local build would need a getFile() sweep.
    ═══════════════════════════════════════════════════════════════════════════ */
-import { render } from "../core/render.js";
 import { classifyFile } from "../core/file-kind.js";
-import { focusCol, path, sel, setState } from "../core/model/state.js";
 
 export const API = document.documentElement.dataset.api || "/api";
 
@@ -53,8 +51,6 @@ const q = (rel, vpath) =>
   `${API}/dir?p=${encodeURIComponent(rel)}` +
   (vpath ? `&v=${encodeURIComponent(vpath)}` : "");
 
-const pageQ = (rel, vpath, page) => `${q(rel, vpath)}&page=${page}`;
-
 export const HTTP = {
   node: (name, rel) =>
     httpNode(
@@ -74,15 +70,12 @@ export const HTTP = {
     if (node.loading) return node.loading;
     node.loading = (async () => {
       try {
-        const r = await fetch(pageQ(node.rel, node.vpath, 1), {
+        const r = await fetch(q(node.rel, node.vpath), {
           headers: { Accept: "application/json" },
         });
         if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
         const j = await r.json();
         node.denied = j.denied || undefined;
-        node.page = j.page;
-        node.pages = j.pages;
-        node.total = j.total;
         node.kids = (j.entries || []).map((e) =>
           e.vpath !== undefined
             /* virtual: same file, deeper key */
@@ -116,61 +109,6 @@ export const HTTP = {
       node.loading = null;
     })();
     return node.loading;
-  },
-
-  async loadPage(node, page) {
-    if (!node.pages || page < 1 || page > node.pages || node.loading) return;
-    node.loading = (async () => {
-      const r = await fetch(pageQ(node.rel, node.vpath, page), {
-        headers: { Accept: "application/json" },
-      });
-      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-      const j = await r.json();
-      const i = path.indexOf(node);
-      if (i >= 0) {
-        setState({
-          path: path.slice(0, i + 1),
-          sel: sel.slice(0, i),
-          focusCol: Math.min(focusCol, i),
-        });
-      }
-      node.kids = (j.entries || []).map((e) =>
-        e.vpath !== undefined
-          ? httpNode(
-            e.name,
-            node.rel,
-            e.dir,
-            { virtual: true },
-            e.vpath,
-            e.icon,
-            e.ordered,
-            e.record,
-            e.abs,
-          )
-          : httpNode(
-            e.name,
-            relOf(node.rel, e.name),
-            e.dir,
-            e.dir ? undefined : { size: e.size, mod: e.mod },
-            "",
-            "",
-            true,
-            undefined,
-            e.abs,
-          )
-      );
-      node.page = j.page;
-      node.pages = j.pages;
-      node.total = j.total;
-      node.loading = null;
-    })();
-    try {
-      await node.loading;
-    } catch (err) {
-      node.denied = String(err.message || err);
-      node.loading = null;
-    }
-    render();
   },
 
   /* The listing already carried it — or there is none to carry, for a node
