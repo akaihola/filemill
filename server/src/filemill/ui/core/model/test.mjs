@@ -17,6 +17,7 @@ import {
   columnWidth,
   focusPan,
   foldingAt,
+  foldPosition,
   tailShift,
 } from "./folding.js";
 import { keyAction, nextRow, pageSelection } from "./keyboard.js";
@@ -48,6 +49,9 @@ assert.equal(columnSpan([200, 300], 1, 10, 20), 350);
 assert.deepEqual(foldingAt(0, 100, 0), { raw: 0, folded: 0, t: 0 });
 assert.equal(foldingAt(49, 100, 2).folded, 1);
 assert.equal(foldingAt(99, 100, 2).folded, 2);
+assert.equal(foldPosition(174, 528 * 0.99 / 3), 1);
+assert.deepEqual(foldingAt(175, 529, 3), { raw: 1, folded: 1, t: 0 });
+assert.equal(foldPosition(150, 200), 0.75);
 assert.equal(columnWidth(200, 0, 0, 0.5, 20), 110);
 assert.equal(focusPan(1, 0, 10, 210, 100, 10), 0);
 assert.ok(Math.abs(tailShift(1, 0, 2, 20, 10) - 60) < 1e-9);

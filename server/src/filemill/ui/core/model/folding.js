@@ -22,10 +22,18 @@ export function automaticFold(
   ) count++;
   return compressed ? sizes.length : Math.min(focus, Math.max(count, previous));
 }
+export function foldPosition(scroll, step) {
+  // Snap rounded landings without adding half a pixel to every partial fold.
+  const position = scroll / step;
+  const boundary = Math.round(position);
+  return Math.abs(scroll - boundary * step) <= 0.5 ? boundary : position;
+}
 export function foldingAt(scroll, maximum, count) {
   if (!count) return { raw: 0, folded: 0, t: 0 };
-  // Half a pixel compensates for rounded scroll positions at fold boundaries.
-  const raw = Math.min(1, (scroll + 0.5) / maximum) / foldStep(count);
+  const raw = Math.min(
+    1 / foldStep(count),
+    foldPosition(scroll, maximum * foldStep(count)),
+  );
   const folded = Math.min(count, Math.floor(raw));
   return { raw, folded, t: Math.min(1, Math.max(0, raw - folded)) };
 }
