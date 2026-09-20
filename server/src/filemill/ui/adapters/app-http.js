@@ -99,16 +99,18 @@ const withHighlighting = (provider) => ({
     PreviewLocal.revoke();
   },
   render: (n) =>
-    (!n.vpath && document.documentElement.dataset.filemill === "highlight" &&
-        hlLang(n.name)
-      ? PreviewLocal
-      : provider).render(n),
+    !n.vpath && document.documentElement.dataset.filemill === "highlight" &&
+      (hlLang(n.name) || classifyFile(n.name, n).preview === "vtt")
+      ? PreviewLocal.render(n, "text")
+      : provider.render(n),
 });
 
 const PreviewHTTP = {
   revoke() {},
   async render(n) {
-    const response = await fetch(`${API}/preview?p=${encodeURIComponent(n.rel)}`);
+    const response = await fetch(
+      `${API}/preview?p=${encodeURIComponent(n.rel)}`,
+    );
     return response.ok ? response.text() : PreviewLocal.render(n);
   },
 };

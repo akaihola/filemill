@@ -15,7 +15,7 @@ import { locationState, walkPath } from "./model/deeplink.js";
    ═══════════════════════════════════════════════════════════════════════════ */
 import { revealRow } from "./layout.js";
 import { FS, ROUTER } from "./ports.js";
-import { path, rowIndex, sel, state } from "./model/state.js";
+import { path, rowIndex, sel, selectedNode, state } from "./model/state.js";
 
 /* render() runs on resize and on every keystroke, so writing the URL from it is
    only safe if an unchanged location is left alone — otherwise Back fills up
@@ -33,7 +33,10 @@ export const setDeepLinkActions = (
 let lastKey = null;
 
 export function syncURL() {
-  if (applying || !ROUTER || !path.length) return;
+  if (
+    applying || !ROUTER || !path.length || path[0].kids === null ||
+    selectedNode()?.dir
+  ) return;
   const result = locationState(
     document.documentElement.dataset.filemill,
     lastKey,

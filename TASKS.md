@@ -33,9 +33,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   devices, a long touch does show it. Also, the context menu is transparent and very
   hard to read. And the `Delete` item is missing from the menu.
 
-- [*] Fix all remaining red tests (listed in project memory), including the one-line
-  cause of the newest root-column regression.
-
 - [*] reStructuredText paragraphs are rendered very narrow. For example
   in`/home/agent/prg/feedtask/README.rst`, a the source for a paragraph is:
 
@@ -96,6 +93,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] Fix all remaining red tests (listed in project memory), including the one-line
+  cause of the newest root-column regression.
 
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.

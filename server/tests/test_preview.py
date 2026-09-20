@@ -32,7 +32,6 @@ def _make_pptx(
     prs.save(str(path))
 
 
-
 # ── render_preview dispatch ───────────────────────────────────────────────────
 
 

@@ -1,25 +1,31 @@
+import functools
+import http.server
 import sqlite3
+import threading
 from pathlib import Path
 
 import pytest
-
-
-class _Playwright:
-    def __init__(self, sync, asynchronous):
-        self._sync = sync
-        self._asynchronous = asynchronous
-
-    def __getattr__(self, name):
-        return getattr(self._sync, name)
-
-    def async_playwright(self):
-        return self._asynchronous()
 
 
 @pytest.fixture
 def bundle(request):
     name = "index-dev.html" if request.config.getoption("--dev") else "index.html"
     return Path(__file__).parent / "static" / name
+
+
+@pytest.fixture
+def static_origin():
+    handler = functools.partial(
+        http.server.SimpleHTTPRequestHandler, directory=str(Path(__file__).parent)
+    )
+    with http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler) as server:
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            yield f"http://127.0.0.1:{server.server_port}"
+        finally:
+            server.shutdown()
+            thread.join()
 
 
 @pytest.fixture
@@ -35,9 +41,21 @@ def opfs_root():
 @pytest.fixture
 def playwright():
     sync_playwright = pytest.importorskip("playwright.sync_api").sync_playwright
-    async_playwright = pytest.importorskip("playwright.async_api").async_playwright
     with sync_playwright() as p:
-        yield _Playwright(p, async_playwright)
+        yield p
+
+
+@pytest.fixture
+def async_playwright():
+    return pytest.importorskip("playwright.async_api")
+
+
+@pytest.fixture(autouse=True)
+def reset_checks(request):
+    for name in ("passed", "failed"):
+        results = getattr(request.module, name, None)
+        if isinstance(results, list):
+            results.clear()
 
 
 @pytest.fixture()

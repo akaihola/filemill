@@ -17,7 +17,7 @@ networkless hosts. The *loaded* path is exercised against stub modules served
 from the same loopback server, which is the only way to reach it without the
 real CDN.
 
-    uv run --with "playwright==1.61.0" python3 test-rich.py [--bundle|--dev] [--rst]
+    uv run --project ../server pytest test-rich.py [--dev]
 
 The server edition serves the Markdown and .docx modules itself from ui/vendor/
 and points FILEMILL_CDN at them; the last section here loads those real files
@@ -64,6 +64,13 @@ def _docx(text: str) -> str:
     return base64.b64encode(buf.getvalue()).decode()
 
 
+def _pptx():
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as z:
+        z.writestr("ppt/slides/slide1.xml", '<slide><p><t>PowerPoint loaded</t></p></slide>')
+    return base64.b64encode(buf.getvalue()).decode()
+
+
 FAKE = r"""
 window.__mk = () => {
   const F = (name, text) => ({kind:'file', name,
@@ -82,24 +89,16 @@ window.__mk = () => {
     F('code.py', 'def f():\n    return 1\n'),
     F('plain.txt', 'just text'),
     F('data.json', '{"items":["json value"],"count":2}'),
-    F('deck.pptx', 'pptx bytes'),
+    B('deck.pptx', '%(pptx)s'),
     F('broken.pptx', 'bad'),
   ]);
 };
-""" % {"docx": _docx("Hello docx")}
+""" % {"docx": _docx("Hello docx"), "pptx": _pptx()}
 
 # Enough of each library's shape to prove the plumbing: the loader, the plugin
 # chaining, the highlight hook, and where the output lands. Faithfulness to the
 # real renderers is the CDN's problem, not this suite's.
 STUBS = {
-    "pptx-viewer.js": """
-export function createPptxViewer(host, options) {
-  /* the real viewer reports a deck it cannot open through onError */
-  if (options.source.size < 5) options.onError('bad deck');
-  else host.innerHTML = '<div class="pptx-stub">PowerPoint loaded</div>';
-  return { destroy() {} };
-}
-""",
     "markdown-it.js": """
 export default class MarkdownIt {
   constructor(o) { this.options = o; this.renderer = { rules: {} }; this.core = { ruler: { push: (n, f) => { this._rule = f; } } }; }
@@ -310,7 +309,7 @@ async def rst_main(bundle, fake_handle, playwright):
         httpd.shutdown()
         httpd.server_close()
     print(f"{len(passed)} passed, {len(failed)} failed")
-    sys.exit(1 if failed else 0)
+    assert not failed, "Failed checks: " + ", ".join(failed)
 
 
 async def main(bundle, fake_handle, playwright):
@@ -351,9 +350,9 @@ async def main(bundle, fake_handle, playwright):
         html = await preview(pg, "doc.rst", ready=".pv-note")
         check("Offline, reStructuredText shows its source and says why",
               "Heading" in html and "pv-text" in html and "pv-note" in html)
-        html = await preview(pg, "deck.pptx", ready=".preview-error")
-        check("Offline, a PowerPoint file says the viewer is unavailable",
-              "PowerPoint preview unavailable" in html, html[:120])
+        html = await preview(pg, "deck.pptx", ready=".pv-pptx")
+        check("PowerPoint renders locally while offline",
+              "PowerPoint loaded" in html, html[:120])
 
         # ── the switch ───────────────────────────────────────────────────
         await boot(pg, base, rich=False)
@@ -393,17 +392,12 @@ async def main(bundle, fake_handle, playwright):
               and "pv-note" not in html, html[:120])
 
         requests.clear()
-        html = await preview(pg, "deck.pptx", ready=".pptx-stub")
-        check("With the viewer available, a PowerPoint file is mounted in it",
-              "PowerPoint loaded" in html and "pv-pptx" in html, html[:120])
-        check("…and the viewer module is the one requested",
-              [u for u in requests if "pptx-viewer.js" in u],
-              "; ".join(requests))
-        html = await preview(
-            pg, "broken.pptx", ready='.pv-pptx:has-text("PowerPoint preview failed")'
-        )
-        check("A deck the viewer rejects shows the viewer's message",
-              "PowerPoint preview failed: bad deck" in html, html[:120])
+        html = await preview(pg, "deck.pptx", ready=".pv-pptx")
+        check("PowerPoint renders slide text without a CDN viewer",
+              "PowerPoint loaded" in html and not any("pptx-viewer" in u for u in requests))
+        html = await preview(pg, "broken.pptx", ready=".preview-error")
+        check("An invalid deck reports a preview error",
+              "PowerPoint preview failed" in html, html[:120])
 
         requests.clear()
         html = await preview(pg, "fence.md")
@@ -483,9 +477,8 @@ async def main(bundle, fake_handle, playwright):
     if failed:
         print("  Failed: " + ", ".join(failed))
     print("═" * 62)
-    sys.exit(1 if failed else 0)
+    assert not failed, "Failed checks: " + ", ".join(failed)
 
 
-def test_rich(bundle, fake_handle, playwright):
-    asyncio.run(rst_main(bundle, fake_handle, playwright) if "--rst" in sys.argv
-                else main(bundle, fake_handle, playwright))
+def test_rich(bundle, fake_handle, async_playwright):
+    asyncio.run(main(bundle, fake_handle, async_playwright))

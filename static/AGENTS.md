@@ -174,13 +174,11 @@ picked roots (`RECENT_MAX`) in the `filemill` database, `kv` store, key
 ## Testing
 
 ```bash
-uv run --with "playwright==1.61.0" python3 test-ui.py          # bundle
-uv run --with "playwright==1.61.0" python3 test-ui.py --dev    # modular sources
-uv run --with "playwright==1.61.0" python3 test-url.py         # deep links
-uv run --with "playwright==1.61.0" python3 test-url.py --dev
-uv run --with "playwright==1.61.0" python3 test-rich.py        # CDN renderers
-uv run --with "playwright==1.61.0" python3 test-rich.py --dev
-uv run --with "playwright==1.61.0" python3 test-e2e.py         # real folder
+# From the repository root:
+uv run --project server pytest static
+uv run --project server pytest static --dev
+# Manual only, requires a folder pick and terminal input:
+uv run --project server python static/test-e2e.py
 ```
 
 `test-rich.py` covers the only feature that touches the network. It needs no

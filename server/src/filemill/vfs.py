@@ -28,8 +28,9 @@ class FileKind:
     editable: bool
 
 
-def classify_path(path: Path, *, is_dir: bool = False, virtual: bool = False,
-                  provider: bool = False) -> FileKind:
+def classify_path(
+    path: Path, *, is_dir: bool = False, virtual: bool = False, provider: bool = False
+) -> FileKind:
     """Return the shared filesystem, preview, and edit classification."""
     if is_dir:
         return FileKind("folder", "none", False)

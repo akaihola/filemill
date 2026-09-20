@@ -16,7 +16,7 @@ Two sections, therefore:
     measured: against a fake handle getFile() returns without touching a disk,
     and the syscall is the whole price.
 
-    uv run --with "playwright==1.61.0" python3 test-url.py [--bundle|--dev]
+    uv run --project ../server pytest test-url.py [--bundle|--dev]
 """
 import asyncio
 import functools
@@ -143,6 +143,7 @@ async def main(bundle, fake_handle, opfs_root, playwright):
         b = await p.chromium.launch()
         pg = await b.new_page(viewport={"width": 1500, "height": 900})
         errs = []
+        pg.on("response", lambda response: errs.append(f"HTTP {response.status}: {response.url}") if response.status >= 400 else None)
         pg.on("console", lambda m: errs.append(m.text) if m.type == "error" else None)
         pg.on("pageerror", lambda e: errs.append(str(e)))
 
@@ -159,23 +160,23 @@ async def main(bundle, fake_handle, opfs_root, playwright):
         await pg.click('.col[data-i="1"] .row:has-text("note.md")')
         await pg.wait_for_timeout(250)
         check("Selecting a file writes its path to the URL",
-              await pg.evaluate("location.hash") == "#r=workspace&p=mixed/note.md",
+              await pg.evaluate("location.hash") == "#r=workspace&p=mixed/note.md&v=render",
               await pg.evaluate("location.hash"))
 
         await pg.click('.col[data-i="1"] .row:has-text("sp ace")')
         await pg.wait_for_timeout(250)
         check("Names with spaces and & are encoded once",
               await pg.evaluate("location.hash")
-              == "#r=workspace&p=mixed/sp%20ace%20%26%20co.txt",
+              == "#r=workspace&p=mixed/sp%20ace%20%26%20co.txt&v=render",
               await pg.evaluate("location.hash"))
 
         # ── walking a column must not flood history ──────────────────────
         await open_at(pg, base)
+        await pg.click('.col[data-i="0"] .row:has-text("mixed")')
+        await pg.click('.col[data-i="1"] .row:has-text("note.md")')
         before = await pg.evaluate("history.length")
-        await pg.click('.col[data-i="0"] .row:has-text("README.md")')
-        await pg.wait_for_timeout(200)
-        for _ in range(3):
-            await pg.keyboard.press("ArrowUp")
+        for key in ("ArrowDown", "ArrowUp", "ArrowDown"):
+            await pg.keyboard.press(key)
             await pg.wait_for_timeout(120)
         after = await pg.evaluate("history.length")
         check("↑/↓ inside one column rewrite the URL, they do not stack history",
@@ -280,11 +281,11 @@ async def main(bundle, fake_handle, opfs_root, playwright):
     if failed:
         print("  Failed: " + ", ".join(failed))
     print("═" * 62)
-    sys.exit(1 if failed else 0)
+    assert not failed, "Failed checks: " + ", ".join(failed)
 
 
-def test_url(bundle, fake_handle, opfs_root, playwright):
-    asyncio.run(main(bundle, fake_handle, opfs_root, playwright))
+def test_url(bundle, fake_handle, opfs_root, async_playwright):
+    asyncio.run(main(bundle, fake_handle, opfs_root, async_playwright))
 
 
 def test_fullscreen_survives_resize(bundle, playwright):

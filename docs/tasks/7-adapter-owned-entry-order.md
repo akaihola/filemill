@@ -13,6 +13,10 @@ directories first, then case-insensitive names with the adapter's tie-breaker.
 `node.ordered` preserves that order for name sorting; size and modified-time
 sorting still use the shared sorter. See the [adapter contract](../../ui/adapters/README.md).
 
+Regression correction (2026-09-20): adapter-owned ordering ignored descending
+name sort. Descending now reverses the adapter order within directories and
+files, keeping directories first and preserving ascending order unchanged.
+
 The proposal below predates that contract and the removal of `columns.py`.
 It records the original rationale and acceptance criteria.
 
