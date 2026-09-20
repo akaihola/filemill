@@ -60,10 +60,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] The `Delete` button in the preview pane gives the red error
-  `Delete failed: actions.render is not a function` on the bottom status line (after
-  confirming deletion).
-
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
 
@@ -95,6 +91,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [*] The `Delete` button in the preview pane gives the red error
+  `Delete failed: actions.render is not a function` on the bottom status line (after
+  confirming deletion).
 
 - [*] reStructuredText paragraphs are rendered very narrow. For example
   in`/home/agent/prg/feedtask/README.rst`, a the source for a paragraph is:
