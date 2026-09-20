@@ -518,9 +518,12 @@ def test_markdown_viewport(bundle, playwright):
                 }""")
                 sizes = page.evaluate("""() => {
                   const body = document.querySelector('.pv-body');
-                  return {width: body.clientWidth, scroll: body.scrollWidth};
+                  const doc = document.documentElement;
+                  return {width: body.clientWidth, scroll: body.scrollWidth,
+                    pageWidth: doc.clientWidth, pageScroll: doc.scrollWidth};
                 }""")
                 assert sizes['scroll'] <= sizes['width'] + 1, (width, fullscreen, sizes)
+                assert sizes['pageScroll'] <= sizes['pageWidth'], sizes
                 assert page.locator('.pv-markdown strong').inner_text() == 'bold'
                 assert page.locator('.pv-markdown em').inner_text() == 'italic'
                 assert page.locator('.pv-markdown a').get_attribute('href') == 'https://example.com/'
