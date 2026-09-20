@@ -87,10 +87,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] There's no way to access the file context menu on desktop browsers. On touch
-  devices, a long touch does show it. Also, the context menu is transparent and very
-  hard to read. And the `Delete` item is missing from the menu.
-
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
 
@@ -122,6 +118,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [*] There's no way to access the file context menu on desktop browsers. On touch
+  devices, a long touch does show it. Also, the context menu is transparent and very
+  hard to read. And the `Delete` item is missing from the menu.
 
 - [*] On a portrait mobile phone, Markdown preview is wider than the screen. Contents
   overflow horizontally both at the left and right edges.
