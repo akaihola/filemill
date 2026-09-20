@@ -22,6 +22,7 @@
    purpose: the pane has something better than source for it.
    ═══════════════════════════════════════════════════════════════════════════ */
 import { esc } from "./icons.js";
+import { jsonCollapse } from "./model/json-collapse.js";
 
 /* Written as plain strings rather than literals because they are assembled:
    a regex literal cannot be pasted into another one without going through its
@@ -280,11 +281,11 @@ export function hlHTML(text, key) {
 
 /* Pretty-printed, foldable HTML for a JSON document, or null when `text` is
    not JSON — the caller then colours it as source instead. Objects and arrays
-   become <details open>, so folding is the browser's: no handlers, and nothing
-   for either build to wire. Inside a pre-wrap <pre> a newline that precedes a
+   become <details>; hierarchical previews carry structural paths and remembered
+   fold state. Inside a pre-wrap <pre> a newline that precedes a
    block is swallowed and one that follows it draws a blank line, so every text
    line ends in "\n" and no run of text begins with one. */
-export function jsonHTML(text) {
+export function jsonHTML(text, context) {
   let doc;
   try {
     doc = JSON.parse(text);
@@ -297,7 +298,7 @@ export function jsonHTML(text) {
       : typeof v === "number"
       ? `<span class="hl-num">${v}</span>`
       : `<span class="hl-str">${esc(JSON.stringify(v))}</span>`;
-  const node = (v, pad, head, tail) => {
+  const node = (v, pad, head, tail, path) => {
     if (typeof v !== "object" || v === null) {
       return `${pad}${head}${scalar(v)}${tail}\n`;
     }
@@ -305,8 +306,17 @@ export function jsonHTML(text) {
     const keys = arr ? v.map((_, i) => i) : Object.keys(v);
     const [open, close] = arr ? ["[", "]"] : ["{", "}"];
     if (!keys.length) return `${pad}${head}${open}${close}${tail}\n`;
+    const openState = !context ||
+      jsonCollapse.open(context.jsonRoot || context, path);
+    const address = context
+      ? ` data-json-path="${
+        esc(JSON.stringify(path))
+      }" data-json-open="${openState}"`
+      : "";
     let out =
-      `<details open><summary data-n="${keys.length}" data-close="${close}${tail}">` +
+      `<details${
+        openState ? " open" : ""
+      }${address}><summary data-n="${keys.length}" data-close="${close}${tail}">` +
       `${pad}${head}${open}</summary>`;
     keys.forEach((k, i) => {
       out += node(
@@ -314,6 +324,7 @@ export function jsonHTML(text) {
         pad + "  ",
         arr ? "" : `${esc(JSON.stringify(k))}: `,
         i < keys.length - 1 ? "," : "",
+        [...path, String(k)],
       );
     });
     return out + `${pad}${close}${tail}</details>`;
@@ -321,7 +332,7 @@ export function jsonHTML(text) {
   /* Nesting deep enough to exhaust the stack is still valid JSON; it is shown
      as source, the same as anything else this cannot fold. */
   try {
-    return node(doc, "", "", "");
+    return node(doc, "", "", "", context?.jsonPath || []);
   } catch {
     return null;
   }
