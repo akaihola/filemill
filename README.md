@@ -88,6 +88,11 @@ uses the same browser PreviewRich renderer. PowerPoint files are
 the one exception: both editions open them in the browser with
 `pptx-vanilla-viewer` from the CDN.
 
+Markdown source previews (`?filemill=highlight`) keep the original text and
+color headings, code, URLs, and links. Links are clickable. Served relative
+Markdown links open in rendered mode unless the link selects another mode.
+Link queries and fragments are preserved in both preview modes.
+
 See [`server/CONTRIBUTING.md`](server/CONTRIBUTING.md).
 
 In JSON, JSONL, and SQLite hierarchies, select a scalar key to preview its value.
