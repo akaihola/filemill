@@ -18,12 +18,8 @@ CASES = [
 ]
 
 
-@pytest.mark.parametrize(
-    "name,is_dir,virtual,provider,kind,preview,editable", CASES
-)
-def test_file_kind_table(
-    name, is_dir, virtual, provider, kind, preview, editable
-):
+@pytest.mark.parametrize("name,is_dir,virtual,provider,kind,preview,editable", CASES)
+def test_file_kind_table(name, is_dir, virtual, provider, kind, preview, editable):
     result = classify_path(
         Path(name), is_dir=is_dir, virtual=virtual, provider=provider
     )

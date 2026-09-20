@@ -246,29 +246,49 @@ async function rst(text) {
 async function unzipPptx(blob) {
   const bytes = new Uint8Array(await blob.arrayBuffer());
   const view = new DataView(bytes.buffer);
+  if (
+    bytes.length < 4 ||
+    ![0x04034b50, 0x06054b50].includes(view.getUint32(0, true))
+  ) {
+    throw new Error("Invalid ZIP archive");
+  }
   const slides = [];
-  for (let at = 0; at + 30 <= bytes.length && view.getUint32(at, true) === 0x04034b50;) {
+  for (
+    let at = 0;
+    at + 30 <= bytes.length && view.getUint32(at, true) === 0x04034b50;
+  ) {
     const method = view.getUint16(at + 8, true);
     const compressed = view.getUint32(at + 18, true);
     const nameSize = view.getUint16(at + 26, true);
     const extraSize = view.getUint16(at + 28, true);
-    const name = new TextDecoder().decode(bytes.subarray(at + 30, at + 30 + nameSize));
+    const name = new TextDecoder().decode(
+      bytes.subarray(at + 30, at + 30 + nameSize),
+    );
     const start = at + 30 + nameSize + extraSize;
     const end = start + compressed;
     if (end > bytes.length) throw new Error("truncated ZIP entry");
     if (/^ppt\/slides\/slide\d+\.xml$/.test(name)) {
       let data = bytes.slice(start, end);
       if (method === 8) {
-        data = new Uint8Array(await new Response(
-          new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw")),
-        ).arrayBuffer());
+        data = new Uint8Array(
+          await new Response(
+            new Blob([data]).stream().pipeThrough(
+              new DecompressionStream("deflate-raw"),
+            ),
+          ).arrayBuffer(),
+        );
       } else if (method !== 0) {
         throw new Error("unsupported ZIP compression");
       }
-      const xml = new DOMParser().parseFromString(new TextDecoder().decode(data), "application/xml");
+      const xml = new DOMParser().parseFromString(
+        new TextDecoder().decode(data),
+        "application/xml",
+      );
       const text = [...xml.getElementsByTagNameNS("*", "p")]
-        .map((paragraph) => [...paragraph.getElementsByTagNameNS("*", "t")]
-          .map((run) => run.textContent).join(" "))
+        .map((paragraph) =>
+          [...paragraph.getElementsByTagNameNS("*", "t")]
+            .map((run) => run.textContent).join(" ")
+        )
         .filter(Boolean).join("\n").trim();
       slides.push({ number: Number(name.match(/slide(\d+)/)[1]), text });
     }
@@ -280,10 +300,16 @@ async function unzipPptx(blob) {
 const pptxHTML = async (_node, blob) => {
   try {
     const slides = await unzipPptx(blob);
-    if (!slides.length) return '<div class="preview-empty">PowerPoint has no slides.</div>';
-    return `<div class="pv-pptx">${slides.map(({ number, text }) =>
-      `<section class="slide"><h2>Slide ${number}</h2><p>${esc(text) || "(No slide text)"}</p></section>`
-    ).join("")}</div>`;
+    if (!slides.length) {
+      return '<div class="preview-empty">PowerPoint has no slides.</div>';
+    }
+    return `<div class="pv-pptx">${
+      slides.map(({ number, text }) =>
+        `<section class="slide"><h2>Slide ${number}</h2><p>${
+          esc(text) || "(No slide text)"
+        }</p></section>`
+      ).join("")
+    }</div>`;
   } catch (err) {
     return `<div class="preview-error">PowerPoint preview failed: ${
       esc(String(err.message || err))
@@ -302,7 +328,9 @@ const docxHTML = async (_node, blob) => {
 /* A text renderer: oversize files take the plain path, like the local one. */
 const richText = (convert, className = "") => async (node, blob) => {
   if (blob.size > TEXT_MAX) return renderNode(node, blob, "text");
-  return `<div class="pv-rich${className ? ` ${className}` : ""}">${await convert(await blob.text(), node)}</div>`;
+  return `<div class="pv-rich${
+    className ? ` ${className}` : ""
+  }">${await convert(await blob.text(), node)}</div>`;
 };
 
 /* Offline, blocked, or the CDN moved. The file is still readable. */
@@ -312,8 +340,16 @@ const offlineHTML = async (node, blob) => {
 };
 
 export const RICH_RENDERERS = [
-  { kind: "md", render: richText(markdown, "pv-markdown"), fallback: "offline" },
-  { kind: "markdown", render: richText(markdown, "pv-markdown"), fallback: "offline" },
+  {
+    kind: "md",
+    render: richText(markdown, "pv-markdown"),
+    fallback: "offline",
+  },
+  {
+    kind: "markdown",
+    render: richText(markdown, "pv-markdown"),
+    fallback: "offline",
+  },
   { kind: "rst", render: richText(rst), fallback: "offline" },
   { kind: "docx", render: docxHTML, fallback: "offline" },
   { kind: "pptx", render: pptxHTML },
@@ -329,7 +365,9 @@ export const PreviewRich = {
   async render(node) {
     const kind = classifyFile(node.name, node).preview;
     const need = NEEDS[kind];
-    if ((!need && kind !== "pptx") || (need && !richEnabled() && !vendored(need))) {
+    if (
+      (!need && kind !== "pptx") || (need && !richEnabled() && !vendored(need))
+    ) {
       return PreviewLocal.render(node);
     }
     const blob = await FS.blob(node);

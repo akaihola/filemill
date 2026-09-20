@@ -105,8 +105,8 @@ def recorder(escape_tree, monkeypatch):
     calls: list[tuple[str, Path | None]] = []
     original = paths_module.resolve_safe
 
-    def spy(path_str: str, root: Path):
-        result = original(path_str, root)
+    def spy(path_str: str, root: Path, zones=None):
+        result = original(path_str, root, zones)
         calls.append((path_str, result))
         return result
 
@@ -200,8 +200,8 @@ def test_resolution_is_identical_across_every_view_and_layout(escape_tree, path)
         for layout in LAYOUT_CASES:
             calls: list[tuple[str, str | None]] = []
 
-            def spy(path_str, root, _calls=calls):
-                result = original(path_str, root)
+            def spy(path_str, root, zones=None, _calls=calls):
+                result = original(path_str, root, zones)
                 _calls.append((path_str, None if result is None else str(result)))
                 return result
 

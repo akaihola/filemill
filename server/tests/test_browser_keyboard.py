@@ -39,9 +39,7 @@ def browser_root(tmp_path: Path) -> Path:
     (subdir / "next.md").write_text("# Next\n")
     (tmp_path / "root-note.md").write_text("# Root\n")
     (tmp_path / "prg").symlink_to(kb, target_is_directory=True)
-    (tmp_path / "home-link.md").write_text(
-        "[Next](~/prg/docs/subdir/next.md)\n"
-    )
+    (tmp_path / "home-link.md").write_text("[Next](~/prg/docs/subdir/next.md)\n")
     return tmp_path
 
 
@@ -142,61 +140,6 @@ def wide_live_server(wide_root: Path):
         yield base_url
 
 
-_FIND_LINK = """() => {
-    const col = document.getElementById(%r);
-    return col && Array.from(col.querySelectorAll('li a'))
-        .find(a => a.textContent.includes(%r));
-}"""
-
-
-def _wait_for_htmx(page) -> None:
-    """Wait until htmx has loaded and the document has finished parsing.
-
-    Every column entry is ``<a href="#" hx-get="/click?...">``. Clicking one
-    before htmx has loaded does nothing at all, and nothing retries it, so the
-    caller then waits out its full timeout for a column that will never appear.
-    htmx comes from unpkg.com, and `wait_until="networkidle"` does not guarantee
-    it has executed: one probe run of six had ``typeof window.htmx ===
-    'undefined'`` 800 ms after `goto` returned.
-    """
-    page.wait_for_function(
-        "() => typeof window.htmx !== 'undefined'"
-        " && document.readyState === 'complete'",
-        timeout=30000,
-    )
-
-
-def _click_item(page, col_id: str, text: str) -> None:
-    """Click the entry whose text contains *text* in column *col_id*.
-
-    The waits are the point. The shell fills its columns after the page reports
-    networkidle, so on a loaded machine a fixed sleep can expire while #col-0 is
-    still empty. This helper used to guard the click with `if (link)` and return
-    quietly when the entry was missing, which turned that race into an
-    unexplained `assert 0 == 1` two lines later in the caller. Measured on a
-    4-core host with 4 busy loops running: 2 of 6 attempts found no #col-0 at
-    800 ms and the element was there by 5700 ms.
-    """
-    _wait_for_htmx(page)
-    finder = _FIND_LINK % (col_id, text)
-    page.wait_for_function(f"() => Boolean(({finder})())", timeout=20000)
-    page.evaluate(f"() => {{ ({finder})().click(); }}")
-
-
-def _expect_column(page, col_id: str) -> None:
-    """Assert column *col_id* is present, waiting for it instead of guessing.
-
-    The shell builds a column after the page reports networkidle, so a fixed
-    `wait_for_timeout` is a bet on how loaded the machine is. Measured on this
-    4-core host with four busy loops running, #col-0 was still absent 800 ms
-    after `goto` in 2 of 6 attempts. Waiting keeps the assertion and drops the
-    bet: a column that never arrives still fails, now with a TimeoutError that
-    names the selector.
-    """
-    page.wait_for_selector(f"#{col_id}.column", timeout=20000)
-    assert page.locator(f"#{col_id}.column").count() == 1
-
-
 def _expect_preview(page) -> None:
     """Assert the preview pane holds text, waiting for the text to arrive."""
     page.wait_for_function(
@@ -209,6 +152,8 @@ def _expect_preview(page) -> None:
 
 def _expect_url_ending(page, suffix: str) -> None:
     """Assert the address bar ends with *suffix*, waiting for the navigation."""
+    if suffix.endswith(".md"):
+        suffix += "?filemill=render"
     page.wait_for_url(lambda url: url.endswith(suffix), timeout=20000)
     assert page.url.endswith(suffix)
 
@@ -459,50 +404,15 @@ def test_nested_column_navigation_keeps_root_mount_in_url(live_server: str):
 
 
 @pytest.mark.integration
-def test_legacy_query_url_canonicalizes_after_nested_navigation(
-    live_server: str, browser_root: Path
-):
-    legacy_path = browser_root / "my-knowledge"
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page(viewport={"width": 1400, "height": 900})
-        page.goto(
-            f"{live_server}/f/?path={legacy_path}",
-            wait_until="networkidle",
-        )
-        page.wait_for_timeout(800)
-
-        _expect_url_ending(page, f"/f/{browser_root.name}/my-knowledge")
-
-        _click_item(page, "col-1", "docs")
-        page.wait_for_timeout(700)
-        _expect_url_ending(page, f"/f/{browser_root.name}/my-knowledge/docs")
-
-        _click_item(page, "col-2", "topic.md")
-        page.wait_for_timeout(700)
-        _expect_url_ending(page, f"/f/{browser_root.name}/my-knowledge/docs/topic.md")
-
-        browser.close()
-
-
-@pytest.mark.integration
 def test_rendered_relative_markdown_link_uses_root_relative_url(
     live_server: str, browser_root: Path
 ):
-    """A link inside rendered Markdown points at the target's own path.
-
-    The browser-level counterpart of the unit tests in test_rendering.py. This
-    asserted ``/f/{root}/my-knowledge/docs/subdir/next.md`` before the PLAN-19
-    URL contract landed; generated links now use the path relative to the
-    configured root. The legacy /f/ URL this test still *navigates to* keeps
-    working, which is the other half of the story.
-    """
+    """Rendered links use root-relative URLs and retain the preview mode."""
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 1400, "height": 900})
         page.goto(
-            f"{live_server}/f/{browser_root.name}/my-knowledge/docs/topic.md",
+            f"{live_server}/my-knowledge/docs/topic.md?filemill=render",
             wait_until="networkidle",
         )
         page.wait_for_timeout(900)
@@ -521,20 +431,26 @@ def test_rendered_relative_markdown_link_uses_root_relative_url(
 
 
 @pytest.mark.integration
-def test_rendered_home_markdown_link_uses_the_symlink_mount_once(
-    live_server: str, browser_root: Path
+@pytest.mark.parametrize("view", ["render", "highlight"])
+def test_home_markdown_link_uses_the_symlink_mount_once(
+    live_server: str, browser_root: Path, view: str
 ):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 1400, "height": 900})
-        page.goto(f"{live_server}/home-link.md", wait_until="networkidle")
+        page.goto(
+            f"{live_server}/home-link.md?filemill={view}", wait_until="networkidle"
+        )
         page.wait_for_selector(
             '#preview a[href="/w/prg/docs/subdir/next.md?filemill=render"]',
             timeout=15000,
         )
-        assert page.locator(
-            '#preview a[href="/w/prg/docs/subdir/next.md?filemill=render"]'
-        ).count() == 1
+        assert (
+            page.locator(
+                '#preview a[href="/w/prg/docs/subdir/next.md?filemill=render"]'
+            ).count()
+            == 1
+        )
         browser.close()
 
 
@@ -581,7 +497,8 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
         assert page.evaluate("focusCol") == 1
         assert page.evaluate("sel[1]") == "AGENTS.md"
         assert (
-            page.locator('.col[data-i="1"] .row.sel .label').text_content() == "AGENTS.md"
+            page.locator('.col[data-i="1"] .row.sel .label').text_content()
+            == "AGENTS.md"
         )
         assert page.url == file_url
         _expect_preview(page)
@@ -767,7 +684,7 @@ def test_vertical_navigation_preserves_full_fold_with_equal_widths(live_server: 
             page.keyboard.press(key)
             page.wait_for_function("count => path.length === count", arg=count)
             assert page.evaluate("folded") == count
-            assert page.locator('.col.spine').count() == count
+            assert page.locator(".col.spine").count() == count
 
 
 @pytest.mark.integration
@@ -866,8 +783,8 @@ def test_mobile_long_press_menu_copies_paths_for_files_and_directories(
             "pointerdown", {"pointerType": "touch", "clientX": 20, "clientY": 20}
         )
         page.wait_for_timeout(550)
-        assert page.locator('#row-menu').is_visible()
-        await_copy = page.locator('#row-menu button', has_text="Copy name")
+        assert page.locator("#row-menu").is_visible()
+        await_copy = page.locator("#row-menu button", has_text="Copy name")
         await_copy.click()
         assert page.evaluate("navigator.clipboard.readText()") == "my-knowledge"
 
@@ -877,14 +794,18 @@ def test_mobile_long_press_menu_copies_paths_for_files_and_directories(
             "pointerdown", {"pointerType": "touch", "clientX": 20, "clientY": 20}
         )
         page.wait_for_timeout(550)
-        assert page.locator('#row-menu button', has_text="Copy relative path").is_visible()
-        page.locator('#row-menu button', has_text="Copy relative path").click()
-        assert page.evaluate("navigator.clipboard.readText()") == "my-knowledge/AGENTS.md"
+        assert page.locator(
+            "#row-menu button", has_text="Copy relative path"
+        ).is_visible()
+        page.locator("#row-menu button", has_text="Copy relative path").click()
+        assert (
+            page.evaluate("navigator.clipboard.readText()") == "my-knowledge/AGENTS.md"
+        )
         file.dispatch_event(
             "pointerdown", {"pointerType": "touch", "clientX": 20, "clientY": 20}
         )
         page.wait_for_timeout(550)
-        page.locator('#row-menu button', has_text="Copy absolute path").click()
+        page.locator("#row-menu button", has_text="Copy absolute path").click()
         assert page.evaluate("navigator.clipboard.readText()").endswith(
             "/my-knowledge/AGENTS.md"
         )
@@ -1044,12 +965,12 @@ def test_mobile_directory_restore_runtime_scroll_position_is_stable(
         )
         page = context.new_page()
         page.goto(
-            f"{live_server}/f/{browser_root.name}/my-knowledge/docs",
+            f"{live_server}/my-knowledge/docs",
             wait_until="networkidle",
         )
         page.wait_for_timeout(1100)
 
-        _expect_column(page, "col-2")
+        _expect_ui_column(page, 2)
 
         context.close()
         browser.close()
@@ -1069,7 +990,7 @@ def test_mobile_file_restore_runtime_scroll_position_is_stable(
         )
         page = context.new_page()
         page.goto(
-            f"{live_server}/f/{browser_root.name}/my-knowledge/AGENTS.md",
+            f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
             wait_until="networkidle",
         )
         page.wait_for_timeout(1100)
@@ -1173,9 +1094,10 @@ def test_mobile_preview_fills_remaining_space(
         assert geometry["previewWidth"] == pytest.approx(
             max(geometry["stageWidth"] / 3, geometry["remaining"]), abs=1
         )
-        assert geometry["visible"] >= min(
-            geometry["stageWidth"] / 3, geometry["remaining"]
-        ) - 1
+        assert (
+            geometry["visible"]
+            >= min(geometry["stageWidth"] / 3, geometry["remaining"]) - 1
+        )
         assert geometry["previewLeft"] >= geometry["finderLeft"] - 2
         assert geometry["previewStartVisible"]
 
@@ -1197,8 +1119,8 @@ def test_mobile_fullscreen_preview_touch_handling(
             f" === '{touch_action}'"
         )
         page.wait_for_function("root.classList.contains('pv-fullscreen')")
-        assert page.locator('#preview').bounding_box()['width'] == pytest.approx(
-            viewport['width'], abs=1
+        assert page.locator("#preview").bounding_box()["width"] == pytest.approx(
+            viewport["width"], abs=1
         )
         # The click scrolled its button into view, dragging #stage sideways;
         # applyScroll puts it back at the next repaint (see layout.js), so wait
@@ -1220,7 +1142,7 @@ def test_mobile_file_restore_scroll_position_is_not_zero(
         )
         page = context.new_page()
         page.goto(
-            f"{live_server}/f/{browser_root.name}/my-knowledge/AGENTS.md",
+            f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
             wait_until="networkidle",
         )
         page.wait_for_timeout(1100)
@@ -1273,11 +1195,11 @@ def test_mobile_restore_runtime_scroll_regression_is_covered(
         )
         page = context.new_page()
         page.goto(
-            f"{live_server}/f/{browser_root.name}/my-knowledge/docs",
+            f"{live_server}/my-knowledge/docs",
             wait_until="networkidle",
         )
         page.wait_for_timeout(1100)
-        _expect_column(page, "col-2")
+        _expect_ui_column(page, 2)
 
         context.close()
         browser.close()
@@ -1297,7 +1219,7 @@ def test_mobile_restore_preview_runtime_scroll_regression_is_covered(
         )
         page = context.new_page()
         page.goto(
-            f"{live_server}/f/{browser_root.name}/my-knowledge/AGENTS.md",
+            f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
             wait_until="networkidle",
         )
         page.wait_for_timeout(1100)
@@ -1366,11 +1288,11 @@ def test_mobile_restore_regression_directory_only(
         )
         page = context.new_page()
         page.goto(
-            f"{live_server}/f/{browser_root.name}/my-knowledge/docs",
+            f"{live_server}/my-knowledge/docs",
             wait_until="networkidle",
         )
         page.wait_for_timeout(1100)
-        _expect_column(page, "col-2")
+        _expect_ui_column(page, 2)
 
         context.close()
         browser.close()
@@ -1390,7 +1312,7 @@ def test_mobile_restore_regression_preview_only(
         )
         page = context.new_page()
         page.goto(
-            f"{live_server}/f/{browser_root.name}/my-knowledge/AGENTS.md",
+            f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
             wait_until="networkidle",
         )
         page.wait_for_timeout(1100)
@@ -1424,7 +1346,7 @@ def test_mobile_restore_behavior_preview_assertions(
         )
         page = context.new_page()
         page.goto(
-            f"{live_server}/f/{browser_root.name}/my-knowledge/AGENTS.md",
+            f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
             wait_until="networkidle",
         )
         page.wait_for_timeout(1100)

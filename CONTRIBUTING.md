@@ -40,14 +40,17 @@ cd server
 uv run pytest
 ```
 
+Run the automated static checks from the repository root. These include the
+UI, URL, rich preview, RST, model and PWA checks. `static/test-e2e.py` remains a
+manual test that requires folder selection and terminal input. Do not collect it
+as an automated browser test.
+
 Run the static checks:
 
 ```bash
-cd static
-./build-index.py --check
-uv run --with "playwright==1.61.0" python3 test-ui.py
-uv run --with "playwright==1.61.0" python3 test-url.py
-uv run --with "playwright==1.61.0" python3 test-rich.py
+static/build-index.py --check
+uv run --project server pytest static
+uv run --project server pytest static --dev
 ```
 
 Run `pre-commit run --all-files` before you commit. It runs the Python and UI

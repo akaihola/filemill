@@ -193,15 +193,24 @@ def _ui_shell(state, base: str, hidden: bool = False):
     ``/`` for the resource route, where the path already is the file path.
     """
     mounts = paths.mount_targets(_root())
-    attrs = {"lang": "en", "data-density": "compact", "data-root": _root().name or "/",
-             "data-mounts": json.dumps(list(mounts)),
-             "data-absolute": _root().resolve().as_posix(), "data-api": "/api",
-             "data-base": base, "data-filemill": state.view, "data-layout": state.layout}
+    attrs = {
+        "lang": "en",
+        "data-density": "compact",
+        "data-root": _root().name or "/",
+        "data-mounts": json.dumps(list(mounts)),
+        "data-absolute": _root().resolve().as_posix(),
+        "data-api": "/api",
+        "data-base": base,
+        "data-filemill": state.view,
+        "data-layout": state.layout,
+    }
     if _COMMIT:
         attrs["data-commit"] = _COMMIT
     if hidden:
         attrs["data-hidden"] = "show"
-    attr_text = " ".join(f'{key}="{escape(str(value), quote=True)}"' for key, value in attrs.items())
+    attr_text = " ".join(
+        f'{key}="{escape(str(value), quote=True)}"' for key, value in attrs.items()
+    )
     title = escape(_root().name or "Filemill")
     return HTMLResponse(f'''<!doctype html>
 <html {attr_text}><head>
@@ -229,7 +238,7 @@ def ui_view(request, path: str = ""):
     zones = _zones(request)
     if path and api.split_vfs(path, _root(), lambda p: _resolve(p, zones)) is None:
         return HTMLResponse("Not found", status_code=404)
-    return _ui_shell(urls.ViewState(), UI_BASE)
+    return _ui_shell(urls.parse_state(request.query_params), UI_BASE)
 
 
 # ── JSON/fragment API behind the shared UI ───────────────────────────────────
@@ -290,7 +299,10 @@ def api_preview(request, p: str = ""):
     target = _api_target(p, _zones(request))
     if target is None or not target.is_file():
         return HTMLResponse("Not found", status_code=404)
-    return HTMLResponse(render_preview(target), headers={"Cache-Control": "no-store"})
+    return HTMLResponse(
+        render_preview(target, preview_url=escape(urls.build_url(p), quote=True)),
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @rt("/api/save", methods=["POST"])

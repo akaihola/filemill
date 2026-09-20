@@ -6,9 +6,9 @@ exercises every code path except the OS picker itself (that one needs
 test-e2e.py). Covers navigation, keyboard focus, folding, previews, the
 settings toggles, and the render-cost budget.
 
-    uv run --with "playwright==1.61.0" python3 test-ui.py [--bundle|--dev] [--editor]
+    uv run --project ../server pytest test-ui.py [--dev]
 
---editor runs only the focused editor checks.
+The full suite includes the editor checks.
 
 --bundle (default) tests the built index.html; --dev tests src/index.html, so
 the same suite guards both the bundle and the modular sources.
@@ -98,7 +98,7 @@ window.__mk = (nbig) => {
   // …and an 88-column comment, for the "never wrap before column 88" checks
   const PY_SRC = 'def f():\n    # doc\n    return "s" + 42\n    # ' + 'x'.repeat(82) + '\n';
   return D('workspace', [
-    D('deep',  [D('alpha',[D('beta',[D('gamma',[F('leaf.md','# leaf')])])])]),
+    D('deep',  [D('alpha',[D('beta',[D('gamma',[F('leaf.md','# leaf\n' + 'scrollable line\n'.repeat(200))])])])]),
     D('mixed', [D('sub',[F('a.py', PY_SRC),
                          // 11 700 chars, so the preview is asked for far
                          // more than the 8 000 it used to clip at.
@@ -275,26 +275,31 @@ window.__seed = (recent) => new Promise((res, rej) => {
                        tx.onerror = () => rej(tx.error); };
   r.onerror = e => rej(e.target.error);
 });
-/* Stand in for one remembered folder. isSameEntry is what recallView matches
-   on, and the real one is the only correct answer — two folders can share a
-   basename — so the stub answers by name and nothing in the app has to. */
-window.__remember = (chain) => {
-  window.recallRoots = async () => [{
-    handle: {name: 'workspace', isSameEntry: async h => h.name === 'workspace'},
-    path: chain}];
+/* Real structured-cloneable handles exercise storage across module boundaries. */
+window.__remember = async (chain) => {
+  const fs = await navigator.storage.getDirectory();
+  const root = await fs.getDirectoryHandle('workspace', {create:true});
+  const mixed = await root.getDirectoryHandle('mixed', {create:true});
+  const sub = await mixed.getDirectoryHandle('sub', {create:true});
+  await sub.getFileHandle('a.py', {create:true});
+  await mixed.getFileHandle('note.md', {create:true});
+  const deep = await root.getDirectoryHandle('deep', {create:true});
+  await deep.getDirectoryHandle('alpha', {create:true});
+  window.__storedRoot = root;
+  await __seed([{handle:root, path:chain}]);
 };
-/* Watch what the app decides to store, without storing it. */
-window.__spySaves = () => {
+/* Observe real writes without replacing the storage module's bindings. */
+window.__spySaves = async () => {
+  await __seed([]);
   window.__saved = [];
-  window.recallRoots = async () => [];
-  window.rememberRoot = async (h, p) => window.__saved.push([h.name, p]);
+  const put = IDBObjectStore.prototype.put;
+  IDBObjectStore.prototype.put = function(value, key) {
+    if (key === 'recent') __saved.push([value[0].handle.name, value[0].path]);
+    return put.call(this, value, key);
+  };
+  window.__restoreSaves = () => { IDBObjectStore.prototype.put = put; };
 };
-/* End on a value, never on an assignment. Playwright evaluates this string and
-   *calls the result if it is a function* — and the result is the completion
-   value of the last statement. Ending on `window.__spySaves = () => {…}` handed
-   Playwright that arrow, which it duly invoked, stubbing recallRoots before a
-   single check ran. The two storage checks then read an empty list from a
-   database that visibly had a record in it. */
+/* Playwright invokes a function-valued evaluation result. End on a string. */
 "fake handle ready";
 """
 
@@ -425,8 +430,6 @@ async def editor_main(bundle, fake_handle, playwright):
             pg = await browser.new_page(viewport={"width": 1500, "height": 900})
             errors = []
             pg.on("pageerror", lambda error: errors.append(str(error)))
-            # The file:// fixture cannot register a PWA service worker.
-            await pg.add_init_script("if ('serviceWorker' in navigator) navigator.serviceWorker.register = async () => ({})")
             await pg.goto(TARGET.as_uri())
             await pg.evaluate("localStorage.setItem('filemill.rich','off')")
             await pg.evaluate(FAKE)
@@ -450,6 +453,14 @@ async def editor_main(bundle, fake_handle, playwright):
             print(f"Editor checks passed: {TARGET.name}")
         finally:
             await browser.close()
+
+
+async def click_row(pg, column, name):
+    spine = pg.locator(f'.col[data-i="{column}"].spine')
+    if await spine.count():
+        await spine.click()
+        await scroll_settled(pg)
+    await pg.click(f'.col[data-i="{column}"] .row[title="{name}"]')
 
 
 async def main(bundle, fake_handle, playwright):
@@ -530,7 +541,7 @@ async def main(bundle, fake_handle, playwright):
         print("\n── Renderer registry ────────────────────────────────────────")
         check("Registry holds the core kinds plus this edition's rich ones",
               await pg.evaluate("RENDERERS.map(e => e.kind)") ==
-              ["image", "pdf", "html", "desktop", "vtt", "text",
+              ["image", "video", "pdf", "html", "desktop", "vtt", "text",
                "md", "markdown", "rst", "docx", "pptx", "offline"])
         RENDER = """([name, kind, body, extra]) =>
             renderNode({name, ...(extra || {})}, new Blob([body]), kind)"""
@@ -1042,6 +1053,7 @@ async def main(bundle, fake_handle, playwright):
               await pg.get_attribute("#pv-fullscreen", "aria-pressed") == "false")
         await pg.focus("#pv-fullscreen")
         await pg.keyboard.press("Enter")
+        await pg.wait_for_function("document.fullscreenElement !== null")
         full = await pg.evaluate("""() => {
           const pv = document.querySelector('#preview').getBoundingClientRect();
           const cs = getComputedStyle(document.querySelector('#preview .pv-body'));
@@ -1055,6 +1067,7 @@ async def main(bundle, fake_handle, playwright):
               full["bar"] == full["status"] == "none" and full["padding"] == "0px",
               json.dumps(full))
         await pg.keyboard.press("Enter")
+        await pg.wait_for_function("document.fullscreenElement === null")
         check("Fullscreen control exits with keyboard",
               await pg.get_attribute("#pv-fullscreen", "aria-pressed") == "false")
         check("Preview shows real size and mtime",
@@ -1207,51 +1220,51 @@ async def main(bundle, fake_handle, playwright):
         check("One byte over TEXT_MAX is declined, not rendered",
               not await pg.is_visible(".pv-text")
               and "No inline preview" in body, body[:80])
-        await pg.click('.col[data-i="2"] .row:has-text("large.png")')
-        await pg.wait_for_timeout(500)
-        check("Oversized PNG still uses the image renderer",
-              await pg.evaluate("() => document.querySelector('.pv-img')?.naturalWidth > 0"),
-              await pg.inner_text("#pv-content"))
-        await pg.click('.col[data-i="2"] .row:has-text("large.jpeg")')
-        await pg.wait_for_timeout(500)
-        check("Oversized JPEG still uses the image renderer",
-              await pg.evaluate("() => document.querySelector('.pv-img')?.naturalWidth > 0"),
-              await pg.inner_text("#pv-content"))
         # The phone pass above folded two columns, and a fold outlives the
         # resize back: unfolding is a user action, so make it one.
         if await pg.eval_on_selector_all('.col[data-i="1"].spine', "e=>e.length"):
             await pg.click('.col[data-i="1"].spine')
             await scroll_settled(pg)
-        await pg.click('.col[data-i="1"] .row:has-text("note.md")')
+        await pg.click('.col[data-i="1"] .row:has-text("large.png")')
+        await pg.wait_for_timeout(500)
+        check("Oversized PNG still uses the image renderer",
+              await pg.evaluate("() => document.querySelector('.pv-img')?.naturalWidth > 0"),
+              await pg.inner_text("#pv-content"))
+        await pg.click('.col[data-i="1"] .row:has-text("large.jpeg")')
+        await pg.wait_for_timeout(500)
+        check("Oversized JPEG still uses the image renderer",
+              await pg.evaluate("() => document.querySelector('.pv-img')?.naturalWidth > 0"),
+              await pg.inner_text("#pv-content"))
+        await pg.click('.col[data-i="1"] .row:has-text("short.txt")')
         await pg.wait_for_timeout(300)
         check("A file with no language it knows stays plain",
               await pg.eval_on_selector_all(".pv-text span", "e=>e.length") == 0)
 
         print("\n── JSONL rows ───────────────────────────────────────────────")
         await mount(pg)
-        await pg.click('.col[data-i="0"] .row:has-text("tables")')
+        await click_row(pg, 0, "tables")
         await pg.wait_for_timeout(300)
-        await pg.click('.col[data-i="1"] .row:has-text("log.jsonl")')
+        await click_row(pg, 1, "log.jsonl")
         await pg.wait_for_timeout(400)
         check("A .jsonl file opens as a column of rows named by the unique short text key",
               await pg.evaluate("__rows(2)") == ["Second", "First", "Third"],
               str(await pg.evaluate("__rows(2)")))
-        await pg.click('.col[data-i="2"] .row:has-text("Second")')
+        await click_row(pg, 2, "Second")
         await pg.wait_for_timeout(400)
         check("A row opens as the JSON hierarchical view",
               await pg.evaluate("__rows(3)") == ["id", "title", "ts", "tags"]
               and await pg.locator("#preview .pv-json details").count() > 0)
-        await pg.click('.col[data-i="3"] .row:has-text("tags")')
+        await click_row(pg, 3, "tags")
         await pg.wait_for_timeout(300)
         check("A JSONL row's nested array remains navigable",
               await pg.evaluate("__rows(4)") == ["0", "1"])
-        await pg.click('.col[data-i="4"] .row:has-text("1")')
+        await click_row(pg, 4, "1")
         await pg.wait_for_timeout(300)
         check("A JSONL array object remains navigable",
               await pg.evaluate("__rows(5)") == ["ok"])
         await pg.evaluate("applyPath(['tables', 'log.jsonl', 'Second'])")
         await pg.wait_for_timeout(300)
-        await pg.click('.col[data-i="3"] .row:has-text("title")')
+        await click_row(pg, 3, "title")
         await pg.wait_for_timeout(300)
         check("A JSONL scalar keeps the JSON scalar preview",
               (await pg.inner_text(".pv-content")).strip() == "Second")
@@ -1262,26 +1275,26 @@ async def main(bundle, fake_handle, playwright):
         check("A deep link names a row and restores it",
               (await pg.evaluate("sel"))[-1] == "Third"
               and "2026-01-03" in await pg.inner_text("#pv-content"))
-        await pg.click('.col[data-i="1"] .row:has-text("dup.jsonl")')
+        await click_row(pg, 1, "dup.jsonl")
         await pg.wait_for_timeout(400)
         check("Repeated titles fall back to the unique scalar key",
               await pg.evaluate("__rows(2)") == ["10", "11"], str(await pg.evaluate("__rows(2)")))
-        await pg.click('.col[data-i="1"] .row:has-text("bad.jsonl")')
+        await click_row(pg, 1, "bad.jsonl")
         await pg.wait_for_timeout(400)
         note = await pg.inner_text('.col[data-i="2"]')
         check("A malformed line lands on the denied note, not a column",
               "Not valid JSONL: line 2" in note and await pg.evaluate("__rows(2)") == [], note)
-        await pg.click('.col[data-i="1"] .row:has-text("huge.jsonl")')
+        await click_row(pg, 1, "huge.jsonl")
         await pg.wait_for_timeout(400)
         note = await pg.inner_text('.col[data-i="2"]')
         check("One byte over the ceiling is declined the same way",
               "Too large" in note and await pg.evaluate("__rows(2)") == [], note)
         # back where the sections below expect to find note.md
-        await pg.click('.col[data-i="0"] .row:has-text("mixed")')
+        await click_row(pg, 0, "mixed")
         await pg.wait_for_timeout(300)
 
         print("\n── Edit mode ────────────────────────────────────────────────")
-        await pg.click('.col[data-i="1"] .row:has-text("long.txt")')
+        await click_row(pg, 1, "long.txt")
         await pg.wait_for_timeout(400)
         await pg.click("#pv-edit")
         await pg.wait_for_timeout(200)
@@ -1296,9 +1309,9 @@ async def main(bundle, fake_handle, playwright):
               json.dumps({**top, "value": f"{len(top['value'])} chars"}))
         await pg.click("#pv-cancel")
         await pg.wait_for_timeout(300)
-        await pg.click('.col[data-i="1"] .row:has-text("sub")')
+        await click_row(pg, 1, "sub")
         await pg.wait_for_timeout(300)
-        await pg.click('.col[data-i="2"] .row:has-text("long.py")')
+        await click_row(pg, 2, "long.py")
         await pg.wait_for_timeout(400)
         await pg.click("#pv-edit")
         await pg.wait_for_timeout(200)
@@ -1313,9 +1326,9 @@ async def main(bundle, fake_handle, playwright):
               json.dumps({**top, "value": f"{len(top['value'])} chars"}))
         await pg.click("#pv-cancel")
         await pg.wait_for_timeout(300)
-        await pg.click('.col[data-i="0"] .row:has-text("mixed")')
+        await click_row(pg, 0, "mixed")
         await pg.wait_for_timeout(300)
-        await pg.click('.col[data-i="1"] .row:has-text("note.md")')
+        await click_row(pg, 1, "note.md")
         await pg.wait_for_timeout(400)
         check("Text preview offers an Edit button",
               await pg.is_visible("#pv-edit"))
@@ -1339,22 +1352,22 @@ async def main(bundle, fake_handle, playwright):
         await pg.wait_for_timeout(400)
         check("Save writes the file and returns to the preview",
               (await pg.inner_text(".pv-text")).strip() == "# edited")
-        await pg.click('.col[data-i="1"] .row:has-text("data.json")')
+        await click_row(pg, 1, "data.json")
         await pg.wait_for_timeout(300)
-        await pg.click('.col[data-i="1"] .row:has-text("note.md")')
+        await click_row(pg, 1, "note.md")
         await pg.wait_for_timeout(400)
         check("Saved and reopened text is not modified", await pg.is_hidden("#pv-modified"))
         check("The change survives re-opening the file",
               (await pg.inner_text(".pv-text")).strip() == "# edited")
         await editor_feature_checks(pg)
         check("Editor undo, find, gutter, modified state and failed save", True)
-        await pg.click('.col[data-i="1"] .row:has-text("page.html")')
+        await click_row(pg, 1, "page.html")
         await pg.wait_for_timeout(400)
         check("A non-text preview offers no Edit button",
               await pg.is_hidden("#pv-edit"))
 
         print("\n── JSON preview ─────────────────────────────────────────────")
-        await pg.click('.col[data-i="1"] .row:has-text("nested.json")')
+        await click_row(pg, 1, "nested.json")
         await pg.wait_for_timeout(400)
         check("Ordinary directories keep the folder icon",
               await pg.locator('.col[data-i="1"] .row:has-text("docs") .ico.dir').count() == 1)
@@ -1365,38 +1378,38 @@ async def main(bundle, fake_handle, playwright):
         check("Selected JSON object keeps its preview beside its children",
               await pg.locator("#preview .pv-json").count() == 1 and
               await pg.locator("#preview details").count() > 0)
-        await pg.click('.col[data-i="2"] .row:has-text("tags")')
+        await click_row(pg, 2, "tags")
         await pg.wait_for_timeout(300)
         check("Nested arrays open as ordered index rows",
               await pg.evaluate("__rows(3)") == ["0", "1"])
         check("JSON arrays use the [] icon",
               await pg.locator('.col[data-i="2"] .row:has-text("tags") .ico.glyph').count() == 1 and
               await pg.locator('.col[data-i="2"] .row:has-text("tags") .ico.glyph').inner_text() == "[]")
-        await pg.click('.col[data-i="3"] .row:has-text("0")')
+        await click_row(pg, 3, "0")
         await pg.wait_for_timeout(300)
         check("Scalar JSON values preview in the pane",
               (await pg.inner_text(".pv-content")).strip() == "a")
-        await pg.click('.col[data-i="2"] .row:has-text("meta")')
+        await click_row(pg, 2, "meta")
         await pg.wait_for_timeout(300)
         check("Nested objects remain navigable",
               await pg.evaluate("__rows(3)") == ["n", "ok", "none"])
         check("JSON objects use the {} icon",
               await pg.locator('.col[data-i="2"] .row:has-text("meta") .ico.glyph').count() == 1 and
               await pg.locator('.col[data-i="2"] .row:has-text("meta") .ico.glyph').inner_text() == "{}")
-        await pg.click('.col[data-i="2"] .row:has-text("items")')
+        await click_row(pg, 2, "items")
         await pg.wait_for_timeout(300)
         check("Arrays expose object child nodes",
               await pg.evaluate("__rows(3)") == ["0"] and
               await pg.locator("#preview .pv-json").count() == 1)
-        await pg.click('.col[data-i="3"] .row:has-text("0")')
+        await click_row(pg, 3, "0")
         await pg.wait_for_timeout(300)
         check("Array object children remain navigable",
               await pg.evaluate("__rows(4)") == ["id", "name"])
-        await pg.click('.col[data-i="1"] .row:has-text("bad.json")')
+        await click_row(pg, 1, "bad.json")
         await pg.wait_for_selector(".pv-text:not(.pv-json)")
         check("Invalid JSON keeps the coloured-source fallback",
               (await pg.inner_text(".pv-text")) == "{oops")
-        await pg.click('.col[data-i="1"] .row:has-text("deep.json")')
+        await click_row(pg, 1, "deep.json")
         await pg.wait_for_selector(".pv-text:not(.pv-json)")
         check("JSON nested past the stack is shown as source, not an error",
               (await pg.inner_text(".pv-text")).startswith("[[[["))
@@ -1569,12 +1582,12 @@ async def main(bundle, fake_handle, playwright):
         await pg.click('.col[data-i="1"] .row:has-text("note.md")')
         await pg.wait_for_timeout(250)
         check("The status strip shows the path in the form it copies",
-              await pg.inner_text("#st-path") == "workspace/mixed/note.md",
+              await pg.inner_text("#st-path") == "mixed/note.md",
               await pg.inner_text("#st-path"))
         await pg.keyboard.press("Control+c")
         await pg.wait_for_timeout(250)
         check("⌘C / Ctrl+C copies the selected item's path",
-              await pg.evaluate("__clipped") == ["workspace/mixed/note.md"],
+              await pg.evaluate("__clipped") == ["mixed/note.md"],
               str(await pg.evaluate("__clipped")))
         check("A copy that worked says so",
               (await pg.inner_text("#st-copy")).strip() == "copied")
@@ -1583,7 +1596,7 @@ async def main(bundle, fake_handle, playwright):
         await pg.click("#st-path")
         await pg.wait_for_timeout(250)
         check("Clicking the status path copies it too",
-              await pg.evaluate("__clipped") == ["workspace/mixed/note.md"],
+              await pg.evaluate("__clipped") == ["mixed/note.md"],
               str(await pg.evaluate("__clipped")))
 
         # The clipboard API can be refused, and a refusal that says nothing is
@@ -1594,7 +1607,7 @@ async def main(bundle, fake_handle, playwright):
         note = await pg.inner_text("#st-copy")
         check("A refused clipboard is visible, not silent", "refused" in note, note)
         check("…and the path is left selected, so the browser's own copy works",
-              await pg.evaluate("getSelection().toString()") == "workspace/mixed/note.md",
+              await pg.evaluate("getSelection().toString()") == "mixed/note.md",
               await pg.evaluate("getSelection().toString()"))
 
         print("\n── Refresh a directory ──────────────────────────────────────")
@@ -1689,7 +1702,7 @@ async def main(bundle, fake_handle, playwright):
             await scroll_settled(pg)
             landed.append(await pg.evaluate(
                 "(() => { const el = document.querySelector('.col.focus');"
-                " return {f: focusCol, d: folded, sp: SPINE(),"
+                " return {f: focusCol, d: folded, sp: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--spine-w')),"
                 "         w: Math.round(el.getBoundingClientRect().width)}; })()"))
         check("Every column ← lands on shows ⟳, folding or not",
               all(w > 0 for _, w in painted),
@@ -1744,7 +1757,7 @@ async def main(bundle, fake_handle, playwright):
         await pg.keyboard.press("ArrowDown")
         await pg.wait_for_timeout(250)
         check("…so ↓ selects the first remaining row",
-              await pg.evaluate("sel[1]") == "one.txt", await pg.evaluate("sel[1]"))
+              await pg.evaluate("sel[1]") == "sub", await pg.evaluate("sel[1]"))
 
         # Refreshing a parent must not quietly throw away the columns to its
         # right. A re-read hands back new node objects, so the chain is walked
@@ -1820,82 +1833,8 @@ async def main(bundle, fake_handle, playwright):
                        for i in range(len(st["path"]) - 1))
         check("A click during a refresh wins, and leaves the columns agreeing "
               "with each other",
-              st["path"] == ["workspace", "mixed"] and st["sel"] == ["mixed"]
+              st["path"] == ["workspace", "mixed"] and st["sel"] == ["mixed", "README"]
               and coherent, json.dumps(st))
-
-        print("\n── Remember view state per folder ───────────────────────────")
-        # The record and its migration go through the real database. The restore
-        # itself is driven by stubbing recallRoots, because a fake handle is not
-        # structured-cloneable — test-e2e.py does the real-handle round trip.
-        await pg.evaluate("__seed([{kind:'directory', name:'legacy'}])")
-        got = await pg.evaluate("recallRoots()")
-        check("A database written before view state keeps its folders",
-              got == [{"handle": {"kind": "directory", "name": "legacy"}, "path": []}],
-              str(got))
-        await pg.evaluate(
-            "__seed([{handle:{kind:'directory',name:'w'}, path:['mixed','sub']}])")
-        got = await pg.evaluate("recallRoots()")
-        check("A stored chain comes back attached to the folder it belongs to",
-              len(got) == 1 and got[0]["path"] == ["mixed", "sub"], str(got))
-
-        await pg.evaluate("__remember([])")
-        check("A folder last left on its own root asks for no restore",
-              await pg.evaluate("recallView({name:'workspace'})") is None)
-
-        await pg.evaluate("__remember(['mixed','sub','a.py'])")
-        await pg.evaluate("mount(__mk(0))")
-        await pg.wait_for_timeout(350)
-        st = await pg.evaluate("__state()")
-        check("Re-mounting a remembered folder puts the user back on the chain",
-              st["path"] == ["workspace", "mixed", "sub"]
-              and st["sel"] == ["mixed", "sub", "a.py"], json.dumps(st))
-
-        # The case that matters: the folder is still there, the chain is not.
-        await pg.evaluate("__remember(['mixed','gone','x.py'])")
-        await pg.evaluate("mount(__mk(0))")
-        await pg.wait_for_timeout(350)
-        st = await pg.evaluate("__state()")
-        check("A remembered chain that no longer exists restores as far as it is "
-              "real, and stops",
-              st["path"] == ["workspace", "mixed"] and st["sel"] == ["mixed"],
-              json.dumps(st))
-        check("…and shows no selection inside the folder it stopped at, because "
-              "there is none to show",
-              len(st["sel"]) == 1 and st["focusCol"] == 0, json.dumps(st))
-
-        await pg.evaluate("__remember(['mixed','sub'])")
-        await pg.evaluate("pendingLoc = {root:'workspace', path:['deep','alpha']}")
-        await pg.evaluate("mount(__mk(0))")
-        await pg.wait_for_timeout(350)
-        st = await pg.evaluate("__state()")
-        check("A link in the address bar beats the remembered chain",
-              st["path"] == ["workspace", "deep", "alpha"], json.dumps(st))
-
-        # The write side. Walking a column is one location change per keystroke,
-        # so the saves are debounced — a write per keystroke would be the
-        # per-entry cost this app spent a rewrite deleting, in another costume.
-        await pg.evaluate("__spySaves()")
-        await pg.evaluate("mount(__mk(0))")
-        await pg.wait_for_timeout(350)
-        start_saves = await pg.evaluate("__saved.length")
-        # Both clicks inside one page call, so the 150 ms gap is 150 ms of app
-        # time. Driven from here it was two Playwright round-trips wide, and on
-        # a loaded machine that exceeds the 400 ms debounce and splits the write
-        # this check exists to prove is single. It flaked twice in five runs.
-        early = await pg.evaluate("""(async () => {
-          document.querySelector('.col[data-i="0"] .row[title="mixed"]').click();
-          await new Promise(r => setTimeout(r, 150));
-          document.querySelector('.col[data-i="1"] .row[title="note.md"]').click();
-          return __saved.length;
-        })()""")
-        await pg.wait_for_timeout(800)
-        saved = await pg.evaluate("__saved")
-        check("Mounting a folder does not overwrite the chain it just restored",
-              start_saves == 0, f"{start_saves} writes during mount")
-        check("Two navigations 150 ms apart collapse into one write",
-              early == 0 and len(saved) == 1, f"{early} early, {len(saved)} total")
-        check("What is stored is the folder and the chain inside it",
-              saved == [["workspace", ["mixed", "note.md"]]], str(saved))
 
         print("\n── Sort options ─────────────────────────────────────────────")
         # The `sorting` folder is built so that every ordering below disagrees
@@ -1967,7 +1906,7 @@ async def main(bundle, fake_handle, playwright):
         await pg.click("#s-sort-size")
         await pg.wait_for_timeout(400)
         ticked = await pg.evaluate(
-            "SORT_KEYS.map(k => document.getElementById('s-sort-'+k)"
+            "['name', 'size', 'mtime'].map(k => document.getElementById('s-sort-'+k)"
             ".getAttribute('aria-checked'))")
         check("The ⚙ menu picks the key and shows which one is active",
               await pg.evaluate("__rows(1)") == SIZE_ASC
@@ -2072,7 +2011,7 @@ async def main(bundle, fake_handle, playwright):
                        for i in range(len(st["path"]) - 1))
         check("A sweep that lands after the user walked off does not repaint the "
               "column it no longer describes",
-              st["path"] == ["workspace", "mixed"] and st["sel"] == ["mixed"]
+              st["path"] == ["workspace", "mixed"] and st["sel"] == ["mixed", "README"]
               and coherent, json.dumps(st))
 
         await pg.evaluate("__slowMeta(0)")
@@ -2221,12 +2160,11 @@ async def main(bundle, fake_handle, playwright):
     if failed:
         print("  Failed: " + ", ".join(failed))
     print("═" * 62)
-    sys.exit(1 if failed else 0)
+    assert not failed, "Failed checks: " + ", ".join(failed)
 
 
-def test_ui(bundle, fake_handle, playwright):
-    asyncio.run(editor_main(bundle, fake_handle, playwright) if "--editor" in sys.argv
-                else main(bundle, fake_handle, playwright))
+def test_ui(bundle, fake_handle, async_playwright):
+    asyncio.run(main(bundle, fake_handle, async_playwright))
 
 
 def test_markdown_source_tokens(bundle, playwright):
@@ -2294,3 +2232,92 @@ def test_markdown_source_link_boundaries(bundle, playwright):
         assert failures == [], json.dumps(failures, indent=2)
     finally:
         browser.close()
+
+
+async def storage_main(bundle, playwright, static_origin):
+    async with playwright.async_playwright() as p:
+        b = await p.chromium.launch()
+        print("\n── Remember view state per folder ───────────────────────────")
+        # OPFS requires an HTTP origin.
+        pg = await b.new_page(viewport={"width": 1500, "height": 900})
+        await pg.goto(f"{static_origin}/static/{bundle.name}")
+        await pg.evaluate(FAKE)
+        # Exercise migration with plain records, then restoration and debounced
+        # writes with real OPFS handles that survive IndexedDB cloning.
+        await pg.evaluate("__seed([{kind:'directory', name:'legacy'}])")
+        got = await pg.evaluate("recallRoots()")
+        check("A database written before view state keeps its folders",
+              got == [{"handle": {"kind": "directory", "name": "legacy"}, "path": []}],
+              str(got))
+        await pg.evaluate(
+            "__seed([{handle:{kind:'directory',name:'w'}, path:['mixed','sub']}])")
+        got = await pg.evaluate("recallRoots()")
+        check("A stored chain comes back attached to the folder it belongs to",
+              len(got) == 1 and got[0]["path"] == ["mixed", "sub"], str(got))
+
+        await pg.evaluate("__remember([])")
+        check("A folder last left on its own root asks for no restore",
+              await pg.evaluate("recallView(__storedRoot)") is None)
+
+        await pg.evaluate("__remember(['mixed','sub','a.py'])")
+        await pg.evaluate("mount(__storedRoot)")
+        await pg.wait_for_timeout(350)
+        st = await pg.evaluate("__state()")
+        check("Re-mounting a remembered folder puts the user back on the chain",
+              st["path"] == ["workspace", "mixed", "sub"]
+              and st["sel"] == ["mixed", "sub", "a.py"], json.dumps(st))
+
+        # The case that matters: the folder is still there, the chain is not.
+        await pg.evaluate("__remember(['mixed','gone','x.py'])")
+        await pg.evaluate("mount(__storedRoot)")
+        await pg.wait_for_timeout(350)
+        st = await pg.evaluate("__state()")
+        check("A remembered chain that no longer exists restores as far as it is "
+              "real, and stops",
+              st["path"] == ["workspace", "mixed"] and st["sel"] == ["mixed"],
+              json.dumps(st))
+        check("…and shows no selection inside the folder it stopped at, because "
+              "there is none to show",
+              len(st["sel"]) == 1 and st["focusCol"] == 0, json.dumps(st))
+
+        await pg.evaluate("__remember(['mixed','sub'])")
+        await pg.evaluate("pendingLoc = {root:'workspace', path:['deep','alpha']}")
+        await pg.evaluate("mount(__storedRoot)")
+        await pg.wait_for_timeout(350)
+        st = await pg.evaluate("__state()")
+        check("A link in the address bar beats the remembered chain",
+              st["path"] == ["workspace", "deep", "alpha"], json.dumps(st))
+
+        # The write side. Walking a column is one location change per keystroke,
+        # so the saves are debounced — a write per keystroke would be the
+        # per-entry cost this app spent a rewrite deleting, in another costume.
+        await pg.evaluate("__spySaves()")
+        await pg.evaluate("mount(__storedRoot)")
+        await pg.wait_for_timeout(350)
+        start_saves = await pg.evaluate("__saved.length")
+        # Both clicks inside one page call, so the 150 ms gap is 150 ms of app
+        # time. Driven from here it was two Playwright round-trips wide, and on
+        # a loaded machine that exceeds the 400 ms debounce and splits the write
+        # this check exists to prove is single. It flaked twice in five runs.
+        early = await pg.evaluate("""(async () => {
+          document.querySelector('.col[data-i="0"] .row[title="mixed"]').click();
+          await new Promise(r => setTimeout(r, 150));
+          document.querySelector('.col[data-i="1"] .row[title="note.md"]').click();
+          return __saved.length;
+        })()""")
+        await pg.wait_for_timeout(800)
+        saved = await pg.evaluate("__saved")
+        check("Mounting a folder does not overwrite the chain it just restored",
+              start_saves == 0, f"{start_saves} writes during mount")
+        check("Two navigations 150 ms apart collapse into one write",
+              early == 0 and len(saved) == 1, f"{early} early, {len(saved)} total")
+        check("What is stored is the folder and the chain inside it",
+              saved == [["workspace", ["mixed", "note.md"]]], str(saved))
+
+        await pg.evaluate("__restoreSaves(); __seed([])")
+        assert not failed, f"{len(failed)} checks failed: {failed}"
+        await b.close()
+
+
+def test_storage(bundle, async_playwright, static_origin):
+    asyncio.run(storage_main(bundle, async_playwright, static_origin))
