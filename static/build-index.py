@@ -46,7 +46,7 @@ def inline_css(m: re.Match) -> str:
     font = (UI / "vendor/seti.woff").read_bytes()
     data = base64.b64encode(font).decode("ascii")
     css = re.sub(
-        r'src: url\("[^"]*seti\.woff"\) format\("woff"\);[^\n]*',
+        r'src: url\("[^"]*seti\.woff"\)\s+format\("woff"\);[^\n]*',
         f'src: url("data:font/woff;base64,{data}") format("woff");',
         css,
     )
