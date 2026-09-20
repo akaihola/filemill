@@ -1,0 +1,4 @@
+/webview/build/
+__pycache__/
+/tauri/target/
+/tauri/gen/
