@@ -547,8 +547,31 @@ function applyFullscreen(value) {
   }
 }
 
+// Touch browsers need a history step for both native and layout fullscreen.
+let fullscreenURL = null;
+
+function leaveFullscreen() {
+  if (history.state?.filemillFullscreen) {
+    history.back();
+    return;
+  }
+  applyFullscreen(false);
+  if (document.fullscreenElement) document.exitFullscreen();
+}
+
+addEventListener("popstate", (event) => {
+  if (
+    location.href !== fullscreenURL ||
+    (!pvFullscreen && !event.state?.filemillFullscreen)
+  ) return;
+  // The file did not change. Do not let the path router rebuild its preview.
+  event.stopImmediatePropagation();
+  applyFullscreen(!!event.state?.filemillFullscreen);
+  if (!pvFullscreen && document.fullscreenElement) document.exitFullscreen();
+}, { capture: true });
+
 document.addEventListener("fullscreenchange", () => {
-  if (!document.fullscreenElement && pvFullscreen) applyFullscreen(false);
+  if (!document.fullscreenElement && pvFullscreen) leaveFullscreen();
 });
 
 async function rawMarkdown(node) {
@@ -648,9 +671,12 @@ function setupPreviewActions(n) {
   if (full) {
     full.onclick = async () => {
       if (pvFullscreen) {
-        if (document.fullscreenElement) await document.exitFullscreen();
-        applyFullscreen(false);
+        leaveFullscreen();
         return;
+      }
+      if (matchMedia("(pointer: coarse)").matches) {
+        fullscreenURL = location.href;
+        history.pushState({ ...history.state, filemillFullscreen: true }, "");
       }
       applyFullscreen(true);
       // Resize rebuilds the preview, so fullscreen must use the stable root.
