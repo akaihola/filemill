@@ -150,6 +150,12 @@ render. Not verified by a run.
 
 ### 6. The preview is rebuilt on every render (Strong)
 
+2026-09-20 update: JSON fold memory now lives in the DOM-free
+`ui/core/model/json-collapse.js`. The shared renderer restores folds by structural
+path and records user changes without rebuilding the preview. Rules are indexed
+by target depth, so unrelated folds do not require scanning every path suffix.
+This does not change the remaining preview cache work below.
+
 `render.js:162` calls `renderPreview()` on every `render()`. There are 23
 call sites of `render()`. A resize, a font load, a sort sweep or a settings
 change therefore builds a new preview element. Each one calls
