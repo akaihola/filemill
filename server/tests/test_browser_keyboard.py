@@ -39,9 +39,7 @@ def browser_root(tmp_path: Path) -> Path:
     (subdir / "next.md").write_text("# Next\n")
     (tmp_path / "root-note.md").write_text("# Root\n")
     (tmp_path / "prg").symlink_to(kb, target_is_directory=True)
-    (tmp_path / "home-link.md").write_text(
-        "[Next](~/prg/docs/subdir/next.md)\n"
-    )
+    (tmp_path / "home-link.md").write_text("[Next](~/prg/docs/subdir/next.md)\n")
     return tmp_path
 
 
@@ -532,9 +530,12 @@ def test_rendered_home_markdown_link_uses_the_symlink_mount_once(
             '#preview a[href="/w/prg/docs/subdir/next.md?filemill=render"]',
             timeout=15000,
         )
-        assert page.locator(
-            '#preview a[href="/w/prg/docs/subdir/next.md?filemill=render"]'
-        ).count() == 1
+        assert (
+            page.locator(
+                '#preview a[href="/w/prg/docs/subdir/next.md?filemill=render"]'
+            ).count()
+            == 1
+        )
         browser.close()
 
 
@@ -581,7 +582,8 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
         assert page.evaluate("focusCol") == 1
         assert page.evaluate("sel[1]") == "AGENTS.md"
         assert (
-            page.locator('.col[data-i="1"] .row.sel .label').text_content() == "AGENTS.md"
+            page.locator('.col[data-i="1"] .row.sel .label').text_content()
+            == "AGENTS.md"
         )
         assert page.url == file_url
         _expect_preview(page)
@@ -767,7 +769,7 @@ def test_vertical_navigation_preserves_full_fold_with_equal_widths(live_server: 
             page.keyboard.press(key)
             page.wait_for_function("count => path.length === count", arg=count)
             assert page.evaluate("folded") == count
-            assert page.locator('.col.spine').count() == count
+            assert page.locator(".col.spine").count() == count
 
 
 @pytest.mark.integration
@@ -866,8 +868,8 @@ def test_mobile_long_press_menu_copies_paths_for_files_and_directories(
             "pointerdown", {"pointerType": "touch", "clientX": 20, "clientY": 20}
         )
         page.wait_for_timeout(550)
-        assert page.locator('#row-menu').is_visible()
-        await_copy = page.locator('#row-menu button', has_text="Copy name")
+        assert page.locator("#row-menu").is_visible()
+        await_copy = page.locator("#row-menu button", has_text="Copy name")
         await_copy.click()
         assert page.evaluate("navigator.clipboard.readText()") == "my-knowledge"
 
@@ -877,14 +879,18 @@ def test_mobile_long_press_menu_copies_paths_for_files_and_directories(
             "pointerdown", {"pointerType": "touch", "clientX": 20, "clientY": 20}
         )
         page.wait_for_timeout(550)
-        assert page.locator('#row-menu button', has_text="Copy relative path").is_visible()
-        page.locator('#row-menu button', has_text="Copy relative path").click()
-        assert page.evaluate("navigator.clipboard.readText()") == "my-knowledge/AGENTS.md"
+        assert page.locator(
+            "#row-menu button", has_text="Copy relative path"
+        ).is_visible()
+        page.locator("#row-menu button", has_text="Copy relative path").click()
+        assert (
+            page.evaluate("navigator.clipboard.readText()") == "my-knowledge/AGENTS.md"
+        )
         file.dispatch_event(
             "pointerdown", {"pointerType": "touch", "clientX": 20, "clientY": 20}
         )
         page.wait_for_timeout(550)
-        page.locator('#row-menu button', has_text="Copy absolute path").click()
+        page.locator("#row-menu button", has_text="Copy absolute path").click()
         assert page.evaluate("navigator.clipboard.readText()").endswith(
             "/my-knowledge/AGENTS.md"
         )
@@ -1173,9 +1179,10 @@ def test_mobile_preview_fills_remaining_space(
         assert geometry["previewWidth"] == pytest.approx(
             max(geometry["stageWidth"] / 3, geometry["remaining"]), abs=1
         )
-        assert geometry["visible"] >= min(
-            geometry["stageWidth"] / 3, geometry["remaining"]
-        ) - 1
+        assert (
+            geometry["visible"]
+            >= min(geometry["stageWidth"] / 3, geometry["remaining"]) - 1
+        )
         assert geometry["previewLeft"] >= geometry["finderLeft"] - 2
         assert geometry["previewStartVisible"]
 
@@ -1197,8 +1204,8 @@ def test_mobile_fullscreen_preview_touch_handling(
             f" === '{touch_action}'"
         )
         page.wait_for_function("root.classList.contains('pv-fullscreen')")
-        assert page.locator('#preview').bounding_box()['width'] == pytest.approx(
-            viewport['width'], abs=1
+        assert page.locator("#preview").bounding_box()["width"] == pytest.approx(
+            viewport["width"], abs=1
         )
         # The click scrolled its button into view, dragging #stage sideways;
         # applyScroll puts it back at the next repaint (see layout.js), so wait

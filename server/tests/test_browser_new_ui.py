@@ -58,8 +58,7 @@ def ui_root(tmp_path: Path) -> Path:
     (tmp_path / "code").mkdir()
     (tmp_path / "code" / "sample.py").write_text(SOURCE)
     (tmp_path / "code" / "guide.rst").write_text(
-        "Guide\n=====\n\nSome *rst* text.\n\n"
-        ".. code-block:: python\n\n   return 1\n"
+        "Guide\n=====\n\nSome *rst* text.\n\n.. code-block:: python\n\n   return 1\n"
     )
     (tmp_path / "code" / "nested.json").write_text('{"tags":["a","b"],"n":1}')
     # 11 700 chars: more than the 8 000 the preview used to clip at.
@@ -73,6 +72,7 @@ def ui_root(tmp_path: Path) -> Path:
     (tmp_path / "page.html").write_text("<h1>Hi</h1>\n")
     from pptx import Presentation
     from pptx.util import Inches
+
     deck = Presentation()
     slide = deck.slides.add_slide(deck.slide_layouts[6])
     for y, lines in ((1, ("Hello world", "Second line")), (3, ("Another block",))):
@@ -337,19 +337,31 @@ def test_preview_fullscreen_control_toggles_and_exits(page):
     assert page.evaluate("document.fullscreenElement !== null")
     assert page.url == url
     assert page.evaluate("history.length") == history_length
-    page.wait_for_function("document.documentElement.classList.contains('pv-fullscreen')")
+    page.wait_for_function(
+        "document.documentElement.classList.contains('pv-fullscreen')"
+    )
     assert full.get_attribute("aria-pressed") == "true"
-    assert page.evaluate("getComputedStyle(document.getElementById('bar')).display") == "none"
+    assert (
+        page.evaluate("getComputedStyle(document.getElementById('bar')).display")
+        == "none"
+    )
 
     full.click()
-    page.wait_for_function("!document.documentElement.classList.contains('pv-fullscreen')")
+    page.wait_for_function(
+        "!document.documentElement.classList.contains('pv-fullscreen')"
+    )
     assert full.get_attribute("aria-pressed") == "false"
-    assert page.evaluate("getComputedStyle(document.getElementById('bar')).display") != "none"
+    assert (
+        page.evaluate("getComputedStyle(document.getElementById('bar')).display")
+        != "none"
+    )
 
     full.click()
     page.wait_for_function("document.fullscreenElement !== null")
     page.evaluate("document.exitFullscreen()")
-    page.wait_for_function("!document.documentElement.classList.contains('pv-fullscreen')")
+    page.wait_for_function(
+        "!document.documentElement.classList.contains('pv-fullscreen')"
+    )
     assert full.get_attribute("aria-pressed") == "false"
     assert page.url == url
     assert page.evaluate("history.length") == history_length
@@ -712,7 +724,9 @@ def test_preview_arrows_fold_all_then_restore_only_document_parent(page):
 
     page.keyboard.press("ArrowLeft")
     _scroll_settled(page)
-    state = page.evaluate("({focusCol, folded, spines: [...document.querySelectorAll('.col.spine')].map(c => +c.dataset.i)})")
+    state = page.evaluate(
+        "({focusCol, folded, spines: [...document.querySelectorAll('.col.spine')].map(c => +c.dataset.i)})"
+    )
     assert state == {"focusCol": 1, "folded": 1, "spines": [0]}
 
 
@@ -1558,7 +1572,9 @@ def scalar_files(ui_root):
             "CREATE TABLE cells (name TEXT, text TEXT, zero INTEGER, "
             'empty TEXT, none TEXT, "" TEXT)'
         )
-        db.execute("INSERT INTO cells VALUES (?, ?, ?, ?, ?, ?)", tuple(record.values()))
+        db.execute(
+            "INSERT INTO cells VALUES (?, ?, ?, ?, ?, ?)", tuple(record.values())
+        )
 
 
 @pytest.mark.parametrize("source", ["scalar.json", "scalar.jsonl", "scalar.db"])

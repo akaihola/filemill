@@ -705,8 +705,15 @@ body {
   border: 1px solid transparent;
   position: relative;
 }
-.row-layer { position: relative; flex: 0 0 auto; }
-.row-layer > .row { position: absolute; left: 0; right: 0; }
+.row-layer {
+  position: relative;
+  flex: 0 0 auto;
+}
+.row-layer > .row {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
 .row .label {
   display: flex;
   flex: 1;
@@ -1324,13 +1331,29 @@ body {
 }
 
 #row-menu {
-  position: fixed; z-index: 20; min-width: 190px; padding: 4px;
-  border: 1px solid var(--line); border-radius: 6px; background: var(--paper);
+  position: fixed;
+  z-index: 20;
+  min-width: 190px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
   box-shadow: 0 4px 18px #0004;
 }
-#row-menu button { display: block; width: 100%; padding: 9px 12px; border: 0;
-  background: none; color: inherit; text-align: left; font: inherit; }
-#row-menu button:hover, #row-menu button:focus-visible { background: var(--accent); color: white; }
+#row-menu button {
+  display: block;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+}
+#row-menu button:hover, #row-menu button:focus-visible {
+  background: var(--accent);
+  color: white;
+}
 #st-copy.bad, #st-refresh.bad {
   color: #d2544a;
 }

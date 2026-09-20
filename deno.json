@@ -5,10 +5,17 @@
     "check": "deno fmt --check ui/ && deno lint ui/"
   },
   "fmt": {
-    "include": ["ui/"]
+    "include": [
+      "ui/"
+    ],
+    "exclude": [
+      "ui/vendor/"
+    ]
   },
   "lint": {
-    "include": ["ui/"],
+    "include": [
+      "ui/"
+    ],
     "rules": {
       "exclude": [
         "no-unused-vars",
@@ -16,6 +23,9 @@
         "prefer-const",
         "require-await"
       ]
-    }
+    },
+    "exclude": [
+      "ui/vendor/"
+    ]
   }
 }

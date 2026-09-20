@@ -193,15 +193,24 @@ def _ui_shell(state, base: str, hidden: bool = False):
     ``/`` for the resource route, where the path already is the file path.
     """
     mounts = paths.mount_targets(_root())
-    attrs = {"lang": "en", "data-density": "compact", "data-root": _root().name or "/",
-             "data-mounts": json.dumps(list(mounts)),
-             "data-absolute": _root().resolve().as_posix(), "data-api": "/api",
-             "data-base": base, "data-filemill": state.view, "data-layout": state.layout}
+    attrs = {
+        "lang": "en",
+        "data-density": "compact",
+        "data-root": _root().name or "/",
+        "data-mounts": json.dumps(list(mounts)),
+        "data-absolute": _root().resolve().as_posix(),
+        "data-api": "/api",
+        "data-base": base,
+        "data-filemill": state.view,
+        "data-layout": state.layout,
+    }
     if _COMMIT:
         attrs["data-commit"] = _COMMIT
     if hidden:
         attrs["data-hidden"] = "show"
-    attr_text = " ".join(f'{key}="{escape(str(value), quote=True)}"' for key, value in attrs.items())
+    attr_text = " ".join(
+        f'{key}="{escape(str(value), quote=True)}"' for key, value in attrs.items()
+    )
     title = escape(_root().name or "Filemill")
     return HTMLResponse(f'''<!doctype html>
 <html {attr_text}><head>

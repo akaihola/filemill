@@ -56,8 +56,18 @@ const q = (rel, vpath) =>
 const pageQ = (rel, vpath, page) => `${q(rel, vpath)}&page=${page}`;
 
 export const HTTP = {
-  node: (name, rel) => httpNode(name, rel || "", true, undefined, "", undefined, true, undefined,
-    document.documentElement.dataset.absolute || ""),
+  node: (name, rel) =>
+    httpNode(
+      name,
+      rel || "",
+      true,
+      undefined,
+      "",
+      undefined,
+      true,
+      undefined,
+      document.documentElement.dataset.absolute || "",
+    ),
 
   async ensureLoaded(node) {
     if (!node.dir || node.kids !== null) return;
