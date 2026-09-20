@@ -178,6 +178,11 @@ Columns are cached with care (`render.js:4-9`); the preview is not.
 - `withJsonl` and `withJson` in `jsonl.js:75-197` are one shape written twice,
   and so are their two preview tables.
 
+Update, 2026-09-20: Markdown source highlighting and rendered previews share
+destination validation and URL resolution in `ui/core/markdown-links.js`.
+The source tokenizer is in `ui/core/markdown-source.js`. Both editions use
+these browser modules; they add no DOM dependency to `ui/core/model/`.
+
 ### 8. Mobile and tablet are arithmetic, not design (Worth exploring)
 
 `ui/core/styles.css` has no media query except `prefers-reduced-motion`.
