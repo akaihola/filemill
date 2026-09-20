@@ -1601,3 +1601,99 @@ def test_selected_scalar_preview(page, source, scalar_files):
     page.wait_for_function(
         "document.querySelector('.pv-json-value')?.textContent === 'empty key'"
     )
+
+
+@pytest.mark.parametrize("extension", ["md", "markdown"])
+def test_markdown_highlight_links_preserve_source_and_navigation(
+    page, ui_root, extension
+):
+    source = (
+        "# Heading [next](leaf.md?hidden=show#leaf)\n\n"
+        "It's prose and here's more.\n"
+        "https://example.org/path.\n"
+        "[reference][ref]\n\n[ref]: leaf.md\n"
+        "`[code](hidden.md)`\n\n```markdown\n[code](hidden.md)\n```\n"
+    )
+    name = f"notes/deep/source.{extension}"
+    (ui_root / name).write_text(source)
+    page.goto(f"{page.base}/{name}?filemill=highlight")
+    preview = page.locator("#preview .pv-text")
+    preview.wait_for()
+    assert preview.text_content() == source
+    assert preview.locator(".hl-heading").count() == 1
+    assert preview.locator("a").count() == 3
+    link = preview.locator("a").first
+    assert (
+        link.get_attribute("href")
+        == "/notes/deep/leaf.md?hidden=show&filemill=render#leaf"
+    )
+    if extension == "md":
+        link.click()
+    else:
+        link.focus()
+        page.keyboard.press("Enter")
+    page.wait_for_url("**/leaf.md?hidden=show&filemill=render#leaf")
+    page.locator("#preview .pv-markdown h1").wait_for()
+    assert page.locator("#preview .pv-markdown h1").inner_text() == "Leaf"
+
+
+@pytest.mark.parametrize("view", ["render", "highlight"])
+def test_markdown_link_paths_and_queries(page, ui_root, view):
+    cases = [
+        (
+            "sibling",
+            "leaf.md?x=1&filemill=highlight#leaf",
+            "/notes/deep/leaf.md?x=1&filemill=highlight#leaf",
+        ),
+        (
+            "parent",
+            "../other%20file.markdown?x=1#top",
+            "/notes/other%20file.markdown?x=1&filemill=render#top",
+        ),
+        ("spaces", "<space name.md>", "/notes/deep/space%20name.md?filemill=render"),
+        ("balanced", "file(a).md", "/notes/deep/file(a).md?filemill=render"),
+        ("escaped", r"file\(b\).md", "/notes/deep/file(b).md?filemill=render"),
+        ("root", "/README.md?filemill=render", "/README.md?filemill=render"),
+        (
+            "external",
+            "https://example.org/a?x=1&y=2#top",
+            "https://example.org/a?x=1&y=2#top",
+        ),
+        ("fragment", "#top", "#top"),
+        ("query", "?filemill=raw", "?filemill=raw"),
+        ("home", "~/note.md", None),
+    ]
+    source = "\n\n".join(f"[{label}]({href})" for label, href, _ in cases)
+    (ui_root / "notes/deep/links.md").write_text(source)
+    page.goto(f"{page.base}/notes/deep/links.md?filemill={view}")
+    page.locator("#preview a", has_text="sibling").wait_for()
+    mount = page.evaluate("document.documentElement.dataset.root")
+    for label, _, expected in cases:
+        link = page.locator("#pv-content a", has_text=label)
+        assert link.count() == 1
+        assert link.get_attribute("href") == (expected or f"/w/{mount}/note.md")
+    if view == "highlight":
+        assert page.locator("#preview .pv-text").text_content() == source
+
+
+@pytest.mark.parametrize("view", ["render", "highlight"])
+def test_markdown_links_reject_unsafe_and_code_destinations(page, ui_root, view):
+    source = (
+        "[bad](javascript:alert(1))\n\n[bad](JaVaScRiPt:alert(1))\n\n"
+        "[bad](javascript&#58;alert(1))\n\n[bad](java&#x09;script:alert(1))\n\n"
+        "[bad](data:text/html,test)\n\n[bad](file:///etc/passwd)\n\n"
+        "[bad](vbscript:alert(1))\n\n"
+        "`[code](hidden.md)`\n\n```markdown\n[code](hidden.md)\n```\n\n"
+        r"\[escaped](hidden.md)"
+        "\n\n[broken](missing.md\n\n"
+        "<img src=x onerror=alert(1)>\n"
+    )
+    (ui_root / "notes/deep/unsafe.md").write_text(source)
+    page.goto(f"{page.base}/notes/deep/unsafe.md?filemill={view}")
+    page.locator(
+        "#preview .pv-text" if view == "highlight" else "#preview .pv-markdown"
+    ).wait_for()
+    assert page.locator("#pv-content a").count() == 0
+    assert page.locator("#pv-content img").count() == 0
+    if view == "highlight":
+        assert page.locator("#preview .pv-text").text_content() == source
