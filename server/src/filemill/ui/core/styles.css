@@ -1344,9 +1344,10 @@ body {
   z-index: 20;
   min-width: 190px;
   padding: 4px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 6px;
-  background: var(--paper);
+  background: var(--surface);
+  color: var(--ink);
   box-shadow: 0 4px 18px #0004;
 }
 #row-menu button {

@@ -16,7 +16,14 @@ import { applyPath, scrollCursorIntoView } from "./deeplink.js";
 import { currentPath } from "./model/deeplink.js";
 import { foldUnit, range, revealRow } from "./layout.js";
 import { FS } from "./ports.js";
-import { colCache, columnFor, render } from "./render.js";
+import {
+  closeRowMenu,
+  colCache,
+  columnFor,
+  openRowMenu,
+  render,
+  rowMenuKey,
+} from "./render.js";
 import { closeSettings } from "./settings.js";
 import {
   focusCol,
@@ -218,10 +225,13 @@ export function saySt(id, msg, ok) {
 }
 
 document.addEventListener("pointerdown", (event) => {
-  if (!event.target.closest("#row-menu")) {
-    document.getElementById("row-menu").hidden = true;
+  if (
+    !event.target.closest("#row-menu") &&
+    !document.getElementById("row-menu").hidden
+  ) {
+    closeRowMenu(false);
   }
-});
+}, true);
 
 const sayCopy = (msg, ok) => saySt("st-copy", msg, ok);
 
@@ -303,6 +313,7 @@ function pageMove(c, dir, ci) {
 }
 
 document.addEventListener("keydown", (e) => {
+  if (rowMenuKey(e)) return;
   const context = {
     editable: e.target.matches?.("input, textarea, select") ||
       e.target.isContentEditable,
@@ -343,6 +354,12 @@ document.addEventListener("keydown", (e) => {
   const rows = c.rows;
   let ci = rowIndex(path[focusCol], sel[focusCol]);
   if (ci < 0) ci = 0;
+
+  if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) {
+    e.preventDefault();
+    if (c.kids[ci]) openRowMenu(c.kids[ci], path[focusCol], c.ensureRow(ci));
+    return;
+  }
 
   /* ⌘C / Ctrl+C. A live text selection wins: the user highlighted something and
      asked for *that*, and after a refused copy the selected path is exactly

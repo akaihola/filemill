@@ -80,13 +80,13 @@ export const FSA = {
   },
 
   async remove(node) {
+    if (!node.parent) throw new Error("Cannot delete this entry");
     if (
-      node.handle.requestPermission &&
-      await node.handle.requestPermission({ mode: "readwrite" }) !== "granted"
+      node.parent.requestPermission &&
+      await node.parent.requestPermission({ mode: "readwrite" }) !== "granted"
     ) {
       throw new Error("No permission to delete");
     }
-    if (!node.handle.parent) throw new Error("Cannot delete this entry");
-    await node.handle.parent.removeEntry(node.name, { recursive: node.dir });
+    await node.parent.removeEntry(node.name, { recursive: node.dir });
   },
 };

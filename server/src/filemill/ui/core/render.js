@@ -59,9 +59,84 @@ const touchUI = () =>
 let longPressTimer;
 let suppressClick = false;
 
-function copyMenu(node, row, event) {
-  const rel = node.rel ||
-    path.slice(1).map((n) => n.name).concat(node.name).join("/");
+let menuRow, menuFocus, updateMenuDelete;
+const removing = new WeakMap();
+const entryPath = (node, parent) =>
+  node.rel ||
+  path.slice(1, path.indexOf(parent) + 1).map((n) => n.name).concat(node.name)
+    .join("/");
+const isRemoving = (node, parent) =>
+  removing.get(path[0])?.has(entryPath(node, parent)) || false;
+
+export function closeRowMenu(restoreFocus = true) {
+  const menu = document.getElementById("row-menu");
+  if (!menu.hidden && restoreFocus) {
+    document.activeElement?.blur();
+    if (menuFocus?.isConnected) menuFocus.focus({ preventScroll: true });
+  }
+  menu.hidden = true;
+  menuRow?.setAttribute("aria-expanded", "false");
+  menuRow = menuFocus = updateMenuDelete = null;
+  suppressClick = false;
+  clearTimeout(longPressTimer);
+}
+
+async function deleteEntry(node, parent, button) {
+  if (isRemoving(node, parent) || !FS.remove || node.vpath) return;
+  if (
+    !window.confirm(
+      `Delete “${node.name}”${node.dir ? " and its contents" : ""}?`,
+    )
+  ) return;
+  const filesystem = FS;
+  const deletionRoot = path[0];
+  const parentNames = path.slice(0, path.indexOf(parent) + 1).map((n) =>
+    n.name
+  );
+  const relative = entryPath(node, parent);
+  const pending = removing.get(deletionRoot) || new Set();
+  removing.set(deletionRoot, pending);
+  pending.add(relative);
+  button.disabled = true;
+  let deleted = false;
+  try {
+    await filesystem.remove(node);
+    deleted = true;
+    // Invalidate even a folder left during deletion, so revisiting it is fresh.
+    if (parent.loading) await parent.loading;
+    // A reload can replace the containing node while removal is pending.
+    const visible = FS === filesystem && path[0] === deletionRoot &&
+      parentNames.every((name, i) => path[i]?.name === name);
+    if (visible) await actions.refreshColumn(parentNames.length - 1);
+    if (!visible || !path.includes(parent)) {
+      parent.kids = null;
+      parent.metaDone = false;
+    }
+  } catch (err) {
+    const message = deleted ? "Deleted; refresh failed" : "Delete failed";
+    actions.saySt(
+      "st-refresh",
+      `${message}: ${String(err.message || err)}`,
+      false,
+    );
+  } finally {
+    pending.delete(relative);
+    button.disabled = false;
+    if (menuRow && !menuRow.isConnected) closeRowMenu();
+    else updateMenuDelete?.();
+    const preview = previewNode();
+    const previewDelete = document.getElementById("pv-delete");
+    if (preview && previewDelete) {
+      previewDelete.disabled = isRemoving(preview, path[path.length - 1]);
+    }
+  }
+}
+
+export function openRowMenu(node, parent, row, event) {
+  closeRowMenu();
+  menuRow = row;
+  menuFocus = document.activeElement;
+  const rel = entryPath(node, parent);
   const absolute = node.abs || "/" + rel;
   const menu = document.getElementById("row-menu");
   menu.innerHTML = [
@@ -73,27 +148,73 @@ function copyMenu(node, row, event) {
       esc(text)
     }">${label}</button>`
   ).join("");
-  menu.hidden = false;
-  menu.style.left = `${
-    Math.min(event.clientX, innerWidth - menu.offsetWidth - 8)
-  }px`;
-  menu.style.top = `${
-    Math.min(event.clientY, innerHeight - menu.offsetHeight - 8)
-  }px`;
   menu.querySelectorAll("button").forEach((button) =>
     button.onclick = async () => {
       suppressClick = false;
       try {
         await navigator.clipboard.writeText(button.dataset.copy);
-        menu.hidden = true;
+        closeRowMenu();
       } catch (err) {
-        const status = document.getElementById("st-copy");
-        status.textContent = `clipboard refused (${err.name || "error"})`;
-        status.classList.add("bad");
+        actions.saySt(
+          "st-copy",
+          `clipboard refused (${err.name || "error"})`,
+          false,
+        );
       }
     }
   );
+  if (FS.remove && !node.vpath) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.setAttribute("role", "menuitem");
+    button.textContent = "Delete";
+    updateMenuDelete = () => {
+      button.disabled = isRemoving(node, parent);
+    };
+    updateMenuDelete();
+    button.onclick = () => {
+      closeRowMenu();
+      return deleteEntry(node, parent, button);
+    };
+    menu.appendChild(button);
+  }
+  menu.hidden = false;
+  const bounds = row.getBoundingClientRect();
+  const x = event?.clientX ?? bounds.left;
+  const y = event?.clientY ?? bounds.bottom;
+  menu.style.left = `${
+    Math.max(8, Math.min(x, innerWidth - menu.offsetWidth - 8))
+  }px`;
+  menu.style.top = `${
+    Math.max(8, Math.min(y, innerHeight - menu.offsetHeight - 8))
+  }px`;
   row.setAttribute("aria-expanded", "true");
+  menu.querySelector("button").focus({ preventScroll: true });
+}
+
+export function rowMenuKey(event) {
+  const menu = document.getElementById("row-menu");
+  if (menu.hidden) return false;
+  if (event.key === "F5") {
+    closeRowMenu();
+    return false;
+  }
+  if (event.key === "Escape" || event.key === "Tab") {
+    closeRowMenu();
+    if (event.key === "Escape") event.preventDefault();
+  } else if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+    event.preventDefault();
+    const buttons = [...menu.querySelectorAll("button:not(:disabled)")];
+    const index = buttons.indexOf(document.activeElement);
+    const next = event.key === "Home"
+      ? 0
+      : event.key === "End"
+      ? buttons.length - 1
+      : (index + (event.key === "ArrowDown" ? 1 : -1) + buttons.length) %
+        buttons.length;
+    buttons[next]?.focus();
+  }
+  return true;
 }
 
 /* Writing the value a property already holds still dirties it — and a width or
@@ -178,6 +299,7 @@ function buildCol(node) {
     row.className = "row" + (k.name.startsWith(".") ? " dotfile" : "");
     row.title = k.name; /* the full name is always one hover away */
     row.setAttribute("aria-label", k.name);
+    row.setAttribute("aria-haspopup", "menu");
     row.innerHTML = iconHTML(k) +
       `<span class="label"><span class="stem">${
         esc(stem)
@@ -198,16 +320,17 @@ function buildCol(node) {
       }
       clearTimeout(longPressTimer);
       longPressTimer = setTimeout(() => {
+        openRowMenu(k, node, row, event);
         suppressClick = true;
-        copyMenu(k, row, event);
       }, LONG_PRESS_MS);
     };
     row.onpointerup = row.onpointercancel = row.onpointerleave = () =>
       clearTimeout(longPressTimer);
     row.oncontextmenu = (event) => {
-      if (!touchUI()) return;
       event.preventDefault();
-      copyMenu(k, row, event);
+      const held = suppressClick;
+      openRowMenu(k, node, row, event);
+      suppressClick = held;
     };
     if (virtual) {
       row.style.top = `${ri * ROW_STEP}px`;
@@ -544,33 +667,9 @@ function setupPreviewActions(n) {
   const del = document.getElementById("pv-delete");
   if (del) {
     del.hidden = !FS.remove || !!n.vpath;
-    del.onclick = async () => {
-      if (
-        !window.confirm(
-          `Delete “${n.name}”${n.dir ? " and its contents" : ""}?`,
-        )
-      ) return;
-      del.disabled = true;
-      const parent = path[path.length - 1];
-      const parentIndex = path.length - 1;
-      try {
-        await FS.remove(n);
-        if (path[parentIndex] === parent && parent.kids) {
-          parent.kids = parent.kids.filter((kid) => kid.name !== n.name);
-          setState({ sel: sel.slice(0, parentIndex) });
-          actions.render();
-        } else if (path.includes(parent)) {
-          await actions.refreshColumn(path.indexOf(parent));
-        }
-      } catch (err) {
-        actions.saySt(
-          "st-refresh",
-          `Delete failed: ${String(err.message || err)}`,
-          false,
-        );
-        del.disabled = false;
-      }
-    };
+    const parent = path[path.length - 1];
+    del.disabled = isRemoving(n, parent);
+    del.onclick = () => deleteEntry(n, parent, del);
   }
 }
 
