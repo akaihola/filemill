@@ -23,6 +23,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { esc } from "./icons.js";
 import { jsonCollapse } from "./model/json-collapse.js";
+import { markdownSource } from "./markdown-source.js";
 
 /* Written as plain strings rather than literals because they are assembled:
    a regex literal cannot be pasted into another one without going through its
@@ -74,7 +75,7 @@ const K_SQL =
    keywords are not words — a TeX macro, a CSS at-rule, an XML tag — can say so
    without a second mechanism. `n: false` turns the number class off. */
 const HL_SPECS = {
-  markdown: { c: HL_HASH, s: HL_TICK, k: hlWords("true false") },
+  markdown: { n: false },
   rst: { c: "\\.\\.[^\\n]*", s: HL_TICK, k: hlWords("attention code-block note warning") },
   js: { c: HL_SLASH, s: HL_TICK, k: hlWords(K_JS) },
   ts: { c: HL_SLASH, s: HL_TICK, k: hlWords(K_TS) },
@@ -260,7 +261,8 @@ export function hlLang(name) {
    and copied, the match itself is escaped inside its span, and the tail after
    the last match is escaped and copied. Nothing here interpolates unescaped
    input, which is what makes the output safe to assign to innerHTML. */
-export function hlHTML(text, key) {
+export function hlHTML(text, key, node) {
+  if (key === "markdown") return markdownSource(text, node);
   const re = HL_LANGS[key];
   let out = "", last = 0, m;
   re.lastIndex = 0;
