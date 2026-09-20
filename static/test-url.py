@@ -16,7 +16,7 @@ Two sections, therefore:
     measured: against a fake handle getFile() returns without touching a disk,
     and the syscall is the whole price.
 
-    uv run --with "playwright==1.61.0" python3 test-url.py [--bundle|--dev]
+    uv run --project ../server pytest test-url.py [--bundle|--dev]
 """
 import asyncio
 import functools
@@ -280,11 +280,11 @@ async def main(bundle, fake_handle, opfs_root, playwright):
     if failed:
         print("  Failed: " + ", ".join(failed))
     print("═" * 62)
-    sys.exit(1 if failed else 0)
+    assert not failed, "Failed checks: " + ", ".join(failed)
 
 
-def test_url(bundle, fake_handle, opfs_root, playwright):
-    asyncio.run(main(bundle, fake_handle, opfs_root, playwright))
+def test_url(bundle, fake_handle, opfs_root, async_playwright):
+    asyncio.run(main(bundle, fake_handle, opfs_root, async_playwright))
 
 
 def test_fullscreen_survives_resize(bundle, playwright):

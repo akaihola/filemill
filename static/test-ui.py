@@ -6,9 +6,9 @@ exercises every code path except the OS picker itself (that one needs
 test-e2e.py). Covers navigation, keyboard focus, folding, previews, the
 settings toggles, and the render-cost budget.
 
-    uv run --with "playwright==1.61.0" python3 test-ui.py [--bundle|--dev] [--editor]
+    uv run --project ../server pytest test-ui.py [--dev]
 
---editor runs only the focused editor checks.
+The full suite includes the editor checks.
 
 --bundle (default) tests the built index.html; --dev tests src/index.html, so
 the same suite guards both the bundle and the modular sources.
@@ -2221,12 +2221,11 @@ async def main(bundle, fake_handle, playwright):
     if failed:
         print("  Failed: " + ", ".join(failed))
     print("═" * 62)
-    sys.exit(1 if failed else 0)
+    assert not failed, "Failed checks: " + ", ".join(failed)
 
 
-def test_ui(bundle, fake_handle, playwright):
-    asyncio.run(editor_main(bundle, fake_handle, playwright) if "--editor" in sys.argv
-                else main(bundle, fake_handle, playwright))
+def test_ui(bundle, fake_handle, async_playwright):
+    asyncio.run(main(bundle, fake_handle, async_playwright))
 
 
 def test_markdown_source_tokens(bundle, playwright):
