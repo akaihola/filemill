@@ -306,6 +306,13 @@ def test_ui_path_mirrors_the_file_path(client, tmp_root: Path):
     assert client.get("/n/subdir").status_code == 200
 
 
+@pytest.mark.parametrize("view", ["render", "highlight"])
+def test_ui_path_preserves_requested_view(client, view):
+    response = client.get("/n/readme.md", params={"filemill": view})
+    assert response.status_code == 200
+    assert f'data-filemill="{view}"' in response.text
+
+
 def test_ui_path_that_does_not_exist_is_404(client, tmp_root: Path):
     assert client.get("/n/nope.md").status_code == 404
 

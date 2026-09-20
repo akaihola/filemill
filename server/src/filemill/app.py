@@ -238,7 +238,7 @@ def ui_view(request, path: str = ""):
     zones = _zones(request)
     if path and api.split_vfs(path, _root(), lambda p: _resolve(p, zones)) is None:
         return HTMLResponse("Not found", status_code=404)
-    return _ui_shell(urls.ViewState(), UI_BASE)
+    return _ui_shell(urls.parse_state(request.query_params), UI_BASE)
 
 
 # ── JSON/fragment API behind the shared UI ───────────────────────────────────
