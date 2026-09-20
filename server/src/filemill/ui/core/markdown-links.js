@@ -8,13 +8,21 @@ export function markdownHref(href, dir) {
   if (href.startsWith("~/")) {
     const root = document.documentElement;
     const mounts = JSON.parse(root.dataset.mounts || "[]");
-    const path = href.slice(2);
-    const mount = mounts.includes(path.split("/", 1)[0])
-      ? path.split("/", 1)[0]
-      : root.dataset.root;
-    return mount && mount !== "/"
-      ? `/w/${encodeURIComponent(mount)}/${path}`
-      : path;
+    const parts = href.slice(2).split("/");
+    const mount = mounts.includes(parts[0]) ? parts.shift() : root.dataset.root;
+    const path = parts.join("/");
+    if (!mount || mount === "/") return path;
+    const url = new URL(
+      `/w/${encodeURIComponent(mount)}/${path}`,
+      location.origin,
+    );
+    if (
+      /\.(?:md|markdown)$/i.test(url.pathname) &&
+      !url.searchParams.has("filemill")
+    ) {
+      url.searchParams.set("filemill", "render");
+    }
+    return url.pathname + url.search + url.hash;
   }
   if (dir === undefined || /^(?:[a-z][a-z0-9+.-]*:|\/|#|\?)/i.test(href)) {
     return href;
