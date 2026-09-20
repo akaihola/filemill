@@ -482,3 +482,58 @@ async def main(bundle, fake_handle, playwright):
 
 def test_rich(bundle, fake_handle, async_playwright):
     asyncio.run(main(bundle, fake_handle, async_playwright))
+
+
+def test_markdown_viewport(bundle, playwright):
+    """Wide Markdown stays reachable in normal and fullscreen previews."""
+    httpd, port = serve()
+    browser = playwright.chromium.launch()
+    try:
+        page = browser.new_page()
+        page.goto(f"http://127.0.0.1:{port}/static/{bundle.name}")
+        page.evaluate(VENDOR_MAP)
+        page.evaluate(r"""async () => {
+          const text = '# Heading' + 'Long'.repeat(30) + '\n\n' +
+            '**bold** and *italic* [https://example.com/' + 'path'.repeat(40) +
+            '](https://example.com/)\n\n```python\n' +
+            'print("' + 'code '.repeat(60) + '")\n```\n\n' +
+            '| ' + Array(20).fill('Column').join(' | ') + ' |\n' +
+            '| ' + Array(20).fill('---').join(' | ') + ' |\n' +
+            '| ' + Array(20).fill('value').join(' | ') + ' |\n';
+          await mount({kind: 'directory', name: 'vault',
+            async *entries() { yield ['wide.md', {kind: 'file', name: 'wide.md',
+              async getFile() { return new File([text], 'wide.md'); }}]; }});
+        }""")
+        page.locator('.row:has-text("wide.md")').click()
+        page.wait_for_selector('.pv-markdown table')
+        page.keyboard.press('ArrowRight')
+        for width, height in ((390, 844), (320, 568), (844, 390), (1500, 900)):
+            page.set_viewport_size({"width": width, "height": height})
+            for fullscreen in (False, True):
+                if fullscreen:
+                    page.locator('#pv-fullscreen').click()
+                page.wait_for_function("""() => {
+                  const pane = document.querySelector('#preview').getBoundingClientRect();
+                  return pane.left >= -1 && pane.right <= innerWidth + 1;
+                }""")
+                sizes = page.evaluate("""() => {
+                  const body = document.querySelector('.pv-body');
+                  return {width: body.clientWidth, scroll: body.scrollWidth};
+                }""")
+                assert sizes['scroll'] <= sizes['width'] + 1, (width, fullscreen, sizes)
+                assert page.locator('.pv-markdown strong').inner_text() == 'bold'
+                assert page.locator('.pv-markdown em').inner_text() == 'italic'
+                assert page.locator('.pv-markdown a').get_attribute('href') == 'https://example.com/'
+                assert 'code ' * 60 in page.locator('.pv-markdown pre').text_content()
+                table = page.locator('.pv-markdown table')
+                assert table.locator('td').count() == 20
+                assert table.evaluate("""e => {
+                  e.scrollLeft = e.scrollWidth;
+                  return e.scrollWidth <= e.clientWidth + e.scrollLeft + 1;
+                }""")
+                if fullscreen:
+                    page.locator('#pv-fullscreen').click()
+    finally:
+        browser.close()
+        httpd.shutdown()
+        httpd.server_close()
