@@ -198,8 +198,9 @@ these browser modules; they add no DOM dependency to `ui/core/model/`.
 2026-09-20 update: touch fullscreen uses a same-URL history entry in the
 shared browser renderer. Back and Exit fullscreen restore the existing preview;
 Forward restores the fullscreen layout. Browser tests cover both editions and
-native fullscreen availability. The DOM-free model and desktop history stay
-unchanged.
+native fullscreen availability. Fullscreen state survives reload; history steps
+that change the file or preview mode still use the router. The DOM-free model
+and desktop history stay unchanged.
 
 `ui/core/styles.css` has no media query except `prefers-reduced-motion`.
 There are no touch or pointer handlers. Narrow screens are handled by clamps
