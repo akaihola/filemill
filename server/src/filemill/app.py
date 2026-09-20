@@ -299,7 +299,10 @@ def api_preview(request, p: str = ""):
     target = _api_target(p, _zones(request))
     if target is None or not target.is_file():
         return HTMLResponse("Not found", status_code=404)
-    return HTMLResponse(render_preview(target), headers={"Cache-Control": "no-store"})
+    return HTMLResponse(
+        render_preview(target, preview_url=escape(urls.build_url(p), quote=True)),
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @rt("/api/save", methods=["POST"])
