@@ -2261,3 +2261,36 @@ def test_markdown_source_tokens(bundle, playwright):
         assert host.locator("img").count() == 0
     finally:
         browser.close()
+
+
+def test_markdown_source_link_boundaries(bundle, playwright):
+    cases = [
+        ("paragraph code", "`open\n\n[visible](next.md)\n\nclose`", ["/notes/next.md?filemill=render"]),
+        ("paragraph label", "[broken\n\nlabel](hidden.txt)\n\n[visible](next.md)", ["/notes/next.md?filemill=render"]),
+        ("code in label", "[caption `]` text](next.md)", ["/notes/next.md?filemill=render"]),
+        ("uppercase URLs", "HTTPS://example.org/page WWW.example.org", ["HTTPS://example.org/page", "http://WWW.example.org"]),
+        ("autolinks", "<person@example.org> <ftp://example.org/file>", ["mailto:person@example.org", "ftp://example.org/file"]),
+        ("empty destination", "[empty]()", [""]),
+        ("angle destination", "[angle]( <file(name.md> )", ["/notes/file(name.md?filemill=render"]),
+        ("escaped title", r"[title](next.md 'don\'t')", ["/notes/next.md?filemill=render"]),
+        ("multiline code", "`code\n[not a link](hidden.txt)`", []),
+    ]
+    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
+    try:
+        page = browser.new_page()
+        page.goto(bundle.as_uri())
+        page.wait_for_function("typeof renderNode === 'function'")
+        failures = []
+        for label, source, expected in cases:
+            actual = page.evaluate("""async text => {
+              const host = document.createElement('div');
+              host.innerHTML = await renderNode(
+                {name: 'test.md', rel: 'notes/test.md'}, new Blob([text]), 'text');
+              return {text: host.textContent,
+                links: [...host.querySelectorAll('a')].map(a => a.getAttribute('href'))};
+            }""", source)
+            if actual != {"text": source, "links": expected}:
+                failures.append({"case": label, "actual": actual, "expected": expected})
+        assert failures == [], json.dumps(failures, indent=2)
+    finally:
+        browser.close()

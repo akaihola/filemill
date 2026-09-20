@@ -2429,6 +2429,7 @@ const jsonCollapse = {
 /* ═══ core/markdown-links.js ═══ */
 /* Shared destinations for rendered Markdown and highlighted source. */
 function markdownHref(href, dir) {
+  if (!href) return href;
   // Browsers ignore controls in schemes. Reject them before path resolution.
   const scheme = href.replace(/%0[0-9a-f]|%1[0-9a-f]|%20|%7f/gi, "")
     .replace(/[\s\p{Cc}]/gu, "");
@@ -2481,15 +2482,30 @@ function markdownDestination(raw) {
 const mdSpan = (text, kind) => `<span class="hl-${kind}">${esc(text)}</span>`;
 const mdReference = (label) => label.trim().replace(/\s+/g, " ").toUpperCase();
 
+/* Inline code can cross soft line breaks, but never a block boundary. */
+function mdCodeEnd(text, start) {
+  const runs = /`+/g;
+  runs.lastIndex = start;
+  const open = runs.exec(text)[0];
+  let close;
+  while ((close = runs.exec(text))) {
+    if (close[0] === open) return runs.lastIndex;
+  }
+  return -1;
+}
+
 /* Find the end of a balanced label/destination without treating escaped
    punctuation as a delimiter. A broken link stays literal source. */
 function mdClosing(text, start, open, close) {
   let depth = 1;
   for (let i = start + 1; i < text.length; i++) {
     if (text[i] === "\\") i++;
-    else if (
+    else if (open === "[" && text[i] === "`") {
+      const end = mdCodeEnd(text, i);
+      if (end >= 0) i = end - 1;
+    } else if (
       open === "(" &&
-      ((text[i] === "<" && i === start + 1) ||
+      ((text[i] === "<" && !text.slice(start + 1, i).trim()) ||
         ((text[i] === '"' || text[i] === "'") && /\s/.test(text[i - 1])))
     ) {
       const delimiter = text[i] === "<" ? ">" : text[i];
@@ -2506,29 +2522,25 @@ function mdClosing(text, start, open, close) {
 }
 
 function mdTarget(text) {
+  if (!text.trim()) return "";
   const match =
-    /^(?:<([^<>\n]*)>|((?:\\.|[^\\\s])+?))(?:\s+(?:"[^"\n]*"|'[^'\n]*'|\([^\n]*\)))?\s*$/
+    /^(?:<([^<>\n]*)>|((?:\\.|[^\\\s])+?))(?:\s+(?:"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|\([^\n]*\)))?\s*$/
       .exec(text.trim());
   return match ? markdownDestination(match[1] ?? match[2]) : null;
 }
 
 function mdInline(text, references, dir, links) {
   const tokens =
-    /\\[!"#$%&'()*+,\-./:;<=>?@[\]\\^_`{|}~]|`+|!?\[|<[^<>\n]+>|(?:https?:\/\/|www\.)[^\s<>]+/g;
+    /\\[!"#$%&'()*+,\-./:;<=>?@[\]\\^_`{|}~]|`+|!?\[|<[^<>\n]+>|(?:https?:\/\/|www\.)[^\s<>]+/gi;
   let out = "", last = 0, match;
   while ((match = tokens.exec(text))) {
     let end = tokens.lastIndex, href = null, kind = null;
     const token = match[0];
     if (token[0] === "`") {
-      const runs = /`+/g;
-      runs.lastIndex = end;
-      let close;
-      while ((close = runs.exec(text))) {
-        if (close[0] === token) {
-          end = runs.lastIndex;
-          kind = "str";
-          break;
-        }
+      const close = mdCodeEnd(text, match.index);
+      if (close >= 0) {
+        end = close;
+        kind = "str";
       }
     } else if (token === "[" || token === "![") {
       const start = match.index + token.length - 1;
@@ -2551,8 +2563,13 @@ function mdInline(text, references, dir, links) {
       }
     } else if (token[0] === "<") {
       const url = token.slice(1, -1);
-      if (/^(?:https?:\/\/|mailto:)/i.test(url)) {
+      if (/^[a-z][a-z0-9+.-]{1,31}:[^\s]*$/i.test(url)) {
         href = markdownDestination(url);
+      } else if (
+        /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*$/i
+          .test(url)
+      ) {
+        href = "mailto:" + markdownDestination(url);
       }
     } else if (token[0] !== "\\") {
       // Sentence punctuation is not part of a bare URL. Balanced URL brackets are.
@@ -2567,7 +2584,7 @@ function mdInline(text, references, dir, links) {
       }
       end = match.index + url.length;
       href = markdownDestination(
-        url.startsWith("www.") ? "http://" + url : url,
+        /^www\./i.test(url) ? "http://" + url : url,
       );
     }
     const raw = text.slice(match.index, end);
@@ -2600,7 +2617,8 @@ function markdownSource(text, node) {
         if (close.test(lines[i])) break;
       }
       kind = "str";
-    } else if (/^(?: {4}|\t)/.test(source)) kind = "str";
+    } else if (!source.trim()) kind = "blank";
+    else if (/^(?: {4}|\t)/.test(source)) kind = "str";
     else if (/^ {0,3}#{1,6}(?:\s|$)/.test(source)) kind = "heading";
     else if (source.trim() && /^ {0,3}(?:=+|-+)\s*$/.test(lines[i + 1] || "")) {
       source += lines[++i];

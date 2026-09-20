@@ -1652,6 +1652,9 @@ def test_markdown_link_paths_and_queries(page, ui_root, view):
         ),
         ("spaces", "<space name.md>", "/notes/deep/space%20name.md?filemill=render"),
         ("balanced", "file(a).md", "/notes/deep/file(a).md?filemill=render"),
+        ("empty", "", ""),
+        ("angle", " <file(name.md> ", "/notes/deep/file(name.md?filemill=render"),
+        ("quoted", r"next.md 'don\'t'", "/notes/deep/next.md?filemill=render"),
         ("titled", 'leaf.md "Title ("', "/notes/deep/leaf.md?filemill=render"),
         ("unicode", "note😀.md", "/notes/deep/note%F0%9F%98%80.md?filemill=render"),
         ("escaped", r"file\(b\).md", "/notes/deep/file(b).md?filemill=render"),
@@ -1673,7 +1676,9 @@ def test_markdown_link_paths_and_queries(page, ui_root, view):
     for label, _, expected in cases:
         link = page.locator("#pv-content a", has_text=label)
         assert link.count() == 1
-        assert link.get_attribute("href") == (expected or f"/w/{mount}/note.md")
+        assert link.get_attribute("href") == (
+            expected if expected is not None else f"/w/{mount}/note.md"
+        )
     if view == "highlight":
         assert page.locator("#preview .pv-text").text_content() == source
 
