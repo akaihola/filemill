@@ -82,11 +82,6 @@ Rules for TASKS.md usage are at the bottom of the file.
     even when there's ample horizontal space available. Paragraphs should be filled out
     to the available width just like in Markdown rendering.
 
-- [*] If I exit a fullscreen preview on a mobile phone using the browser's Back button,
-  I get an empty screen with the label `Select a file to preview`, and the only way to
-  get out is to use the browser's forward button. After entering fullscreen mode, the
-  Back button should behave identically to the `Exit fullscreen` button.
-
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
 
@@ -118,6 +113,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [*] If I exit a fullscreen preview on a mobile phone using the browser's Back button,
+  I get an empty screen with the label `Select a file to preview`, and the only way to
+  get out is to use the browser's forward button. After entering fullscreen mode, the
+  Back button should behave identically to the `Exit fullscreen` button.
 
 - [*] There's no way to access the file context menu on desktop browsers. On touch
   devices, a long touch does show it. Also, the context menu is transparent and very
