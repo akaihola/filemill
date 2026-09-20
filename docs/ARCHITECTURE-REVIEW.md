@@ -21,6 +21,16 @@ of 2026-09-04. `docs/ROADMAP.md` turns the findings into ordered work.
   small, well reasoned and unusually well explained. The gap to world-class
   is real, but it is a gap of discipline, not of design.
 
+## Test baseline update, 2026-09-20
+
+The red-suite blocker below is historical. The combined suite now passes
+761 tests, and the modular static suite passes 45. All six pre-commit hooks
+and the model checks pass. The root pytest configuration collects both suites;
+CI keeps its browser installation step. See the
+[dispositions and review evidence](testing/remaining-red-tests.md) for the
+256 historical failure IDs, repairs, obsolete expectations and remaining
+non-failing warnings.
+
 ## What is healthy
 
 Keep these. They are the parts of the project that already meet the goals.
