@@ -334,3 +334,31 @@ def test_selected_scalar_preview(bundle, playwright, source):
         )
     finally:
         browser.close()
+
+
+@pytest.mark.parametrize("count", [20, 999, 1000])
+def test_mounted_root_paints_visible_rows(bundle, playwright, count):
+    with playwright.chromium.launch(args=["--allow-file-access-from-files"]) as browser:
+        page = browser.new_page(viewport={"width": 1000, "height": 900})
+        page.goto(bundle.as_uri())
+        page.wait_for_function("typeof mount === 'function'")
+        page.evaluate("""async count => {
+            await mount({kind: 'directory', name: 'root',
+                async *entries() {
+                    for (let i = 0; i < count; i++) {
+                        const name = `item-${String(i).padStart(4, '0')}.txt`;
+                        yield [name, {kind: 'file', name,
+                            async getFile() {return new File(['hello'], name);}}];
+                    }
+                }});
+        }""", count)
+        page.wait_for_function("""() => {
+            const body = document.querySelector('.col[data-i="0"] .col-body');
+            const rows = [...body.querySelectorAll('.row')];
+            const last = rows.at(-1)?.getBoundingClientRect();
+            return rows.length === path[0].kids.length ||
+                last?.bottom >= body.getBoundingClientRect().bottom;
+        }""", timeout=2000)
+        page.locator('.col[data-i="0"] .row').first.click()
+        page.wait_for_function("sel[0] === 'item-0000.txt'")
+        assert page.locator('#preview .pv-text').inner_text() == 'hello'

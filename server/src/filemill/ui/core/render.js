@@ -225,8 +225,7 @@ function buildCol(node) {
     );
     for (let i = first; i < last; i++) makeRow(i);
   };
-  if (virtual) paintRange();
-  else kids.forEach((_, i) => makeRow(i));
+  if (!virtual) kids.forEach((_, i) => makeRow(i));
   body.onscroll = () => {
     paintRange();
     paintTrail();
@@ -238,6 +237,7 @@ function buildCol(node) {
     kids,
     rows,
     ensureRow: makeRow,
+    paintRange,
     kidsRef: node.kids,
     metaRef: !!node.metaDone,
     dot: el.querySelector(".dot"),
@@ -333,6 +333,7 @@ export function render(keepScroll) {
     root.classList.toggle("pv-only", !!previewNode());
   }
   for (const c of cols) {
+    c.paintRange();
     c.el.classList.toggle(
       "scrollable-down",
       c.body.scrollHeight > c.body.clientHeight + SCROLL_HINT_PADDING,
