@@ -17,24 +17,14 @@ Rules for TASKS.md usage are at the bottom of the file.
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
     - Depends on: [29]
 
-- [*] reStructuredText paragraphs are rendered very narrow. For example in`/home/agent/prg/feedtask/README.rst`, a the source for a paragraph is:
-    ```rst
-    A command-line tool to capture stdin and command output for AI tools
-    (like `Roo Code`_, an AI-powered coding assistant for VSCode).
-    ```
-    and it's rendered as
-    ```
-    A command-line tool to capture stdin and command output for AI tools (like Roo Code, an AI-powered coding assistant for VSCode).
-```
+- [*] `<file>.md?filemill=highlight` doesn't highlight Markdown files correctly.
+  Headings and URLs are not highlighted, apostrophes cause highlighting of everything
+  between them, even if they're just part of a word. Links are not highlighted. Also,
+  I'd like Markdown links to actually act as clickable links just like in the rendered
+  Markdown preview.
 
-## Scheduled
-
-- [*] There's no way to access the file context menu on desktop browsers. On touch
-  devices, a long touch does show it. Also, the context menu is transparent and very
-  hard to read. And the `Delete` item is missing from the menu.
-
-- [*] Fix all remaining red tests (listed in project memory), including the one-line
-  cause of the newest root-column regression.
+- [*] On a portrait mobile phone, Markdown preview is wider than the screen. Contents
+  overflow horizontally both at the left and right edges.
 
 - [*] If I exit a fullscreen preview on a mobile phone using the browser's Back button,
   I get an empty screen with the label `Select a file to preview`, and the only way to
@@ -45,14 +35,52 @@ Rules for TASKS.md usage are at the bottom of the file.
   `Delete failed: actions.render is not a function` on the bottom status line (after
   confirming deletion).
 
-- [*] `<file>.md?filemill=highlight` doesn't highlight Markdown files correctly.
-  Headings and URLs are not highlighted, apostrophes cause highlighting of everything
-  between them, even if they're just part of a word. Links are not highlighted. Also,
-  I'd like Markdown links to actually act as clickable links just like in the rendered
-  Markdown preview.
+- [*] There's no way to access the file context menu on desktop browsers. On touch
+  devices, a long touch does show it. Also, the context menu is transparent and very
+  hard to read. And the `Delete` item is missing from the menu.
 
-- [*] On a portrait mobile phone, Markdown preview is wider than the screen. Contents
-  overflow horizontally both at the left and right edges.
+- [*] Fix all remaining red tests (listed in project memory), including the one-line
+  cause of the newest root-column regression.
+
+- [*] reStructuredText paragraphs are rendered very narrow. For example
+  in`/home/agent/prg/feedtask/README.rst`, a the source for a paragraph is:
+
+    ```rst
+    A command-line tool to capture stdin and command output for AI tools
+    (like `Roo Code`_, an AI-powered coding assistant for VSCode).
+    ```
+
+    and it's rendered as
+
+    ```
+    A command-line tool to capture stdin and command output for AI tools (like
+    Roo Code, an AI-powered coding assistant for VSCode).
+    ```
+
+    even when there's ample horizontal space available. Paragraphs should be filled out
+    to the available width just like in Markdown rendering.
+
+- [*] Add the `Delete` key as a shortcut to delete the current file or directory.
+
+- [*] When the relative path of a file or folder is copied successfully using `Ctrl+C`
+  or a context menu item, show the copied path in the status bar, truncated if
+  necessary. Pressing `Ctrl+C` again within 5 seconds and before any other interaction
+  must copy the full path, and a third press must copy the item's name only. A fourth
+  press must start the rotation over from the relative path.
+
+- [*] When returning focus back to the containing folder from the preview pane using the
+  left arrow key, always keep all ancestor folder columns in the same expanded/collapsed
+  state as they are. Currently expanded ancestor folders are collapsed if I hit the left
+  arrow key.
+
+- [*] Pressing the right arrow key when the preview pane is focused currently widens the
+  pane in small steps. It should instead collapse the leftmost expanded folder column
+  fully. When all columns are collapsed, it already correctly scrolls them out of view
+  to the left to fill the window with the preview. One more press must go fullscreen,
+  similar to pressing the `Fullscreen` button. A left arrow press must exit fullscreen,
+  equivalent to `Esc`.
+
+## Scheduled
 
 - [*] In hierarchical navigation of `.json`, `.jsonl`, and SQLite `.db` files, when the
   key of a scalar value is highlighted, show its value in the preview pane instead of
@@ -490,27 +518,31 @@ Here are the rules for TASKS.md usage:
 
 ### Workflow for new issue completion
 
+Below, `<filename>@<branch>` means you must operate on the file in the specified branch.
+
 1. Choose issue and schedule work (typically by a heartbeat)
 
-- Pick the first backlog issue with no dependency to any uncompleted issue.
-- Move it under `## Scheduled` in `TASKS.md` and remove it from `## Ordered backlog` in
-  the `main` branch and commit.
+- Pick a backlog issue from `TASKS.md@main`. Pick the first issue that has no dependency
+  to any uncompleted issue.
+- Move it under `## Scheduled` in `TASKS.md@main` and remove it from
+  `## Ordered backlog` and commit `main`.
 
 2. Work on the issue (typically by a task workflow)
 
-- Move the issue under `## In Progress` in `TASKS.md` in the worktree branch, ensure
-  it's not in `## Ordered backlog`, and commit.
-- Create or update, review and refine a plan in docs/tasks/<N-issue-description>.md in
-  `main` if more description is needed than nicely fits in a bullet point. If you
-  created a plan document, link to it using a new `[N]` reference-style link.
-- Commit description file (if any) and TASKS.md in `main`.
-- Rebase the worktree feature branch on `main` before moving the issue, and keep it
-  rebased afterwards.
+- Move the issue under `## In Progress` in `TASKS.md@<worktree-branch>`, ensure no copy
+  is left in `## Ordered backlog`.
+- Create or update, review and refine a plan in
+  `docs/tasks/<N-issue-description>.md@<worktree-branch>`, if more description is needed
+  than nicely fits in a bullet point. If you created a plan document, link to it using a
+  new `[N]` reference-style link.
+- If needed, reword the issue in `TASKS.md@<worktree-branch>` to be more accurate.
+- Commit description file (if any) and `TASKS.md@<worktree-branch>`.
 - Implement the plan, and lint, test, review and refine the implementation in the
   worktree feature branch.
 
 3. Merge and deploy (typically by last steps of a task workflow)
 
+- Rebase the worktree feature branch on `main` and resolve any conflicts.
 - Merge the rebased branch on `main`, and remove the worktree and branch.
-- Move the issue from `## In Progress` to `## Completed` in TASKS.md and commit.
+- Move the issue from `## In Progress` to `## Completed` in `TASKS.md@main` and commit.
 - Do any deployment steps if defined in the general development worklow.
