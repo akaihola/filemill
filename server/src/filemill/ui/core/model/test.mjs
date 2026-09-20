@@ -145,6 +145,39 @@ setState({
   sel: [],
 });
 assert.equal(previewNode(), path[0]);
+for (const value of [false, 0, null, "", "first\nsecond"]) {
+  const scalar = { name: "scalar", dir: false, json: true, value };
+  const object = { name: "object", dir: true, json: true, value: {} };
+  const parent = {
+    name: "data.json",
+    dir: true,
+    json: true,
+    value: { scalar: value, object: {} },
+    kids: [scalar, object],
+  };
+  setState({ path: [tree, parent], sel: ["data.json", "scalar"] });
+  assert.equal(previewNode(), scalar);
+  assert.deepEqual(locationState("highlight", "root/data.json"), {
+    key: "root/data.json",
+    replace: true,
+    location: {
+      root: "root",
+      path: ["data.json", "scalar"],
+      view: "highlight",
+    },
+  });
+  for (const selection of [undefined, "object"]) {
+    setState({ sel: ["data.json", selection] });
+    assert.equal(previewNode(), parent);
+    assert.equal(locationState("highlight", null).location.view, undefined);
+  }
+}
+const emptyKey = { name: "", dir: false, json: true, value: "empty key" };
+setState({
+  path: [{ json: true, value: { "": "empty key" }, kids: [emptyKey] }],
+  sel: [""],
+});
+assert.equal(previewNode(), emptyKey);
 assert.equal(taSearch(["a-note", "note", "n_o_t_e"], "note"), 1);
 assert.equal(taSearch(["a-note", "n_o_t_e"], "note"), 0);
 assert.equal(taSearch(["n_o_t_e"], "note"), 0);
