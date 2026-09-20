@@ -195,6 +195,10 @@ export function openRowMenu(node, parent, row, event) {
 export function rowMenuKey(event) {
   const menu = document.getElementById("row-menu");
   if (menu.hidden) return false;
+  if (event.key === "F5") {
+    closeRowMenu();
+    return false;
+  }
   if (event.key === "Escape" || event.key === "Tab") {
     closeRowMenu();
     if (event.key === "Escape") event.preventDefault();

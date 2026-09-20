@@ -1850,6 +1850,7 @@ def test_context_menu_delete_during_navigation(page, ui_root):
     assert page.get_by_role("menuitem", name="Delete", exact=True).is_disabled()
     page.keyboard.press("Escape")
     page.locator('.col[data-i="0"] .row[aria-label="code"]').click()
+    page.wait_for_url("**/n/code")
     before = page.url
     page.evaluate("window.finishDelete()")
     assert page.url == before
@@ -1955,3 +1956,16 @@ def test_context_menu_delete_stays_disabled_after_reload(page, ui_root, folder):
     page.evaluate("window.finishDelete()")
     row.wait_for(state="detached")
     assert not (ui_root / folder / "short.txt").exists()
+
+
+def test_context_menu_preserves_keyboard_refresh(page, ui_root):
+    page.open("notes/plain.txt")
+    page.evaluate("window.contextMenuSentinel = 42")
+    (ui_root / "notes" / "fresh.txt").write_text("new file")
+    page.keyboard.press("Shift+F10")
+    page.locator("#row-menu").wait_for(state="visible")
+    page.keyboard.press("F5")
+    page.locator("#row-menu").wait_for(state="hidden", timeout=5000)
+    page.locator('.col[data-i="1"] .row[aria-label="fresh.txt"]').wait_for()
+    assert page.evaluate("window.contextMenuSentinel") == 42
+    assert page.evaluate("sel[1]") == "plain.txt"
