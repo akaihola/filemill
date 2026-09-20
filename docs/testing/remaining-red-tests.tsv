@@ -1,0 +1,257 @@
+node_id	disposition
+static/test-rich.py::test_rich	local PPTX renderer contract
+static/test-ui.py::test_ui	fixture/registry/selector defects; see report
+static/test-url.py::test_url	hash/history contract; see report
+static/test-url.py::test_fullscreen_survives_resize	temporary fixture-parameter rename during runner repair; corrected before retry
+server/tests/test_api.py::test_dir_owns_stable_entry_order	fixture drift: expected list omitted media and desktop files
+server/tests/test_api.py::test_large_directory_is_paginated_in_stable_order	fixture drift: shared root count; use isolated 501-entry directory
+server/tests/test_api.py::test_directory_at_page_limit_keeps_small_response	fixture drift: shared root count; use isolated 500-entry directory
+server/tests/test_api.py::test_html_preview_iframe_uses_the_canonical_file_path	broken behavior: preview omitted canonical nested resource URL
+server/tests/test_browser_keyboard.py::test_arrow_left_keeps_browser_url_in_sync	obsolete bare-file URL assertion; rendered view parameter is retained
+server/tests/test_browser_keyboard.py::test_nested_column_navigation_keeps_root_mount_in_url	obsolete bare-file URL assertion; rendered view parameter is retained
+server/tests/test_browser_keyboard.py::test_legacy_query_url_canonicalizes_after_nested_navigation	obsolete legacy /f/ route disabled in 0cae978; removed
+server/tests/test_browser_keyboard.py::test_rendered_relative_markdown_link_uses_root_relative_url	obsolete /f/ entry URL; use root-relative rendered resource
+server/tests/test_browser_keyboard.py::test_rendered_home_markdown_link_uses_the_symlink_mount_once	broken behavior: duplicated mount prefix in home Markdown link
+server/tests/test_browser_keyboard.py::test_mobile_directory_restore_runtime_scroll_position_is_stable	obsolete /f/ restore URL and HTMX selector; retain runtime scroll assertions
+server/tests/test_browser_keyboard.py::test_mobile_file_restore_runtime_scroll_position_is_stable	obsolete /f/ restore URL and HTMX selector; retain runtime scroll assertions
+server/tests/test_browser_keyboard.py::test_mobile_file_restore_scroll_position_is_not_zero	obsolete /f/ restore URL and HTMX selector; retain runtime scroll assertions
+server/tests/test_browser_keyboard.py::test_mobile_restore_runtime_scroll_regression_is_covered	obsolete /f/ restore URL and HTMX selector; retain runtime scroll assertions
+server/tests/test_browser_keyboard.py::test_mobile_restore_preview_runtime_scroll_regression_is_covered	obsolete /f/ restore URL and HTMX selector; retain runtime scroll assertions
+server/tests/test_browser_keyboard.py::test_mobile_restore_regression_directory_only	obsolete /f/ restore URL and HTMX selector; retain runtime scroll assertions
+server/tests/test_browser_keyboard.py::test_mobile_restore_regression_preview_only	obsolete /f/ restore URL and HTMX selector; retain runtime scroll assertions
+server/tests/test_browser_keyboard.py::test_mobile_restore_behavior_preview_assertions	obsolete /f/ restore URL and HTMX selector; retain runtime scroll assertions
+server/tests/test_browser_new_ui.py::test_clicking_a_folder_opens_its_column	fixture drift: short.txt added to notes
+server/tests/test_browser_new_ui.py::test_vtt_highlight_view_keeps_the_source_fallback	broken behavior: highlighted VTT dispatched to rich renderer
+server/tests/test_browser_new_ui.py::test_the_url_path_mirrors_the_file_path	obsolete assertion: preserve filemill=render for files
+server/tests/test_browser_new_ui.py::test_preview_arrows_fold_all_then_restore_only_document_parent	obsolete layout assertion: preview entry preserves folding
+server/tests/test_browser_new_ui.py::test_back_steps_out_of_the_folder_it_entered	broken loading history writes; test also entered an unintended child
+server/tests/test_browser_new_ui.py::test_arrow_navigation_folds_but_never_unfolds	obsolete variable-width setup after fixed-width columns; retain fold checks
+server/tests/test_browser_new_ui.py::test_pptx_preview_preserves_slide_text_spacing_in_both_views[render]	broken behavior: slide paragraphs collapsed extracted newlines
+server/tests/test_browser_new_ui.py::test_pptx_preview_preserves_slide_text_spacing_in_both_views[highlight]	broken behavior: slide paragraphs collapsed extracted newlines
+server/tests/test_browser_new_ui.py::test_the_resource_route_keeps_the_query_while_you_browse	obsolete assertion: view parameter belongs to files, not directories
+server/tests/test_browser_new_ui.py::test_raw_navigation_stays_in_the_file_manager	obsolete assertion: Raw serves actual file bytes; Back returns to finder
+server/tests/test_browser_new_ui.py::test_back_from_raw_restores_the_previous_rendered_file	incorrect containing column index; retain rendered Back restoration
+server/tests/test_browser_new_ui.py::test_back_and_forward_restore_folder_preview_and_raw_states	obsolete raw/column assertions and broken phantom-root history entry
+server/tests/test_browser_new_ui.py::test_highlight_shows_the_source_in_the_columns	broken behavior: /n/ ignored view query and local preview ignored source kind
+server/tests/test_browser_new_ui.py::test_a_jsonl_row_previews_in_the_browser_without_asking_the_server	obsolete table assertion after JSON hierarchy; retain values and no server preview
+server/tests/test_browser_new_ui.py::test_csv_without_unique_column_names_rows_individually	fixture accidentally has unique note column; use duplicate notes for fallback
+server/tests/test_browser_new_ui.py::test_csv_unique_dot_labels_fall_back_to_visible_row_names	fixture accidentally has unique note column; use duplicate notes for fallback
+server/tests/test_cli.py::test_main_default_root_uses_cwd	obsolete ROOT assertion; root-state isolation
+server/tests/test_pwa.py::test_shared_ui_explains_unavailable_server	ES-module shell assertion
+server/tests/test_resource_routes.py::test_bare_path_serves_the_file_bytes	CLI root-state leakage
+server/tests/test_resource_routes.py::test_bare_path_serves_bytes_for_browser_navigation	CLI root-state leakage
+server/tests/test_resource_routes.py::test_bare_path_serves_css_as_css	CLI root-state leakage
+server/tests/test_resource_routes.py::test_bare_path_serves_an_image_as_bytes	CLI root-state leakage
+server/tests/test_resource_routes.py::test_bare_path_serves_html_as_html	CLI root-state leakage
+server/tests/test_resource_routes.py::test_raw_view_is_identical_to_the_bare_path	CLI root-state leakage
+server/tests/test_resource_routes.py::test_raw_view_serves_bytes_with_the_detected_media_type[docs/readme.md-text/markdown]	CLI root-state leakage
+server/tests/test_resource_routes.py::test_raw_view_serves_bytes_with_the_detected_media_type[site/main.css-text/css]	CLI root-state leakage
+server/tests/test_resource_routes.py::test_raw_view_serves_bytes_with_the_detected_media_type[photo.png-image/png]	CLI root-state leakage
+server/tests/test_resource_routes.py::test_raw_view_serves_bytes_with_the_detected_media_type[page.html-text/html]	CLI root-state leakage
+server/tests/test_resource_routes.py::test_a_space_in_a_path_is_served	CLI root-state leakage
+server/tests/test_resource_routes.py::test_document_views_serve_the_shared_shell[render]	CLI root-state leakage
+server/tests/test_resource_routes.py::test_document_views_serve_the_shared_shell[highlight]	CLI root-state leakage
+server/tests/test_resource_routes.py::test_no_columns_layout_serves_the_shared_shell	CLI root-state leakage
+server/tests/test_resource_routes.py::test_full_columns_layout_serves_the_shared_ui	CLI root-state leakage
+server/tests/test_resource_routes.py::test_compressed_columns_reaches_the_shared_ui	CLI root-state leakage
+server/tests/test_resource_routes.py::test_layout_is_reported_on_the_body	CLI root-state leakage
+server/tests/test_resource_routes.py::test_invalid_query_values_serve_the_default_representation[?filemill=nonsense]	CLI root-state leakage
+server/tests/test_resource_routes.py::test_invalid_query_values_serve_the_default_representation[?layout=wide]	CLI root-state leakage
+server/tests/test_resource_routes.py::test_invalid_query_values_serve_the_default_representation[?hidden=maybe]	CLI root-state leakage
+server/tests/test_resource_routes.py::test_invalid_query_values_serve_the_default_representation[?filemill=nonsense&layout=nonsense&hidden=nonsense]	CLI root-state leakage
+server/tests/test_resource_routes.py::test_trailing_slash_redirects_a_file_to_the_rendered_view	CLI root-state leakage
+server/tests/test_resource_routes.py::test_trailing_slash_preserves_other_query_parameters	CLI root-state leakage
+server/tests/test_resource_routes.py::test_explicit_raw_view_overrides_trailing_slash	CLI root-state leakage
+server/tests/test_resource_routes.py::test_repeated_view_takes_the_last_occurrence	CLI root-state leakage
+server/tests/test_resource_routes.py::test_unknown_query_parameters_are_ignored	CLI root-state leakage
+server/tests/test_resource_routes.py::test_directory_serves_the_shared_ui	CLI root-state leakage
+server/tests/test_resource_routes.py::test_directory_with_no_columns_serves_the_shell	CLI root-state leakage
+server/tests/test_resource_routes.py::test_root_relative_directory_with_a_trailing_slash	CLI root-state leakage
+server/tests/test_resource_routes.py::test_markdown_link_targets_the_files_own_path	CLI root-state leakage
+server/tests/test_resource_routes.py::test_markdown_image_src_is_left_relative_and_now_resolves	CLI root-state leakage
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[--/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[--/..%2F..%2Foutside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[--/docs/%2e%2e/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[--/%252e%252e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[--/docs/escape]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[--/docs/escape_dir/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[--/bookmark/cross_link]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[--/%2e%2e/menuEVIL/evil.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[--/etc/passwd]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[--/....//outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-raw-/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-raw-/..%2F..%2Foutside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-raw-/docs/%2e%2e/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-raw-/%252e%252e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-raw-/docs/escape]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-raw-/docs/escape_dir/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-raw-/bookmark/cross_link]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-raw-/%2e%2e/menuEVIL/evil.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-raw-/etc/passwd]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-raw-/....//outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-render-/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-render-/..%2F..%2Foutside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-render-/docs/%2e%2e/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-render-/%252e%252e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-render-/docs/escape]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-render-/docs/escape_dir/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-render-/bookmark/cross_link]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-render-/%2e%2e/menuEVIL/evil.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-render-/etc/passwd]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-render-/....//outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-highlight-/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-highlight-/..%2F..%2Foutside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-highlight-/docs/%2e%2e/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-highlight-/%252e%252e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-highlight-/docs/escape]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-highlight-/docs/escape_dir/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-highlight-/bookmark/cross_link]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-highlight-/%2e%2e/menuEVIL/evil.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-highlight-/etc/passwd]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[-highlight-/....//outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns--/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns--/..%2F..%2Foutside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns--/docs/%2e%2e/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns--/%252e%252e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns--/docs/escape]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns--/docs/escape_dir/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns--/bookmark/cross_link]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns--/%2e%2e/menuEVIL/evil.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns--/etc/passwd]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns--/....//outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-raw-/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-raw-/..%2F..%2Foutside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-raw-/docs/%2e%2e/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-raw-/%252e%252e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-raw-/docs/escape]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-raw-/docs/escape_dir/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-raw-/bookmark/cross_link]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-raw-/%2e%2e/menuEVIL/evil.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-raw-/etc/passwd]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-raw-/....//outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-render-/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-render-/..%2F..%2Foutside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-render-/docs/%2e%2e/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-render-/%252e%252e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-render-/docs/escape]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-render-/docs/escape_dir/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-render-/bookmark/cross_link]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-render-/%2e%2e/menuEVIL/evil.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-render-/etc/passwd]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-render-/....//outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-highlight-/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-highlight-/..%2F..%2Foutside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-highlight-/docs/%2e%2e/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-highlight-/%252e%252e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-highlight-/docs/escape]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-highlight-/docs/escape_dir/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-highlight-/bookmark/cross_link]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-highlight-/%2e%2e/menuEVIL/evil.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-highlight-/etc/passwd]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[full-columns-highlight-/....//outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns--/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns--/..%2F..%2Foutside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns--/docs/%2e%2e/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns--/%252e%252e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns--/docs/escape]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns--/docs/escape_dir/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns--/bookmark/cross_link]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns--/%2e%2e/menuEVIL/evil.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns--/etc/passwd]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns--/....//outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-raw-/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-raw-/..%2F..%2Foutside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-raw-/docs/%2e%2e/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-raw-/%252e%252e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-raw-/docs/escape]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-raw-/docs/escape_dir/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-raw-/bookmark/cross_link]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-raw-/%2e%2e/menuEVIL/evil.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-raw-/etc/passwd]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-raw-/....//outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-render-/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-render-/..%2F..%2Foutside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-render-/docs/%2e%2e/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-render-/%252e%252e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-render-/docs/escape]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-render-/docs/escape_dir/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-render-/bookmark/cross_link]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-render-/%2e%2e/menuEVIL/evil.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-render-/etc/passwd]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-render-/....//outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-highlight-/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-highlight-/..%2F..%2Foutside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-highlight-/docs/%2e%2e/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-highlight-/%252e%252e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-highlight-/docs/escape]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-highlight-/docs/escape_dir/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-highlight-/bookmark/cross_link]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-highlight-/%2e%2e/menuEVIL/evil.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-highlight-/etc/passwd]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[compressed-columns-highlight-/....//outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns--/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns--/..%2F..%2Foutside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns--/docs/%2e%2e/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns--/%252e%252e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns--/docs/escape]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns--/docs/escape_dir/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns--/bookmark/cross_link]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns--/%2e%2e/menuEVIL/evil.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns--/etc/passwd]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns--/....//outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-raw-/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-raw-/..%2F..%2Foutside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-raw-/docs/%2e%2e/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-raw-/%252e%252e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-raw-/docs/escape]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-raw-/docs/escape_dir/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-raw-/bookmark/cross_link]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-raw-/%2e%2e/menuEVIL/evil.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-raw-/etc/passwd]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-raw-/....//outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-render-/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-render-/..%2F..%2Foutside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-render-/docs/%2e%2e/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-render-/%252e%252e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-render-/docs/escape]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-render-/docs/escape_dir/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-render-/bookmark/cross_link]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-render-/%2e%2e/menuEVIL/evil.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-render-/etc/passwd]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-render-/....//outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-highlight-/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-highlight-/..%2F..%2Foutside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-highlight-/docs/%2e%2e/%2e%2e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-highlight-/%252e%252e/outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-highlight-/docs/escape]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-highlight-/docs/escape_dir/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-highlight-/bookmark/cross_link]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-highlight-/%2e%2e/menuEVIL/evil.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-highlight-/etc/passwd]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_escape_is_denied_for_every_view_and_layout[no-columns-highlight-/....//outside/secret.txt]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_legitimate_file_still_resolves_for_every_view_and_layout[-]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_legitimate_file_still_resolves_for_every_view_and_layout[-raw]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_legitimate_file_still_resolves_for_every_view_and_layout[-render]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_legitimate_file_still_resolves_for_every_view_and_layout[-highlight]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_legitimate_file_still_resolves_for_every_view_and_layout[full-columns-]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_legitimate_file_still_resolves_for_every_view_and_layout[full-columns-raw]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_legitimate_file_still_resolves_for_every_view_and_layout[full-columns-render]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_legitimate_file_still_resolves_for_every_view_and_layout[full-columns-highlight]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_legitimate_file_still_resolves_for_every_view_and_layout[compressed-columns-]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_legitimate_file_still_resolves_for_every_view_and_layout[compressed-columns-raw]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_legitimate_file_still_resolves_for_every_view_and_layout[compressed-columns-render]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_legitimate_file_still_resolves_for_every_view_and_layout[compressed-columns-highlight]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_legitimate_file_still_resolves_for_every_view_and_layout[no-columns-]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_legitimate_file_still_resolves_for_every_view_and_layout[no-columns-raw]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_legitimate_file_still_resolves_for_every_view_and_layout[no-columns-render]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_legitimate_file_still_resolves_for_every_view_and_layout[no-columns-highlight]	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_resource_target_allows_a_file_under_root	resolver spy; unchanged safety assertions
+server/tests/test_resource_safety.py::test_resource_target_allows_a_bookmark_target	resolver spy; unchanged safety assertions
+server/tests/test_routes_new.py::test_web_static_serves_file_via_root_mount	CLI root-state leakage
+server/tests/test_routes_new.py::test_web_static_serves_file_via_symlink_mount	CLI root-state leakage
+server/tests/test_routes_new.py::test_web_static_correct_content_type_html	CLI root-state leakage
+server/tests/test_routes_new.py::test_web_static_sends_no_cors_header	CLI root-state leakage
+server/tests/test_routes_new.py::test_root_serves_index_html_as_is	CLI root-state leakage
+server/tests/test_routes_new.py::test_directory_serves_its_index_html_as_is	CLI root-state leakage
+server/tests/test_routes_new.py::test_directory_with_a_query_serves_the_listing	CLI root-state leakage
+server/tests/test_routes_new.py::test_directory_without_index_html_serves_the_listing	CLI root-state leakage
