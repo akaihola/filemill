@@ -17,9 +17,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
     - Depends on: [29]
 
-- [*] On a portrait mobile phone, Markdown preview is wider than the screen. Contents
-  overflow horizontally both at the left and right edges.
-
 - [*] If I exit a fullscreen preview on a mobile phone using the browser's Back button,
   I get an empty screen with the label `Select a file to preview`, and the only way to
   get out is to use the browser's forward button. After entering fullscreen mode, the
@@ -93,6 +90,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] On a portrait mobile phone, Markdown preview is wider than the screen. Contents
+  overflow horizontally both at the left and right edges.
 
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
