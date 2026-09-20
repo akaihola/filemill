@@ -27,6 +27,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+from typing import cast
 
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
@@ -144,8 +145,12 @@ def dir_json(target: Path, page: int = 1) -> JSONResponse:
         for child in target.iterdir():
             try:
                 is_dir = child.is_dir()
-                e = {"name": child.name, "dir": is_dir, "ordered": True,
-                     "abs": child.resolve().as_posix()}
+                e = {
+                    "name": child.name,
+                    "dir": is_dir,
+                    "ordered": True,
+                    "abs": child.resolve().as_posix(),
+                }
                 if not is_dir:
                     st = child.stat()
                     e["size"] = st.st_size
@@ -170,7 +175,9 @@ def dir_json(target: Path, page: int = 1) -> JSONResponse:
         denied = "No permission to read"
     except OSError as exc:
         denied = str(exc)
-    entries.sort(key=lambda e: entry_order_key(e["name"], e["dir"]))
+    entries.sort(
+        key=lambda e: entry_order_key(cast(str, e["name"]), cast(bool, e["dir"]))
+    )
     total = len(entries)
     if total > DIR_PAGE_SIZE:
         pages = math.ceil(total / DIR_PAGE_SIZE)
@@ -200,9 +207,10 @@ def _opens_as_folder(path: Path) -> bool:
     if provider is None:
         return False
     try:
-        return bool(provider.list_entries(path, "")) and classify_path(
-            path, provider=True
-        ).kind == "vfs"
+        return (
+            bool(provider.list_entries(path, ""))
+            and classify_path(path, provider=True).kind == "vfs"
+        )
     except Exception:
         return False
 
@@ -271,7 +279,10 @@ def split_vfs(rel: str, root: Path, resolve) -> tuple[str, str] | None:
             return "/".join(parts[:i]), ""
         # .jsonl is browsed on the client (ui/core/jsonl.js); its rows still
         # need a URL that reloads.
-        if REGISTRY.get(real) is not None or classify_path(real).preview in {"jsonl", "csv"}:
+        if REGISTRY.get(real) is not None or classify_path(real).preview in {
+            "jsonl",
+            "csv",
+        }:
             return "/".join(parts[:i]), "/".join(parts[i:])
         return None
     return ("", "") if not parts else None

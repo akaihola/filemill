@@ -3,8 +3,9 @@
 `../core/model/` owns nodes and column state, selection, sorting, folding
 arithmetic, keyboard actions and deep links. It has no browser dependencies.
 `../core/dom-renderer.js` holds element handles and measurements. The adjacent
-render, layout and navigation modules apply model decisions to the DOM.
-Adapters keep source-specific loading and browser URL transport. Everything source-specific is here, behind the three ports declared in
+render, layout and navigation modules apply model decisions to the DOM. Adapters
+keep source-specific loading and browser URL transport. Everything
+source-specific is here, behind the three ports declared in
 [`../core/ports.js`](../core/ports.js).
 
 Both editions load these files from here, through one entry module each:
@@ -23,7 +24,7 @@ the whole mechanism. There is no framework under it.
 | preview    | `preview-local.js` — the core renderer table     | `preview-local.js` + `preview-rich.js` — browser renderers |
 | router     | `router-hash.js` — `#r=root&p=a/b.md`            | `router-path.js` — `/a/b.md`                               |
 | boot       | `app-fsa.js` — picker + welcome screen           | `app-http.js` — root comes from the server                 |
-| extra      | `preview-rich.js` — renderers fetched from a CDN | `preview-rich.js` — local bytes, browser renderer         |
+| extra      | `preview-rich.js` — renderers fetched from a CDN | `preview-rich.js` — local bytes, browser renderer          |
 |            | `storage.js` — remembered roots in IndexedDB     |                                                            |
 
 ## The ports
@@ -37,8 +38,8 @@ Directory adapters own entry order. The contract is directories first, then
 case-insensitive names, with the adapter's tie-breaker. An adapter sets
 `ordered` when its loaded children follow that order; shared sorting preserves
 that order for the default name view. Selecting size or modified still applies
-the shared metadata sort. The HTTP adapter applies name order on the server,
-and the File System Access adapter applies equivalent browser collation while
+the shared metadata sort. The HTTP adapter applies name order on the server, and
+the File System Access adapter applies equivalent browser collation while
 loading.
 
 **`PREVIEW`** — `render(node) → Promise<string|null>`, plus an optional
@@ -64,13 +65,13 @@ test in `static/test-ui.py`.
 
 **`ROUTER`** — `read()`, `write(state, replace)`, `onNavigate(cb)`, or `null`
 for no URL sync. Core owns the mapping between a path and the column chain
-([`../core/model/deeplink.js`](../core/model/deeplink.js)). Both editions share it. Only the
-transport differs.
+([`../core/model/deeplink.js`](../core/model/deeplink.js)). Both editions share
+it. Only the transport differs.
 
 ## Why the renderers are not ported
 
-`preview-http.js` is the reason `preview.py`, `vfs.py` and `providers/` have
-no JavaScript port. docutils, Pygments and the virtual filesystems keep running
+`preview-http.js` is the reason `preview.py`, `vfs.py` and `providers/` have no
+JavaScript port. docutils, Pygments and the virtual filesystems keep running
 where they run, and their HTML lands in the same pane. Markdown and `.docx` are
 the exception: both editions render them with `preview-rich.js`, the server
 edition from the pinned modules in `ui/vendor/` (its shell sets `FILEMILL_CDN`

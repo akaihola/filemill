@@ -108,7 +108,9 @@ const withHighlighting = (provider) => ({
 const PreviewHTTP = {
   revoke() {},
   async render(n) {
-    const response = await fetch(`${API}/preview?p=${encodeURIComponent(n.rel)}`);
+    const response = await fetch(
+      `${API}/preview?p=${encodeURIComponent(n.rel)}`,
+    );
     return response.ok ? response.text() : PreviewLocal.render(n);
   },
 };
