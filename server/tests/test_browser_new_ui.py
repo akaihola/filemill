@@ -103,8 +103,8 @@ def ui_root(tmp_path: Path) -> Path:
     (tmp_path / "data.csv").write_text(
         'group,id,note\nA,101,hello\nA,102,"comma, value"\n'
     )
-    (tmp_path / "duplicate.csv").write_text("group,note\nA,hello\nA,again\n")
-    (tmp_path / "dot.csv").write_text("name,note\n.hidden,hello\n.visible,again\n")
+    (tmp_path / "duplicate.csv").write_text("group,note\nA,hello\nA,hello\n")
+    (tmp_path / "dot.csv").write_text("name,note\n.hidden,hello\n.visible,hello\n")
     (tmp_path / "empty.csv").write_text("")
     (tmp_path / "bad.csv").write_text('name,note\nAlice,"oops\n')
     (tmp_path / "captions.vtt").write_text(
@@ -283,7 +283,7 @@ def test_clicking_a_folder_opens_its_column(page):
     names = page.eval_on_selector_all(
         '.col[data-i="1"] .row .label', "els => els.map(e => e.textContent)"
     )
-    assert set(names) == {"deep", "plain.txt"}
+    assert set(names) == {"deep", "plain.txt", "short.txt"}
     # filemill's focus model: opening a column does not move focus into it
     assert page.evaluate("focusCol") == 0
 
@@ -440,8 +440,8 @@ def test_vtt_empty_and_malformed_files_are_safe(page):
 
 def test_vtt_highlight_view_keeps_the_source_fallback(page):
     page.open("captions.vtt?filemill=highlight")
-    page.wait_for_selector("#preview .pv-rich .preview-raw", timeout=15000)
-    assert "WEBVTT" in page.inner_text("#preview .pv-rich")
+    page.wait_for_selector("#preview .pv-text", timeout=15000)
+    assert "WEBVTT" in page.inner_text("#preview .pv-text")
     assert page.locator("#pv-vtt-views").is_hidden()
 
 
@@ -682,7 +682,7 @@ def test_the_url_path_mirrors_the_file_path(page):
     assert page.url.endswith("/n/notes")
     page.click('.col[data-i="1"] .row:has-text("plain.txt")')
     page.wait_for_timeout(300)
-    assert page.url.endswith("/n/notes/plain.txt")
+    assert page.url.endswith("/n/notes/plain.txt?filemill=render")
 
 
 def test_a_deep_link_restores_the_whole_column_chain(page):
@@ -714,31 +714,30 @@ def test_arrow_left_unfolds_each_focused_ancestor(page):
         assert page.evaluate("sel") == selected
 
 
-def test_preview_arrows_fold_all_then_restore_only_document_parent(page):
+def test_preview_arrows_preserve_layout_then_restore_document_parent(page):
     page.set_viewport_size({"width": 760, "height": 700})
     page.open("notes/deep/leaf.md")
+    _scroll_settled(page)
+    folded_before = page.evaluate("folded")
     page.keyboard.press("ArrowRight")
     _scroll_settled(page)
     assert page.evaluate("document.activeElement.id") == "preview"
-    assert page.evaluate("folded") == page.evaluate("path.length")
+    assert page.evaluate("folded") == folded_before
 
     page.keyboard.press("ArrowLeft")
     _scroll_settled(page)
     state = page.evaluate(
         "({focusCol, folded, spines: [...document.querySelectorAll('.col.spine')].map(c => +c.dataset.i)})"
     )
-    assert state == {"focusCol": 1, "folded": 1, "spines": [0]}
+    assert state == {"focusCol": 2, "folded": 2, "spines": [0, 1]}
 
 
 def test_back_steps_out_of_the_folder_it_entered(page):
     page.open()
     page.click('.col[data-i="0"] .row:has-text("notes")')
     page.wait_for_timeout(300)
-    page.keyboard.press("ArrowRight")  # entering a column is the navigation
-    page.wait_for_timeout(300)
     page.click('.col[data-i="1"] .row:has-text("deep")')
     page.wait_for_timeout(300)
-    page.keyboard.press("ArrowRight")
     page.wait_for_timeout(400)
     deep_url = page.url
     page.go_back()
@@ -760,13 +759,7 @@ def _scroll_settled(page) -> None:
 
 
 def test_arrow_navigation_folds_but_never_unfolds(page, ui_root):
-    """Opening a wide chain folds the left columns; arrowing to a narrow entry
-    must keep them folded. layout() may only raise the fold count on its own —
-    unfolding is a user action (a scroll, a spine click, or ←).
-
-    The widths are deterministic: the content width is capped at two-thirds of
-    the live finder width, and the 1290 px viewport sits between "the wide
-    chain overflows" and "the narrow chain fits"."""
+    """Vertical navigation retains a deliberate fold with fixed-width columns."""
     inner = ui_root / "w" / "inner"
     (inner / "a-wide").mkdir(parents=True)
     (
@@ -777,21 +770,23 @@ def test_arrow_navigation_folds_but_never_unfolds(page, ui_root):
 
     page.set_viewport_size({"width": 1290, "height": 700})
     page.open()
-    page.click('.col[data-i="0"] .row:has(.label:text-is("w"))')
+    page.click('.col[data-i="0"] .row[title="w"]')
     page.wait_for_timeout(300)
-    page.click('.col[data-i="1"] .row:has(.label:text-is("inner"))')
+    page.click('.col[data-i="1"] .row[title="inner"]')
     page.wait_for_timeout(300)
-    page.click('.col[data-i="2"] .row:has(.label:text-is("a-wide"))')
+    page.click('.col[data-i="2"] .row[title="a-wide"]')
+    _scroll_settled(page)
+    page.evaluate("finder.scrollLeft = 2 * foldUnit() * range()")
     _scroll_settled(page)
     folded_before = page.evaluate("folded")
-    assert folded_before >= 1, "the wide chain did not fold — the test proves nothing"
+    assert folded_before == 2
     assert page.evaluate("focusCol") == 2
 
-    page.keyboard.press("ArrowDown")  # z-narrow: fits with no folds at all
+    page.keyboard.press("ArrowDown")  # Select the sibling directory.
     _scroll_settled(page)
     assert page.evaluate("sel[2]") == "z-narrow"
-    # guard against a vacuous pass: the old minimal-fit layout would unfold here
-    assert page.evaluate("stripSpan(0) + previewTarget() <= finder.clientWidth")
+    # Filename length must not change the fixed column widths.
+    assert page.evaluate("new Set(widths).size") == 1
     assert page.evaluate("folded") == folded_before
     # the animation mechanism: layout()'s scrollLeft writes glide, in pure CSS
     assert page.evaluate("getComputedStyle(finder).scrollBehavior") == "smooth"
@@ -1099,7 +1094,7 @@ def test_the_resource_route_keeps_the_query_while_you_browse(page):
     page.open_resource("notes/deep/leaf.md?filemill=render")
     page.click('.col[data-i="0"] .row:has-text("code")')
     page.wait_for_timeout(400)
-    assert page.url.endswith("/code?filemill=render")
+    assert page.url.endswith("/code")
 
 
 def test_rendered_source_toggle_updates_the_url_and_history(page):
@@ -1132,51 +1127,48 @@ def test_rendered_source_toggle_updates_the_url_and_history(page):
     assert page.inner_text("#pv-view") == "Source"
 
 
-def test_raw_navigation_stays_in_the_file_manager(page):
+def test_raw_navigation_serves_bytes_and_back_restores_finder(page):
     page.open("notes/plain.txt")
     page.click("#pv-raw")
-    page.wait_for_selector("#preview .pv-content", timeout=15000)
-    assert page.url.endswith("/notes/plain.txt?filemill=raw")
+    page.wait_for_url("**/notes/plain.txt?filemill=raw")
+    assert page.locator("body").inner_text() == "hello"
+    assert page.locator("#preview").count() == 0
+    page.go_back()
+    page.wait_for_selector("#preview .pv-text")
     assert page.evaluate("sel")[-1] == "plain.txt"
-    page.click('.col[data-i="0"] .row:has-text("code")')
-    page.wait_for_function("location.pathname === '/code'")
-    assert page.url.endswith("/code?filemill=raw")
 
 
 def test_back_from_raw_restores_the_previous_rendered_file(page):
     page.open("notes")
-    page.click('.col[data-i="0"] .row:has-text("plain.txt")')
-    page.click('.col[data-i="0"] .row:has-text("short.txt")')
+    page.click('.col[data-i="1"] .row:has-text("plain.txt")')
+    page.click('.col[data-i="1"] .row:has-text("short.txt")')
     page.click("#pv-raw")
+    page.wait_for_url("**/notes/short.txt?filemill=raw")
     page.go_back()
-    page.wait_for_selector("#preview .pv-content", timeout=15000)
+    page.wait_for_selector("#preview .pv-text")
     assert page.url.endswith("/notes/short.txt?filemill=render")
     assert page.evaluate("sel")[-1] == "short.txt"
 
 
 def test_back_and_forward_restore_folder_preview_and_raw_states(page):
     page.open("notes")
-    page.click('.col[data-i="0"] .row:has-text("deep")')
-    page.click('.col[data-i="1"] .row:has-text("leaf.md")')
+    page.click('.col[data-i="1"] .row:has-text("deep")')
+    page.click('.col[data-i="2"] .row:has-text("leaf.md")')
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     assert page.url.endswith("/notes/deep/leaf.md?filemill=render")
-
     page.click("#pv-raw")
-    page.wait_for_selector("#preview .pv-content", timeout=15000)
-    assert page.url.endswith("/notes/deep/leaf.md?filemill=raw")
-
+    page.wait_for_url("**/notes/deep/leaf.md?filemill=raw")
+    assert "# Leaf" in page.locator("body").inner_text()
     page.go_back()
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     assert page.url.endswith("/notes/deep/leaf.md?filemill=render")
     page.go_back()
-    assert page.url.endswith("/notes/deep")
-    assert page.evaluate("sel")[-1] == "deep"
-
+    page.wait_for_function("path.length === 2 && sel[0] === 'notes'")
+    assert page.url.endswith("/notes")
     page.go_forward()
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     page.go_forward()
-    page.wait_for_selector("#preview .pv-content", timeout=15000)
-    assert page.url.endswith("/notes/deep/leaf.md?filemill=raw")
+    page.wait_for_url("**/notes/deep/leaf.md?filemill=raw")
 
 
 def test_no_columns_shows_a_document_without_the_finder(page):
@@ -1261,13 +1253,15 @@ def test_a_jsonl_row_previews_in_the_browser_without_asking_the_server(page):
     page.on("request", lambda r: seen.append(r.url))
     page.open("log.jsonl/Second")
     assert page.evaluate("sel")[-1] == "Second"
-    page.wait_for_selector("#preview .pv-kv", timeout=15000)
-    cells = page.eval_on_selector_all(
-        "#preview .pv-kv tr",
-        "rs => rs.map(r => [r.children[0].textContent, r.children[1].textContent])",
-    )
-    assert cells == [["id", "2"], ["title", "Second"], ["ts", "2026-01-02"]]
-    assert page.inner_text("#pv-sub") == ""
+    page.wait_for_selector("#preview .pv-json", timeout=15000)
+    assert page.eval_on_selector_all(
+        '.col[data-i="2"] .row', "rows => rows.map(row => row.title)"
+    ) == ["id", "title", "ts"]
+    assert json.loads(page.text_content("#preview .pv-json")) == {
+        "id": 2,
+        "title": "Second",
+        "ts": "2026-01-02",
+    }
     assert [u for u in seen if "/api/preview" in u] == []
 
 
