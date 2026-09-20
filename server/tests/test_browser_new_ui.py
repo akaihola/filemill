@@ -1687,7 +1687,7 @@ def test_markdown_link_paths_and_queries(page, ui_root, view):
         link = page.locator("#pv-content a", has_text=label)
         assert link.count() == 1
         assert link.get_attribute("href") == (
-            expected if expected is not None else f"/w/{mount}/note.md"
+            expected if expected is not None else f"/w/{mount}/note.md?filemill=render"
         )
     if view == "highlight":
         assert page.locator("#preview .pv-text").text_content() == source
