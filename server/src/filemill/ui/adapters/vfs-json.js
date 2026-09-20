@@ -191,13 +191,22 @@ export const withVirtualPreview = (provider) => ({
   },
   render(n) {
     if (!n.json || n.value === undefined) return provider.render(n);
-    const text = typeof n.value === "string"
-      ? n.value
-      : JSON.stringify(n.value);
+    let text;
+    try {
+      text = typeof n.value === "string" ? n.value : JSON.stringify(n.value);
+    } catch {
+      return provider.render({ ...n, dir: false });
+    }
+    if (n.value !== null && typeof n.value === "object") {
+      const html = jsonHTML(text, n);
+      return Promise.resolve(
+        `<pre class="pv-text${html === null ? "" : " pv-json"}">${
+          html ?? esc(text)
+        }</pre>`,
+      );
+    }
     return Promise.resolve(
-      n.value !== null && typeof n.value === "object"
-        ? `<pre class="pv-text pv-json">${jsonHTML(text, n)}</pre>`
-        : `<pre class="pv-text pv-json-value">${esc(text)}</pre>`,
+      `<pre class="pv-text pv-json-value">${esc(text)}</pre>`,
     );
   },
 });
