@@ -103,12 +103,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] When object hierarchies are collapsed by the user in a JSON object preview,
-  remember the paths of collapsed objects (built all the way from the root), and also
-  collapse the same objects when viewing similar objects anywhere at the same depth. For
-  example, if I'm viewing `a.b.foo` and collapse `a.b.foo.c.bar`, then when I view any
-  `*.*.*` or `*.*.*.c` path, `*.*.*.c.bar` should be collapsed.
-
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
 
@@ -140,6 +134,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [*] When object hierarchies are collapsed by the user in a JSON object preview,
+  remember the paths of collapsed objects (built all the way from the root), and also
+  collapse the same objects when viewing similar objects anywhere at the same depth. For
+  example, if I'm viewing `a.b.foo` and collapse `a.b.foo.c.bar`, then when I view any
+  `*.*.*` or `*.*.*.c` path, `*.*.*.c.bar` should be collapsed.
 
 - [*] In hierarchical navigation of `.json`, `.jsonl`, and SQLite `.db` files, when the
   key of a scalar value is highlighted, show its value in the preview pane instead of
