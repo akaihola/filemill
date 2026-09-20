@@ -81,5 +81,5 @@ export const previewNode = () => {
 
 export const selectedNode = () => {
   const last = path[path.length - 1], s = sel[path.length - 1];
-  return s && (last.kids || []).find((k) => k.name === s) || null;
+  return s !== undefined && (last.kids || []).find((k) => k.name === s) || null;
 };

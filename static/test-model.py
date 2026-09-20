@@ -306,7 +306,7 @@ def test_selected_scalar_preview(bundle, playwright, source):
         page.wait_for_function("typeof mount === 'function'")
         page.evaluate(
             r"""async source => {
-            const text = JSON.stringify({text: 'first\n<b>second</b>', zero: 0});
+            const text = JSON.stringify({text: 'first\n<b>second</b>', zero: 0, '': 'empty key'});
             const file = {kind: 'file', name: source,
                 async getFile() {return new File([text], source);}};
             await mount({kind: 'directory', name: 'scalars',
@@ -327,6 +327,10 @@ def test_selected_scalar_preview(bundle, playwright, source):
         page.keyboard.press("ArrowDown")
         page.wait_for_function(
             "document.querySelector('.pv-json-value')?.textContent === '0'"
+        )
+        page.locator('.row[title=""]').click()
+        page.wait_for_function(
+            "document.querySelector('.pv-json-value')?.textContent === 'empty key'"
         )
     finally:
         browser.close()

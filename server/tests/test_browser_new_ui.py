@@ -1549,14 +1549,16 @@ def scalar_files(ui_root):
         "zero": 0,
         "empty": "",
         "none": None,
+        "": "empty key",
     }
     (ui_root / "scalar.json").write_text(json.dumps(record))
     (ui_root / "scalar.jsonl").write_text(json.dumps(record) + "\n")
     with sqlite3.connect(ui_root / "scalar.db") as db:
         db.execute(
-            "CREATE TABLE cells (name TEXT, text TEXT, zero INTEGER, empty TEXT, none TEXT)"
+            "CREATE TABLE cells (name TEXT, text TEXT, zero INTEGER, "
+            'empty TEXT, none TEXT, "" TEXT)'
         )
-        db.execute("INSERT INTO cells VALUES (?, ?, ?, ?, ?)", tuple(record.values()))
+        db.execute("INSERT INTO cells VALUES (?, ?, ?, ?, ?, ?)", tuple(record.values()))
 
 
 @pytest.mark.parametrize("source", ["scalar.json", "scalar.jsonl", "scalar.db"])
@@ -1595,3 +1597,7 @@ def test_selected_scalar_preview(page, source, scalar_files):
     page.reload()
     page.wait_for_selector("#preview .pv-json")
     assert page.url == parent_url
+    page.locator('.row[title=""]').click()
+    page.wait_for_function(
+        "document.querySelector('.pv-json-value')?.textContent === 'empty key'"
+    )

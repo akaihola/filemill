@@ -172,6 +172,12 @@ for (const value of [false, 0, null, "", "first\nsecond"]) {
     assert.equal(locationState("highlight", null).location.view, undefined);
   }
 }
+const emptyKey = { name: "", dir: false, json: true, value: "empty key" };
+setState({
+  path: [{ json: true, value: { "": "empty key" }, kids: [emptyKey] }],
+  sel: [""],
+});
+assert.equal(previewNode(), emptyKey);
 assert.equal(taSearch(["a-note", "note", "n_o_t_e"], "note"), 1);
 assert.equal(taSearch(["a-note", "n_o_t_e"], "note"), 0);
 assert.equal(taSearch(["n_o_t_e"], "note"), 0);
