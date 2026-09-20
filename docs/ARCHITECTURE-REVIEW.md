@@ -31,6 +31,18 @@ CI keeps its browser installation step. See the
 256 historical failure IDs, repairs, obsolete expectations and remaining
 non-failing warnings.
 
+## Native prototype update, 2026-09-21
+
+Issue [30] adds a Linux WebKitGTK host and a native adapter entry point. The
+DOM-free model is unchanged. The host provides filesystem operations and
+in-memory routing; native bytes feed the existing preview renderer table.
+HTML preview iframes now use a sandbox. Keyboard handling no longer requires
+a welcome-screen element to exist.
+
+Native contract checks pass, but native UI qualification is blocked by a
+scrolled-row hit-testing failure. The browser/server suite passes. No smallest
+passing binary has been selected. See [issue 30](tasks/30-webview-shell.md).
+
 ## What is healthy
 
 Keep these. They are the parts of the project that already meet the goals.
