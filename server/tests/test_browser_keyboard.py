@@ -1435,12 +1435,16 @@ def test_renderer_uses_model_state(browser_root, playwright):
 def test_mobile_long_press_menu_dismissal_preserves_taps(live_server):
     with _ui_page(live_server, mobile=True) as page:
         row = page.locator('.col[data-i="0"] .row[aria-label="my-knowledge"]')
-        row.dispatch_event("pointerdown", {"pointerType": "touch", "clientX": 20, "clientY": 20})
+        row.dispatch_event(
+            "pointerdown", {"pointerType": "touch", "clientX": 20, "clientY": 20}
+        )
         row.dispatch_event("pointercancel")
         # Wait past the timer to prove a cancelled gesture cannot open the menu.
         page.evaluate("() => new Promise(resolve => setTimeout(resolve, 600))")
         assert page.locator("#row-menu").is_hidden()
-        row.dispatch_event("pointerdown", {"pointerType": "touch", "clientX": 20, "clientY": 20})
+        row.dispatch_event(
+            "pointerdown", {"pointerType": "touch", "clientX": 20, "clientY": 20}
+        )
         page.locator("#row-menu").wait_for(state="visible")
         row.dispatch_event("pointerup")
         row.dispatch_event("click")
