@@ -11,6 +11,7 @@ ports. Compare a direct Linux WebKitGTK host with Tauri 2.11.6.
 
 The direct host's preliminary stripped binary was 399,464 bytes. Tauri's was
 3,053,312 bytes. Their embedded UI inputs were 289,624 and 288,920 bytes.
+The final rebased direct build is 395,368 bytes with a 288,599-byte UI input.
 System libraries are excluded. Feature coverage and inputs differed, so
 these numbers are not a final equal-input comparison.
 
