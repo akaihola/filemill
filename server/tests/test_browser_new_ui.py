@@ -1724,3 +1724,248 @@ def test_markdown_render_keeps_safe_embedded_images(page, ui_root):
     image = page.locator("#pv-content img[alt=pixel]")
     image.wait_for(state="attached")
     assert image.get_attribute("src") == "data:image/png;base64,aGVsbG8="
+
+
+@pytest.mark.parametrize("scheme", ["light", "dark"])
+def test_context_menu_desktop_and_keyboard(page, scheme):
+    page.emulate_media(color_scheme=scheme)
+    page.open("notes/plain.txt")
+    page.evaluate("""() => {
+        Object.defineProperty(navigator, 'clipboard', {configurable: true,
+          value: {writeText: async text => window.copied = text}});
+    }""")
+    before = page.url
+    row = page.locator('.col[data-i="0"] .row[aria-label="code"]')
+    row.click(button="right")
+    menu = page.locator("#row-menu")
+    menu.wait_for(state="visible")
+    assert page.url == before
+    colors = menu.evaluate("""el => {
+        const s = getComputedStyle(el);
+        return [s.backgroundColor, s.color];
+    }""")
+    assert colors == (
+        ["rgb(255, 255, 255)", "rgb(22, 23, 26)"]
+        if scheme == "light"
+        else ["rgb(38, 41, 46)", "rgb(233, 234, 238)"]
+    )
+    menu.get_by_role("menuitem", name="Copy name", exact=True).click()
+    page.wait_for_function("window.copied === 'code'")
+    row.click(button="right")
+    page.keyboard.press("Escape")
+    assert menu.is_hidden()
+    assert row.get_attribute("aria-expanded") == "false"
+    file = page.locator('.col[data-i="1"] .row[aria-label="plain.txt"]')
+    file.click()
+    page.keyboard.press("Shift+F10")
+    menu.wait_for(state="visible")
+    assert menu.get_by_role("menuitem").first.evaluate(
+        "e => e === document.activeElement"
+    )
+    page.keyboard.press("ArrowDown")
+    page.keyboard.press("Enter")
+    page.wait_for_function("window.copied === 'notes/plain.txt'")
+    assert menu.is_hidden()
+    page.keyboard.press("ContextMenu")
+    menu.wait_for(state="visible")
+    page.keyboard.press("Escape")
+    page.keyboard.press("ArrowDown")
+    page.wait_for_function("sel[1] === 'short.txt'")
+    assert not page.errors
+
+
+@pytest.mark.parametrize("name", ["short.txt", "notes"])
+def test_context_menu_delete_cancel_then_confirm(page, ui_root, name):
+    page.open("notes/plain.txt")
+    row = page.locator(f'.col[data-i="0"] .row[aria-label="{name}"]')
+    before = page.url
+    requests = []
+    page.on(
+        "request", lambda r: requests.append(r.url) if r.method == "DELETE" else None
+    )
+    row.click(button="right")
+    page.once("dialog", lambda d: d.dismiss())
+    page.get_by_role("menuitem", name="Delete", exact=True).click()
+    assert (ui_root / name).exists()
+    assert requests == []
+    assert page.url == before
+    row.click(button="right")
+    page.once("dialog", lambda d: d.accept())
+    page.get_by_role("menuitem", name="Delete", exact=True).click()
+    row.wait_for(state="detached")
+    assert not (ui_root / name).exists()
+    assert len(requests) == 1
+    if name == "notes":
+        page.wait_for_function("path.length === 1")
+        assert "/notes" not in page.url
+        assert "hello" not in page.locator("#preview").inner_text()
+    else:
+        assert page.url == before
+        assert page.locator("#pv-content").inner_text().strip() == "hello"
+    assert not page.errors
+
+
+def test_context_menu_delete_failure_and_virtual_entry(page, ui_root):
+    page.open()
+    row = page.locator('.col[data-i="0"] .row[aria-label="short.txt"]')
+    page.route(
+        "**/api/delete?*",
+        lambda route: route.fulfill(
+            status=403, content_type="application/json", body='{"error":"test denied"}'
+        ),
+    )
+    row.click(button="right")
+    page.once("dialog", lambda d: d.accept())
+    page.get_by_role("menuitem", name="Delete", exact=True).click()
+    page.wait_for_function(
+        "document.querySelector('#st-refresh').textContent.includes('Delete failed: test denied')"
+    )
+    assert row.is_visible()
+    assert (ui_root / "short.txt").exists()
+    page.open("sample.db")
+    virtual = page.locator('.col[data-i="1"] .row').first
+    virtual.click(button="right")
+    page.locator("#row-menu").wait_for(state="visible")
+    assert page.get_by_role("menuitem", name="Delete", exact=True).count() == 0
+    assert (ui_root / "sample.db").exists()
+
+
+def test_context_menu_delete_during_navigation(page, ui_root):
+    page.open("notes/plain.txt")
+    page.evaluate("""() => {
+        const remove = FS.remove;
+        window.removeCalls = 0;
+        FS.remove = node => { window.removeCalls++;
+          return new Promise(resolve => window.finishDelete = async () => {
+            await remove(node); resolve();
+          });
+        };
+    }""")
+    row = page.locator('.col[data-i="1"] .row[aria-label="plain.txt"]')
+    row.click(button="right")
+    page.once("dialog", lambda d: d.accept())
+    page.get_by_role("menuitem", name="Delete", exact=True).click()
+    page.wait_for_function("window.removeCalls === 1")
+    row.click(button="right")
+    assert page.get_by_role("menuitem", name="Delete", exact=True).is_disabled()
+    page.keyboard.press("Escape")
+    page.locator('.col[data-i="0"] .row[aria-label="code"]').click()
+    page.wait_for_url("**/n/code")
+    before = page.url
+    page.evaluate("window.finishDelete()")
+    assert page.url == before
+    assert not (ui_root / "notes/plain.txt").exists()
+    assert page.evaluate("window.removeCalls") == 1
+    page.locator('.col[data-i="0"] .row[aria-label="notes"]').click()
+    page.wait_for_function("path.length === 2 && path[1].name === 'notes'")
+    assert page.locator('.col[data-i="1"] .row[aria-label="plain.txt"]').count() == 0
+    assert not page.errors
+
+
+def test_context_menu_delete_stays_disabled_until_refresh(page, ui_root):
+    page.open()
+    page.evaluate("""() => {
+        const load = FS.ensureLoaded;
+        FS.ensureLoaded = async node => {
+          if (node === path[0] && node.kids === null) {
+            await new Promise(resolve => window.finishRefresh = resolve);
+          }
+          return load(node);
+        };
+    }""")
+    row = page.locator('.col[data-i="0"] .row[aria-label="short.txt"]')
+    row.click(button="right")
+    page.once("dialog", lambda d: d.accept())
+    page.get_by_role("menuitem", name="Delete", exact=True).click()
+    page.wait_for_function("typeof window.finishRefresh === 'function'")
+    assert not (ui_root / "short.txt").exists()
+    row.click(button="right")
+    assert page.get_by_role("menuitem", name="Delete", exact=True).is_disabled()
+    page.evaluate("window.finishRefresh()")
+    row.wait_for(state="detached")
+    assert page.locator("#row-menu").is_hidden()
+
+
+def test_context_menu_delete_reports_refresh_failure(page, ui_root):
+    page.open()
+    page.evaluate(
+        "() => { FS.ensureLoaded = async () => { throw new Error('test refresh denied'); }; }"
+    )
+    page.locator('.col[data-i="0"] .row[aria-label="short.txt"]').click(button="right")
+    page.once("dialog", lambda d: d.accept())
+    page.get_by_role("menuitem", name="Delete", exact=True).click()
+    page.wait_for_function(
+        "document.querySelector('#st-refresh').textContent.includes('Deleted; refresh failed: test refresh denied')"
+    )
+    assert not (ui_root / "short.txt").exists()
+    assert not page.errors
+
+
+def test_context_menu_delete_retry_after_reopening(page, ui_root):
+    page.open("short.txt")
+    page.evaluate("""() => {
+        const remove = FS.remove;
+        FS.remove = () => new Promise((resolve, reject) => {
+          window.failDelete = () => {
+            FS.remove = remove;
+            reject(new Error('temporary failure'));
+          };
+        });
+    }""")
+    row = page.locator('.col[data-i="0"] .row[aria-label="short.txt"]')
+    row.click(button="right")
+    page.once("dialog", lambda d: d.accept())
+    page.get_by_role("menuitem", name="Delete", exact=True).click()
+    page.wait_for_function("typeof window.failDelete === 'function'")
+    row.click(button="right")
+    delete = page.get_by_role("menuitem", name="Delete", exact=True)
+    assert delete.is_disabled()
+    page.evaluate("render()")
+    assert page.locator("#pv-delete").is_disabled()
+    page.evaluate("window.failDelete()")
+    page.wait_for_function(
+        "document.querySelector('#st-refresh').textContent.includes('temporary failure')"
+    )
+    assert not delete.is_disabled()
+    assert not page.locator("#pv-delete").is_disabled()
+    page.once("dialog", lambda d: d.accept())
+    delete.click()
+    row.wait_for(state="detached")
+    assert not (ui_root / "short.txt").exists()
+
+
+@pytest.mark.parametrize("folder", ["", "notes/"])
+def test_context_menu_delete_stays_disabled_after_reload(page, ui_root, folder):
+    page.open(folder + "short.txt")
+    page.evaluate("""() => {
+        const remove = FS.remove;
+        FS.remove = node => new Promise(resolve => {
+          window.finishDelete = async () => { await remove(node); resolve(); };
+        });
+    }""")
+    column = 1 if folder else 0
+    row = page.locator(f'.col[data-i="{column}"] .row[aria-label="short.txt"]')
+    row.click(button="right")
+    page.once("dialog", lambda d: d.accept())
+    page.get_by_role("menuitem", name="Delete", exact=True).click()
+    page.wait_for_function("typeof window.finishDelete === 'function'")
+    page.evaluate("refreshColumn(0)")
+    row.click(button="right")
+    assert page.get_by_role("menuitem", name="Delete", exact=True).is_disabled()
+    page.keyboard.press("Escape")
+    page.evaluate("window.finishDelete()")
+    row.wait_for(state="detached")
+    assert not (ui_root / folder / "short.txt").exists()
+
+
+def test_context_menu_preserves_keyboard_refresh(page, ui_root):
+    page.open("notes/plain.txt")
+    page.evaluate("window.contextMenuSentinel = 42")
+    (ui_root / "notes" / "fresh.txt").write_text("new file")
+    page.keyboard.press("Shift+F10")
+    page.locator("#row-menu").wait_for(state="visible")
+    page.keyboard.press("F5")
+    page.locator("#row-menu").wait_for(state="hidden", timeout=5000)
+    page.locator('.col[data-i="1"] .row[aria-label="fresh.txt"]').wait_for()
+    assert page.evaluate("window.contextMenuSentinel") == 42
+    assert page.evaluate("sel[1]") == "plain.txt"

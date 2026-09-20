@@ -32,6 +32,12 @@ JSON previews remember collapsed objects during the current session. Matching
 paths at the same depth stay collapsed when you browse similar objects. An
 explicit expansion takes precedence for that object.
 
+Right-click a file or folder to open its context menu. On touch screens, press
+and hold the item. With the keyboard, use Shift+F10 or the Context Menu key
+on the current item. Use the arrow keys to choose an action, Enter to run it,
+and Escape to close the menu. Delete asks for confirmation before it removes
+the item and refreshes its folder. Deleting a folder also removes its contents.
+
 The preview toolbar has a Fullscreen button. The preview stays in fullscreen
 when the browser resizes. Use Exit fullscreen or the browser fullscreen exit
 control to return to the file browser.
