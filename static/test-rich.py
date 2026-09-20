@@ -17,7 +17,7 @@ networkless hosts. The *loaded* path is exercised against stub modules served
 from the same loopback server, which is the only way to reach it without the
 real CDN.
 
-    uv run --with "playwright==1.61.0" python3 test-rich.py [--bundle|--dev] [--rst]
+    uv run --project ../server pytest test-rich.py [--dev]
 
 The server edition serves the Markdown and .docx modules itself from ui/vendor/
 and points FILEMILL_CDN at them; the last section here loads those real files
@@ -310,7 +310,7 @@ async def rst_main(bundle, fake_handle, playwright):
         httpd.shutdown()
         httpd.server_close()
     print(f"{len(passed)} passed, {len(failed)} failed")
-    sys.exit(1 if failed else 0)
+    assert not failed, "Failed checks: " + ", ".join(failed)
 
 
 async def main(bundle, fake_handle, playwright):
@@ -483,9 +483,8 @@ async def main(bundle, fake_handle, playwright):
     if failed:
         print("  Failed: " + ", ".join(failed))
     print("═" * 62)
-    sys.exit(1 if failed else 0)
+    assert not failed, "Failed checks: " + ", ".join(failed)
 
 
-def test_rich(bundle, fake_handle, playwright):
-    asyncio.run(rst_main(bundle, fake_handle, playwright) if "--rst" in sys.argv
-                else main(bundle, fake_handle, playwright))
+def test_rich(bundle, fake_handle, async_playwright):
+    asyncio.run(main(bundle, fake_handle, async_playwright))
