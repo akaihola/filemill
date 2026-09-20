@@ -274,4 +274,18 @@ assert.equal(jsonCollapse.open(origin, ["rows", "1", "a", "b", '/"*']), true);
 jsonCollapse.record(origin, ["root"], 1, false);
 assert.equal(jsonCollapse.open(origin, ["other"]), false);
 
+// Unrelated fold rules must not turn a deep preview into all-suffix scans.
+let pathReads = 0;
+const deepPath = new Proxy(Array(1000).fill("node"), {
+  get(target, key, receiver) {
+    if (/^\d+$/.test(String(key))) pathReads++;
+    return Reflect.get(target, key, receiver);
+  },
+});
+assert.equal(jsonCollapse.open(origin, deepPath), true);
+assert.ok(
+  pathReads <= deepPath.length * 2,
+  `deep path read ${pathReads} times`,
+);
+
 console.log("Model checks passed");
