@@ -2368,8 +2368,26 @@ def test_context_menu_delete_fsa(bundle, fake_handle, playwright):
         page.locator("#pv-delete").click()
         file.wait_for(state="detached")
         assert page.evaluate("window.removals[1]") == {"name": "one.txt", "recursive": False}
+        page.evaluate("""() => {
+          const remove = FS.remove;
+          FS.remove = node => new Promise(resolve => {
+            window.finishDelete = async () => { await remove(node); resolve(); };
+          });
+        }""")
+        second = page.locator('.col[data-i="1"] .row[aria-label="two.txt"]')
+        second.click(button="right")
+        page.once("dialog", lambda d: d.accept())
+        page.get_by_role("menuitem", name="Delete", exact=True).click()
+        page.wait_for_function("typeof window.finishDelete === 'function'")
+        page.evaluate("refreshColumn(0)")
+        second.click(button="right")
+        assert page.get_by_role("menuitem", name="Delete", exact=True).is_disabled()
+        page.keyboard.press("Escape")
+        page.evaluate("window.finishDelete()")
+        second.wait_for(state="detached")
+        assert page.evaluate("window.removals[2]") == {"name": "two.txt", "recursive": False}
         page.evaluate("FS.remove = undefined")
-        page.locator('.col[data-i="1"] .row[aria-label="two.txt"]').click(button="right")
+        page.locator('.col[data-i="1"] .row[aria-label="sub"]').click(button="right")
         page.locator("#row-menu").wait_for(state="visible")
         assert page.get_by_role("menuitem", name="Delete", exact=True).count() == 0
     finally:

@@ -59,8 +59,14 @@ const touchUI = () =>
 let longPressTimer;
 let suppressClick = false;
 
-let menuRow, menuFocus;
-const removing = new WeakSet();
+let menuRow, menuFocus, updateMenuDelete;
+const removing = new WeakMap();
+const entryPath = (node, parent) =>
+  node.rel ||
+  path.slice(1, path.indexOf(parent) + 1).map((n) => n.name).concat(node.name)
+    .join("/");
+const isRemoving = (node, parent) =>
+  removing.get(path[0])?.has(entryPath(node, parent)) || false;
 
 export function closeRowMenu(restoreFocus = true) {
   const menu = document.getElementById("row-menu");
@@ -70,20 +76,27 @@ export function closeRowMenu(restoreFocus = true) {
   }
   menu.hidden = true;
   menuRow?.setAttribute("aria-expanded", "false");
-  menuRow = menuFocus = null;
+  menuRow = menuFocus = updateMenuDelete = null;
   suppressClick = false;
   clearTimeout(longPressTimer);
 }
 
 async function deleteEntry(node, parent, button) {
-  if (removing.has(node) || !FS.remove || node.vpath) return;
+  if (isRemoving(node, parent) || !FS.remove || node.vpath) return;
   if (
     !window.confirm(
       `Delete “${node.name}”${node.dir ? " and its contents" : ""}?`,
     )
   ) return;
   const filesystem = FS;
-  removing.add(node);
+  const deletionRoot = path[0];
+  const parentNames = path.slice(0, path.indexOf(parent) + 1).map((n) =>
+    n.name
+  );
+  const relative = entryPath(node, parent);
+  const pending = removing.get(deletionRoot) || new Set();
+  removing.set(deletionRoot, pending);
+  pending.add(relative);
   button.disabled = true;
   let deleted = false;
   try {
@@ -91,9 +104,11 @@ async function deleteEntry(node, parent, button) {
     deleted = true;
     // Invalidate even a folder left during deletion, so revisiting it is fresh.
     if (parent.loading) await parent.loading;
-    const index = path.indexOf(parent);
-    if (FS === filesystem && index >= 0) await actions.refreshColumn(index);
-    else {
+    // A reload can replace the containing node while removal is pending.
+    const visible = FS === filesystem && path[0] === deletionRoot &&
+      parentNames.every((name, i) => path[i]?.name === name);
+    if (visible) await actions.refreshColumn(parentNames.length - 1);
+    if (!visible || !path.includes(parent)) {
       parent.kids = null;
       parent.metaDone = false;
     }
@@ -105,9 +120,15 @@ async function deleteEntry(node, parent, button) {
       false,
     );
   } finally {
-    removing.delete(node);
+    pending.delete(relative);
     button.disabled = false;
     if (menuRow && !menuRow.isConnected) closeRowMenu();
+    else updateMenuDelete?.();
+    const preview = previewNode();
+    const previewDelete = document.getElementById("pv-delete");
+    if (preview && previewDelete) {
+      previewDelete.disabled = isRemoving(preview, path[path.length - 1]);
+    }
   }
 }
 
@@ -115,11 +136,7 @@ export function openRowMenu(node, parent, row, event) {
   closeRowMenu();
   menuRow = row;
   menuFocus = document.activeElement;
-  const parentIndex = path.indexOf(parent);
-  const rel = node.rel ||
-    path.slice(1, parentIndex + 1).map((n) => n.name).concat(node.name).join(
-      "/",
-    );
+  const rel = entryPath(node, parent);
   const absolute = node.abs || "/" + rel;
   const menu = document.getElementById("row-menu");
   menu.innerHTML = [
@@ -151,7 +168,10 @@ export function openRowMenu(node, parent, row, event) {
     button.type = "button";
     button.setAttribute("role", "menuitem");
     button.textContent = "Delete";
-    button.disabled = removing.has(node);
+    updateMenuDelete = () => {
+      button.disabled = isRemoving(node, parent);
+    };
+    updateMenuDelete();
     button.onclick = () => {
       closeRowMenu();
       return deleteEntry(node, parent, button);
@@ -643,8 +663,8 @@ function setupPreviewActions(n) {
   const del = document.getElementById("pv-delete");
   if (del) {
     del.hidden = !FS.remove || !!n.vpath;
-    del.disabled = removing.has(n);
     const parent = path[path.length - 1];
+    del.disabled = isRemoving(n, parent);
     del.onclick = () => deleteEntry(n, parent, del);
   }
 }

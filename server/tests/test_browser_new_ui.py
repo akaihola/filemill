@@ -1898,3 +1898,60 @@ def test_context_menu_delete_reports_refresh_failure(page, ui_root):
     )
     assert not (ui_root / "short.txt").exists()
     assert not page.errors
+
+
+def test_context_menu_delete_retry_after_reopening(page, ui_root):
+    page.open("short.txt")
+    page.evaluate("""() => {
+        const remove = FS.remove;
+        FS.remove = () => new Promise((resolve, reject) => {
+          window.failDelete = () => {
+            FS.remove = remove;
+            reject(new Error('temporary failure'));
+          };
+        });
+    }""")
+    row = page.locator('.col[data-i="0"] .row[aria-label="short.txt"]')
+    row.click(button="right")
+    page.once("dialog", lambda d: d.accept())
+    page.get_by_role("menuitem", name="Delete", exact=True).click()
+    page.wait_for_function("typeof window.failDelete === 'function'")
+    row.click(button="right")
+    delete = page.get_by_role("menuitem", name="Delete", exact=True)
+    assert delete.is_disabled()
+    page.evaluate("render()")
+    assert page.locator("#pv-delete").is_disabled()
+    page.evaluate("window.failDelete()")
+    page.wait_for_function(
+        "document.querySelector('#st-refresh').textContent.includes('temporary failure')"
+    )
+    assert not delete.is_disabled()
+    assert not page.locator("#pv-delete").is_disabled()
+    page.once("dialog", lambda d: d.accept())
+    delete.click()
+    row.wait_for(state="detached")
+    assert not (ui_root / "short.txt").exists()
+
+
+@pytest.mark.parametrize("folder", ["", "notes/"])
+def test_context_menu_delete_stays_disabled_after_reload(page, ui_root, folder):
+    page.open(folder + "short.txt")
+    page.evaluate("""() => {
+        const remove = FS.remove;
+        FS.remove = node => new Promise(resolve => {
+          window.finishDelete = async () => { await remove(node); resolve(); };
+        });
+    }""")
+    column = 1 if folder else 0
+    row = page.locator(f'.col[data-i="{column}"] .row[aria-label="short.txt"]')
+    row.click(button="right")
+    page.once("dialog", lambda d: d.accept())
+    page.get_by_role("menuitem", name="Delete", exact=True).click()
+    page.wait_for_function("typeof window.finishDelete === 'function'")
+    page.evaluate("refreshColumn(0)")
+    row.click(button="right")
+    assert page.get_by_role("menuitem", name="Delete", exact=True).is_disabled()
+    page.keyboard.press("Escape")
+    page.evaluate("window.finishDelete()")
+    row.wait_for(state="detached")
+    assert not (ui_root / folder / "short.txt").exists()
