@@ -231,7 +231,7 @@ document.addEventListener("pointerdown", (event) => {
   ) {
     closeRowMenu(false);
   }
-});
+}, true);
 
 const sayCopy = (msg, ok) => saySt("st-copy", msg, ok);
 
