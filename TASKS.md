@@ -97,12 +97,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] `<file>.md?filemill=highlight` doesn't highlight Markdown files correctly.
-  Headings and URLs are not highlighted, apostrophes cause highlighting of everything
-  between them, even if they're just part of a word. Links are not highlighted. Also,
-  I'd like Markdown links to actually act as clickable links just like in the rendered
-  Markdown preview.
-
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
 
@@ -134,6 +128,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [*] `<file>.md?filemill=highlight` doesn't highlight Markdown files correctly.
+  Headings and URLs are not highlighted, apostrophes cause highlighting of everything
+  between them, even if they're just part of a word. Links are not highlighted. Also,
+  I'd like Markdown links to actually act as clickable links just like in the rendered
+  Markdown preview.
 
 - [*] When object hierarchies are collapsed by the user in a JSON object preview,
   remember the paths of collapsed objects (built all the way from the root), and also
