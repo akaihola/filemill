@@ -2368,6 +2368,11 @@ def test_context_menu_delete_fsa(bundle, fake_handle, playwright):
         page.locator("#pv-delete").click()
         file.wait_for(state="detached")
         assert page.evaluate("window.removals[1]") == {"name": "one.txt", "recursive": False}
+        page.wait_for_function("document.querySelector('#st-refresh').textContent === 'Deleted “one.txt”'")
+        assert "bad" not in (page.locator("#st-refresh").get_attribute("class") or "")
+        assert page.evaluate("sel[1] === undefined && focusCol === 1")
+        page.keyboard.press("ArrowDown")
+        page.wait_for_function("sel[1] === 'sub'")
         page.evaluate("""() => {
           const remove = FS.remove;
           FS.remove = node => new Promise(resolve => {

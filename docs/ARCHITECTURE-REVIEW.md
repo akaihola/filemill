@@ -216,6 +216,12 @@ per device class.
 
 ### 9. Preview and editing (Worth exploring)
 
+2026-09-21 update: preview and context-menu deletion share `deleteEntry`, which
+refreshes through `actions.refreshColumn` without a render action. Successful
+deletion now replaces the refresh warning about the removed selection with a
+success status. Browser regressions cover cancellation, deletion and refresh
+errors, selection cleanup and continued keyboard navigation.
+
 2026-09-20 update: Shared CSS now removes the paragraph width cap from
 server-rendered reStructuredText, matching rich browser previews. A browser
 regression covers both containers at desktop and mobile widths, including

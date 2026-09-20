@@ -1774,6 +1774,55 @@ def test_context_menu_desktop_and_keyboard(page, scheme):
     assert not page.errors
 
 
+def test_preview_delete_cancel_confirm_and_keyboard(page, ui_root):
+    page.open("notes/plain.txt")
+    before = page.url
+    requests = []
+    page.on(
+        "request", lambda r: requests.append(r.url) if r.method == "DELETE" else None
+    )
+    page.once("dialog", lambda d: d.dismiss())
+    page.locator("#pv-delete").click()
+    assert (ui_root / "notes/plain.txt").exists()
+    assert requests == []
+    assert page.url == before
+    page.once("dialog", lambda d: d.accept())
+    page.locator("#pv-delete").click()
+    page.wait_for_function("sel[1] === undefined && focusCol === 1")
+    assert not (ui_root / "notes/plain.txt").exists()
+    assert len(requests) == 1
+    assert page.locator('.col[data-i="1"] .row[aria-label="plain.txt"]').count() == 0
+    assert "hello" not in page.locator("#preview").inner_text()
+    assert "plain.txt" not in page.url
+    assert "bad" not in (page.locator("#st-refresh").get_attribute("class") or "")
+    page.keyboard.press("ArrowDown")
+    page.wait_for_function("sel[1] === 'deep'")
+    page.keyboard.press("ArrowDown")
+    page.wait_for_function("sel[1] === 'short.txt'")
+    assert not page.errors
+
+
+@pytest.mark.parametrize("failure", ["remove", "refresh"])
+def test_preview_delete_reports_failure(page, ui_root, failure):
+    page.open("notes/plain.txt")
+    method = "remove" if failure == "remove" else "ensureLoaded"
+    page.evaluate(
+        "method => { FS[method] = async () => { throw new Error('test denied'); }; }",
+        method,
+    )
+    page.once("dialog", lambda d: d.accept())
+    page.locator("#pv-delete").click()
+    message = "Delete failed" if failure == "remove" else "Deleted; refresh failed"
+    page.wait_for_function(
+        "message => document.querySelector('#st-refresh').textContent === message",
+        arg=f"{message}: test denied",
+    )
+    assert (ui_root / "notes/plain.txt").exists() == (failure == "remove")
+    assert "bad" in page.locator("#st-refresh").get_attribute("class")
+    assert not page.locator("#pv-delete").is_disabled()
+    assert not page.errors
+
+
 @pytest.mark.parametrize("name", ["short.txt", "notes"])
 def test_context_menu_delete_cancel_then_confirm(page, ui_root, name):
     page.open("notes/plain.txt")
