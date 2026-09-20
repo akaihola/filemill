@@ -94,9 +94,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] Fix all remaining red tests (listed in project memory), including the one-line
-  cause of the newest root-column regression.
-
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
 
@@ -128,6 +125,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [*] Fix all remaining red tests (listed in project memory), including the one-line
+  cause of the newest root-column regression.
 
 - [*] `<file>.md?filemill=highlight` doesn't highlight Markdown files correctly.
   Headings and URLs are not highlighted, apostrophes cause highlighting of everything
