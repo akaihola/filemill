@@ -2227,3 +2227,37 @@ async def main(bundle, fake_handle, playwright):
 def test_ui(bundle, fake_handle, playwright):
     asyncio.run(editor_main(bundle, fake_handle, playwright) if "--editor" in sys.argv
                 else main(bundle, fake_handle, playwright))
+
+
+def test_markdown_source_tokens(bundle, playwright):
+    source = (
+        "# Heading [link](next.md)\n\nSetext\n======\n\n"
+        "It's prose, and here's another apostrophe.\n"
+        "https://example.org/path?q=1&x=2.\n"
+        "[reference][target]\n[target]: next.md\n"
+        "`[code](hidden.md)`\n\n```md\n[code](hidden.md)\n```\n"
+        "<img src=x onerror=alert(1)>\n"
+    )
+    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
+    try:
+        page = browser.new_page()
+        page.goto(bundle.as_uri())
+        page.wait_for_function("typeof renderNode === 'function'")
+        page.evaluate("""async text => {
+          const host = document.createElement('div');
+          host.id = 'markdown-test';
+          host.innerHTML = await renderNode({name: 'test.md'}, new Blob([text]), 'text');
+          document.body.append(host);
+        }""", source)
+        host = page.locator("#markdown-test")
+        assert host.text_content() == source
+        assert host.locator(".hl-heading").count() == 2
+        assert host.locator(".hl-str").all_text_contents() == [
+            "`[code](hidden.md)`", "```md\n[code](hidden.md)\n```\n"
+        ]
+        assert host.locator("a").evaluate_all("es => es.map(e => e.getAttribute('href'))") == [
+            "next.md", "https://example.org/path?q=1&x=2", "next.md"
+        ]
+        assert host.locator("img").count() == 0
+    finally:
+        browser.close()
