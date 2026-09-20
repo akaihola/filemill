@@ -36,6 +36,9 @@ The preview toolbar has a Fullscreen button. The preview stays in fullscreen
 when the browser resizes. Use Exit fullscreen or the browser fullscreen exit
 control to return to the file browser.
 
+Markdown text and code wrap on portrait phones. Wide Markdown tables scroll
+inside the preview, so every column stays reachable.
+
 One repository holds both editions. Two copies of one UI drift apart one bug
 fix at a time. A fix to `ui/` is a fix to both editions in one commit.
 
