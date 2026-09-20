@@ -108,6 +108,15 @@ state.sort = { key: "name", desc: false };
 const ordered = { kids: [file("z"), file("a")], ordered: true };
 assert.deepEqual(visibleKids(ordered).map((n) => n.name), ["z", "a"]);
 assert.equal(rowIndex(ordered, "a"), 1);
+state.sort.desc = true;
+assert.deepEqual(visibleKids(ordered).map((n) => n.name), ["a", "z"]);
+assert.deepEqual(
+  visibleKids({ kids: [folder, ...ordered.kids], ordered: true }).map((n) =>
+    n.name
+  ),
+  [folder.name, "a", "z"],
+);
+state.sort.desc = false;
 const metadata = [file("unknown"), { ...file("large"), meta: { size: 20 } }, {
   ...file("small"),
   meta: { size: 1 },

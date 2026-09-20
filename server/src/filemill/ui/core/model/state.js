@@ -36,13 +36,17 @@ export const setSortKids = (value) => sortOrder = value;
 /* One filtered copy per call, ordered by model/sort.js. Every column build, every
    width measurement and every path walk comes through here, which is what keeps
    the rows and a restored chain agreeing on what row 4 is. */
-export const visibleKids = (node) =>
-  ((kids) =>
-    node.ordered && state.sort.key === "name" ? kids : sortOrder(kids))(
-      (node.kids || []).filter((k) =>
-        state.dotfiles || !k.name.startsWith(".")
-      ),
-    );
+export const visibleKids = (node) => {
+  const kids = (node.kids || []).filter((k) =>
+    state.dotfiles || !k.name.startsWith(".")
+  );
+  if (!node.ordered || state.sort.key !== "name") return sortOrder(kids);
+  if (!state.sort.desc) return kids;
+  return [
+    ...kids.filter((k) => k.dir).reverse(),
+    ...kids.filter((k) => !k.dir).reverse(),
+  ];
+};
 
 export const rowIndex = (node, name) =>
   visibleKids(node).findIndex((k) => k.name === name);
