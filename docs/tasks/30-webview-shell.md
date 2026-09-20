@@ -134,3 +134,8 @@ hooks. Native Python lint and formatting checks also passed.
 Raw-file links, on-demand rich assets, and the portions of the native UI suite
 after the blocking click still need integration or verification. The direct
 host is retained as an unfinished prototype, not as a selected passing binary.
+
+The [qualification ADR](../adr/0065-native-shell-qualification.md) defers the
+binary choice. Only the unfinished direct host remains in the current tree.
+The temporary Tauri source and locked comparison build remain recoverable
+from the commit that added `native/tauri/Cargo.lock`.

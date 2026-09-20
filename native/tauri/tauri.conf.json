@@ -1,1 +1,0 @@
-{"productName":"Filemill","version":"0.1.0","identifier":"org.filemill.prototype","build":{"frontendDist":"../webview/build/assets"},"app":{"windows":[{"title":"Filemill","width":1500,"height":900}],"security":{"csp":null}},"bundle":{"active":false}}
