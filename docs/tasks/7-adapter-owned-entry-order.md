@@ -10,7 +10,9 @@ depends-on: [6]
 Commits `c10c1e3` and `9e46ede` implement adapter-owned ordering. HTTP orders
 entries on the server; File System Access orders them while loading. Both put
 directories first, then case-insensitive names with the adapter's tie-breaker.
-`node.ordered` preserves that order for name sorting; size and modified-time
+`node.ordered` preserves that order for ascending name sorting. Descending
+reverses the adapter order within directories and files, keeping directories
+first. Size and modified-time
 sorting still use the shared sorter. See the [adapter contract](../../ui/adapters/README.md).
 
 The proposal below predates that contract and the removal of `columns.py`.
