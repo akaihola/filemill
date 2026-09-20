@@ -484,13 +484,11 @@ def test_rich(bundle, fake_handle, async_playwright):
     asyncio.run(main(bundle, fake_handle, async_playwright))
 
 
-def test_markdown_viewport(bundle, playwright):
+def test_markdown_viewport(bundle, playwright, static_origin):
     """Wide Markdown stays reachable in normal and fullscreen previews."""
-    httpd, port = serve()
-    browser = playwright.chromium.launch()
-    try:
+    with playwright.chromium.launch() as browser:
         page = browser.new_page()
-        page.goto(f"http://127.0.0.1:{port}/static/{bundle.name}")
+        page.goto(f"{static_origin}/static/{bundle.name}")
         page.evaluate(VENDOR_MAP)
         page.evaluate(r"""async () => {
           const text = '# Heading' + 'Long'.repeat(30) + '\n\n' +
@@ -536,7 +534,3 @@ def test_markdown_viewport(bundle, playwright):
                 }""")
                 if fullscreen:
                     page.locator('#pv-fullscreen').click()
-    finally:
-        browser.close()
-        httpd.shutdown()
-        httpd.server_close()
