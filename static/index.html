@@ -2393,19 +2393,24 @@ const esc = (s) =>
 
 /* ═══ core/model/json-collapse.js ═══ */
 // Patterns replace the preview's prefix, retaining absolute depth and suffix.
-const collapsed = new Set();
+const collapsed = new Map();
 const explicit = new WeakMap();
 const jsonCollapse = {
   record(root, path, depth, open) {
     if (!explicit.has(root)) explicit.set(root, new Map());
     explicit.get(root).set(JSON.stringify(path), open);
-    if (!open) collapsed.add(JSON.stringify([depth, path.slice(depth)]));
+    if (!open) {
+      if (!collapsed.has(path.length)) collapsed.set(path.length, new Map());
+      const depths = collapsed.get(path.length);
+      if (!depths.has(depth)) depths.set(depth, new Set());
+      depths.get(depth).add(JSON.stringify(path.slice(depth)));
+    }
   },
   open(root, path) {
     const saved = explicit.get(root)?.get(JSON.stringify(path));
     if (saved !== undefined) return saved;
-    for (let depth = 0; depth <= path.length; depth++) {
-      if (collapsed.has(JSON.stringify([depth, path.slice(depth)]))) {
+    for (const [depth, suffixes] of collapsed.get(path.length) || []) {
+      if (suffixes.has(JSON.stringify(path.slice(depth)))) {
         return false;
       }
     }
