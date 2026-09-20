@@ -1,5 +1,6 @@
 /* Shared destinations for rendered Markdown and highlighted source. */
 export function markdownHref(href, dir) {
+  if (!href) return href;
   // Browsers ignore controls in schemes. Reject them before path resolution.
   const scheme = href.replace(/%0[0-9a-f]|%1[0-9a-f]|%20|%7f/gi, "")
     .replace(/[\s\p{Cc}]/gu, "");
