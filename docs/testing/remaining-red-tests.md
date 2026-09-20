@@ -57,7 +57,7 @@ route tests affected by CLI state leakage. Individual node IDs are recorded in
 | Static hash URL assertions | Task [58] preserves preview mode; expect `v=render`. Exercise same-folder history replacement using file-to-file arrow moves, not moves into directories. |
 | Native fullscreen resize race | Wait for native fullscreen entry/exit before continuing the keyboard test. Previously the second Enter could race the first asynchronous browser request. |
 | Raw navigation and query persistence assertions | Tasks [51]/[58] intentionally serve bytes for Raw, preserve the previous rendered file for Back, and remove the file view parameter for a directory. Test those contracts with correct containing-column indices. |
-| Preview focus fold assertion | Current keyboard contract preserves layout on preview entry. Assert unchanged fold count and restoration of the actual containing column, covered separately by the parent-selection tests. |
+| Preview focus fold assertion | Commit `1257b46` intentionally removed `foldAll()` and added keyboard coverage for preserving layout on preview entry, superseding task [47]. Assert unchanged fold count and restoration of the actual containing column, covered separately by the parent-selection tests. |
 | Folder fixture includes short.txt | Update the listing expectation to include the file deliberately added to the shared fixture. |
 | Filename-dependent folding precondition | Task [64] made column widths fixed. Deliberately fold two ancestors, navigate to the sibling directory, and assert folding and equal widths are retained. |
 | Wide-chain row selector | `:text-is` on the nested label did not match the row. Select its exact `title`, preserving the layout assertions. |
@@ -106,3 +106,33 @@ The unchanged issue remains In Progress for the later merge workflow. Removing
 that one bullet from both tracker versions leaves byte-identical main text.
 Browser checks ran sequentially with the installed Nix browser; CI retains its
 normal browser installation step.
+
+## AI review on current main
+
+The implementation was rebased onto `179af97` during review. Main had added
+JSON collapse memory and a shared Markdown link resolver since the original
+verification above. Conflict resolution preserves both features:
+
+- `withVirtualPreview` passes the node to `jsonHTML(text, n)` while retaining
+  the deep-JSON source fallback, so collapse paths still have their context.
+- The home-link repair lives in `core/markdown-links.js`, shared by rendered
+  and highlighted Markdown. Both modes now have explicit mount-prefix
+  regression coverage. Home Markdown destinations retain `filemill=render`,
+  matching ordinary Markdown links instead of returning raw file bytes.
+- New Markdown token checks and real-OPFS storage checks are both collected.
+  Generated bundle conflicts were resolved by rebuilding from shared sources.
+
+The first focused review run passed 410 tests. After the second rebase, 37
+focused JSON-collapse, Markdown, history, highlighting and PPTX checks passed.
+All six pre-commit hooks and the Deno model checks passed on the combined code.
+The complete combined suite passed **761 tests**, no skips, in 825.50 s at
+`5cfb6a8`. Its only warning was the existing Docutils pending deprecation.
+The modular static suite passed **45 tests**, no skips, in 214.87 s.
+The combined collection is 761 tests: 45 static and 716 server. The original
+coverage result above remains the pre-rebase measurement; all 716 current
+server tests also pass in the combined run.
+
+Tracker proof at this review point: 122 issues, no repeated numbered IDs or
+normalized complete issue text across headings. Removing this issue's exact
+unchanged bullet from both versions makes the tracker byte-identical to main.
+The TSV's 256 node IDs exactly match the original baseline log's failed nodes.
