@@ -65,6 +65,14 @@ window.__mk = (nbig) => {
     getFile: async () => { window.__gets++;
       throw Object.assign(new Error('no'), {name:'NotAllowedError'}); }});
   const D = (name, kids) => ({kind:'directory', name,
+    requestPermission: async () => 'granted',
+    removeEntry: async (name, {recursive}) => {
+      const i = kids.findIndex(k => k.name === name);
+      if (i < 0) throw new Error('Entry not found');
+      if (kids[i].kind === 'directory' && !recursive) throw new Error('Directory');
+      window.removals?.push({name, recursive});
+      kids.splice(i, 1);
+    },
     entries: async function*(){ for (const k of kids) yield [k.name, k]; }});
   /* Long names must not affect the fixed column width. */
   const LONG = i => `level-${i}-` + 'w'.repeat(36);
@@ -2321,3 +2329,69 @@ async def storage_main(bundle, playwright, static_origin):
 
 def test_storage(bundle, async_playwright, static_origin):
     asyncio.run(storage_main(bundle, async_playwright, static_origin))
+
+
+def test_context_menu_delete_fsa(bundle, fake_handle, playwright):
+    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
+    try:
+        page = browser.new_page(viewport={"width": 1500, "height": 900})
+        page.goto(bundle.as_uri())
+        page.evaluate("localStorage.setItem('filemill.rich','off')")
+        page.evaluate(fake_handle)
+        page.evaluate("""async () => {
+          window.localRoot = __mk(0);
+          await mount(localRoot);
+          window.removals = [];
+        }""")
+        row = page.locator('.col[data-i="0"] .row[aria-label="mixed"]')
+        row.click()
+        page.wait_for_function("path.length === 2")
+        # Native handles have no parent property. The adapter owns the parent link.
+        assert page.evaluate("!path[1].handle.parent && path[1].parent === localRoot")
+        page.evaluate("localRoot.requestPermission = async () => 'denied'")
+        row.click(button="right")
+        page.once("dialog", lambda d: d.accept())
+        page.get_by_role("menuitem", name="Delete", exact=True).click()
+        page.wait_for_function("document.querySelector('#st-refresh').textContent.includes('No permission to delete')")
+        assert page.evaluate("window.removals.length") == 0
+        page.evaluate("localRoot.requestPermission = async () => 'granted'")
+        row.click(button="right")
+        page.once("dialog", lambda d: d.accept())
+        page.get_by_role("menuitem", name="Delete", exact=True).click()
+        row.wait_for(state="detached")
+        assert page.evaluate("window.removals") == [{"name": "mixed", "recursive": True}]
+        page.wait_for_function("path.length === 1")
+        page.locator('.col[data-i="0"] .row[aria-label="refresh"]').click()
+        file = page.locator('.col[data-i="1"] .row[aria-label="one.txt"]')
+        file.click()
+        page.once("dialog", lambda d: d.accept())
+        page.locator("#pv-delete").click()
+        file.wait_for(state="detached")
+        assert page.evaluate("window.removals[1]") == {"name": "one.txt", "recursive": False}
+        page.evaluate("FS.remove = undefined")
+        page.locator('.col[data-i="1"] .row[aria-label="two.txt"]').click(button="right")
+        page.locator("#row-menu").wait_for(state="visible")
+        assert page.get_by_role("menuitem", name="Delete", exact=True).count() == 0
+    finally:
+        browser.close()
+
+
+def test_delete_fsa_uses_parent_directory(bundle, fake_handle, playwright):
+    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
+    try:
+        page = browser.new_page()
+        page.goto(bundle.as_uri())
+        page.evaluate(fake_handle)
+        result = page.evaluate("""async () => {
+          const handle = __mk(0);
+          const root = FSA.node(handle.name, handle);
+          await FSA.ensureLoaded(root);
+          const child = root.kids.find(n => n.name === 'mixed');
+          window.removals = [];
+          try { await FSA.remove(child); }
+          catch (error) { return error.message; }
+          return window.removals;
+        }""")
+        assert result == [{"name": "mixed", "recursive": True}]
+    finally:
+        browser.close()
