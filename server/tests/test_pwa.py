@@ -153,7 +153,9 @@ def test_shared_ui_registers_sw(client):
 
 
 def test_shared_ui_explains_unavailable_server(client):
-    html = client.get("/n/").text
+    assert "/ui/entry-server.js" in client.get("/n/").text
+    assert "app-http.js" in client.get("/ui/entry-server.js").text
+    html = client.get("/ui/adapters/app-http.js").text
     assert "Filemill server unavailable" in html
     assert "Retry connection" in html
     assert "cannot start it" in html

@@ -8,6 +8,8 @@ import json
 import re
 from pathlib import Path
 
+import pytest
+
 import filemill.app as app_module
 
 # ── /api/dir ─────────────────────────────────────────────────────────────────
@@ -44,6 +46,10 @@ def test_dir_owns_stable_entry_order(client, tmp_root: Path):
         ".hidden",
         "10.txt",
         "2.txt",
+        "doc.pdf",
+        "image.jpg",
+        "image.png",
+        "link.desktop",
         "readme.md",
     ]
     assert all(e["ordered"] for e in entries)
@@ -62,27 +68,29 @@ def test_dir_descends_a_relative_path(client, tmp_root: Path):
 
 
 def test_large_directory_is_paginated_in_stable_order(client, tmp_root: Path):
+    folder = tmp_root / "subdir"
     for i in range(501):
-        (tmp_root / f"item-{i:03d}").write_text(str(i))
+        (folder / f"item-{i:03d}").write_text(str(i))
 
-    first = client.get("/api/dir?p=&page=1").json()
-    second = client.get("/api/dir?p=&page=2").json()
+    first = client.get("/api/dir?p=subdir&page=1").json()
+    second = client.get("/api/dir?p=subdir&page=2").json()
 
     assert len(first["entries"]) == 500
-    assert len(second["entries"]) == 7
-    assert first["total"] == 507
+    assert len(second["entries"]) == 1
+    assert first["total"] == 501
     assert first["pages"] == second["pages"] == 2
     assert first["page"] == 1
     assert second["page"] == 2
-    assert first["entries"][-1]["name"] == "item-495"
-    assert second["entries"][0]["name"] == "item-496"
+    assert first["entries"][-1]["name"] == "item-499"
+    assert second["entries"][0]["name"] == "item-500"
 
 
 def test_directory_at_page_limit_keeps_small_response(client, tmp_root: Path):
-    for i in range(494):
-        (tmp_root / f"item-{i:03d}").write_text(str(i))
+    folder = tmp_root / "subdir"
+    for i in range(500):
+        (folder / f"item-{i:03d}").write_text(str(i))
 
-    data = client.get("/api/dir?p=&page=1").json()
+    data = client.get("/api/dir?p=subdir&page=1").json()
 
     assert len(data["entries"]) == 500
     assert "pages" not in data
@@ -212,13 +220,15 @@ def test_preview_of_markdown_is_its_source(client, tmp_root: Path):
     assert r.headers["cache-control"] == "no-store"
 
 
-def test_html_preview_iframe_uses_the_canonical_file_path(client, tmp_root: Path):
-    page = tmp_root / "docs" / "page.html"
+@pytest.mark.parametrize("suffix", ["html", "pdf", "png"])
+def test_media_preview_uses_the_canonical_file_path(client, tmp_root: Path, suffix):
+    page = tmp_root / "docs" / f"page & copy.{suffix}"
     page.parent.mkdir()
     page.write_text("<h1>Hi</h1>")
-    html = client.get("/api/preview?p=docs/page.html").text
-    assert 'src="/docs/page.html"' in html
-    assert "/raw?path=" not in html
+    html = client.get("/api/preview", params={"p": f"docs/{page.name}"}).text
+    assert f'src="/docs/page%20%26%20copy.{suffix}"' in html
+    assert "/api/raw?" not in html
+    assert client.get(f"/docs/page%20%26%20copy.{suffix}").content == page.read_bytes()
 
 
 def test_preview_highlights_source_with_pygments(client, tmp_root: Path):
