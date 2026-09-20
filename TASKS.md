@@ -82,12 +82,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] When object hierarchies are collapsed by the user in a JSON object preview,
-  remember the paths of collapsed objects (built all the way from the root), and also
-  collapse the same objects when viewing similar objects anywhere at the same depth. For
-  example, if I'm viewing `a.b.foo` and collapse `a.b.foo.c.bar`, then when I view any
-  `*.*.*` or `*.*.*.c` path, `*.*.*.c.bar` should be collapsed.
-
 - [*] Large directories now partition their contents into multiple lists that the user
   can browse using a `< Page N of NN >` control. This is not acceptable. The vertical
   scrollbar should be used to navigate through the directory contents. Task
@@ -108,6 +102,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] When object hierarchies are collapsed by the user in a JSON object preview,
+  remember the paths of collapsed objects (built all the way from the root), and also
+  collapse the same objects when viewing similar objects anywhere at the same depth. For
+  example, if I'm viewing `a.b.foo` and collapse `a.b.foo.c.bar`, then when I view any
+  `*.*.*` or `*.*.*.c` path, `*.*.*.c.bar` should be collapsed.
 
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
