@@ -91,9 +91,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] On a portrait mobile phone, Markdown preview is wider than the screen. Contents
-  overflow horizontally both at the left and right edges.
-
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
 
@@ -125,6 +122,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [*] On a portrait mobile phone, Markdown preview is wider than the screen. Contents
+  overflow horizontally both at the left and right edges.
 
 - [*] Fix all remaining red tests (listed in project memory), including the one-line
   cause of the newest root-column regression.
