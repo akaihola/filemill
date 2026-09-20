@@ -2028,3 +2028,57 @@ def test_mobile_fullscreen_back_preserves_preview(server, playwright, native):
             assert page.url == url
     finally:
         browser.close()
+
+
+@pytest.mark.parametrize("change", ["reload", "view", "file"])
+def test_mobile_fullscreen_history_after_preview_change(server, playwright, change):
+    browser = playwright.chromium.launch()
+    try:
+        page = browser.new_page(
+            viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True
+        )
+        page.goto(server + "/notes/deep/leaf.md?filemill=highlight")
+        page.wait_for_selector("#pv-content .pv-text")
+        page.evaluate("document.documentElement.requestFullscreen = undefined")
+        full = page.locator("#pv-fullscreen")
+        full.click()
+        if change == "reload":
+            page.reload()
+            page.wait_for_selector("#pv-content .pv-text")
+        elif change == "file":
+            page.evaluate("applyPath(['notes', 'plain.txt'])")
+            page.wait_for_function("sel.at(-1) === 'plain.txt'")
+            page.go_back()
+            page.wait_for_function("sel.at(-1) === 'leaf.md'", timeout=3000)
+        else:
+            page.locator("#pv-view").click()
+            page.wait_for_selector("#preview .pv-rich h1")
+            page.go_back()
+            page.wait_for_selector("#preview .pv-text", timeout=3000)
+        page.wait_for_function(
+            "document.documentElement.classList.contains('pv-fullscreen')", timeout=3000
+        )
+        page.wait_for_function(
+            "document.querySelector('#pv-content').textContent.includes('# Leaf')"
+        )
+        url = page.url
+        content = page.locator("#pv-content").inner_text()
+        page.go_back()
+        page.wait_for_function(
+            "!document.documentElement.classList.contains('pv-fullscreen')",
+            timeout=3000,
+        )
+        assert page.url == url
+        assert page.locator("#pv-content").inner_text() == content
+        page.go_forward()
+        page.wait_for_function(
+            "document.documentElement.classList.contains('pv-fullscreen')", timeout=3000
+        )
+        assert page.url == url
+        full.click()
+        page.wait_for_function(
+            "!document.documentElement.classList.contains('pv-fullscreen')",
+            timeout=3000,
+        )
+    finally:
+        browser.close()
