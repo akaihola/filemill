@@ -4135,6 +4135,7 @@ async function deleteEntry(node, parent, button) {
       parent.kids = null;
       parent.metaDone = false;
     }
+    actions.saySt("st-refresh", `Deleted “${node.name}”`, true);
   } catch (err) {
     const message = deleted ? "Deleted; refresh failed" : "Delete failed";
     actions.saySt(
