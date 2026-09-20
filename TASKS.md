@@ -13,10 +13,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
     - Depends on: [29]
 
-- [*] The `Delete` button in the preview pane gives the red error
-  `Delete failed: actions.render is not a function` on the bottom status line (after
-  confirming deletion).
-
 - [*] Add the `Delete` key as a shortcut to delete the current file or directory.
 
 - [*] When the relative path of a file or folder is copied successfully using `Ctrl+C`
@@ -63,6 +59,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] The `Delete` button in the preview pane gives the red error
+  `Delete failed: actions.render is not a function` on the bottom status line (after
+  confirming deletion).
 
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
