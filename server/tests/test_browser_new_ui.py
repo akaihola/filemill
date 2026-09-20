@@ -1969,3 +1969,116 @@ def test_context_menu_preserves_keyboard_refresh(page, ui_root):
     page.locator('.col[data-i="1"] .row[aria-label="fresh.txt"]').wait_for()
     assert page.evaluate("window.contextMenuSentinel") == 42
     assert page.evaluate("sel[1]") == "plain.txt"
+
+
+@pytest.mark.parametrize("native", [False, True])
+def test_mobile_fullscreen_back_preserves_preview(server, playwright, native):
+    browser = playwright.chromium.launch()
+    try:
+        page = browser.new_page(
+            viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True
+        )
+        page.goto(server + "/notes/plain.txt?filemill=highlight")
+        page.wait_for_selector("#pv-content .pv-text")
+        if not native:
+            page.evaluate("document.documentElement.requestFullscreen = undefined")
+        url = page.url
+        page.evaluate("window.savedPreview = document.querySelector('#pv-content')")
+        full = page.locator("#pv-fullscreen")
+        full.click()
+        page.wait_for_function(
+            "document.documentElement.classList.contains('pv-fullscreen')"
+        )
+        if native:
+            page.wait_for_function("document.fullscreenElement !== null")
+        page.go_back()
+        page.wait_for_function(
+            "!document.documentElement.classList.contains('pv-fullscreen')"
+        )
+        page.wait_for_function("document.fullscreenElement === null")
+        assert page.url == url
+        assert page.evaluate("sel.at(-1)") == "plain.txt"
+        assert page.evaluate("savedPreview === document.querySelector('#pv-content')")
+        assert page.locator("#bar").is_visible()
+        assert page.locator("#pv-content").inner_text() == "hello"
+        page.go_forward()
+        page.wait_for_function(
+            "document.documentElement.classList.contains('pv-fullscreen')"
+        )
+        assert page.url == url
+        full.click()
+        page.wait_for_function(
+            "!document.documentElement.classList.contains('pv-fullscreen') && !history.state?.filemillFullscreen"
+        )
+        assert page.url == url
+        assert page.evaluate("savedPreview === document.querySelector('#pv-content')")
+        page.go_forward()
+        page.wait_for_function(
+            "document.documentElement.classList.contains('pv-fullscreen')"
+        )
+        if native:
+            full.click()
+            page.wait_for_function("!history.state?.filemillFullscreen")
+            full.click()
+            page.wait_for_function("document.fullscreenElement !== null")
+            page.evaluate("document.exitFullscreen()")
+            page.wait_for_function(
+                "!document.documentElement.classList.contains('pv-fullscreen') && !history.state?.filemillFullscreen"
+            )
+            assert page.url == url
+    finally:
+        browser.close()
+
+
+@pytest.mark.parametrize("change", ["reload", "view", "file"])
+def test_mobile_fullscreen_history_after_preview_change(server, playwright, change):
+    browser = playwright.chromium.launch()
+    try:
+        page = browser.new_page(
+            viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True
+        )
+        page.goto(server + "/notes/deep/leaf.md?filemill=highlight")
+        page.wait_for_selector("#pv-content .pv-text")
+        page.evaluate("document.documentElement.requestFullscreen = undefined")
+        full = page.locator("#pv-fullscreen")
+        full.click()
+        if change == "reload":
+            page.reload()
+            page.wait_for_selector("#pv-content .pv-text")
+        elif change == "file":
+            page.evaluate("applyPath(['notes', 'plain.txt'])")
+            page.wait_for_function("sel.at(-1) === 'plain.txt'")
+            page.go_back()
+            page.wait_for_function("sel.at(-1) === 'leaf.md'", timeout=3000)
+        else:
+            page.locator("#pv-view").click()
+            page.wait_for_selector("#preview .pv-rich h1")
+            page.go_back()
+            page.wait_for_selector("#preview .pv-text", timeout=3000)
+        page.wait_for_function(
+            "document.documentElement.classList.contains('pv-fullscreen')", timeout=3000
+        )
+        page.wait_for_function(
+            "document.querySelector('#pv-content').textContent.includes('# Leaf')"
+        )
+        url = page.url
+        content = page.locator("#pv-content").inner_text()
+        page.go_back()
+        page.wait_for_function(
+            "!document.documentElement.classList.contains('pv-fullscreen')",
+            timeout=3000,
+        )
+        assert page.url == url
+        assert page.locator("#pv-content").inner_text() == content
+        page.go_forward()
+        page.wait_for_function(
+            "document.documentElement.classList.contains('pv-fullscreen')", timeout=3000
+        )
+        assert page.url == url
+        full.click()
+        page.wait_for_function(
+            "!document.documentElement.classList.contains('pv-fullscreen')",
+            timeout=3000,
+        )
+    finally:
+        browser.close()

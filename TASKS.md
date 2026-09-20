@@ -13,11 +13,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
     - Depends on: [29]
 
-- [*] If I exit a fullscreen preview on a mobile phone using the browser's Back button,
-  I get an empty screen with the label `Select a file to preview`, and the only way to
-  get out is to use the browser's forward button. After entering fullscreen mode, the
-  Back button should behave identically to the `Exit fullscreen` button.
-
 - [*] The `Delete` button in the preview pane gives the red error
   `Delete failed: actions.render is not a function` on the bottom status line (after
   confirming deletion).
@@ -86,6 +81,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] If I exit a fullscreen preview on a mobile phone using the browser's Back button,
+  I get an empty screen with the label `Select a file to preview`, and the only way to
+  get out is to use the browser's forward button. After entering fullscreen mode, the
+  Back button should behave identically to the `Exit fullscreen` button.
 
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.

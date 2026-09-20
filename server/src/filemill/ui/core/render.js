@@ -547,8 +547,33 @@ function applyFullscreen(value) {
   }
 }
 
+// Touch browsers need a history step for both native and layout fullscreen.
+applyFullscreen(!!history.state?.filemillFullscreen);
+
+function leaveFullscreen() {
+  if (history.state?.filemillFullscreen) {
+    history.back();
+    return;
+  }
+  applyFullscreen(false);
+  if (document.fullscreenElement) document.exitFullscreen();
+}
+
+addEventListener("popstate", (event) => {
+  if (!pvFullscreen && !event.state?.filemillFullscreen) return;
+  const loc = ROUTER?.read();
+  // Bypass routing only when the selected file and preview mode are unchanged.
+  if (
+    loc && (!loc.root || loc.root === path[0]?.name) &&
+    JSON.stringify(loc.path) === JSON.stringify(currentPath()) &&
+    (loc.view || "render") === (root.dataset.filemill || "render")
+  ) event.stopImmediatePropagation();
+  applyFullscreen(!!event.state?.filemillFullscreen);
+  if (!pvFullscreen && document.fullscreenElement) document.exitFullscreen();
+}, { capture: true });
+
 document.addEventListener("fullscreenchange", () => {
-  if (!document.fullscreenElement && pvFullscreen) applyFullscreen(false);
+  if (!document.fullscreenElement && pvFullscreen) leaveFullscreen();
 });
 
 async function rawMarkdown(node) {
@@ -648,9 +673,11 @@ function setupPreviewActions(n) {
   if (full) {
     full.onclick = async () => {
       if (pvFullscreen) {
-        if (document.fullscreenElement) await document.exitFullscreen();
-        applyFullscreen(false);
+        leaveFullscreen();
         return;
+      }
+      if (matchMedia("(pointer: coarse)").matches) {
+        history.pushState({ ...history.state, filemillFullscreen: true }, "");
       }
       applyFullscreen(true);
       // Resize rebuilds the preview, so fullscreen must use the stable root.
