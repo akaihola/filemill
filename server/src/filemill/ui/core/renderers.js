@@ -136,7 +136,7 @@ async function textHTML(node, blob) {
      the registry and answers for its own virtual nodes before they get
      here — jsonHTML is a plain function it can call on a subtree. */
   const json = lang === "json" ? jsonHTML(text) : null;
-  const body = json ?? (lang ? hlHTML(text, lang) : esc(text));
+  const body = json ?? (lang ? hlHTML(text, lang, node) : esc(text));
   return `<pre class="pv-text${json ? " pv-json" : ""}">${body}</pre>`;
 }
 

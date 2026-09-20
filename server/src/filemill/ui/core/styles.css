@@ -1015,6 +1015,14 @@ body {
 .hl-kw {
   color: var(--hl-kw);
 }
+.hl-heading {
+  color: var(--hl-kw);
+  font-weight: bold;
+}
+.hl-link {
+  color: var(--hl-str);
+  text-decoration: underline;
+}
 /* Foldable JSON — the <details> tree core/syntax.js emits for a parsed file.
    The marker hangs in the <pre>'s own padding so folded and unfolded lines
    keep the same indent; a closed node says what it hides. */

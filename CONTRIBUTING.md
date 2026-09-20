@@ -24,6 +24,13 @@ points use the same model. Run its dependency-free checks with
 `node ui/core/model/test.mjs` or
 `deno run --allow-read=ui/core/model ui/core/model/test.mjs`.
 
+## Markdown previews
+
+Keep source highlighting in `ui/core/markdown-source.js`. Preserve each source
+character and keep links inside code inactive. Both Markdown preview modes use
+`ui/core/markdown-links.js` for destination validation and path resolution. Test
+link behavior with the real vendored Markdown renderer, not a loader stub.
+
 ## Tests
 
 Run the server tests:

@@ -33,6 +33,7 @@ import { classifyFile } from "../core/file-kind.js";
 import { esc } from "../core/icons.js";
 import { choose } from "../core/nav.js";
 import { FS } from "../core/ports.js";
+import { markdownHref } from "../core/markdown-links.js";
 import { render } from "../core/render.js";
 import { renderNode } from "../core/renderers.js";
 import { path, splitName, state, visibleKids } from "../core/model/state.js";
@@ -117,40 +118,6 @@ const NOTE =
 /* ── Markdown ────────────────────────────────────────────────────────────── */
 let mdInstance = null;
 
-function homeHref(href) {
-  if (!href.startsWith("~/")) return href;
-  const root = document.documentElement;
-  const mounts = JSON.parse(root.dataset.mounts || "[]");
-  const path = href.slice(2);
-  const mount = mounts.includes(path.split("/", 1)[0])
-    ? path.split("/", 1)[0]
-    : root.dataset.root;
-  return mount && mount !== "/"
-    ? `/w/${encodeURIComponent(mount)}/${path}`
-    : path;
-}
-
-/* A relative link resolves against the document's own folder and becomes the
-   target's root-relative URL, so it lands on the file the author meant even
-   when the page is a deep link. A Markdown target gets ?filemill=render: a
-   link from one document to another should land on the rendered document,
-   not its bytes. Only a served node has a folder here (`node.rel`); the files
-   of a local or static folder have no URL, and their links stay as written. */
-function localHref(href, dir) {
-  if (dir === undefined || /^(?:[a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) {
-    return href;
-  }
-  const clean = href.split("#")[0].split("?")[0];
-  if (!clean) return href;
-  const parts = dir ? dir.split("/").map(encodeURIComponent) : [];
-  for (const p of clean.split("/")) {
-    if (p === "..") parts.pop();
-    else if (p && p !== ".") parts.push(p);
-  }
-  const url = "/" + parts.join("/");
-  return /\.md$/i.test(url) ? url + "?filemill=render" : url;
-}
-
 async function markdown(text, node) {
   if (!mdInstance) {
     const [MarkdownIt, footnote, deflist, tasklists, anchor] = await Promise
@@ -173,14 +140,21 @@ async function markdown(text, node) {
          one, and a focusable heading landing in a fullscreen preview nudges
          the stage sideways for a frame. Same ids as before, nothing else. */
       .use(anchor, { tabIndex: false });
+    const validateLink = mdInstance.validateLink;
+    mdInstance.validateLink = (href) =>
+      validateLink(href) &&
+      (/^data:/i.test(href) || markdownHref(href) !== null);
     const linkOpen = mdInstance.renderer.rules.link_open ||
-      ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
+      ((tokens, idx, options, env, self) =>
+        self.renderToken(tokens, idx, options));
     mdInstance.renderer.rules.link_open = (tokens, idx, options, env, self) => {
       const token = tokens[idx];
       const href = token.attrGet("href");
       if (href) {
-        const home = homeHref(href);
-        token.attrSet("href", home === href ? localHref(href, env.dir) : home);
+        const target = markdownHref(href, env.dir);
+        if (target === null) {
+          token.attrs = token.attrs.filter(([name]) => name !== "href");
+        } else token.attrSet("href", target);
       }
       return linkOpen(tokens, idx, options, env, self);
     };

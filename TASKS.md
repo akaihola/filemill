@@ -17,12 +17,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
     - Depends on: [29]
 
-- [*] `<file>.md?filemill=highlight` doesn't highlight Markdown files correctly.
-  Headings and URLs are not highlighted, apostrophes cause highlighting of everything
-  between them, even if they're just part of a word. Links are not highlighted. Also,
-  I'd like Markdown links to actually act as clickable links just like in the rendered
-  Markdown preview.
-
 - [*] On a portrait mobile phone, Markdown preview is wider than the screen. Contents
   overflow horizontally both at the left and right edges.
 
@@ -102,6 +96,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] `<file>.md?filemill=highlight` doesn't highlight Markdown files correctly.
+  Headings and URLs are not highlighted, apostrophes cause highlighting of everything
+  between them, even if they're just part of a word. Links are not highlighted. Also,
+  I'd like Markdown links to actually act as clickable links just like in the rendered
+  Markdown preview.
 
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
