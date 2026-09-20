@@ -1186,7 +1186,7 @@ def test_no_columns_shows_a_directory_as_one_listing(page):
 def test_highlight_shows_the_source_in_the_columns(page):
     """Markdown and HTML source use the shared browser highlighter."""
     page.open_resource("notes/deep/leaf.md?filemill=highlight")
-    page.wait_for_selector("#preview .pv-text .hl-com", timeout=15000)
+    page.wait_for_selector("#preview .pv-text .hl-heading", timeout=15000)
     assert page.text_content("#preview .pv-text") == "# Leaf\n**bold** text\n"
     assert page.locator("#preview .pv-rich").count() == 0
     page.open_resource("page.html?filemill=highlight")
@@ -1652,6 +1652,8 @@ def test_markdown_link_paths_and_queries(page, ui_root, view):
         ),
         ("spaces", "<space name.md>", "/notes/deep/space%20name.md?filemill=render"),
         ("balanced", "file(a).md", "/notes/deep/file(a).md?filemill=render"),
+        ("titled", 'leaf.md "Title ("', "/notes/deep/leaf.md?filemill=render"),
+        ("unicode", "note😀.md", "/notes/deep/note%F0%9F%98%80.md?filemill=render"),
         ("escaped", r"file\(b\).md", "/notes/deep/file(b).md?filemill=render"),
         ("root", "/README.md?filemill=render", "/README.md?filemill=render"),
         (
@@ -1683,9 +1685,9 @@ def test_markdown_links_reject_unsafe_and_code_destinations(page, ui_root, view)
         "[bad](javascript&#58;alert(1))\n\n[bad](java&#x09;script:alert(1))\n\n"
         "[bad](data:text/html,test)\n\n[bad](file:///etc/passwd)\n\n"
         "[bad](vbscript:alert(1))\n\n"
-        "`[code](hidden.md)`\n\n```markdown\n[code](hidden.md)\n```\n\n"
-        r"\[escaped](hidden.md)"
-        "\n\n[broken](missing.md\n\n"
+        "`[code](hidden.txt)`\n\n```markdown\n[code](hidden.txt)\n```\n\n"
+        r"\[escaped](hidden.txt)"
+        "\n\n[broken](missing.txt\n\n"
         "<img src=x onerror=alert(1)>\n"
     )
     (ui_root / "notes/deep/unsafe.md").write_text(source)
@@ -1693,7 +1695,17 @@ def test_markdown_links_reject_unsafe_and_code_destinations(page, ui_root, view)
     page.locator(
         "#preview .pv-text" if view == "highlight" else "#preview .pv-markdown"
     ).wait_for()
-    assert page.locator("#pv-content a").count() == 0
+    assert page.locator("#pv-content a").count() == 0, page.locator(
+        "#pv-content a"
+    ).evaluate_all("es => es.map(e => e.outerHTML)")
     assert page.locator("#pv-content img").count() == 0
     if view == "highlight":
         assert page.locator("#preview .pv-text").text_content() == source
+
+
+def test_markdown_render_keeps_safe_embedded_images(page, ui_root):
+    (ui_root / "embedded.md").write_text("![pixel](data:image/png;base64,aGVsbG8=)")
+    page.goto(f"{page.base}/embedded.md?filemill=render")
+    image = page.locator("#pv-content img[alt=pixel]")
+    image.wait_for(state="attached")
+    assert image.get_attribute("src") == "data:image/png;base64,aGVsbG8="
