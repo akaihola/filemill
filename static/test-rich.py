@@ -534,3 +534,68 @@ def test_markdown_viewport(bundle, playwright, static_origin):
                 }""")
                 if fullscreen:
                     page.locator('#pv-fullscreen').click()
+
+
+def test_rst_viewport(bundle, playwright, static_origin, tmp_path):
+    """Both RST containers fill the pane without changing document content."""
+    from filemill.preview import _preview_rst
+
+    source = tmp_path / 'guide.rst'
+    source.write_text('''A command-line tool to capture stdin and command output for AI tools
+(like `Roo Code`_, an AI-powered coding assistant for VSCode).
+
+.. _Roo Code: https://example.com/
+
+Some *emphasis*, **strong text**, and ``inline code``.
+
+- First item
+- Second item
+
+.. code-block:: python
+
+   def example():
+       return 1
+''')
+    html = _preview_rst(source)
+    with playwright.chromium.launch() as browser:
+        page = browser.new_page(viewport={"width": 1500, "height": 900})
+        page.goto(f"{static_origin}/static/{bundle.name}")
+        page.evaluate("""async html => {
+          RENDERERS.unshift({kind: 'rst', render: async () => html});
+          await mount({kind: 'directory', name: 'vault',
+            async *entries() { yield ['guide.rst', {kind: 'file', name: 'guide.rst',
+              async getFile() { return new File(['source'], 'guide.rst'); }}]; }});
+        }""", html)
+        page.locator('.row:has-text("guide.rst")').click()
+        page.wait_for_selector('.preview-rst p')
+        page.keyboard.press('ArrowRight')
+        for container in ('preview-rst', 'pv-rich'):
+            page.locator('#pv-content > div').evaluate('(e, name) => e.className = name', container)
+            for width, height in ((1500, 900), (390, 844), (320, 568)):
+                page.set_viewport_size({"width": width, "height": height})
+                for fullscreen in (False, True):
+                    if fullscreen:
+                        page.locator('#pv-fullscreen').click()
+                    page.wait_for_function("""() => {
+                      const pane = document.querySelector('#preview').getBoundingClientRect();
+                      return pane.left >= -1 && pane.right <= innerWidth + 1;
+                    }""")
+                    document = page.locator('#pv-content > div')
+                    sizes = document.locator('p').first.evaluate("""p => ({
+                      paragraph: p.getBoundingClientRect().width,
+                      available: p.parentElement.getBoundingClientRect().width,
+                      height: p.getBoundingClientRect().height,
+                      line: parseFloat(getComputedStyle(p).lineHeight)
+                    })""")
+                    assert abs(sizes['paragraph'] - sizes['available']) <= 1, (container, width, sizes)
+                    if width == 1500 and fullscreen:
+                        assert sizes['height'] <= sizes['line'] + 1, sizes
+                    assert document.locator('em').inner_text() == 'emphasis'
+                    assert document.locator('strong').inner_text() == 'strong text'
+                    assert document.locator('a').get_attribute('href') == 'https://example.com/'
+                    assert document.locator('p .literal').inner_text() == 'inline code'
+                    assert document.locator('li').all_text_contents() == ['First item', 'Second item']
+                    assert document.locator('pre').text_content() == 'def example():\n    return 1'
+                    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+                    if fullscreen:
+                        page.locator('#pv-fullscreen').click()

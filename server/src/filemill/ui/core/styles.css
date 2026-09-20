@@ -1212,7 +1212,7 @@ body {
   margin-bottom: 18px;
   overflow-wrap: anywhere;
 }
-.pv-rich p {
+.pv-rich p, .preview-rst p {
   max-width: none;
 }
 .pv-rich > :first-child {
