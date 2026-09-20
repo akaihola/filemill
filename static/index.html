@@ -7118,7 +7118,7 @@ expose({
 });
 </script>
 <script>
-if ('serviceWorker' in navigator)
+if (['http:', 'https:'].includes(location.protocol) && 'serviceWorker' in navigator)
   navigator.serviceWorker.register('./sw.js', {scope: './'});
 </script>
 </body>

@@ -19,7 +19,7 @@
      edition's page loads instead. build-index.py inlines the whole graph. -->
 <script type="module" src="../ui/entry-static.js"></script>
 <script>
-if ('serviceWorker' in navigator)
+if (['http:', 'https:'].includes(location.protocol) && 'serviceWorker' in navigator)
   navigator.serviceWorker.register('./sw.js', {scope: './'});
 </script>
 </body>
