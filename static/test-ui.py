@@ -2413,3 +2413,43 @@ def test_delete_fsa_uses_parent_directory(bundle, fake_handle, playwright):
         assert result == [{"name": "mixed", "recursive": True}]
     finally:
         browser.close()
+
+
+def test_mobile_fullscreen_back(bundle, fake_handle, playwright, static_origin):
+    browser = playwright.chromium.launch()
+    try:
+        page = browser.new_page(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+        page.goto(f"{static_origin}/static/{bundle.name}")
+        page.evaluate(fake_handle)
+        page.evaluate("async () => { await mount(__mk(0)); await applyPath(['mixed', 'short.txt']); }")
+        page.wait_for_selector("#pv-content .pv-text")
+        page.evaluate("document.documentElement.requestFullscreen = undefined")
+        url = page.url
+        page.evaluate("window.savedPreview = document.querySelector('#pv-content')")
+        full = page.locator("#pv-fullscreen")
+        full.click()
+        page.wait_for_function("document.documentElement.classList.contains('pv-fullscreen')")
+        page.go_back()
+        page.wait_for_function("!document.documentElement.classList.contains('pv-fullscreen')")
+        assert page.url == url
+        assert page.evaluate("sel.at(-1)") == "short.txt"
+        assert page.evaluate("savedPreview === document.querySelector('#pv-content')")
+        assert page.locator("#bar").is_visible()
+        page.go_forward()
+        page.wait_for_function("document.documentElement.classList.contains('pv-fullscreen')")
+        full.click()
+        page.wait_for_function("!document.documentElement.classList.contains('pv-fullscreen') && !history.state?.filemillFullscreen")
+        assert page.url == url
+        page.go_forward()
+        page.wait_for_function("document.documentElement.classList.contains('pv-fullscreen')")
+        page.go_back()
+        page.wait_for_function("!history.state?.filemillFullscreen")
+        page.go_back()
+        page.wait_for_function("path.length === 1")
+        assert page.locator("#bar").is_visible()
+        page.go_forward()
+        page.wait_for_function("sel.at(-1) === 'short.txt'")
+        page.go_forward()
+        page.wait_for_function("document.documentElement.classList.contains('pv-fullscreen')")
+    finally:
+        browser.close()
