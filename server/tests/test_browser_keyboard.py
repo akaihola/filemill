@@ -1449,6 +1449,12 @@ def test_mobile_long_press_menu_dismissal_preserves_taps(live_server):
         row.dispatch_event("pointerup")
         row.dispatch_event("click")
         assert page.evaluate("path.length") == 1
+        # A new hold dismisses the old menu before starting its own timer.
+        row.dispatch_event(
+            "pointerdown", {"pointerType": "touch", "clientX": 20, "clientY": 20}
+        )
+        page.locator("#row-menu").wait_for(state="visible")
+        row.dispatch_event("pointerup")
         page.keyboard.press("Escape")
         assert page.locator("#row-menu").is_hidden()
         row.click()
