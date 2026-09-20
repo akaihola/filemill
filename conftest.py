@@ -1,4 +1,7 @@
+import functools
+import http.server
 import sqlite3
+import threading
 from pathlib import Path
 
 import pytest
@@ -8,6 +11,21 @@ import pytest
 def bundle(request):
     name = "index-dev.html" if request.config.getoption("--dev") else "index.html"
     return Path(__file__).parent / "static" / name
+
+
+@pytest.fixture
+def static_origin():
+    handler = functools.partial(
+        http.server.SimpleHTTPRequestHandler, directory=str(Path(__file__).parent)
+    )
+    with http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler) as server:
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            yield f"http://127.0.0.1:{server.server_port}"
+        finally:
+            server.shutdown()
+            thread.join()
 
 
 @pytest.fixture
