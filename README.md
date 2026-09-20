@@ -86,6 +86,9 @@ the one exception: both editions open them in the browser with
 
 See [`server/CONTRIBUTING.md`](server/CONTRIBUTING.md).
 
+In JSON, JSONL, and SQLite hierarchies, select a scalar key to preview its value.
+String values preserve line breaks. Objects and arrays keep their foldable previews.
+
 ## Working on the shared UI
 
 Edit `ui/`. It is a symlink to `server/src/filemill/ui/`. A wheel cannot reach

@@ -82,11 +82,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] In hierarchical navigation of `.json`, `.jsonl`, and SQLite `.db` files, when the
-  key of a scalar value is highlighted, show its value in the preview pane instead of
-  rendering the parent JSON structure. If the value is a string and has `\n` characters,
-  display it with line breaks.
-
 - [*] When object hierarchies are collapsed by the user in a JSON object preview,
   remember the paths of collapsed objects (built all the way from the root), and also
   collapse the same objects when viewing similar objects anywhere at the same depth. For
@@ -113,6 +108,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] In hierarchical navigation of `.json`, `.jsonl`, and SQLite `.db` files, when the
+  key of a scalar value is highlighted, show its value in the preview pane instead of
+  rendering the parent JSON structure. If the value is a string and has `\n` characters,
+  display it with line breaks.
 
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.

@@ -73,14 +73,13 @@ export const splitName = (name) => {
 };
 
 export const previewNode = () => {
+  const selected = selectedNode();
+  if (selected && !selected.dir) return selected;
   const current = path[path.length - 1];
-  if (current?.json && current.value !== undefined) return current;
-  const last = path[path.length - 1], s = sel[path.length - 1];
-  const n = s && (last.kids || []).find((k) => k.name === s);
-  return (n && !n.dir) ? n : null;
+  return current?.json && current.value !== undefined ? current : null;
 };
 
 export const selectedNode = () => {
   const last = path[path.length - 1], s = sel[path.length - 1];
-  return s && (last.kids || []).find((k) => k.name === s) || null;
+  return s !== undefined && (last.kids || []).find((k) => k.name === s) || null;
 };
