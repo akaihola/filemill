@@ -9,10 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [31] Evaluate AppKit, GTK and WinUI against the WebView prototype. Record the
-  comparison in an ADR. Do not start a native toolkit before the ADR exists.
-    - Depends on: [30]
-
 - [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
     - Depends on: [29]
@@ -65,6 +61,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   equivalent to `Esc`.
 
 ## Scheduled
+
+- [31] Evaluate AppKit, GTK and WinUI against the WebView prototype. Record the
+  comparison in an ADR. Do not start a native toolkit before the ADR exists.
+    - Depends on: [30]
 
 - [*] Large directories now partition their contents into multiple lists that the user
   can browse using a `< Page N of NN >` control. This is not acceptable. The vertical
