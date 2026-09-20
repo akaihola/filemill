@@ -216,6 +216,11 @@ per device class.
 
 ### 9. Preview and editing (Worth exploring)
 
+2026-09-20 update: Shared CSS now removes the paragraph width cap from
+server-rendered reStructuredText, matching rich browser previews. A browser
+regression covers both containers at desktop and mobile widths, including
+fullscreen, inline markup, links, lists and code whitespace.
+
 Preview kinds are dispatched by regular expressions on the file name inside
 each provider. There is no table. Providers are stacked as decorators at boot
 (`app-fsa.js:14`, `app-http.js:33`), four levels deep, each with an `if`
