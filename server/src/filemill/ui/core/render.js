@@ -7,6 +7,7 @@ import {
   editingPreview,
   openEditor,
 } from "../editor/editor.js";
+import { jsonCollapse } from "./model/json-collapse.js";
 import { syncURL } from "./deeplink.js";
 import { currentPath } from "./model/deeplink.js";
 import { esc, iconHTML } from "./icons.js";
@@ -554,6 +555,8 @@ function setupPreviewActions(n) {
    makes sure a slow read for a file you have since navigated away from is
    dropped. That guard lives here, not in the provider, so a provider is free to
    be as slow as it needs to be — a server round-trip, a WASM highlighter. */
+let previewFoldEvents;
+
 async function fillPreview(n) {
   closeEditor();
   const token = nextPvToken();
@@ -591,6 +594,34 @@ async function fillPreview(n) {
   const host = document.getElementById("pv-content");
   if (!host) return;
   host.innerHTML = html ?? `<p>No inline preview for this file type.</p>`;
+  previewFoldEvents?.abort();
+  previewFoldEvents = new AbortController();
+  const recordFold = (details) => {
+    if (
+      token !== pvToken || !details.isConnected || !details.dataset.jsonPath
+    ) return;
+    if (details.dataset.jsonOpen === String(details.open)) return;
+    details.dataset.jsonOpen = String(details.open);
+    jsonCollapse.record(
+      n.jsonRoot || n,
+      JSON.parse(details.dataset.jsonPath),
+      n.jsonPath?.length || 0,
+      details.open,
+    );
+  };
+  // Handle activation synchronously: native toggle events can arrive after navigation.
+  host.onclick = (event) => {
+    const summary = event.target.closest("summary");
+    const details = summary?.parentElement;
+    if (!details?.dataset.jsonPath || event.defaultPrevented) return;
+    event.preventDefault();
+    details.open = !details.open;
+    recordFold(details);
+  };
+  host.addEventListener("toggle", (event) => recordFold(event.target), {
+    capture: true,
+    signal: previewFoldEvents.signal,
+  });
   hlFences(host);
   const btn = document.getElementById("pv-edit");
   if (btn) {

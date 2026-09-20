@@ -73,7 +73,7 @@ function jsonlRows(node, records) {
     ? jsonlLabels(records, key)
     : records.map((_, i) => `line ${i + 1}`);
   return records.map((record, i) =>
-    jsonValue(node, labels[i], record, String(i + 1))
+    jsonValue(node, labels[i], record, String(i + 1), String(i))
   );
 }
 
@@ -128,6 +128,8 @@ export const withVirtual = (fs) => ({
       return;
     }
     if (node.json) {
+      node.jsonRoot ||= node;
+      node.jsonPath ||= [];
       if (node.value !== undefined) {
         if (node.kids === null) node.kids = jsonKids(node, node.value);
         return;
@@ -194,7 +196,7 @@ export const withVirtualPreview = (provider) => ({
       : JSON.stringify(n.value);
     return Promise.resolve(
       n.value !== null && typeof n.value === "object"
-        ? `<pre class="pv-text pv-json">${jsonHTML(text)}</pre>`
+        ? `<pre class="pv-text pv-json">${jsonHTML(text, n)}</pre>`
         : `<pre class="pv-text pv-json-value">${esc(text)}</pre>`,
     );
   },
@@ -203,7 +205,7 @@ export const withVirtualPreview = (provider) => ({
 /* JSON documents use the same virtual-node contract as JSONL and SQLite. The
    value stays on each node so the preview can answer locally; vpath is only a
    stable address for the shared router and server-shaped nodes. */
-function jsonValue(parent, name, value, vpath) {
+function jsonValue(parent, name, value, vpath, key = name) {
   const container = value !== null && typeof value === "object";
   return {
     name,
@@ -212,6 +214,8 @@ function jsonValue(parent, name, value, vpath) {
     vpath,
     icon: container ? (Array.isArray(value) ? "[]" : "{}") : "◻",
     json: true,
+    jsonRoot: parent.jsonRoot || parent,
+    jsonPath: [...(parent.jsonPath || []), key],
     value,
     rel: parent.rel,
     ordered: true,
