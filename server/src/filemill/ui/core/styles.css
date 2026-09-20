@@ -1252,6 +1252,9 @@ body {
   background: var(--hover);
   padding: 8px;
 }
+.pv-pptx .slide p {
+  white-space: pre-wrap;
+}
 .pv-pptx > :first-child {
   margin-top: 0;
 }

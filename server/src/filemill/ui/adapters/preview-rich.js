@@ -246,6 +246,12 @@ async function rst(text) {
 async function unzipPptx(blob) {
   const bytes = new Uint8Array(await blob.arrayBuffer());
   const view = new DataView(bytes.buffer);
+  if (
+    bytes.length < 4 ||
+    ![0x04034b50, 0x06054b50].includes(view.getUint32(0, true))
+  ) {
+    throw new Error("Invalid ZIP archive");
+  }
   const slides = [];
   for (
     let at = 0;
