@@ -2391,6 +2391,28 @@ const esc = (s) =>
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]),
   );
 
+/* ═══ core/model/json-collapse.js ═══ */
+// Patterns replace the preview's prefix, retaining absolute depth and suffix.
+const collapsed = new Set();
+const explicit = new WeakMap();
+const jsonCollapse = {
+  record(root, path, depth, open) {
+    if (!explicit.has(root)) explicit.set(root, new Map());
+    explicit.get(root).set(JSON.stringify(path), open);
+    if (!open) collapsed.add(JSON.stringify([depth, path.slice(depth)]));
+  },
+  open(root, path) {
+    const saved = explicit.get(root)?.get(JSON.stringify(path));
+    if (saved !== undefined) return saved;
+    for (let depth = 0; depth <= path.length; depth++) {
+      if (collapsed.has(JSON.stringify([depth, path.slice(depth)]))) {
+        return false;
+      }
+    }
+    return true;
+  },
+};
+
 /* ═══ core/syntax.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Syntax highlighting — in the browser, so one copy serves both builds.
@@ -2673,11 +2695,11 @@ function hlHTML(text, key) {
 
 /* Pretty-printed, foldable HTML for a JSON document, or null when `text` is
    not JSON — the caller then colours it as source instead. Objects and arrays
-   become <details open>, so folding is the browser's: no handlers, and nothing
-   for either build to wire. Inside a pre-wrap <pre> a newline that precedes a
+   become <details>; hierarchical previews carry structural paths and remembered
+   fold state. Inside a pre-wrap <pre> a newline that precedes a
    block is swallowed and one that follows it draws a blank line, so every text
    line ends in "\n" and no run of text begins with one. */
-function jsonHTML(text) {
+function jsonHTML(text, context) {
   let doc;
   try {
     doc = JSON.parse(text);
@@ -2690,7 +2712,7 @@ function jsonHTML(text) {
       : typeof v === "number"
       ? `<span class="hl-num">${v}</span>`
       : `<span class="hl-str">${esc(JSON.stringify(v))}</span>`;
-  const node = (v, pad, head, tail) => {
+  const node = (v, pad, head, tail, path) => {
     if (typeof v !== "object" || v === null) {
       return `${pad}${head}${scalar(v)}${tail}\n`;
     }
@@ -2698,8 +2720,17 @@ function jsonHTML(text) {
     const keys = arr ? v.map((_, i) => i) : Object.keys(v);
     const [open, close] = arr ? ["[", "]"] : ["{", "}"];
     if (!keys.length) return `${pad}${head}${open}${close}${tail}\n`;
+    const openState = !context ||
+      jsonCollapse.open(context.jsonRoot || context, path);
+    const address = context
+      ? ` data-json-path="${
+        esc(JSON.stringify(path))
+      }" data-json-open="${openState}"`
+      : "";
     let out =
-      `<details open><summary data-n="${keys.length}" data-close="${close}${tail}">` +
+      `<details${
+        openState ? " open" : ""
+      }${address}><summary data-n="${keys.length}" data-close="${close}${tail}">` +
       `${pad}${head}${open}</summary>`;
     keys.forEach((k, i) => {
       out += node(
@@ -2707,6 +2738,7 @@ function jsonHTML(text) {
         pad + "  ",
         arr ? "" : `${esc(JSON.stringify(k))}: `,
         i < keys.length - 1 ? "," : "",
+        [...path, String(k)],
       );
     });
     return out + `${pad}${close}${tail}</details>`;
@@ -2714,7 +2746,7 @@ function jsonHTML(text) {
   /* Nesting deep enough to exhaust the stack is still valid JSON; it is shown
      as source, the same as anything else this cannot fold. */
   try {
-    return node(doc, "", "", "");
+    return node(doc, "", "", "", context?.jsonPath || []);
   } catch {
     return null;
   }
@@ -4247,6 +4279,8 @@ function setupPreviewActions(n) {
    makes sure a slow read for a file you have since navigated away from is
    dropped. That guard lives here, not in the provider, so a provider is free to
    be as slow as it needs to be — a server round-trip, a WASM highlighter. */
+let previewFoldEvents;
+
 async function fillPreview(n) {
   closeEditor();
   const token = nextPvToken();
@@ -4284,6 +4318,34 @@ async function fillPreview(n) {
   const host = document.getElementById("pv-content");
   if (!host) return;
   host.innerHTML = html ?? `<p>No inline preview for this file type.</p>`;
+  previewFoldEvents?.abort();
+  previewFoldEvents = new AbortController();
+  const recordFold = (details) => {
+    if (
+      token !== pvToken || !details.isConnected || !details.dataset.jsonPath
+    ) return;
+    if (details.dataset.jsonOpen === String(details.open)) return;
+    details.dataset.jsonOpen = String(details.open);
+    jsonCollapse.record(
+      n.jsonRoot || n,
+      JSON.parse(details.dataset.jsonPath),
+      n.jsonPath?.length || 0,
+      details.open,
+    );
+  };
+  // Handle activation synchronously: native toggle events can arrive after navigation.
+  host.onclick = (event) => {
+    const summary = event.target.closest("summary");
+    const details = summary?.parentElement;
+    if (!details?.dataset.jsonPath || event.defaultPrevented) return;
+    event.preventDefault();
+    details.open = !details.open;
+    recordFold(details);
+  };
+  host.addEventListener("toggle", (event) => recordFold(event.target), {
+    capture: true,
+    signal: previewFoldEvents.signal,
+  });
   hlFences(host);
   const btn = document.getElementById("pv-edit");
   if (btn) {
@@ -5091,7 +5153,7 @@ function jsonlRows(node, records) {
     ? jsonlLabels(records, key)
     : records.map((_, i) => `line ${i + 1}`);
   return records.map((record, i) =>
-    jsonValue(node, labels[i], record, String(i + 1))
+    jsonValue(node, labels[i], record, String(i + 1), String(i))
   );
 }
 
@@ -5146,6 +5208,8 @@ const withVirtual = (fs) => ({
       return;
     }
     if (node.json) {
+      node.jsonRoot ||= node;
+      node.jsonPath ||= [];
       if (node.value !== undefined) {
         if (node.kids === null) node.kids = jsonKids(node, node.value);
         return;
@@ -5212,7 +5276,7 @@ const withVirtualPreview = (provider) => ({
       : JSON.stringify(n.value);
     return Promise.resolve(
       n.value !== null && typeof n.value === "object"
-        ? `<pre class="pv-text pv-json">${jsonHTML(text)}</pre>`
+        ? `<pre class="pv-text pv-json">${jsonHTML(text, n)}</pre>`
         : `<pre class="pv-text pv-json-value">${esc(text)}</pre>`,
     );
   },
@@ -5221,7 +5285,7 @@ const withVirtualPreview = (provider) => ({
 /* JSON documents use the same virtual-node contract as JSONL and SQLite. The
    value stays on each node so the preview can answer locally; vpath is only a
    stable address for the shared router and server-shaped nodes. */
-function jsonValue(parent, name, value, vpath) {
+function jsonValue(parent, name, value, vpath, key = name) {
   const container = value !== null && typeof value === "object";
   return {
     name,
@@ -5230,6 +5294,8 @@ function jsonValue(parent, name, value, vpath) {
     vpath,
     icon: container ? (Array.isArray(value) ? "[]" : "{}") : "◻",
     json: true,
+    jsonRoot: parent.jsonRoot || parent,
+    jsonPath: [...(parent.jsonPath || []), key],
     value,
     rel: parent.rel,
     ordered: true,

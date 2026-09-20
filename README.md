@@ -28,6 +28,10 @@ and handles only, so the static edition calls `getFile()` one time per entry.
 Each call takes about 300 µs, so 3 000 entries take about one second.
 `ui/core/sort.js` is one implementation with two prices.
 
+JSON previews remember collapsed objects during the current session. Matching
+paths at the same depth stay collapsed when you browse similar objects. An
+explicit expansion takes precedence for that object.
+
 The preview toolbar has a Fullscreen button. The preview stays in fullscreen
 when the browser resizes. Use Exit fullscreen or the browser fullscreen exit
 control to return to the file browser.
