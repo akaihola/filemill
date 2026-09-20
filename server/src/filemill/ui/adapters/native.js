@@ -2,9 +2,7 @@ import { classifyFile } from "../core/file-kind.js";
 import { PreviewRich } from "./preview-rich.js";
 
 export const nativeCall = (op, args = {}) =>
-  window.__TAURI_INTERNALS__
-    ? window.__TAURI_INTERNALS__.invoke("port", { request: { op, ...args } })
-    : window.webkit.messageHandlers.filemill.postMessage({ op, ...args });
+  window.webkit.messageHandlers.filemill.postMessage({ op, ...args });
 const nativeOrder = new Intl.Collator(undefined, { numeric: true });
 const nativeNode = (name, rel = "", dir = true) => ({
   name,
