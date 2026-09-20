@@ -26,7 +26,7 @@ export const PreviewLocal = {
     revokeObjectURL();
   },
 
-  async render(node) {
+  async render(node, kind = classifyFile(node.name, node).preview) {
     /* Decline an oversized text file before it is fetched, not after. The FSA
        port hands back a lazy File, so blob.size below costs nothing there — but
        HTTP.blob (adapters/http.js) does `await r.blob()`, which buffers the
@@ -37,10 +37,10 @@ export const PreviewLocal = {
        being right. */
     if (
       (node.meta?.size ?? 0) > TEXT_MAX &&
-      classifyFile(node.name, node).preview === "text"
+      kind === "text"
     ) return null;
     const blob = await FS.blob(node);
     if (!blob) return null;
-    return renderNode(node, blob, undefined, CORE_RENDERERS);
+    return renderNode(node, blob, kind, CORE_RENDERERS);
   },
 };
