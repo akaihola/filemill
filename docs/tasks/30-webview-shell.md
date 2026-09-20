@@ -139,3 +139,16 @@ The [qualification ADR](../adr/0065-native-shell-qualification.md) defers the
 binary choice. Only the unfinished direct host remains in the current tree.
 The temporary Tauri source and locked comparison build remain recoverable
 from the commit that added `native/tauri/Cargo.lock`.
+
+### Final rebased checks
+
+Rebased onto `main` at `01836d3`. The tracker conflict was resolved from
+main's complete text, then only the unchanged [30] block was moved. Removing
+that block from both files leaves byte-identical text.
+
+All six pre-commit hooks, the model checks and bundle consistency check pass
+on the rebased tree. The three incoming server preview-delete tests and the
+static context-menu deletion test pass. The rebuilt native host still has
+eight passing contract tests and the one scrolled-row failure. Those tests
+launch the embedded executable with a temporary working directory outside
+the checkout. The retained build is 395,368 bytes with a 288,599-byte UI input.
