@@ -109,11 +109,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] In hierarchical navigation of `.json`, `.jsonl`, and SQLite `.db` files, when the
-  key of a scalar value is highlighted, show its value in the preview pane instead of
-  rendering the parent JSON structure. If the value is a string and has `\n` characters,
-  display it with line breaks.
-
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
 
@@ -145,6 +140,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [*] In hierarchical navigation of `.json`, `.jsonl`, and SQLite `.db` files, when the
+  key of a scalar value is highlighted, show its value in the preview pane instead of
+  rendering the parent JSON structure. If the value is a string and has `\n` characters,
+  display it with line breaks.
 
 - [*] Bug: The `Fullscreen` button causes a full screen view of the file to briefly
   flash, and then immediately returns to the main Filemill UI.
