@@ -136,3 +136,20 @@ Tracker proof at this review point: 122 issues, no repeated numbered IDs or
 normalized complete issue text across headings. Removing this issue's exact
 unchanged bullet from both versions makes the tracker byte-identical to main.
 The TSV's 256 node IDs exactly match the original baseline log's failed nodes.
+
+## End-user checks
+
+These checks describe the repaired behavior. Use your own local fixtures for
+files unavailable on the public demo. The automated results above cover these
+regressions; the interactive folder-picker E2E remains a manual check.
+
+| Change | How to check |
+| --- | --- |
+| Root column paints immediately | Open a small folder, then a folder with at least 1,000 entries. Rows should appear immediately; scroll to the last entry. |
+| Nested media previews use the correct URL | Open HTML, PDF and image files in nested folders, including names containing spaces or `&`. Each preview should load. |
+| Source view and history retain the selected file | Toggle HTML or VTT between rendered and highlighted views. Navigate through folders and files, then use Back and Forward. Open Raw and return with Back; the prior preview should return. |
+| Home Markdown links avoid a repeated mount name | In rendered and highlighted Markdown, follow a `~/mount/path.md` link for an existing mount. It should open the target as rendered Markdown. |
+| PowerPoint text preserves whitespace | Preview a PPTX slide containing multiple lines and spaced words. The text should retain its boundaries. |
+| Deep JSON remains readable | Open JSON nested deeply enough to exceed structured preview limits. Its source should remain readable. For ordinary JSON, collapse a node, leave and return; its collapse state should remain. |
+| Descending names respect directory grouping | Select descending name order. Both directory and file groups should reverse, with directories still first. |
+| Static bundle works from disk | Open the built static HTML with a `file://` URL. Icons should load and the browser console should contain no service-worker registration error. |
