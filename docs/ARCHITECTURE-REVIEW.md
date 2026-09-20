@@ -195,6 +195,12 @@ these browser modules; they add no DOM dependency to `ui/core/model/`.
 
 ### 8. Mobile and tablet are arithmetic, not design (Worth exploring)
 
+2026-09-20 update: touch fullscreen uses a same-URL history entry in the
+shared browser renderer. Back and Exit fullscreen restore the existing preview;
+Forward restores the fullscreen layout. Browser tests cover both editions and
+native fullscreen availability. The DOM-free model and desktop history stay
+unchanged.
+
 `ui/core/styles.css` has no media query except `prefers-reduced-motion`.
 There are no touch or pointer handlers. Narrow screens are handled by clamps
 spread over `state.js:72-75`, `render.js:135`, `layout.js:29-37` and
