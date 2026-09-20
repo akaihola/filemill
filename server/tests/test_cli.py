@@ -1,6 +1,7 @@
 import os
 from unittest.mock import MagicMock
 
+import pytest
 import uvicorn
 from typer.testing import CliRunner
 
@@ -9,6 +10,13 @@ import filemill.cli as cli_module
 from filemill.cli import cli, entry_point
 
 runner = CliRunner()
+
+
+@pytest.fixture(autouse=True)
+def restore_server_state(monkeypatch):
+    monkeypatch.setattr(app_module.app.state, "root", None)
+    for name in ("FILEMILL_ROOT", "FILEMILL_BIND", "FILEMILL_LIVE"):
+        monkeypatch.delenv(name, raising=False)
 
 
 def test_entry_point_calls_cli(monkeypatch):
@@ -53,7 +61,7 @@ def test_main_default_root_uses_cwd(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     result = runner.invoke(cli, [])
     assert result.exit_code == 0
-    assert app_module.ROOT == tmp_path
+    assert app_module.app.state.root == tmp_path
 
 
 def test_default_bind_is_loopback(tmp_path, monkeypatch):
