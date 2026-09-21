@@ -81,7 +81,7 @@ export function closeRowMenu(restoreFocus = true) {
   clearTimeout(longPressTimer);
 }
 
-async function deleteEntry(node, parent, button) {
+export async function deleteEntry(node, parent, button) {
   if (isRemoving(node, parent) || !FS.remove || node.vpath) return;
   if (
     !window.confirm(
