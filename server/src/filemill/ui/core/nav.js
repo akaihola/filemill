@@ -20,6 +20,7 @@ import {
   closeRowMenu,
   colCache,
   columnFor,
+  deleteEntry,
   openRowMenu,
   render,
   rowMenuKey,
@@ -352,12 +353,22 @@ document.addEventListener("keydown", (e) => {
   const c = colCache.get(path[focusCol]);
   if (!c) return;
   const rows = c.rows;
-  let ci = rowIndex(path[focusCol], sel[focusCol]);
+  const selectedRow = rowIndex(path[focusCol], sel[focusCol]);
+  let ci = selectedRow;
   if (ci < 0) ci = 0;
 
   if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) {
     e.preventDefault();
     if (c.kids[ci]) openRowMenu(c.kids[ci], path[focusCol], c.ensureRow(ci));
+    return;
+  }
+
+  if (action === "delete") {
+    const node = selectedRow < 0 ? null : c.kids[selectedRow];
+    if (node) {
+      e.preventDefault();
+      void deleteEntry(node, path[focusCol], { disabled: false });
+    }
     return;
   }
 
