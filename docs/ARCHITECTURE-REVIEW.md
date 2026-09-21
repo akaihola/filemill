@@ -206,6 +206,13 @@ Columns are cached with care (`render.js:4-9`); the preview is not.
 
 ### 7. Duplication in the shared UI (Strong)
 
+2026-09-21 update: Keyboard and context-menu path copying share one browser
+action. Successful copies show the copied value with status-bar ellipsis. A
+five-second cycle retains the target across relative, full and name copies;
+other input or changed selection invalidates it, including pending writes.
+Clipboard effects remain outside the DOM-free model. Focused browser tests
+cover both editions and the existing permission-refusal fallback.
+
 - `512 * 1024` appears five times under four names: `TEXT_MAX`,
   `JSONL_MAX`, `JSON_MAX`, `EDIT_MAX`, and a literal in `preview-rich.js:126`.
 - The image extension list appears in `preview-local.js:19`,
