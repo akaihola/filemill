@@ -11,6 +11,7 @@ export function keyAction(event, context) {
       ? "preview-scroll"
       : null;
   }
+  if (key === "Delete") return "delete";
   if (
     key === "c" && (event.metaKey || event.ctrlKey) && !context.textSelected
   ) return "copy";

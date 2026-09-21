@@ -9,8 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [*] Add the `Delete` key as a shortcut to delete the current file or directory.
-
 - [*] When the relative path of a file or folder is copied successfully using `Ctrl+C`
   or a context menu item, show the copied path in the status bar, truncated if
   necessary. Pressing `Ctrl+C` again within 5 seconds and before any other interaction
@@ -55,6 +53,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] Add the `Delete` key as a shortcut to delete the current file or directory.
 
 - [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
