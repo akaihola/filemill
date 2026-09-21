@@ -38,13 +38,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] Pressing the right arrow key when the preview pane is focused currently widens the
-  pane in small steps. It should instead collapse the leftmost expanded folder column
-  fully. When all columns are collapsed, it already correctly scrolls them out of view
-  to the left to fill the window with the preview. One more press must go fullscreen,
-  similar to pressing the `Fullscreen` button. A left arrow press must exit fullscreen,
-  equivalent to `Esc`.
-
 - [*] When returning focus back to the containing folder from the preview pane using the
   left arrow key, always keep all ancestor folder columns in the same expanded/collapsed
   state as they are. Currently expanded ancestor folders are collapsed if I hit the left
@@ -87,6 +80,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [*] Pressing the right arrow key when the preview pane is focused currently widens the
+  pane in small steps. It should instead collapse the leftmost expanded folder column
+  fully. When all columns are collapsed, it already correctly scrolls them out of view
+  to the left to fill the window with the preview. One more press must go fullscreen,
+  similar to pressing the `Fullscreen` button. A left arrow press must exit fullscreen,
+  equivalent to `Esc`.
 
 - [31] Evaluate AppKit, GTK and WinUI against the WebView prototype. Record the
   comparison in an ADR. Do not start a native toolkit before the ADR exists.
