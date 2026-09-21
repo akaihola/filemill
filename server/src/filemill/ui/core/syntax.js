@@ -202,7 +202,6 @@ const HL_SPECS = {
 
 /* Extensions that are the same language under another name. */
 const HL_ALIAS = {
-  "py.j2": "py",
   md: "markdown",
   markdown: "markdown",
   rst: "rst",
