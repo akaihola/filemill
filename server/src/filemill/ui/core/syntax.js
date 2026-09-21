@@ -253,6 +253,7 @@ const HL_LANGS = Object.fromEntries(
    at index 0 so a dotfile is its own extension: .gitignore is a shell-comment
    file and has nothing else to go on. */
 export function hlLang(name) {
+  if (name.toLowerCase().endsWith(".py.j2")) return "py";
   const i = name.lastIndexOf(".");
   if (i < 0) return null;
   const ext = name.slice(i + 1).toLowerCase();

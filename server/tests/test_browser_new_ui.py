@@ -57,6 +57,7 @@ def ui_root(tmp_path: Path) -> Path:
     (tmp_path / "notes" / "short.txt").write_text("short")
     (tmp_path / "code").mkdir()
     (tmp_path / "code" / "sample.py").write_text(SOURCE)
+    (tmp_path / "code" / "sample.py.j2").write_text(SOURCE)
     (tmp_path / "code" / "guide.rst").write_text(
         "Guide\n=====\n\nSome *rst* text.\n\n.. code-block:: python\n\n   return 1\n"
     )
@@ -583,6 +584,12 @@ def test_source_is_highlighted_in_the_browser(page):
         page.eval_on_selector_all("#preview .pv-text span", TOKEN_CLASSES)
         == "hl-com,hl-kw,hl-num,hl-str"
     )
+    assert page.text_content("#preview .pv-text") == SOURCE
+
+
+def test_jinja_python_source_is_highlighted_in_the_browser(page):
+    page.open("code/sample.py.j2")
+    page.wait_for_selector("#preview .pv-text .hl-kw", timeout=15000)
     assert page.text_content("#preview .pv-text") == SOURCE
 
 

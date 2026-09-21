@@ -61,7 +61,7 @@ def render_preview(path: Path, state=None, preview_url: str | None = None) -> st
     *state* is accepted for callers that have a request's ``ViewState``; no
     renderer reads it since the Markdown renderer moved to the browser.
     """
-    ext = path.suffix.lower()
+    ext = _syntax_extension(path)
     preview = classify_path(path).preview
 
     if preview == "rst":
@@ -100,7 +100,7 @@ def render_source(path: Path) -> str:
     a plain ``<pre>``, then an explicit "no source view" note for bytes that are
     not UTF-8 text.
     """
-    ext = path.suffix.lower()
+    ext = _syntax_extension(path)
     highlighted = _highlight_source(path, ext)
     if highlighted is not None:
         return highlighted
@@ -141,6 +141,10 @@ def _highlight_source(path: Path, ext: str) -> str | None:
     except Exception:  # noqa: S110 — colour is optional; the <pre> fallback is not
         pass
     return None
+
+
+def _syntax_extension(path: Path) -> str:
+    return ".py" if path.name.lower().endswith(".py.j2") else path.suffix.lower()
 
 
 def _raw_text(path: Path) -> str | None:

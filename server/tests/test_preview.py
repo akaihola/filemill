@@ -370,6 +370,13 @@ def test_python_file_is_syntax_highlighted(tmp_path):
     assert "highlight" in result  # Pygments wraps in div.highlight
 
 
+def test_jinja_python_file_is_syntax_highlighted(tmp_path):
+    f = tmp_path / "hello.py.j2"
+    f.write_text("def hello():\n    return 'world'\n")
+    result = render_preview(f)
+    assert "preview-code" in result
+
+
 def test_js_file_is_syntax_highlighted(tmp_path):
     f = tmp_path / "app.js"
     f.write_text("function hello() { return 'world'; }\n")
