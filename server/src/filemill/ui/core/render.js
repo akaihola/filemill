@@ -61,7 +61,7 @@ let suppressClick = false;
 
 let menuRow, menuFocus, updateMenuDelete;
 const removing = new WeakMap();
-const entryPath = (node, parent) =>
+export const entryPath = (node, parent) =>
   node.rel ||
   path.slice(1, path.indexOf(parent) + 1).map((n) => n.name).concat(node.name)
     .join("/");
@@ -137,30 +137,19 @@ export function openRowMenu(node, parent, row, event) {
   closeRowMenu();
   menuRow = row;
   menuFocus = document.activeElement;
-  const rel = entryPath(node, parent);
-  const absolute = node.abs || "/" + rel;
   const menu = document.getElementById("row-menu");
   menu.innerHTML = [
-    ["Copy name", node.name],
-    ["Copy relative path", rel],
-    ["Copy absolute path", absolute],
-  ].map(([label, text]) =>
-    `<button type="button" role="menuitem" data-copy="${
-      esc(text)
-    }">${label}</button>`
+    ["Copy name", 2],
+    ["Copy relative path", 0],
+    ["Copy absolute path", 1],
+  ].map(([label, mode]) =>
+    `<button type="button" role="menuitem" data-copy="${mode}">${label}</button>`
   ).join("");
   menu.querySelectorAll("button").forEach((button) =>
     button.onclick = async () => {
       suppressClick = false;
-      try {
-        await navigator.clipboard.writeText(button.dataset.copy);
+      if (await actions.copyPath(node, parent, Number(button.dataset.copy))) {
         closeRowMenu();
-      } catch (err) {
-        actions.saySt(
-          "st-copy",
-          `clipboard refused (${err.name || "error"})`,
-          false,
-        );
       }
     }
   );
