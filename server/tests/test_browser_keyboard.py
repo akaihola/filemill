@@ -1459,3 +1459,28 @@ def test_mobile_long_press_menu_dismissal_preserves_taps(live_server):
         assert page.locator("#row-menu").is_hidden()
         row.click()
         page.wait_for_function("path.length === 2")
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("directory", [False, True])
+def test_copy_rotation_http(live_server: str, browser_root: Path, directory: bool):
+    with _ui_page(live_server) as page:
+        page.evaluate("""() => {
+          window.copiedPaths = [];
+          Object.defineProperty(navigator, 'clipboard', {configurable: true,
+            value: {writeText: async value => copiedPaths.push(value)}});
+        }""")
+        _ui_tap(page, 0, "my-knowledge")
+        relative = "my-knowledge"
+        if not directory:
+            _ui_tap(page, 1, "AGENTS.md")
+            relative += "/AGENTS.md"
+        for value in [
+            relative,
+            str(browser_root / relative),
+            relative.split("/")[-1],
+            relative,
+        ]:
+            page.keyboard.press("Control+c")
+            page.wait_for_function("v => copiedPaths.at(-1) === v", arg=value)
+            assert page.locator("#st-copy").inner_text() == f"Copied {value}"

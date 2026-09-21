@@ -34,6 +34,7 @@ import { addRenderers, CORE_RENDERERS } from "../core/renderers.js";
 import { mountRoot } from "../core/mount.js";
 import {
   choose,
+  copyPath,
   refreshColumn,
   renderCrumbs,
   saySt,
@@ -62,7 +63,7 @@ const welcome = document.getElementById("welcome");
    in the order they used to load. */
 initSort();
 setSortKids(sortKids);
-setActions({ choose, refreshColumn, renderCrumbs, saySt, unfoldTo });
+setActions({ choose, copyPath, refreshColumn, renderCrumbs, saySt, unfoldTo });
 setSortActions({ render });
 setDeepLinkActions({ render, colCache });
 initLayout(render);
