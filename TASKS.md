@@ -15,13 +15,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   must copy the full path, and a third press must copy the item's name only. A fourth
   press must start the rotation over from the relative path.
 
-- [*] Pressing the right arrow key when the preview pane is focused currently widens the
-  pane in small steps. It should instead collapse the leftmost expanded folder column
-  fully. When all columns are collapsed, it already correctly scrolls them out of view
-  to the left to fill the window with the preview. One more press must go fullscreen,
-  similar to pressing the `Fullscreen` button. A left arrow press must exit fullscreen,
-  equivalent to `Esc`.
-
 ## Scheduled
 
 - [*] Large directories now partition their contents into multiple lists that the user
@@ -44,6 +37,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] Pressing the right arrow key when the preview pane is focused currently widens the
+  pane in small steps. It should instead collapse the leftmost expanded folder column
+  fully. When all columns are collapsed, it already correctly scrolls them out of view
+  to the left to fill the window with the preview. One more press must go fullscreen,
+  similar to pressing the `Fullscreen` button. A left arrow press must exit fullscreen,
+  equivalent to `Esc`.
 
 - [*] When returning focus back to the containing folder from the preview pane using the
   left arrow key, always keep all ancestor folder columns in the same expanded/collapsed
