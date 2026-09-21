@@ -173,3 +173,13 @@ return {clickable: row.contains(hit), hit: hit?.id || hit?.className,
         row: r.toJSON(), viewport: {width:innerWidth,height:innerHeight}};
 }""")
         assert result["clickable"], result
+
+
+def test_write_preserves_embedded_nul(tmp_path):
+    file = tmp_path / "text.txt"
+    file.write_text("before")
+    with application(tmp_path) as page:
+        page.evaluate(
+            'async () => { await FS.write(path[0].kids[0], "before\\u0000after é"); }'
+        )
+    assert file.read_bytes() == "before\0after é".encode()

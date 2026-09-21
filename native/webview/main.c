@@ -149,23 +149,27 @@ static gboolean message(WebKitUserContentManager *manager, JSCValue *request,
             }
             g_byte_array_unref(bytes);
         } else if (!strcmp(op, "write") && S_ISREG(info.st_mode) && *path) {
-            char *text = string_property(request, "text");
-            if (text) {
+            JSCValue *value = jsc_value_object_get_property(request, "text");
+            if (jsc_value_is_string(value)) {
+                GBytes *bytes = jsc_value_to_string_as_bytes(value);
+                gsize length;
+                const char *text = g_bytes_get_data(bytes, &length);
                 char *parent = g_path_get_dirname(path);
                 char *name = g_path_get_basename(path);
                 int parent_fd = open_relative(!strcmp(parent, ".") ? "" : parent, O_RDONLY | O_DIRECTORY);
                 if (parent_fd >= 0) {
                     char *target = g_strdup_printf("/proc/self/fd/%d/%s", parent_fd, name);
                     GError *error = NULL;
-                    if (g_file_set_contents_full(target, text, -1,
+                    if (g_file_set_contents_full(target, text ? text : "", length,
                         G_FILE_SET_CONTENTS_CONSISTENT | G_FILE_SET_CONTENTS_DURABLE,
                         info.st_mode & 0777, &error)) result = jsc_value_new_null(context);
                     else { errno = EIO; g_clear_error(&error); }
                     g_free(target); close(parent_fd);
                 }
                 g_free(parent); g_free(name);
+                g_bytes_unref(bytes);
             }
-            g_free(text);
+            g_object_unref(value);
         }
     }
 finish:
