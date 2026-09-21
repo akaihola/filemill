@@ -5414,7 +5414,7 @@ document.addEventListener("keydown", (e) => {
   const context = {
     editable: e.target.matches?.("input, textarea, select") ||
       e.target.isContentEditable,
-    welcome: !document.getElementById("welcome")?.hidden,
+    welcome: document.getElementById("welcome")?.hidden === false,
     preview: !!e.target.closest?.("#preview"),
     textSelected: !!getSelection().toString(),
     typeahead: taLive(),
@@ -6272,7 +6272,7 @@ const CORE_RENDERERS = [
     kind: "html",
     render(node, blob) {
       pvURL = URL.createObjectURL(blob.slice(0, blob.size, "text/html"));
-      return `<iframe class="pv-html" src="${pvURL}" title="${
+      return `<iframe class="pv-html" sandbox="" src="${pvURL}" title="${
         esc(node.name)
       }"></iframe>`;
     },

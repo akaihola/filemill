@@ -9,10 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
-  the three ports natively. Choose the smallest binary that passes `test-ui.py`.
-    - Depends on: [29]
-
 - [*] Add the `Delete` key as a shortcut to delete the current file or directory.
 
 - [*] When the relative path of a file or folder is copied successfully using `Ctrl+C`
@@ -59,6 +55,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
+  the three ports natively. Choose the smallest binary that passes `test-ui.py`.
+    - Depends on: [29]
 
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.

@@ -108,6 +108,11 @@ def inline_module(m: re.Match) -> str:
 
 
 html = (HERE / "index-dev.html").read_text(encoding="utf-8")
+native_output = Path(sys.argv[sys.argv.index("--native") + 1]) if "--native" in sys.argv else None
+if native_output:
+    html = html.replace("../ui/entry-static.js", "../ui/entry-native.js")
+    html = re.sub(r'<link rel="manifest"[^>]*>', "", html)
+    html = re.sub(r"<script>.*?</script>", "", html, flags=re.S)
 html, n_css = re.subn(r'<link rel="stylesheet" href="([^"]+)">', inline_css, html)
 html, n_mod = re.subn(
     r'<script type="module" src="([^"]+)"></script>', inline_module, html
@@ -118,7 +123,7 @@ if not n_css:
 if n_mod != 1:
     raise SystemExit("index-dev.html must load exactly one entry module")
 
-out = HERE / "index.html"
+out = native_output or HERE / "index.html"
 
 # The bundle is generated *and* committed, which is the arrangement that lets
 # anyone download one file — and the arrangement that silently ships a stale
