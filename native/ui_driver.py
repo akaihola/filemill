@@ -156,7 +156,17 @@ class NativePage:
         self.raw, self.root = raw, root
         self.listeners = {}
         self.raw.evaluate(
-            '() => { window.__nativeErrors = []; addEventListener("error", e => __nativeErrors.push(e.message)); addEventListener("unhandledrejection", e => __nativeErrors.push(String(e.reason))); }'
+            """() => {
+window.__nativeErrors = [];
+window.__nativeConsole = [];
+addEventListener("error", e => __nativeErrors.push(e.message));
+addEventListener("unhandledrejection", e => __nativeErrors.push(String(e.reason)));
+const error = console.error.bind(console);
+console.error = (...args) => {
+  __nativeConsole.push({type: 'error', text: args.map(String).join(' ')});
+  error(...args);
+};
+}"""
         )
         self.keyboard = Keyboard(self)
         self.mouse = SimpleNamespace(move=self.move)
@@ -201,6 +211,9 @@ class NativePage:
         for error in self.raw.evaluate("__nativeErrors.splice(0)"):
             if "pageerror" in self.listeners:
                 self.listeners["pageerror"](error)
+        for message in self.raw.evaluate("__nativeConsole.splice(0)"):
+            if "console" in self.listeners:
+                self.listeners["console"](SimpleNamespace(**message))
         if "window.__mk = " in script:
             self.raw.evaluate("""() => {
 if (window.__nativeInstrumented) return;

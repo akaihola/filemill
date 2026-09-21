@@ -183,3 +183,18 @@ def test_write_preserves_embedded_nul(tmp_path):
             'async () => { await FS.write(path[0].kids[0], "before\\u0000after é"); }'
         )
     assert file.read_bytes() == "before\0after é".encode()
+
+
+def test_ui_driver_reports_console_errors(tmp_path):
+    import asyncio
+
+    from ui_driver import NativePage
+
+    with application(tmp_path) as raw:
+        page = NativePage(raw, tmp_path)
+        errors = []
+        page.on("console", lambda message: errors.append((message.type, message.text)))
+        asyncio.run(page.evaluate('console.error("native", "failure")'))
+        assert errors == [("error", "native failure")]
+        asyncio.run(page.evaluate("true"))
+        assert len(errors) == 1
