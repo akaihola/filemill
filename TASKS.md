@@ -11,8 +11,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] Treat `.py.j2` as Python.
-
 - [*] Large directories now partition their contents into multiple lists that the user
   can browse using a `< Page N of NN >` control. This is not acceptable. The vertical
   scrollbar should be used to navigate through the directory contents. Task
@@ -31,6 +29,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
 - [38] Fix PPTX previews that show unspaced slide text in both modes.
 ## In Progress
+
+- [*] Treat `.py.j2` as Python.
 
 - [*] When returning focus back to the containing folder from the preview pane using the
   left arrow key, always keep all ancestor folder columns in the same expanded/collapsed
