@@ -714,6 +714,145 @@ def test_arrow_left_unfolds_each_focused_ancestor(page):
         assert page.evaluate("sel") == selected
 
 
+@pytest.mark.parametrize("partial", [False, True])
+def test_preview_arrow_folds_then_fullscreen(page, partial):
+    page.open("notes/deep/leaf.md")
+    page.wait_for_selector("#preview .pv-rich h1")
+    page.evaluate("finder.scrollTo({left: 0, behavior: 'instant'})")
+    page.wait_for_function("folded === 0")
+    snapshot = page.evaluate(
+        "({sel: [...sel], focusCol, url: location.href, history: history.length})"
+    )
+    page.keyboard.press("ArrowRight")
+    assert page.evaluate("document.activeElement.id") == "preview"
+    assert page.evaluate("finder.scrollLeft") == 0
+    if partial:
+        page.evaluate(
+            "finder.scrollTo({left: .4 * foldUnit() * range(), behavior: 'instant'})"
+        )
+    for count in range(1, 4):
+        page.keyboard.press("ArrowRight")
+        page.wait_for_function(
+            "n => document.querySelectorAll('.col.spine').length === n",
+            arg=count,
+            timeout=3000,
+        )
+        assert page.evaluate(
+            "n => Math.abs(finder.scrollLeft - n * foldUnit() * range()) <= 1", count
+        )
+        assert page.evaluate("document.activeElement.id") == "preview"
+        assert not page.evaluate(
+            "document.documentElement.classList.contains('pv-fullscreen')"
+        )
+    page.keyboard.press("ArrowRight")
+    page.wait_for_function(
+        "Math.abs(finder.scrollLeft - (finder.scrollWidth - finder.clientWidth)) <= 1"
+    )
+    assert page.evaluate(
+        "[...document.querySelectorAll('.col')].every(c => c.getBoundingClientRect().right <= 1)"
+    )
+    assert not page.evaluate(
+        "document.documentElement.classList.contains('pv-fullscreen')"
+    )
+    page.keyboard.press("ArrowRight")
+    page.wait_for_function(
+        "document.documentElement.classList.contains('pv-fullscreen') && document.fullscreenElement !== null"
+    )
+    page.wait_for_function("document.activeElement.id === 'preview'")
+    page.keyboard.press("ArrowRight")
+    assert page.evaluate("document.documentElement.classList.contains('pv-fullscreen')")
+    page.keyboard.press("ArrowLeft")
+    page.wait_for_function(
+        "!document.documentElement.classList.contains('pv-fullscreen') && !document.fullscreenElement"
+    )
+    page.wait_for_function("document.activeElement.id === 'preview'")
+    assert (
+        page.evaluate(
+            "({sel: [...sel], focusCol, url: location.href, history: history.length})"
+        )
+        == snapshot
+    )
+    page.keyboard.press("ArrowLeft")
+    assert page.evaluate("document.activeElement.id") != "preview"
+    assert page.evaluate("focusCol") == 2
+    assert not page.errors
+
+
+@pytest.mark.parametrize("native", [False, True])
+@pytest.mark.parametrize("key", ["ArrowLeft", "Escape"])
+def test_preview_arrow_exits_button_fullscreen(page, native, key):
+    page.open("notes/deep/leaf.md")
+    page.wait_for_selector("#preview .pv-rich h1")
+    if not native:
+        page.evaluate(
+            "() => { document.documentElement.requestFullscreen = async () => { throw Error('denied'); }; }"
+        )
+    snapshot = page.evaluate(
+        "({sel: [...sel], focusCol, url: location.href, history: history.length})"
+    )
+    page.locator("#pv-fullscreen").click()
+    page.wait_for_function(
+        "document.documentElement.classList.contains('pv-fullscreen')"
+    )
+    if native:
+        page.wait_for_function("document.fullscreenElement !== null")
+    page.locator("#preview").focus()
+    page.keyboard.press(key)
+    page.wait_for_function(
+        "!document.documentElement.classList.contains('pv-fullscreen') && !document.fullscreenElement",
+        timeout=3000,
+    )
+    page.wait_for_function("document.activeElement.id === 'preview'")
+    assert (
+        page.evaluate(
+            "({sel: [...sel], focusCol, url: location.href, history: history.length})"
+        )
+        == snapshot
+    )
+    page.keyboard.press("ArrowLeft")
+    assert page.evaluate("document.activeElement.id") != "preview"
+
+
+def test_preview_arrow_focus_survives_resize(page):
+    page.open("notes/plain.txt")
+    page.keyboard.press("ArrowRight")
+    assert page.evaluate("document.activeElement.id") == "preview"
+    page.set_viewport_size({"width": 1400, "height": 850})
+    page.wait_for_function(
+        "parseFloat(document.documentElement.style.getPropertyValue('--stage-w')) === 1400"
+    )
+    page.wait_for_function("document.activeElement.id === 'preview'", timeout=3000)
+    page.locator('.col[data-i="1"] .row[title="short.txt"]').click()
+    page.keyboard.press("ArrowLeft")
+    assert page.evaluate("focusCol") == 0
+
+
+def test_preview_arrow_rapid_and_editable(page):
+    page.open("notes/deep/leaf.md")
+    page.wait_for_selector("#preview .pv-rich h1")
+    page.evaluate("finder.scrollTo({left: 0, behavior: 'instant'})")
+    page.wait_for_function("folded === 0")
+    page.evaluate("""() => {
+      const input = document.createElement('input');
+      input.value = 'abc';
+      document.querySelector('#preview').append(input);
+      input.focus({preventScroll: true});
+      input.setSelectionRange(1, 1);
+    }""")
+    page.keyboard.press("ArrowRight")
+    assert page.evaluate("document.activeElement.selectionStart") == 2
+    assert page.evaluate("finder.scrollLeft") == 0
+    page.locator("#preview").focus()
+    for _ in range(3):
+        page.keyboard.press("ArrowRight")
+    page.wait_for_function(
+        "document.querySelectorAll('.col.spine').length === 3", timeout=3000
+    )
+    assert not page.evaluate(
+        "document.documentElement.classList.contains('pv-fullscreen')"
+    )
+
+
 def test_preview_arrows_preserve_layout_then_restore_document_parent(page):
     page.set_viewport_size({"width": 760, "height": 700})
     page.open("notes/deep/leaf.md")
@@ -1828,8 +1967,7 @@ def test_delete_key_deletes_selected_files_and_directories_but_not_editors(
     page.keyboard.press("Delete")
     count = page.locator('.col[data-i="0"] .row').count()
     page.evaluate(
-        "() => { document.querySelector('#test-editor').remove(); "
-        "sel[0] = undefined; }"
+        "() => { document.querySelector('#test-editor').remove(); sel[0] = undefined; }"
     )
     page.keyboard.press("Delete")
     assert page.locator('.col[data-i="0"] .row').count() == count
