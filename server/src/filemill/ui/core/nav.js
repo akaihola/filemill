@@ -273,7 +273,7 @@ for (const event of ["blur", "pagehide", "popstate"]) {
   globalThis.addEventListener(event, resetCopy);
 }
 
-export async function copyPath(node, parent, mode) {
+export async function copyPath(node, parent, mode, displayedPath) {
   const explicit = !!node;
   let index = 0;
   if (!explicit) {
@@ -285,20 +285,24 @@ export async function copyPath(node, parent, mode) {
     } else {
       parent = path[focusCol];
       node = parent?.kids?.find((n) => n.name === sel[focusCol]);
+      if (!node && focusCol > 0) {
+        node = parent;
+        parent = path[focusCol - 1];
+      }
     }
   }
   if (!node) return false;
   const relative = entryPath(node, parent);
   const values = [relative, node.abs || "/" + relative, node.name];
   if (explicit) index = mode ?? 0;
-  const text = values[index];
+  const text = displayedPath ?? values[index];
   const selection = copySelection();
   const request = ++copyRequest;
   copyCycle = null;
   try {
     await navigator.clipboard.writeText(text);
     if (request !== copyRequest || !sameCopySelection(selection)) return false;
-    if (!explicit || index === 0) {
+    if ((!explicit || index === 0) && text === values[index]) {
       copyCycle = {
         node,
         parent,
@@ -333,9 +337,10 @@ document.getElementById("kbd-copy").textContent = COPY_KEY;
 document.getElementById("st-path").onclick = () => {
   const parent = path[path.length - 1];
   const node = parent?.kids?.find((n) => n.name === sel[path.length - 1]);
-  return node
-    ? copyPath(node, parent)
-    : path.length > 1 && copyPath(parent, path[path.length - 2]);
+  // A refused rotated copy can leave a different value selected in this slot.
+  const text = document.getElementById("st-path").textContent;
+  return node ? copyPath(node, parent, undefined, text) : path.length > 1 &&
+    copyPath(parent, path[path.length - 2], undefined, text);
 };
 
 /* Entering a column: the row it was left on, else the one it remembers, else
