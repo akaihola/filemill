@@ -75,6 +75,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Completed
 
+- [37] Make the installed PWA show its server-not-running recovery page when
+  opened while the server is stopped.
+
 - [*] When the relative path of a file or folder is copied successfully using `Ctrl+C`
   or a context menu item, show the copied path in the status bar, truncated if
   necessary. Pressing `Ctrl+C` again within 5 seconds and before any other interaction
@@ -444,6 +447,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 [34]: docs/tasks/34-sqlite-json-only.md
 [35]: docs/tasks/35-decide-web-mounts.md
 [36]: docs/tasks/36-pwa-start-server.md
+[37]: docs/tasks/37-pwa-startup-offline-recovery.md
 [37]: docs/tasks/37-py-j2-highlighting.md
 [38]: docs/tasks/38-pptx-rendered-preview.md
 [39]: docs/tasks/39-browser-history-navigation.md

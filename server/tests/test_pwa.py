@@ -85,6 +85,21 @@ def test_sw_keeps_api_requests_network_only(client):
     assert '"/api/"' in body
 
 
+def test_sw_recovers_failed_navigation_with_retry_page(client):
+    body = client.get("/sw.js").text
+    assert 'event.request.mode === "navigate"' in body
+    assert "Filemill server unavailable" in body
+    assert "uv run filemill" in body
+    assert "Retry connection" in body
+
+
+def test_sw_keeps_navigation_fallback_out_of_api_branch(client):
+    body = client.get("/sw.js").text
+    assert body.index("NETWORK_ONLY_PREFIXES.some") < body.index(
+        'event.request.mode === "navigate"'
+    )
+
+
 # ── icons ─────────────────────────────────────────────────────────────────────
 
 
