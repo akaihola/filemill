@@ -45,10 +45,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [31] Evaluate AppKit, GTK and WinUI against the WebView prototype. Record the
-  comparison in an ADR. Do not start a native toolkit before the ADR exists.
-    - Depends on: [30]
-
 - [*] When returning focus back to the containing folder from the preview pane using the
   left arrow key, always keep all ancestor folder columns in the same expanded/collapsed
   state as they are. Currently expanded ancestor folders are collapsed if I hit the left
@@ -91,6 +87,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [31] Evaluate AppKit, GTK and WinUI against the WebView prototype. Record the
+  comparison in an ADR. Do not start a native toolkit before the ADR exists.
+    - Depends on: [30]
 
 - [*] reStructuredText paragraphs are rendered very narrow. For example
   in`/home/agent/prg/feedtask/README.rst`, a the source for a paragraph is:
