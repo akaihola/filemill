@@ -23,6 +23,14 @@ const NETWORK_ONLY_PREFIXES = [
   "/sse/",
 ];
 
+const RECOVERY_HTML = `<!doctype html>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Filemill server unavailable</title>
+<style>body{font:16px system-ui,sans-serif;max-width:36rem;margin:20vh auto;padding:1rem;color:#222}button{font:inherit;padding:.6rem 1rem}</style>
+<h1>Filemill server unavailable</h1>
+<p>Start Filemill locally with <code>uv run filemill</code>, then retry. The installed app can connect to the service but cannot start it.</p>
+<button onclick="location.reload()">Retry connection</button>`;
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -59,6 +67,18 @@ self.addEventListener("fetch", (event) => {
   /* Dynamic endpoints – always hit the network. */
   if (NETWORK_ONLY_PREFIXES.some((p) => path.startsWith(p))) {
     return; /* browser default: network */
+  }
+
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request).catch(
+        () => new Response(RECOVERY_HTML, {
+          status: 503,
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        }),
+      ),
+    );
+    return;
   }
 
   /* App shell + icons: stale-while-revalidate. */
