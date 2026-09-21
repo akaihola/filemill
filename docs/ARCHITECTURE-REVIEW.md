@@ -43,6 +43,14 @@ Ten native checks pass; one scrolled-row hit-testing regression fails and
 blocks native UI qualification. The browser/server suite passes. No smallest
 passing binary has been selected. See [issue 30](tasks/30-webview-shell.md).
 
+## Native toolkit evaluation, 2026-09-21
+
+[ADR 0066](adr/0066-native-toolkits.md) compares AppKit, GTK 4 and WinUI 3
+with the retained WebView prototype. Keep the shared renderer and DOM-free
+model. No native widget port starts. Toolkit capabilities do not establish
+Filemill parity; runtime sizes and implementation hours remain unmeasured.
+The existing [30] qualification failure and binary-selection gate remain.
+
 ## What is healthy
 
 Keep these. They are the parts of the project that already meet the goals.
