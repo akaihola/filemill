@@ -541,7 +541,10 @@ def test_rst_viewport(bundle, playwright, static_origin, tmp_path):
     from filemill.preview import _preview_rst
 
     source = tmp_path / 'guide.rst'
-    source.write_text('''A command-line tool to capture stdin and command output for AI tools
+    source.write_text('''Guide
+=====
+
+A command-line tool to capture stdin and command output for AI tools
 (like `Roo Code`_, an AI-powered coding assistant for VSCode).
 
 .. _Roo Code: https://example.com/
@@ -590,6 +593,7 @@ Some *emphasis*, **strong text**, and ``inline code``.
                     assert abs(sizes['paragraph'] - sizes['available']) <= 1, (container, width, sizes)
                     if width == 1500 and fullscreen:
                         assert sizes['height'] <= sizes['line'] + 1, sizes
+                    assert document.locator('h1').inner_text() == 'Guide'
                     assert document.locator('em').inner_text() == 'emphasis'
                     assert document.locator('strong').inner_text() == 'strong text'
                     assert document.locator('a').get_attribute('href') == 'https://example.com/'
