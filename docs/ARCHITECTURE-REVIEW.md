@@ -39,8 +39,8 @@ in-memory routing; native bytes feed the existing preview renderer table.
 HTML preview iframes now use a sandbox. Keyboard handling no longer requires
 a welcome-screen element to exist.
 
-Native contract checks pass, but native UI qualification is blocked by a
-scrolled-row hit-testing failure. The browser/server suite passes. No smallest
+Ten native checks pass; one scrolled-row hit-testing regression fails and
+blocks native UI qualification. The browser/server suite passes. No smallest
 passing binary has been selected. See [issue 30](tasks/30-webview-shell.md).
 
 ## What is healthy

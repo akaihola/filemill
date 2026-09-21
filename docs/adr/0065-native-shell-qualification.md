@@ -17,7 +17,9 @@ these numbers are not a final equal-input comparison.
 
 Both native UI runs stop at a visible scrolled row whose center hits the
 outer `#finder` instead of the row. WebKitGTK 2.52.5 and 2.52.6 reproduce it.
-The focused native suite has eight passes and this one failure.
+The reviewed native suite has ten passes and this one failure. Review fixed
+NUL truncation in native writes and missing console-error reporting in the
+UI test driver. The rebuilt executable and embedded UI sizes are unchanged.
 
 ## Decision
 

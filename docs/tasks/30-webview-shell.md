@@ -152,3 +152,39 @@ static context-menu deletion test pass. The rebuilt native host still has
 eight passing contract tests and the one scrolled-row failure. Those tests
 launch the embedded executable with a temporary working directory outside
 the checkout. The retained build is 395,368 bytes with a 288,599-byte UI input.
+
+### AI implementation review, 2026-09-21
+
+The initial tracker/documentation commit precedes implementation. The saved
+plan still cannot be accepted as implemented: the full native UI scenario
+fails, later interactions and raw/rich integration remain unfinished, and
+neither candidate qualifies for the required binary comparison.
+
+Review added failing real-WebView regressions and repaired two defects:
+
+- Native writes truncated text at an embedded NUL. JSC byte-string conversion
+  and an explicit byte count now preserve the complete UTF-8 contents.
+- The UI driver registered console listeners without forwarding errors.
+  It now delivers console errors once, so the UI suite can detect them.
+
+The rebuilt native suite reports **10 passed, 1 failed**. The sole failure
+is still `test_scrolled_row_remains_clickable`. The native `test_ui` scenario
+also fails at the same covered row after these repairs. Review independently
+reproduced the geometry and tried removing custom scrollbar rules, explicit
+scrollbar dimensions, default scrollbar colors/widths, vertical `clip`, extra
+bottom padding and always-visible scrollbars. None repaired the hit result.
+These probes were temporary; no speculative renderer CSS was retained. This
+confirms a reproducible qualification blocker, not a proven upstream cause.
+The retained executable is still 395,368 bytes; embedded UI is 288,599 bytes.
+
+Model tests, bundle consistency, all six pre-commit hooks and native Python
+lint/format checks pass. `uv run --project server pytest static/test-ui.py -q`
+passes all seven browser tests in 134.74 seconds. The earlier full repository
+and modular-static results remain the implementation baseline; this review
+changed only native code, native test support and documentation.
+
+Tracker proof against `main` at `01836d3`: removing the exact unchanged [30]
+block from both versions leaves byte-identical text. All 52 numbered issues
+occur exactly once; all 122 issue blocks, including unnumbered proposals,
+are unique across headings. [30] occurs only under In Progress. [31] remains
+unchanged. No task completion or binary selection is claimed.
