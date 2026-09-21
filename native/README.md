@@ -1,7 +1,7 @@
 # Native WebView prototype
 
 Issue [30] is blocked on a WebKitGTK hit-testing failure. This prototype is
-not a qualified release. The native contracts pass, but `static/test-ui.py`
+not a qualified release. Ten native checks pass and one fails. `static/test-ui.py`
 does not finish through the native host. See the [issue evidence](../docs/tasks/30-webview-shell.md).
 
 ## Build and run
@@ -52,7 +52,7 @@ nix-shell native/shell.nix --run 'uv run --project server pytest native/test_hos
 nix-shell native/shell.nix --run 'uv run --project server pytest static/test-ui.py::test_ui --native -q'
 ```
 
-The first command currently has eight passing checks and one failing
+The first command currently has ten passing checks and one failing
 scrolled-row regression. The second stops on the same interaction. The test
 driver writes the existing fixture bytes into temporary files, then exercises
 the native port. It does not substitute fake handles for native reads.
