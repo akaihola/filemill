@@ -52,6 +52,36 @@ def test_model_renderer_selection(bundle, playwright):
         browser.close()
 
 
+def test_preview_left_preserves_ancestor_folds(bundle, playwright):
+    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
+    try:
+        page = browser.new_page(viewport={"width": 700, "height": 700})
+        page.goto(bundle.as_uri())
+        page.wait_for_function("typeof mount === 'function'")
+        page.evaluate("""async () => {
+            const file = name => ({kind: 'file', name,
+                async getFile() {return new File(['hello'], name);}});
+            const dir = (name, kids) => ({kind: 'directory', name,
+                async *entries() {for (const child of kids) yield [child.name, child];}});
+            let node = file('note.txt');
+            for (const name of ['e', 'd', 'c', 'b', 'a']) node = dir(name, [node]);
+            await mount(dir('root', [node]));
+        }""")
+        for depth in range(5):
+            page.keyboard.press("ArrowDown")
+            page.keyboard.press("ArrowRight")
+            page.wait_for_function("length => path.length === length", arg=depth + 2)
+        page.keyboard.press("ArrowRight")
+        page.wait_for_function("document.activeElement.id === 'preview'")
+        before = page.evaluate("folded")
+        assert before > 0
+        page.keyboard.press("ArrowLeft")
+        page.wait_for_function("document.activeElement.id !== 'preview'")
+        assert page.evaluate("folded") == before
+    finally:
+        browser.close()
+
+
 @pytest.mark.parametrize(
     "width,height,expected",
     [
