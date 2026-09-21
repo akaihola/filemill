@@ -188,3 +188,50 @@ block from both versions leaves byte-identical text. All 52 numbered issues
 occur exactly once; all 122 issue blocks, including unnumbered proposals,
 are unique across headings. [30] occurs only under In Progress. [31] remains
 unchanged. No task completion or binary selection is claimed.
+
+### Merge and deployment, 2026-09-21
+
+Merged the reviewed prototype with `--no-ff` as `72e16aa`. Both worktrees
+were clean after the merge. This preserves the unfinished prototype and its
+blocker evidence; [30] remains In Progress because no native binary passes
+the complete UI suite. No completion move is warranted. [31] is unchanged.
+
+Restarted `filemill.service` and `filemill-public.service`, both running from
+main's development tree. Both are active. The merged entry module,
+`core/nav.js` and `core/renderers.js` match byte for byte on ports 8334 and
+8336 and through `https://filemill.vempai.men/`. Live Chromium checks pass
+on all three origins for keyboard navigation with no welcome element and
+HTML preview content whose script cannot access its parent. These checks
+used in-memory preview content and did not modify served files.
+
+The native prototype is a local build, not a public native release. Updating
+the web services deploys the shared keyboard and HTML preview fixes. The
+web application does not gain the native bridge.
+
+### Try the changes
+
+1. For the prototype, follow [build and run](../../native/README.md#build-and-run)
+   against a disposable folder. Open a text file, browse with the arrow keys,
+   and try Back/Forward. The [port mapping](../../native/README.md#port-mapping)
+   explains which work occurs natively. Use the [checks](../../native/README.md#checks)
+   to reproduce the known narrow-window click failure; this is not a qualified
+   replacement for the browser edition.
+2. On the [public finder](https://filemill.vempai.men/?filemill=render), refresh
+   and use Down/Up to move selection. The server edition has no welcome screen;
+   keyboard navigation must still work.
+3. In a disposable local folder, create `preview.html` containing a heading and
+   `<script>document.body.textContent='SCRIPT RAN'</script>`. Open its HTML
+   preview in the native prototype or static edition. The heading should remain
+   visible; the script must not replace it. This concerns the embedded preview,
+   not deliberately opening a raw HTML document as a separate page.
+4. To verify the write and test-reporting repairs without altering personal
+   files, run from the repository root after building the prototype:
+
+   ```bash
+   nix-shell native/shell.nix --run 'uv run --project server pytest native/test_host.py -k "embedded_nul or reports_console" -q'
+   ```
+
+   These two checks exercise the real WebView. They verify that an embedded
+   NUL does not truncate a save and that console errors reach the UI test
+   assertions. Both pass; they do not replace the still-failing full native
+   qualification suite.
