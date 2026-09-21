@@ -36,6 +36,20 @@ export const stripSpan = (k) => columnSpan(widths, k, GUTTER(), SPINE());
 export const foldUnit = () => foldStep(path.length);
 export const range = () => scrollRange(widths, GUTTER(), SPINE());
 
+export function advancePreviewFold() {
+  const maximum = rail.clientWidth - finder.clientWidth;
+  if (!path.length || finder.scrollLeft >= maximum - 0.5) return false;
+  const step = maximum * foldUnit();
+  const next = Math.floor(foldPosition(finder.scrollLeft, step)) + 1;
+  // Land each key synchronously so rapid presses cannot reuse a partial fold.
+  finder.scrollTo({
+    left: Math.min(maximum, Math.round(next * step)),
+    behavior: "instant",
+  });
+  applyScroll();
+  return true;
+}
+
 let scrollStep = 0;
 let scrollColumns = 0;
 
@@ -177,5 +191,11 @@ export function initLayout(render) {
   stage.addEventListener("scroll", () => {
     if (stage.scrollLeft) stage.scrollLeft = 0;
   }, { passive: true });
-  addEventListener("resize", () => render());
+  addEventListener("resize", () => {
+    const previewFocused = document.activeElement?.id === "preview";
+    render(previewFocused);
+    if (previewFocused) {
+      document.getElementById("preview")?.focus({ preventScroll: true });
+    }
+  });
 }

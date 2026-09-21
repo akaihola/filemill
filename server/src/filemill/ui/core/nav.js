@@ -14,21 +14,24 @@ import { autoPreview, selectNode } from "./model/selection.js";
    ═══════════════════════════════════════════════════════════════════════════ */
 import { applyPath, scrollCursorIntoView } from "./deeplink.js";
 import { currentPath } from "./model/deeplink.js";
-import { foldUnit, range, revealRow } from "./layout.js";
+import { advancePreviewFold, foldUnit, range, revealRow } from "./layout.js";
 import { FS } from "./ports.js";
 import {
   closeRowMenu,
   colCache,
   columnFor,
   deleteEntry,
+  leaveFullscreen,
   openRowMenu,
   render,
   rowMenuKey,
+  togglePreviewFullscreen,
 } from "./render.js";
 import { closeSettings } from "./settings.js";
 import {
   focusCol,
   path,
+  pvFullscreen,
   rowIndex,
   sel,
   setState,
@@ -320,12 +323,25 @@ document.addEventListener("keydown", (e) => {
       e.target.isContentEditable,
     welcome: document.getElementById("welcome")?.hidden === false,
     preview: !!e.target.closest?.("#preview"),
+    fullscreen: pvFullscreen,
     textSelected: !!getSelection().toString(),
     typeahead: taLive(),
   };
   const action = keyAction(e, context);
   if (context.editable || context.welcome) return;
   if (context.preview) {
+    if (action === "preview-exit-fullscreen") {
+      e.preventDefault();
+      leaveFullscreen();
+      return;
+    }
+    if (action === "preview-right") {
+      e.preventDefault();
+      if (!pvFullscreen && !advancePreviewFold()) {
+        void togglePreviewFullscreen();
+      }
+      return;
+    }
     if (action === "preview-back") {
       e.preventDefault();
       render(true);

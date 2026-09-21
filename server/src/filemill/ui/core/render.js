@@ -548,10 +548,26 @@ function applyFullscreen(value) {
   }
 }
 
+export async function togglePreviewFullscreen() {
+  if (pvFullscreen) return leaveFullscreen();
+  if (matchMedia("(pointer: coarse)").matches) {
+    history.pushState({ ...history.state, filemillFullscreen: true }, "");
+  }
+  applyFullscreen(true);
+  // Resize rebuilds the preview, so fullscreen must use the stable root.
+  if (root.requestFullscreen) {
+    try {
+      await root.requestFullscreen();
+    } catch (_) {
+      /* Keep the layout fallback when browser fullscreen is unavailable. */
+    }
+  }
+}
+
 // Touch browsers need a history step for both native and layout fullscreen.
 applyFullscreen(!!history.state?.filemillFullscreen);
 
-function leaveFullscreen() {
+export function leaveFullscreen() {
   if (history.state?.filemillFullscreen) {
     history.back();
     return;
@@ -672,24 +688,7 @@ function setupPreviewActions(n) {
   }
   const full = document.getElementById("pv-fullscreen");
   if (full) {
-    full.onclick = async () => {
-      if (pvFullscreen) {
-        leaveFullscreen();
-        return;
-      }
-      if (matchMedia("(pointer: coarse)").matches) {
-        history.pushState({ ...history.state, filemillFullscreen: true }, "");
-      }
-      applyFullscreen(true);
-      // Resize rebuilds the preview, so fullscreen must use the stable root.
-      if (root.requestFullscreen) {
-        try {
-          await root.requestFullscreen();
-        } catch (_) {
-          /* Keep the layout fallback when browser fullscreen is unavailable. */
-        }
-      }
-    };
+    full.onclick = togglePreviewFullscreen;
     full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
   }
   const del = document.getElementById("pv-delete");
