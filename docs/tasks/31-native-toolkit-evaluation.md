@@ -4,28 +4,27 @@ depends-on: [30]
 
 # Evaluate fully native toolkits
 
-## Goal
+## Goal and scope
 
-We know whether AppKit, GTK or WinUI can replace the WebView shell, and at
-what cost. The answer is written down. Roadmap phase 9, step 3.
+Compare AppKit, GTK and WinUI with the existing WebView prototype. Record
+an evidence-backed recommendation in an ADR before any native toolkit work.
+This task changes documentation only. The task brief of 2026-09-21 replaces
+the earlier instruction to build and time a throwaway native column.
 
-## Steps
+## Plan
 
-1. For each toolkit, write a five-line list: how it draws Miller columns,
-   how it does a folding animation, how it renders Markdown and highlighted
-   text, how it shows a PDF, and how big the runtime is.
-2. Build one column with folding in one toolkit on the machine you have.
-   Time the work in hours.
-3. Write `docs/adr/NNNN-native-toolkits.md`. Put the five-line lists in
-   `## Context`, the build time and the runtime sizes in `## Measurement`, and
-   a decision in `## Decision`: keep the WebView shell, or start one native
-   port and which one.
+1. Move only the unchanged [31] block to In Progress and commit this setup.
+2. Compare columns, folding, previews, editing, accessibility, model reuse,
+   performance, security, runtime dependencies and build costs. Use repository
+   evidence and official toolkit documentation. Label unmeasured quantities.
+3. Write an ADR under 40 lines with the comparison, recommendation, rejected
+   options and gates for later work. Link it from the architecture review.
+4. Run all pre-commit hooks, verify links and the complete diff against main.
+   Removing [31] from each tracker must leave byte-identical remaining text.
 
-## Done when
+## Baseline constraint
 
-- The ADR exists and is under 40 lines.
-- No native toolkit code is in the tree unless the ADR says to start one.
-
-## Scope
-
-`docs/adr/`. A throwaway prototype outside the repository.
+The brief calls [30] complete. The repository still records it as In Progress
+with an unqualified WebKitGTK host. Use that result without claiming native
+UI parity or changing [30]. See [ADR 0065](../adr/0065-native-shell-qualification.md).
+Do not implement a toolkit or repair the prototype in this task.
