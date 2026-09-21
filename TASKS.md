@@ -15,11 +15,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   must copy the full path, and a third press must copy the item's name only. A fourth
   press must start the rotation over from the relative path.
 
-- [*] When returning focus back to the containing folder from the preview pane using the
-  left arrow key, always keep all ancestor folder columns in the same expanded/collapsed
-  state as they are. Currently expanded ancestor folders are collapsed if I hit the left
-  arrow key.
-
 - [*] Pressing the right arrow key when the preview pane is focused currently widens the
   pane in small steps. It should instead collapse the leftmost expanded folder column
   fully. When all columns are collapsed, it already correctly scrolls them out of view
@@ -53,6 +48,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] When returning focus back to the containing folder from the preview pane using the
+  left arrow key, always keep all ancestor folder columns in the same expanded/collapsed
+  state as they are. Currently expanded ancestor folders are collapsed if I hit the left
+  arrow key.
 
 - [*] Add the `Delete` key as a shortcut to delete the current file or directory.
 

@@ -328,7 +328,6 @@ document.addEventListener("keydown", (e) => {
   if (context.preview) {
     if (action === "preview-back") {
       e.preventDefault();
-      unfoldTo(focusCol);
       render(true);
       const parent = colCache.get(path[focusCol]);
       const ri = rowIndex(path[focusCol], sel[focusCol]);
