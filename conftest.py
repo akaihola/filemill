@@ -106,4 +106,5 @@ def db_client(db_root: Path):
 
 
 def pytest_addoption(parser):
+    parser.addoption("--native", action="store_true", help="test the native WebView host")
     parser.addoption("--dev", action="store_true", help="test modular static sources")

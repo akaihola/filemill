@@ -147,3 +147,9 @@ These three are not tasks, so they are in `docs/` and not in `docs/tasks/`.
 ## License
 
 MIT
+
+## Native prototype
+
+The Linux [WebKitGTK prototype](native/README.md) embeds the shared DOM UI
+and supplies native file and history operations. Issue [30] remains blocked
+on its native UI acceptance test. It is not a qualified release.

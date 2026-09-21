@@ -317,7 +317,7 @@ document.addEventListener("keydown", (e) => {
   const context = {
     editable: e.target.matches?.("input, textarea, select") ||
       e.target.isContentEditable,
-    welcome: !document.getElementById("welcome")?.hidden,
+    welcome: document.getElementById("welcome")?.hidden === false,
     preview: !!e.target.closest?.("#preview"),
     textSelected: !!getSelection().toString(),
     typeahead: taLive(),

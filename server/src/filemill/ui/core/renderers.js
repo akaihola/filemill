@@ -168,7 +168,7 @@ export const CORE_RENDERERS = [
     kind: "html",
     render(node, blob) {
       pvURL = URL.createObjectURL(blob.slice(0, blob.size, "text/html"));
-      return `<iframe class="pv-html" src="${pvURL}" title="${
+      return `<iframe class="pv-html" sandbox="" src="${pvURL}" title="${
         esc(node.name)
       }"></iframe>`;
     },

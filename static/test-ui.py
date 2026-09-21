@@ -586,19 +586,24 @@ async def main(bundle, fake_handle, playwright):
                                 ["a.txt", "dead", "plain"])
         check("A throwing entry with no fallback rejects", err == "dead", err)
 
-        check("file:// shows the localhost hint, not a dead picker",
-              "file://" in await pg.inner_text("#w-msg"))
+        if getattr(playwright, "native", False):
+            check("Native root opens without a browser picker",
+                  await pg.evaluate("path.length > 0 && typeof nativeCall === 'function'"))
+        else:
+            check("file:// shows the localhost hint, not a dead picker",
+                  "file://" in await pg.inner_text("#w-msg"))
         await pg.evaluate(FAKE)
         await mount(pg)
         check("Root folder mounts", await pg.evaluate("path[0].name") == "workspace")
-        check("Welcome screen hidden after mount", await pg.evaluate("welcome.hidden"))
+        check("Welcome screen hidden after mount", await pg.evaluate(
+            "!welcome || welcome.hidden" if getattr(playwright, "native", False) else "welcome.hidden"))
 
         await pg.click('.col[data-i="0"] .row:has-text("mixed")')
         await pg.wait_for_timeout(250)
         long = '.col[data-i="1"] .row[title^="this-is-a-very"]'
         visual = await pg.inner_text(long)
-        check("Long names keep their extension", visual.endswith(".txt") and
-              "identifiable" in visual)
+        check("Long names keep their extension", visual.rstrip().endswith(".txt") and
+              "identifiable" in visual, repr(visual))
         check("Long names keep their full accessible name",
               await pg.get_attribute(long, "aria-label") ==
               "this-is-a-very-long-file-name-that-must-stay-identifiable.txt")
@@ -644,7 +649,7 @@ async def main(bundle, fake_handle, playwright):
         await pg.wait_for_timeout(400)
         widths = [w.split(":")[1] for w in await pg.evaluate("__w") if w.startswith("wide:")]
         check("A column opens at its standard width, without a narrow first frame",
-              set(widths) == {"240px"}, ", ".join(widths) or "never sized")
+              set(widths) == {"240px"}, ", ".join(widths) or f"never sized: {await pg.evaluate("__w")}")
 
         print("\n── Keyboard: ↑/↓ stay in the column ─────────────────────────")
         # sorted order is folders first, alphabetically:
@@ -2171,7 +2176,11 @@ async def main(bundle, fake_handle, playwright):
     assert not failed, "Failed checks: " + ", ".join(failed)
 
 
-def test_ui(bundle, fake_handle, async_playwright):
+def test_ui(bundle, fake_handle, async_playwright, request):
+    if request.config.getoption("--native"):
+        sys.path.insert(0, str(ROOT.parent / "native"))
+        from ui_driver import NativePlaywright
+        async_playwright = NativePlaywright()
     asyncio.run(main(bundle, fake_handle, async_playwright))
 
 
