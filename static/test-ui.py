@@ -2689,3 +2689,33 @@ def test_copy_menu_refusal_keeps_menu(copy_page):
     page.wait_for_function("document.querySelector('#st-copy').textContent.includes('refused')")
     assert page.locator("#row-menu").is_visible()
     assert page.evaluate("getSelection().toString()") == ""
+
+
+def test_copy_current_folder_after_breadcrumb(copy_page):
+    page = copy_page
+    page.locator('#crumbs .crumb').filter(has_text='mixed').click()
+    assert page.locator('#st-path').inner_text() == 'mixed'
+    assert page.evaluate('sel[1] === undefined')
+    for value in ['mixed', '/mixed', 'mixed', 'mixed']:
+        copied(page, value)
+
+
+@pytest.mark.parametrize("variant", [1, 2])
+@pytest.mark.parametrize("directory", [False, True])
+def test_copy_status_click_after_refused_rotation(copy_page, variant, directory):
+    page = copy_page
+    relative = "mixed/note.md"
+    if directory:
+        page.locator('.col[data-i="1"] .row[title="docs"]').click()
+        page.wait_for_function("sel[2] === 'README'")
+        relative = "mixed/docs"
+    for value in [relative, "/" + relative][:variant]:
+        copied(page, value)
+    page.evaluate("__clip(true)")
+    page.keyboard.press("Control+c")
+    page.wait_for_function("document.querySelector('#st-copy').textContent.includes('refused')")
+    displayed = page.locator('#st-path').inner_text()
+    page.evaluate("__clip(false)")
+    page.locator('#st-path').click()
+    assert page.evaluate('__clipped') == [displayed]
+    copied(page, relative)

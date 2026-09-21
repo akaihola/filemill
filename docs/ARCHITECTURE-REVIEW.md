@@ -211,7 +211,9 @@ action. Successful copies show the copied value with status-bar ellipsis. A
 five-second cycle retains the target across relative, full and name copies;
 other input or changed selection invalidates it, including pending writes.
 Clipboard effects remain outside the DOM-free model. Focused browser tests
-cover both editions and the existing permission-refusal fallback.
+cover both editions, the existing permission-refusal fallback, and copying
+the current folder after breadcrumb navigation clears its child selection.
+Status-path clicks retain the displayed value even after a rotated copy fails.
 
 - `512 * 1024` appears five times under four names: `TEXT_MAX`,
   `JSONL_MAX`, `JSON_MAX`, `EDIT_MAX`, and a literal in `preview-rich.js:126`.
