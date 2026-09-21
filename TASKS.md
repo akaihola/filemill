@@ -485,6 +485,8 @@ Here are the rules for TASKS.md usage:
 - Each backlog item must be prefixed with either
     - a numbered reference-style link (e.g. `[1]`) to a description file, or
     - `[*]` to indicate no description file is needed for a simple task.
+- `[~]` marks an issue that is actively in progress. Replace it with `[x]` when the
+  issue is complete.
 - Link references are listed between `## Completed` and `## Rules`.
 - Keep summaries concise. Move detailed requirements, rationale, examples and acceptance
   criteria into `docs/tasks/N-issue-description.md`; preserve simple tasks inline. Reuse
