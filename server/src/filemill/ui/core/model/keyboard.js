@@ -6,6 +6,10 @@ export function keyAction(event, context) {
   if (context.editable || context.welcome) return null;
   const key = event.key;
   if (context.preview) {
+    if (context.fullscreen && ["ArrowLeft", "Escape"].includes(key)) {
+      return "preview-exit-fullscreen";
+    }
+    if (key === "ArrowRight") return "preview-right";
     if (key === "ArrowLeft") return "preview-back";
     return ["ArrowUp", "ArrowDown", "PageUp", "PageDown"].includes(key)
       ? "preview-scroll"

@@ -3818,6 +3818,20 @@ const stripSpan = (k) => columnSpan(widths, k, GUTTER(), SPINE());
 const foldUnit = () => foldStep(path.length);
 const range = () => scrollRange(widths, GUTTER(), SPINE());
 
+function advancePreviewFold() {
+  const maximum = rail.clientWidth - finder.clientWidth;
+  if (!path.length || finder.scrollLeft >= maximum - 0.5) return false;
+  const step = maximum * foldUnit();
+  const next = Math.floor(foldPosition(finder.scrollLeft, step)) + 1;
+  // Land each key synchronously so rapid presses cannot reuse a partial fold.
+  finder.scrollTo({
+    left: Math.min(maximum, Math.round(next * step)),
+    behavior: "instant",
+  });
+  applyScroll();
+  return true;
+}
+
 let scrollStep = 0;
 let scrollColumns = 0;
 
@@ -3959,7 +3973,13 @@ function initLayout(render) {
   stage.addEventListener("scroll", () => {
     if (stage.scrollLeft) stage.scrollLeft = 0;
   }, { passive: true });
-  addEventListener("resize", () => render());
+  addEventListener("resize", () => {
+    const previewFocused = document.activeElement?.id === "preview";
+    render(previewFocused);
+    if (previewFocused) {
+      document.getElementById("preview")?.focus({ preventScroll: true });
+    }
+  });
 }
 
 /* ═══ core/deeplink.js ═══ */
@@ -4571,6 +4591,22 @@ function applyFullscreen(value) {
   }
 }
 
+async function togglePreviewFullscreen() {
+  if (pvFullscreen) return leaveFullscreen();
+  if (matchMedia("(pointer: coarse)").matches) {
+    history.pushState({ ...history.state, filemillFullscreen: true }, "");
+  }
+  applyFullscreen(true);
+  // Resize rebuilds the preview, so fullscreen must use the stable root.
+  if (root.requestFullscreen) {
+    try {
+      await root.requestFullscreen();
+    } catch (_) {
+      /* Keep the layout fallback when browser fullscreen is unavailable. */
+    }
+  }
+}
+
 // Touch browsers need a history step for both native and layout fullscreen.
 applyFullscreen(!!history.state?.filemillFullscreen);
 
@@ -4695,24 +4731,7 @@ function setupPreviewActions(n) {
   }
   const full = document.getElementById("pv-fullscreen");
   if (full) {
-    full.onclick = async () => {
-      if (pvFullscreen) {
-        leaveFullscreen();
-        return;
-      }
-      if (matchMedia("(pointer: coarse)").matches) {
-        history.pushState({ ...history.state, filemillFullscreen: true }, "");
-      }
-      applyFullscreen(true);
-      // Resize rebuilds the preview, so fullscreen must use the stable root.
-      if (root.requestFullscreen) {
-        try {
-          await root.requestFullscreen();
-        } catch (_) {
-          /* Keep the layout fallback when browser fullscreen is unavailable. */
-        }
-      }
-    };
+    full.onclick = togglePreviewFullscreen;
     full.textContent = pvFullscreen ? "Exit fullscreen" : "Fullscreen";
   }
   const del = document.getElementById("pv-delete");
@@ -4997,6 +5016,10 @@ function keyAction(event, context) {
   if (context.editable || context.welcome) return null;
   const key = event.key;
   if (context.preview) {
+    if (context.fullscreen && ["ArrowLeft", "Escape"].includes(key)) {
+      return "preview-exit-fullscreen";
+    }
+    if (key === "ArrowRight") return "preview-right";
     if (key === "ArrowLeft") return "preview-back";
     return ["ArrowUp", "ArrowDown", "PageUp", "PageDown"].includes(key)
       ? "preview-scroll"
@@ -5417,12 +5440,25 @@ document.addEventListener("keydown", (e) => {
       e.target.isContentEditable,
     welcome: document.getElementById("welcome")?.hidden === false,
     preview: !!e.target.closest?.("#preview"),
+    fullscreen: pvFullscreen,
     textSelected: !!getSelection().toString(),
     typeahead: taLive(),
   };
   const action = keyAction(e, context);
   if (context.editable || context.welcome) return;
   if (context.preview) {
+    if (action === "preview-exit-fullscreen") {
+      e.preventDefault();
+      leaveFullscreen();
+      return;
+    }
+    if (action === "preview-right") {
+      e.preventDefault();
+      if (!pvFullscreen && !advancePreviewFold()) {
+        void togglePreviewFullscreen();
+      }
+      return;
+    }
     if (action === "preview-back") {
       e.preventDefault();
       render(true);
