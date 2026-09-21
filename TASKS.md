@@ -9,12 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [*] When the relative path of a file or folder is copied successfully using `Ctrl+C`
-  or a context menu item, show the copied path in the status bar, truncated if
-  necessary. Pressing `Ctrl+C` again within 5 seconds and before any other interaction
-  must copy the full path, and a third press must copy the item's name only. A fourth
-  press must start the rotation over from the relative path.
-
 ## Scheduled
 
 - [*] Large directories now partition their contents into multiple lists that the user
@@ -37,6 +31,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Treat `.py.j2` as Python.
 
 ## In Progress
+
+- [*] When the relative path of a file or folder is copied successfully using `Ctrl+C`
+  or a context menu item, show the copied path in the status bar, truncated if
+  necessary. Pressing `Ctrl+C` again within 5 seconds and before any other interaction
+  must copy the full path, and a third press must copy the item's name only. A fourth
+  press must start the rotation over from the relative path.
 
 - [*] When returning focus back to the containing folder from the preview pane using the
   left arrow key, always keep all ancestor folder columns in the same expanded/collapsed
