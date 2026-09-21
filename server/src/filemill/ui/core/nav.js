@@ -21,6 +21,7 @@ import {
   colCache,
   columnFor,
   deleteEntry,
+  entryPath,
   leaveFullscreen,
   openRowMenu,
   render,
@@ -48,6 +49,7 @@ const PREVIEW_SCROLL_STEP = 40; // Arrow keys move the preview by a small readab
 let navSeq = 0; /* a read that outlives its selection must not repaint */
 
 export async function choose(colIdx, node, keepScroll = false) {
+  resetCopy();
   const seq = ++navSeq;
   selectNode(colIdx, node);
   if (!node.dir) return void render(keepScroll);
@@ -178,6 +180,7 @@ export function unfoldTo(i) {
    folder *name*, not an absolute path: the File System Access API never hands
    one out, so this is everything the app knows about the location. */
 export function renderCrumbs() {
+  if (copyCycle && !sameCopySelection(copyCycle.selection)) resetCopy();
   const el = document.getElementById("crumbs");
   el.textContent = "";
   path.forEach((p, i) => {
@@ -205,8 +208,8 @@ export function renderCrumbs() {
 }
 
 /* ── Copy path ──────────────────────────────────────────────────────────────
-   The status strip already shows where you are; ⌘C, or a click on it, puts that
-   path on the clipboard.
+   ⌘C copies the focused item; repeated copies rotate through relative path,
+   full path and name. Clicking the status path copies the displayed location.
 
    navigator.clipboard.writeText can be refused: a browser policy, a page the
    user has not touched yet, an insecure context with no clipboard object at
@@ -247,18 +250,78 @@ function selectPath() {
   s.addRange(r);
 }
 
-async function copyPath() {
-  const text = document.getElementById("st-path").textContent;
-  if (!text) return;
+const COPY_WINDOW_MS = 5000;
+let copyCycle = null;
+let copyRequest = 0;
+const copySelection = () => ({ path: [...path], sel: [...sel], focusCol });
+const sameCopySelection = (saved) =>
+  saved.focusCol === focusCol && saved.path.length === path.length &&
+  saved.path.every((node, i) => node === path[i]) &&
+  saved.sel.length === sel.length && saved.sel.every((name, i) =>
+    name === sel[i]
+  );
+
+function resetCopy() {
+  copyCycle = null;
+  ++copyRequest;
+}
+
+for (const event of ["pointerdown", "wheel", "input"]) {
+  document.addEventListener(event, resetCopy, { capture: true, passive: true });
+}
+for (const event of ["blur", "pagehide", "popstate"]) {
+  globalThis.addEventListener(event, resetCopy);
+}
+
+export async function copyPath(node, parent, mode) {
+  const explicit = !!node;
+  let index = 0;
+  if (!explicit) {
+    if (
+      copyCycle && sameCopySelection(copyCycle.selection) &&
+      Date.now() - copyCycle.time < COPY_WINDOW_MS
+    ) {
+      ({ node, parent, index } = copyCycle);
+    } else {
+      parent = path[focusCol];
+      node = parent?.kids?.find((n) => n.name === sel[focusCol]);
+    }
+  }
+  if (!node) return false;
+  const relative = entryPath(node, parent);
+  const values = [relative, node.abs || "/" + relative, node.name];
+  if (explicit) index = mode ?? 0;
+  const text = values[index];
+  const selection = copySelection();
+  const request = ++copyRequest;
+  copyCycle = null;
   try {
     await navigator.clipboard.writeText(text);
-    sayCopy("copied", true);
+    if (request !== copyRequest || !sameCopySelection(selection)) return false;
+    if (!explicit || index === 0) {
+      copyCycle = {
+        node,
+        parent,
+        index: (index + 1) % values.length,
+        time: Date.now(),
+        selection,
+      };
+    }
+    sayCopy(`Copied ${text}`, true);
+    return true;
   } catch (err) {
-    selectPath();
+    if (request !== copyRequest || !sameCopySelection(selection)) return false;
+    // Keep the manual browser-copy fallback on the value that was refused.
+    if (mode === undefined) {
+      document.getElementById("st-path").textContent = text;
+      selectPath();
+    }
     sayCopy(
-      `clipboard refused (${err.name || "error"}) — press ${COPY_KEY} again`,
+      `clipboard refused (${err.name || "error"})` +
+        (mode === undefined ? ` — press ${COPY_KEY} again` : ""),
       false,
     );
+    return false;
   }
 }
 
@@ -267,7 +330,13 @@ const MAC = /Mac|iP(hone|ad)/.test(
 );
 const COPY_KEY = MAC ? "⌘C" : "Ctrl+C";
 document.getElementById("kbd-copy").textContent = COPY_KEY;
-document.getElementById("st-path").onclick = copyPath;
+document.getElementById("st-path").onclick = () => {
+  const parent = path[path.length - 1];
+  const node = parent?.kids?.find((n) => n.name === sel[path.length - 1]);
+  return node
+    ? copyPath(node, parent)
+    : path.length > 1 && copyPath(parent, path[path.length - 2]);
+};
 
 /* Entering a column: the row it was left on, else the one it remembers, else
    the first. The column may still be reading, so this can run twice. */
@@ -316,18 +385,27 @@ function pageMove(c, dir, ci) {
   if (row) revealRow(row);
 }
 
+const keyboardContext = (e) => ({
+  editable: e.target.matches?.("input, textarea, select") ||
+    e.target.isContentEditable,
+  welcome: document.getElementById("welcome")?.hidden === false,
+  preview: !!e.target.closest?.("#preview"),
+  fullscreen: pvFullscreen,
+  textSelected: !!getSelection().toString(),
+  typeahead: taLive(),
+});
+
 document.addEventListener("keydown", (e) => {
-  if (rowMenuKey(e)) return;
-  const context = {
-    editable: e.target.matches?.("input, textarea, select") ||
-      e.target.isContentEditable,
-    welcome: document.getElementById("welcome")?.hidden === false,
-    preview: !!e.target.closest?.("#preview"),
-    fullscreen: pvFullscreen,
-    textSelected: !!getSelection().toString(),
-    typeahead: taLive(),
-  };
+  if (
+    e.key !== "Control" && e.key !== "Meta" &&
+    keyAction(e, keyboardContext(e)) !== "copy"
+  ) resetCopy();
+}, true);
+
+document.addEventListener("keydown", (e) => {
+  const context = keyboardContext(e);
   const action = keyAction(e, context);
+  if (rowMenuKey(e)) return;
   if (context.editable || context.welcome) return;
   if (context.preview) {
     if (action === "preview-exit-fullscreen") {

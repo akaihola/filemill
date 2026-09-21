@@ -13,6 +13,7 @@ import { RICH_RENDERERS } from "./preview-rich.js";
 import { mountRoot } from "../core/mount.js";
 import {
   choose,
+  copyPath,
   refreshColumn,
   renderCrumbs,
   saySt,
@@ -29,7 +30,7 @@ import {
 
 initSort();
 setSortKids(sortKids);
-setActions({ choose, refreshColumn, renderCrumbs, saySt, unfoldTo });
+setActions({ choose, copyPath, refreshColumn, renderCrumbs, saySt, unfoldTo });
 setSortActions({ render });
 setDeepLinkActions({ render, colCache });
 initLayout(render);

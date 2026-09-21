@@ -1334,6 +1334,11 @@ body {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+#st-copy {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 #st-copy, #st-refresh {
   color: var(--accent);
   white-space: nowrap;

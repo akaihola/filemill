@@ -16,6 +16,8 @@ the same suite guards both the bundle and the modular sources.
 import asyncio
 import json
 import sys
+
+import pytest
 from pathlib import Path
 
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
@@ -1603,7 +1605,7 @@ async def main(bundle, fake_handle, playwright):
               await pg.evaluate("__clipped") == ["mixed/note.md"],
               str(await pg.evaluate("__clipped")))
         check("A copy that worked says so",
-              (await pg.inner_text("#st-copy")).strip() == "copied")
+              (await pg.inner_text("#st-copy")).strip() == "Copied mixed/note.md")
 
         await pg.evaluate("__clip(false)")
         await pg.click("#st-path")
@@ -2502,3 +2504,188 @@ def test_preview_arrow_sequence(bundle, fake_handle, playwright, static_origin):
         assert page.url == url
     finally:
         browser.close()
+
+
+@pytest.fixture
+def copy_page(bundle, fake_handle, playwright):
+    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
+    page = browser.new_page(viewport={"width": 1000, "height": 700})
+    page.goto(bundle.as_uri())
+    page.evaluate("localStorage.setItem('filemill.rich','off')")
+    page.evaluate(fake_handle)
+    page.evaluate("async () => { await mount(__mk(0)); __clip(false); }")
+    page.locator('.col[data-i="0"] .row[title="mixed"]').click()
+    page.locator('.col[data-i="1"] .row[title="note.md"]').click()
+    page.clock.install(time=1000000)
+    page.clock.pause_at(1000000)
+    try:
+        yield page
+    finally:
+        browser.close()
+
+
+def copied(page, expected, key="Control+c"):
+    count = page.evaluate("__clipped.length")
+    page.keyboard.press(key)
+    page.wait_for_function(
+        "([count, value]) => __clipped.length === count + 1 && __clipped.at(-1) === value",
+        arg=[count, expected], timeout=3000,
+    )
+    assert page.locator("#st-copy").inner_text() == f"Copied {expected}"
+
+
+@pytest.mark.parametrize("directory", [False, True])
+def test_copy_rotation_fsa(copy_page, directory):
+    page = copy_page
+    relative = "mixed/note.md"
+    if directory:
+        page.locator('.col[data-i="1"] .row[title="docs"]').click()
+        page.wait_for_function("sel[2] === 'README'")
+        relative = "mixed/docs"
+    for value in [relative, "/" + relative, relative.split("/")[-1], relative]:
+        copied(page, value)
+    page.locator("#st-path").click()
+    assert page.evaluate("__clipped.at(-1)") == page.locator("#st-path").inner_text()
+
+
+@pytest.mark.parametrize("elapsed, expected", [(4999, "/mixed/note.md"), (5000, "mixed/note.md"), (5001, "mixed/note.md")])
+def test_copy_timeout(copy_page, elapsed, expected):
+    copied(copy_page, "mixed/note.md")
+    copy_page.clock.run_for(elapsed)
+    copied(copy_page, expected)
+    copy_page.clock.run_for(4999)
+    copied(copy_page, "note.md" if elapsed < 5000 else "/mixed/note.md")
+
+
+@pytest.mark.parametrize("interaction", [
+    "key", "pointer", "wheel", "blur", "input", "preview", "selection", "root", "stopped-input", "input-event",
+])
+def test_copy_interaction_reset(copy_page, interaction):
+    page = copy_page
+    copied(page, "mixed/note.md")
+    if interaction == "key":
+        page.keyboard.press("Escape")
+    elif interaction == "pointer":
+        page.locator("#status").click(position={"x": 1, "y": 1})
+    elif interaction == "wheel":
+        page.mouse.wheel(0, 20)
+    elif interaction == "blur":
+        page.evaluate("window.dispatchEvent(new Event('blur'))")
+    elif interaction == "input-event":
+        page.evaluate("document.body.dispatchEvent(new Event('input', {bubbles: true}))")
+    elif interaction in ("input", "preview", "stopped-input"):
+        page.evaluate("""kind => {
+          const el = kind !== 'preview' ? document.body.appendChild(document.createElement('input')) : document.querySelector('#preview');
+          if (kind === 'stopped-input') el.addEventListener('keydown', e => e.stopPropagation());
+          el.dispatchEvent(new KeyboardEvent('keydown', {key: 'x', bubbles: true}));
+        }""", interaction)
+    elif interaction == "selection":
+        page.evaluate("sel[1] = 'short.txt'; render()")
+    else:
+        page.evaluate("async () => { await mount(__mk(0)); }")
+        page.locator('.col[data-i="0"] .row[title="mixed"]').click()
+        page.locator('.col[data-i="1"] .row[title="note.md"]').click()
+    copied(page, "mixed/short.txt" if interaction == "selection" else "mixed/note.md")
+
+
+@pytest.mark.parametrize("touch", [False, True])
+def test_copy_menu_unselected_target(copy_page, touch):
+    page = copy_page
+    target = page.locator('.col[data-i="1"] .row[title="short.txt"]')
+    if touch:
+        page.evaluate("Object.defineProperty(navigator, 'maxTouchPoints', {value: 1})")
+        target.dispatch_event("pointerdown", {"pointerType": "touch", "clientX": 30, "clientY": 30})
+        page.clock.run_for(501)
+    else:
+        target.click(button="right")
+    page.get_by_role("menuitem", name="Copy relative path", exact=True).click()
+    assert page.locator("#st-copy").inner_text() == "Copied mixed/short.txt"
+    assert page.evaluate("sel[1]") == "note.md"
+    copied(page, "/mixed/short.txt")
+    copied(page, "short.txt")
+    copied(page, "mixed/short.txt")
+    for label, value in [("Copy name", "short.txt"), ("Copy absolute path", "/mixed/short.txt")]:
+        target.click(button="right")
+        page.get_by_role("menuitem", name=label, exact=True).click()
+        assert page.locator("#st-copy").inner_text() == f"Copied {value}"
+        copied(page, "mixed/note.md")
+
+
+@pytest.mark.parametrize("variant", [0, 1, 2])
+def test_copy_refusal_fallback(copy_page, variant):
+    page = copy_page
+    values = ["mixed/note.md", "/mixed/note.md", "note.md"]
+    for value in values[:variant]:
+        copied(page, value)
+    page.evaluate("__clip(true)")
+    page.keyboard.press("Control+c")
+    page.wait_for_function("document.querySelector('#st-copy').textContent.includes('refused')")
+    assert page.evaluate("getSelection().toString()") == values[variant]
+    page.keyboard.press("Control+c")
+    assert page.evaluate("__clipped.length") == 1
+
+
+def test_copy_pending_reset_and_missing_clipboard(copy_page):
+    page = copy_page
+    page.evaluate("() => { navigator.clipboard.writeText = () => new Promise(resolve => { window.finishCopy = resolve; }); }")
+    page.keyboard.press("Control+c")
+    page.keyboard.press("Escape")
+    page.evaluate("finishCopy(); __clip(false)")
+    assert not page.locator("#st-copy").inner_text()
+    copied(page, "mixed/note.md", key="Meta+c")
+    page.evaluate("Object.defineProperty(navigator, 'clipboard', {value: undefined, configurable: true})")
+    page.keyboard.press("Control+c")
+    page.wait_for_function("document.querySelector('#st-copy').textContent.includes('refused')")
+    assert page.evaluate("getSelection().toString()") == "/mixed/note.md"
+
+
+def test_copy_status_truncates(copy_page):
+    page = copy_page
+    name = "long-" * 35 + ".txt"
+    page.evaluate("name => { const n = path[1].kids.find(n => n.name === 'note.md'); n.name = name; sel[1] = name; render(); }", name)
+    page.set_viewport_size({"width": 390, "height": 700})
+    copied(page, "mixed/" + name)
+    assert page.locator("#st-copy").evaluate("el => el.clientWidth > 0 && el.scrollWidth > el.clientWidth && getComputedStyle(el).textOverflow === 'ellipsis'")
+
+
+def test_copy_preserves_native_text_copy(copy_page):
+    page = copy_page
+    copied(page, "mixed/note.md")
+    page.evaluate("""() => {
+      const input = document.body.appendChild(document.createElement('textarea'));
+      input.value = 'selected text'; input.focus(); input.select();
+    }""")
+    page.keyboard.press("Control+c")
+    assert page.evaluate("__clipped") == ["mixed/note.md"]
+    page.evaluate("document.activeElement.blur(); document.querySelector('textarea').remove()")
+    page.evaluate("""() => {
+      const range = document.createRange();
+      range.selectNodeContents(document.querySelector('#st-path'));
+      getSelection().removeAllRanges(); getSelection().addRange(range);
+    }""")
+    page.keyboard.press("Control+c")
+    assert page.evaluate("__clipped") == ["mixed/note.md"]
+    page.evaluate("getSelection().removeAllRanges()")
+    copied(page, "mixed/note.md")
+
+
+def test_copy_late_completion_does_not_replace_new_cycle(copy_page):
+    page = copy_page
+    page.evaluate("() => { navigator.clipboard.writeText = () => new Promise(resolve => { window.finishCopy = resolve; }); }")
+    page.keyboard.press("Control+c")
+    page.evaluate("__clip(false)")
+    copied(page, "mixed/note.md")
+    copied(page, "/mixed/note.md")
+    page.evaluate("finishCopy()")
+    assert page.locator("#st-copy").inner_text() == "Copied /mixed/note.md"
+    copied(page, "note.md")
+
+
+def test_copy_menu_refusal_keeps_menu(copy_page):
+    page = copy_page
+    page.evaluate("__clip(true)")
+    page.locator('.col[data-i="1"] .row[title="short.txt"]').click(button="right")
+    page.get_by_role("menuitem", name="Copy relative path", exact=True).click()
+    page.wait_for_function("document.querySelector('#st-copy').textContent.includes('refused')")
+    assert page.locator("#row-menu").is_visible()
+    assert page.evaluate("getSelection().toString()") == ""
