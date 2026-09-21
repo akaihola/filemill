@@ -1802,6 +1802,39 @@ def test_preview_delete_cancel_confirm_and_keyboard(page, ui_root):
     assert not page.errors
 
 
+def test_delete_key_deletes_selected_files_and_directories_but_not_editors(
+    page, ui_root
+):
+    page.open()
+    row = page.locator('.col[data-i="0"] .row[aria-label="short.txt"]')
+    page.once("dialog", lambda d: d.accept())
+    row.click()
+    page.keyboard.press("Delete")
+    row.wait_for(state="detached")
+    assert not (ui_root / "short.txt").exists()
+
+    folder = page.locator('.col[data-i="0"] .row[aria-label="notes"]')
+    page.once("dialog", lambda d: d.accept())
+    folder.click()
+    page.keyboard.press("Delete")
+    folder.wait_for(state="detached")
+    assert not (ui_root / "notes").exists()
+
+    page.open()
+    page.evaluate(
+        "() => { const input = document.createElement('input'); "
+        "input.id = 'test-editor'; document.body.append(input); input.focus(); }"
+    )
+    page.keyboard.press("Delete")
+    page.evaluate(
+        "() => { document.querySelector('#test-editor').remove(); "
+        "sel[0] = undefined; }"
+    )
+    page.keyboard.press("Delete")
+    assert (ui_root / "README.md").exists()
+    assert not page.errors
+
+
 @pytest.mark.parametrize("failure", ["remove", "refresh"])
 def test_preview_delete_reports_failure(page, ui_root, failure):
     page.open("notes/plain.txt")
