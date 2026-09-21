@@ -51,6 +51,16 @@ model. No native widget port starts. Toolkit capabilities do not establish
 Filemill parity; runtime sizes and implementation hours remain unmeasured.
 The existing [30] qualification failure and binary-selection gate remain.
 
+## Preview keyboard update, 2026-09-21
+
+Preview Right now advances to each complete fold boundary, then hides the spine
+strip, then enters fullscreen through the toolbar action. Keyboard folds land
+immediately so rapid presses do not reuse an unfinished fold. Mouse scrolling
+keeps the existing dial. Left and Esc share fullscreen exit, including the layout
+fallback and touch history. Resize preserves preview focus; ordinary Left still
+returns to folder navigation. Browser regressions cover both editions, and key
+mapping remains in the DOM-free model.
+
 ## What is healthy
 
 Keep these. They are the parts of the project that already meet the goals.

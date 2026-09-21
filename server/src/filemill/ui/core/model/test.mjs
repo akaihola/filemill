@@ -70,6 +70,25 @@ assert.equal(
   keyAction({ key: "ArrowUp" }, { preview: true }),
   "preview-scroll",
 );
+assert.equal(
+  keyAction({ key: "ArrowRight" }, { preview: true }),
+  "preview-right",
+);
+assert.equal(
+  keyAction({ key: "ArrowLeft" }, { preview: true }),
+  "preview-back",
+);
+for (const key of ["ArrowLeft", "Escape"]) {
+  assert.equal(
+    keyAction({ key }, { preview: true, fullscreen: true }),
+    "preview-exit-fullscreen",
+  );
+  assert.equal(
+    keyAction({ key }, { preview: true, fullscreen: true, editable: true }),
+    null,
+  );
+}
+assert.equal(keyAction({ key: "Escape" }, { preview: true }), null);
 assert.equal(nextRow(0, false, 1, 3), 0);
 assert.equal(nextRow(2, true, 1, 3), 2);
 assert.deepEqual(

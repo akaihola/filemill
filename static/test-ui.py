@@ -2467,3 +2467,38 @@ def test_mobile_fullscreen_back(bundle, fake_handle, playwright, static_origin):
         page.wait_for_function("document.documentElement.classList.contains('pv-fullscreen')")
     finally:
         browser.close()
+
+
+def test_preview_arrow_sequence(bundle, fake_handle, playwright, static_origin):
+    browser = playwright.chromium.launch()
+    try:
+        page = browser.new_page(viewport={"width": 1500, "height": 900}, has_touch=True)
+        page.goto(f"{static_origin}/static/{bundle.name}")
+        page.evaluate(fake_handle)
+        page.evaluate("async () => { await mount(__mk(0)); await applyPath(['mixed', 'short.txt']); }")
+        page.wait_for_selector("#pv-content .pv-text")
+        page.evaluate("document.documentElement.requestFullscreen = undefined")
+        page.evaluate("finder.scrollTo({left: 0, behavior: 'instant'})")
+        page.wait_for_function("folded === 0")
+        page.locator("#preview").focus()
+        url = page.url
+        for count in (1, 2):
+            page.keyboard.press("ArrowRight")
+            page.wait_for_function("n => document.querySelectorAll('.col.spine').length === n", arg=count, timeout=3000)
+        page.keyboard.press("ArrowRight")
+        page.wait_for_function("Math.abs(finder.scrollLeft - (finder.scrollWidth - finder.clientWidth)) <= 1")
+        assert not page.evaluate("document.documentElement.classList.contains('pv-fullscreen')")
+        page.keyboard.press("ArrowRight")
+        page.wait_for_function("document.documentElement.classList.contains('pv-fullscreen') && history.state?.filemillFullscreen")
+        page.keyboard.press("ArrowLeft")
+        page.wait_for_function("!document.documentElement.classList.contains('pv-fullscreen') && !history.state?.filemillFullscreen")
+        assert page.evaluate("document.activeElement.id") == "preview"
+        assert page.url == url
+        assert page.evaluate("sel.at(-1)") == "short.txt"
+        page.go_forward()
+        page.wait_for_function("document.documentElement.classList.contains('pv-fullscreen')")
+        page.keyboard.press("Escape")
+        page.wait_for_function("!document.documentElement.classList.contains('pv-fullscreen') && !history.state?.filemillFullscreen")
+        assert page.url == url
+    finally:
+        browser.close()
