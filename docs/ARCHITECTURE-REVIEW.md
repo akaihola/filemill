@@ -237,7 +237,9 @@ errors, selection cleanup and continued keyboard navigation.
 2026-09-20 update: Shared CSS now removes the paragraph width cap from
 server-rendered reStructuredText, matching rich browser previews. A browser
 regression covers both containers at desktop and mobile widths, including
-fullscreen, inline markup, links, lists and code whitespace.
+fullscreen, headings, inline markup, links, lists and code whitespace.
+Reverified on 2026-09-21: removing the RST width override makes the regression
+fail at 414 px of paragraph width with 1178 px available.
 
 Preview kinds are dispatched by regular expressions on the file name inside
 each provider. There is no table. Providers are stacked as decorators at boot
