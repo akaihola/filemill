@@ -1826,11 +1826,13 @@ def test_delete_key_deletes_selected_files_and_directories_but_not_editors(
         "input.id = 'test-editor'; document.body.append(input); input.focus(); }"
     )
     page.keyboard.press("Delete")
+    count = page.locator('.col[data-i="0"] .row').count()
     page.evaluate(
         "() => { document.querySelector('#test-editor').remove(); "
         "sel[0] = undefined; }"
     )
     page.keyboard.press("Delete")
+    assert page.locator('.col[data-i="0"] .row').count() == count
     assert (ui_root / "README.md").exists()
     assert not page.errors
 

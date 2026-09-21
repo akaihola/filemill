@@ -353,7 +353,8 @@ document.addEventListener("keydown", (e) => {
   const c = colCache.get(path[focusCol]);
   if (!c) return;
   const rows = c.rows;
-  let ci = rowIndex(path[focusCol], sel[focusCol]);
+  const selectedRow = rowIndex(path[focusCol], sel[focusCol]);
+  let ci = selectedRow;
   if (ci < 0) ci = 0;
 
   if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) {
@@ -363,7 +364,7 @@ document.addEventListener("keydown", (e) => {
   }
 
   if (action === "delete") {
-    const node = c.kids[ci];
+    const node = selectedRow < 0 ? null : c.kids[selectedRow];
     if (node) {
       e.preventDefault();
       void deleteEntry(node, path[focusCol], { disabled: false });
