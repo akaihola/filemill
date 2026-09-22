@@ -9,6 +9,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- [*] Even in non-editing Markdown previews, let the user check/uncheck rendered
+  checkboxes and edit the Markdown source to correspond to the checkbox status with
+  `- [ ]` or `- [x]`.
+
 ## Scheduled
 
 - [*] Large directories now partition their contents into multiple lists that the user
@@ -28,6 +32,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [40] Return preview focus to the containing folder and selected file.
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
 - [38] Fix PPTX previews that show unspaced slide text in both modes.
+
 ## In Progress
 
 - [*] Treat `.py.j2` as Python.
@@ -75,8 +80,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Completed
 
-- [37] Make the installed PWA show its server-not-running recovery page when
-  opened while the server is stopped.
+- [37] Make the installed PWA show its server-not-running recovery page when opened
+  while the server is stopped.
 
 - [*] When the relative path of a file or folder is copied successfully using `Ctrl+C`
   or a context menu item, show the copied path in the status bar, truncated if
