@@ -64,9 +64,9 @@ mapping remains in the DOM-free model.
 ## Markdown task toggle update, 2026-09-22
 
 Rendered Markdown task checkboxes are enabled in the preview when the file is
-editable. Each box names its source line. The DOM-free
+editable. Each box names its source line and that line's text. The DOM-free
 `ui/core/model/markdown-tasks.js` rewrites only that line's mark, and only if
-the re-read source still has the state that was rendered. The browser wiring
+the re-read line still reads exactly as rendered. The browser wiring
 reuses the editor's `editableText` gate and `FS.write`. There is no new port
 and no server change.
 
