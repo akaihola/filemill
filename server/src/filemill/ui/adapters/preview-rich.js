@@ -159,9 +159,10 @@ async function markdown(text, node) {
       return linkOpen(tokens, idx, options, env, self);
     };
 
-    /* A task checkbox names the source line of its list item, so a click can
-       rewrite that line; see editor/task-toggle.js. */
+    /* A task checkbox names the source line of its list item and its text, so
+       a click can rewrite that line; see editor/task-toggle.js. */
     mdInstance.core.ruler.push("task-source-line", (state) => {
+      const lines = state.src.split("\n");
       state.tokens.forEach((tok, i) => {
         const box = tok.type === "inline" && tok.children?.[0];
         const line = state.tokens[i - 1]?.map?.[0];
@@ -171,7 +172,9 @@ async function markdown(text, node) {
         ) {
           box.content = box.content.replace(
             "<input",
-            `<input data-source-line="${line}"`,
+            `<input data-source-line="${line}" data-source-text="${
+              esc(lines[line] ?? "")
+            }"`,
           );
         }
       });
