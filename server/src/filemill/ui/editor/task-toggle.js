@@ -2,7 +2,7 @@ import { FS } from "../core/ports.js";
 import { toggleTask } from "../core/model/markdown-tasks.js";
 import { editableText } from "./editor.js";
 
-const BOX = "input.task-list-item-checkbox[data-source-line]";
+const BOX = "input.task-list-item-checkbox[data-source-line][data-source-text]";
 
 /* A rendered task checkbox rewrites its own source line, outside the editor.
    The file is read again first, so a line that changed since the render is
@@ -19,9 +19,12 @@ export function enableTaskToggles(host, node, current, report) {
     for (const b of boxes()) b.disabled = true;
     try {
       const text = await editableText(node);
-      const next = text === null
-        ? null
-        : toggleTask(text, Number(box.dataset.sourceLine), box.checked);
+      const next = text === null ? null : toggleTask(
+        text,
+        Number(box.dataset.sourceLine),
+        box.checked,
+        box.dataset.sourceText,
+      );
       if (!current()) return;
       if (next === null) {
         box.checked = !box.checked;
@@ -30,6 +33,9 @@ export function enableTaskToggles(host, node, current, report) {
       }
       try {
         await FS.write(node, next);
+        // The box now stands for the rewritten line; a second click needs it.
+        const source = box.dataset.sourceText;
+        box.dataset.sourceText = toggleTask(source, 0, box.checked, source);
       } catch (err) {
         if (!current()) return;
         box.checked = !box.checked;

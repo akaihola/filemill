@@ -2362,7 +2362,12 @@ def test_markdown_task_checkboxes_toggle_the_source(page, ui_root):
 
 
 @pytest.mark.parametrize(
-    "changed", ["# Tasks\n\n- [x] one\n", "# Tasks\n\none\n- [ ] two\n"]
+    "changed",
+    [
+        "# Tasks\n\n- [x] one\n",
+        "# Tasks\n\none\n- [ ] two\n",
+        "# Tasks\n\n- [ ] zero\n- [ ] one\n- [x] two\n",
+    ],
 )
 def test_markdown_task_checkbox_rejects_changed_source(page, ui_root, changed):
     tasks = _open_tasks(page, ui_root)
