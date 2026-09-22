@@ -31,10 +31,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] Even in non-editing Markdown previews, let the user check/uncheck rendered
-  checkboxes and edit the Markdown source to correspond to the checkbox status with
-  `- [ ]` or `- [x]`.
-
 - [*] Treat `.py.j2` as Python.
 
 - [*] When returning focus back to the containing folder from the preview pane using the
@@ -79,6 +75,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [*] Even in non-editing Markdown previews, let the user check/uncheck rendered
+  checkboxes and edit the Markdown source to correspond to the checkbox status with
+  `- [ ]` or `- [x]`.
 
 - [37] Make the installed PWA show its server-not-running recovery page when opened
   while the server is stopped.
