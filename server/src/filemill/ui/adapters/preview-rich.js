@@ -159,6 +159,24 @@ async function markdown(text, node) {
       return linkOpen(tokens, idx, options, env, self);
     };
 
+    /* A task checkbox names the source line of its list item, so a click can
+       rewrite that line; see editor/task-toggle.js. */
+    mdInstance.core.ruler.push("task-source-line", (state) => {
+      state.tokens.forEach((tok, i) => {
+        const box = tok.type === "inline" && tok.children?.[0];
+        const line = state.tokens[i - 1]?.map?.[0];
+        if (
+          box?.type === "html_inline" && Number.isInteger(line) &&
+          box.content.startsWith('<input class="task-list-item-checkbox"')
+        ) {
+          box.content = box.content.replace(
+            "<input",
+            `<input data-source-line="${line}"`,
+          );
+        }
+      });
+    });
+
     /* filemill renders [[PageName]]; markdown-it has no such plugin, and the
        rule is small enough that matching it is cheaper than finding one. The
        target is resolved by the shared navigator, not by the browser, so the
