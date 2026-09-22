@@ -7,6 +7,7 @@ import {
   editingPreview,
   openEditor,
 } from "../editor/editor.js";
+import { enableTaskToggles } from "../editor/task-toggle.js";
 import { jsonCollapse } from "./model/json-collapse.js";
 import { syncURL } from "./deeplink.js";
 import { currentPath } from "./model/deeplink.js";
@@ -771,6 +772,12 @@ async function fillPreview(n) {
       await editableText(n) !== null && token === pvToken && btn.isConnected
     ) {
       btn.hidden = false;
+      enableTaskToggles(
+        host,
+        n,
+        () => token === pvToken && host.isConnected,
+        (message) => actions.saySt("st-refresh", message, false),
+      );
       btn.onclick = () =>
         openEditor(
           n,

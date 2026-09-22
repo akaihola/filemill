@@ -391,7 +391,8 @@ function pageMove(c, dir, ci) {
 }
 
 const keyboardContext = (e) => ({
-  editable: e.target.matches?.("input, textarea, select") ||
+  editable:
+    e.target.matches?.("input:not([type=checkbox]), textarea, select") ||
     e.target.isContentEditable,
   welcome: document.getElementById("welcome")?.hidden === false,
   preview: !!e.target.closest?.("#preview"),
