@@ -22,6 +22,7 @@ import {
 } from "./folding.js";
 import { keyAction, nextRow, pageSelection } from "./keyboard.js";
 import { currentPath, locationState, walkPath } from "./deeplink.js";
+import { toggleTask } from "./markdown-tasks.js";
 
 assert.equal(typeof globalThis.document, "undefined");
 const file = (name) => ({ name, dir: false });
@@ -315,5 +316,36 @@ assert.ok(
   pathReads <= deepPath.length * 2,
   `deep path read ${pathReads} times`,
 );
+
+// Task checkboxes rewrite exactly one mark, and only a mark that still matches.
+const tasks = "# T\r\n\r\n- [ ] one\r\n- [x] two\r\n  * [X] nested\r\ntail";
+assert.equal(
+  toggleTask(tasks, 2, true),
+  "# T\r\n\r\n- [x] one\r\n- [x] two\r\n  * [X] nested\r\ntail",
+);
+assert.equal(
+  toggleTask(tasks, 3, false),
+  "# T\r\n\r\n- [ ] one\r\n- [ ] two\r\n  * [X] nested\r\ntail",
+);
+assert.equal(
+  toggleTask(tasks, 4, false),
+  "# T\r\n\r\n- [ ] one\r\n- [x] two\r\n  * [ ] nested\r\ntail",
+);
+for (
+  const [line, checked, want] of [
+    ["+ [ ] a", true, "+ [x] a"],
+    ["1. [ ] a", true, "1. [x] a"],
+    ["2) [x] a", false, "2) [ ] a"],
+    ["> - [ ] a", true, "> - [x] a"],
+    ["    - [x] a [ ] b", false, "    - [ ] a [ ] b"],
+  ]
+) assert.equal(toggleTask(line, 0, checked), want);
+for (const line of [-1, 5, 1.5, NaN, 0, 1]) {
+  assert.equal(toggleTask("# T\ntext - [ ] x\n", line, true), null);
+}
+assert.equal(toggleTask("- a [ ] b", 0, true), null);
+assert.equal(toggleTask("- [ ]", 0, true), null);
+assert.equal(toggleTask("- [x] done", 0, true), null);
+assert.equal(toggleTask("- [ ] open", 0, false), null);
 
 console.log("Model checks passed");
