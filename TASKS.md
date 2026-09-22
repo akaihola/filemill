@@ -11,10 +11,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] Even in non-editing Markdown previews, let the user check/uncheck rendered
-  checkboxes and edit the Markdown source to correspond to the checkbox status with
-  `- [ ]` or `- [x]`.
-
 - [*] Large directories now partition their contents into multiple lists that the user
   can browse using a `< Page N of NN >` control. This is not acceptable. The vertical
   scrollbar should be used to navigate through the directory contents. Task
@@ -34,6 +30,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [38] Fix PPTX previews that show unspaced slide text in both modes.
 
 ## In Progress
+
+- [*] Even in non-editing Markdown previews, let the user check/uncheck rendered
+  checkboxes and edit the Markdown source to correspond to the checkbox status with
+  `- [ ]` or `- [x]`.
 
 - [*] Treat `.py.j2` as Python.
 
