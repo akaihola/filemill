@@ -3596,6 +3596,72 @@ async function openEditor(node, current, refresh) {
   };
 }
 
+/* ═══ core/model/markdown-tasks.js ═══ */
+/* A rendered task checkbox names its 0-based source line and that line's text.
+   The line must still read exactly as rendered, apart from a trailing CR; if
+   anything moved, nothing is rewritten. */
+const TASK = /^((?:[ \t]*>)*[ \t]*(?:[-*+]|\d{1,9}[.)])[ \t]+\[)([ xX])(\] )/;
+
+function toggleTask(text, line, checked, source) {
+  const lines = text.split("\n");
+  if (!Number.isInteger(line) || line < 0 || line >= lines.length) return null;
+  if (lines[line].replace(/\r$/, "") !== source) return null;
+  const match = TASK.exec(lines[line]);
+  if (!match || (match[2] !== " ") === checked) return null;
+  lines[line] = match[1] + (checked ? "x" : " ") +
+    lines[line].slice(match[1].length + 1);
+  return lines.join("\n");
+}
+
+/* ═══ editor/task-toggle.js ═══ */
+const BOX = "input.task-list-item-checkbox[data-source-line][data-source-text]";
+
+/* A rendered task checkbox rewrites its own source line, outside the editor.
+   The file is read again first, so a line that changed since the render is
+   refused rather than overwritten. The write goes to the node that was
+   rendered, even if the preview has moved on by the time it lands. */
+function enableTaskToggles(host, node, current, report) {
+  const boxes = () => host.querySelectorAll(BOX);
+  for (const box of boxes()) box.disabled = false;
+  host.onchange = async (event) => {
+    const box = event.target.closest?.(BOX);
+    if (!box) return;
+    // Disabling drops focus; give it back so preview keys keep working.
+    const focused = document.activeElement === box;
+    for (const b of boxes()) b.disabled = true;
+    try {
+      const text = await editableText(node);
+      const next = text === null ? null : toggleTask(
+        text,
+        Number(box.dataset.sourceLine),
+        box.checked,
+        box.dataset.sourceText,
+      );
+      if (!current()) return;
+      if (next === null) {
+        box.checked = !box.checked;
+        report("Checkbox not saved: the source changed");
+        return;
+      }
+      try {
+        await FS.write(node, next);
+        // The box now stands for the rewritten line; a second click needs it.
+        const source = box.dataset.sourceText;
+        box.dataset.sourceText = toggleTask(source, 0, box.checked, source);
+      } catch (err) {
+        if (!current()) return;
+        box.checked = !box.checked;
+        report(`Checkbox not saved: ${String(err.message || err)}`);
+      }
+    } finally {
+      if (current()) {
+        for (const b of boxes()) b.disabled = false;
+        if (focused) box.focus();
+      }
+    }
+  };
+}
+
 /* ═══ core/model/deeplink.js ═══ */
 function currentPath() {
   const names = path.slice(1).map((p) => p.name);
@@ -4820,6 +4886,12 @@ async function fillPreview(n) {
       await editableText(n) !== null && token === pvToken && btn.isConnected
     ) {
       btn.hidden = false;
+      enableTaskToggles(
+        host,
+        n,
+        () => token === pvToken && host.isConnected,
+        (message) => actions.saySt("st-refresh", message, false),
+      );
       btn.onclick = () =>
         openEditor(
           n,
@@ -5502,7 +5574,8 @@ function pageMove(c, dir, ci) {
 }
 
 const keyboardContext = (e) => ({
-  editable: e.target.matches?.("input, textarea, select") ||
+  editable:
+    e.target.matches?.("input:not([type=checkbox]), textarea, select") ||
     e.target.isContentEditable,
   welcome: document.getElementById("welcome")?.hidden === false,
   preview: !!e.target.closest?.("#preview"),
@@ -6634,6 +6707,27 @@ async function markdown(text, node) {
       }
       return linkOpen(tokens, idx, options, env, self);
     };
+
+    /* A task checkbox names the source line of its list item and its text, so
+       a click can rewrite that line; see editor/task-toggle.js. */
+    mdInstance.core.ruler.push("task-source-line", (state) => {
+      const lines = state.src.split("\n");
+      state.tokens.forEach((tok, i) => {
+        const box = tok.type === "inline" && tok.children?.[0];
+        const line = state.tokens[i - 1]?.map?.[0];
+        if (
+          box?.type === "html_inline" && Number.isInteger(line) &&
+          box.content.startsWith('<input class="task-list-item-checkbox"')
+        ) {
+          box.content = box.content.replace(
+            "<input",
+            `<input data-source-line="${line}" data-source-text="${
+              esc(lines[line] ?? "")
+            }"`,
+          );
+        }
+      });
+    });
 
     /* filemill renders [[PageName]]; markdown-it has no such plugin, and the
        rule is small enough that matching it is cheaper than finding one. The

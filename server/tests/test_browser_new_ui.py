@@ -2311,3 +2311,97 @@ def test_mobile_fullscreen_history_after_preview_change(server, playwright, chan
         )
     finally:
         browser.close()
+
+
+TASKS_MD = "# Tasks\n\n- [ ] one\n- [x] two\n\ntext - [ ] kept\n"
+TASK_BOX = "#preview .pv-rich input.task-list-item-checkbox"
+
+
+def _open_tasks(page, ui_root: Path) -> Path:
+    tasks = ui_root / "tasks.md"
+    tasks.write_text(TASKS_MD)
+    page.open("tasks.md")
+    page.wait_for_selector(f"{TASK_BOX}:not([disabled])", timeout=15000)
+    return tasks
+
+
+def test_markdown_task_checkboxes_toggle_the_source(page, ui_root):
+    tasks = _open_tasks(page, ui_root)
+    boxes = page.locator(TASK_BOX)
+    assert boxes.count() == 2
+    assert page.locator("#pv-editor").count() == 0
+    assert [boxes.nth(i).get_attribute("data-source-line") for i in (0, 1)] == [
+        "2",
+        "3",
+    ]
+    before = page.evaluate("({sel: [...sel], path: path.map(n => n.name)})")
+    boxes.nth(0).check()
+    page.wait_for_function(f"!document.querySelector('{TASK_BOX}').disabled")
+    assert tasks.read_text() == TASKS_MD.replace("- [ ] one", "- [x] one")
+    boxes.nth(1).uncheck()
+    page.wait_for_function(
+        f"[...document.querySelectorAll('{TASK_BOX}')].every(b => !b.disabled)"
+    )
+    assert tasks.read_text() == ("# Tasks\n\n- [x] one\n- [ ] two\n\ntext - [ ] kept\n")
+    assert page.evaluate("({sel: [...sel], path: path.map(n => n.name)})") == before
+    # The clicked box keeps focus, and preview keys still work from it.
+    page.wait_for_function(
+        "document.activeElement.matches('input.task-list-item-checkbox')"
+    )
+    page.keyboard.press("Space")
+    page.wait_for_function(f"!document.querySelectorAll('{TASK_BOX}')[1].disabled")
+    assert tasks.read_text() == TASKS_MD.replace("- [ ] one", "- [x] one")
+    page.keyboard.press("ArrowLeft")
+    page.wait_for_function("!document.activeElement.closest('#preview')")
+    page.click('.col[data-i="0"] .row:has-text("tasks.md")')
+    page.wait_for_selector("#pv-edit", state="visible")
+    page.click("#pv-edit")
+    page.wait_for_selector("#pv-editor")
+    assert page.input_value("#pv-editor") == tasks.read_text()
+    assert not page.errors
+
+
+@pytest.mark.parametrize(
+    "changed",
+    [
+        "# Tasks\n\n- [x] one\n",
+        "# Tasks\n\none\n- [ ] two\n",
+        "# Tasks\n\n- [ ] zero\n- [ ] one\n- [x] two\n",
+    ],
+)
+def test_markdown_task_checkbox_rejects_changed_source(page, ui_root, changed):
+    tasks = _open_tasks(page, ui_root)
+    tasks.write_text(changed)
+    page.locator(TASK_BOX).nth(0).click()
+    page.wait_for_function(
+        "document.querySelector('#st-refresh').textContent.includes('not saved')"
+    )
+    page.wait_for_function(f"!document.querySelector('{TASK_BOX}').disabled")
+    assert not page.locator(TASK_BOX).nth(0).is_checked()
+    assert "bad" in page.locator("#st-refresh").get_attribute("class")
+    assert tasks.read_text() == changed
+    assert not page.errors
+
+
+def test_markdown_task_late_write_targets_its_own_file(page, ui_root):
+    tasks = _open_tasks(page, ui_root)
+    page.evaluate("""() => {
+      const write = FS.write;
+      window.__targets = [];
+      FS.write = async (node, text) => {
+        window.__targets.push(node.rel);
+        await new Promise(resolve => { window.__finishWrite = resolve; });
+        await write(node, text);
+        window.__writeFinished = true;
+      };
+    }""")
+    page.locator(TASK_BOX).nth(0).click()
+    page.wait_for_function("typeof window.__finishWrite === 'function'")
+    page.click('.col[data-i="0"] .row:has-text("short.txt")')
+    page.wait_for_selector("#pv-edit", state="visible")
+    page.evaluate("window.__finishWrite()")
+    page.wait_for_function("window.__writeFinished === true")
+    assert page.evaluate("window.__targets") == ["tasks.md"]
+    assert tasks.read_text() == TASKS_MD.replace("- [ ] one", "- [x] one")
+    assert (ui_root / "short.txt").read_text() == "short"
+    assert not page.errors
