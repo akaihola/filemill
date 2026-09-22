@@ -61,6 +61,15 @@ fallback and touch history. Resize preserves preview focus; ordinary Left still
 returns to folder navigation. Browser regressions cover both editions, and key
 mapping remains in the DOM-free model.
 
+## Markdown task toggle update, 2026-09-22
+
+Rendered Markdown task checkboxes are enabled in the preview when the file is
+editable. Each box names its source line. The DOM-free
+`ui/core/model/markdown-tasks.js` rewrites only that line's mark, and only if
+the re-read source still has the state that was rendered. The browser wiring
+reuses the editor's `editableText` gate and `FS.write`. There is no new port
+and no server change.
+
 ## What is healthy
 
 Keep these. They are the parts of the project that already meet the goals.
