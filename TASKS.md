@@ -9,11 +9,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+## Scheduled
+
 - [*] Even in non-editing Markdown previews, let the user check/uncheck rendered
   checkboxes and edit the Markdown source to correspond to the checkbox status with
   `- [ ]` or `- [x]`.
-
-## Scheduled
 
 - [*] Large directories now partition their contents into multiple lists that the user
   can browse using a `< Page N of NN >` control. This is not acceptable. The vertical
