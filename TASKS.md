@@ -9,6 +9,25 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- [*] Task 645b5e03-8b7c-4a29-b56c-0d96f9add7cd tried to fix `[](~/...)` links, and it
+  kind of did, but they now point to the deprecated `/w/home/agent/...` paths. Fix them
+  to point to `/...?f` relative to the root mount directory instead. Example:
+  [`pykoclaw-acp/backlog/004`](~/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md#streaming-restore-plan-buffered-semantic-windows)
+  currently points to
+  `/w/agent/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md?filemill=render#streaming-restore-plan-buffered-semantic-windows`
+  but it needs to point to
+  `/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md?f#streaming-restore-plan-buffered-semantic-windows`
+  instead.
+
+- [*] When all folder columns are collapsed, exiting the preview pane using the arrow
+  left key doesn't currently expand the parent folder column (rightmost folder column
+  just before the preview pane). Make sure left arrow always expands the parent folder
+  column.
+
+- [*] Implement highlighting of reStructuredText (not actually properly implemented by
+  [50]). Ensure unintended highlighting doesn't happen between aposthrophes in words.
+  Ensure special roles are highlighted similar to how Pygments does.
+
 ## Scheduled
 
 - [*] Large directories now partition their contents into multiple lists that the user
@@ -25,9 +44,7 @@ Rules for TASKS.md usage are at the bottom of the file.
   3rd party libraries if that helps.
 
 - [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
-- [40] Return preview focus to the containing folder and selected file.
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
-- [38] Fix PPTX previews that show unspaced slide text in both modes.
 
 ## In Progress
 
@@ -75,10 +92,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
-
-- [*] Even in non-editing Markdown previews, let the user check/uncheck rendered
-  checkboxes and edit the Markdown source to correspond to the checkbox status with
-  `- [ ]` or `- [x]`.
 
 - [37] Make the installed PWA show its server-not-running recovery page when opened
   while the server is stopped.
@@ -208,9 +221,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100 k-entry
   directory still builds 100 k DOM nodes. Do this only if such folders show up.
-
-- [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
-  Today `[text](~/note.md)` is a dead link although the file exists.
 
 - [6] Centralize file-kind classification across filesystem producers and preview/edit
   consumers. Add one test table per language that both sides share.
@@ -428,6 +438,17 @@ Rules for TASKS.md usage are at the bottom of the file.
   38ab06e2-c607-4d4a-9978-67847e70d27d.
 
 ## Accepted
+
+- [*] Even in non-editing Markdown previews, let the user check/uncheck rendered
+  checkboxes and edit the Markdown source to correspond to the checkbox status with
+  `- [ ]` or `- [x]`.
+
+- [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
+  Today `[text](~/note.md)` is a dead link although the file exists.
+
+- [38] Fix PPTX previews that show unspaced slide text in both modes.
+
+- [40] Return preview focus to the containing folder and selected file.
 
 [6]: docs/tasks/6-file-kind-classification.md
 [7]: docs/tasks/7-adapter-owned-entry-order.md
