@@ -1822,19 +1822,29 @@ def test_markdown_link_paths_and_queries(page, ui_root, view):
         ),
         ("fragment", "#top", "#top"),
         ("query", "?filemill=raw", "?filemill=raw"),
-        ("home", "~/note.md", None),
+        ("home", "~/note.md", "/note.md?f"),
+        (
+            "backlog",
+            (
+                "~/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md"
+                "#streaming-restore-plan-buffered-semantic-windows"
+            ),
+            (
+                "/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md"
+                "?f#streaming-restore-plan-buffered-semantic-windows"
+            ),
+        ),
+        ("keepview", "~/note.md?filemill=highlight", "/note.md?filemill=highlight"),
+        ("textfile", "~/data.txt", "/data.txt"),
     ]
     source = "\n\n".join(f"[{label}]({href})" for label, href, _ in cases)
     (ui_root / "notes/deep/links.md").write_text(source)
     page.goto(f"{page.base}/notes/deep/links.md?filemill={view}")
     page.locator("#preview a", has_text="sibling").wait_for()
-    mount = page.evaluate("document.documentElement.dataset.root")
     for label, _, expected in cases:
         link = page.locator("#pv-content a", has_text=label)
         assert link.count() == 1
-        assert link.get_attribute("href") == (
-            expected if expected is not None else f"/w/{mount}/note.md?filemill=render"
-        )
+        assert link.get_attribute("href") == expected
     if view == "highlight":
         assert page.locator("#preview .pv-text").text_content() == source
 
