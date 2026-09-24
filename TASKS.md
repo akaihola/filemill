@@ -9,11 +9,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+## Scheduled
+
 - [*] Implement highlighting of reStructuredText (not actually properly implemented by
   [50]). Ensure unintended highlighting doesn't happen between aposthrophes in words.
   Ensure special roles are highlighted similar to how Pygments does.
-
-## Scheduled
 
 - [*] Task 645b5e03-8b7c-4a29-b56c-0d96f9add7cd tried to fix `[](~/...)` links, and it
   kind of did, but they now point to the deprecated `/w/home/agent/...` paths. Fix them
