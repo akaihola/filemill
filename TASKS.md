@@ -15,11 +15,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   [50]). Ensure unintended highlighting doesn't happen between aposthrophes in words.
   Ensure special roles are highlighted similar to how Pygments does.
 
-- [*] When all folder columns are collapsed, exiting the preview pane using the arrow
-  left key doesn't currently expand the parent folder column (rightmost folder column
-  just before the preview pane). Make sure left arrow always expands the parent folder
-  column.
-
 - [*] Task 645b5e03-8b7c-4a29-b56c-0d96f9add7cd tried to fix `[](~/...)` links, and it
   kind of did, but they now point to the deprecated `/w/home/agent/...` paths. Fix them
   to point to `/...?f` relative to the root mount directory instead. Example:
@@ -47,6 +42,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
 
 ## In Progress
+
+- [*] When all folder columns are collapsed, exiting the preview pane using the arrow
+  left key doesn't currently expand the parent folder column (rightmost folder column
+  just before the preview pane). Make sure left arrow always expands the parent folder
+  column.
 
 - [*] Treat `.py.j2` as Python.
 

@@ -31,6 +31,7 @@ import {
 import { closeSettings } from "./settings.js";
 import {
   focusCol,
+  folded,
   path,
   pvFullscreen,
   rowIndex,
@@ -428,6 +429,7 @@ document.addEventListener("keydown", (e) => {
     }
     if (action === "preview-back") {
       e.preventDefault();
+      if (folded === path.length) unfoldTo(focusCol);
       render(true);
       const parent = colCache.get(path[focusCol]);
       const ri = rowIndex(path[focusCol], sel[focusCol]);
