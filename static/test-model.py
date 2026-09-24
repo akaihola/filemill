@@ -107,7 +107,7 @@ def test_preview_left_expands_parent_when_all_columns_are_folded(bundle, playwri
         page.wait_for_function("folded === path.length")
         page.keyboard.press("ArrowLeft")
         page.wait_for_function("document.activeElement.id !== 'preview'")
-        assert page.evaluate("folded === path.length - 1")
+        page.wait_for_function("folded === path.length - 1")
     finally:
         browser.close()
 
