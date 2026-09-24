@@ -17,6 +17,10 @@
    mangled, because every character of the input is escaped and emitted exactly
    once — see hlHTML.
 
+   Markdown and reStructuredText are the exceptions: their markup is line
+   structure, so each has a tokenizer of its own (markdown-source.js,
+   rst-source.js) and only a placeholder here.
+
    A language is one line in HL_LANGS. An extension that is not listed previews
    as plain text, the way every file did before this existed. SVG is absent on
    purpose: the pane has something better than source for it.
@@ -24,6 +28,7 @@
 import { esc } from "./icons.js";
 import { jsonCollapse } from "./model/json-collapse.js";
 import { markdownSource } from "./markdown-source.js";
+import { rstSource } from "./rst-source.js";
 
 /* Written as plain strings rather than literals because they are assembled:
    a regex literal cannot be pasted into another one without going through its
@@ -76,11 +81,7 @@ const K_SQL =
    without a second mechanism. `n: false` turns the number class off. */
 const HL_SPECS = {
   markdown: { n: false },
-  rst: {
-    c: "\\.\\.[^\\n]*",
-    s: HL_TICK,
-    k: hlWords("attention code-block note warning"),
-  },
+  rst: { n: false },
   js: { c: HL_SLASH, s: HL_TICK, k: hlWords(K_JS) },
   ts: { c: HL_SLASH, s: HL_TICK, k: hlWords(K_TS) },
   py: { c: HL_HASH, s: HL_TRIPLE, k: hlWords(K_PY) },
@@ -268,6 +269,12 @@ export function hlLang(name) {
    input, which is what makes the output safe to assign to innerHTML. */
 export function hlHTML(text, key, node) {
   if (key === "markdown") return markdownSource(text, node);
+  if (key === "rst") {
+    return rstSource(text, (code, lang) => {
+      const sub = hlLang("x." + lang);
+      return sub ? hlHTML(code, sub) : esc(code);
+    });
+  }
   const re = HL_LANGS[key];
   let out = "", last = 0, m;
   re.lastIndex = 0;

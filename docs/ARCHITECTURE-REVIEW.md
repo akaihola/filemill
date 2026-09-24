@@ -242,6 +242,8 @@ The source tokenizer is in `ui/core/markdown-source.js`. Both editions use
 these browser modules; they add no DOM dependency to `ui/core/model/`.
 Update, 2026-09-24: `~/...` destinations resolve against the root served at
 `/`, with `?f` for Markdown. They no longer use the `/w/` mounts.
+Update, 2026-09-25: reStructuredText source has its own tokenizer in
+`ui/core/rst-source.js`, dispatched from `hlHTML` like Markdown.
 
 ### 8. Mobile and tablet are arithmetic, not design (Worth exploring)
 
