@@ -1421,6 +1421,7 @@ def test_rst_syntax_is_highlighted(page):
         ":field: value\n": [["hl-attr", ":field:"]],
         "Paragraph::\n\n   literal block\n": [["hl-str", "   literal block\n"]],
         "2*3*4 and snake_case_name.\n": [],
+        ".. code-block::\n\n   *x* and :ref:`y`\n": [["hl-kw", "code-block"]],
     }
     for source, spans in cases.items():
         assert _rst_tokens(page, source) == spans, source
@@ -1428,6 +1429,21 @@ def test_rst_syntax_is_highlighted(page):
     assert ["hl-kw", "code-block"] in code
     assert ["hl-kw", "return"] in code
     assert ["hl-num", "1"] in code
+
+
+def test_rst_unclosed_markup_is_highlighted_in_linear_time(page):
+    """An opener that never closes must not rescan the rest of the paragraph:
+    300 KB of them took 15 s when every start searched to the end."""
+    page.open()
+    elapsed = page.evaluate(
+        """async () => {
+            const { hlHTML } = await import('/ui/core/syntax.js');
+            const t = performance.now();
+            hlHTML('a **b '.repeat(50000) + 'a ``b '.repeat(50000), 'rst');
+            return performance.now() - t;
+        }"""
+    )
+    assert elapsed < 2000
 
 
 def test_rst_highlight_view_marks_roles_and_leaves_apostrophes(page, ui_root):

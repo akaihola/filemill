@@ -2729,20 +2729,28 @@ const RS_TICK = String.raw`\x60(?![\s\x60])(?:\\[\s\S]|[^\x60\\])*?(?<!\s)\x60`;
 const RS_ROLE = String.raw`:[A-Za-z0-9]+(?:[\-_.+:][A-Za-z0-9]+)*:`;
 const rsMarkup = (name, source) => `(?<${name}>${RS_START}${source}${RS_END})`;
 
-/* The leftmost match wins; at one position the first alternative does. */
+/* The leftmost match wins; at one position the first alternative does. A
+   candidate never looks past the first run that could close it, so an opener
+   that never closes costs one scan to that run, not one to the paragraph end. */
 const RS_INLINE = new RegExp(
   [
     String.raw`(?<esc>\\[\s\S])`,
     String
       .raw`(?<fld>(?<=(?:^|\n)[ \t]*):(?![\s:])(?:\\.|[^:\n\\\x60])*?(?<!\s):(?=\s|$))`,
-    rsMarkup("lit", String.raw`\x60\x60(?!\s)[\s\S]*?(?<!\s)\x60\x60`),
+    rsMarkup(
+      "lit",
+      String.raw`\x60\x60(?!\s)(?:[^\x60]|\x60(?!\x60))*?(?<!\s)\x60\x60`,
+    ),
     rsMarkup("roleL", RS_ROLE + RS_TICK),
     rsMarkup("roleR", RS_TICK + RS_ROLE),
     rsMarkup("ref", RS_TICK + "__?"),
     rsMarkup("interp", RS_TICK),
     rsMarkup("note", String.raw`\[(?:#[\w.\-]*|\*|\d+|[A-Za-z][\w.\-]*)\]__?`),
     rsMarkup("sub", String.raw`\|(?![\s|])[^|\n]*?(?<!\s)\|(?:__?)?`),
-    rsMarkup("strong", String.raw`\*\*(?![\s*])[\s\S]*?(?<!\s)\*\*`),
+    rsMarkup(
+      "strong",
+      String.raw`\*\*(?![\s*])(?:[^*]|\*(?!\*))*?(?<!\s)\*\*`,
+    ),
     rsMarkup("emph", String.raw`\*(?![\s*])(?:\\[\s\S]|[^*\\])*?(?<!\s)\*`),
     rsMarkup("name", String.raw`[A-Za-z0-9](?:\w|[\-.+:](?=\w))*(?<!_)__?`),
   ].join("|"),
@@ -2782,8 +2790,9 @@ function rsInline(text) {
   return out + esc(text.slice(last));
 }
 
-/* `highlight(code, lang)` colours a code-block directive's body; it is passed
-   in rather than imported so that this module does not import syntax.js. */
+/* `highlight(code, lang)` colours a code-block directive's body, as plain text
+   when `lang` is empty or unknown; it is passed in rather than imported so
+   that this module does not import syntax.js. */
 function rstSource(text, highlight) {
   const lines = text.match(/[^\n]*\n|[^\n]+$/g) || [];
   /* The lines from `from` indented deeper than `indent`, without the blank
@@ -2826,10 +2835,9 @@ function rstSource(text, highlight) {
           .exec(line);
       if (directive) {
         const [, lead, name, colons, rest] = directive;
-        const lang = rest.trim();
         out += esc(lead) + rsSpan(name, "kw") + esc(colons) + rsInline(rest) +
-          (/^(?:code|code-block|sourcecode)$/.test(name) && lang
-            ? highlight(body, lang)
+          (/^(?:code|code-block|sourcecode)$/.test(name)
+            ? highlight(body, rest.trim())
             : rstSource(body, highlight));
       } else if (target) {
         out += esc(target[1]) + rsSpan(target[2], "link") + esc(target[3]) +
