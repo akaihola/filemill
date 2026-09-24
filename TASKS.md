@@ -48,6 +48,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
+- [*] When all folder columns are collapsed, exiting the preview pane using the arrow
+  left key doesn't currently expand the parent folder column (rightmost folder column
+  just before the preview pane). Make sure left arrow always expands the parent folder
+  column.
+
 - [*] Treat `.py.j2` as Python.
 
 - [*] When returning focus back to the containing folder from the preview pane using the
