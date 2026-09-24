@@ -9,11 +9,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+## Scheduled
+
 - [*] Implement highlighting of reStructuredText (not actually properly implemented by
   [50]). Ensure unintended highlighting doesn't happen between aposthrophes in words.
   Ensure special roles are highlighted similar to how Pygments does.
-
-## Scheduled
 
 - [*] When all folder columns are collapsed, exiting the preview pane using the arrow
   left key doesn't currently expand the parent folder column (rightmost folder column
