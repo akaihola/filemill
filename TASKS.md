@@ -13,10 +13,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   [50]). Ensure unintended highlighting doesn't happen between aposthrophes in words.
   Ensure special roles are highlighted similar to how Pygments does.
 
-- [*] Don't steal `Alt+Left` and `Alt+Right`, they must invoke the browser's `Back` and
-  `Forward` navigation. Currently Filemill grabs them and uses them for column
-  navigation similar to the `Left` and `Right` arrow keys.
-
 ## Scheduled
 
 - [*] When all folder columns are collapsed, exiting the preview pane using the arrow
@@ -48,6 +44,7 @@ Rules for TASKS.md usage are at the bottom of the file.
   3rd party libraries if that helps.
 
 - [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
+- [39] Fix Back/Forward navigation across folders, previews and raw files.
 
 ## In Progress
 
@@ -66,6 +63,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
+
+- [64] Keep subfolder and folded parent widths stable during Up/Down navigation.
 
 - [41] Fix plain-text reStructuredText previews in Source and Rendered modes.
 
@@ -450,10 +449,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [38] Fix PPTX previews that show unspaced slide text in both modes.
 
 - [40] Return preview focus to the containing folder and selected file.
-
-- [39] Fix Back/Forward navigation across folders, previews and raw files.
-
-- [64] Keep subfolder and folded parent widths stable during Up/Down navigation.
 
 [6]: docs/tasks/6-file-kind-classification.md
 [7]: docs/tasks/7-adapter-owned-entry-order.md
