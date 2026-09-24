@@ -432,7 +432,7 @@ def test_rendered_relative_markdown_link_uses_root_relative_url(
 
 @pytest.mark.integration
 @pytest.mark.parametrize("view", ["render", "highlight"])
-def test_home_markdown_link_uses_the_symlink_mount_once(
+def test_home_markdown_link_is_root_relative(
     live_server: str, browser_root: Path, view: str
 ):
     with sync_playwright() as p:
@@ -442,14 +442,11 @@ def test_home_markdown_link_uses_the_symlink_mount_once(
             f"{live_server}/home-link.md?filemill={view}", wait_until="networkidle"
         )
         page.wait_for_selector(
-            '#preview a[href="/w/prg/docs/subdir/next.md?filemill=render"]',
+            '#preview a[href="/prg/docs/subdir/next.md?f"]',
             timeout=15000,
         )
         assert (
-            page.locator(
-                '#preview a[href="/w/prg/docs/subdir/next.md?filemill=render"]'
-            ).count()
-            == 1
+            page.locator('#preview a[href="/prg/docs/subdir/next.md?f"]').count() == 1
         )
         browser.close()
 
