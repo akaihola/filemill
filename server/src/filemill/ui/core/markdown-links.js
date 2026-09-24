@@ -6,23 +6,16 @@ export function markdownHref(href, dir) {
     .replace(/[\s\p{Cc}]/gu, "");
   if (/^(?:javascript|vbscript|file|data):/i.test(scheme)) return null;
   if (href.startsWith("~/")) {
-    const root = document.documentElement;
-    const mounts = JSON.parse(root.dataset.mounts || "[]");
-    const parts = href.slice(2).split("/");
-    const mount = mounts.includes(parts[0]) ? parts.shift() : root.dataset.root;
-    const path = parts.join("/");
-    if (!mount || mount === "/") return path;
-    const url = new URL(
-      `/w/${encodeURIComponent(mount)}/${path}`,
-      location.origin,
-    );
+    // `~` is the root the server serves at `/`; `?f` asks for the rendered view.
+    const url = new URL(href.slice(1), location.origin);
+    const { pathname, search, hash } = url;
     if (
-      /\.(?:md|markdown)$/i.test(url.pathname) &&
-      !url.searchParams.has("filemill")
+      /\.(?:md|markdown)$/i.test(pathname) &&
+      !url.searchParams.has("filemill") && !url.searchParams.has("f")
     ) {
-      url.searchParams.set("filemill", "render");
+      return pathname + (search ? search + "&f" : "?f") + hash;
     }
-    return url.pathname + url.search + url.hash;
+    return pathname + search + hash;
   }
   if (dir === undefined || /^(?:[a-z][a-z0-9+.-]*:|\/|#|\?)/i.test(href)) {
     return href;
