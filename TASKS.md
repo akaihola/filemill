@@ -15,16 +15,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   [50]). Ensure unintended highlighting doesn't happen between aposthrophes in words.
   Ensure special roles are highlighted similar to how Pygments does.
 
-- [*] Task 645b5e03-8b7c-4a29-b56c-0d96f9add7cd tried to fix `[](~/...)` links, and it
-  kind of did, but they now point to the deprecated `/w/home/agent/...` paths. Fix them
-  to point to `/...?f` relative to the root mount directory instead. Example:
-  [`pykoclaw-acp/backlog/004`](~/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md#streaming-restore-plan-buffered-semantic-windows)
-  currently points to
-  `/w/agent/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md?filemill=render#streaming-restore-plan-buffered-semantic-windows`
-  but it needs to point to
-  `/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md?f#streaming-restore-plan-buffered-semantic-windows`
-  instead.
-
 - [*] Large directories now partition their contents into multiple lists that the user
   can browse using a `< Page N of NN >` control. This is not acceptable. The vertical
   scrollbar should be used to navigate through the directory contents. Task
@@ -42,6 +32,16 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
 
 ## In Progress
+
+- [*] Task 645b5e03-8b7c-4a29-b56c-0d96f9add7cd tried to fix `[](~/...)` links, and it
+  kind of did, but they now point to the deprecated `/w/home/agent/...` paths. Fix them
+  to point to `/...?f` relative to the root mount directory instead. Example:
+  [`pykoclaw-acp/backlog/004`](~/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md#streaming-restore-plan-buffered-semantic-windows)
+  currently points to
+  `/w/agent/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md?filemill=render#streaming-restore-plan-buffered-semantic-windows`
+  but it needs to point to
+  `/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md?f#streaming-restore-plan-buffered-semantic-windows`
+  instead.
 
 - [*] When all folder columns are collapsed, exiting the preview pane using the arrow
   left key doesn't currently expand the parent folder column (rightmost folder column
