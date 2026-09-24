@@ -1352,7 +1352,7 @@ def test_rst_renders_and_highlights_in_the_server_preview(page):
     page.wait_for_selector("#preview .preview-rst h1", timeout=15000)
     assert "Some rst text." in page.text_content("#preview .preview-rst")
     page.open_resource("code/guide.rst?filemill=highlight")
-    page.wait_for_selector("#preview .pv-text .hl-com", timeout=15000)
+    page.wait_for_selector("#preview .pv-text .hl-heading", timeout=15000)
     assert ".. code-block:: python" in page.text_content("#preview .pv-text")
 
 
@@ -1366,6 +1366,97 @@ def test_rst_source_and_rendered_modes_switch_without_losing_the_preview(page):
     page.click("#pv-view")
     page.wait_for_selector("#preview .preview-rst h1", timeout=15000)
     assert "Some rst text." in page.text_content("#preview .preview-rst")
+
+
+def _rst_tokens(page, source: str) -> list[list[str]]:
+    """The [class, text] pairs core/syntax.js wraps in `source`, after checking
+    that the highlighted HTML still reads as exactly the source."""
+    text, spans = page.evaluate(
+        """async (source) => {
+            const { hlHTML } = await import('/ui/core/syntax.js');
+            const t = document.createElement('template');
+            t.innerHTML = hlHTML(source, 'rst');
+            const spans = [...t.content.querySelectorAll('span')]
+                .map(s => [s.className, s.textContent]);
+            return [t.content.textContent, spans];
+        }""",
+        source,
+    )
+    assert text == source
+    return spans
+
+
+def test_rst_apostrophes_in_words_are_not_markup(page):
+    page.open()
+    assert _rst_tokens(page, "Don't use it; it's the user's file.\n") == []
+    assert _rst_tokens(page, "It's ``x`` and don't\n") == [["hl-str", "``x``"]]
+
+
+def test_rst_roles_are_highlighted_like_pygments(page):
+    page.open()
+    source = "See :ref:`intro`, :func:`os.path` or `text`:role:.\n"
+    assert _rst_tokens(page, source) == [
+        ["hl-attr", ":ref:"],
+        ["hl-var", "`intro`"],
+        ["hl-attr", ":func:"],
+        ["hl-var", "`os.path`"],
+        ["hl-var", "`text`"],
+        ["hl-attr", ":role:"],
+    ]
+
+
+def test_rst_syntax_is_highlighted(page):
+    page.open()
+    cases = {
+        "Guide\n=====\n\ntext\n": [["hl-heading", "Guide\n=====\n"]],
+        ".. note:: A note.\n": [["hl-kw", "note"]],
+        ".. a comment\n   more\n": [["hl-com", ".. a comment\n   more\n"]],
+        "Wait, etc.. more\n": [],
+        "Some *emph* and **strong**.\n": [
+            ["hl-emph", "*emph*"],
+            ["hl-strong", "**strong**"],
+        ],
+        "A `link <http://x>`_ here.\n": [["hl-link", "`link <http://x>`_"]],
+        ".. _name: http://example.com\n": [["hl-link", "_name:"]],
+        ":field: value\n": [["hl-attr", ":field:"]],
+        "Paragraph::\n\n   literal block\n": [["hl-str", "   literal block\n"]],
+        "2*3*4 and snake_case_name.\n": [],
+        ".. code-block::\n\n   *x* and :ref:`y`\n": [["hl-kw", "code-block"]],
+    }
+    for source, spans in cases.items():
+        assert _rst_tokens(page, source) == spans, source
+    code = _rst_tokens(page, ".. code-block:: python\n\n   return 1\n")
+    assert ["hl-kw", "code-block"] in code
+    assert ["hl-kw", "return"] in code
+    assert ["hl-num", "1"] in code
+
+
+def test_rst_unclosed_markup_is_highlighted_in_linear_time(page):
+    """An opener that never closes must not rescan the rest of the paragraph:
+    300 KB of them took 15 s when every start searched to the end."""
+    page.open()
+    elapsed = page.evaluate(
+        """async () => {
+            const { hlHTML } = await import('/ui/core/syntax.js');
+            const t = performance.now();
+            hlHTML('a **b '.repeat(50000) + 'a ``b '.repeat(50000), 'rst');
+            return performance.now() - t;
+        }"""
+    )
+    assert elapsed < 2000
+
+
+def test_rst_highlight_view_marks_roles_and_leaves_apostrophes(page, ui_root):
+    source = "Title\n=====\n\nIt's the user's :ref:`intro`, isn't it?\n"
+    (ui_root / "notes" / "roles.rst").write_text(source)
+    page.goto(f"{page.base}/notes/roles.rst?filemill=highlight")
+    preview = page.locator("#preview .pv-text")
+    preview.locator(".hl-attr").wait_for(timeout=15000)
+    assert preview.text_content() == source
+    assert preview.locator(".hl-attr").text_content() == ":ref:"
+    assert preview.locator(".hl-var").text_content() == "`intro`"
+    spans = preview.locator("span").all_text_contents()
+    assert not any("'" in s for s in spans)
 
 
 def test_hidden_show_starts_with_dotfiles_visible(page):
