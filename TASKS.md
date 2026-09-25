@@ -29,7 +29,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
   3rd party libraries if that helps.
 
-- [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
 
 ## In Progress
@@ -93,6 +92,8 @@ Rules for TASKS.md usage are at the bottom of the file.
   moved to the repo root is never loaded and we get a wall of "fixture not found"?
   Should we use `server/.venv/bin/pytest -c pytest.ini server/tests/...` from the root
   until that is fixed?
+
+- [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
 
 - [*] Check the two architecture reviews (`docs/2026-09-05-ARCHITECTURE-REVIEW.md` and
   `docs/2026-09-19-architecture-review-and-remediation-plan.md`). Remove everything that
