@@ -1,16 +1,13 @@
 """The URL contract: one path per file, query parameters pick the representation.
 
 A file has one address. ``/docs/readme.md`` names the resource; the query says
-which representation of it you want. That split is what lets the gogo dashboard
-embed a document without minting a second URL for it — the dashboard asks the
-same path for ``?filemill=render&layout=no-columns``, and a colleague who
-pastes the link into chat opens the same document with the finder around it.
+which representation of it you want, so a link pasted into chat opens the same
+document with the finder around it.
 
-Three query groups, each with one documented default:
+Two query groups, each with one documented default:
 
     filemill = raw | render | highlight            (default: raw)
-    layout   = full-columns | compressed-columns | no-columns
-                                                   (default: full-columns)
+    layout   = full-columns | compressed-columns   (default: full-columns)
 
 ``raw`` is the default because the bare path has to serve the bytes: a stylesheet
 at ``/site/main.css`` must arrive as ``text/css``, not as a preview of one.
@@ -43,8 +40,7 @@ VIEWS: tuple[str, ...] = (VIEW_RAW, VIEW_RENDER, VIEW_HIGHLIGHT)
 
 LAYOUT_FULL = "full-columns"
 LAYOUT_COMPRESSED = "compressed-columns"
-LAYOUT_NONE = "no-columns"
-LAYOUTS: tuple[str, ...] = (LAYOUT_FULL, LAYOUT_COMPRESSED, LAYOUT_NONE)
+LAYOUTS: tuple[str, ...] = (LAYOUT_FULL, LAYOUT_COMPRESSED)
 
 DEFAULT_VIEW = VIEW_RAW
 DEFAULT_LAYOUT = LAYOUT_FULL
@@ -136,4 +132,3 @@ def build_url(
     if vpath:
         pairs.append((VPATH_PARAM, vpath.strip("/")))
     return f"{path}?{urlencode(pairs)}" if pairs else path
-

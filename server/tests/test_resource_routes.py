@@ -9,7 +9,6 @@ For a configured root containing ``docs/readme.md``, these are the addresses:
 
     ?layout=full-columns        the finder, opened there   (default)
     ?layout=compressed-columns  the same, columns folded
-    ?layout=no-columns          the representation alone
 
 The tests below assert exact path and query semantics rather than "the href
 contains /raw", because a URL contract is only worth having if it is pinned
@@ -128,22 +127,24 @@ def test_a_space_in_a_path_is_served(client):
 
 @pytest.mark.parametrize("view", ["render", "highlight"])
 def test_document_views_serve_the_shared_shell(client, view):
-    resp = client.get(f"/docs/readme.md?filemill={view}&layout=no-columns")
+    resp = client.get(f"/docs/readme.md?filemill={view}&layout=compressed-columns")
     assert resp.status_code == 200
     assert "/ui/entry-server.js" in resp.text
     assert f'data-filemill="{view}"' in resp.text
-    assert 'data-layout="no-columns"' in resp.text
+    assert 'data-layout="compressed-columns"' in resp.text
     assert "preview-standalone" not in resp.text
 
 
 # ── Layout selects the chrome, not the content ───────────────────────────────
 
 
-def test_no_columns_layout_serves_the_shared_shell(client):
-    resp = client.get("/docs/readme.md?filemill=render&layout=no-columns")
+@pytest.mark.parametrize("path", ["/docs/readme.md?filemill=render&", "/docs?"])
+def test_retired_no_columns_layout_falls_back_to_full_columns(client, path):
+    """A stale ?layout=no-columns link opens the finder on the same path."""
+    resp = client.get(f"{path}layout=no-columns")
     assert resp.status_code == 200
     assert "/ui/entry-server.js" in resp.text
-    assert 'data-layout="no-columns"' in resp.text
+    assert 'data-layout="full-columns"' in resp.text
 
 
 def test_full_columns_layout_serves_the_shared_ui(client):
@@ -177,11 +178,6 @@ def test_compressed_columns_reaches_the_shared_ui(client):
     assert "/ui/entry-server.js" in resp.text
 
 
-def test_layout_is_reported_on_the_body(client):
-    resp = client.get("/docs/readme.md?filemill=render&layout=no-columns")
-    assert 'data-layout="no-columns"' in resp.text
-
-
 # ── Invalid and repeated query values ────────────────────────────────────────
 
 
@@ -203,8 +199,8 @@ def test_invalid_query_values_serve_the_default_representation(client, query):
 
 @pytest.mark.parametrize("query", ["?filemill", "?filemill=", "?f", "?f="])
 def test_render_shortcuts_serve_the_rendered_representation(client, query):
-    shorthand = client.get(f"/docs/readme.md{query}&layout=no-columns")
-    explicit = client.get("/docs/readme.md?filemill=render&layout=no-columns")
+    shorthand = client.get(f"/docs/readme.md{query}&layout=compressed-columns")
+    explicit = client.get("/docs/readme.md?filemill=render&layout=compressed-columns")
     assert shorthand.text == explicit.text
 
 
@@ -215,9 +211,11 @@ def test_trailing_slash_redirects_a_file_to_the_rendered_view(client):
 
 
 def test_trailing_slash_preserves_other_query_parameters(client):
-    resp = client.get("/docs/readme.md/?layout=no-columns", follow_redirects=False)
+    resp = client.get(
+        "/docs/readme.md/?layout=compressed-columns", follow_redirects=False
+    )
     assert resp.headers["location"] == (
-        "/docs/readme.md?filemill=render&layout=no-columns"
+        "/docs/readme.md?filemill=render&layout=compressed-columns"
     )
 
 
@@ -227,9 +225,11 @@ def test_explicit_raw_view_overrides_trailing_slash(client):
 
 
 def test_repeated_view_takes_the_last_occurrence(client):
-    resp = client.get("/docs/readme.md?filemill=raw&filemill=render&layout=no-columns")
+    resp = client.get(
+        "/docs/readme.md?filemill=raw&filemill=render&layout=compressed-columns"
+    )
     assert 'data-filemill="render"' in resp.text
-    assert 'data-layout="no-columns"' in resp.text
+    assert 'data-layout="compressed-columns"' in resp.text
 
 
 def test_unknown_query_parameters_are_ignored(client):
@@ -246,16 +246,6 @@ def test_directory_serves_the_shared_ui(client):
     assert resp.status_code == 200
     assert "/ui/entry-server.js" in resp.text
     assert 'data-root="menu"' in resp.text
-
-
-def test_directory_with_no_columns_serves_the_shell(client):
-    """The server renders no listing; the client shows the one column."""
-    resp = client.get("/docs?layout=no-columns")
-    assert resp.status_code == 200
-    assert "/ui/entry-server.js" in resp.text
-    assert 'data-layout="no-columns"' in resp.text
-    assert "<ul" not in resp.text
-    assert "readme.md" not in resp.text
 
 
 def test_root_relative_directory_with_a_trailing_slash(client):
@@ -306,9 +296,9 @@ def test_markdown_link_targets_the_files_own_path(site, client):
     """A document link returns the shared shell at its own path."""
     (site / "note.md").write_text("[link](other.md)\n")
     (site / "other.md").write_text("# Other\n")
-    resp = client.get("/note.md?filemill=render&layout=no-columns")
+    resp = client.get("/note.md?filemill=render&layout=compressed-columns")
     assert "/ui/entry-server.js" in resp.text
-    assert 'data-layout="no-columns"' in resp.text
+    assert 'data-layout="compressed-columns"' in resp.text
 
 
 def test_markdown_image_src_is_left_relative_and_now_resolves(site, client):
@@ -323,7 +313,7 @@ def test_markdown_image_src_is_left_relative_and_now_resolves(site, client):
     fixed a bug by removing a special case rather than adding one.
     """
     (site / "docs" / "note.md").write_text("![photo](../photo.png)\n")
-    resp = client.get("/docs/note.md?filemill=render&layout=no-columns")
+    resp = client.get("/docs/note.md?filemill=render&layout=compressed-columns")
     assert "/ui/entry-server.js" in resp.text
 
     # The browser would resolve that against /docs/note.md. Follow it and check.
