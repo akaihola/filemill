@@ -39,12 +39,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] Does the documented way to run server tests still silently lose every fixture:
-  does `server/pyproject.toml` still win the rootdir election, so the conftest that
-  moved to the repo root is never loaded and we get a wall of "fixture not found"?
-  Should we use `server/.venv/bin/pytest -c pytest.ini server/tests/...` from the root
-  until that is fixed?
-
 - [*] When all folder columns are collapsed, exiting the preview pane using the arrow
   left key doesn't currently expand the parent folder column (rightmost folder column
   just before the preview pane). Make sure left arrow always expands the parent folder
@@ -94,6 +88,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [*] Does the documented way to run server tests still silently lose every fixture:
+  does `server/pyproject.toml` still win the rootdir election, so the conftest that
+  moved to the repo root is never loaded and we get a wall of "fixture not found"?
+  Should we use `server/.venv/bin/pytest -c pytest.ini server/tests/...` from the root
+  until that is fixed?
 
 - [*] Check the two architecture reviews (`docs/2026-09-05-ARCHITECTURE-REVIEW.md` and
   `docs/2026-09-19-architecture-review-and-remediation-plan.md`). Remove everything that
