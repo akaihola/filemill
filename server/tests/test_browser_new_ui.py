@@ -1317,22 +1317,14 @@ def test_back_and_forward_restore_folder_preview_and_raw_states(page):
     page.wait_for_url("**/notes/deep/leaf.md?filemill=raw")
 
 
-def test_no_columns_shows_a_document_without_the_finder(page):
-    """?layout=no-columns is the client's job now: the shell hides the chrome."""
+def test_stale_no_columns_link_opens_the_normal_finder(page):
+    """The retired ?layout=no-columns falls back to full columns (ADR 0067)."""
     page.open_resource("notes/deep/leaf.md?filemill=render&layout=no-columns")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
-    assert page.evaluate("document.documentElement.dataset.layout") == "no-columns"
-    assert page.locator("#strip > .col:visible").count() == 0
-    assert not page.is_visible("#bar")
-    assert not page.is_visible("#trail")
-    assert page.is_visible("#preview .pv-rich")
-
-
-def test_no_columns_shows_a_directory_as_one_listing(page):
-    page.open_resource("notes?layout=no-columns")
-    assert page.locator("#strip > .col:visible").count() == 1
-    assert page.is_visible('#strip > .col:visible .row:has-text("deep")')
-    assert not page.is_visible("#bar")
+    assert page.evaluate("document.documentElement.dataset.layout") == "full-columns"
+    assert page.locator("#strip > .col:visible").count() >= 1
+    assert page.is_visible("#bar")
+    assert page.is_visible("#trail")
 
 
 def test_highlight_shows_the_source_in_the_columns(page):

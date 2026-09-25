@@ -31,6 +31,9 @@ status.
   Starlette in `app.py`, which serves the same `ui/` with an import map and
   answers `/api/*`, `/w/` mounts and root-relative resource URLs. A Linux
   WebView host (`ui/entry-native.js`, issue [30]) is a prototype.
+- **One URL per file.** `urls.py` parses `?filemill=raw|render|highlight`
+  and `?layout=full-columns|compressed-columns` ([ADR 0067]). `raw`, the
+  default, serves the bytes; every other view serves the shared shell.
 - **Three ports.** `ui/core/ports.js` declares `FS`, `PREVIEW` and `ROUTER`,
   including `FS.node`, `FS.blob`, optional `FS.write`, `FS.remove` and
   `ROUTER.write(state, replace)`. Each edition supplies adapters.
@@ -350,4 +353,5 @@ A12 items can land at any time, each with a focused test.
 [ADR 0034]: adr/0034-read-only-mode-read.md
 [ADR 0063]: adr/0063-installed-pwa-server-recovery.md
 [ADR 0066]: adr/0066-native-toolkits.md
+[ADR 0067]: adr/0067-drop-no-columns-layout.md
 [remaining red tests]: testing/remaining-red-tests.md

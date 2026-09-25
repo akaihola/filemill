@@ -28,7 +28,7 @@ needs the same width rules before and after folder contents arrive.
   Tests allow 1px for browser geometry rounding, not an earlier fold threshold.
 - Automatic folding never folds the focused column or columns to its right.
   Existing folds remain until the user unfolds them. Manual scrolling, spine
-  clicks, compressed layout, no-columns layout and fullscreen keep their roles.
+  clicks, compressed layout and fullscreen keep their roles.
 - If protected columns and spines leave too little room, the preview can extend
   beyond the finder. This can occur even on a shallow portrait path. Keeping the
   touched column whole takes priority over the preview minimum. When that column

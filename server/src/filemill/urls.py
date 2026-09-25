@@ -1,16 +1,13 @@
 """The URL contract: one path per file, query parameters pick the representation.
 
 A file has one address. ``/docs/readme.md`` names the resource; the query says
-which representation of it you want. That split is what lets the gogo dashboard
-embed a document without minting a second URL for it — the dashboard asks the
-same path for ``?filemill=render&layout=no-columns``, and a colleague who
-pastes the link into chat opens the same document with the finder around it.
+which representation of it you want, so a link pasted into chat opens the same
+document with the finder around it.
 
-Three query groups, each with one documented default:
+Two query groups, each with one documented default:
 
     filemill = raw | render | highlight            (default: raw)
-    layout   = full-columns | compressed-columns | no-columns
-                                                   (default: full-columns)
+    layout   = full-columns | compressed-columns   (default: full-columns)
 
 ``raw`` is the default because the bare path has to serve the bytes: a stylesheet
 at ``/site/main.css`` must arrive as ``text/css``, not as a preview of one.
@@ -43,8 +40,7 @@ VIEWS: tuple[str, ...] = (VIEW_RAW, VIEW_RENDER, VIEW_HIGHLIGHT)
 
 LAYOUT_FULL = "full-columns"
 LAYOUT_COMPRESSED = "compressed-columns"
-LAYOUT_NONE = "no-columns"
-LAYOUTS: tuple[str, ...] = (LAYOUT_FULL, LAYOUT_COMPRESSED, LAYOUT_NONE)
+LAYOUTS: tuple[str, ...] = (LAYOUT_FULL, LAYOUT_COMPRESSED)
 
 DEFAULT_VIEW = VIEW_RAW
 DEFAULT_LAYOUT = LAYOUT_FULL
@@ -59,16 +55,11 @@ VIEW_LABELS: tuple[tuple[str, str], ...] = (
 
 @dataclass(frozen=True)
 class ViewState:
-    """The three query groups, already validated, plus any virtual path."""
+    """The two query groups, already validated, plus any virtual path."""
 
     view: str = DEFAULT_VIEW
     layout: str = DEFAULT_LAYOUT
     vpath: str = ""
-
-    @property
-    def wants_columns(self) -> bool:
-        """True when the response should carry the Miller-columns finder shell."""
-        return self.layout != LAYOUT_NONE
 
     def with_view(self, view: str) -> ViewState:
         """Return the same state pointed at another representation."""
@@ -98,7 +89,7 @@ def _one_of(value: str | None, allowed: tuple[str, ...], default: str) -> str:
 
 
 def parse_state(params) -> ViewState:
-    """Read the three query groups out of a query mapping.
+    """Read the two query groups and the virtual path out of a query mapping.
 
     *params* is anything with ``.get()`` — a Starlette ``QueryParams`` or a plain
     dict. Every field comes back valid, so callers never re-check.
@@ -141,19 +132,3 @@ def build_url(
     if vpath:
         pairs.append((VPATH_PARAM, vpath.strip("/")))
     return f"{path}?{urlencode(pairs)}" if pairs else path
-
-
-def url_for_state(rel: str, state: ViewState, *, view: str | None = None) -> str:
-    """Build the URL for *rel* in *state*, optionally switching representation.
-
-    Non-default values are carried over so a switch link keeps the layout and
-    dotfile choices the reader already made. The default values stay off the
-    URL, which is what keeps the everyday address short.
-    """
-    chosen = view if view is not None else state.view
-    return build_url(
-        rel,
-        view=chosen if chosen != DEFAULT_VIEW else None,
-        layout=state.layout if state.layout != DEFAULT_LAYOUT else None,
-        vpath=state.vpath or None,
-    )

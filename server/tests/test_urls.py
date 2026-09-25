@@ -7,14 +7,12 @@ from filemill.urls import (
     DEFAULT_LAYOUT,
     DEFAULT_VIEW,
     LAYOUT_COMPRESSED,
-    LAYOUT_NONE,
     VIEW_HIGHLIGHT,
     VIEW_RAW,
     VIEW_RENDER,
     ViewState,
     build_url,
     parse_state,
-    url_for_state,
 )
 
 # ── Defaults ─────────────────────────────────────────────────────────────────
@@ -47,7 +45,7 @@ def test_full_view_parameter_takes_priority_over_shortcut():
     assert parse_state(QueryParams("f&filemill=raw")).view == VIEW_RAW
 
 
-@pytest.mark.parametrize("layout", ["full-columns", "compressed-columns", "no-columns"])
+@pytest.mark.parametrize("layout", ["full-columns", "compressed-columns"])
 def test_each_layout_value_parses(layout):
     assert parse_state(QueryParams(f"layout={layout}")).layout == layout
 
@@ -68,7 +66,9 @@ def test_invalid_view_falls_back_to_default(query):
     assert parse_state(QueryParams(query)).view == DEFAULT_VIEW
 
 
-@pytest.mark.parametrize("query", ["layout=wide", "layout=", "layout=no-columns2"])
+@pytest.mark.parametrize(
+    "query", ["layout=wide", "layout=", "layout=compressed-columns2"]
+)
 def test_invalid_layout_falls_back_to_default(query):
     assert parse_state(QueryParams(query)).layout == DEFAULT_LAYOUT
 
@@ -80,7 +80,7 @@ def test_repeated_value_takes_the_last_occurrence():
 
 
 def test_repeated_value_with_invalid_last_falls_back_to_default():
-    state = parse_state(QueryParams("layout=no-columns&layout=nonsense"))
+    state = parse_state(QueryParams("layout=compressed-columns&layout=nonsense"))
     assert state.layout == DEFAULT_LAYOUT
 
 
@@ -98,16 +98,9 @@ def test_plain_dict_parses_like_query_params():
     assert parse_state({"filemill": "highlight"}).view == VIEW_HIGHLIGHT
 
 
-# ── Derived flags ────────────────────────────────────────────────────────────
-
-
-def test_no_columns_layout_reports_no_columns():
-    assert parse_state(QueryParams("layout=no-columns")).wants_columns is False
-
-
-@pytest.mark.parametrize("layout", ["full-columns", "compressed-columns"])
-def test_column_layouts_report_columns(layout):
-    assert parse_state(QueryParams(f"layout={layout}")).wants_columns is True
+def test_retired_no_columns_layout_parses_as_the_default():
+    """A stale ?layout=no-columns link keeps its path and gets full columns."""
+    assert parse_state(QueryParams("layout=no-columns")).layout == DEFAULT_LAYOUT
 
 
 # ── build_url ────────────────────────────────────────────────────────────────
@@ -130,13 +123,17 @@ def test_view_parameter_is_named_filemill():
 
 
 def test_view_and_layout_appear_in_a_stable_order():
-    url = build_url("a.md", view=VIEW_RENDER, layout=LAYOUT_NONE)
-    assert url == "/a.md?filemill=render&layout=no-columns"
+    url = build_url("a.md", view=VIEW_RENDER, layout=LAYOUT_COMPRESSED)
+    assert url == "/a.md?filemill=render&layout=compressed-columns"
 
 
 def test_invalid_values_are_dropped_not_emitted():
     """Every generated link carries valid values, by construction."""
     assert build_url("a.md", view="nonsense", layout="wide") == "/a.md"
+
+
+def test_retired_no_columns_layout_is_not_emitted():
+    assert build_url("a.md", layout="no-columns") == "/a.md"
 
 
 def test_path_separators_survive_encoding():
@@ -168,35 +165,9 @@ def test_vpath_rides_along():
     assert build_url("sample.db", vpath="users/42") == "/sample.db?vpath=users%2F42"
 
 
-# ── url_for_state ────────────────────────────────────────────────────────────
-
-
-def test_url_for_state_keeps_non_default_layout_when_switching_view():
-    """Switching to raw drops the view parameter: the bare path *is* the raw file.
-
-    Clicking "Raw" therefore lands the reader on the canonical short URL, which
-    is the contract's own best explanation of itself. The layout and dotfile
-    choices they already made ride along.
-    """
-    state = ViewState(view=VIEW_RENDER, layout=LAYOUT_NONE)
-    assert url_for_state("a.md", state, view=VIEW_RAW) == ("/a.md?layout=no-columns")
-
-
 def test_build_url_can_still_pin_the_raw_view_explicitly():
     """A router that must not rely on the default spells the value out."""
     assert build_url("a.md", view=VIEW_RAW) == "/a.md?filemill=raw"
-
-
-def test_url_for_state_omits_defaults():
-    state = ViewState()
-    assert url_for_state("a.md", state) == "/a.md"
-
-
-def test_url_for_state_keeps_vpath():
-    state = ViewState(view=VIEW_RENDER, vpath="users/42")
-    assert url_for_state("sample.db", state) == (
-        "/sample.db?filemill=render&vpath=users%2F42"
-    )
 
 
 def test_with_view_replaces_only_the_view():
