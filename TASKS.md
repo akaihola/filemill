@@ -16,11 +16,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Per recommendation from task dd6897a9-b54e-4ad4-b9b5-b2372292f4b1, remove
   ?no-columns, wants_columns, and url_for_state. Keep documentation up-to-date.
 
-- [*] Do issues [38], [39], [40] and [42] each currently sit under both Scheduled and In
-  Progress in the tracker? Should they be deduplicated and corrected to sit in the
-  correct section so they reflect the implementation?
-
-
 - [*] Large directories now partition their contents into multiple lists that the user
   can browse using a `< Page N of NN >` control. This is not acceptable. The vertical
   scrollbar should be used to navigate through the directory contents. Task
@@ -34,7 +29,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
   3rd party libraries if that helps.
 
-- [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
 
 ## In Progress
@@ -94,6 +88,12 @@ Rules for TASKS.md usage are at the bottom of the file.
   moved to the repo root is never loaded and we get a wall of "fixture not found"?
   Should we use `server/.venv/bin/pytest -c pytest.ini server/tests/...` from the root
   until that is fixed?
+
+- [*] Do issues [38], [39], [40] and [42] each currently sit under both Scheduled and In
+  Progress in the tracker? Should they be deduplicated and corrected to sit in the
+  correct section so they reflect the implementation?
+
+- [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
 
 - [*] Check the two architecture reviews (`docs/2026-09-05-ARCHITECTURE-REVIEW.md` and
   `docs/2026-09-19-architecture-review-and-remediation-plan.md`). Remove everything that
