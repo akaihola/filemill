@@ -38,7 +38,8 @@ depends on being able to trust a green run.
 2. Fix or remove the `layout=no-columns` directory listing at `app.py:1073`.
    If a no-JavaScript listing is wanted, render a plain list of links to
    root-relative URLs. If not, return the shared shell. Done for issue 33: the
-   shell is returned.
+   shell is returned. On 2026-09-25 the layout itself was removed
+   ([ADR 0067](adr/0067-drop-no-columns-layout.md)).
 3. Write the decision as a one-page ADR in `docs/adr/0001-one-finder.md`:
    the shared UI owns all interaction; the server renders documents and JSON.
    This closes proposal [8] in `TASKS.md`.
@@ -239,7 +240,7 @@ static edition. Two render paths for one document drift apart.
 2. Keep the URL contract in `urls.py` (`?filemill=`, `?layout=`). The server
    answers `raw` with bytes and everything else with the shell. The client
    reads `data-filemill` and `data-layout` and shows the source view or the
-   preview-only layout. Delete `_view_switch_html`, `_representation_html`,
+   compressed columns. Delete `_view_switch_html`, `_representation_html`,
    `_document_page` and `render_source`.
 3. Make the SQLite provider return JSON only. The client shows tables and
    rows with the JSON hierarchical view. Delete `render_preview` and the two

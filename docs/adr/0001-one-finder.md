@@ -32,8 +32,9 @@ The server supplies directory data through `GET /api/dir`, previews through
 `GET /api/preview`, and rendering for local bytes through `POST /api/render`.
 The server still handles path safety, virtual filesystem providers and Python
 document renderers. The resource route sends the file bytes for
-`?filemill=raw` and the shared shell for every other view and layout,
-including `layout=no-columns`; the client renders the view.
+`?filemill=raw` and the shared shell for every other view and layout; the
+client renders the view. [ADR 0067](0067-drop-no-columns-layout.md) later
+removed the `no-columns` layout.
 
 ## Measurement
 

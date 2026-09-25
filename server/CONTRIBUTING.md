@@ -93,7 +93,8 @@ it too. `index()` hands `/` to `resource()`. A directory under a column layout,
 relative to ROOT, with no prefix. A bare file path returns its own bytes,
 because `raw` is the default view and that branch returns before the column
 one. `filemill=render` or `highlight` puts the shell around a file.
-`layout=no-columns` renders through `_page_html()`.
+`layout=full-columns` (default) or `compressed-columns` only changes the
+`data-layout` attribute the client reads.
 
 ### Key invariants
 
