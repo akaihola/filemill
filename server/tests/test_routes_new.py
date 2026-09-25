@@ -132,7 +132,7 @@ def test_directory_with_a_query_serves_the_listing(tmp_path, monkeypatch):
     site = tmp_path / "site"
     site.mkdir()
     (site / "index.html").write_text("sub index")
-    resp = _client(tmp_path).get("/site?f&layout=no-columns")
+    resp = _client(tmp_path).get("/site?f&layout=compressed-columns")
     assert resp.status_code == 200
     assert resp.text != "sub index"
 
@@ -150,6 +150,6 @@ def test_root_with_short_view_uses_the_resource_route(tmp_path, monkeypatch):
     """?f at the root requests the rendered representation."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     (tmp_path / "index.html").write_text("site index")
-    resp = _client(tmp_path).get("/?f&layout=no-columns")
+    resp = _client(tmp_path).get("/?f&layout=compressed-columns")
     assert resp.status_code == 200
     assert resp.text != "site index"

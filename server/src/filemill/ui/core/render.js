@@ -440,12 +440,6 @@ export function render(keepScroll) {
   if (fullscreenFocused) {
     document.getElementById("pv-fullscreen")?.focus({ preventScroll: true });
   }
-  /* ?layout=no-columns asks for the representation alone. The server puts
-     the value on <html>; a document then fills the pane and a directory shows
-     only its own listing. The static build never sets it. */
-  if (root.dataset.layout === "no-columns") {
-    root.classList.toggle("pv-only", !!previewNode());
-  }
   for (const c of cols) {
     c.paintRange();
     c.el.classList.toggle(
