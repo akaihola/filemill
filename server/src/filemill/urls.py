@@ -55,7 +55,7 @@ VIEW_LABELS: tuple[tuple[str, str], ...] = (
 
 @dataclass(frozen=True)
 class ViewState:
-    """The three query groups, already validated, plus any virtual path."""
+    """The two query groups, already validated, plus any virtual path."""
 
     view: str = DEFAULT_VIEW
     layout: str = DEFAULT_LAYOUT
@@ -89,7 +89,7 @@ def _one_of(value: str | None, allowed: tuple[str, ...], default: str) -> str:
 
 
 def parse_state(params) -> ViewState:
-    """Read the three query groups out of a query mapping.
+    """Read the two query groups and the virtual path out of a query mapping.
 
     *params* is anything with ``.get()`` — a Starlette ``QueryParams`` or a plain
     dict. Every field comes back valid, so callers never re-check.
