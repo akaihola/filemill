@@ -16,8 +16,13 @@ expansion correct.
 
 ## Related work
 
-The completed home-link expansion and [mount decision][35] are earlier work.
-This report specifically rejects the resulting `/w/agent/` prefix and remains
-open independently of those completed tasks.
+The completed home-link expansion and [mount decision][35] predate this report.
+The root-relative link fix in `a4c7707` removes the `/w/agent/` prefix and emits
+`?f` for Markdown targets without an explicit view.
+
+## Resolution (2026-09-24)
+
+`test_home_markdown_link_is_root_relative` verifies the root-relative `~/...`
+target in both rendered and source views. The issue is complete.
 
 [35]: 35-decide-web-mounts.md
