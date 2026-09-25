@@ -20,12 +20,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   Progress in the tracker? Should they be deduplicated and corrected to sit in the
   correct section so they reflect the implementation?
 
-- [*] Does the documented way to run server tests still silently lose every fixture:
-  does `server/pyproject.toml` still win the rootdir election, so the conftest that
-  moved to the repo root is never loaded and we get a wall of "fixture not found"?
-  Should we use `server/.venv/bin/pytest -c pytest.ini server/tests/...` from the root
-  until that is fixed?
-
 
 - [*] Large directories now partition their contents into multiple lists that the user
   can browse using a `< Page N of NN >` control. This is not acceptable. The vertical
@@ -44,6 +38,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
 
 ## In Progress
+
+- [*] Does the documented way to run server tests still silently lose every fixture:
+  does `server/pyproject.toml` still win the rootdir election, so the conftest that
+  moved to the repo root is never loaded and we get a wall of "fixture not found"?
+  Should we use `server/.venv/bin/pytest -c pytest.ini server/tests/...` from the root
+  until that is fixed?
 
 - [*] When all folder columns are collapsed, exiting the preview pane using the arrow
   left key doesn't currently expand the parent folder column (rightmost folder column
