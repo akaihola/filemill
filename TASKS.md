@@ -30,11 +30,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] Check the two architecture reviews (`docs/2026-09-05-ARCHITECTURE-REVIEW.md` and
-  `docs/2026-09-19-architecture-review-and-remediation-plan.md`). Remove everything that
-  isn't valid any more. De-duplicate and refine. Write into a new file and remove the
-  old ones. Use GPT-6-Astra Medium.
-
 - [*] When all folder columns are collapsed, exiting the preview pane using the arrow
   left key doesn't currently expand the parent folder column (rightmost folder column
   just before the preview pane). Make sure left arrow always expands the parent folder
@@ -84,6 +79,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [*] Check the two architecture reviews (`docs/2026-09-05-ARCHITECTURE-REVIEW.md` and
+  `docs/2026-09-19-architecture-review-and-remediation-plan.md`). Remove everything that
+  isn't valid any more. De-duplicate and refine. Write into a new file and remove the
+  old ones. Use GPT-6-Astra Medium.
 
 - [*] Implement highlighting of reStructuredText (not actually properly implemented by
   [50]). Ensure unintended highlighting doesn't happen between aposthrophes in words.
