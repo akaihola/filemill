@@ -9,13 +9,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+
+## Scheduled
+
 - [*] Check the two architecture reviews (`docs/2026-09-05-ARCHITECTURE-REVIEW.md` and
   `docs/2026-09-19-architecture-review-and-remediation-plan.md`). Remove everything that
   isn't valid any more. De-duplicate and refine. Write into a new file and remove the
   old ones. Use GPT-6-Astra Medium.
-
-## Scheduled
-
 - [*] Large directories now partition their contents into multiple lists that the user
   can browse using a `< Page N of NN >` control. This is not acceptable. The vertical
   scrollbar should be used to navigate through the directory contents. Task
