@@ -26,7 +26,6 @@ src/filemill/
 └── ui/             # The shared frontend; the repo root's ui/ symlinks here
 
 tests/
-├── conftest.py               # Shared fixtures (tmp dirs, test client)
 ├── test_api.py               # /api/* contract + the shared UI's shell
 ├── test_app.py               # Route-level integration tests
 ├── test_browser_keyboard.py  # Keyboard navigation, driven in a real browser
@@ -34,6 +33,7 @@ tests/
 ├── test_cli.py               # CLI smoke tests
 ├── test_preview.py           # Preview rendering (all file types)
 ├── test_providers_sqlite.py  # SQLite VFS provider unit tests
+├── test_pytest_config.py     # Server runs elect ../pytest.ini and ../conftest.py
 ├── test_pwa.py               # PWA assets (manifest, SW, icons, head tags)
 ├── test_rendering.py         # Markdown pipeline
 ├── test_resolve_safe.py      # Path-safety logic (paths.resolve_safe)
