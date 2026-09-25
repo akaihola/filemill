@@ -12,10 +12,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] Check the two architecture reviews (`docs/2026-09-05-ARCHITECTURE-REVIEW.md` and
-  `docs/2026-09-19-architecture-review-and-remediation-plan.md`). Remove everything that
-  isn't valid any more. De-duplicate and refine. Write into a new file and remove the
-  old ones. Use GPT-6-Astra Medium.
 - [*] Large directories now partition their contents into multiple lists that the user
   can browse using a `< Page N of NN >` control. This is not acceptable. The vertical
   scrollbar should be used to navigate through the directory contents. Task
@@ -33,6 +29,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
 
 ## In Progress
+
+- [*] Check the two architecture reviews (`docs/2026-09-05-ARCHITECTURE-REVIEW.md` and
+  `docs/2026-09-19-architecture-review-and-remediation-plan.md`). Remove everything that
+  isn't valid any more. De-duplicate and refine. Write into a new file and remove the
+  old ones. Use GPT-6-Astra Medium.
 
 - [*] When all folder columns are collapsed, exiting the preview pane using the arrow
   left key doesn't currently expand the parent folder column (rightmost folder column
