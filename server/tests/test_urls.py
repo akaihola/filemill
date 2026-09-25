@@ -14,7 +14,6 @@ from filemill.urls import (
     ViewState,
     build_url,
     parse_state,
-    url_for_state,
 )
 
 # ── Defaults ─────────────────────────────────────────────────────────────────
@@ -98,18 +97,6 @@ def test_plain_dict_parses_like_query_params():
     assert parse_state({"filemill": "highlight"}).view == VIEW_HIGHLIGHT
 
 
-# ── Derived flags ────────────────────────────────────────────────────────────
-
-
-def test_no_columns_layout_reports_no_columns():
-    assert parse_state(QueryParams("layout=no-columns")).wants_columns is False
-
-
-@pytest.mark.parametrize("layout", ["full-columns", "compressed-columns"])
-def test_column_layouts_report_columns(layout):
-    assert parse_state(QueryParams(f"layout={layout}")).wants_columns is True
-
-
 # ── build_url ────────────────────────────────────────────────────────────────
 
 
@@ -168,35 +155,9 @@ def test_vpath_rides_along():
     assert build_url("sample.db", vpath="users/42") == "/sample.db?vpath=users%2F42"
 
 
-# ── url_for_state ────────────────────────────────────────────────────────────
-
-
-def test_url_for_state_keeps_non_default_layout_when_switching_view():
-    """Switching to raw drops the view parameter: the bare path *is* the raw file.
-
-    Clicking "Raw" therefore lands the reader on the canonical short URL, which
-    is the contract's own best explanation of itself. The layout and dotfile
-    choices they already made ride along.
-    """
-    state = ViewState(view=VIEW_RENDER, layout=LAYOUT_NONE)
-    assert url_for_state("a.md", state, view=VIEW_RAW) == ("/a.md?layout=no-columns")
-
-
 def test_build_url_can_still_pin_the_raw_view_explicitly():
     """A router that must not rely on the default spells the value out."""
     assert build_url("a.md", view=VIEW_RAW) == "/a.md?filemill=raw"
-
-
-def test_url_for_state_omits_defaults():
-    state = ViewState()
-    assert url_for_state("a.md", state) == "/a.md"
-
-
-def test_url_for_state_keeps_vpath():
-    state = ViewState(view=VIEW_RENDER, vpath="users/42")
-    assert url_for_state("sample.db", state) == (
-        "/sample.db?filemill=render&vpath=users%2F42"
-    )
 
 
 def test_with_view_replaces_only_the_view():

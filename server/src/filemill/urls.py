@@ -65,11 +65,6 @@ class ViewState:
     layout: str = DEFAULT_LAYOUT
     vpath: str = ""
 
-    @property
-    def wants_columns(self) -> bool:
-        """True when the response should carry the Miller-columns finder shell."""
-        return self.layout != LAYOUT_NONE
-
     def with_view(self, view: str) -> ViewState:
         """Return the same state pointed at another representation."""
         return replace(self, view=view if view in VIEWS else DEFAULT_VIEW)
@@ -142,18 +137,3 @@ def build_url(
         pairs.append((VPATH_PARAM, vpath.strip("/")))
     return f"{path}?{urlencode(pairs)}" if pairs else path
 
-
-def url_for_state(rel: str, state: ViewState, *, view: str | None = None) -> str:
-    """Build the URL for *rel* in *state*, optionally switching representation.
-
-    Non-default values are carried over so a switch link keeps the layout and
-    dotfile choices the reader already made. The default values stay off the
-    URL, which is what keeps the everyday address short.
-    """
-    chosen = view if view is not None else state.view
-    return build_url(
-        rel,
-        view=chosen if chosen != DEFAULT_VIEW else None,
-        layout=state.layout if state.layout != DEFAULT_LAYOUT else None,
-        vpath=state.vpath or None,
-    )
