@@ -10,14 +10,15 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## Ordered backlog
 
 
-- [*] Do issues [38], [39], [40] and [42] each currently sit under both Scheduled and In
-  Progress in the tracker? Should they be deduplicated and corrected to sit in the
-  correct section so they reflect the implementation?
 
 - [*] Per recommendation from task dd6897a9-b54e-4ad4-b9b5-b2372292f4b1, remove
   ?no-columns, wants_columns, and url_for_state. Keep documentation up-to-date.
 
 ## Scheduled
+- [*] Do issues [38], [39], [40] and [42] each currently sit under both Scheduled and In
+  Progress in the tracker? Should they be deduplicated and corrected to sit in the
+  correct section so they reflect the implementation?
+
 - [*] Does the documented way to run server tests still silently lose every fixture:
   does `server/pyproject.toml` still win the rootdir election, so the conftest that
   moved to the repo root is never loaded and we get a wall of "fixture not found"?
