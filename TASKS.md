@@ -30,9 +30,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] Per recommendation from task dd6897a9-b54e-4ad4-b9b5-b2372292f4b1, remove
-  ?no-columns, wants_columns, and url_for_state. Keep documentation up-to-date.
-
 - [*] When all folder columns are collapsed, exiting the preview pane using the arrow
   left key doesn't currently expand the parent folder column (rightmost folder column
   just before the preview pane). Make sure left arrow always expands the parent folder
@@ -82,6 +79,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [*] Per recommendation from task dd6897a9-b54e-4ad4-b9b5-b2372292f4b1, remove
+  ?no-columns, wants_columns, and url_for_state. Keep documentation up-to-date.
 
 - [*] Does the documented way to run server tests still silently lose every fixture:
   does `server/pyproject.toml` still win the rootdir election, so the conftest that
