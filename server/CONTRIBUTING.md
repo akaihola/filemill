@@ -88,11 +88,11 @@ One repository and one set of files means that a UI change lands in both
 editions in one commit. `ui/adapters/README.md` documents the three ports.
 
 The shared UI is mounted at `UI_BASE = "/n/"`, and the resource route serves
-it too. `index()` hands `/` to `resource()`. A directory under a column layout,
-`/` included, returns `_ui_shell(state, "/")`. The URL path is the file path
-relative to ROOT, with no prefix. A bare file path returns its own bytes,
-because `raw` is the default view and that branch returns before the column
-one. `filemill=render` or `highlight` puts the shell around a file.
+it too. `index()` hands `/` to `resource()`. A directory, `/` included,
+returns `_ui_shell(state, "/")`. The URL path is the file path relative to
+ROOT, with no prefix. A bare file path returns its own bytes, because `raw` is
+the default view and that branch returns before the shell one.
+`filemill=render` or `highlight` puts the shell around a file.
 `layout=full-columns` (default) or `compressed-columns` only changes the
 `data-layout` attribute the client reads.
 
