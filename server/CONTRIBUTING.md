@@ -144,6 +144,11 @@ timeout 1800 uv run pytest     # everything, browser tests included
 timeout 1800 uv run pytest tests/test_browser_keyboard.py tests/test_browser_new_ui.py
 ```
 
+pytest takes its configuration and shared fixtures from `../pytest.ini` and
+`../conftest.py`. Keep `[tool.pytest.ini_options]` out of `pyproject.toml`: it
+would become the rootdir and hide those fixtures. `tests/test_pytest_config.py`
+checks this.
+
 > **Important:** wrap `uv run pytest` in a shell-level timeout when a script or
 > an agent tool calls it. A misbehaving SSE streaming test can block without
 > end (see issue #17, fix hanging SSE test). Use 1800 seconds, not 120: the
