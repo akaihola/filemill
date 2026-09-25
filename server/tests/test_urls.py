@@ -7,7 +7,6 @@ from filemill.urls import (
     DEFAULT_LAYOUT,
     DEFAULT_VIEW,
     LAYOUT_COMPRESSED,
-    LAYOUT_NONE,
     VIEW_HIGHLIGHT,
     VIEW_RAW,
     VIEW_RENDER,
@@ -46,7 +45,7 @@ def test_full_view_parameter_takes_priority_over_shortcut():
     assert parse_state(QueryParams("f&filemill=raw")).view == VIEW_RAW
 
 
-@pytest.mark.parametrize("layout", ["full-columns", "compressed-columns", "no-columns"])
+@pytest.mark.parametrize("layout", ["full-columns", "compressed-columns"])
 def test_each_layout_value_parses(layout):
     assert parse_state(QueryParams(f"layout={layout}")).layout == layout
 
@@ -67,7 +66,9 @@ def test_invalid_view_falls_back_to_default(query):
     assert parse_state(QueryParams(query)).view == DEFAULT_VIEW
 
 
-@pytest.mark.parametrize("query", ["layout=wide", "layout=", "layout=no-columns2"])
+@pytest.mark.parametrize(
+    "query", ["layout=wide", "layout=", "layout=compressed-columns2"]
+)
 def test_invalid_layout_falls_back_to_default(query):
     assert parse_state(QueryParams(query)).layout == DEFAULT_LAYOUT
 
@@ -79,7 +80,7 @@ def test_repeated_value_takes_the_last_occurrence():
 
 
 def test_repeated_value_with_invalid_last_falls_back_to_default():
-    state = parse_state(QueryParams("layout=no-columns&layout=nonsense"))
+    state = parse_state(QueryParams("layout=compressed-columns&layout=nonsense"))
     assert state.layout == DEFAULT_LAYOUT
 
 
@@ -95,6 +96,11 @@ def test_vpath_is_stripped_of_surrounding_slashes():
 def test_plain_dict_parses_like_query_params():
     """The parser accepts a plain mapping, which keeps unit tests cheap."""
     assert parse_state({"filemill": "highlight"}).view == VIEW_HIGHLIGHT
+
+
+def test_retired_no_columns_layout_parses_as_the_default():
+    """A stale ?layout=no-columns link keeps its path and gets full columns."""
+    assert parse_state(QueryParams("layout=no-columns")).layout == DEFAULT_LAYOUT
 
 
 # ── build_url ────────────────────────────────────────────────────────────────
@@ -117,13 +123,17 @@ def test_view_parameter_is_named_filemill():
 
 
 def test_view_and_layout_appear_in_a_stable_order():
-    url = build_url("a.md", view=VIEW_RENDER, layout=LAYOUT_NONE)
-    assert url == "/a.md?filemill=render&layout=no-columns"
+    url = build_url("a.md", view=VIEW_RENDER, layout=LAYOUT_COMPRESSED)
+    assert url == "/a.md?filemill=render&layout=compressed-columns"
 
 
 def test_invalid_values_are_dropped_not_emitted():
     """Every generated link carries valid values, by construction."""
     assert build_url("a.md", view="nonsense", layout="wide") == "/a.md"
+
+
+def test_retired_no_columns_layout_is_not_emitted():
+    assert build_url("a.md", layout="no-columns") == "/a.md"
 
 
 def test_path_separators_survive_encoding():

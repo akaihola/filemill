@@ -243,8 +243,8 @@ def test_preview_serves_the_source_when_the_page_asked_for_highlight(
 ):
     """?filemill=highlight reaches here from the page's own URL.
 
-    ui/adapters/preview-http.js forwards it, so the columns show the same
-    coloured source that the shared shell renders for ?layout=no-columns.
+    ui/adapters/preview-http.js forwards it, so the columns show the coloured
+    source the page's URL asked for.
     """
     html = client.get("/api/preview?p=readme.md&filemill=highlight").text
     assert "preview-code" in html
