@@ -33,10 +33,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] Do issues [38], [39], [40] and [42] each currently sit under both Scheduled and In
-  Progress in the tracker? Should they be deduplicated and corrected to sit in the
-  correct section so they reflect the implementation?
-
 - [*] When all folder columns are collapsed, exiting the preview pane using the arrow
   left key doesn't currently expand the parent folder column (rightmost folder column
   just before the preview pane). Make sure left arrow always expands the parent folder
@@ -92,6 +88,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   moved to the repo root is never loaded and we get a wall of "fixture not found"?
   Should we use `server/.venv/bin/pytest -c pytest.ini server/tests/...` from the root
   until that is fixed?
+
+- [*] Do issues [38], [39], [40] and [42] each currently sit under both Scheduled and In
+  Progress in the tracker? Should they be deduplicated and corrected to sit in the
+  correct section so they reflect the implementation?
 
 - [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
 
