@@ -394,6 +394,39 @@ def test_virtual_rows_follow_the_density_pitch(bundle, playwright, density):
         browser.close()
 
 
+def test_scrolled_virtual_rows_are_evicted(bundle, playwright):
+    """Scrolling a large column end to end keeps about one viewport of rows in
+    the DOM, and the selected row is highlighted again when it scrolls back."""
+    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
+    try:
+        page = browser.new_page(viewport={"width": 1000, "height": 500})
+        page.goto(bundle.as_uri())
+        page.wait_for_function("typeof mount === 'function'")
+        page.evaluate(MOUNT_FILES, 3000)
+        col = '.col[data-i="0"]'
+        page.click(f'{col} .row:has-text("item-0000.txt")')
+        page.wait_for_function("sel[0] === 'item-0000.txt'")
+        page.locator(f"{col} .col-body").evaluate("""async body => {
+            const frame = () => new Promise(r => requestAnimationFrame(r));
+            for (const end of [body.scrollHeight, 0]) {
+                const from = body.scrollTop;
+                for (let step = 1; step <= 20; step++) {
+                    body.scrollTop = from + (end - from) * step / 20;
+                    await frame();
+                    await frame();
+                }
+            }
+        }""")
+        rows, fits = page.locator(f"{col} .col-body").evaluate("""body => [
+            body.querySelectorAll('.row').length,
+            Math.ceil(body.clientHeight / body.querySelector('.row').offsetHeight),
+        ]""")
+        assert rows <= fits + 2 * 10 + 2
+        assert page.locator(f'{col} .row.sel:has-text("item-0000.txt")').count() == 1
+    finally:
+        browser.close()
+
+
 @pytest.mark.parametrize("source", ["scalar.json", "scalar.jsonl"])
 def test_selected_scalar_preview(bundle, playwright, source):
     browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
