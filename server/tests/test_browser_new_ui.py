@@ -62,7 +62,10 @@ def ui_root(tmp_path: Path) -> Path:
     (tmp_path / "code" / "guide.rst").write_text(
         "Guide\n=====\n\nSome *rst* text.\n\n.. code-block:: python\n\n   return 1\n"
     )
-    (tmp_path / "code" / "nested.json").write_text('{"tags":["a","b"],"n":1}')
+    (tmp_path / "code" / "nested.json").write_text(
+        '{"tags":["a","b"],"n":1,"meta":{"n":1}}'
+    )
+    (tmp_path / "code" / "folder.json").mkdir()
     # 11 700 chars: more than the 8 000 the preview used to clip at.
     (tmp_path / "code" / "long.py").write_text(SOURCE * 300)
     # One byte over the preview's 512 KB ceiling.
@@ -684,6 +687,31 @@ def test_json_opens_as_a_hierarchical_view(page):
     page.wait_for_selector('.col[data-i="3"] .row:has-text("0")', timeout=15000)
     page.click('.col[data-i="3"] .row:has-text("0")')
     assert page.inner_text("#pv-content").strip() == "a"
+
+
+def test_json_hierarchy_icons(page):
+    page.open("code/nested.json")
+    page.wait_for_selector('.col[data-i="2"] .row:has-text("tags")', timeout=15000)
+    file_icon = page.locator('.col[data-i="1"] .row:has-text("nested.json") .ico')
+    assert file_icon.get_attribute("class") == "ico seti"
+    assert file_icon.inner_text() == page.evaluate(
+        "String.fromCodePoint(parseInt(SETI.ext.json[0], 16))"
+    )
+    assert (
+        page.locator(
+            '.col[data-i="1"] .row:has-text("folder.json") .ico.dir svg'
+        ).count()
+        == 1
+    )
+    assert page.locator('.col[data-i="2"] .ico.dir').count() == 0
+    assert (
+        page.locator('.col[data-i="2"] .row:has-text("tags") .ico.glyph').inner_text()
+        == "[]"
+    )
+    assert (
+        page.locator('.col[data-i="2"] .row:has-text("meta") .ico.glyph').inner_text()
+        == "{}"
+    )
 
 
 def test_json_hierarchy_works_in_the_highlight_view(page):
