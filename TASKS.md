@@ -21,14 +21,14 @@ Rules for TASKS.md usage are at the bottom of the file.
   code elegant and efficient. Use a 3rd party library to virtualize the directory
   contents if that helps.
 
+- [39] Fix Back/Forward navigation across folders, previews and raw files.
+
+## In Progress
+
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
   column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
   3rd party libraries if that helps.
-
-- [39] Fix Back/Forward navigation across folders, previews and raw files.
-
-## In Progress
 
 - [*] When all folder columns are collapsed, exiting the preview pane using the arrow
   left key doesn't currently expand the parent folder column (rightmost folder column

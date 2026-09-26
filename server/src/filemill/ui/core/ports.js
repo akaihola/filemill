@@ -48,6 +48,7 @@
        value      parsed JSON value for a virtual node
        record     parsed CSV, JSONL, or JSON table-row value
        jsonError  string; JSON parsing/loading error
+       span       {blob, start, end}; byte span of an unread JSONL row
 
      ensureLoaded(node) → Promise   fills node.kids (idempotent, debounced)
      loadMeta(node)     → Promise   fills node.meta (or records {error}); may
