@@ -17,9 +17,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon
-  for the whole file, and `{}` and `[]` icons for objects and arrays.
-
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
   column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
@@ -74,6 +71,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed
+
+- [*] For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon
+  for the whole file, and `{}` and `[]` icons for objects and arrays.
 
 - [*] Large directories now partition their contents into multiple lists that the user
   can browse using a `< Page N of NN >` control. This is not acceptable. The vertical
