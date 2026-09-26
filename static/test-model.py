@@ -357,6 +357,76 @@ def test_left_arrow_reveals_selection(bundle, playwright, count, last, kind):
         browser.close()
 
 
+MOUNT_FILES = """async count => {
+    const dir = (name, kids) => ({kind: 'directory', name,
+        async *entries() {for (const child of kids) yield [child.name, child];}});
+    const file = name => ({kind: 'file', name,
+        async getFile() {return new File(['hello'], name);}});
+    await mount(dir('root', Array.from({length: count},
+        (_, i) => file(`item-${String(i).padStart(4, '0')}.txt`))));
+}"""
+
+
+@pytest.mark.parametrize("density", ["compact", "comfortable"])
+def test_virtual_rows_follow_the_density_pitch(bundle, playwright, density):
+    """A virtual row is placed by arithmetic, so its pitch must be the one the
+    stylesheet draws; otherwise comfortable rows overlap their neighbours."""
+    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
+    try:
+        page = browser.new_page(viewport={"width": 1000, "height": 500})
+        page.goto(bundle.as_uri())
+        page.wait_for_function("typeof mount === 'function'")
+        page.evaluate(MOUNT_FILES, 1000)
+        page.evaluate("d => { root.dataset.density = d; render(true); }", density)
+        page.wait_for_selector('.col[data-i="0"] .row-layer > .row:nth-child(2)')
+        top, bottom, next_top = page.evaluate("""() => {
+            const [a, b] = document.querySelectorAll('.col[data-i="0"] .row');
+            const r = a.getBoundingClientRect();
+            return [r.top, r.bottom, b.getBoundingClientRect().top];
+        }""")
+        assert next_top >= bottom
+        assert next_top - top == page.evaluate("""() => {
+            const css = getComputedStyle(document.documentElement);
+            return parseFloat(css.getPropertyValue('--row-h'))
+                + 2 * parseFloat(css.getPropertyValue('--row-gap'));
+        }""")
+    finally:
+        browser.close()
+
+
+def test_scrolled_virtual_rows_are_evicted(bundle, playwright):
+    """Scrolling a large column end to end keeps about one viewport of rows in
+    the DOM, and the selected row is highlighted again when it scrolls back."""
+    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
+    try:
+        page = browser.new_page(viewport={"width": 1000, "height": 500})
+        page.goto(bundle.as_uri())
+        page.wait_for_function("typeof mount === 'function'")
+        page.evaluate(MOUNT_FILES, 3000)
+        col = '.col[data-i="0"]'
+        page.click(f'{col} .row:has-text("item-0000.txt")')
+        page.wait_for_function("sel[0] === 'item-0000.txt'")
+        page.locator(f"{col} .col-body").evaluate("""async body => {
+            const frame = () => new Promise(r => requestAnimationFrame(r));
+            for (const end of [body.scrollHeight, 0]) {
+                const from = body.scrollTop;
+                for (let step = 1; step <= 20; step++) {
+                    body.scrollTop = from + (end - from) * step / 20;
+                    await frame();
+                    await frame();
+                }
+            }
+        }""")
+        rows, fits = page.locator(f"{col} .col-body").evaluate("""body => [
+            body.querySelectorAll('.row').length,
+            Math.ceil(body.clientHeight / body.querySelector('.row').offsetHeight),
+        ]""")
+        assert rows <= fits + 2 * 10 + 2
+        assert page.locator(f'{col} .row.sel:has-text("item-0000.txt")').count() == 1
+    finally:
+        browser.close()
+
+
 @pytest.mark.parametrize("source", ["scalar.json", "scalar.jsonl"])
 def test_selected_scalar_preview(bundle, playwright, source):
     browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])

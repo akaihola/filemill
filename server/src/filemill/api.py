@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import html as html_lib
 import json
-import math
 import mimetypes
 import os
 import shutil
@@ -40,7 +39,6 @@ SEARCH_QUERY_MAX = 200
 SEARCH_MATCH_MAX = 100
 # The demo proxy allows more than the old two-second subprocess limit.
 SEARCH_TIMEOUT = 10
-DIR_PAGE_SIZE = 500
 
 
 class SearchError(Exception):
@@ -132,7 +130,7 @@ def rel_to_abs(rel: str, root: Path) -> Path | None:
     return root / rel if rel else root
 
 
-def dir_json(target: Path, page: int = 1) -> JSONResponse:
+def dir_json(target: Path) -> JSONResponse:
     """List a directory in the shape the UI's HTTP adapter expects.
 
     Sizes and mtimes ride along with the listing. The File System Access API
@@ -178,20 +176,6 @@ def dir_json(target: Path, page: int = 1) -> JSONResponse:
     entries.sort(
         key=lambda e: entry_order_key(cast(str, e["name"]), cast(bool, e["dir"]))
     )
-    total = len(entries)
-    if total > DIR_PAGE_SIZE:
-        pages = math.ceil(total / DIR_PAGE_SIZE)
-        page = min(page, pages)
-        entries = entries[(page - 1) * DIR_PAGE_SIZE : page * DIR_PAGE_SIZE]
-        return JSONResponse(
-            {
-                "entries": entries,
-                "denied": denied,
-                "page": page,
-                "pages": pages,
-                "total": total,
-            }
-        )
     return JSONResponse({"entries": entries, "denied": denied})
 
 
@@ -215,7 +199,7 @@ def _opens_as_folder(path: Path) -> bool:
         return False
 
 
-def vfs_dir_json(target: Path, vpath: str, page: int = 1) -> JSONResponse:
+def vfs_dir_json(target: Path, vpath: str) -> JSONResponse:
     """List one level inside a virtual filesystem.
 
     The entries carry their own `vpath`, which is how the client knows to keep
@@ -242,20 +226,7 @@ def vfs_dir_json(target: Path, vpath: str, page: int = 1) -> JSONResponse:
         }
         for e in listed
     ]
-    total = len(entries)
-    pagination = {}
-    if total > DIR_PAGE_SIZE:
-        pages = math.ceil(total / DIR_PAGE_SIZE)
-        page = min(page, pages)
-        entries = entries[(page - 1) * DIR_PAGE_SIZE : page * DIR_PAGE_SIZE]
-        pagination = {"page": page, "pages": pages, "total": total}
-    return JSONResponse(
-        {
-            "entries": entries,
-            "denied": None,
-            **pagination,
-        }
-    )
+    return JSONResponse({"entries": entries, "denied": None})
 
 
 def split_vfs(rel: str, root: Path, resolve) -> tuple[str, str] | None:
