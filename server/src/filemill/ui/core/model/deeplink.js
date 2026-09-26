@@ -56,6 +56,7 @@ export async function walkPath(names, ensureLoaded, wantFocus) {
       setState({ focusCol: i }); /* focus stays on the column holding it */
       if (!node.dir) break;
       await ensureLoaded(node);
+      if (!node.dir) break; /* a virtual wrapper declined it while reading */
       path.push(node);
     }
     return complete;

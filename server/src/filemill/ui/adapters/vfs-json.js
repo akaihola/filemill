@@ -11,6 +11,11 @@
    preferring short text (title, name, description…) over other scalars
    (timestamp, id…), and falling back to the line number. Unique because the
    selection, the URL and applyPath all name a row by it.
+
+   A file over TEXT_MAX is never parsed whole (ADR 0068). One pass over the
+   blob's byte stream records the span of each line; rows are named by line
+   number and a row's record is parsed from its slice only when it is opened
+   or previewed. A bad line fails on its own row, not the file.
    ═══════════════════════════════════════════════════════════════════════════ */
 import { esc } from "../core/icons.js";
 import { render } from "../core/render.js";
@@ -18,7 +23,6 @@ import { TEXT_MAX } from "../core/limits.js";
 import { classifyFile } from "../core/file-kind.js";
 import { jsonHTML } from "../core/syntax.js";
 
-const JSONL_MAX = TEXT_MAX;
 const JSONL_LABEL = 60; /* as the server's MAX_LABEL_LEN */
 const JSONL_TEXT = ["title", "name", "description", "summary", "label"];
 const JSONL_SCALAR = ["timestamp", "time", "ts", "id", "uuid", "key"];
@@ -77,6 +81,85 @@ function jsonlRows(node, records) {
   );
 }
 
+/* Byte spans of the non-blank lines, from one pass over the stream. */
+async function jsonlIndex(blob) {
+  const spans = [];
+  const reader = blob.stream().getReader();
+  let base = 0, start = 0, blank = true;
+  const close = (end) => {
+    if (!blank) spans.push([start, end]);
+    start = end + 1;
+    blank = true;
+  };
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    let from = 0;
+    for (;;) {
+      const nl = value.indexOf(10, from);
+      const to = nl < 0 ? value.length : nl;
+      if (blank) {
+        for (let i = from; i < to; i++) {
+          const b = value[i];
+          if (b !== 32 && b !== 9 && b !== 13) {
+            blank = false;
+            break;
+          }
+        }
+      }
+      if (nl < 0) break;
+      close(base + nl);
+      from = nl + 1;
+    }
+    base += value.length;
+  }
+  close(base);
+  return spans;
+}
+
+function jsonlLazyRows(node, blob, spans) {
+  return spans.map(([start, end], i) => ({
+    name: `line ${i + 1}`,
+    dir: true,
+    kids: null,
+    vpath: String(i + 1),
+    icon: "{}",
+    json: true,
+    jsonRoot: node,
+    jsonPath: [String(i)],
+    rel: node.rel,
+    ordered: true,
+    meta: { virtual: true },
+    span: { blob, start, end },
+  }));
+}
+
+/* Parse one lazy row from its slice. A line that is not a JSON object turns
+   the row into a leaf whose preview reports it, so the other rows stay. */
+function loadRow(node) {
+  if (node.value !== undefined || node.jsonError) return;
+  if (node.loading) return node.loading;
+  node.loading = (async () => {
+    const { blob, start, end } = node.span;
+    let v;
+    try {
+      v = JSON.parse(await blob.slice(start, end).text());
+    } catch {
+      v = null;
+    }
+    if (!v || typeof v !== "object" || Array.isArray(v)) {
+      node.jsonError = `Not valid JSONL: line ${node.vpath}`;
+      node.dir = false;
+      node.kids = undefined;
+    } else {
+      node.value = v;
+      node.kids = jsonKids(node, v);
+    }
+    node.loading = null;
+  })();
+  return node.loading;
+}
+
 function jsonlParse(text) {
   const records = [];
   const lines = text.split("\n");
@@ -127,6 +210,7 @@ export const withVirtual = (fs) => ({
       }
       return;
     }
+    if (node.span) return loadRow(node);
     if (node.json) {
       node.jsonRoot ||= node;
       node.jsonPath ||= [];
@@ -164,17 +248,13 @@ export const withVirtual = (fs) => ({
     if (node.loading) return node.loading;
     node.loading = (async () => {
       try {
-        /* Decline before fetching where the listing carried a size: HTTP.blob
-           buffers the whole response. The blob.size test stays for the port
-           whose listing does not. */
-        const big = "Too large to browse (over 512 KB)";
-        if ((node.meta?.size ?? 0) > JSONL_MAX) throw new Error(big);
         /* The node is a directory to core; the port still reads it as the
            file it is (FSA.loadMeta skips directories). */
         const blob = await fs.blob({ ...node, dir: false });
         if (!blob) throw new Error("Cannot read file");
-        if (blob.size > JSONL_MAX) throw new Error(big);
-        node.kids = jsonlRows(node, jsonlParse(await blob.text()));
+        node.kids = blob.size > TEXT_MAX
+          ? jsonlLazyRows(node, blob, await jsonlIndex(blob))
+          : jsonlRows(node, jsonlParse(await blob.text()));
       } catch (err) {
         node.denied = String(err.message || err);
         node.kids = [];
@@ -189,7 +269,11 @@ export const withVirtualPreview = (provider) => ({
   revoke() {
     provider.revoke?.();
   },
-  render(n) {
+  async render(n) {
+    if (n.span && n.value === undefined) {
+      await loadRow(n);
+      if (n.jsonError) throw new Error(n.jsonError);
+    }
     if (!n.json || n.value === undefined) return provider.render(n);
     let text;
     try {

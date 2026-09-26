@@ -10,6 +10,8 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Contribution, security, and release documents.
+- Browsing of `.jsonl` files over 512 KB. Rows are indexed by line and parsed
+  one at a time when opened.
 
 ### Removed
 

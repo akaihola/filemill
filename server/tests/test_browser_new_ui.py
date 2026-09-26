@@ -45,6 +45,7 @@ def _free_port() -> int:
 # which is what "highlighted in both builds" is asserted to mean.
 SOURCE = 'def f():\n    # doc\n    return "s" + 42\n'
 TOKEN_CLASSES = "e=>[...new Set(e.map(x=>x.className))].sort().join()"
+BIG_LINES = 20_000
 
 
 @pytest.fixture()
@@ -101,6 +102,11 @@ def ui_root(tmp_path: Path) -> Path:
         '{"id": 2, "title": "Second", "ts": "2026-01-02"}\n'
         '{"id": 1, "title": "First", "ts": "2026-01-01"}\n'
     )
+    # Past the 512 KB text ceiling: browsed by line index, not parsed whole.
+    big = [f'{{"id": {n}, "title": "Row {n}"}}' for n in range(1, BIG_LINES + 1)]
+    big[6] = "nope"
+    (tmp_path / "big.jsonl").write_text("\n".join(big) + "\n")
+    assert (tmp_path / "big.jsonl").stat().st_size > 512 * 1024
     (tmp_path / "data.csv").write_text(
         'group,id,note\nA,101,hello\nA,102,"comma, value"\n'
     )
@@ -1492,6 +1498,36 @@ def test_a_jsonl_row_previews_in_the_browser_without_asking_the_server(page):
         "ts": "2026-01-02",
     }
     assert [u for u in seen if "/api/preview" in u] == []
+
+
+def test_a_large_jsonl_file_opens_as_a_column_of_line_rows(page):
+    page.open("")
+    page.click('.col[data-i="0"] .row:has-text("big.jsonl")')
+    page.wait_for_selector('.col[data-i="1"] .row', timeout=15000)
+    names = page.eval_on_selector_all(
+        '.col[data-i="1"] .row', "els => els.slice(0, 3).map(e => e.title)"
+    )
+    assert names == ["line 1", "line 2", "line 3"]
+    assert page.evaluate("path[1].kids.length") == BIG_LINES
+    assert page.locator('.col[data-i="1"] .col-note').count() == 0
+
+
+def test_a_large_jsonl_row_previews_in_the_browser_without_asking_the_server(page):
+    seen: list[str] = []
+    page.on("request", lambda r: seen.append(r.url))
+    page.open("big.jsonl/line 2")
+    assert page.evaluate("sel")[-1] == "line 2"
+    page.wait_for_selector("#preview .pv-json", timeout=15000)
+    assert '"id": 2' in page.inner_text("#preview .pv-json")
+    assert [u for u in seen if "/api/preview" in u] == []
+
+
+def test_a_malformed_line_in_a_large_jsonl_file_fails_on_its_own_row(page):
+    page.open("big.jsonl/line 7")
+    page.wait_for_selector("#preview .pv-err", timeout=15000)
+    assert "Not valid JSONL: line 7" in page.inner_text("#preview .pv-err")
+    assert page.evaluate("sel")[-1] == "line 7"
+    assert page.locator('.col[data-i="1"] .row[title="line 8"]').count() == 1
 
 
 def test_a_csv_row_previews_headers_and_quoted_values(page):
