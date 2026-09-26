@@ -271,6 +271,7 @@ function buildCol(node) {
     body.appendChild(layer);
   }
   const rows = new Array(kids.length);
+  const live = new Set(); /* indices of the virtual rows now in the DOM */
   const makeRow = (ri) => {
     if (rows[ri]) return rows[ri];
     const k = kids[ri];
@@ -314,23 +315,38 @@ function buildCol(node) {
     };
     if (virtual) {
       row.style.top = `${ri * ROW_STEP}px`;
-      layer.appendChild(row);
-    } else layer.appendChild(row);
+      live.add(ri);
+      /* An evicted row comes back without the classes render() gave it. */
+      const ci = +el.dataset.i, chosen = k.name === sel[ci];
+      row.classList.toggle("sel", chosen);
+      row.classList.toggle("cursor", chosen && ci === focusCol);
+    }
+    layer.appendChild(row);
     rows[ri] = row;
     return row;
   };
-  const paintRange = () => {
+  /* Only a scroll evicts: Home/End and deep links build a far row and click
+     it before revealRow scrolls to it, and render() runs in between. */
+  const paintRange = (evict) => {
     if (!virtual) return;
     const first = Math.max(0, Math.floor(body.scrollTop / ROW_STEP) - 10);
     const last = Math.min(
       kids.length,
       Math.ceil((body.scrollTop + body.clientHeight) / ROW_STEP) + 10,
     );
+    if (evict) {
+      for (const i of live) {
+        if (i >= first && i < last) continue;
+        rows[i].remove();
+        delete rows[i]; /* a hole, which forEach and flatMap skip */
+        live.delete(i);
+      }
+    }
     for (let i = first; i < last; i++) makeRow(i);
   };
   if (!virtual) kids.forEach((_, i) => makeRow(i));
   body.onscroll = () => {
-    paintRange();
+    paintRange(true);
     paintTrail();
   };
 

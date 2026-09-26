@@ -28,3 +28,7 @@ and type-ahead see the whole directory. A very large directory costs one larger
 JSON response instead of several requests that each listed the whole directory.
 A row's vertical position is arithmetic, so the row pitch must match the
 stylesheet's `--row-h` and `--row-gap` at every density.
+A scroll evicts the rows that leave the painted range, so the row DOM stays at
+about one viewport however far the user scrolls. Only a scroll evicts: Home,
+End and deep links build a far row before the column scrolls to it. A rebuilt
+row takes its selection classes from the current state.

@@ -81,7 +81,7 @@ Keep these.
 | A3  | P1 | Save and delete accept unrelated origins                  | M / medium    | —          |
 | A4  | P1 | Saves are neither atomic nor conflict-checked             | M / medium    | A1, A3     |
 | A5  | P1 | Service workers cache file bytes and break offline misses | M / medium    | —          |
-| A6  | P2 | Virtual rows are never evicted                            | M / medium    | —          |
+| A6  | P2 | Virtual-path round trip is unverified                     | S / low       | —          |
 | A7  | P2 | SQLite labels double as identities; errors look empty     | M / medium    | A6         |
 | A8  | P2 | Preview routing and representation disagree across modes  | M / medium    | A2         |
 | A9  | P2 | The preview is rebuilt on every render                    | M / medium    | A8         |
@@ -165,19 +165,13 @@ Unrelated caches survive activation. A cold offline navigation gets a valid
 recovery response. An upgrade purges legacy `filemill-v1` entries without
 clearing remembered folder handles.
 
-### A6. Virtual rows are never evicted
+### A6. Virtual-path round trip is unverified
 
-`/api/dir` returns the whole listing and the column scrolls ([ADR 0068]).
-Paging and `HTTP.loadPage` are gone, so deep links, refresh, sort and
-type-ahead reach every entry. Row virtualisation (`buildCol` in
-`ui/core/render.js`) creates rows near the viewport but never removes them.
-Scrolling through a large directory therefore leaves every row in the DOM, and
-each `render()` touches all of them.
+Paging and unevicted rows are resolved ([ADR 0068]). One part of the earlier
+listing finding was not verified by that change: paths with `%`, `/` in virtual
+keys, Unicode and empty keys must round-trip through a deep link.
 
-**Acceptance.** In a 1 200-entry fixture, the last file reloads and restores.
-After the column is scrolled end to end, the DOM holds about one viewport of
-rows and the selection stays highlighted. Paths with `%`, `/` in virtual keys,
-Unicode and empty keys round-trip; this change did not check that item.
+**Acceptance.** Each of those paths reloads and restores its selection.
 Related: [7], [22], [39], [45], [61].
 
 ### A7. SQLite labels double as identities; errors look empty
@@ -298,6 +292,7 @@ Do not reopen these without new evidence.
 | `0.0.0.0` bind and `/w/` CORS `*` (#12)                                                               | Loopback default; no CORS headers                                               |
 | Missing `LICENSE`, `SECURITY.md`, `CHANGELOG.md`, `CONTRIBUTING.md`; history files in `server/` (#15) | Present; history files removed                                                  |
 | `static/hotreload.py`, `forgetRoots` (#16)                                                            | Removed                                                                         |
+| Listing paged at 500 entries; virtual rows never evicted (A6, part)                                   | Whole listing, one scrollbar, rows evicted on scroll ([ADR 0068])               |
 
 ## Remediation order
 
@@ -321,8 +316,8 @@ updates. Security steps can start at once. Never weaken a gate to pass it.
    network failure before choosing a recovery response. Version the cache name
    and delete only this app's old caches. Test an installed upgrade. Update
    [ADR 0063].
-5. **Evict virtual rows** (A6). The whole directory is listed and scrolled
-   ([ADR 0068]); keep the row DOM to about one viewport. Use one
+5. **Pin the virtual-path round trip** (A6). The whole directory is listed and
+   scrolled with evicting virtualisation ([ADR 0068]). Use one
    entry-construction path; keep state changes in the navigator.
 6. **Separate SQLite identity from display text** (A7). Use step 5's address
    contract. Keep truncation presentational; support or reject WITHOUT ROWID
