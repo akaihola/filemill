@@ -17,6 +17,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
+- [*] For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon
+  for the whole file, and `{}` and `[]` icons for objects and arrays.
+
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
   column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
@@ -259,9 +262,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
   and the `watchfiles` dependency. Delete their tests.
-
-- [*] For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon
-  for the whole file, and `{}` and `[]` icons for objects and arrays.
 
 - [*] Run the static and server browser tests through one root `conftest.py` and one
   Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.
