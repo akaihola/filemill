@@ -525,19 +525,52 @@ def test_fenced_code_is_highlighted_in_the_browser(page):
     assert page.text_content("#preview .pv-rich pre code") == SOURCE
 
 
-def test_large_directory_pages_in_the_browser(page, ui_root):
-    for i in range(501):
-        (ui_root / f"large-{i:03d}.txt").write_text(str(i))
-    page.open()
-    page.wait_for_selector(".pager span")
-    assert page.inner_text(".pager span") == "Page 1 of 2"
-    assert page.locator('.col[data-i="0"] .row:has-text("large-000.txt")').count() == 1
-    page.click('.pager button[aria-label="Next page"]')
-    page.wait_for_function(
-        "document.querySelector('.pager span')?.innerText === 'Page 2 of 2'"
-    )
-    assert page.locator('.col[data-i="0"] .row:has-text("large-500.txt")').count() == 1
-    assert page.locator('.col[data-i="0"] .row:has-text("large-000.txt")').count() == 0
+def test_large_directory_scrolls_in_one_column(page, ui_root):
+    """One column, one scrollbar: no pager, a viewport's worth of DOM rows,
+    and Home/End reach both ends through the virtualized layer."""
+    big = ui_root / "big"
+    big.mkdir()
+    for i in range(1200):
+        (big / f"big-{i:04d}.txt").write_text(str(i))
+    page.open("big")
+    col = '.col[data-i="1"]'
+    page.wait_for_selector(f"{col} .row")
+    assert page.locator(".pager").count() == 0
+    assert page.inner_text(f"{col} .col-head .count") == "1200"
+    fits = page.evaluate(f"""() => {{
+        const body = document.querySelector('{col} .col-body');
+        return Math.floor(body.clientHeight / body.querySelector('.row').offsetHeight);
+    }}""")
+    assert fits <= page.locator(f"{col} .row").count() < 1200
+
+    page.click(f'{col} .row:has-text("big-0000.txt")')
+    page.keyboard.press("End")
+    page.wait_for_function("sel[1] === 'big-1199.txt'")
+    body = page.locator(f"{col} .col-body").bounding_box()
+    row = page.locator(f"{col} .row.sel").bounding_box()
+    assert body["y"] <= row["y"] <= body["y"] + body["height"] - row["height"]
+    page.keyboard.press("Home")
+    page.wait_for_function("sel[1] === 'big-0000.txt'")
+
+    page.eval_on_selector(f"{col} .col-body", "b => b.scrollTop = b.scrollHeight")
+    page.wait_for_selector(f'{col} .row:has-text("big-1199.txt")')
+    assert page.locator(f"{col} .row").count() < 1200
+
+
+def test_deep_link_restores_the_last_entry_of_a_large_directory(page, ui_root):
+    """Every entry is addressable: a reload on the last of 1200 files
+    restores the selection and scrolls its row into view."""
+    big = ui_root / "big"
+    big.mkdir()
+    for i in range(1200):
+        (big / f"big-{i:04d}.txt").write_text(str(i))
+    page.open("big/big-1199.txt")
+    page.wait_for_function("sel[1] === 'big-1199.txt'", timeout=15000)
+    col = '.col[data-i="1"]'
+    body = page.locator(f"{col} .col-body").bounding_box()
+    row = page.locator(f"{col} .row.sel").bounding_box()
+    assert body["y"] <= row["y"] <= body["y"] + body["height"] - row["height"]
+    page.wait_for_selector("#preview .pv-text")
 
 
 def test_markdown_soft_breaks_wrap_and_hard_breaks_remain(page):

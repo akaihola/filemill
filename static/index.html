@@ -2337,9 +2337,6 @@ const previewTarget = () => finder.clientWidth / 3;
        vpath      virtual path inside rel (JSON key, table, or row)
        ordered    boolean; preserve the adapter's documented child order when true
        icon       string; explicit icon glyph
-       page       one-based current server listing page
-       pages      total server listing pages
-       total      total server listing entries
        previewFormat string; requested preview format
        csv        boolean; this node is a CSV virtual directory or a row in one
        jsonl      boolean; this node is a JSONL virtual directory
@@ -4335,10 +4332,18 @@ const CACHE_MAX = 24; // Retain enough nearby columns without growing memory unb
 const MAX_DEPTH = 5; // Keep depth styling within the available visual scale.
 const SCROLL_HINT_PADDING = 4; // Show the affordance only when content exceeds the viewport.
 const VIRTUAL_ROWS = 1000;
-const ROW_STEP = 23; // 21px row plus its 1px vertical margins.
 const LONG_PRESS_MS = 500;
 const touchUI = () =>
   matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+
+/* A virtual row is positioned by arithmetic, so its pitch has to be the one
+   the stylesheet draws: row height plus the margin above and below it. Both
+   follow the density setting, which is part of the cache signature. */
+function rowStep() {
+  const css = getComputedStyle(document.documentElement);
+  return parseFloat(css.getPropertyValue("--row-h")) +
+    2 * parseFloat(css.getPropertyValue("--row-gap"));
+}
 
 let longPressTimer;
 let suppressClick = false;
@@ -4523,26 +4528,6 @@ function buildCol(node) {
   } else if (!kids.length) {
     body.innerHTML = `<div class="col-note">Empty</div>`;
   }
-  if (node.pages > 1) {
-    const pager = document.createElement("div");
-    pager.className = "pager";
-    pager.innerHTML =
-      `<button type="button" aria-label="Previous page">‹</button>
-      <span>Page ${node.page} of ${node.pages}</span>
-      <button type="button" aria-label="Next page">›</button>`;
-    const [prev, next] = pager.querySelectorAll("button");
-    prev.disabled = node.page === 1;
-    next.disabled = node.page === node.pages;
-    prev.onclick = (e) => {
-      e.stopPropagation();
-      FS.loadPage(node, node.page - 1);
-    };
-    next.onclick = (e) => {
-      e.stopPropagation();
-      FS.loadPage(node, node.page + 1);
-    };
-    el.appendChild(pager);
-  }
   /* a folded column hides its rows, so the click lands on the column itself —
      that is what makes the advertised "click a spine to unfold" work */
   el.onclick = () => {
@@ -4557,6 +4542,7 @@ function buildCol(node) {
   };
 
   const virtual = kids.length >= VIRTUAL_ROWS;
+  const ROW_STEP = rowStep();
   const layer = virtual
     ? Object.assign(document.createElement("div"), { className: "row-layer" })
     : body;
@@ -4565,6 +4551,7 @@ function buildCol(node) {
     body.appendChild(layer);
   }
   const rows = new Array(kids.length);
+  const live = new Set(); /* indices of the virtual rows now in the DOM */
   const makeRow = (ri) => {
     if (rows[ri]) return rows[ri];
     const k = kids[ri];
@@ -4608,23 +4595,38 @@ function buildCol(node) {
     };
     if (virtual) {
       row.style.top = `${ri * ROW_STEP}px`;
-      layer.appendChild(row);
-    } else layer.appendChild(row);
+      live.add(ri);
+      /* An evicted row comes back without the classes render() gave it. */
+      const ci = +el.dataset.i, chosen = k.name === sel[ci];
+      row.classList.toggle("sel", chosen);
+      row.classList.toggle("cursor", chosen && ci === focusCol);
+    }
+    layer.appendChild(row);
     rows[ri] = row;
     return row;
   };
-  const paintRange = () => {
+  /* Only a scroll evicts: Home/End and deep links build a far row and click
+     it before revealRow scrolls to it, and render() runs in between. */
+  const paintRange = (evict) => {
     if (!virtual) return;
     const first = Math.max(0, Math.floor(body.scrollTop / ROW_STEP) - 10);
     const last = Math.min(
       kids.length,
       Math.ceil((body.scrollTop + body.clientHeight) / ROW_STEP) + 10,
     );
+    if (evict) {
+      for (const i of live) {
+        if (i >= first && i < last) continue;
+        rows[i].remove();
+        delete rows[i]; /* a hole, which forEach and flatMap skip */
+        live.delete(i);
+      }
+    }
     for (let i = first; i < last; i++) makeRow(i);
   };
   if (!virtual) kids.forEach((_, i) => makeRow(i));
   body.onscroll = () => {
-    paintRange();
+    paintRange(true);
     paintTrail();
   };
 
