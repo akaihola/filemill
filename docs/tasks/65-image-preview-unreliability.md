@@ -39,3 +39,25 @@ All paths are relative to `agent@gogo:/home/agent/`.
 - paivi/documents/kuvat/motivaatiojatkumo/Motivaatiojatkumo_v2.jpg
 - paivi/documents/kuvat/motivaatiojatkumo/Motivaatiojatkumo_v3.jpg
 - repos/ai/kandev/docs/screenshots/review%20dialog.png (528276 bytes)
+
+## Diagnosis (2026-09-28)
+
+Every failing example is over 512 KiB (524 288 bytes); every working one is under.
+Two causes, both already fixed on `main` before this review:
+
+- `PreviewLocal.render` declined any file over `TEXT_MAX` before fetching it, images
+  included. Fixed in `5d55bd4`, which limits that gate to text. Only the static edition
+  had a regression test, with fake image bytes.
+- Until `fbd49ae` (2026-09-21), the server's service worker answered navigations from
+  its cache first. A shell cached before `5d55bd4` kept loading the old, versioned
+  modules, so a page opened from a stale URL still showed the message. Which pages were
+  stale depended on browsing history, hence "sometimes".
+
+On 2026-09-28 all six failing examples previewed and decoded on the deployed service.
+`server/tests/test_browser_new_ui.py::test_an_image_past_the_text_ceiling_is_previewed`
+now covers the server edition with real PNG and JPEG files over the ceiling. It fails
+when the old size gate is restored and passes on `main`.
+
+The static edition's `sw.js` still serves `index.html` stale-while-revalidate, so the
+first load after a deployment runs the previous bundle. That is architecture finding
+A5 (remediation step 4), not this issue.
