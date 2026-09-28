@@ -18,6 +18,7 @@ CONTRIBUTING.md, "Do Not Pass `--with playwright==…`".
 from __future__ import annotations
 
 import json
+import random
 import shutil
 import socket
 import sqlite3
@@ -91,6 +92,14 @@ def ui_root(tmp_path: Path) -> Path:
             frame.add_paragraph().text = line
     deck.save(str(tmp_path / "deck.pptx"))
     (tmp_path / "clip.mp4").write_bytes(b"not a playable video")
+    # Noise does not compress: both photos are past the 512 KB text ceiling.
+    from PIL import Image
+
+    noise = Image.frombytes(
+        "RGB", (960, 720), random.Random(65).randbytes(960 * 720 * 3)
+    )
+    noise.save(tmp_path / "photo.png")
+    noise.save(tmp_path / "photo.jpg", quality=95)
     (tmp_path / "soft-breaks.md").write_text("one\ntwo\n\nthree  \nfour\n")
     (tmp_path / "wide.md").write_text(
         "# Wide\n\n```bash\n" + "command-with-a-long-name " * 12 + "\n```\n"
@@ -332,6 +341,19 @@ def test_mp4_preview_uses_a_video_control(page):
     page.open("clip.mp4")
     page.wait_for_selector("#preview video.pv-video")
     assert page.locator("#preview video[controls]").count() == 1
+
+
+@pytest.mark.parametrize("name", ["photo.png", "photo.jpg"])
+def test_an_image_past_the_text_ceiling_is_previewed(page, ui_root, name):
+    """Issue 65: the 512 KB ceiling is for text. An image of any size is drawn."""
+    assert (ui_root / name).stat().st_size > 512 * 1024
+    page.open(name)
+    page.wait_for_selector("#preview img.pv-img", timeout=15000)
+    width = page.evaluate(
+        "() => { const i = document.querySelector('#preview img.pv-img');"
+        " return i.decode().then(() => i.naturalWidth) }"
+    )
+    assert width == 960
 
 
 def test_preview_fullscreen_control_toggles_and_exits(page):
