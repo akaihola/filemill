@@ -58,7 +58,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
   what it means.
 
-- [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
+- [~] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
   `static/FSA-TEST-CHECKLIST.md`.
 
 - [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
