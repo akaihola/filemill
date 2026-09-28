@@ -67,10 +67,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [*] `.py` files are not highlighted at all.
 
+## Completed
+
 - [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
   `No inline preview for this file type.` is displayed instead of the image.
-
-## Completed
 
 - [*] For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon
   for the whole file, and `{}` and `[]` icons for objects and arrays.
