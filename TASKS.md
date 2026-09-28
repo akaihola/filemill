@@ -40,9 +40,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
     - Depends on: [29]
 
-- [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
-  `No inline preview for this file type.` is displayed instead of the image.
-
 - [64] Keep subfolder and folded parent widths stable during Up/Down navigation.
 
 - [41] Fix plain-text reStructuredText previews in Source and Rendered modes.
@@ -69,6 +66,9 @@ Rules for TASKS.md usage are at the bottom of the file.
     - Depends on: [12]
 
 - [*] `.py` files are not highlighted at all.
+
+- [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
+  `No inline preview for this file type.` is displayed instead of the image.
 
 ## Completed
 
