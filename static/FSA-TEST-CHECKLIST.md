@@ -1,34 +1,41 @@
 # Manual test checklist
 
-`test-ui.py` covers everything a fake handle can reach. `test-e2e.py` covers a
-real folder and browser permissions. Use it when checking changes to the real
-File System Access API path, especially folder picking, persisted permissions,
-real file metadata, refreshes, and view-state restore. It is a manual check,
-not part of the automated test suite.
+`test-ui.py` covers everything a fake handle can reach. `test-e2e.py` checks the
+real File System Access API path: folder picking, persisted permissions, file
+metadata, refreshes, and view-state restore. Run it manually when changing that
+path or before a release that relies on it. It is not part of the automated
+test suite.
 
-Run the checks from `static/` after starting from a clean browser profile when
-you need to exercise the first-run picker:
+Prerequisites: `uv`, a graphical desktop, the repository's Playwright 1.61.0
+environment with its matching Chromium browser, and port `8787` free. On
+development machines, Chromium comes from the Nix environment; do not run
+`playwright install`. From the repository root, run:
 
 ```bash
-uv run --with "playwright==1.61.0" python3 test-ui.py     # headless, ~30 s
-uv run --with "playwright==1.61.0" python3 test-e2e.py    # headed, manual picks
+uv run --project server python static/test-e2e.py
 ```
 
-`test-e2e.py` starts a local server on port `8787` and opens a headed Chromium
-window with a persistent profile in `/tmp/filemill-profile`. On the first run,
-click **Choose Folder…** and select any local folder. On later runs, the
-remembered folder should mount without a dialog, or appear under **Recently
-opened** for one click. The script then creates a throwaway folder under the
-system temporary directory and prints its path; click **Open Folder…** and pick
-that folder when prompted. The script changes and removes files only in this
-throwaway folder.
+The script starts a server on port `8787` and opens headed Chromium with the
+persistent profile `/tmp/filemill-profile`. On the first run, click **Choose
+Folder…** and select a folder with files. On later runs, confirm it mounts
+without a dialog or appears under **Recently opened**; run twice to check both
+paths. The selected folder is only read. When prompted, click **Open Folder…**
+and select the printed throwaway folder. The script creates, changes, and
+removes files only there, and removes that folder when the check ends.
 
-Run the script twice to check both the initial picker and the remembered-folder
-path. Review the checks printed in the terminal, the browser window, and the
-screenshots in `/tmp/filemill-e2e`. A successful run ends with `passed, 0
-failed`; press Enter in the terminal to close the browser. If the script times
-out waiting for a pick, or reports a failed check or page error, investigate it
-before marking the manual check complete.
+Expect passing checks for the real directory listing, metadata and sorting,
+type-ahead, clipboard copy, persistence, refresh, and view-state restore, with
+no page errors. A successful run ends with `N passed, 0 failed`. Review terminal
+output and screenshots in `/tmp/filemill-e2e`, then press Enter to close the
+browser. The server exits with the script. The profile and screenshots remain
+for another run; after the final run, remove them with:
+
+```bash
+rm -rf /tmp/filemill-profile /tmp/filemill-e2e
+```
+
+Investigate any timeout, failed check, or page error before marking the manual
+check complete.
 
 ---
 
