@@ -14,6 +14,18 @@ when rendered. It should omit the `/w/agent/` prefix. Task
 301fd540-e206-4306-b88f-5b3dbe1a15ec attempted but failed in making this link
 expansion correct.
 
+## Additional original report and requirements
+
+Task 645b5e03-8b7c-4a29-b56c-0d96f9add7cd tried to fix `[](~/...)` links, and it
+kind of did, but they now point to the deprecated `/w/home/agent/...` paths. Fix them
+to point to `/...?f` relative to the root mount directory instead. Example:
+[`pykoclaw-acp/backlog/004`](~/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md#streaming-restore-plan-buffered-semantic-windows)
+currently points to
+`/w/agent/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md?filemill=render#streaming-restore-plan-buffered-semantic-windows`
+but it needs to point to
+`/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md?f#streaming-restore-plan-buffered-semantic-windows`
+instead.
+
 ## Related work
 
 The completed home-link expansion and [mount decision][35] predate this report.

@@ -9,10 +9,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-
-
-
 ## Scheduled
+
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
 
 ## In Progress
@@ -70,401 +68,368 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## Completed / Accepted
 
 - [ ] [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
-  `No inline preview for this file type.` is displayed instead of the image.
+      `No inline preview for this file type.` is displayed instead of the image.
 
-- [ ] [*] For hierarchical nested view of JSON, don't use the folder icon. Use the JSON icon
-  for the whole file, and `{}` and `[]` icons for objects and arrays.
+- [ ] [*] For hierarchical nested view of JSON, don't use the folder icon. Use the JSON
+      icon for the whole file, and `{}` and `[]` icons for objects and arrays.
 
-- [ ] [*] Large directories now partition their contents into multiple lists that the user
-  can browse using a `< Page N of NN >` control. This is not acceptable. The vertical
-  scrollbar should be used to navigate through the directory contents. Task
-  0b1a0f79-4a08-4b1e-a820-27242fdda812 tried to virtualize the directory contents but
-  failed (or was reverted with another task). Use Fable Medium to solve this. Make the
-  code elegant and efficient. Use a 3rd party library to virtualize the directory
-  contents if that helps.
+- [ ] [67] Use the vertical scrollbar to browse large directories instead of pagination.
+      Virtualize directory contents efficiently.
 
 - [ ] [*] Per recommendation from task dd6897a9-b54e-4ad4-b9b5-b2372292f4b1, remove
-  ?no-columns, wants_columns, and url_for_state. Keep documentation up-to-date.
+      ?no-columns, wants_columns, and url_for_state. Keep documentation up-to-date.
 
-- [ ] [*] Does the documented way to run server tests still silently lose every fixture:
-  does `server/pyproject.toml` still win the rootdir election, so the conftest that
-  moved to the repo root is never loaded and we get a wall of "fixture not found"?
-  Should we use `server/.venv/bin/pytest -c pytest.ini server/tests/...` from the root
-  until that is fixed?
+- [ ] [68] Fix server test fixture discovery from the repository root and document the
+      working pytest command.
 
-- [ ] [*] Do issues [38], [39], [40] and [42] each currently sit under both Scheduled and In
-  Progress in the tracker? Should they be deduplicated and corrected to sit in the
-  correct section so they reflect the implementation?
+- [ ] [*] Do issues [38], [39], [40] and [42] each currently sit under both Scheduled
+      and In Progress in the tracker? Should they be deduplicated and corrected to sit
+      in the correct section so they reflect the implementation?
 
-- [ ] [42] Fix the extra mount prefix in rendered `~/...` Markdown links.
+- [ ] [*] Fix the extra mount prefix in rendered `~/...` Markdown links.
+    - Depends on: [42]
 
-- [ ] [*] Check the two architecture reviews (`docs/2026-09-05-ARCHITECTURE-REVIEW.md` and
-  `docs/2026-09-19-architecture-review-and-remediation-plan.md`). Remove everything that
-  isn't valid any more. De-duplicate and refine. Write into a new file and remove the
-  old ones. Use GPT-6-Astra Medium.
+- [ ] [*] Check the two architecture reviews (`docs/2026-09-05-ARCHITECTURE-REVIEW.md`
+      and `docs/2026-09-19-architecture-review-and-remediation-plan.md`). Remove
+      everything that isn't valid any more. De-duplicate and refine. Write into a new
+      file and remove the old ones. Use GPT-6-Astra Medium.
 
-- [ ] [*] Implement highlighting of reStructuredText (not actually properly implemented by
-  [50]). Ensure unintended highlighting doesn't happen between aposthrophes in words.
-  Ensure special roles are highlighted similar to how Pygments does.
+- [ ] [*] Implement highlighting of reStructuredText (not actually properly implemented
+      by [50]). Ensure unintended highlighting doesn't happen between aposthrophes in
+      words. Ensure special roles are highlighted similar to how Pygments does.
 
-- [ ] [*] Task 645b5e03-8b7c-4a29-b56c-0d96f9add7cd tried to fix `[](~/...)` links, and it
-  kind of did, but they now point to the deprecated `/w/home/agent/...` paths. Fix them
-  to point to `/...?f` relative to the root mount directory instead. Example:
-  [`pykoclaw-acp/backlog/004`](~/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md#streaming-restore-plan-buffered-semantic-windows)
-  currently points to
-  `/w/agent/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md?filemill=render#streaming-restore-plan-buffered-semantic-windows`
-  but it needs to point to
-  `/prg/pykoclaw-dev/pykoclaw-acp/backlog/004-tool-call-visibility.md?f#streaming-restore-plan-buffered-semantic-windows`
-  instead.
+- [ ] [42] Render `~/...` Markdown links relative to the root mount, with `?f`, instead
+      of deprecated `/w/...` paths.
 
 - [ ] [37] Make the installed PWA show its server-not-running recovery page when opened
-  while the server is stopped.
+      while the server is stopped.
 
-- [ ] [*] When the relative path of a file or folder is copied successfully using `Ctrl+C`
-  or a context menu item, show the copied path in the status bar, truncated if
-  necessary. Pressing `Ctrl+C` again within 5 seconds and before any other interaction
-  must copy the full path, and a third press must copy the item's name only. A fourth
-  press must start the rotation over from the relative path.
+- [ ] [69] Show copied paths in the status bar. Repeat `Ctrl+C` within 5 seconds, with
+      no intervening interaction, to cycle relative path, full path and item name.
 
-- [ ] [*] Pressing the right arrow key when the preview pane is focused currently widens the
-  pane in small steps. It should instead collapse the leftmost expanded folder column
-  fully. When all columns are collapsed, it already correctly scrolls them out of view
-  to the left to fill the window with the preview. One more press must go fullscreen,
-  similar to pressing the `Fullscreen` button. A left arrow press must exit fullscreen,
-  equivalent to `Esc`.
+- [ ] [70] In preview focus, ArrowRight folds the leftmost expanded folder column, then
+      enters fullscreen once columns are hidden. ArrowLeft exits fullscreen.
 
 - [ ] [31] Evaluate AppKit, GTK and WinUI against the WebView prototype. Record the
-  comparison in an ADR. Do not start a native toolkit before the ADR exists.
+      comparison in an ADR. Do not start a native toolkit before the ADR exists.
     - Depends on: [30]
 
-- [ ] [*] reStructuredText paragraphs are rendered very narrow. For example
-  in`/home/agent/prg/feedtask/README.rst`, a the source for a paragraph is:
-
-    ```rst
-    A command-line tool to capture stdin and command output for AI tools
-    (like `Roo Code`_, an AI-powered coding assistant for VSCode).
-    ```
-
-    and it's rendered as
-
-    ```
-    A command-line tool to capture stdin and command output for AI tools (like
-    Roo Code, an AI-powered coding assistant for VSCode).
-    ```
-
-    even when there's ample horizontal space available. Paragraphs should be filled out
-    to the available width just like in Markdown rendering.
+- [ ] [71] Let reStructuredText paragraphs fill the available preview width, as Markdown
+      paragraphs do.
 
 - [ ] [*] The `Delete` button in the preview pane gives the red error
-  `Delete failed: actions.render is not a function` on the bottom status line (after
-  confirming deletion).
+      `Delete failed: actions.render is not a function` on the bottom status line (after
+      confirming deletion).
 
-- [ ] [*] If I exit a fullscreen preview on a mobile phone using the browser's Back button,
-  I get an empty screen with the label `Select a file to preview`, and the only way to
-  get out is to use the browser's forward button. After entering fullscreen mode, the
-  Back button should behave identically to the `Exit fullscreen` button.
+- [ ] [72] Make the browser Back button exit mobile fullscreen preview like Exit
+      fullscreen, without leaving an empty preview.
 
 - [ ] [*] There's no way to access the file context menu on desktop browsers. On touch
-  devices, a long touch does show it. Also, the context menu is transparent and very
-  hard to read. And the `Delete` item is missing from the menu.
+      devices, a long touch does show it. Also, the context menu is transparent and very
+      hard to read. And the `Delete` item is missing from the menu.
 
-- [ ] [*] On a portrait mobile phone, Markdown preview is wider than the screen. Contents
-  overflow horizontally both at the left and right edges.
+- [ ] [*] On a portrait mobile phone, Markdown preview is wider than the screen.
+      Contents overflow horizontally both at the left and right edges.
 
 - [ ] [*] Fix all remaining red tests (listed in project memory), including the one-line
-  cause of the newest root-column regression.
+      cause of the newest root-column regression.
 
-- [ ] [*] `<file>.md?filemill=highlight` doesn't highlight Markdown files correctly.
-  Headings and URLs are not highlighted, apostrophes cause highlighting of everything
-  between them, even if they're just part of a word. Links are not highlighted. Also,
-  I'd like Markdown links to actually act as clickable links just like in the rendered
-  Markdown preview.
+- [ ] [73] Fix Markdown source highlighting for headings, URLs and links without
+      treating word apostrophes as delimiters. Make links clickable.
 
-- [ ] [*] When object hierarchies are collapsed by the user in a JSON object preview,
-  remember the paths of collapsed objects (built all the way from the root), and also
-  collapse the same objects when viewing similar objects anywhere at the same depth. For
-  example, if I'm viewing `a.b.foo` and collapse `a.b.foo.c.bar`, then when I view any
-  `*.*.*` or `*.*.*.c` path, `*.*.*.c.bar` should be collapsed.
+- [ ] [74] Remember collapsed JSON paths and apply the same collapse pattern to similar
+      objects at the same depth.
 
-- [ ] [*] In hierarchical navigation of `.json`, `.jsonl`, and SQLite `.db` files, when the
-  key of a scalar value is highlighted, show its value in the preview pane instead of
-  rendering the parent JSON structure. If the value is a string and has `\n` characters,
-  display it with line breaks.
+- [ ] [*] In hierarchical navigation of `.json`, `.jsonl`, and SQLite `.db` files, when
+      the key of a scalar value is highlighted, show its value in the preview pane
+      instead of rendering the parent JSON structure. If the value is a string and has
+      `\n` characters, display it with line breaks.
 
 - [ ] [*] Bug: The `Fullscreen` button causes a full screen view of the file to briefly
-  flash, and then immediately returns to the main Filemill UI.
+      flash, and then immediately returns to the main Filemill UI.
 
-- [ ] [*] When navigating to the parent directory using the left arrow key, make sure the
-  highlighted file or directory is scrolled into view.
+- [ ] [*] When navigating to the parent directory using the left arrow key, make sure
+      the highlighted file or directory is scrolled into view.
 
-- [ ] [*] Many of the unintended column width changes could probably be solved by using a
-  constant column width. Choose a standard folder column width in `em` units such that
-  on a normal laptop widescreen, one column wills 1/6 of a full screen width browser
-  window. The preview pane should fill the remaining width. The leftmost column should
-  fold when that remaining width falls below 1/3 of the full screen width. On small
-  screens such as phone screens, the ratios should be different: for portrait mode,
-  column = 1/2 width, preview = at least 1/3 width, and for landscape mode, column = 1/4
-  width, preview = at least 1/3 width. We need to experiment with these.
+- [ ] [75] Use stable folder widths in em units and let previews fill the remaining
+      space. Tune automatic folding and column/preview ratios for desktop and
+      portrait/landscape phones.
 
-- [ ] [*] Bug: Arrow Right into the preview pane works inconasistently. Sometimes it focuses
-  the preview pane without changing the layout. Sometimes it hides the folder columns
-  and stretches the preview pane to full width.
+- [ ] [*] Bug: Arrow Right into the preview pane works inconasistently. Sometimes it
+      focuses the preview pane without changing the layout. Sometimes it hides the
+      folder columns and stretches the preview pane to full width.
 
-- [ ] [*] Arrow Down to focus the next folder sometimes half-folds the column, dims the
-  text, and shows a semi-transparent vertical folder name on top of the contents. The
-  same doesn't happen when navigating by clicking the next folder using the mouse
-  instead. Ensure navigating up/down using the keyboard never resizes the focused
-  column, especially not below the folding transition width range.
+- [ ] [76] Keep the focused folder column's width stable during Up/Down navigation,
+      without partial folding, dimmed text or overlaid folder names.
 
 - [ ] [*] Feature: Clicking on a content search result now opens the raw file. Open the
-  rendered file in the UI preview pane instead.
+      rendered file in the UI preview pane instead.
 
 - [ ] [29] Make `ui/core/` a model package with no DOM: nodes, selection, folding
-  arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
+      arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
     - Depends on: [21]
 
-- [ ] [*] Delete `_document_page` — document representations, including `layout=no-columns`,
-  now return the shared client shell.
+- [ ] [*] Delete `_document_page` — document representations, including
+      `layout=no-columns`, now return the shared client shell.
 
 - [ ] [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
-  `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root `TASKS.md`.
+      `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
+      `TASKS.md`.
 
-- [ ] [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`, `applyWidths`,
-  `panFocus` and `slideTail`. Each function is under 25 lines.
+- [ ] [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`,
+      `applyWidths`, `panFocus` and `slideTail`. Each function is under 25 lines.
 
 - [ ] [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
-  decision in `docs/adr/`. Each file has context, decision, measurement, consequences.
+      decision in `docs/adr/`. Each file has context, decision, measurement,
+      consequences.
 
-- [ ] [10] Toggling `Source` / `Rendered` reloads the whole page and causes an uncomfortable
-  blink and a delay. Just the preview pane should be reloaded, and the URL and history
-  updated.
+- [ ] [10] Toggling `Source` / `Rendered` reloads the whole page and causes an
+      uncomfortable blink and a delay. Just the preview pane should be reloaded, and the
+      URL and history updated.
 
-- [ ] [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=` URLs
-  for images, PDF and HTML. Done when `grep -r raw?path server/src` prints nothing.
+- [ ] [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=`
+      URLs for images, PDF and HTML. Done when `grep -r raw?path server/src` prints
+      nothing.
     - Depends on: [33]
 
-- [ ] [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100 k-entry
-  directory still builds 100 k DOM nodes. Do this only if such folders show up.
+- [ ] [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100
+      k-entry directory still builds 100 k DOM nodes. Do this only if such folders show
+      up.
 
-- [ ] [6] Centralize file-kind classification across filesystem producers and preview/edit
-  consumers. Add one test table per language that both sides share.
+- [ ] [6] Centralize file-kind classification across filesystem producers and
+      preview/edit consumers. Add one test table per language that both sides share.
 
 - [ ] [44] Document demo instances matching each browser test setup.
 
 - [ ] [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
-  `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
+      `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
 
-- [ ] [*] Give each magic number in `ui/core/state.js`, `layout.js`, `nav.js`, `render.js` a
-  name and a one-line comment that says why the value is what it is.
+- [ ] [*] Give each magic number in `ui/core/state.js`, `layout.js`, `nav.js`,
+      `render.js` a name and a one-line comment that says why the value is what it is.
 
-- [ ] [21] Cache the preview element keyed on the previewed node and its `meta`, the same
-  way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
+- [ ] [21] Cache the preview element keyed on the previewed node and its `meta`, the
+      same way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
 
-- [ ] [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in `styles.py`
-  and the `watchfiles` dependency. Delete their tests.
+- [ ] [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in
+      `styles.py` and the `watchfiles` dependency. Delete their tests.
 
 - [ ] [*] Run the static and server browser tests through one root `conftest.py` and one
-  Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.
+      Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.
     - Depends on: [25]
 
-- [ ] [*] Add a preview for `.mp4` files with a `<video controls>` element, as one registry
-  entry plus one test.
+- [ ] [*] Add a preview for `.mp4` files with a `<video controls>` element, as one
+      registry entry plus one test.
     - Depends on: [26]
 
-- [ ] [*] Implement CSV as a browser virtual filesystem in `ui/adapters/vfs-csv.js`, like
-  JSONL: one entry per row, a key/value preview per row. No Python. Closes legacy server
-  issue #49.
+- [ ] [*] Implement CSV as a browser virtual filesystem in `ui/adapters/vfs-csv.js`,
+      like JSONL: one entry per row, a key/value preview per row. No Python. Closes
+      legacy server issue #49.
     - Depends on: [26]
 
-- [ ] [*] Compute the symlink zone map one time per request in `paths.py`. Delete the three
-  other walks of the root that build the same map.
+- [ ] [*] Compute the symlink zone map one time per request in `paths.py`. Delete the
+      three other walks of the root that build the same map.
     - Depends on: [24]
 
-- [ ] [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done when
-  `uv run pytest -n auto` passes at the repository root.
+- [ ] [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done
+      when `uv run pytest -n auto` passes at the repository root.
 
-- [ ] [*] Replace `python-fasthtml` with `starlette` and `uvicorn`. The shell becomes one
-  string template. Done when `dependencies` has starlette, uvicorn, typer, python-pptx.
+- [ ] [*] Replace `python-fasthtml` with `starlette` and `uvicorn`. The shell becomes
+      one string template. Done when `dependencies` has starlette, uvicorn, typer,
+      python-pptx.
     - Depends on: [24]
 
-- [ ] [*] On mobile, long-pressing a file or directory should open a menu of actions to copy
-  its base name, relative path or absolute path.
+- [ ] [*] On mobile, long-pressing a file or directory should open a menu of actions to
+      copy its base name, relative path or absolute path.
 
-- [ ] [*] Delete `server/src/filemill/styles.py`. The shell links `/ui/core/styles.css`, and
-  no other server route emits HTML. Delete the tests that pin `APP_CSS`.
+- [ ] [*] Delete `server/src/filemill/styles.py`. The shell links `/ui/core/styles.css`,
+      and no other server route emits HTML. Delete the tests that pin `APP_CSS`.
     - Depends on: [33], [34]
 
 - [ ] [*] Delete `/api/render` in `app.py`, `render_upload` in `api.py` and
-  `ui/adapters/preview-upload.js`. Local folders in the server edition use PreviewRich.
+      `ui/adapters/preview-upload.js`. Local folders in the server edition use
+      PreviewRich.
     - Depends on: [32], [34]
 
-- [ ] [*] Each row of a JSONL file must be presented exactly like a hierarchical nested view
-  of a JSON file.
+- [ ] [*] Each row of a JSONL file must be presented exactly like a hierarchical nested
+      view of a JSON file.
 
 - [ ] [45] Show JSON children beside a foldable preview of the selected value.
 
 - [ ] [46] Fix ancestor columns unfolding during down-arrow navigation.
 
-- [ ] [*] Keyboard navigation using arrows still doesn't animate folding/unfolding/resizing
-  of columns. Do systematic debugging to identify the cause, and fix it.
+- [ ] [*] Keyboard navigation using arrows still doesn't animate
+      folding/unfolding/resizing of columns. Do systematic debugging to identify the
+      cause, and fix it.
 
 - [ ] [7] Make entry ordering an adapter-owned contract.
     - Depends on: [6]
 
-- [ ] [47] Fold folder columns on preview entry and restore the containing column on exit.
+- [ ] [47] Fold folder columns on preview entry and restore the containing column on
+      exit.
 
 - [ ] [48] Keep ancestor folding unchanged during Up/Down navigation.
 
-- [ ] [*] Add a PWA manifest and service worker to the static bundle so `static/index.html`
-  installs as a standalone window. The server edition already serves `/manifest.json`.
+- [ ] [*] Add a PWA manifest and service worker to the static bundle so
+      `static/index.html` installs as a standalone window. The server edition already
+      serves `/manifest.json`.
 
 - [ ] [49] Fix content search errors and restrict search to the focused directory tree.
 
-- [ ] [*] The `Fullscreen` button in the preview pane doesn't do anything. No errors seen on
-  the JavaScript console either.
+- [ ] [*] The `Fullscreen` button in the preview pane doesn't do anything. No errors
+      seen on the JavaScript console either.
 
 - [ ] [50] Fix missing reStructuredText rendering and highlighting after the initial
-  implementation.
+      implementation.
 
 - [ ] [51] Return raw file bytes for URLs without query parameters.
 
 - [ ] [52] Return focus to the parent column when leaving the preview with ArrowLeft.
 
-- [ ] [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`. Quote
-  identifiers with `"` and replace `"` inside them with `""`, or check `sqlite_master`.
+- [ ] [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`.
+      Quote identifiers with `"` and replace `"` inside them with `""`, or check
+      `sqlite_master`.
 
 - [ ] [53] Let Markdown paragraphs wrap to the preview width instead of preserving
-  linefeeds.
+      linefeeds.
 
 - [ ] [*] Typing a right arrow when the rightmost column before the preview is focused
-  should focus the preview and let the user scroll it up/down using the arrow and
-  PgUp/PgDn keys.
+      should focus the preview and let the user scroll it up/down using the arrow and
+      PgUp/PgDn keys.
 
 - [ ] [*] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
-  `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in `server/src/filemill/styles.py`.
+      `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in
+      `server/src/filemill/styles.py`.
 
 - [ ] [54] Keep all Markdown previews within the portrait screen width.
 
 - [ ] [55] Fix the favicon 404 and `renderPage is not a function` error.
 
-- [ ] [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into `withVirtual`,
-  and `withJsonlPreview` and `withJsonPreview` into `withVirtualPreview`.
+- [ ] [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into
+      `withVirtual`, and `withJsonlPreview` and `withJsonPreview` into
+      `withVirtualPreview`.
 
 - [ ] [20] Create `ui/core/limits.js` with one `TEXT_MAX` and one image extension list.
-  Create one `mountRoot()` and one `currentPath()`. Delete the copies and `pathParts`.
+      Create one `mountRoot()` and one `currentPath()`. Delete the copies and
+      `pathParts`.
 
 - [ ] [22] Replace `cursor[i]`, `sel[i]` and `node.lastSel` with one selection model:
-  `sel[i]` is the selected name. Derive the row index when needed.
+      `sel[i]` is the selected name. Derive the row index when needed.
 
-- [ ] [*] Add root `CONTRIBUTING.md` (setup, tests, commit style, STE rule), `SECURITY.md`
-  (threat model, how to report) and `CHANGELOG.md` (Keep a Changelog format).
+- [ ] [*] Add root `CONTRIBUTING.md` (setup, tests, commit style, STE rule),
+      `SECURITY.md` (threat model, how to report) and `CHANGELOG.md` (Keep a Changelog
+      format).
 
 - [ ] [*] Document the full port contract in `ui/core/ports.js`: `FS.node`, `FS.blob`,
-  `ROUTER.write(state, replace)`, `RouterPath.base` and every node field.
+      `ROUTER.write(state, replace)`, `RouterPath.base` and every node field.
 
 - [ ] [*] Delete `server/PLAN-18.md`, `PLAN-19.md`, `PLAN-20-shared-frontend.md` and
-  `server/lmt/`. Move a paragraph only if it is still true and is not elsewhere.
+      `server/lmt/`. Move a paragraph only if it is still true and is not elsewhere.
 
 - [ ] [*] Make root `README.md` the one explanation of the two editions and their ports.
-  `server/README.md` and `static/AGENTS.md` link to it and keep edition-specific text.
+      `server/README.md` and `static/AGENTS.md` link to it and keep edition-specific
+      text.
 
 - [ ] [*] Delete `server/.pi/settings.json`, `server/mobile-narrow-preview.png`,
-  `server/.claude/commands/` and `architecture-review-20260904.html`.
+      `server/.claude/commands/` and `architecture-review-20260904.html`.
 
 - [ ] [56] Add a Rendered / highlighted Source toggle beside Raw and Fullscreen.
 
-- [ ] [*] Add `.pre-commit-config.yaml` with ruff, ruff-format, mypy, deno fmt, deno lint
-  and `static/build-index.py --check`. Run `pre-commit run --all-files` until it passes.
+- [ ] [*] Add `.pre-commit-config.yaml` with ruff, ruff-format, mypy, deno fmt, deno
+      lint and `static/build-index.py --check`. Run `pre-commit run --all-files` until
+      it passes.
 
 - [ ] [57] Fix portrait horizontal overflow potentially caused by the fold hint.
 
 - [ ] [*] Feature: ability to delete a file or a directory from the file manager.
 
 - [ ] [*] Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight`
-  view.
+      view.
 
 - [ ] [58] Preserve preview mode in file URLs so Back from Raw restores the finder.
 
 - [ ] [59] Fix the missing-timestamp error for YouTube WebVTT files.
 
-- [ ] [*] In an installed PWA, there is no way to get back from raw file view to the file
-  manager view.
+- [ ] [*] In an installed PWA, there is no way to get back from raw file view to the
+      file manager view.
 
 - [ ] [60] Fix content searches failing with `Search timed out`.
 
-- [ ] [61] Choose unique CSV row keys and keep duplicate values independently selectable.
+- [ ] [61] Choose unique CSV row keys and keep duplicate values independently
+      selectable.
 
 - [ ] [66] Evaluate hybrid Python/Jinja highlighting and report supported alternatives.
 
-- [ ] [62] Prevent further left swipes from exposing a margin beside a fullscreen portrait
-  preview.
+- [ ] [62] Prevent further left swipes from exposing a margin beside a fullscreen
+      portrait preview.
 
 - [ ] [*] Add `deno fmt` and `deno lint` for `ui/` (one pinned binary, no Node project).
-  Format `ui/` one time and commit the result as its own commit.
+      Format `ui/` one time and commit the result as its own commit.
 
 - [ ] [*] Add `ruff` and `mypy` to the `dev` group in `server/pyproject.toml`. Add
-  `[tool.ruff]` with `line-length = 88`. Fix all findings. Run `ruff format`.
+      `[tool.ruff]` with `line-length = 88`. Fix all findings. Run `ruff format`.
 
 - [ ] [63] Add Raw, Source / Rendered and Fullscreen controls to the preview toolbar.
 
-- [ ] [12] Make `static/test-ui.py` run to its end, then fix the three checks that fail: the
-  `.pv-content` timeout and the two "edit starts at the top" checks.
+- [ ] [12] Make `static/test-ui.py` run to its end, then fix the three checks that fail:
+      the `.pv-content` timeout and the two "edit starts at the top" checks.
 
 - [ ] [*] In `ui/core/state.js`, replace `node.jsonl ? kids : sortKids(kids)` with a
-  `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
+      `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
 - [ ] [28] Grow the editor behind the `FS.write` port: undo, find, a line gutter and a
-  "modified" mark. Each addition is one file in `ui/editor/`.
+      "modified" mark. Each addition is one file in `ui/editor/`.
 
-- [ ] [27] Try reStructuredText rendering in the browser with Pyodide or a WASM tool, behind
-  the rich renderer consent switch. Record size and first-load time in an ADR.
+- [ ] [27] Try reStructuredText rendering in the browser with Pyodide or a WASM tool,
+      behind the rich renderer consent switch. Record size and first-load time in an
+      ADR.
     - Depends on: [26]
 
 - [ ] [*] Render `.pptx` in the browser: unzip the file and show the slide text, as one
-  registry entry. Then delete `_preview_pptx`, `python-pptx` and `/api/preview`.
+      registry entry. Then delete `_preview_pptx`, `python-pptx` and `/api/preview`.
     - Depends on: [26]
 
 - [ ] [24] Reduce `app.py` to routing: move `_resolve_safe` and the symlink map to
-  `paths.py` and the PWA routes to `pwa.py`. No imports inside functions.
+      `paths.py` and the PWA routes to `pwa.py`. No imports inside functions.
     - Depends on: [33], [34]
 
 - [ ] [33] Keep the URL contract, drop the server-side representations: the server sends
-  bytes for `?filemill=raw` and the shell for all else. The client renders the view.
+      bytes for `?filemill=raw` and the shell for all else. The client renders the view.
     - Depends on: [32]
 
-- [ ] [35] Decide the fate of the `/w/` named mounts and their CORS middleware: delete them,
-  or make CORS opt-in and document it in `SECURITY.md`.
+- [ ] [35] Decide the fate of the `/w/` named mounts and their CORS middleware: delete
+      them, or make CORS opt-in and document it in `SECURITY.md`.
     - Depends on: [32]
 
-- [ ] [32] Render Markdown and `.docx` in the browser in the server edition too. Serve the
-  pinned renderer modules from `ui/vendor/`. Then delete `rendering.py` and its deps.
+- [ ] [32] Render Markdown and `.docx` in the browser in the server edition too. Serve
+      the pinned renderer modules from `ui/vendor/`. Then delete `rendering.py` and its
+      deps.
 
 - [ ] [34] Make the SQLite provider return JSON only. The client renders tables and rows
-  with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close [9].
+      with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close
+      [9].
 
 - [ ] [9] Close the conditional `ViewSpec` proposal: [34] removed the six-argument
-  interface.
+      interface.
 
-- [ ] [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both editions
-  fill it from the same core list plus their own adapters.
+- [ ] [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both
+      editions fill it from the same core list plus their own adapters.
 
-- [ ] [36] Decide how the installed PWA gets a running server: a systemd or launchd unit, a
-  launcher, a desktop shell, or only a better "server not running" page.
+- [ ] [36] Decide how the installed PWA gets a running server: a systemd or launchd
+      unit, a launcher, a desktop shell, or only a better "server not running" page.
 
-- [ ] [*] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT. Use
-  the current year and "Antti Kaihola" as the copyright holder.
+- [ ] [*] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT.
+      Use the current year and "Antti Kaihola" as the copyright holder.
 
-- [ ] [*] Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing PowerPoint
-  files. Current PPTX support was implemented in task
-  38ab06e2-c607-4d4a-9978-67847e70d27d.
-
+- [ ] [*] Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing
+      PowerPoint files. Current PPTX support was implemented in task
+      38ab06e2-c607-4d4a-9978-67847e70d27d.
 
 - [x] [*] Even in non-editing Markdown previews, let the user check/uncheck rendered
-  checkboxes and edit the Markdown source to correspond to the checkbox status with
-  `- [ ]` or `- [x]`.
+      checkboxes and edit the Markdown source to correspond to the checkbox status with
+      `- [ ]` or `- [x]`.
 
-- [x] [*] Expand `~/path` links in rendered Markdown to the mount that resolves to `$HOME`.
-  Today `[text](~/note.md)` is a dead link although the file exists.
+- [x] [*] Expand `~/path` links in rendered Markdown to the mount that resolves to
+      `$HOME`. Today `[text](~/note.md)` is a dead link although the file exists.
 
 - [x] [38] Fix PPTX previews that show unspaced slide text in both modes.
 
@@ -523,6 +488,16 @@ Rules for TASKS.md usage are at the bottom of the file.
 [63]: docs/tasks/63-preview-toolbar-controls.md
 [64]: docs/tasks/64-column-width-stability.md
 [65]: docs/tasks/65-image-preview-unreliability.md
+[67]: docs/tasks/67-scroll-large-directories.md
+[68]: docs/tasks/68-server-pytest-fixture-discovery.md
+[69]: docs/tasks/69-copy-path-status-cycle.md
+[70]: docs/tasks/70-preview-arrow-fullscreen.md
+[71]: docs/tasks/71-rst-paragraph-wrapping.md
+[72]: docs/tasks/72-mobile-fullscreen-back.md
+[73]: docs/tasks/73-markdown-source-highlighting.md
+[74]: docs/tasks/74-json-collapse-patterns.md
+[75]: docs/tasks/75-standard-column-widths.md
+[76]: docs/tasks/76-focused-column-width-stability.md
 [*]: TASKS.md
 
 ---
@@ -533,19 +508,19 @@ Here are the rules for TASKS.md usage:
 
 ### TASKS.md maintenance sessions
 
-- In `## Completed / Accepted`, `- [ ] [N] summary` or `- [ ] [*] summary`
-  means completed work awaiting user acceptance. `- [x] [N] summary` or
-  `- [x] [*] summary` means the user has accepted it. Only user acceptance
-  changes `[ ]` to `[x]`; completion, tests and deployment do not.
+- In `## Completed / Accepted`, `- [ ] [N] summary` or `- [ ] [*] summary` means
+  completed work awaiting user acceptance. `- [x] [N] summary` or `- [x] [*] summary`
+  means the user has accepted it. Only user acceptance changes `[ ]` to `[x]`;
+  completion, tests and deployment do not.
 - Move newly completed issues into `## Completed / Accepted` with `[ ]`.
-- During the next maintenance run, remove only `[x]` issues from this section,
-  plus their unused description files and reference-style links. Keep `[ ]`
-  issues and any files or links still referenced by another issue.
+- During the next maintenance run, remove only `[x]` issues from this section, plus
+  their unused description files and reference-style links. Keep `[ ]` issues and any
+  files or links still referenced by another issue.
 - Each issue must retain either
     - a numbered reference-style link (e.g. `[1]`) to a description file, or
     - `[*]` to indicate no description file is needed for a simple task.
-- `[~]` marks an issue that is actively in progress. When the issue is complete,
-  move it to `## Completed / Accepted` with `[ ]`, pending user acceptance.
+- `[~]` marks an issue that is actively in progress. When the issue is complete, move it
+  to `## Completed / Accepted` with `[ ]`, pending user acceptance.
 - Link references are listed between `## Completed / Accepted` and `## Rules`.
 - Keep summaries concise. Move detailed requirements, rationale, examples and acceptance
   criteria into `docs/tasks/N-issue-description.md`; preserve simple tasks inline. Reuse
@@ -553,9 +528,9 @@ Here are the rules for TASKS.md usage:
 - For a new description, use the first unused number, checking both this file and
   description filenames in Git history. Do not reuse numbers of accepted issues.
 - The section records work status; the checkbox in `## Completed / Accepted` records
-  user acceptance. Completed descriptions retain historical
-  requirements, paths and validation results; they are not current implementation
-  instructions. Date later corrections and distinguish regressions from earlier work.
+  user acceptance. Completed descriptions retain historical requirements, paths and
+  validation results; they are not current implementation instructions. Date later
+  corrections and distinguish regressions from earlier work.
 - Any completed tasks which haven't yet been moved from `## In Progress` to
   `## Completed / Accepted` should be moved there.
 - Any in progress tasks which haven't yet been moved from `## Ordered backlog` or
@@ -571,9 +546,9 @@ Here are the rules for TASKS.md usage:
     - indented `- Depends on: [N]` bullets in TASKS.md, and
     - YAML frontmatter in description files.
 - Ensure backlog order respects dependencies.
-- When you move an issue, preserve its identifier, text and line wrapping.
-  Change only the status checkbox when completion or user acceptance requires it.
-  This keeps moves identifiable in Git and reduces avoidable conflicts.
+- When you move an issue, preserve its identifier, text and line wrapping. Change only
+  the status checkbox when completion or user acceptance requires it. This keeps moves
+  identifiable in Git and reduces avoidable conflicts.
 
 ### Workflow for new issue completion
 
@@ -603,6 +578,6 @@ Below, `<filename>@<branch>` means you must operate on the file in the specified
 
 - Rebase the worktree feature branch on `main` and resolve any conflicts.
 - Merge the rebased branch on `main`, and remove the worktree and branch.
-- Move the issue from `## In Progress` to `## Completed / Accepted` in `TASKS.md@main` with `[ ]`,
-  pending user acceptance, and commit.
+- Move the issue from `## In Progress` to `## Completed / Accepted` in `TASKS.md@main`
+  with `[ ]`, pending user acceptance, and commit.
 - Do any deployment steps if defined in the general development worklow.
