@@ -394,7 +394,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [ ] [61] Choose unique CSV row keys and keep duplicate values independently selectable.
 
-- [ ] [37] Evaluate hybrid Python/Jinja highlighting and report supported alternatives.
+- [ ] [66] Evaluate hybrid Python/Jinja highlighting and report supported alternatives.
 
 - [ ] [62] Prevent further left swipes from exposing a margin beside a fullscreen portrait
   preview.
@@ -494,7 +494,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 [35]: docs/tasks/35-decide-web-mounts.md
 [36]: docs/tasks/36-pwa-start-server.md
 [37]: docs/tasks/37-pwa-startup-offline-recovery.md
-[37]: docs/tasks/37-py-j2-highlighting.md
+[66]: docs/tasks/37-py-j2-highlighting.md
 [38]: docs/tasks/38-pptx-rendered-preview.md
 [39]: docs/tasks/39-browser-history-navigation.md
 [40]: docs/tasks/40-preview-return-containing-folder.md
