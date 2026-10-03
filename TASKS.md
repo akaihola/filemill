@@ -522,6 +522,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 [62]: docs/tasks/62-portrait-preview-swipe-overflow.md
 [63]: docs/tasks/63-preview-toolbar-controls.md
 [64]: docs/tasks/64-column-width-stability.md
+[65]: docs/tasks/65-image-preview-unreliability.md
 [*]: TASKS.md
 
 ---
