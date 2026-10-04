@@ -2522,6 +2522,34 @@ def test_preview_arrow_sequence(bundle, fake_handle, playwright, static_origin):
         browser.close()
 
 
+
+# iOS Safari sends a tap as a hover first. If that hover makes hidden content
+# visible, Safari keeps the hover and drops the click, so the user must tap
+# again. A folder opens its column unfocused, so its rows meet this on the
+# first tap. On a touch-only screen, hover must reveal nothing.
+def test_touch_tap_opens_folder_first_time(bundle, fake_handle, playwright, static_origin):
+    browser = playwright.chromium.launch()
+    try:
+        page = browser.new_page(viewport={"width": 1024, "height": 768}, is_mobile=True, has_touch=True)
+        page.goto(f"{static_origin}/static/{bundle.name}")
+        page.evaluate("localStorage.setItem('filemill.rich','off')")
+        page.evaluate(fake_handle)
+        page.evaluate("async () => { await mount(__mk(0)); }")
+        assert page.evaluate("matchMedia('(hover: none)').matches")
+        shown = """i => [...document.querySelectorAll(`.col[data-i="${i}"] *`)]
+          .filter(e => getComputedStyle(e).visibility === 'visible').length"""
+        for depth, name in enumerate(["deep", "alpha", "beta"]):
+            row = page.locator(f'.col[data-i="{depth}"] .row[aria-label="{name}"]')
+            row.wait_for()
+            before = page.evaluate(shown, depth)
+            row.hover()
+            assert page.evaluate(shown, depth) == before, f"hover on {name} reveals content"
+            row.tap()
+            page.wait_for_function("n => path.length === n", arg=depth + 2, timeout=3000)
+            assert page.evaluate(f"sel[{depth}]") == name
+    finally:
+        browser.close()
+
 @pytest.fixture
 def copy_page(bundle, fake_handle, playwright):
     browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
