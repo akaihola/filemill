@@ -183,21 +183,3 @@ def test_is_vfs_file_returns_false_for_txt(tmp_path):
     f = tmp_path / "data.txt"
     f.touch()
     assert is_vfs_file(f) is False
-
-
-def test_json_provider_registered(tmp_path):
-    from filemill.vfs import REGISTRY
-
-    f = tmp_path / "data.json"
-    f.touch()
-    provider = REGISTRY.get(f)
-    assert provider is not None
-
-
-def test_json_provider_default_fmt_is_formatted(tmp_path):
-    from filemill.vfs import REGISTRY
-
-    f = tmp_path / "data.json"
-    f.touch()
-    provider = REGISTRY.get(f)
-    assert provider.default_fmt("") == "formatted"

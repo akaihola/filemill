@@ -110,8 +110,4 @@ def is_vfs_file(path: Path) -> bool:
 # ── Provider registration (side-effects) ──────────────────────────────────────
 # These imports MUST remain at the bottom, after all names above are defined.
 # Each provider module does `REGISTRY.register(...)` at import time.
-from filemill.providers import (
-    json_provider,  # noqa: F401
-    sqlite,  # noqa: F401
-    vtt_provider,  # noqa: F401
-)
+from filemill.providers import sqlite, vtt_provider  # noqa: F401
