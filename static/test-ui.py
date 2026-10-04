@@ -2522,7 +2522,6 @@ def test_preview_arrow_sequence(bundle, fake_handle, playwright, static_origin):
         browser.close()
 
 
-
 # iOS Safari sends a tap as a hover first. If that hover makes hidden content
 # visible, Safari keeps the hover and drops the click, so the user must tap
 # again. A folder opens its column unfocused, so its rows meet this on the
@@ -2547,8 +2546,20 @@ def test_touch_tap_opens_folder_first_time(bundle, fake_handle, playwright, stat
             row.tap()
             page.wait_for_function("n => path.length === n", arg=depth + 2, timeout=3000)
             assert page.evaluate(f"sel[{depth}]") == name
+        # A long press opens the menu and leaves the folder closed.
+        box = page.locator('.col[data-i="3"] .row[aria-label="gamma"]').bounding_box()
+        point = [{"x": box["x"] + 20, "y": box["y"] + box["height"] / 2}]
+        cdp = page.context.new_cdp_session(page)
+        cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": point})
+        page.locator("#row-menu").wait_for(state="visible", timeout=3000)
+        cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
+        page.wait_for_timeout(300)
+        assert page.locator("#row-menu").is_visible()
+        assert page.evaluate("path.length") == 4
+        assert page.evaluate("sel[3]") is None
     finally:
         browser.close()
+
 
 @pytest.fixture
 def copy_page(bundle, fake_handle, playwright):

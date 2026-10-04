@@ -38,6 +38,7 @@ as before.
 
 `test_touch_tap_opens_folder_first_time` in `static/test-ui.py` emulates a
 touch screen in Chromium. It checks that a hover on a row shows no new element.
-Then it taps folders at three depths. Chromium does not drop the click, so the
-test checks the cause, not the iOS behaviour. A check on a real iPad is still
-necessary.
+Then it taps folders at three depths. Then it does a long press on a folder and
+checks that the menu opens and the folder stays closed. Chromium does not drop
+the click, so the test checks the cause, not the iOS behaviour. A check on a
+real iPad is still necessary.
