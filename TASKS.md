@@ -9,6 +9,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- [*] On iPad, two touches on a folder name are required to open its contents in the
+  next column. Only one touch should do it.
+
 ## Scheduled
 
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
