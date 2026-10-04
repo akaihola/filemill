@@ -264,8 +264,8 @@ advertised command in a clean environment and dates superseded ADRs.
   updates can be lost.
 - `vfs.is_vfs_file` (`vfs.py:105`) has no caller in `server/src`. Providers
   register as an import side effect (`vfs.py:111-116`), and the order matters.
-  `json_provider.py` is slated for deletion; server deep-link validation of
-  browser-owned JSON paths needs a replacement first.
+  browser-owned JSON paths need server deep-link validation through the browser
+  virtual filesystem contract.
 - `<div class="preview-error">` is built by hand in seven places across the
   server.
 - Core knows the server: `ui/core/search.js:35` builds `/api/search` URLs. VTT
