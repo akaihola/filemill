@@ -18,10 +18,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] On iPad, two touches on a folder name are required to open its contents in the
-  next column. Only one touch should do it.
-  <!-- hai:{"id":"simple-63ca4fc48e67d49a","updatedAt":"2026-10-06T20:13:05.911Z"} -->
-
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
   column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
@@ -73,6 +69,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [*] On iPad, two touches on a folder name are required to open its contents in the
+  next column. Only one touch should do it.
+  <!-- hai:{"id":"simple-63ca4fc48e67d49a","updatedAt":"2026-10-06T20:13:05.911Z"} -->
 
 - [ ] [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
       `No inline preview for this file type.` is displayed instead of the image.
