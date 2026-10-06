@@ -950,6 +950,10 @@ body {
   line-height: 1.65;
   max-width: 62ch;
 }
+.pv-body li {
+  color: var(--ink-2);
+  line-height: 1.65;
+}
 .pv-body code {
   font-family: var(--mono);
   font-size: 12px;
