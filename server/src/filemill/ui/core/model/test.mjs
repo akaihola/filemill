@@ -44,6 +44,16 @@ assert.equal(await walkPath(["missing"], async () => {}), false);
 assert.deepEqual(currentPath(), []);
 assert.equal(locationState("render", null).replace, false);
 assert.equal(locationState("render", "root").replace, true);
+/* ADR 0050: history pushes on entering a column and rewrites otherwise, so
+   the key is the chain down to the focused column, not every open column. */
+setState({ path: [tree, folder], sel: ["sub"], focusCol: 0 });
+assert.equal(locationState("render", "root").key, "root");
+assert.equal(locationState("render", "root").replace, true);
+setState({ path: [tree, folder], sel: ["sub", "README.md"], focusCol: 1 });
+assert.equal(locationState("render", "root").key, "root/sub");
+assert.equal(locationState("render", "root").replace, false);
+assert.equal(locationState("render", "root/sub").replace, true);
+setState({ path: [tree], sel: [], focusCol: 0 });
 const many = Array.from({ length: 3000 }, (_, i) => file(`file${2999 - i}`));
 assert.equal(sortKids(many)[0].name, "file0");
 assert.equal(columnSpan([200, 300], 1, 10, 20), 350);
@@ -196,7 +206,7 @@ for (const value of [false, 0, null, "", "first\nsecond"]) {
     value: { scalar: value, object: {} },
     kids: [scalar, object],
   };
-  setState({ path: [tree, parent], sel: ["data.json", "scalar"] });
+  setState({ path: [tree, parent], sel: ["data.json", "scalar"], focusCol: 1 });
   assert.equal(previewNode(), scalar);
   assert.deepEqual(locationState("highlight", "root/data.json"), {
     key: "root/data.json",
@@ -242,6 +252,16 @@ for (
 assert.equal(keyAction({ key: "Backspace" }, { typeahead: true }), "type");
 assert.equal(keyAction({ key: "Backspace" }, {}), null);
 assert.equal(keyAction({ key: "x", altKey: true }, {}), null);
+/* Alt+←/→ and ⌘←/→ are the browser's Back and Forward. */
+for (const key of ["ArrowLeft", "ArrowRight", "ArrowUp", "Enter"]) {
+  assert.equal(keyAction({ key, altKey: true }, {}), null);
+  assert.equal(keyAction({ key, metaKey: true }, {}), null);
+  assert.equal(keyAction({ key, ctrlKey: true }, {}), null);
+  assert.equal(keyAction({ key, altKey: true }, { preview: true }), null);
+  assert.equal(keyAction({ key, metaKey: true }, { preview: true }), null);
+}
+assert.equal(keyAction({ key: "c", ctrlKey: true }, {}), "copy");
+assert.equal(keyAction({ key: "c", metaKey: true }, {}), "copy");
 assert.deepEqual(
   pageSelection([2, 3, 4].map((index) => ({ index, height: 20 })), 3, 1, 100),
   {
