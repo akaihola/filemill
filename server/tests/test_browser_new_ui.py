@@ -981,6 +981,83 @@ def test_back_steps_out_of_the_folder_it_entered(page):
     assert page.evaluate("sel").count("deep") <= 1
 
 
+def test_opening_sibling_folders_rewrites_history(page):
+    """ADR 0050: ↑/↓ over folders in one column opens them without stacking Back."""
+    page.open()
+    page.click('.col[data-i="0"] .row:has-text("README.md")')
+    page.wait_for_timeout(300)
+    before = page.evaluate("history.length")
+    for key in ("ArrowUp", "ArrowUp", "ArrowDown"):
+        page.keyboard.press(key)
+        page.wait_for_timeout(300)
+    page.click('.col[data-i="0"] .row:has-text("code")')
+    page.wait_for_timeout(300)
+    assert page.url.endswith("/code")
+    assert page.evaluate("history.length") == before
+
+
+def test_back_retraces_the_columns_that_were_entered(page):
+    page.open()
+    page.click('.col[data-i="0"] .row:has-text("notes")')
+    page.wait_for_timeout(300)
+    page.click('.col[data-i="1"] .row:has-text("deep")')
+    page.wait_for_timeout(300)
+    page.click('.col[data-i="2"] .row:has-text("leaf.md")')
+    page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
+    page.click('.col[data-i="1"] .row:has-text("plain.txt")')
+    page.wait_for_selector("#preview .pv-text")
+    page.click('.col[data-i="1"] .row:has-text("short.txt")')
+    page.wait_for_timeout(300)
+    assert page.url.endswith("/notes/short.txt?filemill=render")
+
+    page.go_back()
+    page.wait_for_function("sel[2] === 'leaf.md' && focusCol === 2")
+    assert page.url.endswith("/notes/deep/leaf.md?filemill=render")
+    page.go_back()
+    page.wait_for_function("path.length === 3 && sel.length === 2 && focusCol === 1")
+    assert page.url.endswith("/notes/deep")
+    page.go_back()
+    page.wait_for_function("path.length === 2 && sel.length === 1 && focusCol === 0")
+    assert page.url.endswith("/notes")
+    page.go_forward()
+    page.wait_for_function("sel[1] === 'deep' && focusCol === 1")
+    page.go_forward()
+    page.wait_for_function("sel[2] === 'leaf.md'")
+    page.go_forward()
+    page.wait_for_function("sel[1] === 'short.txt' && focusCol === 1")
+    assert page.url.endswith("/notes/short.txt?filemill=render")
+
+
+def test_alt_arrows_are_left_to_the_browser(page):
+    """Alt+←/→ are the browser's Back and Forward; the finder must not eat them."""
+    page.open()
+    page.click('.col[data-i="0"] .row:has-text("notes")')
+    page.wait_for_timeout(300)
+    page.click('.col[data-i="1"] .row:has-text("deep")')
+    page.wait_for_timeout(300)
+    prevented = page.evaluate(
+        """() => ["ArrowLeft", "ArrowRight"].map((key) => {
+            const e = new KeyboardEvent("keydown",
+                {key, altKey: true, bubbles: true, cancelable: true});
+            document.activeElement.dispatchEvent(e);
+            return e.defaultPrevented;
+        })"""
+    )
+    assert prevented == [False, False]
+    assert page.evaluate("focusCol") == 1
+    page.focus("#preview")
+    prevented = page.evaluate(
+        """() => ["ArrowLeft", "ArrowRight"].map((key) => {
+            const e = new KeyboardEvent("keydown",
+                {key, altKey: true, bubbles: true, cancelable: true});
+            document.activeElement.dispatchEvent(e);
+            return e.defaultPrevented;
+        })"""
+    )
+    assert prevented == [False, False]
+    assert not page.evaluate("history.state?.filemillFullscreen")
+
+
 def _scroll_settled(page) -> None:
     """Wait until the smooth scroll of #finder has stopped moving."""
     prev = None
@@ -1398,8 +1475,13 @@ def test_back_and_forward_restore_folder_preview_and_raw_states(page):
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     assert page.url.endswith("/notes/deep/leaf.md?filemill=render")
     page.go_back()
-    page.wait_for_function("path.length === 2 && sel[0] === 'notes'")
+    page.wait_for_function("path.length === 3 && sel.length === 2 && focusCol === 1")
+    assert page.url.endswith("/notes/deep")
+    page.go_back()
+    page.wait_for_function("path.length === 2 && sel.length === 1 && focusCol === 0")
     assert page.url.endswith("/notes")
+    page.go_forward()
+    page.wait_for_function("sel[1] === 'deep' && focusCol === 1")
     page.go_forward()
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     page.go_forward()

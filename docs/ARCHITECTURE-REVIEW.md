@@ -289,6 +289,7 @@ Do not reopen these without new evidence.
 | Unsandboxed HTML preview (F2, part)                                                                   | `sandbox=""`                                                                    |
 | Images over 512 KiB rejected (F10, part)                                                              | Text-only limit                                                                 |
 | Descending name sort ignored                                                                          | `visibleKids` reverses when `desc`                                              |
+| History stacked one entry per sibling folder; Alt+arrows swallowed ([39])                             | Key is the focused chain ([ADR 0050]); `keyAction` ignores modified keys        |
 | `0.0.0.0` bind and `/w/` CORS `*` (#12)                                                               | Loopback default; no CORS headers                                               |
 | Missing `LICENSE`, `SECURITY.md`, `CHANGELOG.md`, `CONTRIBUTING.md`; history files in `server/` (#15) | Present; history files removed                                                  |
 | `static/hotreload.py`, `forgetRoots` (#16)                                                            | Removed                                                                         |
@@ -341,6 +342,7 @@ A12 items can land at any time, each with a focused test.
 
 [ADR 0005]: adr/0005-node-lastsel-per-directory.md
 [ADR 0034]: adr/0034-read-only-mode-read.md
+[ADR 0050]: adr/0050-history-pushes-on-entering-a-column-rewrites-otherwise.md
 [ADR 0063]: adr/0063-installed-pwa-server-recovery.md
 [ADR 0066]: adr/0066-native-toolkits.md
 [ADR 0067]: adr/0067-drop-no-columns-layout.md

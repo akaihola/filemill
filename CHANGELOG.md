@@ -22,6 +22,14 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The `Access-Control-Allow-Origin: *` header on `/w/` named-mount responses.
   Other origins can no longer read files through the server.
 
+### Fixed
+
+- Back and Forward retrace the columns that were entered. Opening sibling
+  folders with ↑/↓ or a click in the same column no longer adds a history entry
+  per folder ([ADR 0050]).
+- `Alt`+`←`/`→` and `⌘`+`←`/`→` reach the browser as Back and Forward instead of
+  moving the finder's focus.
+
 ## [0.1.0] - 2026-09-15
 
 ### Added
@@ -32,3 +40,5 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   support.
 - Previews for Markdown, DOCX, PPTX, PDF, images, plain text, and source code.
 - SQLite and JSON virtual filesystem views.
+
+[ADR 0050]: docs/adr/0050-history-pushes-on-entering-a-column-rewrites-otherwise.md
