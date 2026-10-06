@@ -9,11 +9,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [77] .md tight bullet list line spacing
-  <!-- hai:{"id":"simple-f6220ff8-98cd-48a2-b2ab-4744392be4a7","priority":"none","labels":[],"createdAt":"2026-10-06T18:33:12.894Z","updatedAt":"2026-10-06T18:33:12.894Z"} -->
-
 ## Scheduled
 
+- [77] .md tight bullet list line spacing
+  <!-- hai:{"id":"simple-f6220ff8-98cd-48a2-b2ab-4744392be4a7","priority":"none","labels":[],"createdAt":"2026-10-06T18:33:12.894Z","updatedAt":"2026-10-06T21:04:45.180Z"} -->
 
 ## In Progress
 
