@@ -16,6 +16,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [*] On iPad, two touches on a folder name are required to open its contents in the
   next column. Only one touch should do it.
+  <!-- hai:{"id":"simple-63ca4fc48e67d49a","updatedAt":"2026-10-06T20:13:05.911Z"} -->
 
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
 
