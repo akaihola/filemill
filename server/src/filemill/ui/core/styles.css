@@ -546,7 +546,9 @@ body {
 /* ⟳ sits in the header of every column but only shows on the one being read or
    pointed at: a button on all seven at once is noise, and the key does the same
    job without one. `visibility` rather than `display` so the header never
-   re-measures when it appears — a width change here would relay out the rows. */
+   re-measures when it appears — a width change here would relay out the rows.
+   Only a real hover shows it: iOS Safari sends a tap as a hover first, and
+   when that hover shows hidden content, Safari drops the click. */
 .col-head .rf {
   all: unset;
   visibility: hidden;
@@ -558,8 +560,13 @@ body {
   line-height: 1;
   color: var(--ink-3);
 }
-.col.focus .col-head .rf, .col:hover .col-head .rf {
+.col.focus .col-head .rf {
   visibility: visible;
+}
+@media (hover: hover) {
+  .col:hover .col-head .rf {
+    visibility: visible;
+  }
 }
 .col-head .rf:hover {
   color: var(--accent);
