@@ -3842,9 +3842,13 @@ function currentPath() {
   return names;
 }
 
-// History is grouped by the open directory chain, as in the browser editions.
+/* ADR 0050: history pushes on entering a column and rewrites otherwise. The
+   key is therefore the chain down to the *focused* column, not every open
+   column: ↑/↓ over sibling folders opens each one as a preview without moving
+   focus, and that must rewrite the entry, or Back fills up with one step per
+   row. Moving focus to another column — by a click there or ←/→ — pushes. */
 function locationState(viewMode, previousKey) {
-  const key = path.map((p) => p.name).join("/");
+  const key = path.slice(0, focusCol + 1).map((p) => p.name).join("/");
   const node = previewNode();
   const view = node && !node.dir
     ? (viewMode === "highlight" ? "highlight" : "render")
@@ -5254,6 +5258,13 @@ const typeaheadKey = (event, live) =>
 function keyAction(event, context) {
   if (context.editable || context.welcome) return null;
   const key = event.key;
+  /* Alt+←/→ and ⌘←/→ are the browser's Back and Forward, and the other
+     modified keys are its shortcuts too. Only the copy chord is ours. */
+  if (
+    !context.preview && key === "c" && (event.metaKey || event.ctrlKey) &&
+    !context.textSelected
+  ) return "copy";
+  if (event.altKey || event.metaKey || event.ctrlKey) return null;
   if (context.preview) {
     if (context.fullscreen && ["ArrowLeft", "Escape"].includes(key)) {
       return "preview-exit-fullscreen";
@@ -5265,9 +5276,6 @@ function keyAction(event, context) {
       : null;
   }
   if (key === "Delete") return "delete";
-  if (
-    key === "c" && (event.metaKey || event.ctrlKey) && !context.textSelected
-  ) return "copy";
   if (typeaheadKey(event, context.typeahead)) return "type";
   if (
     [

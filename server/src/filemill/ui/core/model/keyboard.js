@@ -5,6 +5,13 @@ export const typeaheadKey = (event, live) =>
 export function keyAction(event, context) {
   if (context.editable || context.welcome) return null;
   const key = event.key;
+  /* Alt+←/→ and ⌘←/→ are the browser's Back and Forward, and the other
+     modified keys are its shortcuts too. Only the copy chord is ours. */
+  if (
+    !context.preview && key === "c" && (event.metaKey || event.ctrlKey) &&
+    !context.textSelected
+  ) return "copy";
+  if (event.altKey || event.metaKey || event.ctrlKey) return null;
   if (context.preview) {
     if (context.fullscreen && ["ArrowLeft", "Escape"].includes(key)) {
       return "preview-exit-fullscreen";
@@ -16,9 +23,6 @@ export function keyAction(event, context) {
       : null;
   }
   if (key === "Delete") return "delete";
-  if (
-    key === "c" && (event.metaKey || event.ctrlKey) && !context.textSelected
-  ) return "copy";
   if (typeaheadKey(event, context.typeahead)) return "type";
   if (
     [

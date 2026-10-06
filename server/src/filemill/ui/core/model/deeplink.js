@@ -1,4 +1,5 @@
 import {
+  focusCol,
   path,
   previewNode,
   sel,
@@ -13,9 +14,13 @@ export function currentPath() {
   return names;
 }
 
-// History is grouped by the open directory chain, as in the browser editions.
+/* ADR 0050: history pushes on entering a column and rewrites otherwise. The
+   key is therefore the chain down to the *focused* column, not every open
+   column: ↑/↓ over sibling folders opens each one as a preview without moving
+   focus, and that must rewrite the entry, or Back fills up with one step per
+   row. Moving focus to another column — by a click there or ←/→ — pushes. */
 export function locationState(viewMode, previousKey) {
-  const key = path.map((p) => p.name).join("/");
+  const key = path.slice(0, focusCol + 1).map((p) => p.name).join("/");
   const node = previewNode();
   const view = node && !node.dir
     ? (viewMode === "highlight" ? "highlight" : "render")
