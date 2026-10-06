@@ -15,6 +15,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## Scheduled
 
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
+  <!-- hai:{"updatedAt":"2026-10-06T20:35:21.914Z"} -->
 
 ## In Progress
 
