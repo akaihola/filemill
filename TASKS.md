@@ -14,13 +14,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] On iPad, two touches on a folder name are required to open its contents in the
-  next column. Only one touch should do it.
-  <!-- hai:{"id":"simple-63ca4fc48e67d49a","updatedAt":"2026-10-06T20:13:05.911Z"} -->
-
 - [39] Fix Back/Forward navigation across folders, previews and raw files.
 
 ## In Progress
+
+- [*] On iPad, two touches on a folder name are required to open its contents in the
+  next column. Only one touch should do it.
+  <!-- hai:{"id":"simple-63ca4fc48e67d49a","updatedAt":"2026-10-06T20:13:05.911Z"} -->
 
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
