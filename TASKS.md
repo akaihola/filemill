@@ -14,11 +14,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [39] Fix Back/Forward navigation across folders, previews and raw files.
-  <!-- hai:{"updatedAt":"2026-10-06T20:35:21.914Z"} -->
 
 ## In Progress
 
+- [~] [39] Fix Back/Forward navigation across folders, previews and raw files.
+  <!-- hai:{"updatedAt":"2026-10-06T20:35:21.914Z"} -->
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
   column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
