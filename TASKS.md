@@ -9,6 +9,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- [77] .md tight bullet list line spacing
+  <!-- hai:{"id":"simple-f6220ff8-98cd-48a2-b2ab-4744392be4a7","priority":"none","labels":[],"createdAt":"2026-10-06T18:33:12.894Z","updatedAt":"2026-10-06T18:33:12.894Z"} -->
+
 ## Scheduled
 
 - [*] On iPad, two touches on a folder name are required to open its contents in the
@@ -462,7 +465,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 [35]: docs/tasks/35-decide-web-mounts.md
 [36]: docs/tasks/36-pwa-start-server.md
 [37]: docs/tasks/37-pwa-startup-offline-recovery.md
-[66]: docs/tasks/37-py-j2-highlighting.md
+[66]: docs/tasks/66-py-j2-highlighting.md
 [38]: docs/tasks/38-pptx-rendered-preview.md
 [39]: docs/tasks/39-browser-history-navigation.md
 [40]: docs/tasks/40-preview-return-containing-folder.md
@@ -504,6 +507,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 [*]: TASKS.md
 
 ---
+
+[77]: docs/tasks/77-md-tight-bullet-list-line-spacing.md
+
+<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77 -->
 
 ## Rules
 

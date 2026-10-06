@@ -1,0 +1,1 @@
+Line spacing for bullet lists is much smaller than for normal paragraphs. This makes rendered Markdown files look out of balance. See `docs/tasks/line-spacing-screenshot.png`.
