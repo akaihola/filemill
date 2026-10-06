@@ -11,10 +11,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [77] .md tight bullet list line spacing
-  <!-- hai:{"id":"simple-f6220ff8-98cd-48a2-b2ab-4744392be4a7","priority":"none","labels":[],"createdAt":"2026-10-06T18:33:12.894Z","updatedAt":"2026-10-06T21:04:45.180Z"} -->
-
 ## In Progress
+
+- [~] [77] .md tight bullet list line spacing
+  <!-- hai:{"id":"simple-f6220ff8-98cd-48a2-b2ab-4744392be4a7","priority":"none","labels":[],"createdAt":"2026-10-06T18:33:12.894Z","updatedAt":"2026-10-06T21:04:45.180Z"} -->
 
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the

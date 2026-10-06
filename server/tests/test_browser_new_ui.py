@@ -101,6 +101,7 @@ def ui_root(tmp_path: Path) -> Path:
     noise.save(tmp_path / "photo.png")
     noise.save(tmp_path / "photo.jpg", quality=95)
     (tmp_path / "soft-breaks.md").write_text("one\ntwo\n\nthree  \nfour\n")
+    (tmp_path / "bullets.md").write_text("para\n\n- one\n- two\n")
     (tmp_path / "wide.md").write_text(
         "# Wide\n\n```bash\n" + "command-with-a-long-name " * 12 + "\n```\n"
     )
@@ -624,6 +625,20 @@ def test_markdown_soft_breaks_wrap_and_hard_breaks_remain(page):
         "one\ntwo",
         "three<br>\nfour",
     ]
+
+
+def test_markdown_list_items_share_paragraph_line_height(page):
+    """Bullet lists are set as loosely as paragraphs ([77])."""
+    page.open("bullets.md")
+    page.wait_for_selector("#preview .pv-markdown li", timeout=15000)
+    heights = page.evaluate(
+        """() => {
+          const lh = (sel) => getComputedStyle(
+            document.querySelector('#preview .pv-markdown ' + sel)).lineHeight;
+          return [lh('p'), lh('li')];
+        }"""
+    )
+    assert heights[0] == heights[1]
 
 
 def test_markdown_code_wraps_within_portrait_preview(page):
