@@ -37,6 +37,7 @@ import {
   rowIndex,
   sel,
   setState,
+  state,
   visibleKids,
 } from "./model/state.js";
 import { finder } from "./dom-renderer.js";
@@ -49,8 +50,18 @@ const PREVIEW_SCROLL_STEP = 40; // Arrow keys move the preview by a small readab
 
 let navSeq = 0; /* a read that outlives its selection must not repaint */
 
-export async function choose(colIdx, node, keepScroll = false) {
+/* `stepping` says the selection came from ↑/↓, Home/End or paging rather
+   than a click or a jump: the URL is then rewritten, never pushed (ADR 0050).
+   It stays set through the deferred render of a folder that is still reading,
+   which is when that folder's URL is actually written. */
+export async function choose(
+  colIdx,
+  node,
+  keepScroll = false,
+  stepping = false,
+) {
   resetCopy();
+  state.stepping = stepping;
   const seq = ++navSeq;
   selectNode(colIdx, node);
   if (!node.dir) return void render(keepScroll);
@@ -387,8 +398,9 @@ function pageMove(c, dir, ci) {
     decision = pageSelection(visible(), undefined, dir, body.clientHeight);
   }
   const row = c.rows[decision.index];
-  row?.click();
-  if (row) revealRow(row);
+  if (!row) return;
+  choose(focusCol, c.kids[decision.index], true, true);
+  revealRow(row);
 }
 
 const keyboardContext = (e) => ({
@@ -500,15 +512,14 @@ document.addEventListener("keydown", (e) => {
       e.key === "ArrowDown" ? 1 : -1,
       rows.length,
     );
-    choose(focusCol, c.kids[ci], true);
+    choose(focusCol, c.kids[ci], true, true);
     revealRow(c.ensureRow(ci));
   } else if (action === "Home" || action === "End") {
     e.preventDefault();
     if (!rows.length) return;
     const ri = e.key === "Home" ? 0 : rows.length - 1;
-    const row = c.ensureRow(ri);
-    row.click();
-    revealRow(row);
+    choose(focusCol, c.kids[ri], true, true);
+    revealRow(c.ensureRow(ri));
   } else if (action === "PageUp" || action === "PageDown") {
     e.preventDefault();
     pageMove(c, e.key === "PageUp" ? -1 : 1, ci);
