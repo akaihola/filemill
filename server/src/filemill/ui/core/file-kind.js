@@ -5,9 +5,11 @@ const image = new RegExp(`^(?:${IMAGE_EXTENSIONS.join("|")})$`, "i");
 
 export function classifyFile(
   name,
-  { dir = false, vpath = "", csv = false, jsonl = false } = {},
+  { dir = false, vpath = "", csv = false, jsonl = false, doc = false } = {},
 ) {
-  if (dir) return { kind: "folder", preview: "none", editable: false };
+  /* A Markdown or reStructuredText file browsed by headings (`doc`) opens as
+     a column but stays the file it is: previewed, edited and iconed as one. */
+  if (dir && !doc) return { kind: "folder", preview: "none", editable: false };
   if (vpath || csv || jsonl) {
     return { kind: "vfs", preview: "virtual", editable: false };
   }

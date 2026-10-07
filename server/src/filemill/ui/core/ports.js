@@ -46,6 +46,11 @@
        record     parsed CSV, JSONL, or JSON table-row value
        jsonError  string; JSON parsing/loading error
        span       {blob, start, end}; byte span of an unread JSONL row
+       doc        boolean; a Markdown or reStructuredText file browsed by its
+                  headings — a column of sections that is still the file
+       lines      the doc's source lines, once read
+       section    {root, outline}; a heading inside a doc, root being the doc
+                  node and outline its {name, start, end, kids} line span
 
      ensureLoaded(node) → Promise   fills node.kids (idempotent, debounced)
      loadMeta(node)     → Promise   fills node.meta (or records {error}); may

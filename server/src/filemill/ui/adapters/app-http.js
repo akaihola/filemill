@@ -21,6 +21,7 @@ import { PreviewRich, RICH_RENDERERS } from "./preview-rich.js";
 import { RouterPath } from "./router-path.js";
 import { rememberRoot } from "./storage.js";
 import { withCsv, withCsvPreview } from "./vfs-csv.js";
+import { withDocumentPreview, withDocuments } from "./vfs-doc.js";
 import {
   applyPath,
   setDeepLinkActions,
@@ -109,8 +110,13 @@ const withHighlighting = (provider) => ({
 const PreviewHTTP = {
   revoke() {},
   async render(n) {
+    /* A section of a reStructuredText file is the server's to render too,
+       from the lines the browser's outline named (see adapters/vfs-doc.js). */
+    const lines = n.section
+      ? `&lines=${n.section.outline.start}-${n.section.outline.end}`
+      : "";
     const response = await fetch(
-      `${API}/preview?p=${encodeURIComponent(n.rel)}`,
+      `${API}/preview?p=${encodeURIComponent(n.rel)}${lines}`,
     );
     return response.ok ? response.text() : PreviewLocal.render(n);
   },
@@ -137,11 +143,13 @@ const withRichPreview = (provider) => ({
 });
 
 async function mountServer() {
-  useFilesystem(withCsv(withVirtual(HTTP)));
+  useFilesystem(withDocuments(withCsv(withVirtual(HTTP))));
   usePreview(
-    withCsvPreview(
-      withVirtualPreview(
-        withHighlighting(withRichPreview(PreviewLocal)),
+    withDocumentPreview(
+      withCsvPreview(
+        withVirtualPreview(
+          withHighlighting(withRichPreview(PreviewLocal)),
+        ),
       ),
     ),
   );
@@ -189,11 +197,13 @@ function showServerUnavailable() {
    itself uses the same browser renderers as the served tree, so
    switching sides costs no fidelity; only the URL goes quiet. */
 export async function mount(handle) {
-  useFilesystem(withCsv(withVirtual(FSA)));
+  useFilesystem(withDocuments(withCsv(withVirtual(FSA))));
   usePreview(
-    withCsvPreview(
-      withVirtualPreview(
-        withHighlighting(withRichPreview(PreviewRich)),
+    withDocumentPreview(
+      withCsvPreview(
+        withVirtualPreview(
+          withHighlighting(withRichPreview(PreviewRich)),
+        ),
       ),
     ),
   );

@@ -28,6 +28,7 @@ import "./adapters/http.js";
 import "./adapters/preview-local.js";
 import "./adapters/preview-rich.js";
 import "./adapters/vfs-csv.js";
+import "./adapters/vfs-doc.js";
 import "./adapters/router-path.js";
 import "./adapters/fsa.js";
 import "./adapters/storage.js";

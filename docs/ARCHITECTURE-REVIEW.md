@@ -41,7 +41,9 @@ status.
   keyboard mapping, deep links, JSON folds and Markdown task toggles, tested by
   `ui/core/model/test.mjs`. The rest of `ui/core/` is a DOM-coupled singleton.
 - **Virtual filesystems.** JSON, JSONL and CSV are browser adapters
-  (`ui/adapters/vfs-json.js`, `vfs-csv.js`). SQLite and WebVTT are server
+  (`ui/adapters/vfs-json.js`, `vfs-csv.js`). Markdown and reStructuredText
+  browse by their headings the same way (`vfs-doc.js`, outline in
+  `ui/core/model/headings.js`, [ADR 0070]). SQLite and WebVTT are server
   providers registered in `vfs.py`.
 - **Persistence.** Files are the only durable data. The browser keeps recent
   folder handles in IndexedDB, settings in localStorage, navigation in history
@@ -347,4 +349,5 @@ A12 items can land at any time, each with a focused test.
 [ADR 0066]: adr/0066-native-toolkits.md
 [ADR 0067]: adr/0067-drop-no-columns-layout.md
 [ADR 0068]: adr/0068-scroll-whole-directory-listings.md
+[ADR 0070]: adr/0070-documents-browse-by-headings.md
 [remaining red tests]: testing/remaining-red-tests.md
