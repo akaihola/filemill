@@ -9,6 +9,7 @@ dependencies = [
     "pygments",
     "docutils",
     "typer",
+    "zstandard>=0.23 ; python_full_version < '3.14'",
 ]
 
 [project.scripts]
