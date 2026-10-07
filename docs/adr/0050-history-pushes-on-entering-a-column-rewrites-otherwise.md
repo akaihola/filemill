@@ -20,13 +20,14 @@ folders would otherwise push a history entry per row and make Back useless
 The static edition follows this decision. The measurement above records the
 basis for maintaining and evaluating it.
 
-## Clarification (2026-10-06)
+## Clarification (2026-10-07)
 
-"Entering a column" means moving focus to it. The history key is the chain of
-folder names down to the focused column, `path[0..focusCol]`, in
-`ui/core/model/deeplink.js`. Opening a folder as a preview from the focused
-column does not change the key and rewrites the entry; a click in another column
-or ←/→ changes it and pushes. Both editions share this rule. Issue [39] restored
-it after the key had drifted to the whole open chain.
+The history key is the open directory chain, `path.map(name)`, in
+`ui/core/model/deeplink.js`. A click that opens another folder changes the chain
+and pushes; choosing a file inside the open folder rewrites. Keyboard stepping
+with ↑/↓, Home/End, PageUp/PageDown sets `state.stepping` through `choose()` and
+always rewrites, however many folders the walk opens, which is the measurement
+above. Both editions share this rule. Issue [39] restored it after ↑/↓ over
+folders had started pushing one entry per row.
 
 [39]: ../tasks/39-browser-history-navigation.md
