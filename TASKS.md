@@ -9,13 +9,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [*] Make `.tar.zst` (and other compressed archive) files navigable hierarchically, and
-  if they contain previewable files, show them in the preview pane when navigated to.
-
 - [*] Make Git `.bundle` files navigable hierarchically, and if they contain previewable
   files, show them in the preview pane when navigated to.
 
 ## Scheduled
+
+- [*] Make `.tar.zst` (and other compressed archive) files navigable hierarchically, and
+  if they contain previewable files, show them in the preview pane when navigated to.
+  <!-- hai:{"id":"simple-8f807623b9f707fd","updatedAt":"2026-10-07T17:13:55.825Z"} -->
 
 - [*] A 528 kB JSON file like
   https://gogo.crane-boa.ts.net:8445/backups/kasvimuseo-deployment/20261007-010643/backup-manifest.json?f=
