@@ -9,6 +9,16 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- [*] A 528 kB JSON file like
+  https://<tailnet-host>:8445/backups/kasvimuseo-deployment/20261007-010643/backup-manifest.json?f=
+  isn't previewed nor navigable hierarchically.
+
+- [*] Make `.tar.zst` (and other compressed archive) files navigable hierarchically, and
+  if they contain previewable files, show them in the preview pane when navigated to.
+
+- [*] Make Git `.bundle` files navigable hierarchically, and if they contain previewable
+  files, show them in the preview pane when navigated to.
+
 ## Scheduled
 
 ## In Progress
@@ -65,18 +75,18 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Completed / Accepted
 
-- [ ] [*] Similar to JSON and SQLite files, allow hierarchical navigation of Markdown and
-  reStructuredText documents based on their headings.
-  <!-- hai:{"id":"simple-f8626c1613849773","updatedAt":"2026-10-07T15:40:08.724Z"} -->
+- [ ] [*] Similar to JSON and SQLite files, allow hierarchical navigation of Markdown
+      and reStructuredText documents based on their headings.
+      <!-- hai:{"id":"simple-f8626c1613849773","updatedAt":"2026-10-07T15:40:08.724Z"} -->
 
 - [x] [77] .md tight bullet list line spacing
-    <!-- hai:{"id":"simple-f6220ff8-98cd-48a2-b2ab-4744392be4a7","priority":"none","labels":[],"createdAt":"2026-10-06T18:33:12.894Z","updatedAt":"2026-10-07T15:05:44.592Z"} -->
+      <!-- hai:{"id":"simple-f6220ff8-98cd-48a2-b2ab-4744392be4a7","priority":"none","labels":[],"createdAt":"2026-10-06T18:33:12.894Z","updatedAt":"2026-10-07T15:05:44.592Z"} -->
 
 - [x] [39] Fix Back/Forward navigation across folders, previews and raw files.
-    <!-- hai:{"updatedAt":"2026-10-07T15:04:51.317Z"} -->
+      <!-- hai:{"updatedAt":"2026-10-07T15:04:51.317Z"} -->
 - [x] [*] On iPad, two touches on a folder name are required to open its contents in the
       next column. Only one touch should do it.
-    <!-- hai:{"id":"simple-63ca4fc48e67d49a","updatedAt":"2026-10-07T15:03:32.602Z"} -->
+      <!-- hai:{"id":"simple-63ca4fc48e67d49a","updatedAt":"2026-10-07T15:03:32.602Z"} -->
 
 - [ ] [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
       `No inline preview for this file type.` is displayed instead of the image.
