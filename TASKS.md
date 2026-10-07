@@ -17,10 +17,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] Make `.tar.zst` (and other compressed archive) files navigable hierarchically, and
-  if they contain previewable files, show them in the preview pane when navigated to.
-  <!-- hai:{"id":"simple-8f807623b9f707fd","updatedAt":"2026-10-07T17:13:55.825Z"} -->
-
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
   column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
@@ -72,6 +68,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] Make `.tar.zst` (and other compressed archive) files navigable hierarchically, and
+  if they contain previewable files, show them in the preview pane when navigated to.
+  <!-- hai:{"id":"simple-8f807623b9f707fd","updatedAt":"2026-10-07T17:13:55.825Z"} -->
 
 - [ ] [*] A 528 kB JSON file like
   https://<tailnet-host>:8445/backups/kasvimuseo-deployment/20261007-010643/backup-manifest.json?f=
