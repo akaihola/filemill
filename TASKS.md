@@ -13,10 +13,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [*] Similar to JSON and SQLite files, allow hierarchical navigation of Markdown and
-  reStructuredText documents based on their headings.
-  <!-- hai:{"id":"simple-f8626c1613849773","updatedAt":"2026-10-07T15:40:08.724Z"} -->
-
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
   column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
@@ -68,6 +64,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [*] Similar to JSON and SQLite files, allow hierarchical navigation of Markdown and
+  reStructuredText documents based on their headings.
+  <!-- hai:{"id":"simple-f8626c1613849773","updatedAt":"2026-10-07T15:40:08.724Z"} -->
 
 - [x] [77] .md tight bullet list line spacing
     <!-- hai:{"id":"simple-f6220ff8-98cd-48a2-b2ab-4744392be4a7","priority":"none","labels":[],"createdAt":"2026-10-06T18:33:12.894Z","updatedAt":"2026-10-07T15:05:44.592Z"} -->
