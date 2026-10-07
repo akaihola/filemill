@@ -9,10 +9,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+## Scheduled
+
 - [*] Make Git `.bundle` files navigable hierarchically, and if they contain previewable
   files, show them in the preview pane when navigated to.
-
-## Scheduled
+  <!-- hai:{"id":"simple-ca7153b94516ed5f","updatedAt":"2026-10-07T17:35:59.077Z"} -->
 
 - [*] Make `.tar.zst` (and other compressed archive) files navigable hierarchically, and
   if they contain previewable files, show them in the preview pane when navigated to.
