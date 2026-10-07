@@ -1,5 +1,6 @@
 import {
   path,
+  previewable,
   previewNode,
   sel,
   setState,
@@ -21,7 +22,9 @@ export function currentPath() {
 export function locationState(viewMode, previousKey) {
   const key = path.map((p) => p.name).join("/");
   const node = previewNode();
-  const view = node && !node.dir
+  /* A file, a doc or a section has a representation to name; a JSON
+     container previewed as a folder keeps the bare URL it always had. */
+  const view = previewable(node)
     ? (viewMode === "highlight" ? "highlight" : "render")
     : undefined;
   return {

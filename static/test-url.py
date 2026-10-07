@@ -39,7 +39,7 @@ window.__mk = () => {
   const D = (name, kids) => ({kind:'directory', name,
     entries: async function*(){ for (const k of kids) yield [k.name, k]; }});
   return D('workspace', [
-    D('deep',  [D('alpha',[D('beta',[F('leaf.md','# leaf')])])]),
+    D('deep',  [D('alpha',[D('beta',[F('leaf.txt','leaf')])])]),
     D('mixed', [D('sub',[F('a.py','print(1)')]), F('.hidden','h'),
                 F('note.md','# note'), F('sp ace & co.txt','x')]),
     F('README.md','# hi\n'),
@@ -174,6 +174,8 @@ async def main(bundle, fake_handle, opfs_root, playwright):
         await open_at(pg, base)
         await pg.click('.col[data-i="0"] .row:has-text("mixed")')
         await pg.click('.col[data-i="1"] .row:has-text("note.md")')
+        # note.md opens as a column of headings; its own push must land first
+        await pg.wait_for_timeout(250)
         before = await pg.evaluate("history.length")
         for key in ("ArrowDown", "ArrowUp", "ArrowDown"):
             await pg.keyboard.press(key)
@@ -183,11 +185,11 @@ async def main(bundle, fake_handle, opfs_root, playwright):
               after == before, f"{before} → {after}")
 
         # ── a link restores the selection ────────────────────────────────
-        await open_at(pg, base, "#r=workspace&p=deep/alpha/beta/leaf.md")
+        await open_at(pg, base, "#r=workspace&p=deep/alpha/beta/leaf.txt")
         st = await pg.evaluate("__state()")
         check("A deep link opens every column down to the file",
               st["path"] == ["workspace", "deep", "alpha", "beta"]
-              and st["sel"] == ["deep", "alpha", "beta", "leaf.md"],
+              and st["sel"] == ["deep", "alpha", "beta", "leaf.txt"],
               str(st))
         check("The linked file is previewed, not just selected",
               "leaf" in await pg.inner_text("#preview .col-head"))

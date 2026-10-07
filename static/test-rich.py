@@ -221,8 +221,15 @@ async def boot(pg, base, *, rich=True, stubs=False, vendored=False):
 
 
 async def preview(pg, name, timeout=4000, ready=None):
+    # The pane is rebuilt per preview, and a Markdown file is read for its
+    # headings before it renders: wait for the new pane, not the old one.
+    await pg.evaluate("window.__pvOld = document.querySelector('#pv-content')")
     await pg.click(f'.col[data-i="0"] .row:has-text("{name}")')
-    await pg.wait_for_selector("#pv-content > *", timeout=timeout)
+    await pg.wait_for_function(
+        "document.querySelector('#pv-content') !== window.__pvOld"
+        " && document.querySelector('#pv-content > *')",
+        timeout=timeout,
+    )
     if ready:
         await pg.wait_for_selector(ready, timeout=timeout)
     return await pg.inner_html("#pv-content")

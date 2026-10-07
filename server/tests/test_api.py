@@ -476,7 +476,7 @@ def test_split_vfs_refuses_a_path_that_is_not_virtual(tmp_root: Path):
     """readme.md has no provider, so readme.md/anything is simply not a path."""
     from filemill.api import split_vfs
 
-    assert split_vfs("readme.md/nope", tmp_root, app_module._resolve) is None
+    assert split_vfs("image.png/nope", tmp_root, app_module._resolve) is None
     assert split_vfs("nope/at/all", tmp_root, app_module._resolve) is None
 
 
@@ -487,7 +487,7 @@ def test_a_url_can_name_a_row_inside_a_database(db_client, db_root: Path):
 
 
 def test_a_url_into_a_non_virtual_file_is_404(client, tmp_root: Path):
-    assert client.get("/n/readme.md/nope").status_code == 404
+    assert client.get("/n/image.png/nope").status_code == 404
 
 
 # ── /api/save ────────────────────────────────────────────────────────────────
@@ -575,3 +575,46 @@ def test_delete_removes_a_broken_symlink(client, tmp_root: Path):
     (tmp_root / "broken").symlink_to(tmp_root / "missing")
     assert client.delete("/api/delete?p=broken").json() == {"deleted": True}
     assert not (tmp_root / "broken").is_symlink()
+
+
+def test_split_vfs_keeps_document_headings_virtual(tmp_root: Path):
+    """The browser browses Markdown and reStructuredText by headings; their
+    section URLs reload like a SQLite row's."""
+    from filemill import app as app_module
+    from filemill.api import split_vfs
+
+    (tmp_root / "guide.rst").write_text("Guide\n=====\n")
+    assert split_vfs("readme.md/Hello", tmp_root, app_module._resolve) == (
+        "readme.md",
+        "Hello",
+    )
+    assert split_vfs("guide.rst/Guide/Sub", tmp_root, app_module._resolve) == (
+        "guide.rst",
+        "Guide/Sub",
+    )
+
+
+def test_document_heading_urls_serve_the_shell(client):
+    for url in (
+        "/readme.md/Hello?filemill=render",
+        "/readme.md/Hello",
+        "/readme.md/Hello?filemill=raw",
+    ):
+        r = client.get(url)
+        assert r.status_code == 200, url
+        assert 'data-filemill="render"' in r.text, url
+
+
+def test_rst_preview_renders_a_line_range(client, tmp_root: Path):
+    (tmp_root / "guide.rst").write_text(
+        "Title\n=====\n\nPart A\n------\n\nalpha\n\nPart B\n------\n\nbeta\n"
+    )
+    html = client.get("/api/preview", params={"p": "guide.rst", "lines": "8-12"}).text
+    assert "Part B" in html and "beta" in html
+    assert "alpha" not in html and "Part A" not in html
+    whole = client.get("/api/preview", params={"p": "guide.rst"}).text
+    assert "alpha" in whole and "beta" in whole
+    assert (
+        client.get("/api/preview", params={"p": "guide.rst", "lines": "x"}).status_code
+        == 400
+    )

@@ -2235,9 +2235,10 @@ const visibleKids = (node) => {
   );
   if (!node.ordered || state.sort.key !== "name") return sortOrder(kids);
   if (!state.sort.desc) return kids;
+  const folder = (k) => k.dir && !k.doc; /* a doc sorts among the files */
   return [
-    ...kids.filter((k) => k.dir).reverse(),
-    ...kids.filter((k) => !k.dir).reverse(),
+    ...kids.filter(folder).reverse(),
+    ...kids.filter((k) => !folder(k)).reverse(),
   ];
 };
 
@@ -2269,11 +2270,20 @@ const splitName = (name) => {
   return (i > 0) ? [name.slice(0, i), name.slice(i)] : [name, ""];
 };
 
+/* What the preview pane shows for a selected row: a file, or a Markdown or
+   reStructuredText file browsed by headings (`doc`) or one of its sections —
+   both are still the text they stand for. A folder has nothing to show, and a
+   JSON container previews only once it is the open column. */
+const previewable = (n) => !!n && (!n.dir || !!n.doc || !!n.section);
+
 const previewNode = () => {
   const selected = selectedNode();
-  if (selected && !selected.dir) return selected;
+  if (previewable(selected)) return selected;
   const current = path[path.length - 1];
-  return current?.json && current.value !== undefined ? current : null;
+  return previewable(current) ||
+      (current?.json && current.value !== undefined)
+    ? current
+    : null;
 };
 
 const selectedNode = () => {
@@ -2361,6 +2371,11 @@ const previewTarget = () => finder.clientWidth / 3;
        record     parsed CSV, JSONL, or JSON table-row value
        jsonError  string; JSON parsing/loading error
        span       {blob, start, end}; byte span of an unread JSONL row
+       doc        boolean; a Markdown or reStructuredText file browsed by its
+                  headings — a column of sections that is still the file
+       lines      the doc's source lines, once read
+       section    {root, outline}; a heading inside a doc, root being the doc
+                  node and outline its {name, start, end, kids} line span
 
      ensureLoaded(node) → Promise   fills node.kids (idempotent, debounced)
      loadMeta(node)     → Promise   fills node.meta (or records {error}); may
@@ -2439,7 +2454,9 @@ function iconHTML(node) {
     const [glyph, color] = SETI.ext.json;
     return `<span class="ico seti" style="color:${color}">&#x${glyph};</span>`;
   }
-  if (node.dir) return `<span class="ico dir">${FOLDER_SVG}</span>`;
+  if (node.dir && !node.doc) {
+    return `<span class="ico dir">${FOLDER_SVG}</span>`;
+  }
   const e = SETI.name[lower] || SETI.ext[ext] || SUPP[ext] || SETI.default;
   const color = (root.dataset.theme === "light" && SETI.light[ext]) || e[1];
   return `<span class="ico seti" style="color:${color}">&#x${e[0]};</span>`;
@@ -3235,6 +3252,59 @@ function hlFences(host) {
   }
 }
 
+/* ═══ core/model/sort.js ═══ */
+const SORT_FIELD = { size: "size", mtime: "mod" };
+const NAME_COLLATOR = new Intl.Collator(undefined, { numeric: true });
+const byName = (a, b) => NAME_COLLATOR.compare(a.name, b.name);
+/* A Markdown or reStructuredText file browsed by headings (`doc`) opens as a
+   column but has a size and a time like any file, and sorts among them. */
+const isFolder = (k) => !!k.dir && !k.doc;
+
+/* The number to order on, or null for "this row has none". A file the port
+   could not open carries `meta.error`; a row inside a database carries
+   `meta.virtual` and no size at all. Both are honestly unknown. */
+const sortValue = (k, field) => {
+  const v = k.meta && !k.meta.error ? k.meta[field] : undefined;
+  return typeof v === "number" ? v : null;
+};
+
+/* Directories first, then the chosen key, then the name to break ties.
+   `kids` is already the filtered copy visibleKids made, so sorting it in place
+   never touches node.kids.
+
+   Directories are never ordered by size or time. Neither port can give a
+   directory either number: the File System Access API has no `getFile()` for a
+   directory handle, and the server build's listing sends metadata for files
+   only. A folder ordered by an invented 0 would sit at one end of every size
+   sort and mean nothing there, so folders keep the one order that is real for
+   them.
+
+   A file whose metadata could not be read sorts last, in name order, in *both*
+   directions. Sorting by size descending asks "what is biggest here"; a file
+   the app could not open is not the answer, and putting one at the top is how a
+   permission error gets read as a result. Last either way keeps the end the
+   user is looking at meaningful. The row is never dropped — an unreadable file
+   is still a file in that folder, and hiding the rows it failed to stat would
+   make the app lie about the directory. */
+function sortKids(kids) {
+  const { key, desc } = state.sort;
+  const dir = desc ? -1 : 1;
+  const field = SORT_FIELD[key];
+  return kids.sort((a, b) => {
+    const kind = +isFolder(b) - +isFolder(a);
+    if (kind) return kind;
+    if (field && !isFolder(a)) {
+      const av = sortValue(a, field), bv = sortValue(b, field);
+      if (av === null || bv === null) {
+        if (av !== bv) return av === null ? 1 : -1; /* unknown sinks */
+      } else if (av !== bv) {
+        return (av < bv ? -1 : 1) * dir;
+      }
+    }
+    return byName(a, b) * (field ? 1 : dir);
+  });
+}
+
 /* ═══ core/sort.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Sort order — name, size or modification time, ascending or descending.
@@ -3280,7 +3350,7 @@ const sortNeedsMeta = () => state.sort.key !== "name";
 function ensureMeta(node) {
   if (node.metaLoading) return node.metaLoading;
   const kids = node.kids;
-  const todo = kids.filter((k) => !k.dir && !k.meta);
+  const todo = kids.filter((k) => !isFolder(k) && !k.meta);
   /* Nothing to fetch: the listing carried it (the server build), or a preview
      already did. Settle it here, before columnFor runs, so a column with no
      sweep to run is built once in the right order rather than built and
@@ -3467,9 +3537,11 @@ const image = new RegExp(`^(?:${IMAGE_EXTENSIONS.join("|")})$`, "i");
 
 function classifyFile(
   name,
-  { dir = false, vpath = "", csv = false, jsonl = false } = {},
+  { dir = false, vpath = "", csv = false, jsonl = false, doc = false } = {},
 ) {
-  if (dir) return { kind: "folder", preview: "none", editable: false };
+  /* A Markdown or reStructuredText file browsed by headings (`doc`) opens as
+     a column but stays the file it is: previewed, edited and iconed as one. */
+  if (dir && !doc) return { kind: "folder", preview: "none", editable: false };
   if (vpath || csv || jsonl) {
     return { kind: "vfs", preview: "virtual", editable: false };
   }
@@ -3856,7 +3928,9 @@ function currentPath() {
 function locationState(viewMode, previousKey) {
   const key = path.map((p) => p.name).join("/");
   const node = previewNode();
-  const view = node && !node.dir
+  /* A file, a doc or a section has a representation to name; a JSON
+     container previewed as a folder keeps the bare URL it always had. */
+  const view = previewable(node)
     ? (viewMode === "highlight" ? "highlight" : "render")
     : undefined;
   return {
@@ -5323,7 +5397,7 @@ function pageSelection(visible, selected, direction, height) {
 function autoPreview(node) {
   const i = path.length - 1;
   if (path[i] !== node || sel[i] !== undefined) return;
-  const files = visibleKids(node).filter((k) => !k.dir);
+  const files = visibleKids(node).filter((k) => !k.dir || k.doc);
   const pick = files.find((k) => k.name === "README") ||
     files.find((k) => k.name.startsWith("README.")) ||
     files.find((k) => k.name === "index.html");
@@ -5435,8 +5509,11 @@ async function choose(
 
   const reading = node.kids === null ? FS.ensureLoaded(node) : null;
   if (reading) {
-    /* Highlight immediately, but avoid flashing a spinner for fast reads. */
-    render(keepScroll);
+    /* Highlight immediately, but avoid flashing a spinner for fast reads. A
+       Markdown or reStructuredText file read for its headings (`doc`) would
+       be previewed whole by that render and again by the next; it waits the
+       grace period instead. */
+    if (!node.doc) render(keepScroll);
     await Promise.race([
       reading,
       new Promise((r) => setTimeout(r, OPEN_GRACE)),
@@ -6398,6 +6475,330 @@ const withCsvPreview = (provider) => ({
   },
 });
 
+/* ═══ core/model/headings.js ═══ */
+/* Headings — the outline of a Markdown or reStructuredText file.
+
+   outline(text, kind) returns the sections as a tree of {name, level, start,
+   end, kids}. start and end are 0-based line indexes, end exclusive, of the
+   section's source: its heading, its body and its subsections. A section ends
+   where the next heading of its own level or a shallower one begins. Names are
+   unique among siblings, because a column, the selection and the URL all name
+   a row by it; a repeat gets " (2)", " (3)" and so on.
+
+   Markdown: ATX (`# Title`, optional closing hashes) and setext (a paragraph
+   underlined with `===` or `---`) headings, skipping fenced code and a leading
+   YAML front matter block. reStructuredText: a title underlined, or overlined
+   and underlined, with one repeated punctuation character; levels follow the
+   order in which the adornment styles first appear, as docutils assigns them.
+   Only the label is read from inline markup: code spans, emphasis and links
+   are reduced to their text. */
+
+const FENCE = /^ {0,3}(`{3,}|~{3,})/;
+const ATX = /^ {0,3}(#{1,6})(?:[ \t]+(.*?))?(?:[ \t]+#+)?[ \t]*$/;
+const SETEXT = /^ {0,3}(=+|-+)[ \t]*$/;
+const FRONT_MATTER = /^(?:---|\.\.\.)\s*$/;
+/* A line that cannot be a setext heading's paragraph: a block start, indented
+   code, a thematic break or an empty line. */
+const NOT_PARAGRAPH =
+  /^(?:\s*$|(?: {4}|\t)| {0,3}(?:>|[-*+][ \t]|\d{1,9}[.)][ \t]|([-*_])(?:[ \t]*\1){2,}[ \t]*$))/;
+const ADORNMENT = /^([!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~])\1*[ \t]*$/;
+const SHORT_UNDERLINE =
+  4; /* docutils: shorter than this and the title is text */
+
+const label = (raw) => {
+  const text = raw
+    .replace(/:[\w.+-]+:`([^`]*)`/g, "$1")
+    .replace(/`+([^`]*?)(?:\s*<[^>]*>)?`+_{0,2}/g, "$1")
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/!?\[([^\]]*)\]\[[^\]]*\]/g, "$1")
+    .replace(/<[^>]+>/g, "")
+    .replace(/(\*\*|__)(.+?)\1/g, "$2")
+    .replace(/(\*|_)(.+?)\1/g, "$2")
+    .replace(/\s*\{#[^}]*\}\s*$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return text || "Untitled";
+};
+
+const paragraph = (line) =>
+  !NOT_PARAGRAPH.test(line) && !ATX.test(line) &&
+  !FENCE.test(line) && !SETEXT.test(line);
+
+/* The line after a leading YAML front matter block, or 0. */
+function afterFrontMatter(lines) {
+  if (lines[0] === undefined || !/^---\s*$/.test(lines[0])) return 0;
+  const close = lines.findIndex((l, j) => j > 0 && FRONT_MATTER.test(l));
+  return close > 0 ? close + 1 : 0;
+}
+
+function markdownHeadings(lines) {
+  const found = [];
+  let fence = null;
+  for (let i = afterFrontMatter(lines); i < lines.length; i++) {
+    const line = lines[i];
+    if (fence) {
+      if (line.trim().startsWith(fence) && !line.trim().replace(/^[`~]+/, "")) {
+        fence = null;
+      }
+      continue;
+    }
+    const open = FENCE.exec(line);
+    if (open) {
+      fence = open[1];
+      continue;
+    }
+    const atx = ATX.exec(line);
+    if (atx) {
+      found.push({ name: label(atx[2] || ""), level: atx[1].length, start: i });
+      continue;
+    }
+    const under = i + 1 < lines.length && paragraph(line) &&
+      SETEXT.exec(lines[i + 1]);
+    if (under) {
+      let start = i;
+      while (start > 0 && paragraph(lines[start - 1])) start--;
+      found.push({
+        name: label(lines.slice(start, i + 1).join(" ")),
+        level: under[1][0] === "=" ? 1 : 2,
+        start,
+      });
+      i++;
+    }
+  }
+  return found;
+}
+
+function rstHeadings(lines) {
+  const found = [];
+  const styles = [];
+  const level = (style) => {
+    if (!styles.includes(style)) styles.push(style);
+    return styles.indexOf(style) + 1;
+  };
+  const blankBefore = (i) => i === 0 || !lines[i - 1].trim();
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (ADORNMENT.test(line)) {
+      const title = lines[i + 1], under = lines[i + 2];
+      if (
+        blankBefore(i) && title?.trim() && !ADORNMENT.test(title) &&
+        under !== undefined && ADORNMENT.test(under) && under[0] === line[0]
+      ) {
+        found.push({
+          name: label(title),
+          level: level(`over${line[0]}`),
+          start: i,
+        });
+        i += 2;
+      }
+      continue;
+    }
+    const under = lines[i + 1];
+    if (
+      !line.trim() || /^\s/.test(line) || under === undefined ||
+      !ADORNMENT.test(under) || !blankBefore(i)
+    ) continue;
+    const width = under.trimEnd().length;
+    if (width < line.trimEnd().length && width < SHORT_UNDERLINE) continue;
+    found.push({
+      name: label(line),
+      level: level(`under${under[0]}`),
+      start: i,
+    });
+    i++;
+  }
+  return found;
+}
+
+function unique(kids) {
+  const seen = new Set();
+  for (const kid of kids) {
+    let name = kid.name;
+    for (let n = 2; seen.has(name); n++) name = `${kid.name} (${n})`;
+    seen.add(name);
+    kid.name = name;
+    unique(kid.kids);
+  }
+  return kids;
+}
+
+function outline(text, kind) {
+  return build(String(text ?? "").split("\n"), kind);
+}
+
+/* The outline as a column browses it. A file that opens with its one title,
+   and nothing before it but blank lines or front matter, is named by that
+   title already: its subsections are the first column. A file with fewer than
+   two sections in all has no hierarchy to browse and returns []. */
+function sections(text, kind) {
+  const lines = String(text ?? "").split("\n");
+  let tree = build(lines, kind);
+  const first = kind === "rst" ? 0 : afterFrontMatter(lines);
+  const top = lines.findIndex((l, i) => i >= first && l.trim());
+  if (tree.length === 1 && tree[0].start === top) tree = tree[0].kids;
+  const count = (list) => list.reduce((n, s) => n + 1 + count(s.kids), 0);
+  return count(tree) < 2 ? [] : tree;
+}
+
+function build(lines, kind) {
+  const headings = kind === "rst"
+    ? rstHeadings(lines)
+    : markdownHeadings(lines);
+  const root = { level: 0, kids: [] };
+  const open = [root];
+  for (const h of headings) {
+    while (open.length > 1 && open.at(-1).level >= h.level) {
+      open.pop().end = h.start;
+    }
+    const node = { ...h, end: lines.length, kids: [] };
+    open.at(-1).kids.push(node);
+    open.push(node);
+  }
+  return unique(root.kids);
+}
+
+/* ═══ adapters/vfs-doc.js ═══ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Documents — Markdown and reStructuredText browsed by their headings.
+
+   The counterpart of adapters/vfs-json.js for prose: a `.md` or `.rst` file
+   opens as a column of its top-level sections, a section with subsections
+   opens as another column, and a section previews as its own slice of the
+   file, rendered the way the whole file would be. Both builds get it by
+   wrapping their FS and PREVIEW ports here — see adapters/app-fsa.js and
+   adapters/app-http.js — so core/ still sees nothing but nodes.
+
+   Unlike a JSON file, the document is still a file: selected in its folder it
+   previews whole, it can be edited and deleted, and its icon is its own
+   (`doc` on the node; see core/file-kind.js and core/ports.js). A file whose
+   only heading is its title has no hierarchy and stays a plain file, as does
+   one over TEXT_MAX; a lone title at the top names the file, so its
+   subsections are the first column. Those rules and the outline itself are
+   the model's, core/model/headings.js, tested without a browser; here they
+   are only turned into nodes.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const DOC_KINDS = new Set(["md", "markdown", "rst"]);
+const isDoc = (n) =>
+  !n.dir && !n.vpath && DOC_KINDS.has(classifyFile(n.name).preview);
+
+/* vpath is only a stable address for the shared router and server-shaped
+   nodes, as in vfs-json.js; the URL names a section by its heading text. */
+const sectionNode = (root, parent, section, i) => ({
+  name: section.name,
+  dir: section.kids.length > 0,
+  kids: section.kids.length ? null : undefined,
+  vpath: parent.vpath ? `${parent.vpath}/${i}` : String(i),
+  icon: "§",
+  section: { root, outline: section },
+  rel: root.rel,
+  ordered: true,
+  meta: { virtual: true },
+});
+
+const sectionKids = (node) =>
+  node.section.outline.kids.map((k, i) =>
+    sectionNode(node.section.root, node, k, i)
+  );
+
+const sectionText = (n) =>
+  n.section.root.lines.slice(n.section.outline.start, n.section.outline.end)
+    .join("\n");
+
+/* The doc is a directory to core; the port still reads it as the file it is. */
+const asFile = (node) => ({ ...node, dir: false });
+
+function loadDoc(fs, node) {
+  if (node.loading) return node.loading;
+  node.loading = (async () => {
+    try {
+      const blob = await fs.blob(asFile(node));
+      if (!blob || blob.size > TEXT_MAX) throw new Error("not browsable");
+      const text = await blob.text();
+      const found = sections(text, classifyFile(node.name).preview);
+      if (!found.length) throw new Error("nothing to browse");
+      node.lines = text.split("\n");
+      node.kids = found.map((s, i) => sectionNode(node, node, s, i));
+    } catch {
+      /* declined: the row is a plain file again, and nav.js / deeplink.js
+         notice `dir` turning false while they were reading */
+      node.dir = false;
+      node.kids = undefined;
+      node.lines = undefined;
+    }
+    node.loading = null;
+  })();
+  return node.loading;
+}
+
+const withDocuments = (fs) => ({
+  ...fs,
+  async ensureLoaded(node) {
+    if (node.section) {
+      if (node.kids === null) node.kids = sectionKids(node);
+      return;
+    }
+    if (node.doc) {
+      if (node.kids !== null) return;
+      return loadDoc(fs, node);
+    }
+    await fs.ensureLoaded(node);
+    for (const k of node.kids || []) {
+      if (isDoc(k)) {
+        /* ordered: sections keep the file's order under a name sort */
+        Object.assign(k, { dir: true, kids: null, doc: true, ordered: true });
+      }
+    }
+  },
+
+  async loadMeta(node) {
+    if (!node.doc) return fs.loadMeta(node);
+    const file = asFile(node);
+    await fs.loadMeta(file);
+    node.meta = file.meta;
+    node.file = file.file;
+  },
+
+  async blob(node) {
+    if (node.section) return new Blob([sectionText(node)]);
+    return fs.blob(node.doc ? asFile(node) : node);
+  },
+
+  ...(fs.write && {
+    /* The save goes to the file; the sections it was browsed by are stale
+       the moment it lands, so an open outline is rebuilt from the new text. */
+    async write(node, text) {
+      await fs.write(node, text);
+      if (node.doc && node.kids !== null) {
+        node.lines = text.split("\n");
+        node.kids = sections(text, classifyFile(node.name).preview)
+          .map((s, i) => sectionNode(node, node, s, i));
+      }
+    },
+  }),
+});
+
+const withDocumentPreview = (provider) => ({
+  revoke() {
+    provider.revoke?.();
+  },
+  render(n) {
+    if (!n.section) return provider.render(n);
+    /* A section renders as the file it is part of: same name, same kind, same
+       renderer; only the bytes — FS.blob above — are the section's slice. */
+    const root = n.section.root;
+    return provider.render({
+      ...n,
+      name: root.name,
+      rel: root.rel,
+      dir: false,
+      vpath: "",
+      icon: undefined,
+      fileKind: root.fileKind,
+    });
+  },
+});
+
 /* ═══ core/search.js ═══ */
 /* Server-only content search. The control stays hidden in local FSA mode. */
 
@@ -7232,7 +7633,10 @@ const PreviewRich = {
    row would. Only that directory is searched: walking the whole tree would mean
    reading every folder under the root to resolve one link. */
 function openWikilink(target) {
-  const col = path.length - 1;
+  /* The file itself may be the open column (a Markdown file browsed by its
+     headings, adapters/vfs-doc.js); the folder is the column holding it. */
+  let col = path.length - 1;
+  while (col > 0 && (path[col].doc || path[col].section)) col--;
   const kids = visibleKids(path[col]);
   const want = target.toLowerCase();
   const ri = kids.findIndex((k) => {
@@ -7403,56 +7807,6 @@ async function recallView(handle) {
   return null;
 }
 
-/* ═══ core/model/sort.js ═══ */
-const SORT_FIELD = { size: "size", mtime: "mod" };
-const NAME_COLLATOR = new Intl.Collator(undefined, { numeric: true });
-const byName = (a, b) => NAME_COLLATOR.compare(a.name, b.name);
-
-/* The number to order on, or null for "this row has none". A file the port
-   could not open carries `meta.error`; a row inside a database carries
-   `meta.virtual` and no size at all. Both are honestly unknown. */
-const sortValue = (k, field) => {
-  const v = k.meta && !k.meta.error ? k.meta[field] : undefined;
-  return typeof v === "number" ? v : null;
-};
-
-/* Directories first, then the chosen key, then the name to break ties.
-   `kids` is already the filtered copy visibleKids made, so sorting it in place
-   never touches node.kids.
-
-   Directories are never ordered by size or time. Neither port can give a
-   directory either number: the File System Access API has no `getFile()` for a
-   directory handle, and the server build's listing sends metadata for files
-   only. A folder ordered by an invented 0 would sit at one end of every size
-   sort and mean nothing there, so folders keep the one order that is real for
-   them.
-
-   A file whose metadata could not be read sorts last, in name order, in *both*
-   directions. Sorting by size descending asks "what is biggest here"; a file
-   the app could not open is not the answer, and putting one at the top is how a
-   permission error gets read as a result. Last either way keeps the end the
-   user is looking at meaningful. The row is never dropped — an unreadable file
-   is still a file in that folder, and hiding the rows it failed to stat would
-   make the app lie about the directory. */
-function sortKids(kids) {
-  const { key, desc } = state.sort;
-  const dir = desc ? -1 : 1;
-  const field = SORT_FIELD[key];
-  return kids.sort((a, b) => {
-    const kind = !!b.dir - !!a.dir;
-    if (kind) return kind;
-    if (field && !a.dir) {
-      const av = sortValue(a, field), bv = sortValue(b, field);
-      if (av === null || bv === null) {
-        if (av !== bv) return av === null ? 1 : -1; /* unknown sinks */
-      } else if (av !== bv) {
-        return (av < bv ? -1 : 1) * dir;
-      }
-    }
-    return byName(a, b) * (field ? 1 : dir);
-  });
-}
-
 /* ═══ adapters/app-fsa.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Static build — boot, folder picker, welcome screen.
@@ -7491,8 +7845,10 @@ addRenderers([...CORE_RENDERERS, ...RICH_RENDERERS]);
    rather than at the bottom of each adapter file means a page may load more
    than one of them — which the server build does — without import order
    silently deciding which wins. */
-useFilesystem(withCsv(withVirtual(FSA)));
-usePreview(withCsvPreview(withVirtualPreview(PreviewRich)));
+useFilesystem(withDocuments(withCsv(withVirtual(FSA))));
+usePreview(
+  withDocumentPreview(withCsvPreview(withVirtualPreview(PreviewRich))),
+);
 /* The router is already the one place that hears "the selection changed": core
    writes the location there and nowhere else. Wrapping write() here, rather
    than adding a hook to core, keeps remembering in the only file that knows
