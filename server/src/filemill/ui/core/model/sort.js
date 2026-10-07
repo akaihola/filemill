@@ -2,6 +2,9 @@ import { state } from "./state.js";
 const SORT_FIELD = { size: "size", mtime: "mod" };
 const NAME_COLLATOR = new Intl.Collator(undefined, { numeric: true });
 const byName = (a, b) => NAME_COLLATOR.compare(a.name, b.name);
+/* A Markdown or reStructuredText file browsed by headings (`doc`) opens as a
+   column but has a size and a time like any file, and sorts among them. */
+export const isFolder = (k) => !!k.dir && !k.doc;
 
 /* The number to order on, or null for "this row has none". A file the port
    could not open carries `meta.error`; a row inside a database carries
@@ -34,9 +37,9 @@ export function sortKids(kids) {
   const dir = desc ? -1 : 1;
   const field = SORT_FIELD[key];
   return kids.sort((a, b) => {
-    const kind = !!b.dir - !!a.dir;
+    const kind = +isFolder(b) - +isFolder(a);
     if (kind) return kind;
-    if (field && !a.dir) {
+    if (field && !isFolder(a)) {
       const av = sortValue(a, field), bv = sortValue(b, field);
       if (av === null || bv === null) {
         if (av !== bv) return av === null ? 1 : -1; /* unknown sinks */
