@@ -46,15 +46,17 @@ const paragraph = (line) =>
   !NOT_PARAGRAPH.test(line) && !ATX.test(line) &&
   !FENCE.test(line) && !SETEXT.test(line);
 
+/* The line after a leading YAML front matter block, or 0. */
+function afterFrontMatter(lines) {
+  if (lines[0] === undefined || !/^---\s*$/.test(lines[0])) return 0;
+  const close = lines.findIndex((l, j) => j > 0 && FRONT_MATTER.test(l));
+  return close > 0 ? close + 1 : 0;
+}
+
 function markdownHeadings(lines) {
   const found = [];
-  let i = 0;
-  if (lines[0] !== undefined && /^---\s*$/.test(lines[0])) {
-    const close = lines.findIndex((l, j) => j > 0 && FRONT_MATTER.test(l));
-    if (close > 0) i = close + 1;
-  }
   let fence = null;
-  for (; i < lines.length; i++) {
+  for (let i = afterFrontMatter(lines); i < lines.length; i++) {
     const line = lines[i];
     if (fence) {
       if (line.trim().startsWith(fence) && !line.trim().replace(/^[`~]+/, "")) {
@@ -143,7 +145,24 @@ function unique(kids) {
 }
 
 export function outline(text, kind) {
+  return build(String(text ?? "").split("\n"), kind);
+}
+
+/* The outline as a column browses it. A file that opens with its one title,
+   and nothing before it but blank lines or front matter, is named by that
+   title already: its subsections are the first column. A file with fewer than
+   two sections in all has no hierarchy to browse and returns []. */
+export function sections(text, kind) {
   const lines = String(text ?? "").split("\n");
+  let tree = build(lines, kind);
+  const first = kind === "rst" ? 0 : afterFrontMatter(lines);
+  const top = lines.findIndex((l, i) => i >= first && l.trim());
+  if (tree.length === 1 && tree[0].start === top) tree = tree[0].kids;
+  const count = (list) => list.reduce((n, s) => n + 1 + count(s.kids), 0);
+  return count(tree) < 2 ? [] : tree;
+}
+
+function build(lines, kind) {
   const headings = kind === "rst"
     ? rstHeadings(lines)
     : markdownHeadings(lines);

@@ -10,14 +10,16 @@
 
    Unlike a JSON file, the document is still a file: selected in its folder it
    previews whole, it can be edited and deleted, and its icon is its own
-   (`doc` on the node; see core/file-kind.js and core/ports.js). A file with no
-   heading, or one over TEXT_MAX, declines and stays a plain file. The outline
-   itself is the model's, core/model/headings.js, so it is tested without a
-   browser; here it is only turned into nodes.
+   (`doc` on the node; see core/file-kind.js and core/ports.js). A file whose
+   only heading is its title has no hierarchy and stays a plain file, as does
+   one over TEXT_MAX; a lone title at the top names the file, so its
+   subsections are the first column. Those rules and the outline itself are
+   the model's, core/model/headings.js, tested without a browser; here they
+   are only turned into nodes.
    ═══════════════════════════════════════════════════════════════════════════ */
 import { TEXT_MAX } from "../core/limits.js";
 import { classifyFile } from "../core/file-kind.js";
-import { outline } from "../core/model/headings.js";
+import { sections } from "../core/model/headings.js";
 
 const DOC_KINDS = new Set(["md", "markdown", "rst"]);
 const isDoc = (n) =>
@@ -56,10 +58,10 @@ function loadDoc(fs, node) {
       const blob = await fs.blob(asFile(node));
       if (!blob || blob.size > TEXT_MAX) throw new Error("not browsable");
       const text = await blob.text();
-      const sections = outline(text, classifyFile(node.name).preview);
-      if (!sections.length) throw new Error("no headings");
+      const found = sections(text, classifyFile(node.name).preview);
+      if (!found.length) throw new Error("nothing to browse");
       node.lines = text.split("\n");
-      node.kids = sections.map((s, i) => sectionNode(node, node, s, i));
+      node.kids = found.map((s, i) => sectionNode(node, node, s, i));
     } catch {
       /* declined: the row is a plain file again, and nav.js / deeplink.js
          notice `dir` turning false while they were reading */
@@ -112,7 +114,7 @@ export const withDocuments = (fs) => ({
       await fs.write(node, text);
       if (node.doc && node.kids !== null) {
         node.lines = text.split("\n");
-        node.kids = outline(text, classifyFile(node.name).preview)
+        node.kids = sections(text, classifyFile(node.name).preview)
           .map((s, i) => sectionNode(node, node, s, i));
       }
     },

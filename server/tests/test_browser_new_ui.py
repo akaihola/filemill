@@ -100,6 +100,12 @@ def ui_root(tmp_path: Path) -> Path:
     )
     noise.save(tmp_path / "photo.png")
     noise.save(tmp_path / "photo.jpg", quality=95)
+    (tmp_path / "guide.md").write_text(
+        "intro\n\n# Guide\n\ntext\n\n## Install\n\nsteps\n\n## Use\n\nrun\n"
+    )
+    (tmp_path / "code" / "manual.rst").write_text(
+        "Manual\n======\n\nPart A\n------\n\nSome *alpha* text.\n\nPart B\n------\n\nbeta\n"
+    )
     (tmp_path / "soft-breaks.md").write_text("one\ntwo\n\nthree  \nfour\n")
     (tmp_path / "bullets.md").write_text("para\n\n- one\n- two\n")
     (tmp_path / "wide.md").write_text(
@@ -2728,23 +2734,36 @@ def test_markdown_task_late_write_targets_its_own_file(page, ui_root):
 
 
 def test_markdown_headings_open_as_columns_in_the_server_build(page):
-    """A document's headings are columns, a section is a URL, and it reloads."""
-    page.open("README.md")
-    page.wait_for_selector('.col[data-i="1"] .row:has-text("Readme")', timeout=15000)
-    assert page.evaluate("sel") == ["README.md"]
-    assert page.url.endswith("/README.md?filemill=render")
+    """A document's headings are columns, a section is a URL, and it reloads;
+    a file whose only heading is its title stays a file."""
+    page.open("guide.md")
+    page.wait_for_selector('.col[data-i="1"] .row:has-text("Guide")', timeout=15000)
+    assert page.evaluate("sel") == ["guide.md"]
+    assert page.url.endswith("/guide.md?filemill=render")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
-    page.click('.col[data-i="1"] .row:has-text("Readme")')
-    page.wait_for_url("**/README.md/Readme?filemill=render")
-    assert "line one" in page.text_content("#preview .pv-rich")
-    page.open_resource("README.md/Readme?filemill=render")
-    page.wait_for_function('JSON.stringify(sel) === \'["README.md","Readme"]\'')
+    page.click('.col[data-i="1"] .row:has-text("Guide")')
+    page.wait_for_url("**/guide.md/Guide?filemill=render")
+    page.wait_for_selector('.col[data-i="2"] .row:has-text("Install")', timeout=15000)
+    page.click('.col[data-i="2"] .row:has-text("Install")')
+    page.wait_for_url("**/guide.md/Guide/Install?filemill=render")
+    page.wait_for_function(
+        "document.querySelector('#preview .pv-rich')?.textContent.includes('steps')"
+    )
+    assert "intro" not in page.text_content("#preview .pv-rich")
+    page.open_resource("guide.md/Guide/Install?filemill=render")
+    page.wait_for_function('JSON.stringify(sel) === \'["guide.md","Guide","Install"]\'')
+    page.open("README.md")
+    page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
+    assert page.evaluate("path.length") == 1
+    assert page.evaluate("sel") == ["README.md"]
 
 
 def test_rst_sections_render_through_the_server_in_the_server_build(page):
-    page.open("code/guide.rst")
-    page.wait_for_selector('.col[data-i="2"] .row:has-text("Guide")', timeout=15000)
-    page.click('.col[data-i="2"] .row:has-text("Guide")')
-    page.wait_for_url("**/code/guide.rst/Guide?filemill=render")
+    page.open("code/manual.rst")
+    page.wait_for_selector('.col[data-i="2"] .row:has-text("Part A")', timeout=15000)
+    page.click('.col[data-i="2"] .row:has-text("Part A")')
+    page.wait_for_url("**/code/manual.rst/Part%20A?filemill=render")
     page.wait_for_selector("#preview .preview-rst h1", timeout=15000)
-    assert "Some rst text." in page.text_content("#preview .preview-rst")
+    text = page.text_content("#preview .preview-rst")
+    assert "Some alpha text." in text and "beta" not in text
+    assert page.locator("#preview .preview-rst em").inner_text() == "alpha"

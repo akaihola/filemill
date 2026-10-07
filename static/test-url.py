@@ -174,6 +174,8 @@ async def main(bundle, fake_handle, opfs_root, playwright):
         await open_at(pg, base)
         await pg.click('.col[data-i="0"] .row:has-text("mixed")')
         await pg.click('.col[data-i="1"] .row:has-text("note.md")')
+        # note.md opens as a column of headings; its own push must land first
+        await pg.wait_for_timeout(250)
         before = await pg.evaluate("history.length")
         for key in ("ArrowDown", "ArrowUp", "ArrowDown"):
             await pg.keyboard.press(key)

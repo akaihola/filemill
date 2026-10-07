@@ -6524,15 +6524,17 @@ const paragraph = (line) =>
   !NOT_PARAGRAPH.test(line) && !ATX.test(line) &&
   !FENCE.test(line) && !SETEXT.test(line);
 
+/* The line after a leading YAML front matter block, or 0. */
+function afterFrontMatter(lines) {
+  if (lines[0] === undefined || !/^---\s*$/.test(lines[0])) return 0;
+  const close = lines.findIndex((l, j) => j > 0 && FRONT_MATTER.test(l));
+  return close > 0 ? close + 1 : 0;
+}
+
 function markdownHeadings(lines) {
   const found = [];
-  let i = 0;
-  if (lines[0] !== undefined && /^---\s*$/.test(lines[0])) {
-    const close = lines.findIndex((l, j) => j > 0 && FRONT_MATTER.test(l));
-    if (close > 0) i = close + 1;
-  }
   let fence = null;
-  for (; i < lines.length; i++) {
+  for (let i = afterFrontMatter(lines); i < lines.length; i++) {
     const line = lines[i];
     if (fence) {
       if (line.trim().startsWith(fence) && !line.trim().replace(/^[`~]+/, "")) {
@@ -6621,7 +6623,24 @@ function unique(kids) {
 }
 
 function outline(text, kind) {
+  return build(String(text ?? "").split("\n"), kind);
+}
+
+/* The outline as a column browses it. A file that opens with its one title,
+   and nothing before it but blank lines or front matter, is named by that
+   title already: its subsections are the first column. A file with fewer than
+   two sections in all has no hierarchy to browse and returns []. */
+function sections(text, kind) {
   const lines = String(text ?? "").split("\n");
+  let tree = build(lines, kind);
+  const first = kind === "rst" ? 0 : afterFrontMatter(lines);
+  const top = lines.findIndex((l, i) => i >= first && l.trim());
+  if (tree.length === 1 && tree[0].start === top) tree = tree[0].kids;
+  const count = (list) => list.reduce((n, s) => n + 1 + count(s.kids), 0);
+  return count(tree) < 2 ? [] : tree;
+}
+
+function build(lines, kind) {
   const headings = kind === "rst"
     ? rstHeadings(lines)
     : markdownHeadings(lines);
@@ -6651,10 +6670,12 @@ function outline(text, kind) {
 
    Unlike a JSON file, the document is still a file: selected in its folder it
    previews whole, it can be edited and deleted, and its icon is its own
-   (`doc` on the node; see core/file-kind.js and core/ports.js). A file with no
-   heading, or one over TEXT_MAX, declines and stays a plain file. The outline
-   itself is the model's, core/model/headings.js, so it is tested without a
-   browser; here it is only turned into nodes.
+   (`doc` on the node; see core/file-kind.js and core/ports.js). A file whose
+   only heading is its title has no hierarchy and stays a plain file, as does
+   one over TEXT_MAX; a lone title at the top names the file, so its
+   subsections are the first column. Those rules and the outline itself are
+   the model's, core/model/headings.js, tested without a browser; here they
+   are only turned into nodes.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const DOC_KINDS = new Set(["md", "markdown", "rst"]);
@@ -6694,10 +6715,10 @@ function loadDoc(fs, node) {
       const blob = await fs.blob(asFile(node));
       if (!blob || blob.size > TEXT_MAX) throw new Error("not browsable");
       const text = await blob.text();
-      const sections = outline(text, classifyFile(node.name).preview);
-      if (!sections.length) throw new Error("no headings");
+      const found = sections(text, classifyFile(node.name).preview);
+      if (!found.length) throw new Error("nothing to browse");
       node.lines = text.split("\n");
-      node.kids = sections.map((s, i) => sectionNode(node, node, s, i));
+      node.kids = found.map((s, i) => sectionNode(node, node, s, i));
     } catch {
       /* declined: the row is a plain file again, and nav.js / deeplink.js
          notice `dir` turning false while they were reading */
@@ -6750,7 +6771,7 @@ const withDocuments = (fs) => ({
       await fs.write(node, text);
       if (node.doc && node.kids !== null) {
         node.lines = text.split("\n");
-        node.kids = outline(text, classifyFile(node.name).preview)
+        node.kids = sections(text, classifyFile(node.name).preview)
           .map((s, i) => sectionNode(node, node, s, i));
       }
     },

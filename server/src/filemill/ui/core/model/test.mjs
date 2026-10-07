@@ -474,6 +474,36 @@ assert.deepEqual([rstSections[0].kids[1].start, rstSections[0].kids[1].end], [
   18,
 ]);
 assert.deepEqual(outline("plain\n\ntext\n", "rst"), []);
+/* As browsed: a lone top title names the file, its subsections are the
+   column; fewer than two sections in all is nothing to browse. */
+const { sections: browse } = await import("./headings.js");
+assert.deepEqual(browse(markdown, "md").map((s) => s.name), [
+  "Guide",
+  "Setext",
+]);
+assert.deepEqual(browse("# T\n\n## A\n\n## B\n", "md").map((s) => s.name), [
+  "A",
+  "B",
+]);
+assert.deepEqual(
+  browse("---\nx: 1\n---\n\n# T\n## A\ntext\n## B\n", "markdown").map((s) =>
+    s.name
+  ),
+  ["A", "B"],
+);
+assert.deepEqual(browse(rst, "rst").map((s) => s.name), [
+  "Part A",
+  "Part B",
+  "Part A (2)",
+]);
+assert.deepEqual(browse("# Leaf\n**bold** text\n", "md"), []);
+assert.deepEqual(browse("# T\n\n## Only\n", "md"), []);
+assert.deepEqual(browse("intro\n\n# Guide\n\ntext\n", "md"), []);
+assert.deepEqual(
+  browse("intro\n\n# Guide\n\n## Install\n", "md").map((s) => s.name),
+  ["Guide"],
+);
+assert.deepEqual(browse("Guide\n=====\n\ntext\n", "rst"), []);
 
 /* A document selected in its folder previews whole, like a file; an opened
    document or section previews when nothing inside it is selected. */
