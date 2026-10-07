@@ -25,13 +25,20 @@ import mimetypes
 import os
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import cast
 
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
-from filemill.preview import read_text, valid_text
-from filemill.vfs import REGISTRY, classify_path, entry_order_key
+from filemill.preview import read_text, render_preview, valid_text
+from filemill.vfs import (
+    REGISTRY,
+    VFSMember,
+    VFSMemberProvider,
+    classify_path,
+    entry_order_key,
+)
 
 # Largest body /api/save will write.
 RENDER_MAX = 8 * 1024 * 1024
@@ -279,6 +286,54 @@ def raw_response(target: Path) -> Response:
         media_type=media or "application/octet-stream",
         headers={"Cache-Control": "no-store"},
     )
+
+
+def member_of(target: Path, vpath: str) -> VFSMember | None:
+    """The file member *vpath* names inside *target*, when its provider has
+    bytes to give — an archive does, a database does not."""
+    provider = REGISTRY.get(target)
+    if not isinstance(provider, VFSMemberProvider):
+        return None
+    return provider.member(target, vpath)
+
+
+def member_raw_response(target: Path, vpath: str) -> Response:
+    """Serve a member's bytes with a media type guessed from its own name."""
+    member = member_of(target, vpath)
+    if member is None:
+        return HTMLResponse("Not found", status_code=404)
+    if member.data is None:
+        return HTMLResponse("Too large", status_code=413)
+    media, _ = mimetypes.guess_type(member.name)
+    return Response(
+        member.data,
+        media_type=media or "application/octet-stream",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+def member_preview_response(target: Path, vpath: str, preview_url: str) -> Response:
+    """Render a member the way the same file would render on disk.
+
+    The renderers read paths, so the bytes go to a temporary file under the
+    member's own name — the suffix is what picks the renderer — and are gone
+    before the response leaves. *preview_url* is where an image or PDF member
+    fetches itself from: the raw route with the same vpath.
+    """
+    member = member_of(target, vpath)
+    if member is None:
+        return HTMLResponse("Not found", status_code=404)
+    if member.data is None:
+        html = (
+            '<div class="preview-unsupported"><em>Too large to preview '
+            f"({member.size:,} bytes inside the archive).</em></div>"
+        )
+    else:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / member.name
+            path.write_bytes(member.data)
+            html = render_preview(path, preview_url=preview_url)
+    return HTMLResponse(html, headers={"Cache-Control": "no-store"})
 
 
 def save_file(target: Path, data: bytes) -> Response:

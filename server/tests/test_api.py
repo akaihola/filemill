@@ -490,6 +490,91 @@ def test_a_url_into_a_non_virtual_file_is_404(client, tmp_root: Path):
     assert client.get("/n/image.png/nope").status_code == 404
 
 
+# ── archives through the new API ─────────────────────────────────────────────
+
+
+def test_an_archive_lists_as_a_folder_and_an_empty_one_as_a_file(
+    archive_client, archive_root: Path
+):
+    by_name = {
+        e["name"]: e for e in archive_client.get("/api/dir?p=").json()["entries"]
+    }
+    assert by_name["demo.tar.zst"]["dir"] is True
+    assert by_name["demo.zip"]["dir"] is True
+    assert by_name["empty.tar"]["dir"] is False
+
+
+def test_dir_inside_an_archive_lists_one_level(archive_client, archive_root: Path):
+    for name in ("demo.tar.zst", "demo.zip"):
+        j = archive_client.get(f"/api/dir?p={name}").json()
+        assert [(e["name"], e["dir"], e["vpath"]) for e in j["entries"]] == [
+            ("docs", True, "docs"),
+            ("src", True, "src"),
+            ("top.txt", False, "top.txt"),
+        ]
+        j = archive_client.get(f"/api/dir?p={name}&v=docs").json()
+        assert [e["vpath"] for e in j["entries"]] == ["docs/pic.png", "docs/readme.md"]
+
+
+def test_a_member_previews_as_the_file_it_is(archive_client, archive_root: Path):
+    r = archive_client.get("/api/preview?p=demo.tar.zst&v=docs/readme.md")
+    assert r.status_code == 200
+    assert r.headers["cache-control"] == "no-store"
+    assert "Hello from the archive" in r.text
+    assert (
+        'class="highlight"'
+        in archive_client.get("/api/preview?p=demo.zip&v=src/app.py").text
+    )
+
+
+def test_an_image_member_is_served_through_raw_with_its_vpath(
+    archive_client, archive_root: Path
+):
+    html = archive_client.get("/api/preview?p=demo.tar.zst&v=docs/pic.png").text
+    assert '<img src="/api/raw?p=demo.tar.zst&amp;v=docs%2Fpic.png"' in html
+    r = archive_client.get("/api/raw?p=demo.tar.zst&v=docs/pic.png")
+    assert r.status_code == 200
+    assert r.content == b"\x89PNG\r\n"
+    assert r.headers["content-type"].startswith("image/png")
+    assert r.headers["cache-control"] == "no-store"
+
+
+def test_raw_without_a_vpath_still_serves_the_archive_itself(
+    archive_client, archive_root: Path
+):
+    r = archive_client.get("/api/raw?p=demo.zip")
+    assert r.status_code == 200
+    assert r.content == (archive_root / "demo.zip").read_bytes()
+
+
+def test_a_folder_or_missing_member_is_404(archive_client, archive_root: Path):
+    for v in ("docs", "nope.txt", "../top.txt"):
+        assert (
+            archive_client.get(f"/api/preview?p=demo.tar.zst&v={v}").status_code == 404
+        )
+        assert archive_client.get(f"/api/raw?p=demo.tar.zst&v={v}").status_code == 404
+    assert archive_client.get("/api/preview?p=top.txt&v=x").status_code == 404
+
+
+def test_an_oversized_member_says_so_instead_of_rendering(
+    archive_client, archive_root: Path, monkeypatch
+):
+    monkeypatch.setattr("filemill.providers.archive.MEMBER_MAX", 4)
+    r = archive_client.get("/api/preview?p=demo.tar.zst&v=docs/readme.md")
+    assert r.status_code == 200
+    assert "Too large to preview" in r.text
+    assert (
+        archive_client.get("/api/raw?p=demo.tar.zst&v=docs/readme.md").status_code
+        == 413
+    )
+
+
+def test_a_url_can_name_a_member_inside_an_archive(archive_client, archive_root: Path):
+    assert archive_client.get("/n/demo.tar.zst/docs/readme.md").status_code == 200
+    assert archive_client.get("/n/demo.tar.zst").status_code == 200
+    assert archive_client.get("/demo.tar.zst/docs/readme.md?f").status_code == 200
+
+
 # ── /api/save ────────────────────────────────────────────────────────────────
 
 

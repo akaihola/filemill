@@ -75,8 +75,9 @@ def tmp_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 @pytest.fixture()
 def client(tmp_root: Path):
-    from filemill.app import app
     from starlette.testclient import TestClient
+
+    from filemill.app import app
 
     return TestClient(app, raise_server_exceptions=False)
 
@@ -99,8 +100,49 @@ def db_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 @pytest.fixture()
 def db_client(db_root: Path):
-    from filemill.app import app
     from starlette.testclient import TestClient
+
+    from filemill.app import app
+
+    return TestClient(app, raise_server_exceptions=False)
+
+
+@pytest.fixture()
+def archive_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """A root with a .tar.zst and a .zip, the same members in each."""
+    import io
+    import tarfile
+    import zipfile
+
+    from filemill import app as app_module
+    from filemill.providers.archive import zstd_compress
+
+    members = {
+        "top.txt": b"top level\n",
+        "docs/readme.md": b"# Hello from the archive\n",
+        "docs/pic.png": b"\x89PNG\r\n",
+        "src/app.py": b"print('hi')\n",
+    }
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w") as tf:
+        for name, data in members.items():
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            tf.addfile(info, io.BytesIO(data))
+    (tmp_path / "demo.tar.zst").write_bytes(zstd_compress(buf.getvalue()))
+    with zipfile.ZipFile(tmp_path / "demo.zip", "w") as zf:
+        for name, data in members.items():
+            zf.writestr(name, data)
+    (tmp_path / "empty.tar").write_bytes(b"\0" * 1024)
+    monkeypatch.setattr(app_module.app.state, "root", tmp_path)
+    yield tmp_path
+
+
+@pytest.fixture()
+def archive_client(archive_root: Path):
+    from starlette.testclient import TestClient
+
+    from filemill.app import app
 
     return TestClient(app, raise_server_exceptions=False)
 

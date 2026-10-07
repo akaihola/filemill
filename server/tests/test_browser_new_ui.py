@@ -17,6 +17,7 @@ CONTRIBUTING.md, "Do Not Pass `--with playwright==…`".
 
 from __future__ import annotations
 
+import io
 import json
 import random
 import shutil
@@ -24,10 +25,13 @@ import socket
 import sqlite3
 import subprocess
 import sys
+import tarfile
 import time
 from pathlib import Path
 
 import pytest
+
+from filemill.providers.archive import zstd_compress
 
 pytest.importorskip("playwright")
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
@@ -149,6 +153,12 @@ def ui_root(tmp_path: Path) -> Path:
         con.execute("INSERT INTO users VALUES (?, ?)", (i, f"User{i}"))
     con.commit()
     con.close()
+    archive_buf = io.BytesIO()
+    with tarfile.open(fileobj=archive_buf, mode="w") as tf:
+        info = tarfile.TarInfo("inside/hello.txt")
+        info.size = len(b"hello from the archive\n")
+        tf.addfile(info, io.BytesIO(b"hello from the archive\n"))
+    (tmp_path / "bundle.tar.zst").write_bytes(zstd_compress(archive_buf.getvalue()))
     return tmp_path
 
 
@@ -1426,6 +1436,31 @@ def test_the_url_names_a_row_inside_a_database(page):
     page.click('.col[data-i="1"] .row:has-text("users")')
     page.wait_for_timeout(400)
     assert page.url.endswith("/n/sample.db/users")
+
+
+def test_an_archive_opens_as_columns_and_a_member_previews(page):
+    """A .tar.zst is a folder of its members; a text member previews through
+    the server, which is the only side that can read inside the archive."""
+    page.open()
+    page.click('.col[data-i="0"] .row:has-text("bundle.tar.zst")')
+    page.wait_for_selector('.col[data-i="1"] .row', timeout=15000)
+    page.click('.col[data-i="1"] .row:has-text("inside")')
+    page.wait_for_selector('.col[data-i="2"] .row', timeout=15000)
+    page.click('.col[data-i="2"] .row:has-text("hello.txt")')
+    page.wait_for_function(
+        "document.querySelector('#preview').innerText.includes('hello from the archive')",
+        timeout=15000,
+    )
+    assert "/n/bundle.tar.zst/inside/hello.txt" in page.url
+
+
+def test_a_deep_link_into_an_archive_previews_the_member(page):
+    page.open("bundle.tar.zst/inside/hello.txt")
+    page.wait_for_function(
+        "document.querySelector('#preview').innerText.includes('hello from the archive')",
+        timeout=15000,
+    )
+    assert page.evaluate("path.map(p => p.vpath)")[-1] == "inside"
 
 
 def test_a_row_shows_no_invented_size_or_date(page):

@@ -1,0 +1,50 @@
+# ADR 0072: Archives browse by their members
+
+Date: 2026-10-07.
+
+## Context
+
+A `.tar.zst` backup holds files the user wants to look at: a manifest, a
+configuration, a log. Opening it meant extracting it somewhere first. A SQLite
+database already opens as a column of tables ([ADR 0070] lists the other file
+kinds that open as columns), through a provider registered in `vfs.py`.
+
+Only the server can read inside a compressed archive: the browser has no zstd
+decoder, and a tar stream must be decompressed to list it at all.
+
+## Decision
+
+A tar archive — plain, gzip, bzip2, xz or zstd — and a zip open as a column of
+their members in the server edition. The provider is
+`providers/archive.py`. A member path `docs/readme.md` is the row `readme.md`
+in the column `docs`; directories a tar never recorded are implied by the
+members below them. Members whose names escape (`..`) are dropped from the
+listing; nothing is ever extracted to disk.
+
+A file member previews as the file it is. The client sends the member's
+virtual path with the preview request (`/api/preview?p=…&v=…`); the server
+reads the member's bytes, writes them to a temporary file under the member's
+own name so that the suffix picks the renderer, and renders it through the same
+`render_preview` as a file on disk. An image or a PDF member fetches itself
+from `/api/raw?p=…&v=…`, which serves the member's bytes with a media type
+guessed from its name.
+
+The work is bounded. The member index stops at `MAX_MEMBERS` entries and is
+cached per path, size and mtime, so one directory listing that asks "is this
+archive non-empty?" costs one walk, not one per request. A member over
+`MEMBER_MAX` is listed and named but not read; its preview says so and the raw
+route answers 413.
+
+Zstandard comes from the standard library on Python 3.14 and from the
+`zstandard` package before that; `pyproject.toml` pins the package for older
+interpreters only. The static edition does not open archives.
+
+## Consequences
+
+`vfs.py` gains a second protocol, `VFSMemberProvider`, for providers whose
+leaves have bytes: archives have them, database rows do not. The server
+edition's preview chain gains one wrapper that sends a server-listed virtual
+leaf to the server instead of to the local renderer, which would have fetched
+the whole archive. A zip is listed from its central directory; a tar is walked
+once per listing and once more per member read, so a large compressed tar is
+slow to open and slow to preview from, in proportion to its size.

@@ -5,6 +5,7 @@ import re
 import subprocess
 from html import escape
 from pathlib import Path
+from urllib.parse import urlencode
 
 from starlette.applications import Starlette
 from starlette.concurrency import run_in_threadpool
@@ -283,25 +284,35 @@ def api_search(request, q: str = "", p: str = ""):
 
 
 @rt("/api/raw")
-def api_raw(request, p: str = ""):
-    """Serve a file's bytes."""
+def api_raw(request, p: str = "", v: str = ""):
+    """Serve a file's bytes — or, with ``v``, one member's bytes from inside it."""
     target = _api_target(p, _zones(request))
     if target is None:
         return HTMLResponse("Not found", status_code=404)
+    if v:
+        if not target.is_file():
+            return HTMLResponse("Not found", status_code=404)
+        return api.member_raw_response(target, v)
     return api.raw_response(target)
 
 
 @rt("/api/preview")
-def api_preview(request, p: str = "", lines: str = ""):
+def api_preview(request, p: str = "", lines: str = "", v: str = ""):
     """Render a file — or, with ``lines=START-END``, one slice of its lines.
 
     The slice is 0-based and end-exclusive, the way the browser's heading
     outline (``ui/core/model/headings.js``) spans a section. Only the
     reStructuredText renderer reads it; every other kind renders whole.
+
+    With ``v``, the file is an archive and the member at that virtual path is
+    what renders, as the file it is.
     """
     target = _api_target(p, _zones(request))
     if target is None or not target.is_file():
         return HTMLResponse("Not found", status_code=404)
+    if v:
+        raw = "/api/raw?" + urlencode({"p": p, "v": v})
+        return api.member_preview_response(target, v, escape(raw, quote=True))
     span = None
     if lines:
         match = re.fullmatch(r"(\d+)-(\d+)", lines)

@@ -43,8 +43,11 @@ status.
 - **Virtual filesystems.** JSON, JSONL and CSV are browser adapters
   (`ui/adapters/vfs-json.js`, `vfs-csv.js`). Markdown and reStructuredText
   browse by their headings the same way (`vfs-doc.js`, outline in
-  `ui/core/model/headings.js`, [ADR 0070]). SQLite and WebVTT are server
-  providers registered in `vfs.py`.
+  `ui/core/model/headings.js`, [ADR 0070]). SQLite, WebVTT and archives
+  (tar, compressed tar and zip, [ADR 0072]) are server providers registered in
+  `vfs.py`. An archive member has bytes of its own, so `vfs.py` has a second
+  protocol, `VFSMemberProvider`, and `/api/preview` and `/api/raw` take the
+  member's virtual path as `v`.
 - **Persistence.** Files are the only durable data. The browser keeps recent
   folder handles in IndexedDB, settings in localStorage, navigation in history
   and application assets in Cache Storage.
@@ -229,6 +232,8 @@ replace the current selection. Related: [39], [40], [64].
   after the process ends. The client abort does not stop the subprocess.
 - `preview.py:read_text` and the RST path read whole files. PPTX and DOCX have
   no archive expansion limit. FSA metadata sweeps use unbounded `Promise.all`.
+  Tar and zip browsing ([ADR 0072]) is bounded: `MAX_MEMBERS` on the index and
+  `MEMBER_MAX` on a member read.
 
 No load benchmark exists; measure before adding pools or caches.
 
@@ -353,4 +358,5 @@ A12 items can land at any time, each with a focused test.
 [ADR 0068]: adr/0068-scroll-whole-directory-listings.md
 [ADR 0070]: adr/0070-documents-browse-by-headings.md
 [ADR 0071]: adr/0071-bounded-json-documents.md
+[ADR 0072]: adr/0072-archives-browse-by-their-members.md
 [remaining red tests]: testing/remaining-red-tests.md
