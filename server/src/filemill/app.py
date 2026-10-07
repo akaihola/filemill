@@ -1,6 +1,7 @@
 import hashlib
 import inspect
 import json
+import re
 import subprocess
 from html import escape
 from pathlib import Path
@@ -291,12 +292,26 @@ def api_raw(request, p: str = ""):
 
 
 @rt("/api/preview")
-def api_preview(request, p: str = ""):
+def api_preview(request, p: str = "", lines: str = ""):
+    """Render a file — or, with ``lines=START-END``, one slice of its lines.
+
+    The slice is 0-based and end-exclusive, the way the browser's heading
+    outline (``ui/core/model/headings.js``) spans a section. Only the
+    reStructuredText renderer reads it; every other kind renders whole.
+    """
     target = _api_target(p, _zones(request))
     if target is None or not target.is_file():
         return HTMLResponse("Not found", status_code=404)
+    span = None
+    if lines:
+        match = re.fullmatch(r"(\d+)-(\d+)", lines)
+        if match is None:
+            return HTMLResponse("Bad lines", status_code=400)
+        span = (int(match[1]), int(match[2]))
     return HTMLResponse(
-        render_preview(target, preview_url=escape(urls.build_url(p), quote=True)),
+        render_preview(
+            target, preview_url=escape(urls.build_url(p), quote=True), lines=span
+        ),
         headers={"Cache-Control": "no-store"},
     )
 

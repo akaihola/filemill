@@ -2725,3 +2725,26 @@ def test_markdown_task_late_write_targets_its_own_file(page, ui_root):
     assert tasks.read_text() == TASKS_MD.replace("- [ ] one", "- [x] one")
     assert (ui_root / "short.txt").read_text() == "short"
     assert not page.errors
+
+
+def test_markdown_headings_open_as_columns_in_the_server_build(page):
+    """A document's headings are columns, a section is a URL, and it reloads."""
+    page.open("README.md")
+    page.wait_for_selector('.col[data-i="1"] .row:has-text("Readme")', timeout=15000)
+    assert page.evaluate("sel") == ["README.md"]
+    assert page.url.endswith("/README.md?filemill=render")
+    page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
+    page.click('.col[data-i="1"] .row:has-text("Readme")')
+    page.wait_for_url("**/README.md/Readme?filemill=render")
+    assert "line one" in page.text_content("#preview .pv-rich")
+    page.open_resource("README.md/Readme?filemill=render")
+    page.wait_for_function('JSON.stringify(sel) === \'["README.md","Readme"]\'')
+
+
+def test_rst_sections_render_through_the_server_in_the_server_build(page):
+    page.open("code/guide.rst")
+    page.wait_for_selector('.col[data-i="2"] .row:has-text("Guide")', timeout=15000)
+    page.click('.col[data-i="2"] .row:has-text("Guide")')
+    page.wait_for_url("**/code/guide.rst/Guide?filemill=render")
+    page.wait_for_selector("#preview .preview-rst h1", timeout=15000)
+    assert "Some rst text." in page.text_content("#preview .preview-rst")

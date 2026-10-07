@@ -14,6 +14,7 @@ import "./core/deeplink.js";
 import "./core/settings.js";
 import "./adapters/vfs-json.js";
 import "./adapters/vfs-csv.js";
+import "./adapters/vfs-doc.js";
 import "./core/search.js";
 import "./core/mount.js";
 
