@@ -2,6 +2,9 @@
 
 Date: 2026-08-16
 
+Update, 2026-10-07: JSON documents use a separate bounded size limit. See
+[ADR 0071](0071-bounded-json-documents.md). Ordinary text keeps this decision.
+
 ## Context
 
 The static edition needs a documented decision for this design choice.

@@ -106,6 +106,8 @@ See [`server/CONTRIBUTING.md`](server/CONTRIBUTING.md).
 
 In JSON, JSONL, and SQLite hierarchies, select a scalar key to preview its value.
 String values preserve line breaks. Objects and arrays keep their foldable previews.
+JSON documents up to 8 MiB support previews and nested navigation in both editions.
+Larger JSON documents show the size limit. Ordinary text previews keep the 512 KiB limit.
 
 Markdown and reStructuredText files open as columns of their headings. Select the
 file to preview it whole, or a section to preview and link to that section alone.

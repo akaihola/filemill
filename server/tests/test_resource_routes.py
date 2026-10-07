@@ -50,6 +50,21 @@ def client(site):
 # ── The bare path serves the file ────────────────────────────────────────────
 
 
+@pytest.mark.parametrize("extension", ["json", "jsonc"])
+def test_json_nested_resource_serves_shell(client, site, extension):
+    name = f"backup-manifest.{extension}"
+    (site / name).write_text('{"nested":{"leaf":"manifest leaf"}}')
+    response = client.get(f"/{name}/nested/leaf")
+    assert response.status_code == 200
+    assert 'data-filemill="render"' in response.text
+    assert client.get(f"/{name}").json() == {"nested": {"leaf": "manifest leaf"}}
+
+
+def test_json_named_directory_does_not_create_virtual_paths(client, site):
+    (site / "folder.json").mkdir()
+    assert client.get("/folder.json/missing").status_code == 404
+
+
 def test_bare_path_serves_the_file_bytes(client):
     """/docs/readme.md is the file, not a page about the file."""
     resp = client.get("/docs/readme.md")

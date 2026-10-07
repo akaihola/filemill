@@ -732,6 +732,34 @@ def test_json_opens_as_a_hierarchical_view(page):
     assert page.inner_text("#pv-content").strip() == "a"
 
 
+@pytest.mark.parametrize("mode", ["render", "highlight"])
+def test_large_json_previews_and_nested_links_reload(page, ui_root, mode):
+    value = {"padding": "x" * (528 * 1024), "nested": {"leaf": "manifest leaf"}}
+    (ui_root / "backup-manifest.json").write_text(json.dumps(value))
+    page.open_resource(f"backup-manifest.json?filemill={mode}")
+    page.wait_for_selector("#preview .pv-json", timeout=15000)
+    assert value["padding"] in page.text_content("#preview .pv-json")
+    page.click('.col[data-i="1"] .row:has-text("nested")')
+    page.click('.col[data-i="2"] .row:has-text("leaf")')
+    page.wait_for_function(
+        "document.querySelector('#preview .pv-json-value')?.textContent === 'manifest leaf'"
+    )
+    page.reload()
+    page.wait_for_function(
+        "document.querySelector('#preview .pv-json-value')?.textContent === 'manifest leaf'"
+    )
+
+
+def test_json_over_size_limit_is_declined_without_fetching(page, ui_root):
+    (ui_root / "huge.json").write_text(" " * (8 * 1024 * 1024 + 1))
+    seen = []
+    page.on("request", lambda request: seen.append(request.url))
+    page.open("huge.json")
+    page.wait_for_selector("#preview .pv-err", timeout=15000)
+    assert "Too large to browse (over 8 MiB)" in page.inner_text("#preview .pv-err")
+    assert not [url for url in seen if "/api/raw" in url]
+
+
 def test_json_hierarchy_icons(page):
     page.open("code/nested.json")
     page.wait_for_selector('.col[data-i="2"] .row:has-text("tags")', timeout=15000)

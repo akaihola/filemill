@@ -63,6 +63,8 @@ Keep these.
 - Real filesystem tests without a picker: `static/test-url.py` drives the real
   FSA adapter against the origin private file system.
 - Size limits and the image extension list have one home, `ui/core/limits.js`.
+  JSON documents use a separate 8 MiB limit, with a metadata check before
+  fetching and a blob check before parsing ([ADR 0071], 2026-10-07).
 - The server binds to `127.0.0.1` by default (`cli.py:21`).
 
 ### Rules for changes
@@ -266,8 +268,8 @@ advertised command in a clean environment and dates superseded ADRs.
   updates can be lost.
 - `vfs.is_vfs_file` (`vfs.py:105`) has no caller in `server/src`. Providers
   register as an import side effect (`vfs.py:111-116`), and the order matters.
-  browser-owned JSON paths need server deep-link validation through the browser
-  virtual filesystem contract.
+  Resolved, 2026-10-07: browser-owned JSON paths use the same safe real-file
+  resolution and client validation as JSONL paths ([ADR 0071]).
 - `<div class="preview-error">` is built by hand in seven places across the
   server.
 - Core knows the server: `ui/core/search.js:35` builds `/api/search` URLs. VTT
@@ -350,4 +352,5 @@ A12 items can land at any time, each with a focused test.
 [ADR 0067]: adr/0067-drop-no-columns-layout.md
 [ADR 0068]: adr/0068-scroll-whole-directory-listings.md
 [ADR 0070]: adr/0070-documents-browse-by-headings.md
+[ADR 0071]: adr/0071-bounded-json-documents.md
 [remaining red tests]: testing/remaining-red-tests.md
