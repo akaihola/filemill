@@ -25,7 +25,9 @@ export function iconHTML(node) {
     const [glyph, color] = SETI.ext.json;
     return `<span class="ico seti" style="color:${color}">&#x${glyph};</span>`;
   }
-  if (node.dir) return `<span class="ico dir">${FOLDER_SVG}</span>`;
+  if (node.dir && !node.doc) {
+    return `<span class="ico dir">${FOLDER_SVG}</span>`;
+  }
   const e = SETI.name[lower] || SETI.ext[ext] || SUPP[ext] || SETI.default;
   const color = (root.dataset.theme === "light" && SETI.light[ext]) || e[1];
   return `<span class="ico seti" style="color:${color}">&#x${e[0]};</span>`;

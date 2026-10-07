@@ -107,6 +107,9 @@ See [`server/CONTRIBUTING.md`](server/CONTRIBUTING.md).
 In JSON, JSONL, and SQLite hierarchies, select a scalar key to preview its value.
 String values preserve line breaks. Objects and arrays keep their foldable previews.
 
+Markdown and reStructuredText files open as columns of their headings. Select the
+file to preview it whole, or a section to preview and link to that section alone.
+
 ## Working on the shared UI
 
 Edit `ui/`. It is a symlink to `server/src/filemill/ui/`. A wheel cannot reach

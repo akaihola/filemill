@@ -389,3 +389,138 @@ assert.equal(toggleTask("- [ ] zero\n- [ ] one", 0, true, "- [ ] one"), null);
 assert.equal(toggleTask("- [ ] one", 0, true, undefined), null);
 
 console.log("Model checks passed");
+
+/* Documents browse by headings: the outline is the model's, DOM-free. */
+const { outline } = await import("./headings.js");
+const markdown = [
+  "---",
+  "title: front matter",
+  "---",
+  "intro",
+  "# Guide",
+  "text",
+  "## Install",
+  "```",
+  "# not a heading",
+  "```",
+  "### Linux",
+  "## Use ##",
+  "## Install",
+  "Setext",
+  "======",
+  "## *Tail* [link](x) `code`",
+  "",
+].join("\n");
+const sections = outline(markdown, "md");
+assert.deepEqual(sections.map((s) => s.name), ["Guide", "Setext"]);
+const [guide, setext] = sections;
+assert.deepEqual(guide.kids.map((s) => s.name), [
+  "Install",
+  "Use",
+  "Install (2)",
+]);
+assert.deepEqual(guide.kids[0].kids.map((s) => s.name), ["Linux"]);
+assert.deepEqual([guide.start, guide.end], [4, 13]);
+assert.deepEqual([guide.kids[0].start, guide.kids[0].end], [6, 11]);
+assert.deepEqual([guide.kids[0].kids[0].start, guide.kids[0].kids[0].end], [
+  10,
+  11,
+]);
+assert.deepEqual([guide.kids[2].start, guide.kids[2].end], [12, 13]);
+assert.deepEqual([setext.start, setext.end], [13, 17]);
+assert.deepEqual(setext.kids.map((s) => s.name), ["Tail link code"]);
+assert.deepEqual(outline("no headings\n\n    # indented code\n", "md"), []);
+assert.deepEqual(outline("", "markdown"), []);
+const rst = [
+  "=====",
+  "Title",
+  "=====",
+  "",
+  "Part A",
+  "------",
+  "text",
+  "",
+  "Sub",
+  "~~~",
+  "",
+  "Part B",
+  "------",
+  "::",
+  "",
+  "    code",
+  "    ====",
+  "",
+  "Part A",
+  "------",
+  "short",
+  "--",
+  "",
+].join("\n");
+const rstSections = outline(rst, "rst");
+assert.deepEqual(rstSections.map((s) => s.name), ["Title"]);
+assert.deepEqual(rstSections[0].kids.map((s) => s.name), [
+  "Part A",
+  "Part B",
+  "Part A (2)",
+]);
+assert.deepEqual(rstSections[0].kids[0].kids.map((s) => s.name), ["Sub"]);
+assert.deepEqual([rstSections[0].start, rstSections[0].end], [0, 23]);
+assert.deepEqual([rstSections[0].kids[0].start, rstSections[0].kids[0].end], [
+  4,
+  11,
+]);
+assert.deepEqual([rstSections[0].kids[1].start, rstSections[0].kids[1].end], [
+  11,
+  18,
+]);
+assert.deepEqual(outline("plain\n\ntext\n", "rst"), []);
+/* As browsed: a lone top title names the file, its subsections are the
+   column; fewer than two sections in all is nothing to browse. */
+const { sections: browse } = await import("./headings.js");
+assert.deepEqual(browse(markdown, "md").map((s) => s.name), [
+  "Guide",
+  "Setext",
+]);
+assert.deepEqual(browse("# T\n\n## A\n\n## B\n", "md").map((s) => s.name), [
+  "A",
+  "B",
+]);
+assert.deepEqual(
+  browse("---\nx: 1\n---\n\n# T\n## A\ntext\n## B\n", "markdown").map((s) =>
+    s.name
+  ),
+  ["A", "B"],
+);
+assert.deepEqual(browse(rst, "rst").map((s) => s.name), [
+  "Part A",
+  "Part B",
+  "Part A (2)",
+]);
+assert.deepEqual(browse("# Leaf\n**bold** text\n", "md"), []);
+assert.deepEqual(browse("# T\n\n## Only\n", "md"), []);
+assert.deepEqual(browse("intro\n\n# Guide\n\ntext\n", "md"), []);
+assert.deepEqual(
+  browse("intro\n\n# Guide\n\n## Install\n", "md").map((s) => s.name),
+  ["Guide"],
+);
+assert.deepEqual(browse("Guide\n=====\n\ntext\n", "rst"), []);
+
+/* A document selected in its folder previews whole, like a file; an opened
+   document or section previews when nothing inside it is selected. */
+const section = { name: "Intro", dir: false, section: { start: 0, end: 1 } };
+const document_ = { name: "guide.md", dir: true, doc: true, kids: [section] };
+const shelf = { name: "shelf", dir: true, kids: [document_, file("a.txt")] };
+setState({ path: [shelf], sel: ["guide.md"], focusCol: 0 });
+assert.equal(previewNode(), document_);
+assert.equal(locationState("render", null).location.view, "render");
+setState({ path: [shelf, document_], sel: ["guide.md"], focusCol: 0 });
+assert.equal(previewNode(), document_);
+sel[1] = "Intro";
+assert.equal(previewNode(), section);
+assert.equal(locationState("highlight", null).location.view, "highlight");
+const readmeDoc = { name: "README.md", dir: true, doc: true, kids: [] };
+const library = { name: "library", dir: true, kids: [readmeDoc, file("b")] };
+setState({ path: [library], sel: [], focusCol: 0 });
+autoPreview(library);
+assert.equal(sel[0], "README.md");
+assert.equal(previewNode(), readmeDoc);

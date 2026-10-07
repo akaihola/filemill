@@ -68,8 +68,11 @@ export async function choose(
 
   const reading = node.kids === null ? FS.ensureLoaded(node) : null;
   if (reading) {
-    /* Highlight immediately, but avoid flashing a spinner for fast reads. */
-    render(keepScroll);
+    /* Highlight immediately, but avoid flashing a spinner for fast reads. A
+       Markdown or reStructuredText file read for its headings (`doc`) would
+       be previewed whole by that render and again by the next; it waits the
+       grace period instead. */
+    if (!node.doc) render(keepScroll);
     await Promise.race([
       reading,
       new Promise((r) => setTimeout(r, OPEN_GRACE)),

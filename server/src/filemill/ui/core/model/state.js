@@ -44,9 +44,10 @@ export const visibleKids = (node) => {
   );
   if (!node.ordered || state.sort.key !== "name") return sortOrder(kids);
   if (!state.sort.desc) return kids;
+  const folder = (k) => k.dir && !k.doc; /* a doc sorts among the files */
   return [
-    ...kids.filter((k) => k.dir).reverse(),
-    ...kids.filter((k) => !k.dir).reverse(),
+    ...kids.filter(folder).reverse(),
+    ...kids.filter((k) => !folder(k)).reverse(),
   ];
 };
 
@@ -78,11 +79,20 @@ export const splitName = (name) => {
   return (i > 0) ? [name.slice(0, i), name.slice(i)] : [name, ""];
 };
 
+/* What the preview pane shows for a selected row: a file, or a Markdown or
+   reStructuredText file browsed by headings (`doc`) or one of its sections —
+   both are still the text they stand for. A folder has nothing to show, and a
+   JSON container previews only once it is the open column. */
+export const previewable = (n) => !!n && (!n.dir || !!n.doc || !!n.section);
+
 export const previewNode = () => {
   const selected = selectedNode();
-  if (selected && !selected.dir) return selected;
+  if (previewable(selected)) return selected;
   const current = path[path.length - 1];
-  return current?.json && current.value !== undefined ? current : null;
+  return previewable(current) ||
+      (current?.json && current.value !== undefined)
+    ? current
+    : null;
 };
 
 export const selectedNode = () => {

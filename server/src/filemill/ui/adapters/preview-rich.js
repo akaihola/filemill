@@ -402,7 +402,10 @@ export const PreviewRich = {
    row would. Only that directory is searched: walking the whole tree would mean
    reading every folder under the root to resolve one link. */
 function openWikilink(target) {
-  const col = path.length - 1;
+  /* The file itself may be the open column (a Markdown file browsed by its
+     headings, adapters/vfs-doc.js); the folder is the column holding it. */
+  let col = path.length - 1;
+  while (col > 0 && (path[col].doc || path[col].section)) col--;
   const kids = visibleKids(path[col]);
   const want = target.toLowerCase();
   const ri = kids.findIndex((k) => {

@@ -248,11 +248,15 @@ def split_vfs(rel: str, root: Path, resolve) -> tuple[str, str] | None:
             continue
         if i == len(parts):
             return "/".join(parts[:i]), ""
-        # .jsonl is browsed on the client (ui/core/jsonl.js); its rows still
-        # need a URL that reloads.
+        # JSONL, CSV, Markdown and reStructuredText are browsed on the client
+        # (ui/adapters/vfs-*.js); their rows and sections still need a URL that
+        # reloads. Whether the virtual part exists is the client's to decide.
         if REGISTRY.get(real) is not None or classify_path(real).preview in {
             "jsonl",
             "csv",
+            "md",
+            "markdown",
+            "rst",
         }:
             return "/".join(parts[:i]), "/".join(parts[i:])
         return None

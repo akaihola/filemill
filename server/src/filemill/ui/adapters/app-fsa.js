@@ -15,6 +15,7 @@ import { PreviewRich, RICH_RENDERERS } from "./preview-rich.js";
 import { RouterHash } from "./router-hash.js";
 import { recallRoots, recallView, rememberRoot } from "./storage.js";
 import { withCsv, withCsvPreview } from "./vfs-csv.js";
+import { withDocumentPreview, withDocuments } from "./vfs-doc.js";
 import {
   applyPath,
   setDeepLinkActions,
@@ -77,8 +78,10 @@ addRenderers([...CORE_RENDERERS, ...RICH_RENDERERS]);
    rather than at the bottom of each adapter file means a page may load more
    than one of them — which the server build does — without import order
    silently deciding which wins. */
-useFilesystem(withCsv(withVirtual(FSA)));
-usePreview(withCsvPreview(withVirtualPreview(PreviewRich)));
+useFilesystem(withDocuments(withCsv(withVirtual(FSA))));
+usePreview(
+  withDocumentPreview(withCsvPreview(withVirtualPreview(PreviewRich))),
+);
 /* The router is already the one place that hears "the selection changed": core
    writes the location there and nowhere else. Wrapping write() here, rather
    than adding a hook to core, keeps remembering in the only file that knows

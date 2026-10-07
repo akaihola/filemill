@@ -48,7 +48,12 @@ def read_text(path: Path, reject_wide: bool = True) -> str | None:
         return None
 
 
-def render_preview(path: Path, state=None, preview_url: str | None = None) -> str:
+def render_preview(
+    path: Path,
+    state=None,
+    preview_url: str | None = None,
+    lines: tuple[int, int] | None = None,
+) -> str:
     """Return an HTML string (inner body fragment) for the given file path.
 
     This is the *rendered* representation: it dispatches on suffix, so
@@ -60,12 +65,14 @@ def render_preview(path: Path, state=None, preview_url: str | None = None) -> st
 
     *state* is accepted for callers that have a request's ``ViewState``; no
     renderer reads it since the Markdown renderer moved to the browser.
+    *lines* is a 0-based, end-exclusive line span: a section of the file, as
+    the browser's heading outline names one. Only reStructuredText honours it.
     """
     ext = _syntax_extension(path)
     preview = classify_path(path).preview
 
     if preview == "rst":
-        return _preview_rst(path)
+        return _preview_rst(path, lines)
     elif preview == "desktop":
         return _preview_desktop(path)
     elif preview == "pdf":
@@ -159,10 +166,13 @@ def _raw_text(path: Path) -> str | None:
     return None
 
 
-def _preview_rst(path: Path) -> str:
+def _preview_rst(path: Path, lines: tuple[int, int] | None = None) -> str:
     try:
+        source = path.read_text(encoding="utf-8")
+        if lines is not None:
+            source = "\n".join(source.split("\n")[lines[0] : lines[1]])
         parts = publish_parts(
-            path.read_text(encoding="utf-8"),
+            source,
             writer_name="html5",
             settings_overrides={
                 "raw_enabled": False,

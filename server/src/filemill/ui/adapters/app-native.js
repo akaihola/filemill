@@ -4,6 +4,7 @@ import { initSort, setSortActions } from "../core/sort.js";
 import { sortKids } from "../core/model/sort.js";
 import { setSortKids } from "../core/model/state.js";
 import { withCsv, withCsvPreview } from "./vfs-csv.js";
+import { withDocumentPreview, withDocuments } from "./vfs-doc.js";
 import { withVirtual, withVirtualPreview } from "./vfs-json.js";
 import { setDeepLinkActions, startRouting } from "../core/deeplink.js";
 import { useFilesystem, usePreview, useRouter } from "../core/ports.js";
@@ -36,8 +37,10 @@ setDeepLinkActions({ render, colCache });
 initLayout(render);
 initSettings();
 addRenderers([...CORE_RENDERERS, ...RICH_RENDERERS]);
-useFilesystem(withCsv(withVirtual(NativeFS)));
-usePreview(withCsvPreview(withVirtualPreview(NativePreview)));
+useFilesystem(withDocuments(withCsv(withVirtual(NativeFS))));
+usePreview(
+  withDocumentPreview(withCsvPreview(withVirtualPreview(NativePreview))),
+);
 useRouter(NativeRouter);
 for (const [label, delta] of [["Back", -1], ["Forward", 1]]) {
   const button = document.createElement("button");

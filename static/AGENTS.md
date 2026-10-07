@@ -57,6 +57,7 @@ context reset.
 │   │   ├── fsa.js          ← FS: File System Access API      (static)
 │   │   ├── http.js         ← FS: GET /api/dir                (server)
 │   │   ├── vfs-csv.js      ← FS: CSV as a virtual directory
+│   │   ├── vfs-doc.js      ← FS: Markdown/reStructuredText headings as columns
 │   │   ├── preview-local.js  ← PREVIEW: coloured text, image, PDF, .desktop
 │   │   ├── preview-rich.js   ← PREVIEW: markdown-it/mammoth/docutils, on demand
 │   │   ├── preview-http.js   ← PREVIEW: GET /api/preview — the Python renderers
