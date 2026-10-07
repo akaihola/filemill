@@ -20,11 +20,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [*] A 528 kB JSON file like
-  https://gogo.crane-boa.ts.net:8445/backups/kasvimuseo-deployment/20261007-010643/backup-manifest.json?f=
-  isn't previewed nor navigable hierarchically.
-  <!-- hai:{"id":"simple-fec4c3e94daf7040","updatedAt":"2026-10-07T17:24:40.215Z"} -->
-
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
   column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
@@ -76,6 +71,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [*] A 528 kB JSON file like
+  https://gogo.crane-boa.ts.net:8445/backups/kasvimuseo-deployment/20261007-010643/backup-manifest.json?f=
+  isn't previewed nor navigable hierarchically.
+  <!-- hai:{"id":"simple-fec4c3e94daf7040","updatedAt":"2026-10-07T17:25:48.108Z"} -->
 
 - [ ] [*] Similar to JSON and SQLite files, allow hierarchical navigation of Markdown
       and reStructuredText documents based on their headings.
