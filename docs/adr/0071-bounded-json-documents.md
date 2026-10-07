@@ -16,7 +16,7 @@ JSON adapter and preview. Do not truncate a JSON document.
 
 Reject a document above the limit before `FS.blob` when listing metadata gives
 its size. Check the returned blob size again before reading its text. Show the
-size limit or parse error in the preview pane.
+size limit in the preview pane. Invalid JSON keeps the colored-source fallback.
 
 Allow JSON virtual paths through the server's existing browser-owned path
 contract. Resolve the real file with the normal containment checks. Let the

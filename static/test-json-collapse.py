@@ -3,6 +3,25 @@
 import pytest
 
 
+def test_invalid_json_keeps_source_fallback(bundle, playwright):
+    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
+    try:
+        page = browser.new_page()
+        page.goto(bundle.as_uri())
+        page.wait_for_function("typeof mount === 'function'")
+        page.evaluate("""async () => {
+            const file = new File(['{"broken":}'], 'broken.json');
+            await mount({kind: 'directory', name: 'root', async *entries() {
+                yield [file.name, {kind: 'file', name: file.name, async getFile() {return file;}}];
+            }});
+            await applyPath([file.name], 0);
+        }""")
+        page.wait_for_selector("#preview .pv-text .hl-str", timeout=3000)
+        assert page.inner_text("#preview .pv-text") == '{"broken":}'
+    finally:
+        browser.close()
+
+
 def test_json_size_guard_checks_blob_before_reading_text(bundle, playwright):
     browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
     try:

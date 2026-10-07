@@ -221,11 +221,13 @@ export const withVirtual = (fs) => ({
       node.loading = (async () => {
         try {
           if ((node.meta?.size ?? 0) > JSON_MAX) {
+            node.jsonTooLarge = true;
             throw new Error("Too large to browse (over 8 MiB)");
           }
           const blob = await fs.blob({ ...node, dir: false, vpath: "" });
           if (!blob) throw new Error("Cannot read file");
           if (blob.size > JSON_MAX) {
+            node.jsonTooLarge = true;
             throw new Error("Too large to browse (over 8 MiB)");
           }
           const value = JSON.parse(await blob.text());
@@ -274,8 +276,9 @@ export const withVirtualPreview = (provider) => ({
   async render(n) {
     if (n.span && n.value === undefined) {
       await loadRow(n);
+      if (n.jsonError) throw new Error(n.jsonError);
     }
-    if (n.jsonError) throw new Error(n.jsonError);
+    if (n.jsonTooLarge) throw new Error(n.jsonError);
     if (!n.json || n.value === undefined) return provider.render(n);
     let text;
     try {
