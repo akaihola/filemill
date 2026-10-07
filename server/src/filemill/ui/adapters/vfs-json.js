@@ -12,21 +12,20 @@
    (timestamp, id…), and falling back to the line number. Unique because the
    selection, the URL and applyPath all name a row by it.
 
-   A file over TEXT_MAX is never parsed whole (ADR 0068). One pass over the
+   A JSONL file over TEXT_MAX is never parsed whole (ADR 0068). One pass over the
    blob's byte stream records the span of each line; rows are named by line
    number and a row's record is parsed from its slice only when it is opened
    or previewed. A bad line fails on its own row, not the file.
    ═══════════════════════════════════════════════════════════════════════════ */
 import { esc } from "../core/icons.js";
 import { render } from "../core/render.js";
-import { TEXT_MAX } from "../core/limits.js";
+import { JSON_MAX, TEXT_MAX } from "../core/limits.js";
 import { classifyFile } from "../core/file-kind.js";
 import { jsonHTML } from "../core/syntax.js";
 
 const JSONL_LABEL = 60; /* as the server's MAX_LABEL_LEN */
 const JSONL_TEXT = ["title", "name", "description", "summary", "label"];
 const JSONL_SCALAR = ["timestamp", "time", "ts", "id", "uuid", "key"];
-const JSON_MAX = TEXT_MAX;
 
 const isJsonl = (n) => classifyFile(n.name).preview === "jsonl";
 const isJson = (n) =>
@@ -221,10 +220,13 @@ export const withVirtual = (fs) => ({
       if (node.loading) return node.loading;
       node.loading = (async () => {
         try {
+          if ((node.meta?.size ?? 0) > JSON_MAX) {
+            throw new Error("Too large to browse (over 8 MiB)");
+          }
           const blob = await fs.blob({ ...node, dir: false, vpath: "" });
           if (!blob) throw new Error("Cannot read file");
           if (blob.size > JSON_MAX) {
-            throw new Error("Too large to browse (over 512 KB)");
+            throw new Error("Too large to browse (over 8 MiB)");
           }
           const value = JSON.parse(await blob.text());
           if (value === null || typeof value !== "object") {
@@ -272,8 +274,8 @@ export const withVirtualPreview = (provider) => ({
   async render(n) {
     if (n.span && n.value === undefined) {
       await loadRow(n);
-      if (n.jsonError) throw new Error(n.jsonError);
     }
+    if (n.jsonError) throw new Error(n.jsonError);
     if (!n.json || n.value === undefined) return provider.render(n);
     let text;
     try {
