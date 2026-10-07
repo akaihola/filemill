@@ -9,10 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [*] A 528 kB JSON file like
-  https://<tailnet-host>:8445/backups/kasvimuseo-deployment/20261007-010643/backup-manifest.json?f=
-  isn't previewed nor navigable hierarchically.
-
 - [*] Make `.tar.zst` (and other compressed archive) files navigable hierarchically, and
   if they contain previewable files, show them in the preview pane when navigated to.
 
@@ -20,6 +16,11 @@ Rules for TASKS.md usage are at the bottom of the file.
   files, show them in the preview pane when navigated to.
 
 ## Scheduled
+
+- [*] A 528 kB JSON file like
+  https://<tailnet-host>:8445/backups/kasvimuseo-deployment/20261007-010643/backup-manifest.json?f=
+  isn't previewed nor navigable hierarchically.
+  <!-- hai:{"id":"simple-fec4c3e94daf7040","updatedAt":"2026-10-07T17:13:21.163Z"} -->
 
 ## In Progress
 
