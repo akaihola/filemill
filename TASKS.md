@@ -9,10 +9,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+## Scheduled
+
 - [*] Similar to JSON and SQLite files, allow hierarchical navigation of Markdown and
   reStructuredText documents based on their headings.
-
-## Scheduled
+  <!-- hai:{"id":"simple-f8626c1613849773","updatedAt":"2026-10-07T15:40:08.724Z"} -->
 
 ## In Progress
 
