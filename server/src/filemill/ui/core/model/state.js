@@ -28,6 +28,8 @@ export function setState(patch) {
 export const nextPvToken = () => ++pvToken;
 export const state = {
   dotfiles: false,
+  stepping: false, // the last selection came from ↑/↓, Home/End or paging
+
   sort: { key: "name", desc: false },
 };
 let sortOrder = (kids) => kids;

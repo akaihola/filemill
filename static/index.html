@@ -2219,6 +2219,8 @@ function setState(patch) {
 const nextPvToken = () => ++pvToken;
 const state = {
   dotfiles: false,
+  stepping: false, // the last selection came from ↑/↓, Home/End or paging
+
   sort: { key: "name", desc: false },
 };
 let sortOrder = (kids) => kids;
@@ -3847,19 +3849,19 @@ function currentPath() {
 }
 
 /* ADR 0050: history pushes on entering a column and rewrites otherwise. The
-   key is therefore the chain down to the *focused* column, not every open
-   column: ↑/↓ over sibling folders opens each one as a preview without moving
-   focus, and that must rewrite the entry, or Back fills up with one step per
-   row. Moving focus to another column — by a click there or ←/→ — pushes. */
+   key is the open directory chain, so a click that opens another folder is a
+   new entry and choosing a file inside the open folder rewrites it. Stepping
+   with ↑/↓, Home/End or paging always rewrites, however many folders the walk
+   opens on the way: one entry per row would make Back useless. */
 function locationState(viewMode, previousKey) {
-  const key = path.slice(0, focusCol + 1).map((p) => p.name).join("/");
+  const key = path.map((p) => p.name).join("/");
   const node = previewNode();
   const view = node && !node.dir
     ? (viewMode === "highlight" ? "highlight" : "render")
     : undefined;
   return {
     key,
-    replace: previousKey === key,
+    replace: previousKey === key || state.stepping,
     location: { root: path[0].name, path: currentPath(), view },
   };
 }
@@ -5415,8 +5417,18 @@ const PREVIEW_SCROLL_STEP = 40; // Arrow keys move the preview by a small readab
 
 let navSeq = 0; /* a read that outlives its selection must not repaint */
 
-async function choose(colIdx, node, keepScroll = false) {
+/* `stepping` says the selection came from ↑/↓, Home/End or paging rather
+   than a click or a jump: the URL is then rewritten, never pushed (ADR 0050).
+   It stays set through the deferred render of a folder that is still reading,
+   which is when that folder's URL is actually written. */
+async function choose(
+  colIdx,
+  node,
+  keepScroll = false,
+  stepping = false,
+) {
   resetCopy();
+  state.stepping = stepping;
   const seq = ++navSeq;
   selectNode(colIdx, node);
   if (!node.dir) return void render(keepScroll);
@@ -5753,8 +5765,9 @@ function pageMove(c, dir, ci) {
     decision = pageSelection(visible(), undefined, dir, body.clientHeight);
   }
   const row = c.rows[decision.index];
-  row?.click();
-  if (row) revealRow(row);
+  if (!row) return;
+  choose(focusCol, c.kids[decision.index], true, true);
+  revealRow(row);
 }
 
 const keyboardContext = (e) => ({
@@ -5866,15 +5879,14 @@ document.addEventListener("keydown", (e) => {
       e.key === "ArrowDown" ? 1 : -1,
       rows.length,
     );
-    choose(focusCol, c.kids[ci], true);
+    choose(focusCol, c.kids[ci], true, true);
     revealRow(c.ensureRow(ci));
   } else if (action === "Home" || action === "End") {
     e.preventDefault();
     if (!rows.length) return;
     const ri = e.key === "Home" ? 0 : rows.length - 1;
-    const row = c.ensureRow(ri);
-    row.click();
-    revealRow(row);
+    choose(focusCol, c.kids[ri], true, true);
+    revealRow(c.ensureRow(ri));
   } else if (action === "PageUp" || action === "PageDown") {
     e.preventDefault();
     pageMove(c, e.key === "PageUp" ? -1 : 1, ci);

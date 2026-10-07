@@ -1,5 +1,4 @@
 import {
-  focusCol,
   path,
   previewNode,
   sel,
@@ -15,19 +14,19 @@ export function currentPath() {
 }
 
 /* ADR 0050: history pushes on entering a column and rewrites otherwise. The
-   key is therefore the chain down to the *focused* column, not every open
-   column: ↑/↓ over sibling folders opens each one as a preview without moving
-   focus, and that must rewrite the entry, or Back fills up with one step per
-   row. Moving focus to another column — by a click there or ←/→ — pushes. */
+   key is the open directory chain, so a click that opens another folder is a
+   new entry and choosing a file inside the open folder rewrites it. Stepping
+   with ↑/↓, Home/End or paging always rewrites, however many folders the walk
+   opens on the way: one entry per row would make Back useless. */
 export function locationState(viewMode, previousKey) {
-  const key = path.slice(0, focusCol + 1).map((p) => p.name).join("/");
+  const key = path.map((p) => p.name).join("/");
   const node = previewNode();
   const view = node && !node.dir
     ? (viewMode === "highlight" ? "highlight" : "render")
     : undefined;
   return {
     key,
-    replace: previousKey === key,
+    replace: previousKey === key || state.stepping,
     location: { root: path[0].name, path: currentPath(), view },
   };
 }

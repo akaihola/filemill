@@ -44,15 +44,17 @@ assert.equal(await walkPath(["missing"], async () => {}), false);
 assert.deepEqual(currentPath(), []);
 assert.equal(locationState("render", null).replace, false);
 assert.equal(locationState("render", "root").replace, true);
-/* ADR 0050: history pushes on entering a column and rewrites otherwise, so
-   the key is the chain down to the focused column, not every open column. */
+/* ADR 0050: a click that opens another folder pushes; choosing a file inside
+   the open folder rewrites; ↑/↓, Home/End and paging always rewrite. */
 setState({ path: [tree, folder], sel: ["sub"], focusCol: 0 });
-assert.equal(locationState("render", "root").key, "root");
-assert.equal(locationState("render", "root").replace, true);
-setState({ path: [tree, folder], sel: ["sub", "README.md"], focusCol: 1 });
 assert.equal(locationState("render", "root").key, "root/sub");
 assert.equal(locationState("render", "root").replace, false);
 assert.equal(locationState("render", "root/sub").replace, true);
+state.stepping = true;
+assert.equal(locationState("render", "root").replace, true);
+assert.equal(locationState("render", null).replace, true);
+state.stepping = false;
+assert.equal(locationState("render", "root").replace, false);
 setState({ path: [tree], sel: [], focusCol: 0 });
 const many = Array.from({ length: 3000 }, (_, i) => file(`file${2999 - i}`));
 assert.equal(sortKids(many)[0].name, "file0");
@@ -206,7 +208,7 @@ for (const value of [false, 0, null, "", "first\nsecond"]) {
     value: { scalar: value, object: {} },
     kids: [scalar, object],
   };
-  setState({ path: [tree, parent], sel: ["data.json", "scalar"], focusCol: 1 });
+  setState({ path: [tree, parent], sel: ["data.json", "scalar"] });
   assert.equal(previewNode(), scalar);
   assert.deepEqual(locationState("highlight", "root/data.json"), {
     key: "root/data.json",
