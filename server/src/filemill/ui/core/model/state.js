@@ -44,9 +44,10 @@ export const visibleKids = (node) => {
   );
   if (!node.ordered || state.sort.key !== "name") return sortOrder(kids);
   if (!state.sort.desc) return kids;
+  const folder = (k) => k.dir && !k.doc; /* a doc sorts among the files */
   return [
-    ...kids.filter((k) => k.dir).reverse(),
-    ...kids.filter((k) => !k.dir).reverse(),
+    ...kids.filter(folder).reverse(),
+    ...kids.filter((k) => !folder(k)).reverse(),
   ];
 };
 

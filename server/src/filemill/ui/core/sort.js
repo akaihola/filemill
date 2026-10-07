@@ -25,6 +25,7 @@
    syscall per row.
    ═══════════════════════════════════════════════════════════════════════════ */
 import { FS } from "./ports.js";
+import { isFolder } from "./model/sort.js";
 import { path, state } from "./model/state.js";
 let repaint;
 export const setSortActions = ({ render }) => repaint = render;
@@ -44,7 +45,7 @@ const sortNeedsMeta = () => state.sort.key !== "name";
 export function ensureMeta(node) {
   if (node.metaLoading) return node.metaLoading;
   const kids = node.kids;
-  const todo = kids.filter((k) => !k.dir && !k.meta);
+  const todo = kids.filter((k) => !isFolder(k) && !k.meta);
   /* Nothing to fetch: the listing carried it (the server build), or a preview
      already did. Settle it here, before columnFor runs, so a column with no
      sweep to run is built once in the right order rather than built and

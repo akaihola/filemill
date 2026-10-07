@@ -108,7 +108,7 @@ window.__mk = (nbig) => {
   // …and an 88-column comment, for the "never wrap before column 88" checks
   const PY_SRC = 'def f():\n    # doc\n    return "s" + 42\n    # ' + 'x'.repeat(82) + '\n';
   return D('workspace', [
-    D('deep',  [D('alpha',[D('beta',[D('gamma',[F('leaf.md','# leaf\n' + 'scrollable line\n'.repeat(200))])])])]),
+    D('deep',  [D('alpha',[D('beta',[D('gamma',[F('leaf.txt','leaf\n' + 'scrollable line\n'.repeat(200))])])])]),
     D('mixed', [D('sub',[F('a.py', PY_SRC),
                          // 11 700 chars, so the preview is asked for far
                          // more than the 8 000 it used to clip at.
@@ -144,7 +144,7 @@ window.__mk = (nbig) => {
     // finger is then wider than the stage has left once its ancestors have
     // folded to spines, and #stage clips what runs past the right edge.
     D('wide', [F('a-quite-long-file-name-1.txt'), F('a-quite-long-file-name-2.txt'),
-               D(LONG(0), [D(LONG(1), [D(LONG(2), [D(LONG(3), [D(LONG(4), [F('leaf.md', '# leaf')])])])])])]),
+               D(LONG(0), [D(LONG(1), [D(LONG(2), [D(LONG(3), [D(LONG(4), [F('leaf.txt', 'leaf')])])])])])]),
     // Names chosen so each type-ahead rung is the *only* one that can explain
     // the answer. Sorted: Alpha Report.txt, beta-notes.md, changelog.md,
     // notes.txt, readme.md, release-notes.md.
@@ -703,14 +703,14 @@ async def main(bundle, fake_handle, playwright):
         st = await pg.evaluate("__state()")
         check("→ walks all the way to the leaf",
               st["path"] == ["workspace", "deep", "alpha", "beta", "gamma"] and
-              st["sel"][-1] == "leaf.md", json.dumps(st["path"]))
+              st["sel"][-1] == "leaf.txt", json.dumps(st["path"]))
         await pg.keyboard.press("ArrowLeft")
         await pg.wait_for_timeout(200)
         check("← moves focus back out", await pg.evaluate("focusCol") == 3)
         await pg.keyboard.press("ArrowRight")
         await pg.wait_for_timeout(250)
         check("→ returns to the row the column was left on",
-              await pg.evaluate("sel[4]") == "leaf.md" and
+              await pg.evaluate("sel[4]") == "leaf.txt" and
               await pg.evaluate("focusCol") == 4)
         await pg.keyboard.press("ArrowRight")
         check("→ focuses the preview from the rightmost column",
@@ -719,8 +719,8 @@ async def main(bundle, fake_handle, playwright):
         await pg.wait_for_timeout(200)
         st = await pg.evaluate("__state()")
         check("← from preview restores its containing folder and file",
-              st["focusCol"] == 4 and st["sel"][-1] == "leaf.md" and
-              await pg.evaluate("document.querySelector('.col.focus .row.cursor')?.title") == "leaf.md",
+              st["focusCol"] == 4 and st["sel"][-1] == "leaf.txt" and
+              await pg.evaluate("document.querySelector('.col.focus .row.cursor')?.title") == "leaf.txt",
               json.dumps(st))
         await pg.keyboard.press("ArrowRight")
         await pg.wait_for_timeout(200)
