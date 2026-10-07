@@ -37,12 +37,22 @@ Reproduced with Playwright against the server edition:
 
 ## Plan
 
-1. Key history on the chain down to the _focused_ column: `path[0..focusCol]`.
-   Moving to another column pushes; moving within a column rewrites.
+1. Keep the open directory chain as the history key, so a folder click pushes
+   and a file choice inside the open folder rewrites. Keyboard stepping
+   (`↑`/`↓`, `Home`/`End`, paging) sets `state.stepping` through `choose()` and
+   always rewrites.
 2. `keyAction` returns `null` for `Alt`, `Meta` and `Ctrl` (except copy)
    combinations so the browser keeps its history shortcuts.
 3. Tests: `ui/core/model/test.mjs` for both rules;
-   `server/tests/test_browser_new_ui.py` for sibling folders not stacking
-   history, Back retracing columns, and `Alt`+`ArrowLeft` staying unhandled.
+   `server/tests/test_browser_new_ui.py` for stepping not stacking history,
+   folder clicks recording it (also from `/?f=`), Back retracing opened folders,
+   and `Alt`+`ArrowLeft` staying unhandled.
+
+## Correction (2026-10-07)
+
+The first merge (`83c44ad`) keyed history on the focused column instead, which
+made folder-to-folder clicks in one column rewrite the entry: at `/?f=` the Back
+button stayed disabled while browsing folders. Reverted to the chain key with
+the stepping flag described above.
 
 [ADR 0050]: ../adr/0050-history-pushes-on-entering-a-column-rewrites-otherwise.md

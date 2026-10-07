@@ -289,7 +289,7 @@ Do not reopen these without new evidence.
 | Unsandboxed HTML preview (F2, part)                                                                   | `sandbox=""`                                                                    |
 | Images over 512 KiB rejected (F10, part)                                                              | Text-only limit                                                                 |
 | Descending name sort ignored                                                                          | `visibleKids` reverses when `desc`                                              |
-| History stacked one entry per sibling folder; Alt+arrows swallowed ([39])                             | Key is the focused chain ([ADR 0050]); `keyAction` ignores modified keys        |
+| ↑/↓ over folders stacked one entry per row; Alt+arrows swallowed ([39])                               | `state.stepping` rewrites ([ADR 0050]); `keyAction` ignores modified keys       |
 | `0.0.0.0` bind and `/w/` CORS `*` (#12)                                                               | Loopback default; no CORS headers                                               |
 | Missing `LICENSE`, `SECURITY.md`, `CHANGELOG.md`, `CONTRIBUTING.md`; history files in `server/` (#15) | Present; history files removed                                                  |
 | `static/hotreload.py`, `forgetRoots` (#16)                                                            | Removed                                                                         |
