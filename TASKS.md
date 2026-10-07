@@ -18,12 +18,12 @@ Rules for TASKS.md usage are at the bottom of the file.
   if they contain previewable files, show them in the preview pane when navigated to.
   <!-- hai:{"id":"simple-8f807623b9f707fd","updatedAt":"2026-10-07T17:13:55.825Z"} -->
 
-- [*] A 528 kB JSON file like
+## In Progress
+
+- [~] [*] A 528 kB JSON file like
   https://gogo.crane-boa.ts.net:8445/backups/kasvimuseo-deployment/20261007-010643/backup-manifest.json?f=
   isn't previewed nor navigable hierarchically.
-  <!-- hai:{"id":"simple-fec4c3e94daf7040","updatedAt":"2026-10-07T17:13:21.163Z"} -->
-
-## In Progress
+  <!-- hai:{"id":"simple-fec4c3e94daf7040","updatedAt":"2026-10-07T17:24:40.215Z"} -->
 
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
