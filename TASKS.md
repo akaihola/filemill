@@ -9,6 +9,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- [*] Similar to JSON and SQLite files, allow hierarchical navigation of Markdown and
+  reStructuredText documents based on their headings.
+
 ## Scheduled
 
 ## In Progress
@@ -65,14 +68,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Completed / Accepted
 
-- [ ] [77] .md tight bullet list line spacing
-  <!-- hai:{"id":"simple-f6220ff8-98cd-48a2-b2ab-4744392be4a7","priority":"none","labels":[],"createdAt":"2026-10-06T18:33:12.894Z","updatedAt":"2026-10-06T21:04:45.180Z"} -->
+- [x] [77] .md tight bullet list line spacing
+    <!-- hai:{"id":"simple-f6220ff8-98cd-48a2-b2ab-4744392be4a7","priority":"none","labels":[],"createdAt":"2026-10-06T18:33:12.894Z","updatedAt":"2026-10-07T15:05:44.592Z"} -->
 
-- [ ] [39] Fix Back/Forward navigation across folders, previews and raw files.
-  <!-- hai:{"updatedAt":"2026-10-06T20:35:21.914Z"} -->
-- [ ] [*] On iPad, two touches on a folder name are required to open its contents in the
-  next column. Only one touch should do it.
-  <!-- hai:{"id":"simple-63ca4fc48e67d49a","updatedAt":"2026-10-06T20:13:05.911Z"} -->
+- [x] [39] Fix Back/Forward navigation across folders, previews and raw files.
+    <!-- hai:{"updatedAt":"2026-10-07T15:04:51.317Z"} -->
+- [x] [*] On iPad, two touches on a folder name are required to open its contents in the
+      next column. Only one touch should do it.
+    <!-- hai:{"id":"simple-63ca4fc48e67d49a","updatedAt":"2026-10-07T15:03:32.602Z"} -->
 
 - [ ] [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
       `No inline preview for this file type.` is displayed instead of the image.
