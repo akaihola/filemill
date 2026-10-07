@@ -23,8 +23,13 @@ file, and a `?filemill=highlight` view shows those lines as source.
 
 The document stays a file. Selected in its folder, or opened with nothing chosen
 inside it, it previews whole. It can be edited, deleted and copied as before; a
-section cannot. A file with no heading, or one over the text size limit, opens
-as a plain file.
+section cannot.
+
+A file that opens with its one title, and nothing before it but blank lines or
+front matter, is already named by that title: its subsections are the first
+column. A file with fewer than two sections in all has no hierarchy to browse,
+and opens as a plain file, as does one over the text size limit. A README with
+one heading therefore behaves as it did.
 
 The outline is computed by `ui/core/model/headings.js`, which runs without a
 browser and is checked by `ui/core/model/test.mjs`. The adapter

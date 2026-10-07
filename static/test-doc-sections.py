@@ -6,7 +6,7 @@ MOUNT = """async () => {
     const entries = [
         file('guide.md', 'intro\\n\\n# Guide\\n\\ntext\\n\\n## Install\\n\\nsteps\\n\\n'
             + '### Linux\\n\\napt\\n\\n## Use\\n\\nrun\\n'),
-        file('plain.md', 'no headings here\\n'),
+        file('plain.md', '# Title only\\n\\nno hierarchy here\\n'),
         file('doc.rst', 'Title\\n=====\\n\\nPart A\\n------\\n\\nalpha\\n\\n'
             + 'Part B\\n------\\n\\nbeta\\n'),
     ];
@@ -70,19 +70,18 @@ def test_markdown_headings_open_as_columns(bundle, playwright):
         )
         preview_has(page, "apt", absent=["steps", "run"])
 
-        # A document without headings stays a plain file: the deep link ends
-        # at it, and no column opens.
+        # A file whose only heading is its title stays a plain file: the deep
+        # link ends at it, and no column opens.
         page.evaluate('applyPath(["plain.md"], 0)')
-        preview_has(page, "no headings here")
+        preview_has(page, "no hierarchy here")
         page.wait_for_function("path.length === 1 && sel[0] === 'plain.md'")
         assert page.evaluate("path[0].kids.find(k => k.name === 'plain.md').dir") is False
 
+        # The lone title at the top names the file; its parts are the column.
         page.click('.col[data-i="0"] .row:has-text("doc.rst")')
-        page.wait_for_selector('.col[data-i="1"] .row:has-text("Title")')
-        page.click('.col[data-i="1"] .row:has-text("Title")')
-        page.wait_for_selector('.col[data-i="2"] .row:has-text("Part B")')
-        assert rows(page, 2) == ["Part A", "Part B"]
-        page.click('.col[data-i="2"] .row:has-text("Part B")')
+        page.wait_for_selector('.col[data-i="1"] .row:has-text("Part B")')
+        assert rows(page, 1) == ["Part A", "Part B"]
+        page.click('.col[data-i="1"] .row:has-text("Part B")')
         preview_has(page, "beta", absent=["alpha"])
     finally:
         browser.close()
