@@ -13,7 +13,7 @@ shared ports. This document covers the Python edition.
 - **Column view** – multi-pane navigation in the style of macOS Finder
 - **Rich previews** – Markdown (with plugins), DOCX, PPTX, PDF, images, plain text, and source code with Pygments highlighting ("friendly" theme)
 - **Markdown extras** – wikilinks (`[[PageName]]`), Mermaid diagrams, plain-URL links, relative-link normalisation
-- **Virtual filesystem** – a SQLite database opens as table → row columns; JSON files open through their own provider
+- **Virtual filesystem** – a SQLite database opens as table → row columns; JSON files open through their own provider; a tar (`.tar`, `.tar.gz`, `.tar.bz2`, `.tar.xz`, `.tar.zst`) or zip archive opens as columns of its members, and a member previews as the file it is
 - **Static web server** – `/w/<mount>/<path>` serves a file under a named mount with the correct Content-Type. The root directory is mounted as `/w/<ROOT.name>/...`. Each direct symlink child of ROOT is mounted under its own name
 - **Finder URLs** – the URL path is the file path relative to the root, for example `/docs/readme.md`. A deep link opens any location. `/sample.db/users/1` opens one database row
 - **Dotfiles** – add `?hidden=show` to the URL to show them
@@ -127,7 +127,7 @@ src/filemill/
 ├── rendering.py    # markdown-it-py instance with plugins
 ├── urls.py         # View state and canonical URLs
 ├── vfs.py          # Virtual-filesystem registry + provider protocol
-├── providers/      # VFS backends: SQLite, JSON, VTT
+├── providers/      # VFS backends: SQLite, VTT, archives (tar, zip)
 ├── static/         # Bundled PWA assets: manifest.json, sw.js, icons/
 └── ui/             # The shared frontend; the repo root's ui/ symlinks here
 ```

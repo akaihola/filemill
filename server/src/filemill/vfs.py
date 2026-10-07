@@ -82,6 +82,22 @@ class VFSProvider(Protocol):
     def list_entries(self, path: Path, vpath: str) -> list[VFSEntry]: ...
 
 
+@dataclass(frozen=True)
+class VFSMember:
+    """A leaf inside a virtual filesystem that has bytes of its own."""
+
+    name: str  # the member's own file name, which says how to preview it
+    size: int
+    data: bytes | None  # None when the member is over the provider's limit
+
+
+@runtime_checkable
+class VFSMemberProvider(Protocol):
+    """A provider whose leaves are files: archives, not database rows."""
+
+    def member(self, path: Path, vpath: str) -> VFSMember | None: ...
+
+
 class VFSRegistry:
     """Registry mapping file paths to VFSProvider instances."""
 
@@ -110,4 +126,4 @@ def is_vfs_file(path: Path) -> bool:
 # ── Provider registration (side-effects) ──────────────────────────────────────
 # These imports MUST remain at the bottom, after all names above are defined.
 # Each provider module does `REGISTRY.register(...)` at import time.
-from filemill.providers import sqlite, vtt_provider  # noqa: F401
+from filemill.providers import archive, sqlite, vtt_provider  # noqa: F401

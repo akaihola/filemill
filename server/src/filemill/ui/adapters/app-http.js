@@ -115,8 +115,11 @@ const PreviewHTTP = {
     const lines = n.section
       ? `&lines=${n.section.outline.start}-${n.section.outline.end}`
       : "";
+    /* A member of an archive is addressed by the file plus its vpath; the
+       server reads inside the archive and renders it as the file it is. */
+    const vpath = n.vpath ? `&v=${encodeURIComponent(n.vpath)}` : "";
     const response = await fetch(
-      `${API}/preview?p=${encodeURIComponent(n.rel)}${lines}`,
+      `${API}/preview?p=${encodeURIComponent(n.rel)}${lines}${vpath}`,
     );
     return response.ok ? response.text() : PreviewLocal.render(n);
   },
@@ -142,13 +145,31 @@ const withRichPreview = (provider) => ({
       : provider).render(n),
 });
 
+/* A virtual leaf the *server* listed — `meta.virtual` is what http.js puts on
+   an entry that came back with a vpath — has no bytes the browser can fetch:
+   it is a member inside an archive, and only the server can read it. The
+   JSON, CSV and document wrappers above have already answered for the virtual
+   nodes they own, and a database row previews from its record before any
+   provider runs, so what reaches here is the server's to render. */
+const withServerVirtualPreview = (provider) => ({
+  revoke() {
+    provider.revoke?.();
+  },
+  render: (n) =>
+    n.vpath && n.meta?.virtual && n.record === undefined
+      ? PreviewHTTP.render(n)
+      : provider.render(n),
+});
+
 async function mountServer() {
   useFilesystem(withDocuments(withCsv(withVirtual(HTTP))));
   usePreview(
     withDocumentPreview(
       withCsvPreview(
         withVirtualPreview(
-          withHighlighting(withRichPreview(PreviewLocal)),
+          withServerVirtualPreview(
+            withHighlighting(withRichPreview(PreviewLocal)),
+          ),
         ),
       ),
     ),

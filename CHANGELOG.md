@@ -12,6 +12,8 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Contribution, security, and release documents.
 - Browsing of `.jsonl` files over 512 KB. Rows are indexed by line and parsed
   one at a time when opened.
+- Tar archives (plain, gzip, bzip2, xz, zstd) and zip files open as columns of
+  their members in the server edition, and a member previews as the file it is.
 
 ### Changed
 
