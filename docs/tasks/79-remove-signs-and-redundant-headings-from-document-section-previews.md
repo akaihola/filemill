@@ -1,0 +1,1 @@
+Remove the leading § signs from Markdown and reStructuredText hierarchical browsing items, and remove the redundant `§ <heading>` and horizontal line since the actual heading from the document is displayed at the top of the preview anyway.

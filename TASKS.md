@@ -9,6 +9,30 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- [87] Make CI green so GitHub Pages publishes
+
+- [83] Screen-reader search label shows on screen
+
+- [84] JSON member in an archive shows a chevron but does not open
+
+- [85] Images in archives are not scaled to the preview pane
+
+- [86] Markdown in archives is not rendered
+
+- [82] Update stale Playwright 1.61 pins and the server renderer note in docs
+
+- [81] Horizontal scrolling fold "stops"
+  <!-- hai:{"id":"simple-d01a5118-704f-4133-953c-ead294dbc119","priority":"none","labels":[],"createdAt":"2026-10-08T19:19:18.607Z","updatedAt":"2026-10-08T19:19:18.607Z"} -->
+
+- [80] Left arrow doesn't preview the whole document after returning from per-section preview
+  <!-- hai:{"id":"simple-c4d74fd6-cd42-426e-9cda-819fbf9965c3","priority":"none","labels":[],"createdAt":"2026-10-08T16:24:33.129Z","updatedAt":"2026-10-08T16:24:33.129Z"} -->
+
+- [79] Remove § signs and redundant headings from document section previews
+  <!-- hai:{"id":"simple-e6ef425c-e474-4559-b792-1e21478c71bb","priority":"none","labels":[],"createdAt":"2026-10-08T16:21:55.597Z","updatedAt":"2026-10-08T16:21:55.597Z"} -->
+
+- [78] Wide document scrolls instead of expanding the preview
+  <!-- hai:{"id":"simple-78e15d9a-0d90-4186-953f-46fdddf6fe5c","priority":"none","labels":[],"createdAt":"2026-10-08T16:19:43.075Z","updatedAt":"2026-10-08T16:19:43.075Z"} -->
+
 ## Scheduled
 
 - [*] Make Git `.bundle` files navigable hierarchically, and if they contain previewable
@@ -528,7 +552,27 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 [77]: docs/tasks/77-md-tight-bullet-list-line-spacing.md
 
-<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77 -->
+<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87 -->
+
+[78]: docs/tasks/78-wide-document-scrolls-instead-of-expanding-the-preview.md
+
+[79]: docs/tasks/79-remove-signs-and-redundant-headings-from-document-section-previews.md
+
+[80]: docs/tasks/80-left-arrow-doesn-t-preview-the-whole-document-after-returning-from-per.md
+
+[81]: docs/tasks/81-horizontal-scrolling-fold-stops.md
+
+[82]: docs/tasks/82-stale-playwright-pins-and-server-renderer-note.md
+
+[83]: docs/tasks/83-screen-reader-search-label-shows-on-screen.md
+
+[84]: docs/tasks/84-json-member-in-archive-shows-chevron-but-does-not-open.md
+
+[85]: docs/tasks/85-images-in-archives-are-not-scaled.md
+
+[86]: docs/tasks/86-markdown-in-archives-is-not-rendered.md
+
+[87]: docs/tasks/87-make-ci-green-so-pages-publishes.md
 
 ## Rules
 
