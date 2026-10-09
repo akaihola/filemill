@@ -1,0 +1,9 @@
+When I swipe quickly on a touchpad right or left, the horizontal scrollbar correctly goes all the way to the left or right, respectively. Currently on Filemill these correspond to "all folder columns at full width, preview fills the rest" and "preview fills the window", respectively.
+
+I want the first swipe to the left to stop at the point where the rightmost column is fully expanded but all the columns left of it are fully folded. The next swipe should also fold the rightmost column. The last swipe should fill the window with the preview and hide the columns.
+
+Swipes to the right should do the same stops in reverse, and additional swipes to the right should increase column width so one less column fits in the window and the visible columns fill the window. So e.g. typically the current extreme scrollbar position at the left after the right swipe shows almost four full columns. The next swipe should fill the width of the screen with three columns. The next swipe with two. And if the screen is a narrow portrait screen, yet another swipe should fill the screen with the leftmost, root column.
+
+The way I envision this would work is to always rely on native scrolling. So the next swipe stops to the left and right would correspond to the current extreme ends of the horizontal scrollbar. When a swipe has settled at either far edge, the page scroll width is "recomputed" so the next stop in that direction becomes the extreme end of the scrollbar, and the scrollbar position is updated to correspond to the current stop position relative to the new range.
+
+Plan this enhancement, ask if there's anything to confirm, implement it, test it, let me test it, and let's iterate until it's porfect.

@@ -1,0 +1,1 @@
+If an `.rst` file has wide code blocks, a horizontal scroll gesture on the trackpad on the preview area scrolls the preview instead of widening the preview. Scrolling the preview horizontally should only activate after the preview is as wide as fits on the screen.
