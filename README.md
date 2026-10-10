@@ -132,10 +132,13 @@ developer mode for that.
 
 ```bash
 cd static
-uv run --with "playwright==1.61.0" python3 test-ui.py     # UI, fake handle
-uv run --with "playwright==1.61.0" python3 test-url.py    # deep links
-uv run --with "playwright==1.61.0" python3 test-rich.py   # CDN renderers
+uv run --project ../server pytest test-ui.py     # UI, fake handle
+uv run --project ../server pytest test-url.py    # deep links
+uv run --project ../server pytest test-rich.py   # CDN renderers
 #   each also takes --dev, to run against ui/ unbundled
+#   `--project ../server` uses the locked Playwright, the one release whose
+#   browser revision the Nix bundle provides; `--with "playwright==X"` would
+#   override it and fail to launch
 
 cd server && uv run pytest
 ```

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Measure real CDN-backed RST rendering in the committed browser bundle.
 
-uv run --with 'playwright==1.61.0' python3 static/measure-rst.py
+uv run --project server python3 static/measure-rst.py
 Outputs JSON; no stubs, local mirrors or timing assertions.
 """
 import asyncio

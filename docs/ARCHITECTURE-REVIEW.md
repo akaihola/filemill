@@ -272,6 +272,12 @@ Truncated text is never editable as if complete. Related: [49], [60].
 **Acceptance.** Each fix corrects its documents. A final pass checks every
 advertised command in a clean environment and dates superseded ADRs.
 
+Resolved 2026-10-11 ([82]): the Playwright run commands in `README.md`,
+`server/CONTRIBUTING.md`, `static/AGENTS.md`, `static/FSA-TEST-CHECKLIST.md`
+and the static scripts no longer name a version; they defer to the lock via
+`uv run --project server`. `ui/adapters/README.md` lists the renderers
+`app-http.js` registers. `server/tests/test_docs.py` keeps both true.
+
 ### A12. Smaller defects and audits
 
 - `rt` in `app.py:46` calls `int()` on query values, so `page=bad` is a 500.

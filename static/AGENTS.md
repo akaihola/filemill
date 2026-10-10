@@ -208,8 +208,9 @@ same run, and the check asserts that ratio, not a wall-clock ceiling. OPFS is
 not the user's own disk. That is `test-e2e.py`'s job.
 
 **Never run `playwright install`.** Pin the version that matches the
-NixOS-installed browsers. Now that is rev 1228 → `playwright==1.61.0`, which
-is also what `$UV_CONSTRAINT` says.
+NixOS-installed browsers. That is the version in `$UV_CONSTRAINT`, which
+`server/pyproject.toml` pins; run the suites with `uv run --project server`
+so the lock, not a `--with` override, chooses the release.
 
 `test-ui.py` fakes the handle API, which is all the app touches:
 

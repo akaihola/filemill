@@ -5,7 +5,7 @@ Needs a real browser window and one manual folder pick, because the OS picker
 is not scriptable. Verifies that a *real* directory reads correctly and, on the
 second run, that the remembered folder opens with no dialog at all.
 
-    uv run --with "playwright==1.61.0" python3 test-e2e.py
+    uv run --project server python3 static/test-e2e.py
 
 Run it twice: the persistent profile in /tmp/filemill-profile keeps both the
 IndexedDB entry and Chrome's permission grant, so the second run should mount
