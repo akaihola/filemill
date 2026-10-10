@@ -27,9 +27,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [86] Markdown in archives is not rendered
-  <!-- hai:{"updatedAt":"2026-10-10T22:32:03.675Z"} -->
-
 - [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-10T19:58:38.726Z"} -->
 
@@ -84,6 +81,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [86] Markdown in archives is not rendered
+  <!-- hai:{"updatedAt":"2026-10-10T22:32:03.675Z"} -->
 
 - [ ] [85] Images in archives are not scaled to the preview pane
   <!-- hai:{"updatedAt":"2026-10-10T22:31:14.157Z"} -->
