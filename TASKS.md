@@ -35,10 +35,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [83] Screen-reader search label shows on screen
-  <!-- hai:{"updatedAt":"2026-10-10T20:36:32.655Z"} -->
-
 ## In Progress
+
+- [~] [83] Screen-reader search label shows on screen
+  <!-- hai:{"updatedAt":"2026-10-10T20:37:30.257Z"} -->
 
 - [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-10T19:58:38.726Z"} -->
