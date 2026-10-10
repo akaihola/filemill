@@ -37,9 +37,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [83] Screen-reader search label shows on screen
-  <!-- hai:{"updatedAt":"2026-10-10T20:37:30.257Z"} -->
-
 - [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-10T19:58:38.726Z"} -->
 
@@ -94,6 +91,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [83] Screen-reader search label shows on screen
+  <!-- hai:{"updatedAt":"2026-10-10T20:53:33.766Z"} -->
 
 - [ ] [*] Make Git `.bundle` files navigable hierarchically, and if they contain previewable
   files, show them in the preview pane when navigated to.
