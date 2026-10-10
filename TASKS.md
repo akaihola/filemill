@@ -89,7 +89,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## Completed / Accepted
 
 - [ ] [89] Markdown previews show two Raw buttons
-  <!-- hai:{"updatedAt":"2026-10-10T21:29:34.645Z"} -->
+  <!-- hai:{"updatedAt":"2026-10-10T21:58:09.204Z"} -->
 
 - [ ] [88] Status bar hints wrap and get clipped
   <!-- hai:{"updatedAt":"2026-10-10T21:28:47.986Z"} -->
