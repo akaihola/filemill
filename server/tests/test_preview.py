@@ -225,7 +225,7 @@ def test_preview_image_contains_img_tag(tmp_path):
     f.write_bytes(b"\x89PNG")
     html = _preview_image(f)
     assert "preview-image" in html
-    assert "<img" in html
+    assert '<img class="pv-img"' in html
     assert "/api/raw?p=img.png" in html
 
 

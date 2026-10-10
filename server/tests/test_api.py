@@ -531,7 +531,7 @@ def test_an_image_member_is_served_through_raw_with_its_vpath(
     archive_client, archive_root: Path
 ):
     html = archive_client.get("/api/preview?p=demo.tar.zst&v=docs/pic.png").text
-    assert '<img src="/api/raw?p=demo.tar.zst&amp;v=docs%2Fpic.png"' in html
+    assert '<img class="pv-img" src="/api/raw?p=demo.tar.zst&amp;v=docs%2Fpic.png"' in html
     r = archive_client.get("/api/raw?p=demo.tar.zst&v=docs/pic.png")
     assert r.status_code == 200
     assert r.content == b"\x89PNG\r\n"

@@ -208,10 +208,15 @@ def _preview_html(path: Path, preview_url: str | None = None) -> str:
 
 
 def _preview_image(path: Path, preview_url: str | None = None) -> str:
+    """The same ``pv-img`` the browser draws for an image on disk, so the
+    shared stylesheet scales a member image to the pane the same way."""
     try:
         src = preview_url or f"/api/raw?p={urlquote(path.name)}"
         safe_name = html_lib.escape(path.name)
-        return f'<div class="preview-image"><img src="{src}" alt="{safe_name}"></div>'
+        return (
+            '<div class="preview-image">'
+            f'<img class="pv-img" src="{src}" alt="{safe_name}"></div>'
+        )
     except Exception as e:  # pragma: no cover
         return (
             f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'

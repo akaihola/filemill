@@ -161,8 +161,11 @@ def ui_root(tmp_path: Path) -> Path:
         info.size = len(b"hello from the archive\n")
         tf.addfile(info, io.BytesIO(b"hello from the archive\n"))
     (tmp_path / "bundle.tar.zst").write_bytes(zstd_compress(archive_buf.getvalue()))
+    wide = io.BytesIO()
+    Image.new("RGB", (1600, 200), "teal").save(wide, format="PNG")
     with zipfile.ZipFile(tmp_path / "bundle.zip", "w") as zf:
         zf.writestr("data.json", '{"tags":["a","b"],"n":1,"meta":{"n":1}}')
+        zf.writestr("wide.png", wide.getvalue())
         zf.writestr(
             "rows.jsonl",
             '{"id": 1, "title": "First"}\n{"id": 2, "title": "Second"}\n',
@@ -1541,6 +1544,20 @@ def test_a_jsonl_member_opens_as_a_column_of_rows(page):
         "title": "Second",
     }
     assert "/n/bundle.zip/rows.jsonl/Second" in page.url
+
+
+def test_an_image_member_is_scaled_to_the_pane_like_a_file_on_disk(page):
+    """Issue 85: a 1600 px member drew at its natural size and overflowed
+    the pane. It must scale the way the same image on disk does."""
+    page.open("bundle.zip/wide.png")
+    page.wait_for_selector("#preview img.pv-img", timeout=15000)
+    natural, shown, pane = page.evaluate(
+        "() => { const i = document.querySelector('#preview img.pv-img');"
+        " return i.decode().then(() => [i.naturalWidth, i.clientWidth,"
+        " document.querySelector('#preview').clientWidth]) }"
+    )
+    assert natural == 1600
+    assert 0 < shown <= pane < natural
 
 
 def test_a_deep_link_into_an_archive_previews_the_member(page):
