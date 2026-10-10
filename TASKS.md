@@ -23,10 +23,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
+## In Progress
+
 - [82] Update stale Playwright 1.61 pins and the server renderer note in docs
   <!-- hai:{"updatedAt":"2026-10-10T22:59:13.130Z"} -->
-
-## In Progress
 
 - [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-10T19:58:38.726Z"} -->
