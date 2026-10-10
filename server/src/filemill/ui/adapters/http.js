@@ -117,8 +117,13 @@ export const HTTP = {
     if (!node.dir && !node.meta) node.meta = { error: "no metadata" };
   },
 
+  /* A member of an archive has bytes of its own; the server reads them from
+     inside the file `rel` names when the request carries the member's vpath.
+     A JSON or JSONL member is browsed in the browser like the same file on
+     disk, so this is the read that opens it. */
   async blob(node) {
-    const r = await fetch(`${API}/raw?p=${encodeURIComponent(node.rel)}`);
+    const v = node.vpath ? `&v=${encodeURIComponent(node.vpath)}` : "";
+    const r = await fetch(`${API}/raw?p=${encodeURIComponent(node.rel)}${v}`);
     return r.ok ? await r.blob() : null;
   },
 

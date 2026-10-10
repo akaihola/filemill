@@ -29,6 +29,13 @@ own name so that the suffix picks the renderer, and renders it through the same
 from `/api/raw?p=…&v=…`, which serves the member's bytes with a media type
 guessed from its name.
 
+A JSON or JSONL member is browsed in the browser, as the same file on disk is
+(`ui/adapters/vfs-json.js`): the browser reads the member's bytes from
+`/api/raw?p=…&v=…` through `FS.blob`, which sends the node's virtual path, and
+opens the member as columns of its keys or rows with the foldable JSON preview.
+Until 2026-10-11 the read dropped the virtual path and fetched the archive
+itself, so the member showed a chevron that opened nothing ([84]).
+
 The work is bounded. The member index stops at `MAX_MEMBERS` entries and is
 cached per path, size and mtime, so one directory listing that asks "is this
 archive non-empty?" costs one walk, not one per request. A member over
@@ -48,3 +55,5 @@ leaf to the server instead of to the local renderer, which would have fetched
 the whole archive. A zip is listed from its central directory; a tar is walked
 once per listing and once more per member read, so a large compressed tar is
 slow to open and slow to preview from, in proportion to its size.
+
+[84]: ../tasks/84-json-member-in-archive-shows-chevron-but-does-not-open.md
