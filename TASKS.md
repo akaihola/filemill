@@ -41,7 +41,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [*] Make Git `.bundle` files navigable hierarchically, and if they contain previewable
   files, show them in the preview pane when navigated to.
-  <!-- hai:{"id":"simple-ca7153b94516ed5f","updatedAt":"2026-10-07T17:35:59.077Z"} -->
+  <!-- hai:{"id":"simple-ca7153b94516ed5f","updatedAt":"2026-10-10T19:48:17.336Z"} -->
 
 ## In Progress
 
