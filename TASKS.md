@@ -25,10 +25,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
+## In Progress
+
 - [86] Markdown in archives is not rendered
   <!-- hai:{"updatedAt":"2026-10-10T22:32:03.675Z"} -->
-
-## In Progress
 
 - [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-10T19:58:38.726Z"} -->
