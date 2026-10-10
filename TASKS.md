@@ -31,10 +31,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [89] Markdown previews show two Raw buttons
-  <!-- hai:{"updatedAt":"2026-10-10T21:29:34.645Z"} -->
-
 ## In Progress
+
+- [~] [89] Markdown previews show two Raw buttons
+  <!-- hai:{"updatedAt":"2026-10-10T21:29:34.645Z"} -->
 
 - [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-10T19:58:38.726Z"} -->
