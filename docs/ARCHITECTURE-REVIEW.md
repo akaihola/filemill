@@ -201,7 +201,7 @@ read-only. No ORM. Related: [34], [61].
   RST node to `PreviewHTTP`. The server's local-folder mount (`:191-196`) uses
   the same wrapper, so a browser-owned RST file requests
   `/api/preview?p=undefined`. See [41].
-- The Raw link (`ui/core/render.js:479-488`) is a server-style URL whenever any
+- The Raw link (`ui/core/render.js:478-488`) is a server-style URL whenever any
   router exists, including the static hash router. The server's local-folder
   mode has no router, so changing view mode is a no-op there.
 - Resolved: `PreviewLocal` now applies `TEXT_MAX` only to text
