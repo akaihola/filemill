@@ -50,6 +50,8 @@ status.
   `VFSMemberProvider`, and `/api/preview` and `/api/raw` take the member's
   virtual path as `v`. `HTTP.blob` sends it too, so a JSON or JSONL member
   browses in the browser like the same file on disk ([84], 2026-10-11).
+  A member that the server renders (an image) reuses the browser's own
+  markup, `img.pv-img`, so one stylesheet scales both ([85], 2026-10-11).
 - **Persistence.** Files are the only durable data. The browser keeps recent
   folder handles in IndexedDB, settings in localStorage, navigation in history
   and application assets in Cache Storage.
