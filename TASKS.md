@@ -17,10 +17,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [79] Remove § signs and redundant headings from document section previews
   <!-- hai:{"id":"simple-e6ef425c-e474-4559-b792-1e21478c71bb","priority":"none","labels":[],"createdAt":"2026-10-08T16:21:55.597Z","updatedAt":"2026-10-11T10:29:43.419Z"} -->
 
+## In Progress
+
 - [81] Horizontal scrolling fold "stops"
   <!-- hai:{"id":"simple-d01a5118-704f-4133-953c-ead294dbc119","priority":"none","labels":[],"createdAt":"2026-10-08T19:19:18.607Z","updatedAt":"2026-10-10T23:17:26.416Z"} -->
-
-## In Progress
 
 - [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-10T19:58:38.726Z"} -->
