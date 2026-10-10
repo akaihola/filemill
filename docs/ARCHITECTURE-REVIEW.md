@@ -43,11 +43,12 @@ status.
 - **Virtual filesystems.** JSON, JSONL and CSV are browser adapters
   (`ui/adapters/vfs-json.js`, `vfs-csv.js`). Markdown and reStructuredText
   browse by their headings the same way (`vfs-doc.js`, outline in
-  `ui/core/model/headings.js`, [ADR 0070]). SQLite, WebVTT and archives
-  (tar, compressed tar and zip, [ADR 0072]) are server providers registered in
-  `vfs.py`. An archive member has bytes of its own, so `vfs.py` has a second
-  protocol, `VFSMemberProvider`, and `/api/preview` and `/api/raw` take the
-  member's virtual path as `v`.
+  `ui/core/model/headings.js`, [ADR 0070]). SQLite, WebVTT, archives
+  (tar, compressed tar and zip, [ADR 0072]) and Git bundles (through `git`,
+  [ADR 0073]) are server providers registered in `vfs.py`. An archive member
+  or a bundle blob has bytes of its own, so `vfs.py` has a second protocol,
+  `VFSMemberProvider`, and `/api/preview` and `/api/raw` take the member's
+  virtual path as `v`.
 - **Persistence.** Files are the only durable data. The browser keeps recent
   folder handles in IndexedDB, settings in localStorage, navigation in history
   and application assets in Cache Storage.
@@ -233,7 +234,8 @@ replace the current selection. Related: [39], [40], [64].
 - `preview.py:read_text` and the RST path read whole files. PPTX and DOCX have
   no archive expansion limit. FSA metadata sweeps use unbounded `Promise.all`.
   Tar and zip browsing ([ADR 0072]) is bounded: `MAX_MEMBERS` on the index and
-  `MEMBER_MAX` on a member read.
+  `MEMBER_MAX` on a member read. Git bundle browsing ([ADR 0073]) is bounded:
+  `BUNDLE_MAX` on the file, `MEMBER_MAX` on a blob, a timeout per `git` call.
 
 No load benchmark exists; measure before adding pools or caches.
 
@@ -277,6 +279,8 @@ advertised command in a clean environment and dates superseded ADRs.
   resolution and client validation as JSONL paths ([ADR 0071]).
 - `<div class="preview-error">` is built by hand in seven places across the
   server.
+- The server shells out: ripgrep for search, `git` for bundles. Neither is
+  checked at start-up; search fails per request, bundles are plain files.
 - Core knows the server: `ui/core/search.js:35` builds `/api/search` URLs. VTT
   parsing and file classification exist in both Python and JavaScript.
 - Rows are clickable `div`s without full list semantics. No assistive technology
@@ -359,4 +363,5 @@ A12 items can land at any time, each with a focused test.
 [ADR 0070]: adr/0070-documents-browse-by-headings.md
 [ADR 0071]: adr/0071-bounded-json-documents.md
 [ADR 0072]: adr/0072-archives-browse-by-their-members.md
+[ADR 0073]: adr/0073-git-bundles-browse-by-refs-and-trees.md
 [remaining red tests]: testing/remaining-red-tests.md

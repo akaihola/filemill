@@ -159,6 +159,18 @@ def ui_root(tmp_path: Path) -> Path:
         info.size = len(b"hello from the archive\n")
         tf.addfile(info, io.BytesIO(b"hello from the archive\n"))
     (tmp_path / "bundle.tar.zst").write_bytes(zstd_compress(archive_buf.getvalue()))
+    if shutil.which("git"):
+        repo = tmp_path / ".bundle-source"
+        repo.mkdir()
+        git = ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t"]
+        (repo / "notes.txt").write_bytes(b"hello from the git bundle\n")
+        for cmd in (["init", "-q", "-b", "main"], ["add", "."], ["commit", "-qm", "x"]):
+            subprocess.run([*git, *cmd], check=True)
+        subprocess.run(
+            [*git, "bundle", "create", "-q", str(tmp_path / "repo.bundle"), "--all"],
+            check=True,
+        )
+        shutil.rmtree(repo)
     return tmp_path
 
 
@@ -1452,6 +1464,24 @@ def test_an_archive_opens_as_columns_and_a_member_previews(page):
         timeout=15000,
     )
     assert "/n/bundle.tar.zst/inside/hello.txt" in page.url
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="needs git")
+def test_a_git_bundle_opens_as_refs_then_files_and_a_file_previews(page):
+    """A .bundle is a folder of its refs; a ref is a folder of its tree."""
+    page.open()
+    page.click('.col[data-i="0"] .row:has-text("repo.bundle")')
+    page.wait_for_selector('.col[data-i="1"] .row', timeout=15000)
+    page.click('.col[data-i="1"] .row:has-text("heads")')
+    page.wait_for_selector('.col[data-i="2"] .row', timeout=15000)
+    page.click('.col[data-i="2"] .row:has-text("main")')
+    page.wait_for_selector('.col[data-i="3"] .row', timeout=15000)
+    page.click('.col[data-i="3"] .row:has-text("notes.txt")')
+    page.wait_for_function(
+        "document.querySelector('#preview').innerText.includes('hello from the git bundle')",
+        timeout=15000,
+    )
+    assert "/n/repo.bundle/heads/main/notes.txt" in page.url
 
 
 def test_a_deep_link_into_an_archive_previews_the_member(page):

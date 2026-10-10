@@ -14,6 +14,8 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   one at a time when opened.
 - Tar archives (plain, gzip, bzip2, xz, zstd) and zip files open as columns of
   their members in the server edition, and a member previews as the file it is.
+- Git `.bundle` files open as columns of their refs and trees in the server
+  edition when `git` is installed, and a blob previews as the file it is.
 
 ### Changed
 
