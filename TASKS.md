@@ -85,7 +85,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## Completed / Accepted
 
 - [ ] [85] Images in archives are not scaled to the preview pane
-  <!-- hai:{"updatedAt":"2026-10-10T22:15:23.061Z"} -->
+  <!-- hai:{"updatedAt":"2026-10-10T22:31:14.157Z"} -->
 
 - [ ] [84] JSON member in an archive shows a chevron but does not open
   <!-- hai:{"updatedAt":"2026-10-10T22:15:01.018Z"} -->
