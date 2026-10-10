@@ -315,6 +315,9 @@ def member_raw_response(target: Path, vpath: str) -> Response:
 def member_preview_response(target: Path, vpath: str, preview_url: str) -> Response:
     """Render a member the way the same file would render on disk.
 
+    Only the kinds the server renders for a file on disk arrive here: the
+    browser keeps Markdown, .docx and .pptx members for its own renderers
+    (ui/adapters/app-http.js), reading their bytes through the raw route.
     The renderers read paths, so the bytes go to a temporary file under the
     member's own name — the suffix is what picks the renderer — and are gone
     before the response leaves. *preview_url* is where an image or PDF member

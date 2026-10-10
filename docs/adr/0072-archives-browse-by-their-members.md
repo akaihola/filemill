@@ -36,6 +36,17 @@ opens the member as columns of its keys or rows with the foldable JSON preview.
 Until 2026-10-11 the read dropped the virtual path and fetched the archive
 itself, so the member showed a chevron that opened nothing ([84]).
 
+The same holds for every kind the browser renders from bytes on disk —
+Markdown, `.docx` and `.pptx` (`ui/adapters/app-http.js`): the server's
+virtual-leaf wrapper leaves those members to the browser's rich renderer,
+which reads them through `FS.blob`. A Markdown member also opens as columns
+of its headings (`ui/adapters/vfs-doc.js`), the way the same file on disk
+does. A reStructuredText member stays a plain file: its sections render on
+the server, which has no route for a member plus a line span. Under
+`?filemill=highlight` a member still asks the server, whose answer is the
+member's coloured source. Until 2026-10-11 every member asked the server,
+so a Markdown member previewed as coloured source ([86]).
+
 The work is bounded. The member index stops at `MAX_MEMBERS` entries and is
 cached per path, size and mtime, so one directory listing that asks "is this
 archive non-empty?" costs one walk, not one per request. A member over
@@ -57,3 +68,4 @@ once per listing and once more per member read, so a large compressed tar is
 slow to open and slow to preview from, in proportion to its size.
 
 [84]: ../tasks/84-json-member-in-archive-shows-chevron-but-does-not-open.md
+[86]: ../tasks/86-markdown-in-archives-is-not-rendered.md

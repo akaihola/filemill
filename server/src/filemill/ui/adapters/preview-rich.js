@@ -29,7 +29,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { PreviewLocal } from "./preview-local.js";
 import { TEXT_MAX } from "../core/limits.js";
-import { classifyFile } from "../core/file-kind.js";
+import { classifyFile, fileKind } from "../core/file-kind.js";
 import { esc } from "../core/icons.js";
 import { choose } from "../core/nav.js";
 import { FS } from "../core/ports.js";
@@ -384,7 +384,9 @@ export const PreviewRich = {
   },
 
   async render(node) {
-    const kind = classifyFile(node.name, node).preview;
+    /* By the file's own kind: a member of an archive is "virtual" to
+       classifyFile, and its bytes arrive through FS.blob all the same. */
+    const kind = fileKind(node);
     const need = NEEDS[kind];
     if (
       (!need && kind !== "pptx") || (need && !richEnabled() && !vendored(need))

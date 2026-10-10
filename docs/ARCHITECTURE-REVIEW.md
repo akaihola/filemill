@@ -52,6 +52,9 @@ status.
   browses in the browser like the same file on disk ([84], 2026-10-11).
   A member that the server renders (an image) reuses the browser's own
   markup, `img.pv-img`, so one stylesheet scales both ([85], 2026-10-11).
+  A Markdown, `.docx` or `.pptx` member renders in the browser like the same
+  file on disk, and a Markdown member opens by its headings ([86],
+  2026-10-11); a reStructuredText member stays with the server renderer.
 - **Persistence.** Files are the only durable data. The browser keeps recent
   folder handles in IndexedDB, settings in localStorage, navigation in history
   and application assets in Cache Storage.

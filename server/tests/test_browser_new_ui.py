@@ -55,6 +55,35 @@ TOKEN_CLASSES = "e=>[...new Set(e.map(x=>x.className))].sort().join()"
 BIG_LINES = 20_000
 
 
+def _minimal_docx(text: str) -> bytes:
+    """The smallest .docx mammoth will read: one paragraph, no styles."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr(
+            "[Content_Types].xml",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+            '<Default Extension="xml" ContentType="application/xml"/>'
+            '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+            "</Types>",
+        )
+        zf.writestr(
+            "_rels/.rels",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
+            "</Relationships>",
+        )
+        zf.writestr(
+            "word/document.xml",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+            f"<w:body><w:p><w:r><w:t>{text}</w:t></w:r></w:p></w:body></w:document>",
+        )
+    return buf.getvalue()
+
+
 @pytest.fixture()
 def ui_root(tmp_path: Path) -> Path:
     """A tree with enough shape to exercise columns, previews and deep links."""
@@ -170,6 +199,11 @@ def ui_root(tmp_path: Path) -> Path:
             "rows.jsonl",
             '{"id": 1, "title": "First"}\n{"id": 2, "title": "Second"}\n',
         )
+        zf.writestr(
+            "readme.md",
+            "# Inside\n\n**bold** member\n\n## Intro\n\nfirst part\n\n## Outro\n\nlast part\n",
+        )
+        zf.writestr("letter.docx", _minimal_docx("Dear member"))
     if shutil.which("git"):
         repo = tmp_path / ".bundle-source"
         repo.mkdir()
@@ -1558,6 +1592,31 @@ def test_an_image_member_is_scaled_to_the_pane_like_a_file_on_disk(page):
     )
     assert natural == 1600
     assert 0 < shown <= pane < natural
+
+
+def test_a_markdown_member_renders_like_the_same_file_on_disk(page):
+    """Issue 86: a .md inside an archive came back from the server as
+    highlighted source. It renders in the browser from the member's bytes,
+    the way the same file on disk does, and opens as columns of its
+    headings like one too."""
+    page.open("bundle.zip/readme.md")
+    page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
+    assert "Inside" in page.inner_text("#preview .pv-rich h1")
+    assert page.locator("#preview .pv-rich strong").count() == 1
+    page.wait_for_selector('.col[data-i="2"] .row:has-text("Outro")', timeout=15000)
+    page.click('.col[data-i="2"] .row:has-text("Outro")')
+    page.wait_for_function(
+        "document.querySelector('#preview .pv-rich')?.innerText.includes('last part')",
+        timeout=15000,
+    )
+    assert "first part" not in page.inner_text("#preview .pv-rich")
+    assert "/n/bundle.zip/readme.md/Outro" in page.url
+
+
+def test_a_docx_member_renders_like_the_same_file_on_disk(page):
+    page.open("bundle.zip/letter.docx")
+    page.wait_for_selector("#preview .pv-rich p", timeout=15000)
+    assert "Dear member" in page.inner_text("#preview .pv-rich p")
 
 
 def test_a_deep_link_into_an_archive_previews_the_member(page):
