@@ -81,7 +81,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## Completed / Accepted
 
 - [ ] [82] Update stale Playwright 1.61 pins and the server renderer note in docs
-  <!-- hai:{"updatedAt":"2026-10-10T22:59:13.130Z"} -->
+  <!-- hai:{"updatedAt":"2026-10-10T23:16:57.165Z"} -->
 
 - [ ] [86] Markdown in archives is not rendered
   <!-- hai:{"updatedAt":"2026-10-10T22:58:12.829Z"} -->
