@@ -25,9 +25,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [82] Update stale Playwright 1.61 pins and the server renderer note in docs
-  <!-- hai:{"updatedAt":"2026-10-10T22:59:13.130Z"} -->
-
 - [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-10T19:58:38.726Z"} -->
 
@@ -82,6 +79,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [82] Update stale Playwright 1.61 pins and the server renderer note in docs
+  <!-- hai:{"updatedAt":"2026-10-10T22:59:13.130Z"} -->
 
 - [ ] [86] Markdown in archives is not rendered
   <!-- hai:{"updatedAt":"2026-10-10T22:58:12.829Z"} -->
