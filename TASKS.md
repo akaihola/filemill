@@ -9,8 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [88] Status bar hints wrap and get clipped
-
 - [89] Markdown previews show two Raw buttons
 
 - [84] JSON member in an archive shows a chevron but does not open
@@ -34,6 +32,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-78e15d9a-0d90-4186-953f-46fdddf6fe5c","priority":"none","labels":[],"createdAt":"2026-10-08T16:19:43.075Z","updatedAt":"2026-10-08T16:19:43.075Z"} -->
 
 ## Scheduled
+
+- [88] Status bar hints wrap and get clipped
+  <!-- hai:{"updatedAt":"2026-10-10T20:54:15.108Z"} -->
 
 ## In Progress
 
