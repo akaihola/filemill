@@ -35,6 +35,7 @@ from filemill.providers.archive import zstd_compress
 
 pytest.importorskip("playwright")
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+from playwright.sync_api import expect
 
 pytestmark = pytest.mark.integration
 
@@ -268,6 +269,21 @@ def test_the_root_column_lists_the_served_directory(page):
     )
     assert {"notes", "code", "empty", "README.md", "sample.db"} <= set(names)
     assert ".hidden" not in names  # dotfiles off by default, as in filemill
+
+
+def test_search_label_is_read_aloud_but_not_shown(page):
+    """The label names the search box for assistive tech and stays off screen.
+
+    `sr-only` is the usual clip-to-a-pixel trick; a label with a real box would
+    show "Search file contents" in the top bar on every screen.
+    """
+    page.open()
+    label = page.locator('label[for="search-bar"]')
+    assert label.inner_text() == "Search file contents"
+    box = label.bounding_box()
+    assert box is not None and box["width"] <= 1 and box["height"] <= 1
+    expect(page.locator("#search-bar")).to_have_accessible_name("Search file contents")
+    assert page.get_by_label("Search file contents").get_attribute("id") == "search-bar"
 
 
 def test_theme_follows_os_colour_scheme_and_keeps_manual_control(server, playwright):
