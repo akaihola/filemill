@@ -82,3 +82,18 @@ finder's smooth scroll had moved.
 - Pre-commit: all hooks pass except mypy, which on this Python 3.14 host cannot
   import `zstandard` (its marker skips 3.14). CI runs 3.12 and its lint job
   passed on the same sources on 2026-10-09.
+
+## Blocked on the push, 2026-10-10
+
+Local `main` is fast-forwarded to `5ee500f` and contains the fix. Every push
+from `agent@gogo` returns 403, for `main` and for a feature branch alike,
+inside and outside the sandbox, although the token reports push permission on
+the repository. Per the push rules in `~/.config/coding-agents/sandbox.md`,
+pushing stops here.
+
+Remaining steps, from `akaihola@atom`:
+
+1. `git push origin main`.
+2. Watch the `publish` run. The open question is `test-ui.py::test_storage`
+   on the stock Chromium 1243 download (see Validation above).
+3. Check <https://akaihola.github.io/filemill/>.
