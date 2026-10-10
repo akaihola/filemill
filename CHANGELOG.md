@@ -33,6 +33,8 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   per folder ([ADR 0050]).
 - `Alt`+`←`/`→` and `⌘`+`←`/`→` reach the browser as Back and Forward instead of
   moving the finder's focus.
+- Markdown and WebVTT previews show one Raw link. The per-type Rendered/Raw
+  and Transcript/Raw groups duplicated the Raw link and the Source toggle.
 
 ## [0.1.0] - 2026-09-15
 

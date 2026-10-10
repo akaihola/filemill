@@ -460,57 +460,63 @@ def test_preview_fullscreen_falls_back_when_browser_denies_it(page):
     assert full.get_attribute("aria-pressed") == "false"
 
 
-def test_markdown_rendered_raw_toggle_preserves_navigation(page):
+TOOLBAR_LABELS = """() => [...document.querySelectorAll('.pv-actions .pv-action')]
+    .filter(el => el.checkVisibility()).map(el => el.textContent.trim())"""
+
+
+@pytest.mark.parametrize(
+    "filename,ready",
+    [("README.md", "#preview .pv-rich h1"), ("captions.vtt", ".preview-cue")],
+)
+def test_preview_toolbar_shows_one_raw_control(page, filename, ready):
+    """One Raw link for every file type; the view toggle is the Source button."""
+    page.open_resource(f"{filename}?filemill=render")
+    page.wait_for_selector(ready, timeout=15000)
+    assert page.evaluate(TOOLBAR_LABELS) == ["Raw", "Source", "Delete", "Fullscreen"]
+
+
+def test_markdown_rendered_source_toggle_preserves_navigation(page):
     source = "# Readme\n\nline one\nline two\n\n```python\n" + SOURCE + "```\n"
-    page.open("README.md")
+    page.open_resource("README.md?filemill=render")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
-    rendered = page.locator("#pv-md-rendered")
-    raw = page.locator("#pv-md-raw")
-    assert rendered.get_attribute("aria-pressed") == "true"
-    assert raw.get_attribute("aria-pressed") == "false"
+    toggle = page.locator("#pv-view")
+    assert toggle.inner_text() == "Source"
     assert page.evaluate("sel")[-1] == "README.md"
 
-    raw.click()
+    toggle.click()
     page.wait_for_function("document.querySelector('#preview .pv-text')?.textContent")
     assert page.locator("#preview .pv-rich h1").count() == 0
     assert page.text_content("#preview .pv-text") == source
-    assert rendered.get_attribute("aria-pressed") == "false"
-    assert raw.get_attribute("aria-pressed") == "true"
+    assert toggle.inner_text() == "Rendered"
     assert page.evaluate("sel")[-1] == "README.md"
 
-    rendered.press("Enter")
+    toggle.press("Enter")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
+    assert toggle.inner_text() == "Source"
     assert page.evaluate("sel")[-1] == "README.md"
 
 
-def test_vtt_transcript_and_raw_views_preserve_navigation(page):
-    source = (
-        "WEBVTT\n\n1\n00:00:01.000 --> 00:00:03.500\n"
-        "<v Alice>Hello <c.green>world</c>\n\n"
-        "00:00:04.000 --> 00:00:05.000\nBye\n"
-    )
-    page.open("captions.vtt")
+def test_vtt_transcript_and_source_views_preserve_navigation(page):
+    page.open_resource("captions.vtt?filemill=render")
     page.wait_for_selector(".preview-transcript .preview-cue", timeout=15000)
     assert "00:00:01.000" in page.inner_text("#pv-content")
     assert "Hello world" in page.inner_text("#pv-content")
-    assert page.locator("#pv-vtt-transcript").get_attribute("aria-pressed") == "true"
     assert page.evaluate("sel")[-1] == "captions.vtt"
 
-    page.click("#pv-vtt-raw")
-    page.wait_for_function("document.querySelector('#pv-content .preview-raw')")
-    assert page.text_content("#pv-content .preview-raw") == source
-    assert page.locator("#pv-vtt-raw").get_attribute("aria-pressed") == "true"
+    page.click("#pv-view")
+    page.wait_for_selector("#preview .pv-text", timeout=15000)
+    assert "WEBVTT" in page.text_content("#preview .pv-text")
+    assert page.locator(".preview-transcript").count() == 0
     assert page.evaluate("sel")[-1] == "captions.vtt"
 
-    page.click("#pv-vtt-transcript")
+    page.click("#pv-view")
     page.wait_for_selector(".preview-transcript .preview-cue", timeout=15000)
-    assert page.locator("#pv-vtt-transcript").get_attribute("aria-pressed") == "true"
+    assert page.evaluate("sel")[-1] == "captions.vtt"
 
 
 def test_vtt_empty_and_malformed_files_are_safe(page):
     page.open("empty.vtt")
     assert "no cues" in page.inner_text("#pv-content").lower()
-    assert page.locator("#pv-vtt-views").is_visible()
     page.open("bad.vtt")
     assert "malformed webvtt" in page.inner_text("#pv-content").lower()
 
@@ -519,7 +525,6 @@ def test_vtt_highlight_view_keeps_the_source_fallback(page):
     page.open("captions.vtt?filemill=highlight")
     page.wait_for_selector("#preview .pv-text", timeout=15000)
     assert "WEBVTT" in page.inner_text("#preview .pv-text")
-    assert page.locator("#pv-vtt-views").is_hidden()
 
 
 @pytest.mark.parametrize("start", ["", "notes/plain.txt?filemill=highlight"])
@@ -561,24 +566,6 @@ def test_content_search_opens_a_matching_file(page, start, activation):
     raw_action = page.locator("#pv-raw").get_attribute("href")
     assert raw_action == "/notes/deep/leaf.md?filemill=raw"
     assert page.request.get(f"{page.base}{raw_action}").body() == raw.body()
-
-
-@pytest.mark.parametrize(
-    "filename,query,raw_button,rendered",
-    [
-        ("notes/deep/leaf.md", "Leaf", "#pv-md-raw", "#preview .pv-rich h1"),
-        ("captions.vtt", "Hello", "#pv-vtt-raw", ".preview-transcript .preview-cue"),
-    ],
-)
-def test_content_search_resets_raw_preview_mode(
-    page, filename, query, raw_button, rendered
-):
-    page.open_resource(f"{filename}?filemill=render")
-    page.click(raw_button)
-    page.fill("#search-bar", query)
-    page.locator(f'.search-result[data-path="{filename}"]').first.press("Space")
-    page.wait_for_selector(rendered, timeout=15000)
-    assert page.locator(raw_button).get_attribute("aria-pressed") == "false"
 
 
 def test_fenced_code_is_highlighted_in_the_browser(page):
