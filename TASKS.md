@@ -41,10 +41,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [*] Make Git `.bundle` files navigable hierarchically, and if they contain previewable
-  files, show them in the preview pane when navigated to.
-  <!-- hai:{"id":"simple-ca7153b94516ed5f","updatedAt":"2026-10-10T19:48:17.336Z"} -->
-
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
   column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
@@ -96,6 +92,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [*] Make Git `.bundle` files navigable hierarchically, and if they contain previewable
+  files, show them in the preview pane when navigated to.
+  <!-- hai:{"id":"simple-ca7153b94516ed5f","updatedAt":"2026-10-10T19:56:48.893Z"} -->
 
 - [ ] Make `.tar.zst` (and other compressed archive) files navigable hierarchically, and
   if they contain previewable files, show them in the preview pane when navigated to.
