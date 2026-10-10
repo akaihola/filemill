@@ -70,14 +70,16 @@ def test_preview_left_preserves_ancestor_folds(bundle, playwright):
         for depth in range(5):
             page.keyboard.press("ArrowDown")
             page.keyboard.press("ArrowRight")
-            page.wait_for_function("length => path.length === length", arg=depth + 2)
+            page.wait_for_function("length => sel.length === length", arg=depth + 2)
         page.keyboard.press("ArrowRight")
         page.wait_for_function("document.activeElement.id === 'preview'")
-        before = page.evaluate("folded")
-        assert before > 0
+        # The finder scrolls smoothly (styles.css) and `folded` follows the
+        # scroll, so wait for the layout's target: every ancestor folded.
+        page.wait_for_function("folded === path.length - 1")
+        before = page.evaluate("[folded, finder.scrollLeft]")
         page.keyboard.press("ArrowLeft")
         page.wait_for_function("document.activeElement.id !== 'preview'")
-        assert page.evaluate("folded") == before
+        assert page.evaluate("[folded, finder.scrollLeft]") == before
     finally:
         browser.close()
 
@@ -100,7 +102,7 @@ def test_preview_left_expands_parent_when_all_columns_are_folded(bundle, playwri
         for depth in range(5):
             page.keyboard.press("ArrowDown")
             page.keyboard.press("ArrowRight")
-            page.wait_for_function("length => path.length === length", arg=depth + 2)
+            page.wait_for_function("length => sel.length === length", arg=depth + 2)
         page.keyboard.press("ArrowRight")
         page.wait_for_function("document.activeElement.id === 'preview'")
         page.evaluate("finder.scrollTo({left: range(), behavior: 'instant'})")
