@@ -33,9 +33,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [89] Markdown previews show two Raw buttons
-  <!-- hai:{"updatedAt":"2026-10-10T21:29:34.645Z"} -->
-
 - [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-10T19:58:38.726Z"} -->
 
@@ -90,6 +87,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [89] Markdown previews show two Raw buttons
+  <!-- hai:{"updatedAt":"2026-10-10T21:29:34.645Z"} -->
 
 - [ ] [88] Status bar hints wrap and get clipped
   <!-- hai:{"updatedAt":"2026-10-10T21:28:47.986Z"} -->
