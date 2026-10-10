@@ -171,13 +171,14 @@ BrowserType.launch: Executable doesn't exist at
 ```
 
 Ignore that banner. Each Playwright release carries one browser revision.
-Each Nix browser bundle carries one. They must be the same one.
-`$PLAYWRIGHT_BROWSERS_PATH` holds `chromium-1228` and
-`chromium_headless_shell-1228`, so only 1.61.x launches. 1.57.0 asks for
-revision 1200 and 1.62.0 asks for 1234. `pyproject.toml` pins
-`playwright~=1.61.0` for that reason, and `--with` overrides the pin.
+Each Nix browser bundle carries one. They must be the same one. The release
+that matches the bundle in `$PLAYWRIGHT_BROWSERS_PATH` is the version in
+`$UV_CONSTRAINT`, and `pyproject.toml` pins that version with a comment that
+records which neighbouring releases were measured to fail. Both neighbours die
+at `BrowserType.launch` with the banner above. `--with "playwright==X"`
+overrides the pin, so run the suites with `uv run --project server` instead.
 `playwright install` downloads a fourth copy of a browser that Nix provides.
-Do not run it. Re-pin from the constraint file instead:
+Do not run it. When the Nix bundle moves, re-pin from the constraint file:
 
 ```bash
 uv lock --upgrade-package "$(grep -E '^playwright[=<>~!]' "$UV_CONSTRAINT")"

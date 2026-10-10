@@ -6,10 +6,10 @@ metadata, refreshes, and view-state restore. Run it manually when changing that
 path or before a release that relies on it. It is not part of the automated
 test suite.
 
-Prerequisites: `uv`, a graphical desktop, the repository's Playwright 1.61.0
-environment with its matching Chromium browser, and port `8787` free. On
-development machines, Chromium comes from the Nix environment; do not run
-`playwright install`. From the repository root, run:
+Prerequisites: `uv`, a graphical desktop, the Playwright release pinned in
+`server/pyproject.toml` with its matching Chromium browser, and port `8787`
+free. On development machines, Chromium comes from the Nix environment; do
+not run `playwright install`. From the repository root, run:
 
 ```bash
 uv run --project server python static/test-e2e.py

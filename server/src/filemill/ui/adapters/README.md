@@ -59,9 +59,9 @@ node's kind and follows the chain.
 `CORE_RENDERERS` holds what the browser draws from the bytes alone: images, PDF,
 HTML, `.desktop`, WebVTT and coloured text. Each app module registers that list
 first and then its own adapters' entries. `app-fsa.js` adds every entry of
-`preview-rich.js`. `app-http.js` adds only `.pptx` from it, because the Python
-renderers keep Markdown, `.docx` and `.rst`. A new kind is one entry and one
-test in `static/test-ui.py`.
+`preview-rich.js`. `app-http.js` adds Markdown, `.docx`, `.pptx` and the
+`offline` fallback from it; only reStructuredText stays with the Python
+renderer. A new kind is one entry and one test in `static/test-ui.py`.
 
 **`ROUTER`** — `read()`, `write(state, replace)`, `onNavigate(cb)`, or `null`
 for no URL sync. Core owns the mapping between a path and the column chain
