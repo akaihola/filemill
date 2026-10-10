@@ -39,3 +39,10 @@ export function classifyFile(
   }
   return { kind: "file", preview: "text", editable: true };
 }
+
+/* The kind of the file a node names, wherever its bytes live. Classified with
+   its vpath a member of an archive is "virtual", like a database row: that
+   says where the bytes come from, not what they are. A renderer that reads
+   them through FS.blob wants the kind of the member itself. */
+export const fileKind = (n) =>
+  classifyFile(n.name, { ...n, vpath: "" }).preview;

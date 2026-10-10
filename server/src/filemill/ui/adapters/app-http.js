@@ -48,7 +48,7 @@ import {
   setState,
 } from "../core/model/state.js";
 import { hlLang } from "../core/syntax.js";
-import { classifyFile } from "../core/file-kind.js";
+import { classifyFile, fileKind } from "../core/file-kind.js";
 
 document.getElementById("bar").insertAdjacentHTML(
   "beforeend",
@@ -128,35 +128,44 @@ const PreviewHTTP = {
 /* Markdown, .docx and .pptx render in the browser in this edition too, from
    the modules the shell lists in FILEMILL_CDN (Markdown and .docx are served
    from /ui/vendor/, see ui/vendor/README.md). This sits inside withHighlighting
-   so that ?filemill=highlight still shows a Markdown file as coloured source. */
-const RICH = ["md", "markdown", "rst", "docx", "pptx"];
+   so that ?filemill=highlight still shows a Markdown file as coloured source.
+   A member of an archive is no exception: FS.blob fetches its bytes with its
+   vpath (adapters/http.js), so the same renderer draws it from those. */
+const BROWSER_RENDERED = new Set(["md", "markdown", "docx", "pptx"]);
 const withRichPreview = (provider) => ({
   revoke() {
     provider.revoke?.();
     PreviewRich.revoke();
   },
-  render: (n) =>
-    (!n.vpath && classifyFile(n.name, n).preview === "video"
+  render: (n) => {
+    const kind = fileKind(n);
+    return (!n.vpath && kind === "video"
       ? PreviewLocal
-      : !n.vpath && classifyFile(n.name, n).preview === "rst"
+      : !n.vpath && kind === "rst"
       ? PreviewHTTP
-      : !n.vpath && RICH.includes(classifyFile(n.name, n).preview)
+      : BROWSER_RENDERED.has(kind)
       ? PreviewRich
-      : provider).render(n),
+      : provider).render(n);
+  },
 });
 
 /* A virtual leaf the *server* listed — `meta.virtual` is what http.js puts on
-   an entry that came back with a vpath — has no bytes the browser can fetch:
-   it is a member inside an archive, and only the server can read it. The
+   an entry that came back with a vpath — is a member inside an archive. The
    JSON, CSV and document wrappers above have already answered for the virtual
    nodes they own, and a database row previews from its record before any
-   provider runs, so what reaches here is the server's to render. */
+   provider runs. What reaches here renders in the browser when the browser
+   renders that kind from bytes on disk too, so that a Markdown member is
+   rendered rather than coloured ([86]); ?filemill=highlight keeps asking the
+   server, whose answer for a member is its coloured source. Everything else
+   is the server's to render, since only the server reads inside the archive. */
 const withServerVirtualPreview = (provider) => ({
   revoke() {
     provider.revoke?.();
   },
   render: (n) =>
-    n.vpath && n.meta?.virtual && n.record === undefined
+    n.vpath && n.meta?.virtual && n.record === undefined &&
+      (document.documentElement.dataset.filemill === "highlight" ||
+        !BROWSER_RENDERED.has(fileKind(n)))
       ? PreviewHTTP.render(n)
       : provider.render(n),
 });

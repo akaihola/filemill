@@ -22,8 +22,15 @@ import { classifyFile } from "../core/file-kind.js";
 import { sections } from "../core/model/headings.js";
 
 const DOC_KINDS = new Set(["md", "markdown", "rst"]);
+/* A member of an archive (it has a vpath; see adapters/http.js) browses by
+   its headings too when the browser renders it: a Markdown member reads and
+   renders from its own bytes exactly like the file on disk. A
+   reStructuredText member stays a plain file, because its sections render on
+   the server, which has no route for a member plus a line span. */
+const MEMBER_DOC_KINDS = new Set(["md", "markdown"]);
 const isDoc = (n) =>
-  !n.dir && !n.vpath && DOC_KINDS.has(classifyFile(n.name).preview);
+  !n.dir &&
+  (n.vpath ? MEMBER_DOC_KINDS : DOC_KINDS).has(classifyFile(n.name).preview);
 
 /* vpath is only a stable address for the shared router and server-shaped
    nodes, as in vfs-json.js; the URL names a section by its heading text. */

@@ -3602,6 +3602,13 @@ function classifyFile(
   return { kind: "file", preview: "text", editable: true };
 }
 
+/* The kind of the file a node names, wherever its bytes live. Classified with
+   its vpath a member of an archive is "virtual", like a database row: that
+   says where the bytes come from, not what they are. A renderer that reads
+   them through FS.blob wants the kind of the member itself. */
+const fileKind = (n) =>
+  classifyFile(n.name, { ...n, vpath: "" }).preview;
+
 /* ═══ editor/undo.js ═══ */
 function editorUndo(ta, changed) {
   const past = [], future = [];
@@ -6639,8 +6646,15 @@ function build(lines, kind) {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const DOC_KINDS = new Set(["md", "markdown", "rst"]);
+/* A member of an archive (it has a vpath; see adapters/http.js) browses by
+   its headings too when the browser renders it: a Markdown member reads and
+   renders from its own bytes exactly like the file on disk. A
+   reStructuredText member stays a plain file, because its sections render on
+   the server, which has no route for a member plus a line span. */
+const MEMBER_DOC_KINDS = new Set(["md", "markdown"]);
 const isDoc = (n) =>
-  !n.dir && !n.vpath && DOC_KINDS.has(classifyFile(n.name).preview);
+  !n.dir &&
+  (n.vpath ? MEMBER_DOC_KINDS : DOC_KINDS).has(classifyFile(n.name).preview);
 
 /* vpath is only a stable address for the shared router and server-shaped
    nodes, as in vfs-json.js; the URL names a section by its heading text. */
@@ -7574,7 +7588,9 @@ const PreviewRich = {
   },
 
   async render(node) {
-    const kind = classifyFile(node.name, node).preview;
+    /* By the file's own kind: a member of an archive is "virtual" to
+       classifyFile, and its bytes arrive through FS.blob all the same. */
+    const kind = fileKind(node);
     const need = NEEDS[kind];
     if (
       (!need && kind !== "pptx") || (need && !richEnabled() && !vendored(need))

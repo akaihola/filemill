@@ -35,6 +35,9 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   moving the finder's focus.
 - Markdown and WebVTT previews show one Raw link. The per-type Rendered/Raw
   and Transcript/Raw groups duplicated the Raw link and the Source toggle.
+- A Markdown or `.docx` member of an archive renders in the browser like the
+  same file on disk, and a Markdown member opens as columns of its headings.
+  The server had returned a member's coloured source ([ADR 0072]).
 
 ## [0.1.0] - 2026-09-15
 
@@ -48,3 +51,4 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - SQLite and JSON virtual filesystem views.
 
 [ADR 0050]: docs/adr/0050-history-pushes-on-entering-a-column-rewrites-otherwise.md
+[ADR 0072]: docs/adr/0072-archives-browse-by-their-members.md
