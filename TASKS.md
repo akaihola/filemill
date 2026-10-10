@@ -27,10 +27,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [85] Images in archives are not scaled to the preview pane
-  <!-- hai:{"updatedAt":"2026-10-10T22:15:23.061Z"} -->
-
 ## In Progress
+
+- [~] [85] Images in archives are not scaled to the preview pane
+  <!-- hai:{"updatedAt":"2026-10-10T22:15:23.061Z"} -->
 
 - [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-10T19:58:38.726Z"} -->
