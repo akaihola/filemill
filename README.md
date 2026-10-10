@@ -91,7 +91,8 @@ Markdown and `.docx` render in the browser here too, from the pinned
 markdown-it and mammoth modules the server serves out of `ui/vendor/` — nothing
 is fetched from a CDN for them, and the ⚙ switch does not apply to them. Python
 renders reStructuredText, Pygments source and the JSON virtual filesystem, and
-reads inside tar and zip archives, which open as columns of their members. The
+reads inside tar and zip archives, which open as columns of their members, and
+lists Git `.bundle` files by their refs and trees through `git`. The
 result goes into the shared preview pane. SQLite rows arrive as JSON and the
 shared JSON view draws them. A local folder opened from the served page posts
 uses the same browser PreviewRich renderer. PowerPoint files are

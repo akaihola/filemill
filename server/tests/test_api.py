@@ -703,3 +703,63 @@ def test_rst_preview_renders_a_line_range(client, tmp_root: Path):
         client.get("/api/preview", params={"p": "guide.rst", "lines": "x"}).status_code
         == 400
     )
+
+
+# ── Git bundles through the new API ──────────────────────────────────────────
+
+
+def test_a_bundle_lists_as_a_folder_and_a_broken_one_as_a_file(
+    bundle_client, bundle_root: Path
+):
+    by_name = {e["name"]: e for e in bundle_client.get("/api/dir?p=").json()["entries"]}
+    assert by_name["demo.bundle"]["dir"] is True
+    assert by_name["broken.bundle"]["dir"] is False
+
+
+def test_dir_inside_a_bundle_lists_refs_then_trees(bundle_client, bundle_root: Path):
+    j = bundle_client.get("/api/dir?p=demo.bundle").json()
+    assert [(e["name"], e["dir"], e["vpath"]) for e in j["entries"]] == [
+        ("HEAD", True, "HEAD"),
+        ("heads", True, "heads"),
+        ("tags", True, "tags"),
+    ]
+    j = bundle_client.get("/api/dir?p=demo.bundle&v=heads/main").json()
+    assert [(e["name"], e["dir"]) for e in j["entries"]] == [
+        ("docs", True),
+        ("src", True),
+        ("top.txt", False),
+    ]
+    j = bundle_client.get("/api/dir?p=demo.bundle&v=heads/main/docs").json()
+    assert [e["vpath"] for e in j["entries"]] == [
+        "heads/main/docs/pic.png",
+        "heads/main/docs/readme.md",
+    ]
+
+
+def test_a_bundle_member_previews_as_the_file_it_is(bundle_client, bundle_root: Path):
+    r = bundle_client.get("/api/preview?p=demo.bundle&v=heads/main/docs/readme.md")
+    assert r.status_code == 200
+    assert "Hello from the bundle" in r.text
+    assert (
+        'class="highlight"'
+        in bundle_client.get("/api/preview?p=demo.bundle&v=tags/v1/src/app.py").text
+    )
+    r = bundle_client.get("/api/raw?p=demo.bundle&v=HEAD/docs/pic.png")
+    assert r.status_code == 200
+    assert r.content == b"\x89PNG\r\n"
+    assert r.headers["content-type"].startswith("image/png")
+
+
+def test_a_bundle_folder_ref_or_missing_member_is_404(bundle_client, bundle_root: Path):
+    for v in ("heads", "heads/main", "heads/main/docs", "heads/main/nope.txt"):
+        assert bundle_client.get(f"/api/preview?p=demo.bundle&v={v}").status_code == 404
+        assert bundle_client.get(f"/api/raw?p=demo.bundle&v={v}").status_code == 404
+
+
+def test_a_url_can_name_a_file_inside_a_bundle(bundle_client, bundle_root: Path):
+    assert (
+        bundle_client.get("/n/demo.bundle/heads/main/docs/readme.md").status_code == 200
+    )
+    assert (
+        bundle_client.get("/demo.bundle/heads/main/docs/readme.md?f").status_code == 200
+    )

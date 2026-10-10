@@ -139,6 +139,68 @@ def archive_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.fixture()
+def bundle_builder():
+    """Build a Git bundle: `build(path, {member: bytes}, tags=[...], repo=dir)`.
+
+    The repository is made beside the bundle unless *repo* says where, and the
+    bundle carries every ref in it. Returns the bundle path."""
+    import subprocess
+
+    def build(
+        path: Path,
+        members: dict[str, bytes],
+        tags: list[str] = (),
+        repo: Path | None = None,
+    ) -> Path:
+        repo = repo or path.with_suffix(".repo")
+        repo.mkdir(parents=True, exist_ok=True)
+        git = ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t"]
+        subprocess.run([*git, "init", "-q", "-b", "main"], check=True)
+        for name, data in members.items():
+            (repo / name).parent.mkdir(parents=True, exist_ok=True)
+            (repo / name).write_bytes(data)
+        subprocess.run([*git, "add", "."], check=True)
+        subprocess.run([*git, "commit", "-qm", "files"], check=True)
+        for tag in tags:
+            subprocess.run([*git, "tag", tag], check=True)
+        if path.exists():
+            path.unlink()
+        subprocess.run([*git, "bundle", "create", "-q", str(path), "--all"], check=True)
+        return path
+
+    return build
+
+
+@pytest.fixture()
+def bundle_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, bundle_builder):
+    """A root with a Git bundle of one branch and one tag."""
+    from filemill import app as app_module
+
+    bundle_builder(
+        tmp_path / "demo.bundle",
+        {
+            "top.txt": b"top level\n",
+            "docs/readme.md": b"# Hello from the bundle\n",
+            "docs/pic.png": b"\x89PNG\r\n",
+            "src/app.py": b"print('hi')\n",
+        },
+        tags=["v1"],
+    )
+    (tmp_path / "broken.bundle").write_bytes(b"not a bundle")
+    monkeypatch.setattr(app_module.app.state, "root", tmp_path)
+    yield tmp_path
+
+
+@pytest.fixture()
+def bundle_client(bundle_root: Path):
+    from starlette.testclient import TestClient
+
+    from filemill.app import app
+
+    return TestClient(app, raise_server_exceptions=False)
+
+
+@pytest.fixture()
 def archive_client(archive_root: Path):
     from starlette.testclient import TestClient
 

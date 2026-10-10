@@ -17,7 +17,14 @@ from functools import lru_cache
 from pathlib import Path
 from typing import IO, cast
 
-from filemill.vfs import REGISTRY, VFSEntry, VFSMember, _truncate, entry_order_key
+from filemill.vfs import (
+    REGISTRY,
+    VFSEntry,
+    VFSMember,
+    _truncate,
+    clean_member_path,
+    entry_order_key,
+)
 
 FOLDER_ICON = "📁"
 FILE_ICON = "📄"
@@ -76,19 +83,6 @@ def _kind(path: Path) -> str | None:
     return None
 
 
-def _clean(name: str) -> str | None:
-    """A member name as a virtual path, or None when it cannot be one.
-
-    Leading slashes and ``.`` segments go; a ``..`` anywhere drops the member.
-    Nothing is written to disk, so this is about one address per member, not
-    about containment.
-    """
-    parts = [p for p in name.replace("\\", "/").split("/") if p and p != "."]
-    if not parts or ".." in parts:
-        return None
-    return "/".join(parts)
-
-
 def _open_tar(path: Path, kind: str) -> tuple[IO[bytes] | None, tarfile.TarFile]:
     if kind == "zst":
         fh: IO[bytes] = path.open("rb")
@@ -108,7 +102,7 @@ def _tar_members(path: Path, kind: str) -> Iterator[tuple[str, tarfile.TarInfo]]
             for member in tf:
                 if not (member.isfile() or member.isdir()):
                     continue
-                clean = _clean(member.name)
+                clean = clean_member_path(member.name)
                 if clean is not None:
                     yield clean, member
     finally:
@@ -129,7 +123,7 @@ def _index(path: str, mtime_ns: int, size: int) -> Index:
         if kind == "zip":
             with zipfile.ZipFile(path) as zf:
                 for info in zf.infolist():
-                    clean = _clean(info.filename)
+                    clean = clean_member_path(info.filename)
                     if clean is None:
                         continue
                     index[clean] = (

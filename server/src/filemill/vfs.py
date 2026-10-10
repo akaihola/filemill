@@ -56,6 +56,19 @@ def classify_path(
     return FileKind("file", "text", True)
 
 
+def clean_member_path(name: str) -> str | None:
+    """A member name as a virtual path, or None when it cannot be one.
+
+    Leading slashes and ``.`` segments go; a ``..`` anywhere drops the member.
+    Nothing is written to disk, so this is about one address per member, not
+    about containment.
+    """
+    parts = [p for p in name.replace("\\", "/").split("/") if p and p != "."]
+    if not parts or ".." in parts:
+        return None
+    return "/".join(parts)
+
+
 def _truncate(s: str, n: int = MAX_LABEL_LEN) -> str:
     """Return s truncated to n chars with a trailing ellipsis if longer."""
     return s if len(s) <= n else s[: n - 1] + "…"
@@ -126,4 +139,4 @@ def is_vfs_file(path: Path) -> bool:
 # ── Provider registration (side-effects) ──────────────────────────────────────
 # These imports MUST remain at the bottom, after all names above are defined.
 # Each provider module does `REGISTRY.register(...)` at import time.
-from filemill.providers import archive, sqlite, vtt_provider  # noqa: F401
+from filemill.providers import archive, gitbundle, sqlite, vtt_provider  # noqa: F401
