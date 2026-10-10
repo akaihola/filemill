@@ -9,8 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [86] Markdown in archives is not rendered
-
 - [82] Update stale Playwright 1.61 pins and the server renderer note in docs
 
 - [81] Horizontal scrolling fold "stops"
@@ -26,6 +24,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-78e15d9a-0d90-4186-953f-46fdddf6fe5c","priority":"none","labels":[],"createdAt":"2026-10-08T16:19:43.075Z","updatedAt":"2026-10-08T16:19:43.075Z"} -->
 
 ## Scheduled
+
+- [86] Markdown in archives is not rendered
+  <!-- hai:{"updatedAt":"2026-10-10T22:32:03.675Z"} -->
 
 ## In Progress
 
