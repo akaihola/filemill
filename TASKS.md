@@ -13,6 +13,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [83] Screen-reader search label shows on screen
 
+- [88] Status bar hints wrap and get clipped
+
+- [89] Markdown previews show two Raw buttons
+
 - [84] JSON member in an archive shows a chevron but does not open
 
 - [85] Images in archives are not scaled to the preview pane
@@ -573,6 +577,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 [86]: docs/tasks/86-markdown-in-archives-is-not-rendered.md
 
 [87]: docs/tasks/87-make-ci-green-so-pages-publishes.md
+
+[88]: docs/tasks/88-status-bar-hints-wrap-and-get-clipped.md
+
+[89]: docs/tasks/89-markdown-previews-show-two-raw-buttons.md
 
 ## Rules
 
