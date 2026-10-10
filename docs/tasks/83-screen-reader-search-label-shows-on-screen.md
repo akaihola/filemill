@@ -27,3 +27,15 @@ before the screencast is captured.
 - The label is not visible.
 - The search box keeps the accessible name "Search file contents".
 - A browser test checks both.
+
+## Resolution (2026-10-10)
+
+`ui/core/styles.css` now defines `.sr-only` next to the search rules: a 1 px,
+clipped, absolutely positioned box. The label stays in the accessibility tree,
+so the search box keeps its accessible name. `static/index.html` was rebuilt
+from `ui/`, so both editions carry the rule.
+
+`server/tests/test_browser_new_ui.py::test_search_label_is_read_aloud_but_not_shown`
+failed before the fix (label box 105 × 14 px) and passes after it. It checks
+that the label's box is at most 1 × 1 px and that `#search-bar` has the
+accessible name "Search file contents".
