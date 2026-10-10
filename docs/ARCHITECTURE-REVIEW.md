@@ -307,6 +307,7 @@ Do not reopen these without new evidence.
 | Missing `LICENSE`, `SECURITY.md`, `CHANGELOG.md`, `CONTRIBUTING.md`; history files in `server/` (#15) | Present; history files removed                                                  |
 | `static/hotreload.py`, `forgetRoots` (#16)                                                            | Removed                                                                         |
 | Listing paged at 500 entries; virtual rows never evicted (A6, part)                                   | Whole listing, one scrollbar, rows evicted on scroll ([ADR 0068])               |
+| Status strip items shrank and wrapped into its clipped height ([88])                                  | Whole hints drop from the end; nothing wraps ([ADR 0074])                       |
 
 ## Remediation order
 
@@ -364,4 +365,5 @@ A12 items can land at any time, each with a focused test.
 [ADR 0071]: adr/0071-bounded-json-documents.md
 [ADR 0072]: adr/0072-archives-browse-by-their-members.md
 [ADR 0073]: adr/0073-git-bundles-browse-by-refs-and-trees.md
+[ADR 0074]: adr/0074-status-strip-drops-whole-hints.md
 [remaining red tests]: testing/remaining-red-tests.md

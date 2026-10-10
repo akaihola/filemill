@@ -224,7 +224,7 @@ def _ui_page(base_url: str, mobile: bool = False, viewport: dict | None = None):
             )
             page = context.new_page()
         else:
-            page = browser.new_page(viewport={"width": 1400, "height": 900})
+            page = browser.new_page(viewport=viewport or {"width": 1400, "height": 900})
         page.goto(base_url)
         page.wait_for_function("typeof path !== 'undefined' && path.length >= 1")
         page.wait_for_timeout(400)
@@ -1481,3 +1481,54 @@ def test_copy_rotation_http(live_server: str, browser_root: Path, directory: boo
             page.keyboard.press("Control+c")
             page.wait_for_function("v => copiedPaths.at(-1) === v", arg=value)
             assert page.locator("#st-copy").inner_text() == f"Copied {value}"
+
+
+# The README screencast's viewport: landscape, narrower than the hints and a
+# folded status item together.
+SCREENCAST_VIEWPORT = {"width": 838, "height": 640}
+
+# Every status bar item that carries text, measured against the strip. An item
+# wraps when it is taller than the strip; a hint is "whole" when it sits wholly
+# inside the strip, and "hidden" when it sits wholly outside it. Anything in
+# between is a clipped second line.
+_STATUS_ITEMS = """() => {
+    const bar = document.getElementById('status').getBoundingClientRect();
+    const items = [...document.querySelectorAll(
+        '#status > :not(.spacer):not(.status-hints), #status .status-hints > *')];
+    return items.filter(el => el.textContent.trim()).map(el => {
+        const r = el.getBoundingClientRect();
+        return {
+            id: el.id || el.className || el.textContent.trim(),
+            text: el.textContent.trim(),
+            hint: el.parentElement.classList.contains('status-hints')
+                || el.classList.contains('status-fold'),
+            wraps: r.height > bar.height,
+            inside: r.top >= bar.top - 0.5 && r.bottom <= bar.bottom + 0.5,
+            outside: r.top >= bar.bottom - 0.5 || r.bottom <= bar.top + 0.5,
+        };
+    });
+}"""
+
+
+@pytest.mark.integration
+def test_status_bar_items_stay_on_one_line_when_hints_do_not_fit(
+    wide_live_server: str,
+):
+    """Hints that do not fit are dropped whole; nothing wraps or gets clipped.
+
+    At 838 px with columns folded, "4/5 folded" and the key hints used to shrink
+    and wrap, and the 24 px strip cut off their second line.
+    """
+    with _ui_page(wide_live_server, viewport=SCREENCAST_VIEWPORT) as page:
+        _tap_wide_chain(page, 4)
+        page.wait_for_function("folded > 0")
+
+        items = page.evaluate(_STATUS_ITEMS)
+        wrapped = [i["text"] for i in items if i["wraps"]]
+        assert wrapped == [], f"status bar items wrap: {wrapped}"
+        clipped = [i["text"] for i in items if not (i["inside"] or i["outside"])]
+        assert clipped == [], f"status bar items are clipped: {clipped}"
+        by_id = {i["id"]: i for i in items}
+        assert by_id["st-fold"]["inside"], "the fold count is not shown"
+        shown = [i["text"] for i in items if i["hint"] and i["inside"]]
+        assert shown, "no hint survived"
