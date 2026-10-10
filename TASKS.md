@@ -83,7 +83,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## Completed / Accepted
 
 - [ ] [86] Markdown in archives is not rendered
-  <!-- hai:{"updatedAt":"2026-10-10T22:32:03.675Z"} -->
+  <!-- hai:{"updatedAt":"2026-10-10T22:58:12.829Z"} -->
 
 - [ ] [85] Images in archives are not scaled to the preview pane
   <!-- hai:{"updatedAt":"2026-10-10T22:31:14.157Z"} -->
