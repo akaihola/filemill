@@ -48,7 +48,8 @@ status.
   [ADR 0073]) are server providers registered in `vfs.py`. An archive member
   or a bundle blob has bytes of its own, so `vfs.py` has a second protocol,
   `VFSMemberProvider`, and `/api/preview` and `/api/raw` take the member's
-  virtual path as `v`.
+  virtual path as `v`. `HTTP.blob` sends it too, so a JSON or JSONL member
+  browses in the browser like the same file on disk ([84], 2026-10-11).
 - **Persistence.** Files are the only durable data. The browser keeps recent
   folder handles in IndexedDB, settings in localStorage, navigation in history
   and application assets in Cache Storage.

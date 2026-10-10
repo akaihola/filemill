@@ -224,7 +224,9 @@ export const withVirtual = (fs) => ({
             node.jsonTooLarge = true;
             throw new Error("Too large to browse (over 8 MiB)");
           }
-          const blob = await fs.blob({ ...node, dir: false, vpath: "" });
+          /* The node keeps its vpath: a JSON member of an archive is read
+             from inside the archive by it (see adapters/http.js). */
+          const blob = await fs.blob({ ...node, dir: false });
           if (!blob) throw new Error("Cannot read file");
           if (blob.size > JSON_MAX) {
             node.jsonTooLarge = true;

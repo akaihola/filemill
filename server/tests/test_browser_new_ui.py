@@ -27,6 +27,7 @@ import subprocess
 import sys
 import tarfile
 import time
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -160,6 +161,12 @@ def ui_root(tmp_path: Path) -> Path:
         info.size = len(b"hello from the archive\n")
         tf.addfile(info, io.BytesIO(b"hello from the archive\n"))
     (tmp_path / "bundle.tar.zst").write_bytes(zstd_compress(archive_buf.getvalue()))
+    with zipfile.ZipFile(tmp_path / "bundle.zip", "w") as zf:
+        zf.writestr("data.json", '{"tags":["a","b"],"n":1,"meta":{"n":1}}')
+        zf.writestr(
+            "rows.jsonl",
+            '{"id": 1, "title": "First"}\n{"id": 2, "title": "Second"}\n',
+        )
     if shutil.which("git"):
         repo = tmp_path / ".bundle-source"
         repo.mkdir()
@@ -1485,6 +1492,55 @@ def test_a_git_bundle_opens_as_refs_then_files_and_a_file_previews(page):
         timeout=15000,
     )
     assert "/n/repo.bundle/heads/main/notes.txt" in page.url
+
+
+def test_a_json_member_opens_as_columns_of_its_keys_and_previews_foldable(page):
+    """A .json inside an archive renders the way the same file does on disk:
+    its keys are a column and the preview is the foldable JSON view, built
+    from the member's bytes rather than the archive's."""
+    page.open()
+    page.click('.col[data-i="0"] .row:has-text("bundle.zip")')
+    page.wait_for_selector('.col[data-i="1"] .row', timeout=15000)
+    page.click('.col[data-i="1"] .row:has-text("data.json")')
+    page.wait_for_selector('.col[data-i="2"] .row:has-text("tags")', timeout=15000)
+    page.wait_for_selector("#preview .pv-json", timeout=15000)
+    assert json.loads(page.text_content("#preview .pv-json")) == {
+        "tags": ["a", "b"],
+        "n": 1,
+        "meta": {"n": 1},
+    }
+    page.click('.col[data-i="2"] .row:has-text("tags")')
+    page.wait_for_selector('.col[data-i="3"] .row:has-text("0")', timeout=15000)
+    page.click('.col[data-i="3"] .row:has-text("0")')
+    page.wait_for_function(
+        "document.querySelector('#preview .pv-json-value')?.textContent === 'a'",
+        timeout=15000,
+    )
+    assert "/n/bundle.zip/data.json/tags/0" in page.url
+
+
+def test_a_deep_link_into_a_json_member_reloads(page):
+    page.open("bundle.zip/data.json/meta/n")
+    page.wait_for_function(
+        "document.querySelector('#preview .pv-json-value')?.textContent === '1'",
+        timeout=15000,
+    )
+    assert page.evaluate("sel") == ["bundle.zip", "data.json", "meta", "n"]
+
+
+def test_a_jsonl_member_opens_as_a_column_of_rows(page):
+    page.open()
+    page.click('.col[data-i="0"] .row:has-text("bundle.zip")')
+    page.wait_for_selector('.col[data-i="1"] .row', timeout=15000)
+    page.click('.col[data-i="1"] .row:has-text("rows.jsonl")')
+    page.wait_for_selector('.col[data-i="2"] .row:has-text("Second")', timeout=15000)
+    page.click('.col[data-i="2"] .row:has-text("Second")')
+    page.wait_for_selector("#preview .pv-json", timeout=15000)
+    assert json.loads(page.text_content("#preview .pv-json")) == {
+        "id": 2,
+        "title": "Second",
+    }
+    assert "/n/bundle.zip/rows.jsonl/Second" in page.url
 
 
 def test_a_deep_link_into_an_archive_previews_the_member(page):
