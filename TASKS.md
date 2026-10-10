@@ -35,9 +35,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [88] Status bar hints wrap and get clipped
-  <!-- hai:{"updatedAt":"2026-10-10T20:56:41.471Z"} -->
-
 - [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-10T19:58:38.726Z"} -->
 
@@ -92,6 +89,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [88] Status bar hints wrap and get clipped
+  <!-- hai:{"updatedAt":"2026-10-10T21:28:47.986Z"} -->
 
 - [ ] [83] Screen-reader search label shows on screen
   <!-- hai:{"updatedAt":"2026-10-10T20:53:33.766Z"} -->
