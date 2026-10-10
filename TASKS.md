@@ -39,11 +39,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] Make Git `.bundle` files navigable hierarchically, and if they contain previewable
+## In Progress
+
+- [~] [*] Make Git `.bundle` files navigable hierarchically, and if they contain previewable
   files, show them in the preview pane when navigated to.
   <!-- hai:{"id":"simple-ca7153b94516ed5f","updatedAt":"2026-10-10T19:48:17.336Z"} -->
-
-## In Progress
 
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
