@@ -87,7 +87,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## Completed / Accepted
 
 - [ ] [84] JSON member in an archive shows a chevron but does not open
-  <!-- hai:{"updatedAt":"2026-10-10T21:58:42.100Z"} -->
+  <!-- hai:{"updatedAt":"2026-10-10T22:15:01.018Z"} -->
 
 - [ ] [89] Markdown previews show two Raw buttons
   <!-- hai:{"updatedAt":"2026-10-10T21:58:09.204Z"} -->
