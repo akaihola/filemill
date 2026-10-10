@@ -1309,13 +1309,21 @@ body {
 }
 
 /* ── Status strip ──────────────────────────────────────────────────────── */
+/* One line, always. Items never shrink or wrap their text; when they do not all
+   fit, the row wraps and the strip's fixed height hides the second line whole.
+   Each item is as tall as the row inside the hairline, so a wrapped item
+   starts exactly at the strip's bottom edge — hidden, never half-shown. The
+   hints come last in the markup, in priority order, so they are what wraps,
+   lowest priority first from the end. */
 #status {
+  --row: 23px;
   flex: 0 0 auto;
   min-width: 0;
-  height: 24px;
+  height: calc(var(--row) + 1px);
   display: flex;
-  align-items: center;
-  gap: 14px;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 0 14px;
   padding: 0 12px;
   font-size: var(--fs-meta);
   color: var(--ink-3);
@@ -1323,12 +1331,18 @@ body {
   background: color-mix(in srgb, var(--chrome) 70%, var(--surface));
   overflow: hidden;
 }
+#status > *, .status-hints > * {
+  flex-shrink: 0;
+  height: var(--row);
+  line-height: var(--row);
+  white-space: nowrap;
+}
 .status-hints {
   display: contents;
 }
 @media (max-width: 600px) and (orientation: portrait) {
   #status {
-    gap: 8px;
+    gap: 0 8px;
   }
   #status .status-hints {
     display: none;
@@ -1355,6 +1369,7 @@ body {
    off the strip; the full text is still in the DOM, so a fallback selection
    copies all of it even when the display ellipsises. */
 #st-path {
+  flex-shrink: 1;
   max-width: 46%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1367,6 +1382,7 @@ body {
   text-underline-offset: 2px;
 }
 #st-copy {
+  flex-shrink: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
