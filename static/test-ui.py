@@ -2278,12 +2278,17 @@ def test_markdown_source_link_boundaries(bundle, playwright):
         browser.close()
 
 
-async def storage_main(bundle, playwright, static_origin):
+async def storage_main(bundle, playwright, static_origin, profile):
     async with playwright.async_playwright() as p:
-        b = await p.chromium.launch()
+        # Chromium 153 (Playwright 1.63) aborts the whole browser when an
+        # off-the-record context reads a stored FileSystemHandle back from
+        # IndexedDB, and launch() + new_page() is off-the-record. A persistent
+        # profile reads it back fine.
+        b = await p.chromium.launch_persistent_context(
+            profile, viewport={"width": 1500, "height": 900})
         print("\n── Remember view state per folder ───────────────────────────")
         # OPFS requires an HTTP origin.
-        pg = await b.new_page(viewport={"width": 1500, "height": 900})
+        pg = await b.new_page()
         await pg.goto(f"{static_origin}/static/{bundle.name}")
         await pg.evaluate(FAKE)
         # Exercise migration with plain records, then restoration and debounced
@@ -2363,8 +2368,8 @@ async def storage_main(bundle, playwright, static_origin):
         await b.close()
 
 
-def test_storage(bundle, async_playwright, static_origin):
-    asyncio.run(storage_main(bundle, async_playwright, static_origin))
+def test_storage(bundle, async_playwright, static_origin, tmp_path):
+    asyncio.run(storage_main(bundle, async_playwright, static_origin, tmp_path))
 
 
 def test_context_menu_delete_fsa(bundle, fake_handle, playwright):
