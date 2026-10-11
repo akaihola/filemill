@@ -70,3 +70,13 @@ rebasing. Merge is blocked by unrelated uncommitted changes in main's TASKS.md,
 architecture review, server browser tests, and generated static bundle. Those
 changes were preserved. Keep this issue in progress until integration completes;
 user acceptance remains pending.
+
+## Integration validation, 2026-10-11
+
+Rebased the review correction onto current main. The model checks, generated
+bundle check, and all pre-commit hooks pass. The targeted bundle/server run
+passed 29 tests and failed the existing Markdown section Source-mode check.
+That failure reproduced in isolation on unchanged main, before this correction
+was merged. The development document suite passed all 17 tests. All 36 new
+special-heading browser cases pass; the Source-mode failure is independent
+of automatic heading selection.
