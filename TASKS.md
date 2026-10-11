@@ -13,9 +13,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [78] Wide document scrolls instead of expanding the preview
-  <!-- hai:{"id":"simple-78e15d9a-0d90-4186-953f-46fdddf6fe5c","priority":"none","labels":[],"createdAt":"2026-10-08T16:19:43.075Z","updatedAt":"2026-10-11T10:34:42.048Z"} -->
-
 - [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-10T19:58:38.726Z"} -->
 
@@ -70,6 +67,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [78] Wide document scrolls instead of expanding the preview
+  <!-- hai:{"id":"simple-78e15d9a-0d90-4186-953f-46fdddf6fe5c","priority":"none","labels":[],"createdAt":"2026-10-08T16:19:43.075Z","updatedAt":"2026-10-11T10:55:14.858Z"} -->
 
 - [ ] [79] Remove § signs and redundant headings from document section previews
   <!-- hai:{"id":"simple-e6ef425c-e474-4559-b792-1e21478c71bb","priority":"none","labels":[],"createdAt":"2026-10-08T16:21:55.597Z","updatedAt":"2026-10-11T10:38:39.134Z"} -->
