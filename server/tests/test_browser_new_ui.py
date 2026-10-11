@@ -1844,6 +1844,26 @@ def test_a_docx_member_renders_like_the_same_file_on_disk(page):
     assert "Dear member" in page.inner_text("#preview .pv-rich p")
 
 
+@pytest.mark.parametrize("section", ["", "/Intro"])
+def test_markdown_member_links_follow_siblings_from_whole_file_and_section(
+    page, ui_root, section
+):
+    with zipfile.ZipFile(ui_root / "bundle.zip", "a") as zf:
+        zf.writestr(
+            "docs/readme.md",
+            "# Guide\n\n## Intro\n\n[first sibling](next.md)\n\n## Outro\n\nend\n",
+        )
+        zf.writestr("docs/next.md", "# Archive sibling\n\nReached the member.\n")
+    (ui_root / "next.md").write_text("# Unrelated root file\n")
+    page.open(f"bundle.zip/docs/readme.md{section}")
+    link = page.locator("#pv-content a", has_text="first sibling")
+    expect(link).to_have_attribute("href", "/bundle.zip/docs/next.md?filemill=render")
+    link.click()
+    expect(page.locator("#preview .pv-rich h1")).to_have_text("Archive sibling")
+    assert "/bundle.zip/docs/next.md?filemill=render" in page.url
+    assert page.evaluate("sel") == ["bundle.zip", "docs", "next.md"]
+
+
 def test_a_deep_link_into_an_archive_previews_the_member(page):
     page.open("bundle.tar.zst/inside/hello.txt")
     page.wait_for_function(
@@ -2187,6 +2207,32 @@ def test_a_csv_row_previews_headers_and_quoted_values(page):
     page.wait_for_selector("#preview .pv-kv", timeout=15000)
     assert page.inner_text("#preview .pv-kv") == "group\tA\nid\t102\nnote\tcomma, value"
     assert [u for u in seen if "/api/preview" in u] == []
+
+
+@pytest.mark.parametrize("kind", ["json", "csv"])
+@pytest.mark.parametrize("label", ["readme.md", "readme.markdown"])
+def test_filename_like_data_labels_stay_virtual_values(page, ui_root, kind, label):
+    filename = f"labels.{kind}"
+    source = (
+        json.dumps({label: "a data value", "other": 3})
+        if kind == "json"
+        else f"name,note\n{label},a data value\nother,second value\n"
+    )
+    (ui_root / filename).write_text(source)
+    requests: list[str] = []
+    page.on("request", lambda r: requests.append(r.url))
+    page.open(filename)
+    row = page.locator('.col[data-i="1"] .row').filter(has_text=label)
+    expect(row).to_be_visible()
+    assert page.evaluate(
+        "label => { const n = path[1].kids.find(n => n.name === label);"
+        " return [n.dir, !!n.doc]; }",
+        label,
+    ) == [False, False]
+    row.click()
+    expect(page.locator("#pv-content")).to_contain_text("a data value")
+    assert page.evaluate("sel") == [filename, label]
+    assert [u for u in requests if "/api/raw" in u and "&v=" in u] == []
 
 
 def test_csv_without_unique_column_names_rows_individually(page):

@@ -55,6 +55,12 @@ the server, which has no route for a member plus a line span. Under
 member's coloured source. Until 2026-10-11 every member asked the server,
 so a Markdown member previewed as coloured source ([86]).
 
+Review correction, 2026-10-11 ([86]): relative Markdown links use the member's
+directory inside the archive. A section uses its document root's member
+address for the same link base. Only files browse by document headings;
+JSON values and CSV or database records remain data even when their labels
+end in `.md` or `.markdown`.
+
 The work is bounded. The member index stops at `MAX_MEMBERS` entries and is
 cached per path, size and mtime, so one directory listing that asks "is this
 archive non-empty?" costs one walk, not one per request. A member over

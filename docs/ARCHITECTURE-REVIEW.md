@@ -68,6 +68,9 @@ status.
   A Markdown, `.docx` or `.pptx` member renders in the browser like the same
   file on disk, and a Markdown member opens by its headings ([86],
   2026-10-11); a reStructuredText member stays with the server renderer.
+  Markdown links resolve from the member's directory, including in section
+  previews. Filename-like JSON keys and CSV labels remain data values and
+  records, without document heading columns ([86] review fixes, 2026-10-11).
   Left-arrow navigation reselects a document or parent section through the
   shared navigator, restoring its full preview and URL while removing deeper
   section selections ([80], 2026-10-11).

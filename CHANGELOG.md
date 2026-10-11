@@ -38,6 +38,10 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A Markdown or `.docx` member of an archive renders in the browser like the
   same file on disk, and a Markdown member opens as columns of its headings.
   The server had returned a member's coloured source ([ADR 0072]).
+- Relative Markdown links in archive members and their heading sections open
+  siblings inside the archive instead of unrelated files at the server root.
+- JSON keys and CSV labels ending in `.md` or `.markdown` remain data values
+  and records instead of advertising document heading columns.
 
 ## [0.1.0] - 2026-09-15
 
