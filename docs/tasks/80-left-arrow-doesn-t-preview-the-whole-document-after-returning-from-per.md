@@ -37,3 +37,14 @@ binaries first in PATH: the server fixture keeps only the directory containing
 `rg`, which must also contain `git`. The agent's bundled `rg` directory does
 not contain `git`. No unrelated code was changed. Both server regressions also
 pass under Python 3.13.
+
+## Review correction plan, 2026-10-11
+
+R1 found that `autoPreview()` treats headings named `README`, `README.*`, or
+`index.html` as folder preview files. After left arrow reselects a document or
+parent section, this convention selects a child heading again.
+
+Add failing model and browser regressions for all three names in Markdown and
+RST, covering whole-document and parent-section returns. Exclude documents and
+sections from automatic folder preview selection. Keep ordinary folder behavior,
+regenerate the static bundle, and validate both static builds and server renderers.
