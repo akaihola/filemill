@@ -39,7 +39,6 @@ const sectionNode = (root, parent, section, i) => ({
   dir: section.kids.length > 0,
   kids: section.kids.length ? null : undefined,
   vpath: parent.vpath ? `${parent.vpath}/${i}` : String(i),
-  icon: "§",
   section: { root, outline: section },
   rel: root.rel,
   ordered: true,

@@ -17,6 +17,7 @@ export const FOLDER_PATH =
 const FOLDER_SVG = `<svg viewBox="0 0 16 16">${FOLDER_PATH}</svg>`;
 
 export function iconHTML(node) {
+  if (node.section) return "";
   /* An adapter may name its own glyph — a virtual filesystem's tables and rows
      are not files and have no extension to look up. */
   if (node.icon) return `<span class="ico glyph">${esc(node.icon)}</span>`;

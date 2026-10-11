@@ -3102,6 +3102,7 @@ def test_markdown_headings_open_as_columns_in_the_server_build(page):
     assert page.evaluate("sel") == ["guide.md"]
     assert page.url.endswith("/guide.md?filemill=render")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
+    assert page.locator("#preview .pv-hero").count() == 1
     page.click('.col[data-i="1"] .row:has-text("Guide")')
     page.wait_for_url("**/guide.md/Guide?filemill=render")
     page.wait_for_selector('.col[data-i="2"] .row:has-text("Install")', timeout=15000)
@@ -3111,6 +3112,14 @@ def test_markdown_headings_open_as_columns_in_the_server_build(page):
         "document.querySelector('#preview .pv-rich')?.textContent.includes('steps')"
     )
     assert "intro" not in page.text_content("#preview .pv-rich")
+    assert page.locator("#preview .pv-rich h2").first.inner_text() == "Install"
+    assert page.locator('.col[data-i="2"] .row .ico').count() == 0
+    assert page.locator("#preview .pv-hero").count() == 0
+    page.click("#pv-view")
+    page.wait_for_function(
+        "document.querySelector('#pv-content pre')?.textContent.includes('## Install')"
+    )
+    assert page.locator("#preview .pv-hero").count() == 0
     page.open_resource("guide.md/Guide/Install?filemill=render")
     page.wait_for_function('JSON.stringify(sel) === \'["guide.md","Guide","Install"]\'')
     page.keyboard.press("ArrowLeft")
@@ -3121,6 +3130,7 @@ def test_markdown_headings_open_as_columns_in_the_server_build(page):
         "document.querySelector('#preview .pv-rich')?.textContent.includes('intro')"
     )
     assert page.evaluate("sel") == ["guide.md"]
+    assert page.locator("#preview .pv-hero").count() == 1
     page.open("README.md")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     assert page.evaluate("path.length") == 1
@@ -3136,6 +3146,9 @@ def test_rst_sections_render_through_the_server_in_the_server_build(page):
     text = page.text_content("#preview .preview-rst")
     assert "Some alpha text." in text and "beta" not in text
     assert page.locator("#preview .preview-rst em").inner_text() == "alpha"
+    assert page.locator("#preview .preview-rst h1").inner_text() == "Part A"
+    assert page.locator('.col[data-i="2"] .row .ico').count() == 0
+    assert page.locator("#preview .pv-hero").count() == 0
 
     page.keyboard.press("ArrowLeft")
     page.wait_for_url("**/code/manual.rst?filemill=render")
@@ -3144,3 +3157,4 @@ def test_rst_sections_render_through_the_server_in_the_server_build(page):
     )
     assert "Some alpha text." in page.text_content("#preview .preview-rst")
     assert page.evaluate("sel") == ["code", "manual.rst"]
+    assert page.locator("#preview .pv-hero").count() == 1

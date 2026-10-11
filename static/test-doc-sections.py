@@ -1,5 +1,7 @@
 """Markdown and reStructuredText documents browse by their headings."""
 
+import pytest
+
 MOUNT = """async () => {
     const file = (name, text) => [name, {kind: 'file', name,
         async getFile() { return new File([text], name); }}];
@@ -30,6 +32,39 @@ def preview_has(page, *wanted, absent=()):
         }""",
         arg=[list(wanted), list(absent)],
     )
+
+
+@pytest.mark.parametrize(
+    "filename, heading, body",
+    [
+        ("guide.md", "Guide", "steps"),
+        ("doc.rst", "Part B", "beta"),
+    ],
+)
+@pytest.mark.parametrize("decoration", [".row .ico", "#preview .pv-hero"])
+def test_section_previews_omit_decorations(
+    bundle, playwright, filename, heading, body, decoration
+):
+    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
+    try:
+        page = browser.new_page(viewport={"width": 1500, "height": 900})
+        page.goto(bundle.as_uri())
+        page.wait_for_function("typeof mount === 'function'")
+        page.evaluate("localStorage.setItem('filemill.rich', 'off')")
+        page.evaluate(MOUNT)
+        page.click(f'.col[data-i="0"] .row:has-text("{filename}")')
+        preview_has(page, body)
+        assert page.locator("#preview .pv-hero").count() == 1
+        page.click(f'.col[data-i="1"] .row:has-text("{heading}")')
+        preview_has(page, heading, body)
+        selector = (
+            f'.col[data-i="1"] {decoration}'
+            if decoration.startswith(".row")
+            else decoration
+        )
+        assert page.locator(selector).count() == 0
+    finally:
+        browser.close()
 
 
 def test_markdown_headings_open_as_columns(bundle, playwright):
@@ -88,7 +123,9 @@ def test_markdown_headings_open_as_columns(bundle, playwright):
         page.evaluate('applyPath(["plain.md"], 0)')
         preview_has(page, "no hierarchy here")
         page.wait_for_function("path.length === 1 && sel[0] === 'plain.md'")
-        assert page.evaluate("path[0].kids.find(k => k.name === 'plain.md').dir") is False
+        assert (
+            page.evaluate("path[0].kids.find(k => k.name === 'plain.md').dir") is False
+        )
 
         # The lone title at the top names the file; its parts are the column.
         page.click('.col[data-i="0"] .row:has-text("doc.rst")')

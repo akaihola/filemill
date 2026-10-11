@@ -64,6 +64,9 @@ status.
   Left-arrow navigation reselects a document or parent section through the
   shared navigator, restoring its full preview and URL while removing deeper
   section selections ([80], 2026-10-11).
+  Document sections show their heading text without a row icon. Their previews
+  omit the file summary heading and divider, leaving the document's own heading
+  at the top of the content ([79], 2026-10-11).
 - **Persistence.** Files are the only durable data. The browser keeps recent
   folder handles in IndexedDB, settings in localStorage, navigation in history
   and application assets in Cache Storage.
