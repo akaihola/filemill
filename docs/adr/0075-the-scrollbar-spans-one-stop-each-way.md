@@ -56,6 +56,27 @@ Further browser tests cover a slow scroll between widening stops, → from a
 widened stop, a spine click from fully folded across ranges, and a phone tap
 that opens a folder from a full-width root.
 
+### Independent-review corrections, 2026-10-11
+
+Widening counts can change on resize even when column width and path length
+stay fixed. Layout detects that change and remaps a whole widened stop to the
+same column count where available. Partial positions outside the new range are
+clamped before rebasing. Changing only the widening counts retains that widened
+position instead of applying the automatic fold for the focused column. Widened
+counts use the same 0.5 px stop tolerance as folding, so a rounded landing is
+not mistaken for the next wider stop.
+
+The base absorbs the rounding needed to preserve the current dial position.
+The rail span is the rounded distance from that adjusted base to the upper
+stop, keeping both native scroll endpoints within 0.5 px of their stops.
+Sizing it from the original interval could miss the upper stop and consume an
+extra fling, reproduced at 414 px with a first landing of 429 instead of 429.66.
+
+Browser regressions cover 1500 ↔ 1000 px resizing, an out-of-range partial
+widening, and repeated flings in both directions at 413 and 414 px and with
+fractional desktop column widths. A four-column path resized from 1500 to
+2000 px keeps three widened columns after a rounded native landing.
+
 ## Consequences
 
 `finder.scrollLeft` no longer equals the dial position; tests that read it as
