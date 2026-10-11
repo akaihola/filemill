@@ -15,6 +15,7 @@
 import { FS } from "../core/ports.js";
 import { classifyFile } from "../core/file-kind.js";
 import { TEXT_MAX } from "../core/limits.js";
+import { hlLang } from "../core/syntax.js";
 import {
   CORE_RENDERERS,
   renderNode,
@@ -44,3 +45,17 @@ export const PreviewLocal = {
     return renderNode(node, blob, kind, CORE_RENDERERS);
   },
 };
+
+/* Source uses the same text renderer in every edition. Virtual providers
+   answer for their own nodes before this wrapper runs. */
+export const withHighlighting = (provider) => ({
+  revoke() {
+    provider.revoke?.();
+    PreviewLocal.revoke();
+  },
+  render: (n) =>
+    !n.vpath && document.documentElement.dataset.filemill === "highlight" &&
+      (hlLang(n.name) || classifyFile(n.name, n).preview === "vtt")
+      ? PreviewLocal.render(n, "text")
+      : provider.render(n),
+});

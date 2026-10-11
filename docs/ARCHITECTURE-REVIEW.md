@@ -236,9 +236,12 @@ read-only. No ORM. Related: [34], [61].
   RST node to `PreviewHTTP`. The server's local-folder mount (`:191-196`) uses
   the same wrapper, so a browser-owned RST file requests
   `/api/preview?p=undefined`. See [41].
-- The Raw link (`ui/core/render.js:478-488`) is a server-style URL whenever any
-  router exists, including the static hash router. The server's local-folder
-  mode has no router, so changing view mode is a no-op there.
+- Resolved 2026-10-11 ([89], [ADR 0077]): view state no longer requires a
+  router. Both editions use `withHighlighting` from
+  `ui/adapters/preview-local.js`, so Markdown and WebVTT switch between
+  rendered content and source in static and local-folder modes too. Raw uses
+  optional `FS.rawURL` for served files and `FS.blob` for browser-owned files;
+  core owns and revokes the latter's object URL.
 - Resolved: `PreviewLocal` now applies `TEXT_MAX` only to text
   (`ui/adapters/preview-local.js:38-41`).
 
@@ -413,4 +416,5 @@ A12 items can land at any time, each with a focused test.
 [ADR 0074]: adr/0074-status-strip-drops-whole-hints.md
 [ADR 0075]: adr/0075-the-scrollbar-spans-one-stop-each-way.md
 [ADR 0076]: adr/0076-a-sideways-wheel-over-the-preview-turns-the-dial-first.md
+[ADR 0077]: adr/0077-preview-views-and-raw-links-work-without-routing.md
 [remaining red tests]: testing/remaining-red-tests.md

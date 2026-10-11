@@ -16,7 +16,7 @@ import { initSort, setSortActions } from "../core/sort.js";
 import { sortKids } from "../core/model/sort.js";
 import { FSA } from "./fsa.js";
 import { API, HTTP } from "./http.js";
-import { PreviewLocal } from "./preview-local.js";
+import { PreviewLocal, withHighlighting } from "./preview-local.js";
 import { PreviewRich, RICH_RENDERERS } from "./preview-rich.js";
 import { RouterPath } from "./router-path.js";
 import { rememberRoot } from "./storage.js";
@@ -47,8 +47,7 @@ import {
   setSortKids,
   setState,
 } from "../core/model/state.js";
-import { hlLang } from "../core/syntax.js";
-import { classifyFile, fileKind } from "../core/file-kind.js";
+import { fileKind } from "../core/file-kind.js";
 
 document.getElementById("bar").insertAdjacentHTML(
   "beforeend",
@@ -88,24 +87,6 @@ const ROOT_NAME = document.documentElement.dataset.root || "/";
    *server's* root, and a folder the browser granted is not under it.
    Pretending otherwise would produce links that resolve to the wrong file —
    hence useRouter(null) below, and the badge that says which side you are on. */
-
-/* Source files are coloured in the browser by core/syntax.js, not by Pygments
-   on the way out — see that file for why. The server still renders what it is
-   better at (reStructuredText), so this wraps the provider rather than
-   replacing it: a file with a language we know is read through FS.blob and
-   highlighted here, and anything else goes on as before. A virtual path is
-   never diverted, because only the server can read one. */
-const withHighlighting = (provider) => ({
-  revoke() {
-    provider.revoke?.();
-    PreviewLocal.revoke();
-  },
-  render: (n) =>
-    !n.vpath && document.documentElement.dataset.filemill === "highlight" &&
-      (hlLang(n.name) || classifyFile(n.name, n).preview === "vtt")
-      ? PreviewLocal.render(n, "text")
-      : provider.render(n),
-});
 
 const PreviewHTTP = {
   revoke() {},

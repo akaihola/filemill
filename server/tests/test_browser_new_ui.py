@@ -1609,6 +1609,75 @@ def test_local_markdown_is_rendered_in_the_browser(page):
     assert page.locator("#preview .pv-rich strong").count() >= 1
 
 
+@pytest.fixture(
+    params=[
+        (
+            "local.md",
+            "# Local heading\n\n**bold** from a local folder\n",
+            ".pv-rich h1",
+        ),
+        (
+            "local.vtt",
+            "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHello world\n",
+            ".preview-cue",
+        ),
+    ]
+)
+def local_preview(page, request):
+    name, source, rendered = request.param
+    page.open_resource("?filemill=render")
+    page.evaluate(
+        """async ([name, source]) => {
+          await mount({kind: 'directory', name: 'local-folder', async *entries() {
+            yield [name, {kind: 'file', name,
+              async getFile() { return new File([source], name); }}];
+          }});
+        }""",
+        [name, source],
+    )
+    page.locator('.col[data-i="0"] .row').click()
+    page.wait_for_selector(rendered)
+    return page, source, rendered
+
+
+def test_local_rendered_source_round_trip(local_preview):
+    page, source, rendered = local_preview
+    before = page.url, page.evaluate("sel.slice()")
+    requests = []
+    page.on("request", lambda r: requests.append(r.url))
+    toggle = page.locator("#pv-view")
+    assert toggle.inner_text() == "Source"
+    toggle.click()
+    page.wait_for_selector("#preview .pv-text", timeout=3000)
+    assert page.locator("#preview .pv-text").text_content() == source
+    assert page.locator(rendered).count() == 0
+    assert toggle.inner_text() == "Rendered"
+    assert (page.url, page.evaluate("sel")) == before
+
+    toggle.press("Enter")
+    page.wait_for_selector(rendered)
+    assert toggle.inner_text() == "Source"
+    assert (page.url, page.evaluate("sel")) == before
+    assert not [url for url in requests if "/api/" in url]
+
+
+def test_local_raw_link_reads_local_bytes(local_preview):
+    page, source, _rendered = local_preview
+    raw = page.locator("#pv-raw")
+    assert raw.count() == 1
+    assert raw.get_attribute("href").startswith("blob:")
+    assert raw.evaluate("async a => (await fetch(a.href)).text()") == source
+    assert page.evaluate(TOOLBAR_LABELS) == ["Raw", "Source", "Delete", "Fullscreen"]
+    before = page.url
+    with page.expect_popup() as opened:
+        raw.click()
+    popup = opened.value
+    popup.wait_for_load_state()
+    assert popup.locator("pre").text_content() == source
+    assert page.url == before
+    popup.close()
+
+
 def test_local_source_is_highlighted_without_asking_the_server(page):
     """The gain from moving highlighting into the page: a folder the server has
     no path to is coloured with no round-trip at all."""
