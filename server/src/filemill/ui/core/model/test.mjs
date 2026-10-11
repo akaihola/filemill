@@ -15,10 +15,15 @@ import {
   columnMetrics,
   columnSpan,
   columnWidth,
+  dialStops,
+  dialWindow,
+  fitCount,
   focusPan,
   foldingAt,
   foldPosition,
   tailShift,
+  wideCounts,
+  widenedSizes,
 } from "./folding.js";
 import { keyAction, nextRow, pageSelection } from "./keyboard.js";
 import { currentPath, locationState, walkPath } from "./deeplink.js";
@@ -70,6 +75,45 @@ assert.equal(focusPan(1, 0, 10, 210, 100, 10), 0);
 assert.ok(Math.abs(tailShift(1, 0, 2, 20, 10) - 60) < 1e-9);
 assert.equal(automaticFold([200, 300], 10, 20, 200, 100, 0, 0, false), 0);
 assert.equal(automaticFold([200, 300], 10, 20, 200, 100, 0, 0, true), 2);
+/* [81] Dial stops. A fling lands on the next stop in its direction; the
+   stops left of natural widen the leftmost columns to fill the finder. */
+const near = (a, b) => assert.ok(Math.abs(a - b) <= 1e-9, `${a} ≠ ${b}`);
+assert.equal(fitCount(240, 1440, 480, 10), 3); /* "almost four" */
+assert.equal(fitCount(195, 390, 130, 10), 1); /* portrait phone */
+assert.deepEqual(wideCounts(4, 3), [3, 2]); /* desktop stops at two */
+assert.deepEqual(wideCounts(2, 3), [2]);
+assert.deepEqual(wideCounts(1, 3), []); /* a root alone cannot widen */
+assert.deepEqual(wideCounts(3, 1), [1]); /* a phone reaches the root */
+assert.deepEqual(wideCounts(1, 1), [1]);
+const four = [240, 240, 240, 240];
+const unit = 0.99 * 1000 / 4;
+const stops = dialStops(four, [3, 2], 10, 34);
+assert.deepEqual(stops, [-2 * unit, -unit, 0, 3 * unit, 4 * unit, 1000]);
+assert.deepEqual(dialStops([240], [], 10, 34), [0, 0.99 * 250, 250]);
+assert.deepEqual(dialWindow(stops, 0), { lower: -unit, upper: 3 * unit });
+assert.deepEqual(dialWindow(stops, 3 * unit), { lower: 0, upper: 4 * unit });
+assert.deepEqual(dialWindow(stops, 1000), { lower: 4 * unit, upper: 1000 });
+assert.deepEqual(dialWindow(stops, -2 * unit), {
+  lower: -2 * unit,
+  upper: -unit,
+});
+assert.deepEqual(dialWindow(stops, 300), { lower: 0, upper: 3 * unit });
+assert.deepEqual(dialWindow(stops, 3 * unit + 0.4), {
+  lower: 0,
+  upper: 4 * unit,
+});
+assert.deepEqual(widenedSizes(four, 0, unit, [3, 2], 1440, 10), four);
+let wide = widenedSizes(four, -unit, unit, [3, 2], 1440, 10);
+near(wide[0], 1400 / 3);
+near(wide[2], 1400 / 3);
+assert.equal(wide[3], 240);
+wide = widenedSizes(four, -2 * unit, unit, [3, 2], 1440, 10);
+assert.deepEqual(wide, [705, 705, 240, 240]);
+wide = widenedSizes(four, -unit / 2, unit, [3, 2], 1440, 10);
+near(wide[0], (240 + 1400 / 3) / 2);
+assert.equal(wide[3], 240);
+wide = widenedSizes(four, -3 * unit, unit, [3, 2], 1440, 10); /* past the end */
+assert.deepEqual(wide, [705, 705, 240, 240]);
 assert.equal(keyAction({ key: "ArrowDown" }, { editable: true }), null);
 assert.equal(keyAction({ key: "ArrowDown" }, { welcome: true }), null);
 assert.equal(keyAction({ key: "c", ctrlKey: true }, {}), "copy");

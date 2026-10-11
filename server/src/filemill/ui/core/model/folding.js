@@ -61,3 +61,73 @@ export function columnMetrics(sizes, count, progress, focus, gutter, spine) {
   });
   return { sizes: rendered, focusLeft, focusRight };
 }
+
+/* ── Dial stops ([81]) ──────────────────────────────────────────────────
+   A fling runs to the end of the scrollbar, so the scrollbar is kept one
+   stop long in each direction: its range is the span between the stops on
+   either side of the dial, and layout.js re-bases it once a scroll settles.
+   Right of natural the stops are today's dial: the rightmost column alone
+   unfolded, every column folded, the preview alone. Left of natural the
+   leftmost columns widen to fill the finder, one fewer at each stop. */
+const STOP_TOLERANCE = 0.5; // scroll positions are whole pixels, stops are not
+
+/* How many natural columns fit beside the preview reserve: 3.8 on a 1440px
+   laptop ("almost four"), 1.2 on a portrait phone. */
+export const fitCount = (width, viewport, preview, gutter) =>
+  Math.max(1, Math.floor((viewport - preview - gutter) / (width + gutter)));
+export const fillWidth = (count, viewport, gutter) =>
+  (viewport - gutter * (count + 1)) / count;
+
+/* The column counts of the widening stops, nearest natural first: one fewer
+   than fit, down to two — down to one where fewer than two fit. */
+export function wideCounts(columns, fit) {
+  const floor = fit < 2 ? 1 : 2;
+  const counts = [];
+  for (let n = Math.min(columns, fit); n >= floor; n--) counts.push(n);
+  return counts;
+}
+
+export function dialStops(sizes, counts, gutter, spine) {
+  const maximum = scrollRange(sizes, gutter, spine);
+  const unit = foldStep(sizes.length) * maximum;
+  const stops = counts.map((_, j) => -(j + 1) * unit).reverse();
+  for (
+    const x of [0, (sizes.length - 1) * unit, sizes.length * unit, maximum]
+  ) {
+    if (!stops.length || x - stops[stops.length - 1] > STOP_TOLERANCE) {
+      stops.push(x);
+    }
+  }
+  return stops;
+}
+
+/* The two stops the scrollbar spans around dial position x: the neighbours
+   of the stop x rests on, or the pair enclosing x in between. */
+export function dialWindow(stops, x) {
+  const last = stops.length - 1;
+  const at = stops.findIndex((s) => Math.abs(s - x) <= STOP_TOLERANCE);
+  if (at >= 0) {
+    return {
+      lower: stops[Math.max(0, at - 1)],
+      upper: stops[Math.min(last, at + 1)],
+    };
+  }
+  const above = stops.findIndex((s) => s > x);
+  if (above < 0) return { lower: stops[last], upper: stops[last] };
+  return { lower: stops[Math.max(0, above - 1)], upper: stops[above] };
+}
+
+/* Column widths at a dial position left of natural: between two stops each
+   column slides from its width at one to its width at the next. */
+export function widenedSizes(sizes, x, unit, counts, viewport, gutter) {
+  const at = (j) => {
+    if (j < 1) return sizes;
+    const count = counts[Math.min(j, counts.length) - 1];
+    const fill = fillWidth(count, viewport, gutter);
+    return sizes.map((width, i) => i < count ? fill : width);
+  };
+  const u = Math.max(0, -x / unit);
+  const j = Math.floor(u), t = u - j;
+  const from = at(j), to = at(j + 1);
+  return from.map((width, i) => width + (to[i] - width) * t);
+}
