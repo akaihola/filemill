@@ -73,3 +73,10 @@ the content, in both rendered and source views. Whole-file previews keep their
 file summary and edit control.
 
 [79]: ../tasks/79-remove-signs-and-redundant-headings-from-document-section-previews.md
+
+## Automatic preview correction, 2026-10-11
+
+Automatic README and index preview selection applies to ordinary folders only.
+Documents and sections preview their own full text when no child is selected.
+Headings named `README`, `README.*`, or `index.html` do not change that selection.
+This corrects review finding R1 for [80], including parent-section returns.

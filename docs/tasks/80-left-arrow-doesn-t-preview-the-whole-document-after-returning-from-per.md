@@ -48,3 +48,25 @@ Add failing model and browser regressions for all three names in Markdown and
 RST, covering whole-document and parent-section returns. Exclude documents and
 sections from automatic folder preview selection. Keep ordinary folder behavior,
 regenerate the static bundle, and validate both static builds and server renderers.
+
+## Review correction validation, 2026-10-11
+
+The new model regression failed before the fix: a document automatically selected
+its `README` heading. Browser regressions also failed for whole-document and
+parent-section returns. `autoPreview()` now excludes document and section nodes.
+Ordinary folders still select README and index files automatically.
+
+The model suite and all pre-commit hooks pass. The targeted bundle/server run
+passed all 30 tests, including the 24 new Markdown/RST special-heading cases
+and existing section, keyboard, ancestor-unfolding, and preview-focus regressions.
+The full suites from the original implementation were not rerun for this
+one-line model correction.
+
+The development static build passed all 17 document tests. Together with the
+bundle/server run, all 47 targeted browser tests pass.
+
+The correction is rebased onto main. The model and bundle checks pass after
+rebasing. Merge is blocked by unrelated uncommitted changes in main's TASKS.md,
+architecture review, server browser tests, and generated static bundle. Those
+changes were preserved. Keep this issue in progress until integration completes;
+user acceptance remains pending.

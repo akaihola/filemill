@@ -568,3 +568,20 @@ setState({ path: [library], sel: [], focusCol: 0 });
 autoPreview(library);
 assert.equal(sel[0], "README.md");
 assert.equal(previewNode(), readmeDoc);
+
+/* Folder preview filenames are ordinary headings inside documents. */
+for (const name of ["README", "README.md", "index.html"]) {
+  for (const kind of ["doc", "section"]) {
+    const child = { name, dir: false, section: {} };
+    const parent = { name: "Parent", dir: true, kids: [child], [kind]: true };
+    setState({ path: [parent], sel: [], focusCol: 0 });
+    autoPreview(parent);
+    assert.deepEqual(sel, [], `${kind} must not auto-select ${name}`);
+    assert.equal(previewNode(), parent);
+    assert.deepEqual(currentPath(), []);
+  }
+  const parent = { name: "Folder", dir: true, kids: [file(name)] };
+  setState({ path: [parent], sel: [], focusCol: 0 });
+  autoPreview(parent);
+  assert.deepEqual(sel, [name], `folders still auto-select ${name}`);
+}

@@ -1,5 +1,6 @@
 import { path, sel, setState, visibleKids } from "./state.js";
 export function autoPreview(node) {
+  if (node.doc || node.section) return;
   const i = path.length - 1;
   if (path[i] !== node || sel[i] !== undefined) return;
   const files = visibleKids(node).filter((k) => !k.dir || k.doc);

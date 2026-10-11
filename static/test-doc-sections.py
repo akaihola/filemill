@@ -1,5 +1,7 @@
 """Markdown and reStructuredText documents browse by their headings."""
 
+from urllib.parse import parse_qs, urlsplit
+
 import pytest
 
 MOUNT = """async () => {
@@ -138,5 +140,48 @@ def test_markdown_headings_open_as_columns(bundle, playwright):
         assert page.evaluate("focusCol") == 0
         assert page.evaluate("sel") == ["doc.rst"]
         assert rows(page, 1) == ["Part A", "Part B"]
+    finally:
+        browser.close()
+
+
+def test_left_return_ignores_preview_heading_names(
+    bundle, playwright, static_origin, special_heading_document
+):
+    name, text, nested = special_heading_document
+    browser = playwright.chromium.launch()
+    try:
+        page = browser.new_page(viewport={"width": 1500, "height": 900})
+        page.goto(f"{static_origin}/static/{bundle.name}")
+        page.wait_for_function("typeof mount === 'function'")
+        page.evaluate("localStorage.setItem('filemill.rich', 'off')")
+        page.evaluate(
+            """async ([name, text]) => {
+            const file = {kind: 'file', name,
+                async getFile() { return new File([text], name); }};
+            await mount({kind: 'directory', name: 'root', async *entries() {
+                yield [name, file];
+            }});
+        }""",
+            [name, text],
+        )
+        page.click('.col[data-i="0"] .row')
+        if nested:
+            page.click('.col[data-i="1"] .row:has-text("Group")')
+        depth = 2 if nested else 1
+        page.click(f'.col[data-i="{depth}"] .row:has-text("Other")')
+        preview_has(page, "OTHER BODY", absent=["README BODY"])
+        page.keyboard.press("ArrowLeft")
+        preview_has(page, "README BODY")
+        expected = [name, "Group"] if nested else [name]
+        assert page.evaluate("sel") == expected
+        assert page.evaluate("focusCol") == len(expected) - 1
+        assert parse_qs(urlsplit(page.url).fragment)["p"] == ["/".join(expected)]
+        preview_has(
+            page,
+            "README BODY",
+            "OTHER BODY",
+            "GROUP INTRO" if nested else "PREFACE",
+            absent=["PREFACE"] if nested else [],
+        )
     finally:
         browser.close()
