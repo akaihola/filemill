@@ -80,3 +80,6 @@ That failure reproduced in isolation on unchanged main, before this correction
 was merged. The development document suite passed all 17 tests. All 36 new
 special-heading browser cases pass; the Source-mode failure is independent
 of automatic heading selection.
+
+The rebased review correction is merged into main. Issue 80 is complete,
+pending user acceptance.
