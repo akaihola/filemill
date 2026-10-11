@@ -13,6 +13,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
+- [~] [89] Markdown previews show two Raw buttons
+  <!-- hai:{"updatedAt":"2026-10-11T19:06:19.809Z"} -->
+
 - [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-10T19:58:38.726Z"} -->
 
@@ -68,14 +71,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Completed / Accepted
 
-- [ ] [84] JSON member in an archive shows a chevron but does not open
-  <!-- hai:{"updatedAt":"2026-10-11T18:47:57.861Z"} -->
+- [x] [84] JSON member in an archive shows a chevron but does not open
+  <!-- hai:{"updatedAt":"2026-10-11T19:03:14.084Z"} -->
 
-- [ ] [78] Wide document scrolls instead of expanding the preview
-  <!-- hai:{"id":"simple-78e15d9a-0d90-4186-953f-46fdddf6fe5c","priority":"none","labels":[],"createdAt":"2026-10-08T16:19:43.075Z","updatedAt":"2026-10-11T10:55:14.858Z"} -->
+- [x] [78] Wide document scrolls instead of expanding the preview
+  <!-- hai:{"id":"simple-78e15d9a-0d90-4186-953f-46fdddf6fe5c","priority":"none","labels":[],"createdAt":"2026-10-08T16:19:43.075Z","updatedAt":"2026-10-11T19:05:34.107Z"} -->
 
-- [ ] [79] Remove § signs and redundant headings from document section previews
-  <!-- hai:{"id":"simple-e6ef425c-e474-4559-b792-1e21478c71bb","priority":"none","labels":[],"createdAt":"2026-10-08T16:21:55.597Z","updatedAt":"2026-10-11T10:38:39.134Z"} -->
+- [x] [79] Remove § signs and redundant headings from document section previews
+  <!-- hai:{"id":"simple-e6ef425c-e474-4559-b792-1e21478c71bb","priority":"none","labels":[],"createdAt":"2026-10-08T16:21:55.597Z","updatedAt":"2026-10-11T18:53:20.045Z"} -->
 
 - [ ] [81] Horizontal scrolling fold "stops"
   <!-- hai:{"id":"simple-d01a5118-704f-4133-953c-ead294dbc119","priority":"none","labels":[],"createdAt":"2026-10-08T19:19:18.607Z","updatedAt":"2026-10-11T10:14:37.126Z"} -->
@@ -83,23 +86,20 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [80] Left arrow doesn't preview the whole document after returning from per-section preview
   <!-- hai:{"id":"simple-c4d74fd6-cd42-426e-9cda-819fbf9965c3","priority":"none","labels":[],"createdAt":"2026-10-08T16:24:33.129Z","updatedAt":"2026-10-11T05:15:34.124Z"} -->
 
-- [ ] [82] Update stale Playwright 1.61 pins and the server renderer note in docs
-  <!-- hai:{"updatedAt":"2026-10-10T23:16:57.165Z"} -->
+- [x] [82] Update stale Playwright 1.61 pins and the server renderer note in docs
+  <!-- hai:{"updatedAt":"2026-10-11T19:06:17.369Z"} -->
 
-- [ ] [86] Markdown in archives is not rendered
-  <!-- hai:{"updatedAt":"2026-10-10T22:58:12.829Z"} -->
+- [x] [86] Markdown in archives is not rendered
+  <!-- hai:{"updatedAt":"2026-10-11T19:04:16.821Z"} -->
 
-- [ ] [85] Images in archives are not scaled to the preview pane
-  <!-- hai:{"updatedAt":"2026-10-10T22:31:14.157Z"} -->
-
-- [ ] [89] Markdown previews show two Raw buttons
-  <!-- hai:{"updatedAt":"2026-10-10T21:58:09.204Z"} -->
+- [x] [85] Images in archives are not scaled to the preview pane
+  <!-- hai:{"updatedAt":"2026-10-11T18:27:58.921Z"} -->
 
 - [ ] [88] Status bar hints wrap and get clipped
   <!-- hai:{"updatedAt":"2026-10-10T21:28:47.986Z"} -->
 
-- [ ] [83] Screen-reader search label shows on screen
-  <!-- hai:{"updatedAt":"2026-10-10T20:53:33.766Z"} -->
+- [x] [83] Screen-reader search label shows on screen
+  <!-- hai:{"updatedAt":"2026-10-11T19:00:25.515Z"} -->
 
 - [x] [*] Make Git `.bundle` files navigable hierarchically, and if they contain previewable
   files, show them in the preview pane when navigated to.
