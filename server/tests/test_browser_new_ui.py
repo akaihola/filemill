@@ -1176,6 +1176,34 @@ def test_a_slow_scroll_between_stops_widens_continuously(page):
     assert all(abs(w - (240 + (width - 40) / 3) / 2) <= 1 for w in widths), widths
 
 
+def test_a_sideways_wheel_over_a_wide_preview_turns_the_dial_first(page):
+    """[78] A wide code block scrolls only once the dial is at its end.
+
+    The block is a scroll container inside the dial, so the browser would
+    hand it the gesture; the dial takes it until the preview is as wide as
+    the screen allows, and the block gets the next one.
+    """
+    page.open("wide.md")
+    page.wait_for_selector("#preview .pv-markdown pre", timeout=15000)
+    page.evaluate("dialTo(0)")
+    assert _dial_settled(page) == 0
+    pre = "document.querySelector('#preview .pv-markdown pre')"
+    assert page.evaluate(f"{pre}.scrollWidth > {pre}.clientWidth")
+    box = page.locator("#preview .pv-markdown pre").bounding_box()
+    page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+
+    page.mouse.wheel(4000, 0)
+    assert _dial_settled(page) > 0
+    assert page.evaluate(f"{pre}.scrollLeft") == 0
+
+    page.evaluate("dialTo(range())")
+    end = _dial_settled(page)
+    assert abs(end - page.evaluate("range()")) <= 1
+    page.mouse.wheel(200, 0)
+    page.wait_for_function(f"{pre}.scrollLeft > 0", timeout=3000)
+    assert abs(_dial_settled(page) - end) <= 1
+
+
 def test_arrow_right_from_a_widened_stop_steps_back_to_natural(page):
     page.open("notes/deep/leaf.md")
     page.wait_for_selector("#preview .pv-rich h1")
