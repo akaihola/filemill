@@ -59,6 +59,10 @@ status.
   `VFSMemberProvider`, and `/api/preview` and `/api/raw` take the member's
   virtual path as `v`. `HTTP.blob` sends it too, so a JSON or JSONL member
   browses in the browser like the same file on disk ([84], 2026-10-11).
+  Declined JSON/JSONL entries become leaves, cached rows lose their chevrons,
+  and the navigator closes any loading column opened before the decline. Size
+  and JSONL read/parse failures stay visible in the preview ([84] review
+  follow-up, 2026-10-11).
   A member that the server renders (an image) reuses the browser's own
   markup, `img.pv-img`, so one stylesheet scales both ([85], 2026-10-11).
   A Markdown, `.docx` or `.pptx` member renders in the browser like the same

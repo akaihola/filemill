@@ -1741,6 +1741,70 @@ def test_a_jsonl_member_opens_as_a_column_of_rows(page):
     assert "/n/bundle.zip/rows.jsonl/Second" in page.url
 
 
+@pytest.mark.parametrize("extension", ["json", "jsonl"])
+@pytest.mark.parametrize("delayed", [False, True])
+def test_declined_json_member_becomes_a_leaf(page, ui_root, extension, delayed):
+    name = f"declined.{extension}"
+    if extension == "json":
+        content = json.dumps({"padding": "x" * (8 * 1024 * 1024)})
+    else:
+        line = json.dumps({"id": 1, "padding": "x" * 1000}) + "\n"
+        content = line * (16 * 1024 * 1024 // len(line) + 1)
+    with zipfile.ZipFile(ui_root / "declined.zip", "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(name, content)
+
+    page.open("declined.zip")
+    row = page.locator(f'.col[data-i="1"] .row[title="{name}"]')
+    assert row.locator(".chev").count() == 1
+    page.evaluate(
+        """async delayed => {
+            window.memberRow = document.querySelector('.col[data-i="1"] .row');
+            if (!delayed) return;
+            const {HTTP} = await import('/ui/adapters/http.js');
+            const blob = HTTP.blob;
+            HTTP.blob = async node => {
+                await new Promise(resolve => { window.releaseMemberRead = resolve; });
+                return blob(node);
+            };
+        }""",
+        delayed,
+    )
+    row.click()
+    if delayed:
+        page.wait_for_selector('.col[data-i="2"] .spinner')
+        page.evaluate("releaseMemberRead()")
+    page.wait_for_function(
+        """name => {
+            const n = path[1]?.kids.find(n => n.name === name);
+            return n && !n.loading && (n.jsonError || n.denied);
+        }""",
+        arg=name,
+    )
+    expect(row.locator(".chev")).to_have_count(0)
+    expect(page.locator('.col[data-i="2"]')).to_have_count(0)
+    assert page.evaluate("path.length") == 2
+    assert page.evaluate("sel") == ["declined.zip", name]
+    assert row.evaluate("row => row === window.memberRow")
+    message = (
+        "Too large to browse (over 8 MiB)"
+        if extension == "json"
+        else "Cannot read file"
+    )
+    expect(page.locator("#preview .pv-err")).to_contain_text(message)
+
+    row.click()
+    expect(page.locator('.col[data-i="2"]')).to_have_count(0)
+    expect(page.locator("#preview .pv-err")).to_contain_text(message)
+    page.evaluate("names => applyPath(names)", ["declined.zip", name])
+    expect(row.locator(".chev")).to_have_count(0)
+    expect(page.locator('.col[data-i="2"]')).to_have_count(0)
+    expect(page.locator("#preview .pv-err")).to_contain_text(message)
+    page.reload()
+    expect(page.locator('.col[data-i="1"] .row .chev')).to_have_count(0)
+    expect(page.locator('.col[data-i="2"]')).to_have_count(0)
+    expect(page.locator("#preview .pv-err")).to_contain_text(message)
+
+
 def test_an_image_member_is_scaled_to_the_pane_like_a_file_on_disk(page):
     """Issue 85: a 1600 px member drew at its natural size and overflowed
     the pane. It must scale the way the same image on disk does."""

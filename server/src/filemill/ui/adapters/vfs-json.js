@@ -184,7 +184,7 @@ export const withVirtual = (fs) => ({
     if (!node.jsonl && !node.json) {
       await fs.ensureLoaded(node);
       for (const k of node.kids || []) {
-        if (!k.dir && isJsonl(k)) {
+        if (!k.dir && !k.jsonl && isJsonl(k)) {
           Object.assign(k, {
             dir: true,
             kids: null,
@@ -193,7 +193,7 @@ export const withVirtual = (fs) => ({
             ordered: true,
           });
         }
-        if (!k.dir && isJson(k)) {
+        if (!k.dir && !k.json && isJson(k)) {
           Object.assign(k, {
             dir: true,
             kids: null,
@@ -262,8 +262,9 @@ export const withVirtual = (fs) => ({
           ? jsonlLazyRows(node, blob, await jsonlIndex(blob))
           : jsonlRows(node, jsonlParse(await blob.text()));
       } catch (err) {
-        node.denied = String(err.message || err);
-        node.kids = [];
+        node.jsonError = String(err.message || err);
+        node.dir = false;
+        node.kids = undefined;
       }
       node.loading = null;
     })();
@@ -280,7 +281,9 @@ export const withVirtualPreview = (provider) => ({
       await loadRow(n);
       if (n.jsonError) throw new Error(n.jsonError);
     }
-    if (n.jsonTooLarge) throw new Error(n.jsonError);
+    if (n.jsonTooLarge || (n.jsonl && n.jsonError)) {
+      throw new Error(n.jsonError);
+    }
     if (!n.json || n.value === undefined) return provider.render(n);
     let text;
     try {
