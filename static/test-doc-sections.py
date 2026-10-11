@@ -70,6 +70,19 @@ def test_markdown_headings_open_as_columns(bundle, playwright):
         )
         preview_has(page, "apt", absent=["steps", "run"])
 
+        # Left walks back through parent sections to the whole document.
+        page.keyboard.press("ArrowLeft")
+        preview_has(page, "steps", "apt", absent=["intro", "run"])
+        page.keyboard.press("ArrowLeft")
+        preview_has(page, "text", "steps", "run", absent=["intro"])
+        page.keyboard.press("ArrowLeft")
+        preview_has(page, "intro", "text", "steps", "apt", "run")
+        assert page.evaluate("focusCol") == 0
+        assert page.evaluate("sel") == ["guide.md"]
+        assert rows(page, 1) == ["Guide"]
+        page.keyboard.press("ArrowRight")
+        preview_has(page, "text", "steps", "run", absent=["intro"])
+
         # A file whose only heading is its title stays a plain file: the deep
         # link ends at it, and no column opens.
         page.evaluate('applyPath(["plain.md"], 0)')
@@ -83,5 +96,10 @@ def test_markdown_headings_open_as_columns(bundle, playwright):
         assert rows(page, 1) == ["Part A", "Part B"]
         page.click('.col[data-i="1"] .row:has-text("Part B")')
         preview_has(page, "beta", absent=["alpha"])
+        page.keyboard.press("ArrowLeft")
+        preview_has(page, "Title", "alpha", "beta")
+        assert page.evaluate("focusCol") == 0
+        assert page.evaluate("sel") == ["doc.rst"]
+        assert rows(page, 1) == ["Part A", "Part B"]
     finally:
         browser.close()
