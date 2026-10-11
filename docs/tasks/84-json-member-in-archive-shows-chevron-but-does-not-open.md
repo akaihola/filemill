@@ -46,3 +46,21 @@ already served member bytes. [ADR 0072] records the behaviour.
 - `static/index.html` rebuilt with `static/build-index.py`.
 
 [ADR 0072]: ../adr/0072-archives-browse-by-their-members.md
+
+## Independent review follow-up, 2026-10-11
+
+R1 found an unmet fallback requirement. A JSON member above 8 MiB becomes a
+leaf but its cached row keeps the chevron. A JSONL member above the server's
+16 MiB member limit keeps directory status and opens an empty error column.
+These paths predate the member-byte fix.
+
+Plan:
+
+- Add browser regressions for both limits, including a read that finishes
+  after navigation has opened a loading column.
+- Make rejected JSONL files leaves with a useful preview error. Reconcile
+  cached row chevrons and let the navigator close a declined loading column.
+- Check successful member browsing, deep links, and static JSON/JSONL behavior;
+  rebuild the shared bundle and update the architecture record.
+
+User acceptance remains pending.
