@@ -13,9 +13,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [84] JSON member in an archive shows a chevron but does not open
-  <!-- hai:{"updatedAt":"2026-10-11T18:28:08.317Z"} -->
-
 - [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-10T19:58:38.726Z"} -->
 
@@ -70,6 +67,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [84] JSON member in an archive shows a chevron but does not open
+  <!-- hai:{"updatedAt":"2026-10-11T18:47:57.861Z"} -->
 
 - [ ] [78] Wide document scrolls instead of expanding the preview
   <!-- hai:{"id":"simple-78e15d9a-0d90-4186-953f-46fdddf6fe5c","priority":"none","labels":[],"createdAt":"2026-10-08T16:19:43.075Z","updatedAt":"2026-10-11T10:55:14.858Z"} -->
