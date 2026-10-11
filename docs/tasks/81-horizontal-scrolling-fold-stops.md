@@ -1,7 +1,7 @@
 ---
 issue: 81
 title: Horizontal scrolling fold "stops"
-status: in progress
+status: completed
 depends_on: []
 ---
 
@@ -147,6 +147,30 @@ Model tests pass. The keyboard browser suite passes in full. The new-UI
 suite passes except `test_context_menu_delete_cancel_then_confirm[short.txt]`,
 which fails the same way on `main` at `20acff4`. The static suites pass except
 `test_storage`, a known local red (Chromium 1243 and OPFS handles).
+
+### Independent-review corrections (2026-10-11)
+
+Thread `41779270-752f-45ba-8f46-850db94b0549` received two P2 findings:
+
+- At 1500 → 1000 px, the widening counts change from `[3, 2]` to `[2]`
+  without changing column width or path length. The two-column position must
+  move from `-495` to `-247.5`; otherwise rebasing leaves a 1 px scroll range.
+- At 414 px, rounding the base separately from the rail span leaves the first
+  native endpoint at 429 instead of the 429.66 stop. The next fling only moves
+  to 430, requiring four flings to reach the preview instead of three.
+
+Layout now detects changes to the widening counts, preserves the column count
+at a whole widened stop where possible, and clamps partial positions to the
+available range. The rail span is rounded from the adjusted base to the upper
+stop. Regression tests first reproduced both findings, including expanding
+resizes, partial widening, reverse flings and fractional desktop column widths.
+Acceptance remains pending in `TASKS.md`.
+
+Validation: all seven new regression cases pass. The full server run had
+807 passes and one Git bundle browsing timeout: the test server's PATH kept
+the bundled `rg` directory but omitted `git`. That test passes with the system
+tools first on PATH. Both static suites, bundle and `--dev`, pass all 98 tests.
+Model tests, formatting, lint, type checks and bundle consistency pass.
 
 [ADR 0021]: ../adr/0021-horizontal-scroll-fold-dial-not-translation.md
 [ADR 0022]: ../adr/0022-the-dial-s-resting-place-never-folds-the-focused-column-nor-anything-r.md

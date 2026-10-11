@@ -45,7 +45,11 @@ status.
   scroll settles, so a fling lands on the next stop; left of natural the
   leftmost columns widen to fill the finder ([ADR 0075], [81], 2026-10-11).
   `ui/core/model/folding.js` holds the arithmetic; `ui/core/layout.js` owns
-  the scroll range and is the only writer of the dial. A sideways wheel over
+  the scroll range and is the only writer of the dial. Resizing remaps widened
+  positions when the available stops change, preserving the visible column count
+  where possible and clamping partial positions to the new range. The rail span
+  uses the adjusted base so fractional stops remain native scroll endpoints
+  ([81] review fixes, 2026-10-11). A sideways wheel over
   the preview turns the dial until its end, where the preview is as wide as
   the screen allows; only then do the preview's own scrollers, a wide code
   block among them, take the gesture ([ADR 0076], [78], 2026-10-11).

@@ -28,6 +28,8 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Resizing remaps widened columns to the available fold-dial stops. Fractional
+  column widths reach each stop with one fling instead of requiring an extra swipe.
 - Back and Forward retrace the columns that were entered. Opening sibling
   folders with ↑/↓ or a click in the same column no longer adds a history entry
   per folder ([ADR 0050]).

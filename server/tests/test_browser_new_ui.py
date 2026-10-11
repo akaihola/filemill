@@ -1176,6 +1176,81 @@ def test_a_slow_scroll_between_stops_widens_continuously(page):
     assert all(abs(w - (240 + (width - 40) / 3) / 2) <= 1 for w in widths), widths
 
 
+@pytest.mark.parametrize(
+    "before, after, position, expected",
+    [(1500, 1000, -2, -1), (1000, 1500, -1, -2), (1500, 1000, -1.5, -1)],
+)
+def test_resize_remaps_widened_positions_when_available_stops_change(
+    page, before, after, position, expected
+):
+    """[81] The column width can stay fixed while the widening stops change."""
+    page.set_viewport_size({"width": before, "height": 900})
+    page.open("notes/deep/leaf.md")
+    page.locator("#preview").focus()
+    unit = page.evaluate("foldUnit() * range()")
+    page.evaluate("x => dialTo(x)", position * unit)
+    assert abs(_dial_settled(page) - position * unit) <= 0.5
+
+    page.set_viewport_size({"width": after, "height": 900})
+    assert page.evaluate("foldUnit() * range()") == unit
+    assert abs(_dial_settled(page) - expected * unit) <= 0.5
+    assert all(abs(w - (after - 30) / 2) <= 1 for w in _column_widths(page)[:2])
+    for step in range(int(expected) + 1, 1):
+        assert abs(_fling(page, +1) - step * unit) <= 0.5
+    assert page.evaluate("document.activeElement.id") == "preview"
+
+
+def test_resize_preserves_widened_column_count_at_a_rounded_stop(page, ui_root):
+    (ui_root / "notes/deep/more").mkdir()
+    (ui_root / "notes/deep/more/leaf.txt").write_text("leaf")
+    page.open("notes/deep/more/leaf.txt")
+    page.locator("#preview").focus()
+    page.evaluate("dialTo(0)")
+    _dial_settled(page)
+    unit = page.evaluate("foldUnit() * range()")
+    assert abs(_fling(page, -1) + unit) <= 0.5
+    assert all(abs(w - (1500 - 40) / 3) <= 1 for w in _column_widths(page)[:3])
+
+    page.set_viewport_size({"width": 2000, "height": 900})
+    assert abs(_dial_settled(page) + 2 * unit) <= 0.5
+    assert all(abs(w - (2000 - 40) / 3) <= 1 for w in _column_widths(page)[:3])
+
+
+@pytest.mark.parametrize(
+    "viewport, column_width", [(414, None), (413, None), (1500, "20.025em")]
+)
+def test_fractional_fold_stops_are_native_scrollbar_endpoints(
+    page, viewport, column_width
+):
+    """[81] Three flings reach the preview even after repeated fractional rebases."""
+    page.set_viewport_size({"width": viewport, "height": 900})
+    page.open("notes/deep/leaf.md")
+    if column_width:
+        page.evaluate(
+            "w => { root.style.setProperty('--column-width', w); render(true); }",
+            column_width,
+        )
+    page.evaluate("dialTo(0)")
+    assert _dial_settled(page) == 0
+    unit, maximum = page.evaluate("[foldUnit() * range(), range()]")
+    widest = -unit if viewport < 600 else -2 * unit
+    for _ in range(2):
+        for target, folded_count in ((2 * unit, 2), (3 * unit, 3), (maximum, 3)):
+            assert abs(_fling(page, +1) - target) <= 0.5
+            assert page.evaluate("folded") == folded_count
+        assert page.evaluate(
+            "[...document.querySelectorAll('.col')].every(c => c.getBoundingClientRect().right <= 1)"
+        )
+        for target in (3 * unit, 2 * unit, 0, -unit):
+            assert abs(_fling(page, -1) - target) <= 0.5
+        if widest < -unit:
+            assert abs(_fling(page, -1) - widest) <= 0.5
+        assert abs(_fling(page, -1) - widest) <= 0.5
+        if widest < -unit:
+            assert abs(_fling(page, +1) + unit) <= 0.5
+        assert abs(_fling(page, +1)) <= 0.5
+
+
 def test_a_sideways_wheel_over_a_wide_preview_turns_the_dial_first(page):
     """[78] A wide code block scrolls only once the dial is at its end.
 

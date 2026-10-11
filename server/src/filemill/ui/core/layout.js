@@ -63,7 +63,7 @@ export const dial = () => base + finder.scrollLeft;
 /* The columns that fill the finder at a widened dial position: between two
    stops, the wider of the two. */
 function wideCount(x) {
-  const j = Math.ceil(-x / unit() - 1e-9);
+  const j = Math.ceil(-foldPosition(x, unit()) - 1e-9);
   return j > 0 ? counts[Math.min(j, counts.length) - 1] : 0;
 }
 
@@ -99,7 +99,8 @@ function setRange(from, to, x) {
   const next = x - Math.round(x - from);
   // Relative to the finder, so a resize never shrinks the range under the
   // dial — Chrome would clamp scrollLeft to the new end and base would lie.
-  const width = `calc(100% + ${Math.max(1, to - from)}px)`;
+  // Size from the adjusted base so the native endpoint rounds to the stop.
+  const width = `calc(100% + ${Math.max(1, Math.round(to - next))}px)`;
   [rangeFrom, rangeTo] = [from, to];
   if (
     next === base && rail.style.width === width &&
@@ -222,9 +223,12 @@ export function layout(keepScroll) {
   const nextStep = unit();
   const geometryChanged = nextStep !== scrollStep ||
     path.length !== scrollColumns;
+  const previousCounts = counts;
   measureStops();
+  const stopsChanged = counts.length !== previousCounts.length ||
+    counts.some((n, i) => n !== previousCounts[i]);
   let target = x;
-  if (keepScroll && scrollStep && geometryChanged) {
+  if (keepScroll && scrollStep && (geometryChanged || stopsChanged)) {
     const nextPosition = position > scrollColumns
       ? path.length * position / scrollColumns
       : position;
@@ -235,6 +239,7 @@ export function layout(keepScroll) {
       target = -(j >= 0 ? j + 1 : Math.min(-position, counts.length)) *
         nextStep;
     }
+    target = Math.max(stops[0], target);
   }
   scrollStep = nextStep;
   scrollColumns = path.length;
