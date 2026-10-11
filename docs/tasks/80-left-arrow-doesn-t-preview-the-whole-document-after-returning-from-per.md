@@ -29,3 +29,11 @@ isolation and on unchanged main. Two server layout/link failures also passed
 in isolation. The vertical-folding test still fails and is documented in [87].
 
 [87]: 87-make-ci-green-so-pages-publishes.md
+
+Full server validation: 774 passed, 4 failed. The rendered-link and preview
+layout tests passed in isolation. The vertical-folding failure reproduced on
+unchanged main. The Git bundle test passed after putting the user profile's
+binaries first in PATH: the server fixture keeps only the directory containing
+`rg`, which must also contain `git`. The agent's bundled `rg` directory does
+not contain `git`. No unrelated code was changed. Both server regressions also
+pass under Python 3.13.
