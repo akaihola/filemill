@@ -212,3 +212,31 @@ def archive_client(archive_root: Path):
 def pytest_addoption(parser):
     parser.addoption("--native", action="store_true", help="test the native WebView host")
     parser.addoption("--dev", action="store_true", help="test modular static sources")
+
+
+@pytest.fixture(
+    params=[
+        pytest.param(
+            (kind, heading, nested),
+            id=f"{kind}-{heading}-{'parent' if nested else 'whole'}",
+        )
+        for kind in ("md", "rst")
+        for heading in ("README", "README.md", "index.html")
+        for nested in (False, True)
+    ]
+)
+def special_heading_document(request):
+    kind, heading, nested = request.param
+    if kind == "md":
+        text = "# Title\n\nPREFACE\n\n"
+        if nested:
+            text += "## Group\n\nGROUP INTRO\n\n"
+        level = "###" if nested else "##"
+        text += f"{level} {heading}\n\nREADME BODY\n\n{level} Other\n\nOTHER BODY\n"
+    else:
+        text = "Title\n=====\n\nPREFACE\n\n"
+        if nested:
+            text += "Group\n-----\n\nGROUP INTRO\n\n"
+        marker = "~" if nested else "-"
+        text += f"{heading}\n{marker * len(heading)}\n\nREADME BODY\n\nOther\n{marker * 5}\n\nOTHER BODY\n"
+    return f"special.{kind}", text, nested

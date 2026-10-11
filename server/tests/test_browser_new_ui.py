@@ -3501,3 +3501,31 @@ def test_rst_sections_render_through_the_server_in_the_server_build(page):
     assert "Some alpha text." in page.text_content("#preview .preview-rst")
     assert page.evaluate("sel") == ["code", "manual.rst"]
     assert page.locator("#preview .pv-hero").count() == 1
+
+
+def test_left_return_ignores_preview_heading_names(
+    page, ui_root, special_heading_document
+):
+    name, text, nested = special_heading_document
+    (ui_root / name).write_text(text)
+    page.open(name)
+    if nested:
+        page.click('.col[data-i="1"] .row:has-text("Group")')
+    depth = 2 if nested else 1
+    page.click(f'.col[data-i="{depth}"] .row:has-text("Other")')
+    page.wait_for_function(
+        "document.querySelector('#pv-content')?.textContent.includes('OTHER BODY')"
+    )
+    page.keyboard.press("ArrowLeft")
+    page.wait_for_function(
+        "document.querySelector('#pv-content')?.textContent.includes('README BODY')"
+    )
+    expected = [name, "Group"] if nested else [name]
+    assert page.evaluate("sel") == expected
+    assert page.evaluate("focusCol") == len(expected) - 1
+    assert page.url.endswith("/".join(expected) + "?filemill=render")
+    content = page.text_content("#pv-content")
+    assert "README BODY" in content and "OTHER BODY" in content
+    assert ("GROUP INTRO" if nested else "PREFACE") in content
+    if nested:
+        assert "PREFACE" not in content
