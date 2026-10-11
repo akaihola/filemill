@@ -66,6 +66,7 @@ function rowStep() {
 }
 
 let longPressTimer;
+let longPressPointer; // only the pointer that started a press may end it
 let suppressClick = false;
 
 let menuRow, menuFocus, updateMenuDelete;
@@ -300,13 +301,18 @@ function buildCol(node) {
         return;
       }
       clearTimeout(longPressTimer);
+      longPressPointer = event.pointerId;
       longPressTimer = setTimeout(() => {
         openRowMenu(k, node, row, event);
         suppressClick = true;
       }, LONG_PRESS_MS);
     };
-    row.onpointerup = row.onpointercancel = row.onpointerleave = () =>
-      clearTimeout(longPressTimer);
+    /* The timer is shared by every row, and a fold glide moving rows under a
+       resting mouse fires its pointerleave on them: that must not end a
+       finger's press elsewhere. */
+    row.onpointerup = row.onpointercancel = row.onpointerleave = (event) => {
+      if (event.pointerId === longPressPointer) clearTimeout(longPressTimer);
+    };
     row.oncontextmenu = (event) => {
       event.preventDefault();
       const held = suppressClick;

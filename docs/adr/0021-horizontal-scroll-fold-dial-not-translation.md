@@ -17,3 +17,9 @@ Horizontal scroll = fold dial, not translation
 ## Consequences
 
 The static edition follows this decision. The measurement above records the basis for maintaining and evaluating it.
+
+Superseded in part on 2026-10-11 by [ADR 0075]: the dial is still a fold
+control, but the scrollbar spans one stop each way and the axis extends left
+of natural, where columns widen.
+
+[ADR 0075]: 0075-the-scrollbar-spans-one-stop-each-way.md

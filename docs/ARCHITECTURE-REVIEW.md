@@ -40,6 +40,12 @@ status.
 - **A DOM-free model.** `ui/core/model/` holds state, selection, sort, folding,
   keyboard mapping, deep links, JSON folds and Markdown task toggles, tested by
   `ui/core/model/test.mjs`. The rest of `ui/core/` is a DOM-coupled singleton.
+- **One fold dial with stops.** Horizontal scroll is a dial, not a translation
+  ([ADR 0021]). The scrollbar spans one stop each way and is re-based once a
+  scroll settles, so a fling lands on the next stop; left of natural the
+  leftmost columns widen to fill the finder ([ADR 0075], [81], 2026-10-11).
+  `ui/core/model/folding.js` holds the arithmetic; `ui/core/layout.js` owns
+  the scroll range and is the only writer of the dial.
 - **Virtual filesystems.** JSON, JSONL and CSV are browser adapters
   (`ui/adapters/vfs-json.js`, `vfs-csv.js`). Markdown and reStructuredText
   browse by their headings the same way (`vfs-doc.js`, outline in
@@ -370,6 +376,7 @@ updates. Security steps can start at once. Never weaken a gate to pass it.
 A12 items can land at any time, each with a focused test.
 
 [ADR 0005]: adr/0005-node-lastsel-per-directory.md
+[ADR 0021]: adr/0021-horizontal-scroll-fold-dial-not-translation.md
 [ADR 0034]: adr/0034-read-only-mode-read.md
 [ADR 0050]: adr/0050-history-pushes-on-entering-a-column-rewrites-otherwise.md
 [ADR 0063]: adr/0063-installed-pwa-server-recovery.md
@@ -381,4 +388,5 @@ A12 items can land at any time, each with a focused test.
 [ADR 0072]: adr/0072-archives-browse-by-their-members.md
 [ADR 0073]: adr/0073-git-bundles-browse-by-refs-and-trees.md
 [ADR 0074]: adr/0074-status-strip-drops-whole-hints.md
+[ADR 0075]: adr/0075-the-scrollbar-spans-one-stop-each-way.md
 [remaining red tests]: testing/remaining-red-tests.md
