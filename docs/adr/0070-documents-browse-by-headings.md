@@ -63,3 +63,13 @@ It drops deeper section selections, so the preview and URL name that selection.
 The selected document keeps its heading column open for right-arrow navigation.
 
 [80]: ../tasks/80-left-arrow-doesn-t-preview-the-whole-document-after-returning-from-per.md
+
+## Presentation correction, 2026-10-11
+
+Issue [79] removes the section glyph from heading rows and folded columns.
+Section previews omit the file summary heading and its divider. The selected
+section name remains in the preview toolbar. The document's own heading starts
+the content, in both rendered and source views. Whole-file previews keep their
+file summary and edit control.
+
+[79]: ../tasks/79-remove-signs-and-redundant-headings-from-document-section-previews.md

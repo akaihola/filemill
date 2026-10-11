@@ -501,14 +501,16 @@ function renderPreview() {
       </span>
     </div>
     <div class="pv-body">
-      <div class="pv-hero">
+      ${
+    target.section ? "" : `<div class="pv-hero">
         ${iconHTML(target)}
         <div><h2>${esc(stem)}<span style="color:var(--ink-3)">${
-    esc(ext)
-  }</span></h2>
+      esc(ext)
+    }</span></h2>
              <div class="sub" id="pv-sub">reading…</div></div>
         <button id="pv-edit" hidden>Edit</button>
-      </div>
+      </div>`
+  }
       <div id="pv-content" class="pv-content"></div>
     </div>`;
   if (n) fillPreview(n);
@@ -638,18 +640,18 @@ async function fillPreview(n) {
   if (token !== pvToken) return;
   const m = n.meta || {};
   const sub = document.getElementById("pv-sub");
-  if (!sub) return;
+  if (!sub && !n.section) return;
   if (m.error) {
-    sub.textContent = "unreadable";
+    if (sub) sub.textContent = "unreadable";
     return;
   }
   /* Not everything a column can hold is a file. A row inside a database has no
      size and no mtime, and inventing them prints "0 B · 1 Jan 1970" — so leave
      the sub-line empty and go straight to the body. */
-  if (m.size == null) {
-    sub.textContent = "";
-  } else {
-    sub.textContent = `${fmtSize(m.size)} · modified ${fmtDate(m.mod)}`;
+  if (sub) {
+    sub.textContent = m.size == null
+      ? ""
+      : `${fmtSize(m.size)} · modified ${fmtDate(m.mod)}`;
   }
 
   let html = null;
