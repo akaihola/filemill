@@ -30,3 +30,20 @@ up to `#finder` and turns the dial, which is what the user expects everywhere.
   is reached, as a browser latches a gesture to one scroller.
 - ADR 0076 records the decision; `docs/ARCHITECTURE-REVIEW.md` notes it under
   the fold dial.
+
+## Independent-review correction, 2026-10-11
+
+Fullscreen fills the window without moving the dial to its end. The original
+wheel interception therefore moved the hidden dial instead of scrolling wide
+content, in both native fullscreen and its layout fallback.
+
+The shared layout now checks `pvFullscreen` before the wheel latch and leaves
+fullscreen gestures to the preview. Browser regressions cover the first
+sideways wheel in both fullscreen modes and entering fullscreen during an
+already latched gesture. All three failed before the fix: the dial moved from
+0 to 200 in fullscreen, and the latched wheel remained prevented. ADR 0076 and
+the architecture review record the exception; the static bundle is rebuilt.
+
+Validation: 19 fullscreen and fold-gesture browser cases pass, plus two static
+fullscreen-navigation cases in each build. Model and documentation tests,
+formatting, lint, mypy, and the bundle freshness check pass.

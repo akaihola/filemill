@@ -53,6 +53,9 @@ status.
   the preview turns the dial until its end, where the preview is as wide as
   the screen allows; only then do the preview's own scrollers, a wide code
   block among them, take the gesture ([ADR 0076], [78], 2026-10-11).
+  Native fullscreen and its layout fallback give the preview the gesture
+  immediately, before the wheel latch is checked, because the preview already
+  fills the screen ([78] independent-review fix, 2026-10-11).
 - **Virtual filesystems.** JSON, JSONL and CSV are browser adapters
   (`ui/adapters/vfs-json.js`, `vfs-csv.js`). Markdown and reStructuredText
   browse by their headings the same way (`vfs-doc.js`, outline in
