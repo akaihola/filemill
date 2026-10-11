@@ -16,3 +16,12 @@ summary for Markdown and reStructuredText. All five document browsing tests
 pass against the shared sources. All seven focused bundle and server browser
 tests pass. Server checks verify the document's rendered heading, source view
 switching, deep-link reloads and whole-file previews after left-arrow navigation.
+
+After rebasing onto `9502cde`, all five source tests, all six pre-commit hooks
+and the model checks pass. A broader bundle and server preview run has 51
+passes and one Git bundle timeout. That timeout repeats with the unchanged
+main frontend in this worktree. The same test passes in the canonical checkout.
+It is outside this issue's section presentation change.
+
+Deployment needs a push from `akaihola@atom`. The push rules in
+`~/.config/coding-agents/sandbox.md` prohibit pushing `main` from `agent@gogo`.

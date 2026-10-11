@@ -14,7 +14,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [78] Wide document scrolls instead of expanding the preview
   <!-- hai:{"id":"simple-78e15d9a-0d90-4186-953f-46fdddf6fe5c","priority":"none","labels":[],"createdAt":"2026-10-08T16:19:43.075Z","updatedAt":"2026-10-11T10:31:19.292Z"} -->
 
-
 ## In Progress
 
 - [~] [79] Remove § signs and redundant headings from document section previews
