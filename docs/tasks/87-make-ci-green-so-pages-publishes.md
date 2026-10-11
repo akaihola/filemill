@@ -115,3 +115,16 @@ as the profile. Passes in both editions, four runs each.
 The app's own `recallRoots()` takes the same path, so a user who opens the
 static edition in an incognito window of that Chrome would hit the abort.
 That is a browser bug outside this task; no app change was made.
+
+## Second CI run, 2026-10-11
+
+Run 38155597653 on `ea20d27`: both static suites passed (98 each, the storage
+test included). The server edition failed 10 of 721:
+
+- Five `test_api.py` search tests got 503 "Search is unavailable: ripgrep is
+  not installed", and four browser search tests timed out on the same cause.
+  The runner image lacks ripgrep. The workflow now installs it before the
+  server suite; a guard test keeps that order.
+- `test_context_menu_delete_cancel_then_confirm[short.txt]` read the preview
+  text empty right after the delete. The preview re-renders after the listing
+  refresh, so the test now waits for the text instead of reading it once.

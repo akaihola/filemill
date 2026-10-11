@@ -3110,7 +3110,10 @@ def test_context_menu_delete_cancel_then_confirm(page, ui_root, name):
         assert "hello" not in page.locator("#preview").inner_text()
     else:
         assert page.url == before
-        assert page.locator("#pv-content").inner_text().strip() == "hello"
+        # The preview re-renders after the listing refresh; CI read it empty.
+        page.wait_for_function(
+            "document.querySelector('#pv-content').innerText.trim() === 'hello'"
+        )
     assert not page.errors
 
 
