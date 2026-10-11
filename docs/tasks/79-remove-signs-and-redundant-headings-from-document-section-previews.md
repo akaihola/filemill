@@ -25,3 +25,7 @@ It is outside this issue's section presentation change.
 
 Deployment needs a push from `akaihola@atom`. The push rules in
 `~/.config/coding-agents/sandbox.md` prohibit pushing `main` from `agent@gogo`.
+
+After the local merge, eight focused bundle and server browser tests pass in
+the canonical checkout, including the Git bundle case. All six pre-commit
+hooks and the model checks pass there too.
