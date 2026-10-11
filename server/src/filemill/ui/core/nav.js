@@ -14,7 +14,13 @@ import { autoPreview, selectNode } from "./model/selection.js";
    ═══════════════════════════════════════════════════════════════════════════ */
 import { applyPath, scrollCursorIntoView } from "./deeplink.js";
 import { currentPath } from "./model/deeplink.js";
-import { advancePreviewFold, foldUnit, range, revealRow } from "./layout.js";
+import {
+  advancePreviewFold,
+  dialTo,
+  foldUnit,
+  range,
+  revealRow,
+} from "./layout.js";
 import { FS } from "./ports.js";
 import {
   closeRowMenu,
@@ -185,10 +191,7 @@ export async function refreshColumn(i) {
 
 /* clicking a spine scrolls back just far enough to unfold it */
 export function unfoldTo(i) {
-  finder.scrollTo({
-    left: Math.round(i * foldUnit() * range()),
-    behavior: "smooth",
-  });
+  dialTo(Math.round(i * foldUnit() * range()), true);
 }
 
 /* Where you are, from the root down to the selected row. The first element is a

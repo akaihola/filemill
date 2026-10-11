@@ -932,18 +932,16 @@ def test_arrow_left_unfolds_each_focused_ancestor(page):
 def test_preview_arrow_folds_then_fullscreen(page, partial):
     page.open("notes/deep/leaf.md")
     page.wait_for_selector("#preview .pv-rich h1")
-    page.evaluate("finder.scrollTo({left: 0, behavior: 'instant'})")
+    page.evaluate("dialTo(0)")
     page.wait_for_function("folded === 0")
     snapshot = page.evaluate(
         "({sel: [...sel], focusCol, url: location.href, history: history.length})"
     )
     page.keyboard.press("ArrowRight")
     assert page.evaluate("document.activeElement.id") == "preview"
-    assert page.evaluate("finder.scrollLeft") == 0
+    assert page.evaluate("dial()") == 0
     if partial:
-        page.evaluate(
-            "finder.scrollTo({left: .4 * foldUnit() * range(), behavior: 'instant'})"
-        )
+        page.evaluate("dialTo(.4 * foldUnit() * range())")
     for count in range(1, 4):
         page.keyboard.press("ArrowRight")
         page.wait_for_function(
@@ -952,16 +950,14 @@ def test_preview_arrow_folds_then_fullscreen(page, partial):
             timeout=3000,
         )
         assert page.evaluate(
-            "n => Math.abs(finder.scrollLeft - n * foldUnit() * range()) <= 1", count
+            "n => Math.abs(dial() - n * foldUnit() * range()) <= 1", count
         )
         assert page.evaluate("document.activeElement.id") == "preview"
         assert not page.evaluate(
             "document.documentElement.classList.contains('pv-fullscreen')"
         )
     page.keyboard.press("ArrowRight")
-    page.wait_for_function(
-        "Math.abs(finder.scrollLeft - (finder.scrollWidth - finder.clientWidth)) <= 1"
-    )
+    page.wait_for_function("Math.abs(dial() - range()) <= 1")
     assert page.evaluate(
         "[...document.querySelectorAll('.col')].every(c => c.getBoundingClientRect().right <= 1)"
     )
@@ -1044,7 +1040,7 @@ def test_preview_arrow_focus_survives_resize(page):
 def test_preview_arrow_rapid_and_editable(page):
     page.open("notes/deep/leaf.md")
     page.wait_for_selector("#preview .pv-rich h1")
-    page.evaluate("finder.scrollTo({left: 0, behavior: 'instant'})")
+    page.evaluate("dialTo(0)")
     page.wait_for_function("folded === 0")
     page.evaluate("""() => {
       const input = document.createElement('input');
@@ -1055,7 +1051,7 @@ def test_preview_arrow_rapid_and_editable(page):
     }""")
     page.keyboard.press("ArrowRight")
     assert page.evaluate("document.activeElement.selectionStart") == 2
-    assert page.evaluate("finder.scrollLeft") == 0
+    assert page.evaluate("dial()") == 0
     page.locator("#preview").focus()
     for _ in range(3):
         page.keyboard.press("ArrowRight")
@@ -1083,6 +1079,143 @@ def test_preview_arrows_preserve_layout_then_restore_document_parent(page):
         "({focusCol, folded, spines: [...document.querySelectorAll('.col.spine')].map(c => +c.dataset.i)})"
     )
     assert state == {"focusCol": 2, "folded": 2, "spines": [0, 1]}
+
+
+def _dial_settled(page) -> float:
+    """Wait until the dial has stopped and its scroll range has been re-based.
+
+    The dial glides (CSS smooth scroll) and re-bases its range SETTLE_MS after
+    the last scroll event, so "settled" is both numbers holding still for
+    longer than that.
+    """
+    prev = None
+    still = 0
+    for _ in range(60):  # 6 s ceiling
+        cur = page.evaluate("[dial(), finder.scrollLeft]")
+        still = still + 1 if cur == prev else 0
+        if still >= 3:
+            return cur[0]
+        prev = cur
+        page.wait_for_timeout(100)
+    raise AssertionError("the dial never settled")
+
+
+def _fling(page, direction: int) -> float:
+    """One fast touchpad swipe: a wheel delta far past any stop."""
+    box = page.locator("#finder").bounding_box()
+    page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+    page.mouse.wheel(direction * 4000, 0)
+    return _dial_settled(page)
+
+
+def _column_widths(page) -> list[float]:
+    return page.evaluate(
+        "[...document.querySelectorAll('.col')].map(c => c.getBoundingClientRect().width)"
+    )
+
+
+def test_flings_stop_at_each_fold_stop(page):
+    """[81] A fast swipe lands on the next stop, not at the end of the dial.
+
+    Left of natural: the rightmost column whole over spines, every column a
+    spine, the preview alone. Right of natural: three, then two columns fill
+    the finder and the preview leaves the screen; a desktop never widens to one.
+    """
+    page.open("notes/deep/leaf.md")
+    page.wait_for_selector("#preview .pv-rich h1")
+    page.evaluate("dialTo(0)")
+    assert _dial_settled(page) == 0
+    unit = page.evaluate("foldUnit() * range()")
+    width = page.evaluate("finder.clientWidth")
+    spines = "document.querySelectorAll('.col.spine').length"
+
+    assert abs(_fling(page, +1) - 2 * unit) <= 1
+    assert page.evaluate(spines) == 2
+    assert abs(_fling(page, +1) - 3 * unit) <= 1
+    assert page.evaluate(spines) == 3
+    assert abs(_fling(page, +1) - page.evaluate("range()")) <= 1
+    assert page.evaluate(
+        "[...document.querySelectorAll('.col')].every(c => c.getBoundingClientRect().right <= 1)"
+    )
+    assert abs(_fling(page, +1) - page.evaluate("range()")) <= 1  # the end
+
+    assert abs(_fling(page, -1) - 3 * unit) <= 1
+    assert abs(_fling(page, -1) - 2 * unit) <= 1
+    assert abs(_fling(page, -1) - 0) <= 1
+    assert page.evaluate(spines) == 0
+    assert all(abs(w - 240) <= 1 for w in _column_widths(page))
+
+    assert abs(_fling(page, -1) + unit) <= 1
+    widths = _column_widths(page)
+    assert all(abs(w - (width - 40) / 3) <= 1 for w in widths), widths
+    preview_left = "document.querySelector('#preview').getBoundingClientRect().left"
+    assert page.evaluate(preview_left) >= width - 1
+    assert page.evaluate("folded") == 0
+
+    assert abs(_fling(page, -1) + 2 * unit) <= 1
+    widths = _column_widths(page)
+    assert all(abs(w - (width - 30) / 2) <= 1 for w in widths[:2]), widths
+    assert abs(widths[2] - 240) <= 1
+    assert (
+        page.evaluate(
+            "document.querySelector('.col[data-i=\"2\"]').getBoundingClientRect().left"
+        )
+        >= width - 1
+    )
+
+    assert abs(_fling(page, -1) + 2 * unit) <= 1  # the other end
+
+
+def test_a_slow_scroll_between_stops_widens_continuously(page):
+    page.open("notes/deep/leaf.md")
+    unit = page.evaluate("foldUnit() * range()")
+    width = page.evaluate("finder.clientWidth")
+    page.evaluate("x => dialTo(x)", -unit / 2)
+    _dial_settled(page)
+    widths = _column_widths(page)
+    assert all(abs(w - (240 + (width - 40) / 3) / 2) <= 1 for w in widths), widths
+
+
+def test_arrow_right_from_a_widened_stop_steps_back_to_natural(page):
+    page.open("notes/deep/leaf.md")
+    page.wait_for_selector("#preview .pv-rich h1")
+    unit = page.evaluate("foldUnit() * range()")
+    page.evaluate("x => dialTo(x)", -2 * unit)
+    assert abs(_dial_settled(page) + 2 * unit) <= 1
+    page.keyboard.press("ArrowRight")
+    assert page.evaluate("document.activeElement.id") == "preview"
+    for expected in (-unit, 0, unit):  # one stop per press, widened ones too
+        page.keyboard.press("ArrowRight")
+        assert abs(_dial_settled(page) - expected) <= 1
+
+
+def test_a_spine_click_unfolds_across_the_scroll_range(page):
+    """unfoldTo targets a dial position outside the current one-stop range."""
+    page.open("notes/deep/leaf.md")
+    page.evaluate("dialTo(range() * 0.99)")
+    _dial_settled(page)
+    assert page.evaluate("document.querySelectorAll('.col.spine').length") == 3
+    page.click('.col[data-i="0"].spine')
+    assert abs(_dial_settled(page)) <= 1
+    assert page.evaluate("document.querySelectorAll('.col.spine').length") == 0
+
+
+def test_opening_a_folder_from_a_full_width_root_shows_the_new_column(page):
+    """ADR 0022 at a widened stop: a tap never hides the column it opened."""
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.open()
+    unit = page.evaluate("foldUnit() * range()")
+    assert abs(_fling(page, -1) + unit) <= 1  # a phone widens the root alone
+    assert abs(_column_widths(page)[0] - (390 - 20)) <= 1
+    page.click('.col[data-i="0"] .row[aria-label="notes"]')
+    page.wait_for_selector('.col[data-i="1"]')
+    assert abs(_dial_settled(page)) <= 1
+    assert (
+        page.evaluate(
+            "document.querySelector('.col[data-i=\"1\"]').getBoundingClientRect().left"
+        )
+        < 390
+    )
 
 
 def test_back_steps_out_of_the_folder_it_entered(page):
@@ -1222,7 +1355,7 @@ def test_arrow_navigation_folds_but_never_unfolds(page, ui_root):
     page.wait_for_timeout(300)
     page.click('.col[data-i="2"] .row[title="a-wide"]')
     _scroll_settled(page)
-    page.evaluate("finder.scrollLeft = 2 * foldUnit() * range()")
+    page.evaluate("dialTo(2 * foldUnit() * range(), true)")
     _scroll_settled(page)
     folded_before = page.evaluate("folded")
     assert folded_before == 2
@@ -1234,7 +1367,7 @@ def test_arrow_navigation_folds_but_never_unfolds(page, ui_root):
     # Filename length must not change the fixed column widths.
     assert page.evaluate("new Set(widths).size") == 1
     assert page.evaluate("folded") == folded_before
-    # the animation mechanism: layout()'s scrollLeft writes glide, in pure CSS
+    # the animation mechanism: layout()'s dial writes glide, in pure CSS
     assert page.evaluate("getComputedStyle(finder).scrollBehavior") == "smooth"
 
 

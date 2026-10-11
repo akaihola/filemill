@@ -171,12 +171,12 @@ def _wait_for_finder_scroll(page) -> None:
     """
     page.wait_for_function(
         "() => { const f = document.getElementById('finder');"
-        " return Boolean(f && f.scrollLeft > 0); }",
+        " return Boolean(f && typeof dial === 'function' && dial() > 0); }",
         timeout=20000,
     )
     previous = None
     for _ in range(40):  # 40 x 100 ms, a 4 s ceiling on the smooth scroll
-        current = page.evaluate("() => document.getElementById('finder').scrollLeft")
+        current = page.evaluate("() => dial()")
         if current == previous:
             return
         previous = current
@@ -288,9 +288,9 @@ _REVEAL_METRICS = """() => {
     const pv = document.getElementById('preview');
     const pr = pv && pv.getBoundingClientRect();
     return {
-        scrollLeft: finder.scrollLeft,
+        dial: dial(),
         expected: expected,
-        delta: Math.abs(finder.scrollLeft - expected),
+        delta: Math.abs(dial() - expected),
         withinUpToFocus: cols.every((c, i) => +c.dataset.i > focusCol
             || (boxes[i].left >= fr.left - 2 && boxes[i].right <= fr.right + 2)),
         everyColStartsInside: boxes.every(r => r.left >= fr.left - 2
@@ -534,7 +534,7 @@ def test_arrowright_preview_preserves_layout(live_server, viewport, selection):
         geometry = """() => ({
             widths: [...document.querySelectorAll('.col')].map(c => c.offsetWidth),
             preview: document.getElementById('preview').offsetWidth,
-            scroll: finder.scrollLeft,
+            scroll: dial(),
             stage: stage.scrollLeft,
             history: history.length,
         })"""
@@ -599,9 +599,7 @@ def test_vertical_navigation_keeps_focused_column_whole(
         page.keyboard.press("ArrowRight")
         page.wait_for_function("focusCol === 1 && path.length === 3")
         page.evaluate(
-            """offset => finder.scrollTo({
-                left: foldUnit() * range() + offset, behavior: "instant"
-            })""",
+            "offset => dialTo(foldUnit() * range() + offset)",
             boundary_offset,
         )
         page.wait_for_function("folded === 1")
@@ -649,7 +647,7 @@ def test_vertical_navigation_preserves_rounded_fold_boundary(live_server: str):
             // Ranges 528/529 land on opposite sides of a rounded fold boundary.
             widths.splice(0, 3, 230 - 3 * GUTTER(), 148, 150);
             layout(true);
-            finder.scrollTo({left: Math.round(foldUnit() * range()), behavior: 'instant'});
+            dialTo(Math.round(foldUnit() * range()));
         }""")
         page.wait_for_function("folded === 1")
         page.evaluate("""async () => {
@@ -674,12 +672,17 @@ def test_vertical_navigation_preserves_full_fold_with_equal_widths(live_server: 
         page.evaluate("""() => {
             path.forEach(node => colCache.get(node).width = 150);
             render();
-            finder.scrollTo({left: range(), behavior: 'instant'});
+            dialTo(range());
         }""")
         page.wait_for_function("folded === 3")
         for key, count in [("ArrowDown", 2), ("ArrowUp", 3)]:
             page.keyboard.press(key)
-            page.wait_for_function("count => path.length === count", arg=count)
+            # choose() truncates the path before it reads a document and
+            # renders after; the fold count is only current once widths are.
+            page.wait_for_function(
+                "count => path.length === count && widths.length === count",
+                arg=count,
+            )
             assert page.evaluate("folded") == count
             assert page.locator(".col.spine").count() == count
 
@@ -695,12 +698,12 @@ def test_arrow_navigation_keeps_fold_animation_running(live_server: str):
         page.evaluate("finder.scrollLeft = finder.scrollWidth")
         _wait_for_finder_scroll(page)
 
-        before = page.evaluate("finder.scrollLeft")
+        before = page.evaluate("dial()")
         page.keyboard.press("ArrowLeft")
         page.wait_for_timeout(50)
-        during = page.evaluate("finder.scrollLeft")
+        during = page.evaluate("dial()")
         page.wait_for_timeout(350)
-        after = page.evaluate("finder.scrollLeft")
+        after = page.evaluate("dial()")
 
         assert before > during > after
 
@@ -720,9 +723,9 @@ def test_mobile_folder_click_reveals_new_column_without_flushing_left(
 
         _wait_for_finder_scroll(page)
         metrics = page.evaluate(_REVEAL_METRICS)
-        assert metrics["scrollLeft"] > 0, "the dial never engaged"
+        assert metrics["dial"] > 0, "the dial never engaged"
         assert metrics["delta"] <= 2, (
-            f"dial at {metrics['scrollLeft']:.0f}px, layout()'s minimum is "
+            f"dial at {metrics['dial']:.0f}px, layout()'s minimum is "
             f"{metrics['expected']:.0f}px"
         )
         assert metrics["withinUpToFocus"], (
@@ -752,9 +755,9 @@ def test_mobile_file_click_reveals_preview_without_flushing_left(
 
         _wait_for_finder_scroll(page)
         metrics = page.evaluate(_REVEAL_METRICS)
-        assert metrics["scrollLeft"] > 0, "the dial never engaged"
+        assert metrics["dial"] > 0, "the dial never engaged"
         assert metrics["delta"] <= 2, (
-            f"dial at {metrics['scrollLeft']:.0f}px, layout()'s minimum is "
+            f"dial at {metrics['dial']:.0f}px, layout()'s minimum is "
             f"{metrics['expected']:.0f}px"
         )
         assert metrics["previewStartVisible"], "the preview starts off-screen"
@@ -1055,7 +1058,7 @@ def test_mobile_preview_scroll_position_is_not_zero_after_navigation(
         _expect_preview(page)
 
         _wait_for_finder_scroll(page)
-        assert page.evaluate("finder.scrollLeft") > 0
+        assert page.evaluate("dial()") > 0
 
 
 @pytest.mark.integration
@@ -1148,7 +1151,7 @@ def test_mobile_file_restore_scroll_position_is_not_zero(
         scroll_left = page.evaluate(
             """() => {
                 const finder = document.getElementById('finder');
-                return finder ? finder.scrollLeft : null;
+                return finder ? dial() : null;
             }"""
         )
 
@@ -1326,7 +1329,7 @@ def test_mobile_scroll_behavior_runtime_assertions(live_server: str):
         _ui_tap(page, 1, "AGENTS.md")
 
         _wait_for_finder_scroll(page)
-        assert page.evaluate("finder.scrollLeft") > 0
+        assert page.evaluate("dial()") > 0
 
 
 @pytest.mark.integration
@@ -1349,7 +1352,7 @@ def test_mobile_restore_behavior_preview_assertions(
         page.wait_for_timeout(1100)
 
         _wait_for_finder_scroll(page)
-        assert page.evaluate("() => document.getElementById('finder').scrollLeft") > 0
+        assert page.evaluate("() => dial()") > 0
 
         context.close()
         browser.close()
@@ -1362,7 +1365,7 @@ def test_mobile_scroll_behavior_preview_assertions(live_server: str):
         _ui_tap(page, 1, "AGENTS.md")
 
         _wait_for_finder_scroll(page)
-        assert page.evaluate("finder.scrollLeft") > 0
+        assert page.evaluate("dial()") > 0
 
         metrics = page.evaluate(
             """() => {

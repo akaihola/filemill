@@ -746,11 +746,21 @@ async def main(bundle, fake_handle, playwright):
         # Both moves glide: the dial is a CSS smooth scroll either way round, so
         # wait for it to stop rather than for a clock. A flat 300 ms read the
         # fold mid-flight and counted 4 of the 5 spines.
+        # A fling runs to the end of the scrollbar, which is one stop away
+        # (ADR 0075): first the rightmost column alone, then every column.
+        n = await pg.evaluate("path.length")
         await pg.evaluate("finder.scrollLeft = finder.scrollWidth")
         settled = await scroll_settled(pg)
+        await pg.wait_for_timeout(300)                # the range re-bases
         spines = await pg.eval_on_selector_all(".col.spine", "e=>e.length")
-        check("Scrolling right folds columns into spines", spines == 5,
-              f"{spines} spines" + ("" if settled else ", scroll never settled"))
+        check("A fling folds every column but the rightmost", spines == n - 1,
+              f"{spines} spines of {n}" + ("" if settled else ", scroll never settled"))
+        await pg.evaluate("finder.scrollLeft = finder.scrollWidth")
+        settled = await scroll_settled(pg)
+        await pg.wait_for_timeout(300)
+        spines = await pg.eval_on_selector_all(".col.spine", "e=>e.length")
+        check("The next fling folds the rightmost column too", spines == n,
+              f"{spines} spines of {n}" + ("" if settled else ", scroll never settled"))
         await pg.evaluate("document.querySelector('.col.spine').click()")
         await scroll_settled(pg)
         check("Clicking a spine unfolds it",
@@ -1186,7 +1196,7 @@ async def main(bundle, fake_handle, playwright):
         # clipped, not scrollable — and the code pans inside .pv-body instead.
         await pg.set_viewport_size({"width": 390, "height": 700})
         await pg.wait_for_timeout(300)
-        await pg.evaluate("finder.scrollLeft = finder.scrollWidth")
+        await pg.evaluate("dialTo(range() * 0.99, true)")
         await pg.wait_for_timeout(400)
         w = await pg.evaluate(WIDTH)
         fits = await pg.evaluate("""(() => {
@@ -1195,8 +1205,7 @@ async def main(bundle, fake_handle, playwright):
           return {ok: p.left >= s.left - 1 && p.right <= s.right + 1,
                   preview: [Math.round(p.left), Math.round(p.right)],
                   stage: [Math.round(s.left), Math.round(s.right)],
-                  target: previewTarget(), scroll: finder.scrollLeft,
-                  max: finder.scrollWidth - finder.clientWidth};
+                  target: previewTarget(), scroll: dial(), max: range()};
         })()""")
         check("On a phone the preview pane fits the stage",
               fits["ok"] and w["code"] >= w["ch88"] - 0.5, json.dumps(w) + json.dumps(fits))
@@ -2496,7 +2505,7 @@ def test_preview_arrow_sequence(bundle, fake_handle, playwright, static_origin):
         page.evaluate("async () => { await mount(__mk(0)); await applyPath(['mixed', 'short.txt']); }")
         page.wait_for_selector("#pv-content .pv-text")
         page.evaluate("document.documentElement.requestFullscreen = undefined")
-        page.evaluate("finder.scrollTo({left: 0, behavior: 'instant'})")
+        page.evaluate("dialTo(0)")
         page.wait_for_function("folded === 0")
         page.locator("#preview").focus()
         url = page.url
@@ -2504,7 +2513,7 @@ def test_preview_arrow_sequence(bundle, fake_handle, playwright, static_origin):
             page.keyboard.press("ArrowRight")
             page.wait_for_function("n => document.querySelectorAll('.col.spine').length === n", arg=count, timeout=3000)
         page.keyboard.press("ArrowRight")
-        page.wait_for_function("Math.abs(finder.scrollLeft - (finder.scrollWidth - finder.clientWidth)) <= 1")
+        page.wait_for_function("Math.abs(dial() - range()) <= 1")
         assert not page.evaluate("document.documentElement.classList.contains('pv-fullscreen')")
         page.keyboard.press("ArrowRight")
         page.wait_for_function("document.documentElement.classList.contains('pv-fullscreen') && history.state?.filemillFullscreen")
@@ -2774,3 +2783,5 @@ def test_copy_status_click_after_refused_rotation(copy_page, variant, directory)
     page.locator('#st-path').click()
     assert page.evaluate('__clipped') == [displayed]
     copied(page, relative)
+
+

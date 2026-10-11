@@ -61,10 +61,12 @@ Stops, in order from the right end of the axis to the left:
 | natural                | `0`                          | every column at natural width, preview off the right edge    |
 | `N` columns fill       | `−j × unit`, `j = 1 …`       | the leftmost `N` columns share the finder width, `N = F − j` |
 
-`F = max(1, round((stageW − gutter) / (natural + gutter)))` is how many natural
-columns fit the finder, capped at `n`. The widest stop is `N = max(1, F − 1)` and
-`N` counts down to 1 on every screen (open question 1). Equal stops are merged,
-so a root-only path has `natural`, `all folded`, `preview alone` and `1 column`.
+`F = ⌊(stageW − preview − gutter) / (natural + gutter)⌋`, at least 1, is how
+many natural columns fit beside the preview reserve: 3 on a 1440 px laptop
+("almost four"), 1 on a portrait phone. The widest stop shows `min(n, F)`
+columns and `N` counts down to two, or to one where fewer than two fit (a
+portrait phone; decided 2026-10-11). Equal stops are merged. A root alone on a
+desktop has no widening stop; on a phone it fills the finder.
 
 The **scroll range is a window** `[lower, upper]` of two consecutive stops.
 `rail.width = stageW + (upper − lower)`, `x = lower + finder.scrollLeft`. At a
@@ -81,7 +83,12 @@ finger or a scrollbar drag therefore never has its range changed under it.
 **Programmatic moves** (`layout`, `advancePreviewFold`, `unfoldTo`) go through
 one `dialTo(x, smooth)`: if `x` is outside the window the window first grows to
 enclose both the current `x` and the target's own window, then the scroll
-glides; settling narrows the window again.
+glides; settling narrows the window again. → in the preview steps one stop per
+press, widened stops included. A glide takes no explicit behaviour, so the
+stylesheet decides (smooth unless reduced motion), and a glide issued in the
+same frame as an instant scroll write waits one frame, because the write would
+cut it (seen in mobile emulation). The rail is `calc(100% + range)` so a resize
+never clamps `scrollLeft` under the dial.
 
 **Widened geometry.** At `x < 0` with `u = −x / unit`, `j = ⌊u⌋`, `t = u − j`,
 column `i` is `S_j(i) + t × (S_{j+1}(i) − S_j(i))` where `S_j(i)` is the width
@@ -125,13 +132,21 @@ hits a stop does not chain into the browser's back/forward gesture.
 - Existing tests that read `finder.scrollLeft` as the dial read `dial()`
   instead and set it with `dialTo()`; `static/test-ui.py` folds in two swipes.
 
-### Open questions
+### Decisions (2026-10-11)
 
-1. Do the widening stops run down to one column on desktop too, or only on a
-   portrait phone? Plan: on every screen.
-2. Widened stops show the leftmost columns, so on a deep path the focused column
-   can be off-screen until a tap brings it back. Plan: accept, matching the
-   natural stop today.
+1. Widening stops run down to two columns on a desktop and to one only on a
+   portrait phone.
+2. Widened stops show the leftmost columns; on a deep path the focused column
+   can be off-screen until a tap brings it back, as at the natural stop.
+3. A swipe has settled after about 180 ms with no scroll, wheel or touchmove
+   event and no mouse button or finger held on the finder.
+
+### Validation (2026-10-11)
+
+Model tests pass. The keyboard browser suite passes in full. The new-UI
+suite passes except `test_context_menu_delete_cancel_then_confirm[short.txt]`,
+which fails the same way on `main` at `20acff4`. The static suites pass except
+`test_storage`, a known local red (Chromium 1243 and OPFS handles).
 
 [ADR 0021]: ../adr/0021-horizontal-scroll-fold-dial-not-translation.md
 [ADR 0022]: ../adr/0022-the-dial-s-resting-place-never-folds-the-focused-column-nor-anything-r.md

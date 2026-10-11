@@ -76,10 +76,10 @@ def test_preview_left_preserves_ancestor_folds(bundle, playwright):
         # The finder scrolls smoothly (styles.css) and `folded` follows the
         # scroll, so wait for the layout's target: every ancestor folded.
         page.wait_for_function("folded === path.length - 1")
-        before = page.evaluate("[folded, finder.scrollLeft]")
+        before = page.evaluate("[folded, dial()]")
         page.keyboard.press("ArrowLeft")
         page.wait_for_function("document.activeElement.id !== 'preview'")
-        assert page.evaluate("[folded, finder.scrollLeft]") == before
+        assert page.evaluate("[folded, dial()]") == before
     finally:
         browser.close()
 
@@ -105,7 +105,7 @@ def test_preview_left_expands_parent_when_all_columns_are_folded(bundle, playwri
             page.wait_for_function("length => sel.length === length", arg=depth + 2)
         page.keyboard.press("ArrowRight")
         page.wait_for_function("document.activeElement.id === 'preview'")
-        page.evaluate("finder.scrollTo({left: range(), behavior: 'instant'})")
+        page.evaluate("dialTo(range())")
         page.wait_for_function("folded === path.length")
         page.keyboard.press("ArrowLeft")
         page.wait_for_function("document.activeElement.id !== 'preview'")
@@ -278,7 +278,7 @@ def test_geometry_changes_preserve_preview_rules(bundle, playwright, activation)
         assert page.evaluate("folded") == 0
         if activation == "partial":
             page.evaluate(
-                "finder.scrollTo({left: 0.25 * foldUnit() * range(), behavior: 'instant'})"
+                "dialTo(0.25 * foldUnit() * range())"
             )
         if activation in ["keyboard", "partial"]:
             page.keyboard.press("ArrowUp")
@@ -290,7 +290,7 @@ def test_geometry_changes_preserve_preview_rules(bundle, playwright, activation)
         page.wait_for_function("count => path.length === count", arg=count)
         position = 0.25 if activation == "partial" else 1
         page.wait_for_function(
-            "position => Math.abs(finder.scrollLeft / (foldUnit() * range()) - position) < 0.005",
+            "position => Math.abs(dial() / (foldUnit() * range()) - position) < 0.005",
             arg=position,
             timeout=2000,
         )

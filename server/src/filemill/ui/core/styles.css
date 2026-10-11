@@ -376,6 +376,9 @@ body {
   min-height: 0;
   overflow-x: auto;
   overflow-y: hidden;
+  /* A fling now ends at a stop, often; it must not chain into the browser's
+     back/forward swipe. */
+  overscroll-behavior-x: contain;
   scrollbar-width: thin;
   scrollbar-color: var(--hairline-2) transparent;
 }
