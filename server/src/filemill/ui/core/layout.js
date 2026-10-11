@@ -148,12 +148,14 @@ const GLIDE_WAITS = 10; // a glide that has not arrived after 10 settles is dead
 let settleTimer = 0;
 let mouseDown = false, touching = false;
 let gliding = null; // the smooth dialTo in flight; a scroll write would cut it
+let wheeling = false; // the dial took this wheel gesture from the preview
 function scheduleSettle() {
   clearTimeout(settleTimer);
   settleTimer = setTimeout(settle, SETTLE_MS);
 }
 function settle() {
   settleTimer = 0;
+  wheeling = false; // the gesture is over; the next may go to the preview
   // A held finger or a scrollbar drag keeps its range until it lets go.
   if (mouseDown || touching) return;
   // A glide on a busy machine may not have started yet; wait for it.
@@ -346,6 +348,21 @@ export function revealRow(row) {
   else if (r.bottom > b.bottom) body.scrollTop += r.bottom - b.bottom;
 }
 
+/* A sideways wheel over the preview turns the dial first ([78], ADR 0076).
+   .pv-body and a wide code block are scroll containers inside the dial, so
+   the browser would hand them the gesture and the preview would scroll
+   instead of widening. The dial takes the wheel until it is at its end,
+   where the preview is as wide as the screen allows; the preview's own
+   scrollers get the next gesture. A gesture latches to the dial, as a
+   browser latches one to a scroller: the fling that reaches the end does
+   not run on into the code block. */
+function previewWheel(e) {
+  if (!e.target.closest?.("#preview")) return false;
+  if (wheeling) return true;
+  wheeling = dial() < range() - 0.5;
+  return wheeling;
+}
+
 export function initLayout(render) {
   finder.addEventListener("scroll", () => {
     applyScroll();
@@ -354,12 +371,24 @@ export function initLayout(render) {
   /* A fling keeps sending wheel events after the scrollbar has hit its end;
      re-basing the range before they stop would let the rest of the momentum
      run through the stop. A finger or a scrollbar drag holds the range. */
-  for (const event of ["wheel", "touchmove"]) {
-    finder.addEventListener(event, () => {
-      gliding = null; // the browser drops a glide on user input
-      scheduleSettle();
-    }, { passive: true });
-  }
+  finder.addEventListener("wheel", (e) => {
+    gliding = null; // the browser drops a glide on user input
+    scheduleSettle();
+    if (!e.deltaX || Math.abs(e.deltaX) < Math.abs(e.deltaY)) return;
+    if (!previewWheel(e)) return;
+    e.preventDefault();
+    // deltaMode: 0 pixels, 1 lines, 2 pages
+    const px = e.deltaMode === 1
+      ? 40
+      : e.deltaMode === 2
+      ? finder.clientWidth
+      : 1;
+    finder.scrollBy({ left: e.deltaX * px, behavior: "instant" });
+  });
+  finder.addEventListener("touchmove", () => {
+    gliding = null;
+    scheduleSettle();
+  }, { passive: true });
   finder.addEventListener("pointerdown", (e) => {
     if (e.pointerType === "mouse") mouseDown = true;
   });
