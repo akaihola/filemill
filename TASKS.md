@@ -22,9 +22,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [80] Left arrow doesn't preview the whole document after returning from per-section preview
-  <!-- hai:{"id":"simple-c4d74fd6-cd42-426e-9cda-819fbf9965c3","priority":"none","labels":[],"createdAt":"2026-10-08T16:24:33.129Z","updatedAt":"2026-10-11T04:58:09.895Z"} -->
-
 - [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-10T19:58:38.726Z"} -->
 
@@ -79,6 +76,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [80] Left arrow doesn't preview the whole document after returning from per-section preview
+  <!-- hai:{"id":"simple-c4d74fd6-cd42-426e-9cda-819fbf9965c3","priority":"none","labels":[],"createdAt":"2026-10-08T16:24:33.129Z","updatedAt":"2026-10-11T05:15:34.124Z"} -->
 
 - [ ] [82] Update stale Playwright 1.61 pins and the server renderer note in docs
   <!-- hai:{"updatedAt":"2026-10-10T23:16:57.165Z"} -->
