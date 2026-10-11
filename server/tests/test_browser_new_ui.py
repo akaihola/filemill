@@ -2980,6 +2980,14 @@ def test_markdown_headings_open_as_columns_in_the_server_build(page):
     assert "intro" not in page.text_content("#preview .pv-rich")
     page.open_resource("guide.md/Guide/Install?filemill=render")
     page.wait_for_function('JSON.stringify(sel) === \'["guide.md","Guide","Install"]\'')
+    page.keyboard.press("ArrowLeft")
+    page.wait_for_url("**/guide.md/Guide?filemill=render")
+    page.keyboard.press("ArrowLeft")
+    page.wait_for_url("**/guide.md?filemill=render")
+    page.wait_for_function(
+        "document.querySelector('#preview .pv-rich')?.textContent.includes('intro')"
+    )
+    assert page.evaluate("sel") == ["guide.md"]
     page.open("README.md")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     assert page.evaluate("path.length") == 1
@@ -2995,3 +3003,11 @@ def test_rst_sections_render_through_the_server_in_the_server_build(page):
     text = page.text_content("#preview .preview-rst")
     assert "Some alpha text." in text and "beta" not in text
     assert page.locator("#preview .preview-rst em").inner_text() == "alpha"
+
+    page.keyboard.press("ArrowLeft")
+    page.wait_for_url("**/code/manual.rst?filemill=render")
+    page.wait_for_function(
+        "document.querySelector('#preview .preview-rst')?.textContent.includes('beta')"
+    )
+    assert "Some alpha text." in page.text_content("#preview .preview-rst")
+    assert page.evaluate("sel") == ["code", "manual.rst"]

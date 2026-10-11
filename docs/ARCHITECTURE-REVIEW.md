@@ -55,6 +55,9 @@ status.
   A Markdown, `.docx` or `.pptx` member renders in the browser like the same
   file on disk, and a Markdown member opens by its headings ([86],
   2026-10-11); a reStructuredText member stays with the server renderer.
+  Left-arrow navigation reselects a document or parent section through the
+  shared navigator, restoring its full preview and URL while removing deeper
+  section selections ([80], 2026-10-11).
 - **Persistence.** Files are the only durable data. The browser keeps recent
   folder handles in IndexedDB, settings in localStorage, navigation in history
   and application assets in Cache Storage.

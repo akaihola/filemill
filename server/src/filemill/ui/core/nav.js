@@ -551,9 +551,11 @@ document.addEventListener("keydown", (e) => {
     if (focusCol > 0) {
       setState({ focusCol: focusCol - 1 });
       unfoldTo(focusCol);
-      render(true);
       const parent = colCache.get(path[focusCol]);
       const ri = rowIndex(path[focusCol], sel[focusCol]);
+      const node = parent?.kids[ri];
+      if (node?.doc || node?.section) choose(focusCol, node, true, true);
+      else render(true);
       if (parent && ri >= 0) revealRow(parent.ensureRow(ri));
     }
   } else if (action === "refresh") {

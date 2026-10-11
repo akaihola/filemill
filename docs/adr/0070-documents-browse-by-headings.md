@@ -54,3 +54,12 @@ in their folder. Duplicate heading texts under one parent are suffixed
 " (2)", " (3)" so that every row has one name. A section rendered on its own
 lacks the definitions the rest of the file holds — footnotes, link references,
 substitutions — which then render as plain text.
+
+## Correction, 2026-10-11
+
+Issue [80] fixes left-arrow navigation from a section column. The navigator
+reselects the document or parent section in the column that receives focus.
+It drops deeper section selections, so the preview and URL name that selection.
+The selected document keeps its heading column open for right-arrow navigation.
+
+[80]: ../tasks/80-left-arrow-doesn-t-preview-the-whole-document-after-returning-from-per.md
