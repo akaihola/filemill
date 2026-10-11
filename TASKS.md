@@ -13,9 +13,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [80] Left arrow doesn't preview the whole document after returning from per-section preview
-  <!-- hai:{"id":"simple-c4d74fd6-cd42-426e-9cda-819fbf9965c3","priority":"none","labels":[],"createdAt":"2026-10-08T16:24:33.129Z","updatedAt":"2026-10-11T19:15:56.830Z"} -->
-
 - [~] [89] Markdown previews show two Raw buttons
   <!-- hai:{"updatedAt":"2026-10-11T19:06:19.809Z"} -->
 
@@ -73,6 +70,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [80] Left arrow doesn't preview the whole document after returning from per-section preview
+  <!-- hai:{"id":"simple-c4d74fd6-cd42-426e-9cda-819fbf9965c3","priority":"none","labels":[],"createdAt":"2026-10-08T16:24:33.129Z","updatedAt":"2026-10-11T19:22:36.736Z"} -->
 
 - [x] [84] JSON member in an archive shows a chevron but does not open
   <!-- hai:{"updatedAt":"2026-10-11T19:03:14.084Z"} -->
