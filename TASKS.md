@@ -11,10 +11,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [78] Wide document scrolls instead of expanding the preview
-  <!-- hai:{"id":"simple-78e15d9a-0d90-4186-953f-46fdddf6fe5c","priority":"none","labels":[],"createdAt":"2026-10-08T16:19:43.075Z","updatedAt":"2026-10-11T10:31:19.292Z"} -->
-
 ## In Progress
+
+- [~] [78] Wide document scrolls instead of expanding the preview
+  <!-- hai:{"id":"simple-78e15d9a-0d90-4186-953f-46fdddf6fe5c","priority":"none","labels":[],"createdAt":"2026-10-08T16:19:43.075Z","updatedAt":"2026-10-11T10:34:42.048Z"} -->
 
 - [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-10T19:58:38.726Z"} -->
