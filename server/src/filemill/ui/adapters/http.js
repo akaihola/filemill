@@ -127,6 +127,15 @@ export const HTTP = {
     return r.ok ? await r.blob() : null;
   },
 
+  rawURL(node) {
+    return node.vpath
+      ? `${API}/raw?p=${encodeURIComponent(node.rel)}&v=${
+        encodeURIComponent(node.vpath)
+      }`
+      : "/" + node.rel.split("/").map(encodeURIComponent).join("/") +
+        "?filemill=raw";
+  },
+
   /* Optional — see ports.js. POST the whole new content; the reply carries the
      fresh {size, mod}, so the pane's sub-line stays truthful after a save. */
   async write(node, text) {

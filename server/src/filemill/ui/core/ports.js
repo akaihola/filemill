@@ -57,6 +57,9 @@
                                     be a no-op when the listing has metadata
      blob(node)         → Promise<Blob|null> returns file bytes for preview, or
                                     null when the file cannot be read
+     rawURL(node)       → string|null optional; URL for the file's raw bytes.
+                                    Without it, core uses blob(node) and owns
+                                    the resulting object URL.
    write(node, text)  → Promise   optional; overwrite the file with `text`.
                                     A port without it is read-only — the
                                     preview pane then offers no Edit action.

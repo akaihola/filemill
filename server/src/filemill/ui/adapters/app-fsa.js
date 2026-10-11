@@ -12,6 +12,7 @@ import { initSort, setSortActions } from "../core/sort.js";
 import { sortKids } from "../core/model/sort.js";
 import { FSA } from "./fsa.js";
 import { PreviewRich, RICH_RENDERERS } from "./preview-rich.js";
+import { withHighlighting } from "./preview-local.js";
 import { RouterHash } from "./router-hash.js";
 import { recallRoots, recallView, rememberRoot } from "./storage.js";
 import { withCsv, withCsvPreview } from "./vfs-csv.js";
@@ -80,7 +81,9 @@ addRenderers([...CORE_RENDERERS, ...RICH_RENDERERS]);
    silently deciding which wins. */
 useFilesystem(withDocuments(withCsv(withVirtual(FSA))));
 usePreview(
-  withDocumentPreview(withCsvPreview(withVirtualPreview(PreviewRich))),
+  withDocumentPreview(
+    withCsvPreview(withVirtualPreview(withHighlighting(PreviewRich))),
+  ),
 );
 /* The router is already the one place that hears "the selection changed": core
    writes the location there and nowhere else. Wrapping write() here, rather

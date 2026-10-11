@@ -42,6 +42,11 @@ The preview toolbar has a Fullscreen button. The preview stays in fullscreen
 when the browser resizes. Use Exit fullscreen or the browser fullscreen exit
 control to return to the file browser.
 
+Markdown and WebVTT previews have one Raw link and a Source/Rendered toggle
+in both editions, including the server's Open Folder mode. Source shows the
+original text without changing the selection. Raw opens a browser-owned file
+in a new tab and a served file at its raw URL.
+
 Markdown text and code wrap on portrait phones. Wide Markdown tables scroll
 inside the preview, so every column stays reachable.
 

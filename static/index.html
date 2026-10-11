@@ -2417,6 +2417,9 @@ const previewTarget = () => finder.clientWidth / 3;
                                     be a no-op when the listing has metadata
      blob(node)         → Promise<Blob|null> returns file bytes for preview, or
                                     null when the file cannot be read
+     rawURL(node)       → string|null optional; URL for the file's raw bytes.
+                                    Without it, core uses blob(node) and owns
+                                    the resulting object URL.
    write(node, text)  → Promise   optional; overwrite the file with `text`.
                                     A port without it is read-only — the
                                     preview pane then offers no Edit action.
@@ -5177,6 +5180,13 @@ function render(keepScroll) {
   syncURL();
 }
 
+let rawObjectURL = null;
+
+function revokeRawURL() {
+  if (rawObjectURL) URL.revokeObjectURL(rawObjectURL);
+  rawObjectURL = null;
+}
+
 function renderPreview() {
   const n = previewNode();
   const selected = selectedNode();
@@ -5187,6 +5197,7 @@ function renderPreview() {
   pv.tabIndex = 0;
   pv.setAttribute("aria-label", "File preview");
   PREVIEW.revoke?.();
+  revokeRawURL();
   if (!n && !selected) {
     pv.innerHTML = `<div class="pv-empty"><div class="glyph">◫</div>
                     <div>Select a file to preview</div></div>`;
@@ -5194,18 +5205,12 @@ function renderPreview() {
   }
   const target = n || selected;
   const [stem, ext] = splitName(target.name);
-  const rawPath = "/" + currentPath().map(encodeURIComponent).join("/") +
-    "?filemill=raw";
   pv.innerHTML = `
     <div class="col-head pv-head"><span class="name"><span>${
     esc(target.name)
   }</span><span id="pv-modified" hidden role="img" aria-label="Modified" title="Unsaved changes">●</span></span>
       <span class="pv-actions">
-        ${
-    ROUTER
-      ? `<a id="pv-raw" class="pv-action" href="${rawPath}" title="View raw file">Raw</a>`
-      : ""
-  }
+        <a id="pv-raw" class="pv-action" hidden title="View raw file">Raw</a>
         <button id="pv-view" class="pv-action" type="button"></button>
         <button id="pv-delete" class="pv-action" type="button"
                 title="Delete selected item">Delete</button>
@@ -5288,8 +5293,7 @@ document.addEventListener("fullscreenchange", () => {
 });
 
 function previewView() {
-  const view = new URL(location.href).searchParams.get("filemill") ||
-    document.documentElement.dataset.filemill || "raw";
+  const view = document.documentElement.dataset.filemill || "render";
   return view === "highlight"
     ? "highlight"
     : view === "render"
@@ -5298,9 +5302,8 @@ function previewView() {
 }
 
 function setPreviewView(view) {
-  if (!ROUTER) return;
   document.documentElement.dataset.filemill = view;
-  ROUTER.write({ path: currentPath(), view }, false);
+  ROUTER?.write({ root: path[0]?.name, path: currentPath(), view }, false);
   const n = previewNode();
   if (n) {
     fillPreview(n);
@@ -5357,6 +5360,29 @@ async function fillPreview(n) {
   if (m.error) {
     if (sub) sub.textContent = "unreadable";
     return;
+  }
+  const raw = document.getElementById("pv-raw");
+  if (raw) {
+    try {
+      let url = FS.rawURL?.(n);
+      if (!FS.rawURL) {
+        const blob = await FS.blob(n);
+        if (token !== pvToken) return;
+        revokeRawURL();
+        if (blob) {
+          rawObjectURL = URL.createObjectURL(
+            blob.type ? blob : blob.slice(0, blob.size, "text/plain"),
+          );
+          url = rawObjectURL;
+        }
+        raw.target = "_blank";
+        raw.rel = "noopener noreferrer";
+      }
+      raw.hidden = !url;
+      if (url) raw.href = url;
+    } catch (_) {
+      raw.hidden = true;
+    }
   }
   /* Not everything a column can hold is a file. A row inside a database has no
      size and no mtime, and inventing them prints "0 B · 1 Jan 1970" — so leave
@@ -7528,6 +7554,20 @@ const PreviewLocal = {
   },
 };
 
+/* Source uses the same text renderer in every edition. Virtual providers
+   answer for their own nodes before this wrapper runs. */
+const withHighlighting = (provider) => ({
+  revoke() {
+    provider.revoke?.();
+    PreviewLocal.revoke();
+  },
+  render: (n) =>
+    !n.vpath && document.documentElement.dataset.filemill === "highlight" &&
+      (hlLang(n.name) || classifyFile(n.name, n).preview === "vtt")
+      ? PreviewLocal.render(n, "text")
+      : provider.render(n),
+});
+
 /* ═══ adapters/preview-rich.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Preview provider — rich rendering, fetched on demand.
@@ -8140,7 +8180,9 @@ addRenderers([...CORE_RENDERERS, ...RICH_RENDERERS]);
    silently deciding which wins. */
 useFilesystem(withDocuments(withCsv(withVirtual(FSA))));
 usePreview(
-  withDocumentPreview(withCsvPreview(withVirtualPreview(PreviewRich))),
+  withDocumentPreview(
+    withCsvPreview(withVirtualPreview(withHighlighting(PreviewRich))),
+  ),
 );
 /* The router is already the one place that hears "the selection changed": core
    writes the location there and nowhere else. Wrapping write() here, rather
