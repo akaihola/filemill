@@ -1946,6 +1946,56 @@ def test_a_jsonl_member_opens_as_a_column_of_rows(page):
     assert "/n/bundle.zip/rows.jsonl/Second" in page.url
 
 
+@pytest.mark.parametrize(
+    ("name", "size", "error"),
+    [
+        ("large.json", 8 * 1024 * 1024, "Too large to browse (over 8 MiB)"),
+        ("large.jsonl", 16 * 1024 * 1024, "Cannot read file"),
+        ("bad.jsonl", 0, "Not valid JSONL: line 1"),
+    ],
+)
+def test_declined_json_member_recovers_after_refresh(page, ui_root, name, size, error):
+    content = json.dumps({"padding": "x" * size}) + "\n" if size else "not json\n"
+    archive = ui_root / "declined.zip"
+    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(name, content)
+
+    reads = []
+
+    def delayed_read(route):
+        reads.append(route.request.url)
+        response = route.fetch()
+        time.sleep(0.2)  # Let navigation open its pending column before rejection.
+        route.fulfill(response=response)
+
+    page.route("**/api/raw?*", delayed_read)
+    page.open("declined.zip")
+    row = page.locator(f'.col[data-i="1"] .row[title="{name}"]')
+    row.click()
+    page.wait_for_function(
+        "name => { const n = path[1]?.kids.find(n => n.name === name);"
+        " return n && !n.loading && (n.jsonError || n.denied); }",
+        arg=name,
+    )
+    expect(row.locator(".chev")).to_have_count(0)
+    expect(page.locator('.col[data-i="2"]')).to_have_count(0)
+    expect(page.locator("#preview .pv-err")).to_contain_text(error)
+
+    # Rewalking the cached parent must not promote the rejected member again.
+    page.evaluate("names => applyPath(names)", ["declined.zip", name])
+    expect(row.locator(".chev")).to_have_count(0)
+    expect(page.locator('.col[data-i="2"]')).to_have_count(0)
+    expect(page.locator("#preview .pv-err")).to_contain_text(error)
+    assert len(reads) == 1
+
+    # Refreshing the archive can discover a repaired member.
+    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(name, '{"ok":true}\n')
+    page.evaluate("refreshColumn(1)")
+    expect(row.locator(".chev")).to_have_count(1)
+    expect(page.locator('.col[data-i="2"] .row')).to_have_count(1)
+
+
 @pytest.mark.parametrize("extension", ["json", "jsonl"])
 @pytest.mark.parametrize("delayed", [False, True])
 def test_declined_json_member_becomes_a_leaf(page, ui_root, extension, delayed):

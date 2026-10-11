@@ -74,3 +74,19 @@ Validation:
 - The shared static bundle, architecture record, and ADRs 0029/0072 are updated.
 
 User acceptance remains pending.
+
+## Additional recovery coverage, 2026-10-11
+
+The review branch's regression tests also cover malformed JSONL members and
+recovery after replacing an oversized or malformed member with valid content.
+They check delayed reads, cached path restoration without another raw read,
+and restored chevrons and child columns after refreshing the archive.
+
+During rebase, the equivalent implementation and static checks already merged
+in `95ea18b` were retained. This follow-up adds the recovery coverage above.
+
+After rebase, all 10 targeted JSON/JSONL archive-member browser cases passed,
+including the three recovery cases and the existing ordinary/deferred rejection
+and successful member/deep-link cases. Ruff lint/format, bundle freshness and
+`git diff --check` passed. The full suites were not rerun for this test-only
+integration.
