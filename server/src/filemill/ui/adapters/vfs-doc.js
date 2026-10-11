@@ -26,10 +26,11 @@ const DOC_KINDS = new Set(["md", "markdown", "rst"]);
    its headings too when the browser renders it: a Markdown member reads and
    renders from its own bytes exactly like the file on disk. A
    reStructuredText member stays a plain file, because its sections render on
-   the server, which has no route for a member plus a line span. */
+   the server, which has no route for a member plus a line span. JSON values
+   and CSV or database records have no file bytes, whatever their label. */
 const MEMBER_DOC_KINDS = new Set(["md", "markdown"]);
 const isDoc = (n) =>
-  !n.dir &&
+  !n.dir && !n.json && !n.csv && n.record === undefined &&
   (n.vpath ? MEMBER_DOC_KINDS : DOC_KINDS).has(classifyFile(n.name).preview);
 
 /* vpath is only a stable address for the shared router and server-shaped

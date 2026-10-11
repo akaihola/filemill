@@ -202,8 +202,9 @@ async function markdown(text, node) {
       }
     });
   }
-  const dir = typeof node.rel === "string"
-    ? node.rel.replace(/\/?[^/]*$/, "")
+  const doc = node.section?.root || node;
+  const dir = typeof doc.rel === "string"
+    ? (doc.vpath ? `${doc.rel}/${doc.vpath}` : doc.rel).replace(/\/?[^/]*$/, "")
     : undefined;
   return mdInstance.render(text, { dir });
 }

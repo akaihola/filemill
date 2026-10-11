@@ -60,5 +60,30 @@ a plain file: its sections render on the server from a line span, and
   `.docx` member renders. Red before the fix, green after.
 - `static/index.html` rebuilt with `static/build-index.py`.
 
+## Independent review fixes (2026-10-11)
+
+The reviewer found that relative Markdown links used the archive's filesystem
+directory instead of the member's directory. `PreviewRich` now derives the
+link base from the member address on `node.section?.root || node`, so a sibling
+link in either the whole member or a heading section opens the sibling inside
+the archive.
+
+The document wrapper also mistook JSON keys and CSV labels ending in `.md` or
+`.markdown` for files. It now excludes JSON values, CSV nodes and records from
+document detection while preserving Markdown member heading columns.
+
+Six browser regression cases failed before these fixes and pass afterwards.
+They cover following a sibling link from both a whole member and a section,
+and selecting JSON keys and CSV labels that resemble filenames without fetching
+them as archive members.
+
+Follow-up validation passed:
+
+- 562 server tests outside the integration suites and 59 related server-browser
+  tests covering Markdown, DOCX, JSON, CSV, archives and reStructuredText.
+- Seven focused static-browser tests in each build, bundled and development.
+- ruff, ruff format, mypy, deno fmt, deno lint, model checks and the rebuilt
+  static bundle check.
+
 [84]: 84-json-member-in-archive-shows-chevron-but-does-not-open.md
 [ADR 0072]: ../adr/0072-archives-browse-by-their-members.md
