@@ -1,3 +1,9 @@
 If I select a heading of a Markdown or reStructuredText file in hierarchical browsing, that section is shown in the preview. If I then hit the left arrow key to return to the whole file again, only the section is still previewed.
 
 Render the whole document in the preview area when returning from hierarchical per-section browsing to selecting the whole file in its folder column using the left arrow key.
+
+## Implementation plan
+
+Add regression tests for left-arrow navigation from nested Markdown headings
+and reStructuredText sections. Restore the selected document or parent section
+through the shared navigator. Keep ordinary folder navigation unchanged.
