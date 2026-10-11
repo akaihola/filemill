@@ -27,6 +27,12 @@ scroller: once the dial has taken a wheel, every wheel until the dial settles
 reaches the end does not run on into the code block. The next gesture scrolls
 the block.
 
+Fullscreen is an exception, clarified after independent review on 2026-10-11.
+Both native fullscreen and its layout fallback already fill the screen,
+regardless of the dial position. Their scrollers receive horizontal wheels
+immediately. The fullscreen check runs before the gesture latch, so entering
+fullscreen during a gesture releases that gesture to the preview too.
+
 The `wheel` listener on `#finder` is therefore no longer passive; `touchmove`
 still is. `deltaMode` lines count 40 px and pages the finder's width.
 
@@ -37,6 +43,11 @@ still is. `deltaMode` lines count 40 px and pages the finder's width.
 and the block did not, then moves the dial to its end and checks that the next
 wheel scrolls the block and leaves the dial where it was. The fling and
 slow-scroll tests of [ADR 0075] still pass with the shared listener.
+
+The fullscreen regression opens the same wide block with the dial at natural
+and checks that the first sideways wheel scrolls the block without moving the
+dial, in both native and fallback modes. A second regression enters fullscreen
+during a latched gesture and checks that the next wheel is not prevented.
 
 ## Consequences
 

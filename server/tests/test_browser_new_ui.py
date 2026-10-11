@@ -1279,6 +1279,67 @@ def test_a_sideways_wheel_over_a_wide_preview_turns_the_dial_first(page):
     assert abs(_dial_settled(page) - end) <= 1
 
 
+@pytest.mark.parametrize("native", [False, True], ids=["fallback", "native"])
+def test_fullscreen_wheel_scrolls_content_without_moving_the_dial(page, native):
+    """[78] Fullscreen already fills the screen, even with the dial at natural."""
+    page.open("wide.md")
+    pre = page.locator("#preview .pv-markdown pre")
+    pre.wait_for()
+    page.evaluate("dialTo(0)")
+    assert _dial_settled(page) == 0
+    if not native:
+        page.evaluate("""() => {
+            Element.prototype.requestFullscreen = async () => {
+                throw new Error('Fullscreen unavailable');
+            };
+        }""")
+    page.locator("#pv-fullscreen").click()
+    page.wait_for_function(
+        "document.documentElement.classList.contains('pv-fullscreen')"
+    )
+    if native:
+        page.wait_for_function("document.fullscreenElement !== null")
+    else:
+        assert page.evaluate("document.fullscreenElement === null")
+    before = _dial_settled(page)
+    assert before == 0
+    assert pre.evaluate("e => e.scrollWidth > e.clientWidth")
+    box = pre.bounding_box()
+    page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+    page.mouse.wheel(200, 0)
+    after = _dial_settled(page)
+    assert after == before
+    assert pre.evaluate("e => e.scrollLeft") > 0
+
+
+def test_fullscreen_releases_a_latched_preview_wheel(page):
+    """Entering fullscreen during a gesture releases it before it settles."""
+    page.open("wide.md")
+    page.wait_for_selector("#preview .pv-markdown pre")
+    page.evaluate("dialTo(0)")
+    assert _dial_settled(page) == 0
+    result = page.evaluate("""() => {
+        Element.prototype.requestFullscreen = async () => {
+            throw new Error('Fullscreen unavailable');
+        };
+        const pre = document.querySelector('#preview .pv-markdown pre');
+        const wheel = () => new WheelEvent('wheel', {
+            deltaX: 1, bubbles: true, cancelable: true,
+        });
+        const first = wheel();
+        pre.dispatchEvent(first);
+        document.getElementById('pv-fullscreen').click();
+        const before = dial();
+        const next = wheel();
+        pre.dispatchEvent(next);
+        return {claimed: first.defaultPrevented,
+            retained: next.defaultPrevented, before, after: dial()};
+    }""")
+    assert result["claimed"]
+    assert not result["retained"]
+    assert result["after"] == result["before"]
+
+
 def test_arrow_right_from_a_widened_stop_steps_back_to_natural(page):
     page.open("notes/deep/leaf.md")
     page.wait_for_selector("#preview .pv-rich h1")

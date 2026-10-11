@@ -33,7 +33,14 @@ import {
    only thing the fold arithmetic reads; scrollLeft is scrollbar-relative.
    ═══════════════════════════════════════════════════════════════════════════ */
 import { set, setVar } from "./dom.js";
-import { focusCol, folded, path, setState, widths } from "./model/state.js";
+import {
+  focusCol,
+  folded,
+  path,
+  pvFullscreen,
+  setState,
+  widths,
+} from "./model/state.js";
 import {
   finder,
   folderWidth,
@@ -360,9 +367,10 @@ export function revealRow(row) {
    where the preview is as wide as the screen allows; the preview's own
    scrollers get the next gesture. A gesture latches to the dial, as a
    browser latches one to a scroller: the fling that reaches the end does
-   not run on into the code block. */
+   not run on into the code block. Fullscreen already fills the screen,
+   so its scrollers always get the gesture, including a latched one. */
 function previewWheel(e) {
-  if (!e.target.closest?.("#preview")) return false;
+  if (pvFullscreen || !e.target.closest?.("#preview")) return false;
   if (wheeling) return true;
   wheeling = dial() < range() - 0.5;
   return wheeling;
