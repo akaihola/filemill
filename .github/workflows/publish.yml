@@ -94,6 +94,11 @@ jobs:
           uv run --project server pytest static
           uv run --project server pytest static --dev
 
+      # The server shells out to ripgrep for content search; the runner image
+      # does not ship it, and without it every search test gets a 503.
+      - name: Install ripgrep
+        run: sudo apt-get install -y ripgrep
+
       # The same ui/, driven against a real server — this is what would catch a
       # change that suits one project and breaks the other.
       - name: The server edition

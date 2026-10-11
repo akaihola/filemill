@@ -44,3 +44,15 @@ def test_ci_installs_browsers_for_the_locked_playwright():
     workflow = (SERVER.parent / ".github" / "workflows" / "publish.yml").read_text()
     assert "playwright==" not in workflow
     assert "uv run --project server playwright install --with-deps chromium" in workflow
+
+
+def test_ci_installs_ripgrep_before_the_server_suite():
+    """The server shells out to ripgrep; the runner image lacks it.
+
+    Run 38155597653 (2026-10-11) failed every search test with
+    "Search is unavailable: ripgrep is not installed".
+    """
+    workflow = (SERVER.parent / ".github" / "workflows" / "publish.yml").read_text()
+    assert workflow.index("apt-get install -y ripgrep") < workflow.index(
+        "name: The server edition"
+    )
