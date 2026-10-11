@@ -12,22 +12,32 @@ hid the hints, and they hid all of them at once ([88]).
 
 ## Decision
 
-No status item shrinks or wraps its text. The strip is `flex-wrap: wrap` with
-`align-content: flex-start`, every item is as tall as the strip, and the strip's
-fixed height hides the second row whole. The hints come last in the markup, in
-priority order, so they are what wraps — lowest priority first, from the end —
-and the path, messages and fold count stay on the visible row. `#st-path` and
-`#st-copy` keep shrinking with an ellipsis, as before, for the case where the
-row overflows with no hint left to drop.
+Status text never wraps. The main strip is a single flex row. The path and
+active copy, refresh and delete messages can shrink with an ellipsis; the fold
+count stays visible at its natural width.
+
+All keyboard hints, including the fold shortcut, share a shrinkable container
+after the status text. Only this container wraps and clips overflow. Every hint
+is one row tall, so the container's fixed height hides later rows whole. Hints
+keep their markup priority, dropping from the end first. An empty first item
+ensures that even a hint wider than the remaining space moves to a hidden row
+instead of being partially clipped.
 
 Layout does the dropping; no script measures the strip.
+
+Corrected 2026-10-11 after independent review. Wrapping the entire strip moved
+long copy feedback and clipboard-refusal instructions below the visible row
+before flex shrinking could shorten them. Wrapping is now confined to hints.
 
 ## Measurement
 
 `test_status_bar_items_stay_on_one_line_when_hints_do_not_fit` folds four
-long-named columns at 838 × 640 px and checks that every status item with text
-is no taller than the strip and sits either wholly inside it or wholly outside
-it, that the fold count is shown, and that at least one hint survives.
+long-named columns at 838 × 640, 390 × 844 and 568 × 320 px. It exercises idle
+status, successful long-path copying, clipboard refusal and long delete
+feedback. Every active status item and the fold count must remain inside the
+strip. Only hints may be hidden, and none may be partially clipped. Idle status
+at 838 px must retain some hints and drop excess hints in priority order. The
+clipboard fallback must still select the full path despite display truncation.
 
 ## Consequences
 

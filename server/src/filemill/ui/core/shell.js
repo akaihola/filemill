@@ -81,8 +81,8 @@ document.body.insertAdjacentHTML(
       <span><kbd>a…z</kbd> find</span>
       <span><kbd>F5</kbd> refresh</span>
       <span><kbd id="kbd-copy">⌘C</kbd> copy path</span>
+      <span class="status-fold"><kbd>⇧</kbd>+wheel fold</span>
     </span>
-    <span class="status-fold"><kbd>⇧</kbd>+wheel fold</span>
   </div>
   <div id="row-menu" role="menu" hidden></div>
 </div>

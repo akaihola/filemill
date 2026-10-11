@@ -1490,10 +1490,7 @@ def test_copy_rotation_http(live_server: str, browser_root: Path, directory: boo
 # folded status item together.
 SCREENCAST_VIEWPORT = {"width": 838, "height": 640}
 
-# Every status bar item that carries text, measured against the strip. An item
-# wraps when it is taller than the strip; a hint is "whole" when it sits wholly
-# inside the strip, and "hidden" when it sits wholly outside it. Anything in
-# between is a clipped second line.
+# Text items must fit on one line. Only hints may sit outside the visible strip.
 _STATUS_ITEMS = """() => {
     const bar = document.getElementById('status').getBoundingClientRect();
     const items = [...document.querySelectorAll(
@@ -1506,7 +1503,9 @@ _STATUS_ITEMS = """() => {
             hint: el.parentElement.classList.contains('status-hints')
                 || el.classList.contains('status-fold'),
             wraps: r.height > bar.height,
-            inside: r.top >= bar.top - 0.5 && r.bottom <= bar.bottom + 0.5,
+            inside: r.width > 0 && r.top >= bar.top - 0.5
+                && r.bottom <= bar.bottom + 0.5 && r.left >= bar.left - 0.5
+                && r.right <= bar.right + 0.5,
             outside: r.top >= bar.bottom - 0.5 || r.bottom <= bar.top + 0.5,
         };
     });
@@ -1514,24 +1513,65 @@ _STATUS_ITEMS = """() => {
 
 
 @pytest.mark.integration
+@pytest.mark.parametrize(
+    "viewport", [SCREENCAST_VIEWPORT, MOBILE_VIEWPORT, MOBILE_LANDSCAPE]
+)
 def test_status_bar_items_stay_on_one_line_when_hints_do_not_fit(
     wide_live_server: str,
+    viewport: dict,
 ):
-    """Hints that do not fit are dropped whole; nothing wraps or gets clipped.
-
-    At 838 px with columns folded, "4/5 folded" and the key hints used to shrink
-    and wrap, and the 24 px strip cut off their second line.
-    """
-    with _ui_page(wide_live_server, viewport=SCREENCAST_VIEWPORT) as page:
+    """Active messages and fold count stay visible; excess hints drop whole."""
+    with _ui_page(wide_live_server, viewport=viewport) as page:
         _tap_wide_chain(page, 4)
         page.wait_for_function("folded > 0")
 
-        items = page.evaluate(_STATUS_ITEMS)
-        wrapped = [i["text"] for i in items if i["wraps"]]
-        assert wrapped == [], f"status bar items wrap: {wrapped}"
-        clipped = [i["text"] for i in items if not (i["inside"] or i["outside"])]
-        assert clipped == [], f"status bar items are clipped: {clipped}"
-        by_id = {i["id"]: i for i in items}
-        assert by_id["st-fold"]["inside"], "the fold count is not shown"
-        shown = [i["text"] for i in items if i["hint"] and i["inside"]]
-        assert shown, "no hint survived"
+        for result in ["idle", "success", "refused", "refresh"]:
+            page.evaluate(
+                """async result => {
+                const nav = await import('/ui/core/nav.js');
+                nav.saySt('st-copy', '', true);
+                nav.saySt('st-refresh', '', true);
+                if (result === 'idle') return;
+                if (result === 'refresh') {
+                    nav.saySt('st-refresh', `Deleted “${path.at(-1).name}”`, true);
+                    return;
+                }
+                Object.defineProperty(navigator, 'clipboard', {
+                    configurable: true, value: {writeText: async () => {
+                        if (result === 'refused')
+                            throw new DOMException('Denied', 'NotAllowedError');
+                    }}
+                });
+                document.dispatchEvent(new Event('pointerdown'));
+                await nav.copyPath();
+            }""",
+                result,
+            )
+            if result == "success":
+                assert (
+                    page.locator("#st-copy").inner_text().startswith("Copied level-0-")
+                )
+            elif result == "refused":
+                assert "press Ctrl+C again" in page.locator("#st-copy").inner_text()
+                assert (
+                    page.evaluate("getSelection().toString()")
+                    == page.locator("#st-path").inner_text()
+                )
+            elif result == "refresh":
+                assert page.locator("#st-refresh").inner_text().startswith("Deleted")
+
+            items = page.evaluate(_STATUS_ITEMS)
+            wrapped = [i["text"] for i in items if i["wraps"]]
+            assert wrapped == [], f"status bar items wrap: {wrapped}"
+            hidden = [i["id"] for i in items if not i["hint"] and not i["inside"]]
+            assert hidden == [], f"{result}: status items are hidden: {hidden}"
+            clipped = [i["text"] for i in items if not (i["inside"] or i["outside"])]
+            assert clipped == [], f"status bar items are clipped: {clipped}"
+            by_id = {i["id"]: i for i in items}
+            assert by_id["st-fold"]["inside"], "the fold count is not shown"
+            if result == "idle" and viewport == SCREENCAST_VIEWPORT:
+                hints = [i for i in items if i["hint"]]
+                assert any(i["inside"] for i in hints), "no hint survived"
+                assert any(i["outside"] for i in hints), "no excess hint was hidden"
+                shown = [i["inside"] for i in hints]
+                assert shown == sorted(shown, reverse=True), "hint priority changed"
