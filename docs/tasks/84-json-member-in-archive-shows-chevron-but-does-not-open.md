@@ -54,13 +54,23 @@ leaf but its cached row keeps the chevron. A JSONL member above the server's
 16 MiB member limit keeps directory status and opens an empty error column.
 These paths predate the member-byte fix.
 
-Plan:
+Rejected JSONL files now become leaves with their read/parse error in the
+preview. Rendering removes stale chevrons without rebuilding the parent
+column. The navigator closes a declined loading column, preserving the member
+selection. Rewalking a cached path leaves declined entries as leaves until a
+refresh replaces the listing. Invalid JSON retains its source fallback.
 
-- Add browser regressions for both limits, including a read that finishes
-  after navigation has opened a loading column.
-- Make rejected JSONL files leaves with a useful preview error. Reconcile
-  cached row chevrons and let the navigator close a declined loading column.
-- Check successful member browsing, deep links, and static JSON/JSONL behavior;
-  rebuild the shared bundle and update the architecture record.
+Validation:
+
+- Four oversized-member cases, JSON above 8 MiB and JSONL above 16 MiB, with
+  ordinary and deferred reads: all failed on retained chevrons before the fix
+  and passed afterward. They also check column removal, parent row identity,
+  visible errors, reselection, cached path restoration, and reloads.
+- 24 focused browser tests passed for JSON, JSONL, archives, and Git bundles.
+- The static UI suite passed against both the generated bundle and `--dev`,
+  including invalid JSON/JSONL fallback checks.
+- 553 non-browser server tests passed. Model checks, Deno formatting/lint,
+  Ruff, mypy, bundle freshness, and `git diff --check` passed.
+- The shared static bundle, architecture record, and ADRs 0029/0072 are updated.
 
 User acceptance remains pending.
