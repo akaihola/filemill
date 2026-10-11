@@ -97,3 +97,21 @@ Remaining steps, from `akaihola@atom`:
 2. Watch the `publish` run. The open question is `test-ui.py::test_storage`
    on the stock Chromium 1243 download (see Validation above).
 3. Check <https://akaihola.github.io/filemill/>.
+
+## CI result and the storage fix, 2026-10-11
+
+The user pushed `263288f`. Run 38147875268 found the browsers and ran the
+static suite: 97 passed, 1 failed, `test-ui.py::test_storage`, with the same
+browser abort as on this host. So it is Chromium 153.0.8010.12 (Playwright
+revision 1243), not a host artifact.
+
+Community reports narrow it down: the browser process aborts when an
+off-the-record context reads a stored `FileSystemHandle` back from IndexedDB,
+while a persistent profile reads it back fine. Playwright's `launch()` +
+`new_page()` is off-the-record. Reproduced both halves here in a bare page.
+`test_storage` now uses `launch_persistent_context` with pytest's `tmp_path`
+as the profile. Passes in both editions, four runs each.
+
+The app's own `recallRoots()` takes the same path, so a user who opens the
+static edition in an incognito window of that Chrome would hit the abort.
+That is a browser bug outside this task; no app change was made.
