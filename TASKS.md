@@ -101,13 +101,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [83] Screen-reader search label shows on screen
   <!-- hai:{"updatedAt":"2026-10-10T20:53:33.766Z"} -->
 
-- [ ] [*] Make Git `.bundle` files navigable hierarchically, and if they contain previewable
+- [x] [*] Make Git `.bundle` files navigable hierarchically, and if they contain previewable
   files, show them in the preview pane when navigated to.
-  <!-- hai:{"id":"simple-ca7153b94516ed5f","updatedAt":"2026-10-10T19:56:48.893Z"} -->
+  <!-- hai:{"id":"simple-ca7153b94516ed5f","updatedAt":"2026-10-11T08:10:30.642Z"} -->
 
-- [ ] Make `.tar.zst` (and other compressed archive) files navigable hierarchically, and
+- [x] [*] Make `.tar.zst` (and other compressed archive) files navigable hierarchically, and
   if they contain previewable files, show them in the preview pane when navigated to.
-  <!-- hai:{"id":"simple-8f807623b9f707fd","updatedAt":"2026-10-07T17:13:55.825Z"} -->
+  <!-- hai:{"id":"simple-8f807623b9f707fd","updatedAt":"2026-10-11T08:09:29.993Z"} -->
 
 - [ ] [*] A 528 kB JSON file like
   https://gogo.crane-boa.ts.net:8445/backups/kasvimuseo-deployment/20261007-010643/backup-manifest.json?f=
