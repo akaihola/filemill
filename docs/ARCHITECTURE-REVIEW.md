@@ -338,7 +338,7 @@ Do not reopen these without new evidence.
 | Missing `LICENSE`, `SECURITY.md`, `CHANGELOG.md`, `CONTRIBUTING.md`; history files in `server/` (#15) | Present; history files removed                                                  |
 | `static/hotreload.py`, `forgetRoots` (#16)                                                            | Removed                                                                         |
 | Listing paged at 500 entries; virtual rows never evicted (A6, part)                                   | Whole listing, one scrollbar, rows evicted on scroll ([ADR 0068])               |
-| Status strip items shrank and wrapped into its clipped height ([88])                                  | Whole hints drop from the end; nothing wraps ([ADR 0074])                       |
+| Status strip items shrank and wrapped into its clipped height ([88])                                  | Only hints wrap into hidden rows, dropping from the end. Path, active messages and fold count stay visible; long text ellipsises ([ADR 0074], review correction 2026-10-11) |
 
 ## Remediation order
 
