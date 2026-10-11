@@ -13,6 +13,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
+- [~] [80] Left arrow doesn't preview the whole document after returning from per-section preview
+  <!-- hai:{"id":"simple-c4d74fd6-cd42-426e-9cda-819fbf9965c3","priority":"none","labels":[],"createdAt":"2026-10-08T16:24:33.129Z","updatedAt":"2026-10-11T19:15:56.830Z"} -->
+
 - [~] [89] Markdown previews show two Raw buttons
   <!-- hai:{"updatedAt":"2026-10-11T19:06:19.809Z"} -->
 
@@ -82,9 +85,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [ ] [81] Horizontal scrolling fold "stops"
   <!-- hai:{"id":"simple-d01a5118-704f-4133-953c-ead294dbc119","priority":"none","labels":[],"createdAt":"2026-10-08T19:19:18.607Z","updatedAt":"2026-10-11T10:14:37.126Z"} -->
-
-- [ ] [80] Left arrow doesn't preview the whole document after returning from per-section preview
-  <!-- hai:{"id":"simple-c4d74fd6-cd42-426e-9cda-819fbf9965c3","priority":"none","labels":[],"createdAt":"2026-10-08T16:24:33.129Z","updatedAt":"2026-10-11T05:15:34.124Z"} -->
 
 - [x] [82] Update stale Playwright 1.61 pins and the server renderer note in docs
   <!-- hai:{"updatedAt":"2026-10-11T19:06:17.369Z"} -->
