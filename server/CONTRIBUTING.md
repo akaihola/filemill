@@ -176,7 +176,7 @@ that matches the bundle in `$PLAYWRIGHT_BROWSERS_PATH` is the version in
 `$UV_CONSTRAINT`, and `pyproject.toml` pins that version with a comment that
 records which neighbouring releases were measured to fail. Both neighbours die
 at `BrowserType.launch` with the banner above. `--with "playwright==X"`
-overrides the pin, so run the suites with `uv run --project server` instead.
+overrides the pin, so run the suites with `uv run pytest` from `server/` instead.
 `playwright install` downloads a fourth copy of a browser that Nix provides.
 Do not run it. When the Nix bundle moves, re-pin from the constraint file:
 

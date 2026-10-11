@@ -7,7 +7,12 @@ descriptions) are exempt: they state what was measured, not what to run.
 """
 
 import re
+import shlex
+import subprocess
+import sys
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).parents[2]
 
@@ -22,7 +27,10 @@ LIVE_DOCS = [
     ROOT / "docs" / "GOALS.md",
 ]
 
-PIN = re.compile(r"playwright\s*[~=]=\s*(\d+\.\d+)")
+PIN = re.compile(
+    r"\bplaywright(?:\s*[~=]=\s*|\s+(?=\d+\.\d+\.(?:\d+|x)\b))(\d+\.\d+)",
+    re.IGNORECASE,
+)
 
 
 def pinned_version() -> str:
@@ -52,6 +60,67 @@ def test_live_documents_name_only_the_pinned_playwright():
                         f"{path.relative_to(ROOT)}:{index + 1}: {line.strip()}"
                     )
     assert not stale, "\n".join(stale)
+
+
+@pytest.mark.parametrize(
+    ("text", "rejected"),
+    [
+        (
+            (
+                "Prerequisites: `uv`, a graphical desktop, the repository's Playwright "
+                "1.61.0\nenvironment with its matching Chromium browser, and port `8787` "
+                "free."
+            ),
+            True,
+        ),
+        ('uv run --with "playwright==1.61.0" pytest', True),
+        ("playwright~=1.61", True),
+        ("Playwright 1.61.x environment", True),
+        ("Playwright 1.61.0\nfailed to launch the Nix browser.", False),
+        ("playwright==1.61.0\nExecutable doesn't exist", False),
+        (f"Playwright {pinned_version()}.0 environment", False),
+        ("Update stale Playwright 1.61 pins and the server renderer note", False),
+    ],
+)
+def test_playwright_guard_checks_prose_and_preserves_measurements(
+    tmp_path, monkeypatch, text, rejected
+):
+    pyproject = (ROOT / "server" / "pyproject.toml").read_text()
+    (tmp_path / "server").mkdir()
+    (tmp_path / "server" / "pyproject.toml").write_text(pyproject)
+    (tmp_path / "static").mkdir()
+    checklist = tmp_path / "static" / "FSA-TEST-CHECKLIST.md"
+    checklist.write_text(text)
+    monkeypatch.setattr(sys.modules[__name__], "ROOT", tmp_path)
+    monkeypatch.setattr(sys.modules[__name__], "LIVE_DOCS", [checklist])
+    if rejected:
+        with pytest.raises(AssertionError, match="FSA-TEST-CHECKLIST"):
+            test_live_documents_name_only_the_pinned_playwright()
+    else:
+        test_live_documents_name_only_the_pinned_playwright()
+
+
+def test_server_test_guidance_runs_from_server():
+    contributing = (ROOT / "server" / "CONTRIBUTING.md").read_text()
+    match = re.search(
+        r"overrides the pin, so run the suites with `([^`]+)`", contributing
+    )
+    assert match, "CONTRIBUTING.md must give a test command without --with"
+    result = subprocess.run(
+        [
+            *shlex.split(match.group(1)),
+            "--collect-only",
+            "-q",
+            "tests/test_docs.py",
+        ],
+        cwd=ROOT / "server",
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "test_live_documents_name_only_the_pinned_playwright" in result.stdout
 
 
 def test_adapters_readme_matches_app_http_renderers():
