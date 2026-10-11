@@ -431,6 +431,7 @@ export function render(keepScroll) {
       c.dotFor = sel[i];
     }
     c.rows.forEach((row, ri) => {
+      if (!c.kids[ri].dir) row.querySelector(".chev")?.remove();
       row.classList.toggle("sel", c.kids[ri].name === sel[i]);
       row.classList.toggle("cursor", i === focusCol && selectedRow === ri);
     });

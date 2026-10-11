@@ -1307,9 +1307,11 @@ async def main(bundle, fake_handle, playwright):
               await pg.evaluate("__rows(2)") == ["10", "11"], str(await pg.evaluate("__rows(2)")))
         await click_row(pg, 1, "bad.jsonl")
         await pg.wait_for_timeout(400)
-        note = await pg.inner_text('.col[data-i="2"]')
-        check("A malformed line lands on the denied note, not a column",
-              "Not valid JSONL: line 2" in note and await pg.evaluate("__rows(2)") == [], note)
+        note = await pg.inner_text('#preview .pv-err')
+        check("Invalid JSONL becomes a leaf with its error in the preview",
+              "Not valid JSONL: line 2" in note
+              and await pg.locator('.col[data-i="2"]').count() == 0
+              and await pg.locator('.row[title="bad.jsonl"] .chev').count() == 0, note)
         await click_row(pg, 1, "huge.jsonl")
         await pg.wait_for_selector('.col[data-i="2"] .row', timeout=15000)
         rows = await pg.evaluate("__rows(2)")
@@ -1448,7 +1450,8 @@ async def main(bundle, fake_handle, playwright):
         await click_row(pg, 1, "bad.json")
         await pg.wait_for_selector(".pv-text:not(.pv-json)")
         check("Invalid JSON keeps the coloured-source fallback",
-              (await pg.inner_text(".pv-text")) == "{oops")
+              (await pg.inner_text(".pv-text")) == "{oops"
+              and await pg.locator('.row[title="bad.json"] .chev').count() == 0)
         await click_row(pg, 1, "deep.json")
         await pg.wait_for_selector(".pv-text:not(.pv-json)")
         check("JSON nested past the stack is shown as source, not an error",

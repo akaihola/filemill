@@ -5134,6 +5134,7 @@ function render(keepScroll) {
       c.dotFor = sel[i];
     }
     c.rows.forEach((row, ri) => {
+      if (!c.kids[ri].dir) row.querySelector(".chev")?.remove();
       row.classList.toggle("sel", c.kids[ri].name === sel[i]);
       row.classList.toggle("cursor", i === focusCol && selectedRow === ri);
     });
@@ -5793,7 +5794,9 @@ async function choose(
   if (reading) {
     await reading;
     if (seq !== navSeq || !path.includes(node)) return; /* still up? repaint */
-    autoPreview(node); /* kids landed after the grace period */
+    if (!node.dir) {
+      selectNode(colIdx, node); /* close a declined loading column */
+    } else autoPreview(node); /* kids landed after the grace period */
     render(keepScroll);
   }
 }
@@ -6458,7 +6461,7 @@ const withVirtual = (fs) => ({
     if (!node.jsonl && !node.json) {
       await fs.ensureLoaded(node);
       for (const k of node.kids || []) {
-        if (!k.dir && isJsonl(k)) {
+        if (!k.dir && !k.jsonl && isJsonl(k)) {
           Object.assign(k, {
             dir: true,
             kids: null,
@@ -6467,7 +6470,7 @@ const withVirtual = (fs) => ({
             ordered: true,
           });
         }
-        if (!k.dir && isJson(k)) {
+        if (!k.dir && !k.json && isJson(k)) {
           Object.assign(k, {
             dir: true,
             kids: null,
@@ -6536,8 +6539,9 @@ const withVirtual = (fs) => ({
           ? jsonlLazyRows(node, blob, await jsonlIndex(blob))
           : jsonlRows(node, jsonlParse(await blob.text()));
       } catch (err) {
-        node.denied = String(err.message || err);
-        node.kids = [];
+        node.jsonError = String(err.message || err);
+        node.dir = false;
+        node.kids = undefined;
       }
       node.loading = null;
     })();
@@ -6554,7 +6558,9 @@ const withVirtualPreview = (provider) => ({
       await loadRow(n);
       if (n.jsonError) throw new Error(n.jsonError);
     }
-    if (n.jsonTooLarge) throw new Error(n.jsonError);
+    if (n.jsonTooLarge || (n.jsonl && n.jsonError)) {
+      throw new Error(n.jsonError);
+    }
     if (!n.json || n.value === undefined) return provider.render(n);
     let text;
     try {

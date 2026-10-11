@@ -95,7 +95,9 @@ export async function choose(
   if (reading) {
     await reading;
     if (seq !== navSeq || !path.includes(node)) return; /* still up? repaint */
-    autoPreview(node); /* kids landed after the grace period */
+    if (!node.dir) {
+      selectNode(colIdx, node); /* close a declined loading column */
+    } else autoPreview(node); /* kids landed after the grace period */
     render(keepScroll);
   }
 }

@@ -36,6 +36,14 @@ opens the member as columns of its keys or rows with the foldable JSON preview.
 Until 2026-10-11 the read dropped the virtual path and fetched the archive
 itself, so the member showed a chevron that opened nothing ([84]).
 
+Review follow-up, 2026-10-11: a JSON or JSONL member that cannot be browsed
+becomes a leaf and loses its chevron. Cached rows update the indicator without
+rebuilding the parent column. If the read outlasts the navigation grace period,
+the navigator closes the loading column and keeps the member selected. JSON
+size failures and JSONL read/parse failures show an error in the preview;
+invalid JSON keeps the existing source fallback. Rewalking a cached path keeps
+declined entries as leaves until a refresh replaces the listing.
+
 The same holds for every kind the browser renders from bytes on disk —
 Markdown, `.docx` and `.pptx` (`ui/adapters/app-http.js`): the server's
 virtual-leaf wrapper leaves those members to the browser's rich renderer,
