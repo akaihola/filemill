@@ -128,3 +128,18 @@ test included). The server edition failed 10 of 721:
 - `test_context_menu_delete_cancel_then_confirm[short.txt]` read the preview
   text empty right after the delete. The preview re-renders after the listing
   refresh, so the test now waits for the text instead of reading it once.
+
+## Third CI run, 2026-10-12
+
+Run 38252850595 on `3d830e7`: search and delete now pass. One failure,
+`test_markdown_headings_open_as_columns_in_the_server_build`, reproduced
+locally. A bare `/n/<file>` URL parses to the default view, raw, so the shell
+carried `data-filemill="raw"`. Since `1c179ef` the view toggle trusts that
+attribute instead of the URL, so it read "Rendered" on a rendered section and
+clicking it changed nothing. The shell now coerces raw to render, with a route
+test for the bare and explicit-raw cases.
+
+The same run skipped all 65 `test_browser_keyboard.py` tests: the suite
+skipped itself when `PLAYWRIGHT_BROWSERS_PATH` was unset, a dev-machine
+convention CI does not follow. The skip is gone; a missing browser now fails
+loudly at launch instead.
