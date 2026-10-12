@@ -62,9 +62,6 @@ def wide_root(tmp_path: Path) -> Path:
 @contextmanager
 def _serve(root: Path):
     """Run `filemill <root>` on a free port for the duration of the block."""
-    if not os.environ.get("PLAYWRIGHT_BROWSERS_PATH"):
-        pytest.skip("PLAYWRIGHT_BROWSERS_PATH is not set")
-
     port = _free_port()
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
