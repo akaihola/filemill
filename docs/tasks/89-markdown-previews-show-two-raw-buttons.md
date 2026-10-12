@@ -32,3 +32,35 @@ The README screencast shows a Markdown toolbar in several scenes.
 - A browser test checks the toolbar labels of a Markdown preview.
 
 [63]: 63-preview-toolbar-controls.md
+
+## Independent-review follow-up, 2026-10-11
+
+Implemented R1 and R2 from thread `c4d572b0-2089-4760-b246-2942dbe59503`.
+
+- Preview view state no longer depends on URL routing. Markdown and WebVTT
+  switch between rendered and source views in the server's Open Folder mode,
+  preserving the selection and address bar.
+- The static bundle and module build share the server's source-highlighting
+  wrapper. Static view changes retain the root folder name in the hash.
+- The sole Raw link uses optional `FS.rawURL` for served files and local blobs
+  otherwise. Local Raw opens the original bytes in a new tab. Object URLs are
+  revoked on preview replacement or view change.
+
+See [ADR 0077](../adr/0077-preview-views-and-raw-links-work-without-routing.md).
+
+Validation:
+
+- Red first: eight bundle/server regression cases failed, followed by four
+  failures against the static module build.
+- All new source, Raw-tab and Raw-lifecycle regressions pass in both static
+  builds and the server's local-folder mode. Tests use the shipped Markdown
+  renderer, compare exact source bytes, and cover keyboard activation.
+- 21 adjacent server preview/history tests and 11 documentation tests pass.
+- Full static module suite: 102 passed. Full static bundle suite: 101 passed,
+  one failed at the existing RST Python-globals cleanup assertion. The focused
+  rich-preview rerun passed all 51 internal checks without a code change.
+  Raw-tab and lifecycle checks added during those runs also pass separately.
+- Deno formatting/lint, model checks, Ruff, mypy, bundle consistency and
+  `git diff --check` pass.
+
+User acceptance remains pending.

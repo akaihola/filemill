@@ -13,9 +13,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [89] Markdown previews show two Raw buttons
-  <!-- hai:{"updatedAt":"2026-10-11T19:06:19.809Z"} -->
-
 - [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-10T19:58:38.726Z"} -->
 
@@ -71,8 +68,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Completed / Accepted
 
-- [ ] [80] Left arrow doesn't preview the whole document after returning from per-section preview
-  <!-- hai:{"id":"simple-c4d74fd6-cd42-426e-9cda-819fbf9965c3","priority":"none","labels":[],"createdAt":"2026-10-08T16:24:33.129Z","updatedAt":"2026-10-11T19:22:36.736Z"} -->
+- [x] [89] Markdown previews show two Raw buttons
+  <!-- hai:{"updatedAt":"2026-10-11T19:28:33.081Z"} -->
+
+- [x] [80] Left arrow doesn't preview the whole document after returning from per-section preview
+  <!-- hai:{"id":"simple-c4d74fd6-cd42-426e-9cda-819fbf9965c3","priority":"none","labels":[],"createdAt":"2026-10-08T16:24:33.129Z","updatedAt":"2026-10-11T19:27:12.770Z"} -->
 
 - [x] [84] JSON member in an archive shows a chevron but does not open
   <!-- hai:{"updatedAt":"2026-10-11T19:03:14.084Z"} -->
@@ -83,8 +83,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] [79] Remove § signs and redundant headings from document section previews
   <!-- hai:{"id":"simple-e6ef425c-e474-4559-b792-1e21478c71bb","priority":"none","labels":[],"createdAt":"2026-10-08T16:21:55.597Z","updatedAt":"2026-10-11T18:53:20.045Z"} -->
 
-- [ ] [81] Horizontal scrolling fold "stops"
-  <!-- hai:{"id":"simple-d01a5118-704f-4133-953c-ead294dbc119","priority":"none","labels":[],"createdAt":"2026-10-08T19:19:18.607Z","updatedAt":"2026-10-11T10:14:37.126Z"} -->
+- [x] [81] Horizontal scrolling fold "stops"
+  <!-- hai:{"id":"simple-d01a5118-704f-4133-953c-ead294dbc119","priority":"none","labels":[],"createdAt":"2026-10-08T19:19:18.607Z","updatedAt":"2026-10-11T19:28:58.545Z"} -->
 
 - [x] [82] Update stale Playwright 1.61 pins and the server renderer note in docs
   <!-- hai:{"updatedAt":"2026-10-11T19:06:17.369Z"} -->
@@ -95,8 +95,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] [85] Images in archives are not scaled to the preview pane
   <!-- hai:{"updatedAt":"2026-10-11T18:27:58.921Z"} -->
 
-- [ ] [88] Status bar hints wrap and get clipped
-  <!-- hai:{"updatedAt":"2026-10-10T21:28:47.986Z"} -->
+- [x] [88] Status bar hints wrap and get clipped
+  <!-- hai:{"updatedAt":"2026-10-11T19:18:11.203Z"} -->
 
 - [x] [83] Screen-reader search label shows on screen
   <!-- hai:{"updatedAt":"2026-10-11T19:00:25.515Z"} -->
