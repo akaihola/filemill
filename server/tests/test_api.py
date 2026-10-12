@@ -292,6 +292,18 @@ def test_ui_path_preserves_requested_view(client, view):
     assert f'data-filemill="{view}"' in response.text
 
 
+@pytest.mark.parametrize("query", [{}, {"filemill": "raw"}])
+def test_ui_path_never_tells_the_shell_it_is_raw(client, query):
+    """The shell always renders, so `raw` there is `render`.
+
+    The client's Source/Rendered toggle trusts data-filemill. Told "raw", it
+    labelled a rendered section "Rendered" and clicking it changed nothing.
+    """
+    response = client.get("/n/readme.md", params=query)
+    assert response.status_code == 200
+    assert 'data-filemill="render"' in response.text
+
+
 def test_ui_path_that_does_not_exist_is_404(client, tmp_root: Path):
     assert client.get("/n/nope.md").status_code == 404
 

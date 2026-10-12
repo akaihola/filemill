@@ -194,6 +194,10 @@ def _ui_shell(state, base: str, hidden: bool = False):
     prefix ui/adapters/router-path.js strips — ``/n/`` for the migration mount,
     ``/`` for the resource route, where the path already is the file path.
     """
+    # The shell always renders, so a raw request here is a rendered one. The
+    # client's view toggle trusts this attribute; "raw" would mislabel it.
+    if state.view == urls.VIEW_RAW:
+        state = state.with_view(urls.VIEW_RENDER)
     attrs = {
         "lang": "en",
         "data-density": "compact",
