@@ -74,8 +74,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-14T13:16:05.732Z"} -->
 
-- [ ] [92] Scope CI cancellation to the same branch or pull request
-  <!-- hai:{"id":"simple-e40d6c02-1029-4f85-b7d6-3189430599b8","createdAt":"2026-10-12T13:32:54.478Z","updatedAt":"2026-10-14T08:41:57.216Z"} -->
+- [x] [92] Scope CI cancellation to the same branch or pull request
+  <!-- hai:{"id":"simple-e40d6c02-1029-4f85-b7d6-3189430599b8","createdAt":"2026-10-12T13:32:54.478Z","updatedAt":"2026-10-14T20:15:31.951Z"} -->
 
 - [x] [89] Markdown previews show two Raw buttons
   <!-- hai:{"updatedAt":"2026-10-11T19:28:33.081Z"} -->
