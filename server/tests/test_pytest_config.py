@@ -84,3 +84,15 @@ def test_ci_reports_the_slowest_tests_of_each_suite():
         "Test the shared sources",
         "The server edition",
     } <= set(steps)
+
+
+def test_ci_runs_every_suite_after_an_earlier_suite_fails():
+    """A failing suite must not hide the next suite's results and durations.
+
+    Run 38534616531 (2026-10-14) failed one static development test and so
+    skipped the server suite entirely. The job still fails either way.
+    """
+    workflow = (SERVER.parent / ".github" / "workflows" / "publish.yml").read_text()
+    for name in ("Test the shared sources", "Install ripgrep", "The server edition"):
+        step = workflow.split(f"- name: {name}\n", 1)[1].split("\n\n", 1)[0]
+        assert "if: ${{ !cancelled() }}" in step, name
