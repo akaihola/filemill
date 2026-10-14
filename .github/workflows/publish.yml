@@ -109,16 +109,9 @@ jobs:
 
       # The same ui/, driven against a real server — this is what would catch a
       # change that suits one project and breaks the other.
-<<<<<<< HEAD
-      - name: The server edition
-        if: ${{ !cancelled() }}
-        working-directory: server
-        run: uv run pytest --cov=src/filemill --cov-branch --cov-report=term-missing --durations=20
-=======
       - name: Run ${{ matrix.suite }} suite
         working-directory: ${{ matrix.directory }}
         run: ${{ matrix.command }}
->>>>>>> bced5c9 (ci: run edition suites in parallel)
 
   publish:
     needs: [lint, test]
