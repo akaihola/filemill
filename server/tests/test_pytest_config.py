@@ -3,6 +3,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 SERVER = Path(__file__).parents[1]
 
 
@@ -53,9 +55,73 @@ def test_ci_installs_ripgrep_before_the_server_suite():
     Run 38155597653 (2026-10-11) failed every search test with
     "Search is unavailable: ripgrep is not installed".
     """
-    workflow = (SERVER.parent / ".github" / "workflows" / "publish.yml").read_text()
-    assert workflow.index("apt-get install -y ripgrep") < workflow.index(
-        "name: The server edition"
+    job = yaml.safe_load(
+        (SERVER.parent / ".github" / "workflows" / "publish.yml").read_text()
+    )["jobs"]["test"]
+    steps = job["steps"]
+    install_index = next(
+        i
+        for i, step in enumerate(steps)
+        if "apt-get install -y ripgrep" in step.get("run", "")
+    )
+    assert steps[install_index]["if"] == "matrix.suite == 'server'"
+    assert install_index < next(
+        i for i, step in enumerate(steps) if step.get("run") == "${{ matrix.command }}"
+    )
+
+
+def test_ci_runs_independent_suites_after_lint_and_gates_publication():
+    jobs = yaml.safe_load(
+        (SERVER.parent / ".github" / "workflows" / "publish.yml").read_text()
+    )["jobs"]
+    test = jobs["test"]
+    assert "strategy" in test, "The three suites still run serially in one job"
+    assert test["needs"] == "lint"
+    assert test["strategy"]["fail-fast"] is False
+    assert "max-parallel" not in test["strategy"]
+    assert test["strategy"]["matrix"]["include"] == [
+        {
+            "suite": "static-bundle",
+            "command": "uv run --project server pytest static",
+            "directory": ".",
+        },
+        {
+            "suite": "static-development",
+            "command": "uv run --project server pytest static --dev",
+            "directory": ".",
+        },
+        {
+            "suite": "server",
+            "command": "uv run pytest --cov=src/filemill --cov-branch --cov-report=term-missing",
+            "directory": "server",
+        },
+    ]
+    steps = test["steps"]
+    install = next(s for s in steps if "playwright install" in s.get("run", ""))
+    assert (
+        install["run"]
+        == "uv run --project server playwright install --with-deps chromium"
+    )
+    assert "if" not in install
+    suite = steps[-1]
+    assert suite["run"] == "${{ matrix.command }}"
+    assert suite["working-directory"] == "${{ matrix.directory }}"
+    assert not test.get("continue-on-error", False)
+    assert all(not step.get("continue-on-error", False) for step in steps)
+    lint = "\n".join(s.get("run", "") for s in jobs["lint"]["steps"])
+    for check in (
+        "pre-commit run --all-files",
+        "deno fmt --check ui/",
+        "deno lint ui/",
+        "deno run --allow-read=ui/core/model ui/core/model/test.mjs",
+        "./build-index.py --check",
+    ):
+        assert check in lint
+    publish = jobs["publish"]
+    assert set(publish["needs"]) == {"lint", "test"}
+    assert (
+        publish["if"]
+        == "github.ref == 'refs/heads/main' && github.event_name != 'pull_request'"
     )
 
 
