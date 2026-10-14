@@ -11,13 +11,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] Share Chromium, and the server where tests allow, across `server/tests/test_browser_new_ui.py`. Per-test startup and teardown cost about 200s of the 611s server suite in run 38630672866 (see [91]). Measure pytest workers afterwards.
-  <!-- hai:{"id":"simple-adb180cf-7f03-46bb-86ca-b374139716ab","createdAt":"2026-10-14T20:37:41.753Z","updatedAt":"2026-10-14T21:37:26.981Z"} -->
-
 - [90] Run the static bundle, static development and server CI suites in parallel
   <!-- hai:{"id":"simple-8b926d81-b116-4839-987a-c05a6e7930a0","createdAt":"2026-10-12T13:32:52.839Z","updatedAt":"2026-10-14T08:22:05.337Z"} -->
 
 ## In Progress
+
+- [~] [*] Share Chromium, and the server where tests allow, across `server/tests/test_browser_new_ui.py`. Per-test startup and teardown cost about 200s of the 611s server suite in run 38630672866 (see [91]). Measure pytest workers afterwards.
+  <!-- hai:{"id":"simple-adb180cf-7f03-46bb-86ca-b374139716ab","createdAt":"2026-10-14T20:37:41.753Z","updatedAt":"2026-10-14T21:39:04.059Z"} -->
 
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
