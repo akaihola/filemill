@@ -48,27 +48,12 @@ jobs:
           pip install pre-commit
           pre-commit run --all-files
 
-  test:
-    needs: lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install pinned Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: 2.6.8
-
       - name: Check the shared UI
         run: |
           test "$(deno --version | head -1)" = "deno 2.6.8 (stable, release, x86_64-unknown-linux-gnu)"
           deno fmt --check ui/
           deno lint ui/
           deno run --allow-read=ui/core/model ui/core/model/test.mjs
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
 
       # index.html is generated from ui/ and committed, so it can go stale
       # without anything else noticing — and a stale one would be published.
@@ -77,6 +62,30 @@ jobs:
       - name: The committed bundle matches ui/
         run: ./build-index.py --check
         working-directory: static
+
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    name: Test ${{ matrix.suite }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: static-bundle
+            command: uv run --project server pytest static --durations=20
+            directory: .
+          - suite: static-development
+            command: uv run --project server pytest static --dev --durations=20
+            directory: .
+          - suite: server
+            command: uv run pytest --cov=src/filemill --cov-branch --cov-report=term-missing --durations=20
+            directory: server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -92,32 +101,27 @@ jobs:
       - name: Install the locked Playwright's browsers
         run: uv run --project server playwright install --with-deps chromium
 
-      # --durations=20 lists the slowest setup, call and teardown phases, also
-      # when tests fail. One step per suite keeps the three reports apart, and
-      # `!cancelled()` runs each suite after an earlier one fails, so every
-      # report appears; the job still fails.
-      - name: Test the bundle
-        run: uv run --project server pytest static --durations=20
-
-      - name: Test the shared sources
-        if: ${{ !cancelled() }}
-        run: uv run --project server pytest static --dev --durations=20
-
       # The server shells out to ripgrep for content search; the runner image
       # does not ship it, and without it every search test gets a 503.
       - name: Install ripgrep
-        if: ${{ !cancelled() }}
+        if: matrix.suite == 'server'
         run: sudo apt-get install -y ripgrep
 
       # The same ui/, driven against a real server — this is what would catch a
       # change that suits one project and breaks the other.
+<<<<<<< HEAD
       - name: The server edition
         if: ${{ !cancelled() }}
         working-directory: server
         run: uv run pytest --cov=src/filemill --cov-branch --cov-report=term-missing --durations=20
+=======
+      - name: Run ${{ matrix.suite }} suite
+        working-directory: ${{ matrix.directory }}
+        run: ${{ matrix.command }}
+>>>>>>> bced5c9 (ci: run edition suites in parallel)
 
   publish:
-    needs: test
+    needs: [lint, test]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
