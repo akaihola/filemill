@@ -96,3 +96,55 @@ def test_ci_runs_every_suite_after_an_earlier_suite_fails():
     for name in ("Test the shared sources", "Install ripgrep", "The server edition"):
         step = workflow.split(f"- name: {name}\n", 1)[1].split("\n\n", 1)[0]
         assert "if: ${{ !cancelled() }}" in step, name
+
+
+def _workflow_concurrency() -> dict[str, str]:
+    """The top-level `concurrency:` mapping of publish.yml, as raw strings."""
+    workflow = (SERVER.parent / ".github" / "workflows" / "publish.yml").read_text()
+    block = re.search(r"^concurrency:\n((?:  .*\n)+)", workflow, re.MULTILINE)
+    assert block, "publish.yml has no workflow-level concurrency"
+    return dict(line.strip().split(": ", 1) for line in block.group(1).splitlines())
+
+
+def _evaluate(expression: str, workflow: str, ref: str) -> str:
+    """Substitute the `github.workflow` and `github.ref` contexts like Actions."""
+    context = {"github.workflow": workflow, "github.ref": ref}
+    return re.sub(
+        r"\$\{\{\s*([\w.]+)\s*\}\}", lambda m: context[m.group(1)], expression
+    )
+
+
+def test_ci_cancels_only_superseded_runs_of_the_same_ref():
+    """A run may cancel only an older run of the same workflow and ref.
+
+    The workflow-wide `group: pages` let any pull request cancel a main run or
+    another pull request's tests. Main runs still share one group, which keeps
+    Pages deployments serialized, since only main publishes.
+    """
+    concurrency = _workflow_concurrency()
+    assert concurrency["cancel-in-progress"] == "true"
+    group = concurrency["group"]
+    assert "github.workflow" in group
+    assert "github.ref" in group
+
+    main = "refs/heads/main"
+    pr_1, pr_2 = "refs/pull/1/merge", "refs/pull/2/merge"
+    assert _evaluate(group, "publish", main) == _evaluate(group, "publish", main)
+    assert _evaluate(group, "publish", pr_1) == _evaluate(group, "publish", pr_1)
+    assert _evaluate(group, "publish", pr_1) != _evaluate(group, "publish", pr_2)
+    assert _evaluate(group, "publish", main) != _evaluate(group, "publish", pr_1)
+    assert _evaluate(group, "publish", main) != _evaluate(group, "other", main)
+
+
+def test_ci_publishes_only_from_main_after_every_check():
+    """Pull requests never publish; main publishes only after lint and tests."""
+    workflow = (SERVER.parent / ".github" / "workflows" / "publish.yml").read_text()
+    jobs = workflow.split("\njobs:", 1)[1]
+    publish = jobs.split("\n  publish:\n", 1)[1]
+    assert "\n  lint:\n" in jobs
+    assert "\n  test:\n    needs: lint\n" in jobs
+    assert publish.startswith(
+        "    needs: test\n"
+        "    if: github.ref == 'refs/heads/main'"
+        " && github.event_name != 'pull_request'\n"
+    )
