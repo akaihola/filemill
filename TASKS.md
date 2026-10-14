@@ -16,9 +16,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [*] Share Chromium, and the server where tests allow, across `server/tests/test_browser_new_ui.py`. Per-test startup and teardown cost about 200s of the 611s server suite in run 38630672866 (see [91]). Measure pytest workers afterwards.
-  <!-- hai:{"id":"simple-adb180cf-7f03-46bb-86ca-b374139716ab","createdAt":"2026-10-14T20:37:41.753Z","updatedAt":"2026-10-14T21:39:04.059Z"} -->
-
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
   column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
@@ -70,6 +67,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [*] Share Chromium, and the server where tests allow, across `server/tests/test_browser_new_ui.py`. Per-test startup and teardown cost about 200s of the 611s server suite in run 38630672866 (see [91]). Measure pytest workers afterwards.
+  <!-- hai:{"id":"simple-adb180cf-7f03-46bb-86ca-b374139716ab","createdAt":"2026-10-14T20:37:41.753Z","updatedAt":"2026-10-14T22:20:24.185Z"} -->
 
 - [ ] [*] `static/test-rich.py::test_markdown_viewport` counts `td` cells without waiting after viewport and fullscreen changes; it failed `assert 0 == 20` in the `--dev` suite of run 38630672866.
   <!-- hai:{"id":"simple-e983b058-8891-4280-9712-04ba9dcbfb61","createdAt":"2026-10-14T20:37:42.533Z","updatedAt":"2026-10-14T21:37:08.382Z"} -->
