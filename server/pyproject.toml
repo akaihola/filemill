@@ -56,6 +56,7 @@ dev = [
     # it would download a revision Nix already provides. Re-pin instead:
     #   uv lock --upgrade-package "$(grep -E '^playwright[=<>~!]' "$UV_CONSTRAINT")"
     "playwright~=1.63.0",
+    "pyyaml>=6",
 ]
 
 [tool.ruff]
