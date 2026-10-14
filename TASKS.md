@@ -9,10 +9,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [92] Scope CI cancellation to the same branch or pull request
-  <!-- hai:{"id":"simple-e40d6c02-1029-4f85-b7d6-3189430599b8","createdAt":"2026-10-12T13:32:54.478Z","updatedAt":"2026-10-12T13:32:54.478Z"} -->
-
 ## Scheduled
+
+- [92] Scope CI cancellation to the same branch or pull request
+  <!-- hai:{"id":"simple-e40d6c02-1029-4f85-b7d6-3189430599b8","createdAt":"2026-10-12T13:32:54.478Z","updatedAt":"2026-10-14T08:39:50.090Z"} -->
 
 - [90] Run the static bundle, static development and server CI suites in parallel
   <!-- hai:{"id":"simple-8b926d81-b116-4839-987a-c05a6e7930a0","createdAt":"2026-10-12T13:32:52.839Z","updatedAt":"2026-10-14T08:22:05.337Z"} -->
