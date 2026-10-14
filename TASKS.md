@@ -9,6 +9,15 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- [90] Run the static bundle, static development and server CI suites in parallel
+  <!-- hai:{"id":"simple-8b926d81-b116-4839-987a-c05a6e7930a0","createdAt":"2026-10-12T13:32:52.839Z","updatedAt":"2026-10-12T13:32:52.839Z"} -->
+
+- [91] Report the slowest tests in each CI suite
+  <!-- hai:{"id":"simple-80260468-7074-4230-adda-ff1ce00e1fe5","createdAt":"2026-10-12T13:32:53.680Z","updatedAt":"2026-10-12T13:32:53.680Z"} -->
+
+- [92] Scope CI cancellation to the same branch or pull request
+  <!-- hai:{"id":"simple-e40d6c02-1029-4f85-b7d6-3189430599b8","createdAt":"2026-10-12T13:32:54.478Z","updatedAt":"2026-10-12T13:32:54.478Z"} -->
+
 ## Scheduled
 
 ## In Progress
@@ -564,7 +573,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 [77]: docs/tasks/77-md-tight-bullet-list-line-spacing.md
 
-<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87 -->
+<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92 -->
 
 [78]: docs/tasks/78-wide-document-scrolls-instead-of-expanding-the-preview.md
 
@@ -589,6 +598,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 [88]: docs/tasks/88-status-bar-hints-wrap-and-get-clipped.md
 
 [89]: docs/tasks/89-markdown-previews-show-two-raw-buttons.md
+
+[90]: docs/tasks/90-run-the-static-bundle-static-development-and-server-ci-suites-in-paral.md
+
+[91]: docs/tasks/91-report-the-slowest-tests-in-each-ci-suite.md
+
+[92]: docs/tasks/92-scope-ci-cancellation-to-the-same-branch-or-pull-request.md
 
 ## Rules
 
