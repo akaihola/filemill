@@ -493,10 +493,23 @@ def test_rich(bundle, fake_handle, async_playwright):
 
 def test_markdown_viewport(bundle, playwright, static_origin):
     """Wide Markdown stays reachable in normal and fullscreen previews."""
+    from playwright.sync_api import expect
+
     with playwright.chromium.launch() as browser:
         page = browser.new_page()
         page.goto(f"{static_origin}/static/{bundle.name}")
         page.evaluate(VENDOR_MAP)
+        # Every resize rebuilds #preview and refills it asynchronously. A slow
+        # renderer makes that window wide enough that a check which does not
+        # wait for the new Markdown fails every run, not one CI run in many.
+        page.evaluate("""() => {
+          const kind = classifyFile('wide.md').preview;
+          const entry = RENDERERS.find((e) => e.kind === kind);
+          RENDERERS.unshift({...entry, render: async (...args) => {
+            await new Promise((done) => setTimeout(done, 300));
+            return entry.render(...args);
+          }});
+        }""")
         page.evaluate(r"""async () => {
           const text = '# Heading' + 'Long'.repeat(30) + '\n\n' +
             '**bold** and *italic* [https://example.com/' + 'path'.repeat(40) +
@@ -513,20 +526,29 @@ def test_markdown_viewport(bundle, playwright, static_origin):
         page.wait_for_selector('.pv-markdown table')
         page.keyboard.press('ArrowRight')
         for width, height in ((390, 844), (320, 568), (844, 390), (1500, 900)):
+            # The resize replaces #preview; mark the old one so the wait below
+            # cannot pass on it before the replacement arrives.
+            page.evaluate("document.querySelector('#preview').dataset.stale = '1'")
             page.set_viewport_size({"width": width, "height": height})
             for fullscreen in (False, True):
                 if fullscreen:
                     page.locator('#pv-fullscreen').click()
+                # Measure the re-rendered Markdown, not the empty pane before it.
                 page.wait_for_function("""() => {
-                  const pane = document.querySelector('#preview').getBoundingClientRect();
-                  return pane.left >= -1 && pane.right <= innerWidth + 1;
+                  const pv = document.querySelector('#preview');
+                  const pane = pv.getBoundingClientRect();
+                  return !pv.dataset.stale &&
+                    pane.left >= -1 && pane.right <= innerWidth + 1 &&
+                    pv.querySelectorAll('.pv-markdown td').length === 20;
                 }""")
                 sizes = page.evaluate("""() => {
                   const body = document.querySelector('.pv-body');
                   const doc = document.documentElement;
                   return {width: body.clientWidth, scroll: body.scrollWidth,
-                    pageWidth: doc.clientWidth, pageScroll: doc.scrollWidth};
+                    pageWidth: doc.clientWidth, pageScroll: doc.scrollWidth,
+                    cells: body.querySelectorAll('.pv-markdown td').length};
                 }""")
+                assert sizes['cells'] == 20, (width, fullscreen, sizes)
                 assert sizes['scroll'] <= sizes['width'] + 1, (width, fullscreen, sizes)
                 assert sizes['pageScroll'] <= sizes['pageWidth'], sizes
                 assert page.locator('.pv-markdown strong').inner_text() == 'bold'
@@ -534,7 +556,8 @@ def test_markdown_viewport(bundle, playwright, static_origin):
                 assert page.locator('.pv-markdown a').get_attribute('href') == 'https://example.com/'
                 assert 'code ' * 60 in page.locator('.pv-markdown pre').text_content()
                 table = page.locator('.pv-markdown table')
-                assert table.locator('td').count() == 20
+                # A resize that lands late rebuilds the preview once more.
+                expect(table.locator('td')).to_have_count(20)
                 assert table.evaluate("""e => {
                   e.scrollLeft = e.scrollWidth;
                   return e.scrollWidth <= e.clientWidth + e.scrollLeft + 1;
