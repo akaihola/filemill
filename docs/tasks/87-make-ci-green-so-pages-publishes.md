@@ -143,3 +143,13 @@ The same run skipped all 65 `test_browser_keyboard.py` tests: the suite
 skipped itself when `PLAYWRIGHT_BROWSERS_PATH` was unset, a dev-machine
 convention CI does not follow. The skip is gone; a missing browser now fails
 loudly at launch instead.
+
+## Fourth CI run, 2026-10-14
+
+Run 38534616531 on `3723854`: the bundle suite passed (116) and the modular
+suite failed one test, `test_copy_refusal_fallback[0]`, reading the fallback
+selection empty. The `copy_page` fixture clicked `note.md` and yielded while
+the preview was still loading; the preview's late render rewrites the status
+path and drops a selection made before it. The fixture now waits for the
+preview. All 30 copy tests pass in both editions. The server edition did not
+run in this round.

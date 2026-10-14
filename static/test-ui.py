@@ -2588,6 +2588,9 @@ def copy_page(bundle, fake_handle, playwright):
     page.evaluate("async () => { await mount(__mk(0)); __clip(false); }")
     page.locator('.col[data-i="0"] .row[title="mixed"]').click()
     page.locator('.col[data-i="1"] .row[title="note.md"]').click()
+    # The preview's late render rewrites the status path and drops a fallback
+    # selection made before it; CI once read that selection empty.
+    page.wait_for_selector("#preview .pv-text")
     page.clock.install(time=1000000)
     page.clock.pause_at(1000000)
     try:
