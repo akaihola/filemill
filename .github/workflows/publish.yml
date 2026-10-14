@@ -90,21 +90,26 @@ jobs:
         run: uv run --project server playwright install --with-deps chromium
 
       # --durations=20 lists the slowest setup, call and teardown phases, also
-      # when tests fail. One step per suite keeps the three reports apart.
+      # when tests fail. One step per suite keeps the three reports apart, and
+      # `!cancelled()` runs each suite after an earlier one fails, so every
+      # report appears; the job still fails.
       - name: Test the bundle
         run: uv run --project server pytest static --durations=20
 
       - name: Test the shared sources
+        if: ${{ !cancelled() }}
         run: uv run --project server pytest static --dev --durations=20
 
       # The server shells out to ripgrep for content search; the runner image
       # does not ship it, and without it every search test gets a 503.
       - name: Install ripgrep
+        if: ${{ !cancelled() }}
         run: sudo apt-get install -y ripgrep
 
       # The same ui/, driven against a real server — this is what would catch a
       # change that suits one project and breaks the other.
       - name: The server edition
+        if: ${{ !cancelled() }}
         working-directory: server
         run: uv run pytest --cov=src/filemill --cov-branch --cov-report=term-missing --durations=20
 

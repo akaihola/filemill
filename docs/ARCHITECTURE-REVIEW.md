@@ -98,7 +98,9 @@ Keep these.
 - Decisions are recorded with their measurements in `docs/adr/`.
 - The quality gate runs. CI runs `deno fmt --check`, `deno lint`, the model
   tests, `build-index.py --check`, both static suites (bundle and `--dev`) and
-  the server suite with coverage (`.github/workflows/publish.yml`). Pre-commit
+the server suite with coverage (`.github/workflows/publish.yml`), each in its
+own step with `--durations=20`; a failing suite does not skip the later ones.
+Pre-commit
   runs ruff, ruff format, mypy, deno and the bundle check. The baseline and
   dispositions are in `docs/testing/remaining-red-tests.md`.
 - Real filesystem tests without a picker: `static/test-url.py` drives the real
