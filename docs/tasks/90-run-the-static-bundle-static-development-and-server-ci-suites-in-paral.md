@@ -42,3 +42,12 @@ to main outside pull requests.
 - Record a before/after comparison including wall time, summed runner time,
   test counts and outcomes. Faster execution must preserve the quality gate in
   `docs/ARCHITECTURE-REVIEW.md`.
+
+## Implementation plan, 2026-10-14
+
+1. Add structural workflow guards and demonstrate failure on serial scheduling.
+2. Move shared UI and freshness checks into lint; run the three browser suites
+   in a matrix after lint, with fail-fast disabled and locked browser installs.
+3. Validate the quality gate, measure a GitHub Actions run against the baseline,
+   and record counts, outcomes, wall time and summed runner time.
+4. Rebase and merge into main, then complete the tracker pending acceptance.
