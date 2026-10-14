@@ -19,9 +19,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [*] `static/test-rich.py::test_markdown_viewport` counts `td` cells without waiting after viewport and fullscreen changes; it failed `assert 0 == 20` in the `--dev` suite of run 38630672866.
-  <!-- hai:{"id":"simple-e983b058-8891-4280-9712-04ba9dcbfb61","createdAt":"2026-10-14T20:37:42.533Z","updatedAt":"2026-10-14T21:25:32.421Z"} -->
-
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
   column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
@@ -73,6 +70,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [*] `static/test-rich.py::test_markdown_viewport` counts `td` cells without waiting after viewport and fullscreen changes; it failed `assert 0 == 20` in the `--dev` suite of run 38630672866.
+  <!-- hai:{"id":"simple-e983b058-8891-4280-9712-04ba9dcbfb61","createdAt":"2026-10-14T20:37:42.533Z","updatedAt":"2026-10-14T21:37:08.382Z"} -->
 
 - [ ] [91] Report the slowest tests in each CI suite
   <!-- hai:{"id":"simple-80260468-7074-4230-adda-ff1ce00e1fe5","createdAt":"2026-10-12T13:32:53.680Z","updatedAt":"2026-10-14T13:04:13.619Z"} -->
