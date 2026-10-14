@@ -77,6 +77,7 @@ def test_ci_runs_independent_suites_after_lint_and_gates_publication():
     test = jobs["test"]
     assert "strategy" in test, "The three suites still run serially in one job"
     assert test["needs"] == "lint"
+    assert "if" not in test
     assert test["strategy"]["fail-fast"] is False
     assert "max-parallel" not in test["strategy"]
     assert test["strategy"]["matrix"]["include"] == [
@@ -105,9 +106,14 @@ def test_ci_runs_independent_suites_after_lint_and_gates_publication():
     assert "if" not in install
     suite = steps[-1]
     assert suite["run"] == "${{ matrix.command }}"
+    assert "if" not in suite
     assert suite["working-directory"] == "${{ matrix.directory }}"
     assert not test.get("continue-on-error", False)
     assert all(not step.get("continue-on-error", False) for step in steps)
+    assert not jobs["lint"].get("continue-on-error", False)
+    assert all(
+        not step.get("continue-on-error", False) for step in jobs["lint"]["steps"]
+    )
     lint = "\n".join(s.get("run", "") for s in jobs["lint"]["steps"])
     for check in (
         "pre-commit run --all-files",
