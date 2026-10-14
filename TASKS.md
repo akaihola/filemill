@@ -16,9 +16,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [91] Report the slowest tests in each CI suite
-  <!-- hai:{"id":"simple-80260468-7074-4230-adda-ff1ce00e1fe5","createdAt":"2026-10-12T13:32:53.680Z","updatedAt":"2026-10-14T08:36:39.113Z"} -->
-
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
   column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
@@ -70,6 +67,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [91] Report the slowest tests in each CI suite
+  <!-- hai:{"id":"simple-80260468-7074-4230-adda-ff1ce00e1fe5","createdAt":"2026-10-12T13:32:53.680Z","updatedAt":"2026-10-14T13:04:13.619Z"} -->
 
 - [ ] [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-10T19:58:38.726Z"} -->
