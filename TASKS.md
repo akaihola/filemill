@@ -16,9 +16,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [92] Scope CI cancellation to the same branch or pull request
-  <!-- hai:{"id":"simple-e40d6c02-1029-4f85-b7d6-3189430599b8","createdAt":"2026-10-12T13:32:54.478Z","updatedAt":"2026-10-14T08:40:23.563Z"} -->
-
 - [~] [91] Report the slowest tests in each CI suite
   <!-- hai:{"id":"simple-80260468-7074-4230-adda-ff1ce00e1fe5","createdAt":"2026-10-12T13:32:53.680Z","updatedAt":"2026-10-14T08:36:39.113Z"} -->
 
@@ -76,6 +73,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [92] Scope CI cancellation to the same branch or pull request
+  <!-- hai:{"id":"simple-e40d6c02-1029-4f85-b7d6-3189430599b8","createdAt":"2026-10-12T13:32:54.478Z","updatedAt":"2026-10-14T08:41:57.216Z"} -->
 
 - [x] [89] Markdown previews show two Raw buttons
   <!-- hai:{"updatedAt":"2026-10-11T19:28:33.081Z"} -->
