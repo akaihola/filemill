@@ -9,9 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [90] Run the static bundle, static development and server CI suites in parallel
-  <!-- hai:{"id":"simple-8b926d81-b116-4839-987a-c05a6e7930a0","createdAt":"2026-10-12T13:32:52.839Z","updatedAt":"2026-10-12T13:32:52.839Z"} -->
-
 - [91] Report the slowest tests in each CI suite
   <!-- hai:{"id":"simple-80260468-7074-4230-adda-ff1ce00e1fe5","createdAt":"2026-10-12T13:32:53.680Z","updatedAt":"2026-10-12T13:32:53.680Z"} -->
 
@@ -19,6 +16,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-e40d6c02-1029-4f85-b7d6-3189430599b8","createdAt":"2026-10-12T13:32:54.478Z","updatedAt":"2026-10-12T13:32:54.478Z"} -->
 
 ## Scheduled
+
+- [90] Run the static bundle, static development and server CI suites in parallel
+  <!-- hai:{"id":"simple-8b926d81-b116-4839-987a-c05a6e7930a0","createdAt":"2026-10-12T13:32:52.839Z","updatedAt":"2026-10-14T08:22:05.337Z"} -->
 
 ## In Progress
 
