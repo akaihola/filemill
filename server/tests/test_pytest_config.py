@@ -83,17 +83,17 @@ def test_ci_runs_independent_suites_after_lint_and_gates_publication():
     assert test["strategy"]["matrix"]["include"] == [
         {
             "suite": "static-bundle",
-            "command": "uv run --project server pytest static",
+            "command": "uv run --project server pytest static --durations=20",
             "directory": ".",
         },
         {
             "suite": "static-development",
-            "command": "uv run --project server pytest static --dev",
+            "command": "uv run --project server pytest static --dev --durations=20",
             "directory": ".",
         },
         {
             "suite": "server",
-            "command": "uv run pytest --cov=src/filemill --cov-branch --cov-report=term-missing",
+            "command": "uv run pytest --cov=src/filemill --cov-branch --cov-report=term-missing --durations=20",
             "directory": "server",
         },
     ]
@@ -136,7 +136,7 @@ def test_ci_reports_the_slowest_tests_of_each_suite():
 
     Run 38155597653 (2026-10-11) logged only suite totals, so the time spent in
     browser fixtures could not be told apart from the tests. Each suite runs in
-    its own named step, which keeps the three reports apart in the log.
+    its own named matrix leg, which keeps the three reports apart in the log.
     """
     workflow = (SERVER.parent / ".github" / "workflows" / "publish.yml").read_text()
     runs = [
@@ -146,28 +146,22 @@ def test_ci_reports_the_slowest_tests_of_each_suite():
     ]
     assert len(runs) == 3
     assert all("--durations=20" in run for run in runs), runs
-    steps = [
-        line.split("name:", 1)[1].strip()
-        for line in workflow.splitlines()
-        if line.strip().startswith("- name:")
-    ]
-    assert {
-        "Test the bundle",
-        "Test the shared sources",
-        "The server edition",
-    } <= set(steps)
+    job = yaml.safe_load(workflow)["jobs"]["test"]
+    assert job["name"] == "Test ${{ matrix.suite }}"
+    assert len({leg["suite"] for leg in job["strategy"]["matrix"]["include"]}) == 3
 
 
 def test_ci_runs_every_suite_after_an_earlier_suite_fails():
-    """A failing suite must not hide the next suite's results and durations.
+    """A failing matrix leg must not cancel the other suites or their reports.
 
     Run 38534616531 (2026-10-14) failed one static development test and so
-    skipped the server suite entirely. The job still fails either way.
+    skipped the server suite entirely in the earlier serial job.
     """
-    workflow = (SERVER.parent / ".github" / "workflows" / "publish.yml").read_text()
-    for name in ("Test the shared sources", "Install ripgrep", "The server edition"):
-        step = workflow.split(f"- name: {name}\n", 1)[1].split("\n\n", 1)[0]
-        assert "if: ${{ !cancelled() }}" in step, name
+    job = yaml.safe_load(
+        (SERVER.parent / ".github" / "workflows" / "publish.yml").read_text()
+    )["jobs"]["test"]
+    assert job["strategy"]["fail-fast"] is False
+    assert "if" not in job["steps"][-1]
 
 
 def _workflow_concurrency() -> dict[str, str]:
@@ -216,7 +210,7 @@ def test_ci_publishes_only_from_main_after_every_check():
     assert "\n  lint:\n" in jobs
     assert "\n  test:\n    needs: lint\n" in jobs
     assert publish.startswith(
-        "    needs: test\n"
+        "    needs: [lint, test]\n"
         "    if: github.ref == 'refs/heads/main'"
         " && github.event_name != 'pull_request'\n"
     )

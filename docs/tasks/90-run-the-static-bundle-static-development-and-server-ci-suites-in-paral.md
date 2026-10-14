@@ -143,3 +143,16 @@ The frontend and server implementation were unchanged by this task.
 The worktree issue remains In Progress. Merge, tracker completion and deployment
 are deferred pending a passing quality gate and the required actual CI
 measurement; user acceptance has not been checked.
+
+### Rebase integration
+
+Main advanced during validation with [91]'s `--durations=20` reporting and
+[92]'s concurrency scope. The rebase preserves both. Workflow guards from those
+changes now check named matrix legs and disabled fail-fast rather than serial
+step names and `!cancelled()` conditions. Publication guards require both lint
+and the full matrix. The local full-suite measurement above preceded this
+rebase and did not include duration reporting. Final structural checks cover
+the integrated workflow; a new complete CI measurement remains required.
+
+Final integrated validation: 19 workflow/documentation tests passed, all six
+pre-commit hooks passed, and no conflict markers remain in the changed files.
