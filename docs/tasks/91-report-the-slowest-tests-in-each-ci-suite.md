@@ -121,3 +121,61 @@ failed-test timeout appears.
    accounts for the 576s tail.
 4. Find out why three tests last exactly 10.04s before changing any
    timeout.
+
+## Follow-ups, 2026-10-14
+
+Follow-ups 1 and 2 already had owners. [90] is in progress in another
+worktree, and the `wait_for_timeout` replacement is on
+`feature/replace-timed-browse-6dn`.
+
+### The 10.04s tests
+
+There is no shared ceiling. Locally the same four tests took 15.45s
+(`[1500-20.025em]`), 15.43s (landscape tap), 11.26s (`[414-None]`) and 11.00s
+(`[413-None]`). The landscape test makes 12 taps, each with a fixed 600 ms
+wait plus a `_dial_settled` poll of at least 300 ms. The fractional-stop test
+makes about 19 settles. On the CI runner those sums happened to land on the
+same value. `_dial_settled` raises after 6s, and the selector waits allow 20s,
+so a stuck dial fails rather than stalling.
+
+### Every phase
+
+[Run 38630672866](https://github.com/akaihola/filemill/actions/runs/38630672866)
+came from the throwaway draft PR #1, whose root `conftest.py` set
+`config.option.durations = 0`. A conftest change was needed because gogo's
+token cannot push workflow files or dispatch runs. The PR is closed and its
+branch deleted. Rows under 5 ms are omitted by pytest.
+
+| Suite        | Outcome               | Total   | Setup  | Call   | Teardown |
+| ------------ | --------------------- | ------- | ------ | ------ | -------- |
+| Bundle       | 116 passed            | 220.33s | 39.3s  | 173.5s | 7.0s     |
+| Development  | 1 failed, 115 passed  | 222.80s | 40.0s  | 174.9s | 7.7s     |
+| Server       | 841 passed            | 611.12s | 168.5s | 379.5s | 57.0s    |
+
+By file, setup / call / teardown:
+
+- `static/test-ui.py`: 19.3s / 118.7s / 1.8s (bundle). `test_ui` is still
+  most of the call time; [25] splits it.
+- `server/tests/test_browser_new_ui.py`: 154.9s / 216.2s / 45.4s over 208
+  tests. Each test starts a new `uvicorn` subprocess (`server`), a new
+  Playwright driver (`playwright`) and a new Chromium (`page`). That costs
+  0.74s on average to set up and 0.22s to tear down, about 200s, or a third
+  of the server suite.
+- `server/tests/test_browser_keyboard.py`: 13.3s / 159.9s / 11.6s over 65
+  tests. It also starts a `filemill` subprocess per test (`live_server`,
+  0.20s setup), but it launches Chromium inside `_ui_page`, during the call.
+  That makes its startup cost show up as call time alongside the fixed waits.
+- Every non-browser server test file adds up to under 4s.
+
+The development run failed `static/test-rich.py::test_markdown_viewport` with
+`assert 0 == 20`. The test waits for `.pv-markdown table` once, then counts
+`td` cells without waiting after viewport and fullscreen changes. That is a
+race, not a slowdown. It is filed as its own issue.
+
+### Resulting work
+
+- Reusing fixtures in `test_browser_new_ui.py` is the largest lever the data
+  supports, at up to about 200s on what will be the critical-path job once
+  [90] lands. It is filed as an issue. Consider pytest workers only after
+  that, since every worker would pay the same per-test startup.
+- No timeout needs changing. Neither run lost time to a failed-test timeout.
