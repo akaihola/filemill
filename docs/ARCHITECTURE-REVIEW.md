@@ -98,11 +98,12 @@ Keep these.
 - Decisions are recorded with their measurements in `docs/adr/`.
 - The quality gate runs. CI runs `deno fmt --check`, `deno lint`, the model
   tests, `build-index.py --check`, both static suites (bundle and `--dev`) and
-the server suite with coverage (`.github/workflows/publish.yml`), each in its
-own step with `--durations=20`; a failing suite does not skip the later ones.
-A new run cancels only older runs of the same workflow and ref, so pull
-requests cannot cancel main; only main publishes, after every check.
-Pre-commit
+  the server suite with coverage (`.github/workflows/publish.yml`), each with
+  `--durations=20`. Shared UI and bundle checks run in lint; all three browser
+  suites then run as parallel matrix legs with fail-fast disabled. Publishing
+  requires lint and every leg to pass ([90], 2026-10-14). A new run cancels only
+  older runs of the same workflow and ref, so pull requests cannot cancel main;
+  only main publishes. Pre-commit
   runs ruff, ruff format, mypy, deno and the bundle check. The baseline and
   dispositions are in `docs/testing/remaining-red-tests.md`.
 - Real filesystem tests without a picker: `static/test-url.py` drives the real
