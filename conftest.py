@@ -240,3 +240,8 @@ def special_heading_document(request):
         marker = "~" if nested else "-"
         text += f"{heading}\n{marker * len(heading)}\n\nREADME BODY\n\nOther\n{marker * 5}\n\nOTHER BODY\n"
     return f"special.{kind}", text, nested
+
+
+def pytest_configure(config):
+    # Temporary [91] follow-up measurement: report every phase, not the top 20.
+    config.option.durations = 0
