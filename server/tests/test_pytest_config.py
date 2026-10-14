@@ -1,3 +1,4 @@
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -56,3 +57,30 @@ def test_ci_installs_ripgrep_before_the_server_suite():
     assert workflow.index("apt-get install -y ripgrep") < workflow.index(
         "name: The server edition"
     )
+
+
+def test_ci_reports_the_slowest_tests_of_each_suite():
+    """Every CI pytest run prints its 20 slowest setup, call and teardown phases.
+
+    Run 38155597653 (2026-10-11) logged only suite totals, so the time spent in
+    browser fixtures could not be told apart from the tests. Each suite runs in
+    its own named step, which keeps the three reports apart in the log.
+    """
+    workflow = (SERVER.parent / ".github" / "workflows" / "publish.yml").read_text()
+    runs = [
+        line.strip()
+        for line in workflow.splitlines()
+        if re.search(r"\buv run (--project server )?pytest\b", line)
+    ]
+    assert len(runs) == 3
+    assert all("--durations=20" in run for run in runs), runs
+    steps = [
+        line.split("name:", 1)[1].strip()
+        for line in workflow.splitlines()
+        if line.strip().startswith("- name:")
+    ]
+    assert {
+        "Test the bundle",
+        "Test the shared sources",
+        "The server edition",
+    } <= set(steps)

@@ -89,10 +89,13 @@ jobs:
       - name: Install the locked Playwright's browsers
         run: uv run --project server playwright install --with-deps chromium
 
-      - name: Test the bundle and the shared sources
-        run: |
-          uv run --project server pytest static
-          uv run --project server pytest static --dev
+      # --durations=20 lists the slowest setup, call and teardown phases, also
+      # when tests fail. One step per suite keeps the three reports apart.
+      - name: Test the bundle
+        run: uv run --project server pytest static --durations=20
+
+      - name: Test the shared sources
+        run: uv run --project server pytest static --dev --durations=20
 
       # The server shells out to ripgrep for content search; the runner image
       # does not ship it, and without it every search test gets a 503.
@@ -103,7 +106,7 @@ jobs:
       # change that suits one project and breaks the other.
       - name: The server edition
         working-directory: server
-        run: uv run pytest --cov=src/filemill --cov-branch --cov-report=term-missing
+        run: uv run pytest --cov=src/filemill --cov-branch --cov-report=term-missing --durations=20
 
   publish:
     needs: test
