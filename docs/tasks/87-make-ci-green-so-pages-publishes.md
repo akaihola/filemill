@@ -153,3 +153,11 @@ the preview was still loading; the preview's late render rewrites the status
 path and drops a selection made before it. The fixture now waits for the
 preview. All 30 copy tests pass in both editions. The server edition did not
 run in this round.
+
+## Done, 2026-10-14
+
+Run 38564017994 on `9c67d66` passed: lint, both static suites (116 each),
+the server edition (841, the keyboard suite included) and `publish`.
+<https://akaihola.github.io/filemill/> returns the static edition (200,
+349,556 bytes, title "Filemill") and its manifest. All three acceptance
+criteria hold.
