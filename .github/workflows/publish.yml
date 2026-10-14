@@ -20,8 +20,11 @@ on:
 permissions:
   contents: read
 
+# A new run supersedes an older one of the same ref only, so a pull request
+# cannot cancel main or another pull request. Only main publishes, and its
+# runs share one group, which keeps Pages deployments serialized.
 concurrency:
-  group: pages
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

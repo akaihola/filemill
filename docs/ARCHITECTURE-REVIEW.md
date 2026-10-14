@@ -100,6 +100,8 @@ Keep these.
   tests, `build-index.py --check`, both static suites (bundle and `--dev`) and
 the server suite with coverage (`.github/workflows/publish.yml`), each in its
 own step with `--durations=20`; a failing suite does not skip the later ones.
+A new run cancels only older runs of the same workflow and ref, so pull
+requests cannot cancel main; only main publishes, after every check.
 Pre-commit
   runs ruff, ruff format, mypy, deno and the bundle check. The baseline and
   dispositions are in `docs/testing/remaining-red-tests.md`.

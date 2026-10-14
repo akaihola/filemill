@@ -32,3 +32,21 @@ The expression follows
   repeated runs of the same workflow/ref produce the same group.
 - PRs cannot cancel main through the concurrency group or publish to Pages.
   Main publishing still requires all checks to pass.
+
+## Implementation (2026-10-14)
+
+The workflow-level group is now `${{ github.workflow }}-${{ github.ref }}`
+with `cancel-in-progress: true`. No separate deployment group was added: only
+main publishes, and all main runs share one group, so Pages deployments stay
+serialized. A job-level group could not protect a deployment anyway, because
+workflow-level cancellation cancels the whole run.
+
+`server/tests/test_pytest_config.py` covers it:
+
+- `test_ci_cancels_only_superseded_runs_of_the_same_ref` failed against
+  `group: pages` and passes now. It substitutes `github.workflow` and
+  `github.ref` into the group and checks that repeated main or PR runs share a
+  group, while two PR refs, main versus a PR, and two workflows differ.
+- `test_ci_publishes_only_from_main_after_every_check` guards that `publish`
+  needs `test` (which needs `lint`) and runs only for main outside pull
+  requests.
