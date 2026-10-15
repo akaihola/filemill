@@ -231,3 +231,32 @@ The failed complete run remains part of the evidence.
 [Draft PR 2](https://github.com/akaihola/filemill/pull/2) was opened to exercise
 the pull-request trigger because direct workflow dispatch remains unauthorized.
 The task remains In Progress until the quality gate passes.
+
+## Completion, 2026-10-15
+
+[Confirmation run 38771009899](https://github.com/akaihola/filemill/actions/runs/38771009899)
+on `4851e83` passed lint and all three suites:
+
+| Suite | Outcome | Pytest duration |
+| --- | --- | ---: |
+| Static bundle | 116 passed | 234.91 s |
+| Static development | 116 passed | 214.02 s |
+| Server | 843 passed, 90% statement/branch coverage | 471.20 s |
+
+All 1075 test invocations passed, with no skips. The extra server invocation
+versus the original parallel run comes from main's browser-fixture test. Lint
+finished at 16:41:06 UTC; bundle and server started at 16:41:09 and development
+at 16:41:10. Workflow wall time was 529 s (8m 49s); summed lint/test runner
+time was 1034 s (17m 14s). Publication was correctly skipped for the PR event.
+This further improvement includes main's fixture changes; the closer
+comparison for the workflow scheduling change remains the 20m 39s versus
+12m 05s measurement above. Earlier failed runs and their local retries remain
+recorded rather than being counted as passes. No assertions or gates were
+weakened.
+
+PR #2 merged at `06792cb871c7ab16b23c85eddd197c409f342eea`. Main preserves the
+concurrent documentation updates, duration reporting, cancellation scope,
+Markdown wait repair and shared browser fixtures. The final workflow and
+architecture review retain every quality check. The issue is complete and
+moved to Completed / Accepted with `[ ]`, pending user acceptance. Publication
+on main remains conditional on lint and every matrix leg passing.
