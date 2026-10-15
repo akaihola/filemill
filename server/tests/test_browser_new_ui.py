@@ -5,8 +5,12 @@ frontend byte-for-byte, and here it is browsing a real directory tree over
 `/api/dir` and `/api/preview` with nothing about `core/` changed.
 
 Unlike the HTMX suite, nothing here reaches the network. The app serves every
-asset, `test_nothing_is_fetched_from_a_cdn` holds it to that, and so these 27
+asset, `test_nothing_is_fetched_from_a_cdn` holds it to that, and so these
 tests pass in an offline sandbox.
+
+The module starts one Chromium and one server over a read-only tree. Each
+test gets a fresh browser context. A test that changes files asks for
+`ui_root` and gets a writable copy of the tree with its own server.
 
     timeout 600 uv run pytest tests/test_browser_new_ui.py
 
@@ -17,6 +21,7 @@ CONTRIBUTING.md, "Do Not Pass `--with playwright==…`".
 
 from __future__ import annotations
 
+import contextlib
 import io
 import json
 import random
@@ -84,8 +89,7 @@ def _minimal_docx(text: str) -> bytes:
     return buf.getvalue()
 
 
-@pytest.fixture()
-def ui_root(tmp_path: Path) -> Path:
+def _build_tree(tmp_path: Path) -> Path:
     """A tree with enough shape to exercise columns, previews and deep links."""
     (tmp_path / "notes").mkdir()
     (tmp_path / "notes" / "deep").mkdir()
@@ -219,13 +223,43 @@ def ui_root(tmp_path: Path) -> Path:
     return tmp_path
 
 
+def _chmod_tree(root: Path, dirs: int, files: int) -> None:
+    for path in [root, *root.rglob("*")]:
+        path.chmod(dirs if path.is_dir() else files)
+
+
+@pytest.fixture(scope="module")
+def shared_root(tmp_path_factory):
+    """One tree for the whole module, read-only so no test can change it."""
+    root = _build_tree(tmp_path_factory.mktemp("shared-root"))
+    _chmod_tree(root, 0o555, 0o444)
+    try:
+        yield root
+    finally:
+        _chmod_tree(root, 0o755, 0o644)
+
+
 @pytest.fixture()
-def server(ui_root: Path, tmp_path_factory):
+def ui_root(shared_root: Path, tmp_path: Path) -> Path:
+    """A writable copy of the shared tree, served by a server of its own.
+
+    Ask for this in any test that changes the tree, directly or through the
+    UI: the `server` fixture only starts a private server when it is
+    requested.
+    """
+    root = tmp_path / "root"
+    shutil.copytree(shared_root, root, symlinks=True, copy_function=shutil.copyfile)
+    _chmod_tree(root, 0o755, 0o644)
+    return root
+
+
+@contextlib.contextmanager
+def _serve(root: Path, log_dir: Path):
     """Run the real app in a subprocess — TestClient cannot serve a browser."""
     port = _free_port()
     # Keep stderr: when this does not come up, its traceback is the only thing
     # that says why, and discarding it turns every cause into "did not start".
-    log = tmp_path_factory.mktemp("server") / "stderr.log"
+    log = log_dir / "stderr.log"
     rg_dir = str(Path(shutil.which("rg") or "/usr/bin/rg").parent)
     with log.open("wb") as fh:
         proc = subprocess.Popen(
@@ -238,14 +272,13 @@ def server(ui_root: Path, tmp_path_factory):
                     "log_level='error')"
                 ),
             ],
-            env={"FILEMILL_ROOT": str(ui_root), "PATH": f"{rg_dir}:/usr/bin:/bin"},
+            env={"FILEMILL_ROOT": str(root), "PATH": f"{rg_dir}:/usr/bin:/bin"},
             stdout=subprocess.DEVNULL,
             stderr=fh,
         )
     base = f"http://127.0.0.1:{port}"
-    # Importing the application takes a couple of seconds, and every test in this
-    # module pays it in a fresh process — on a loaded machine ten seconds was
-    # not enough, which read as a flake.
+    # Importing the application takes a couple of seconds — on a loaded
+    # machine ten seconds was not enough, which read as a flake.
     deadline = time.monotonic() + 60
     while time.monotonic() < deadline:
         if proc.poll() is not None:
@@ -263,6 +296,23 @@ def server(ui_root: Path, tmp_path_factory):
     finally:
         proc.terminate()
         proc.wait(timeout=10)
+
+
+@pytest.fixture(scope="module")
+def shared_server(shared_root: Path, tmp_path_factory):
+    with _serve(shared_root, tmp_path_factory.mktemp("server")) as base:
+        yield base
+
+
+@pytest.fixture()
+def server(request, tmp_path_factory):
+    """The shared server, or a private one over `ui_root` if the test uses it."""
+    if "ui_root" not in request.fixturenames:
+        yield request.getfixturevalue("shared_server")
+        return
+    root = request.getfixturevalue("ui_root")
+    with _serve(root, tmp_path_factory.mktemp("server")) as base:
+        yield base
 
 
 class Harness:
@@ -297,13 +347,43 @@ class Harness:
         self._pg.wait_for_timeout(400)
 
 
+@pytest.fixture(scope="module")
+def browser():
+    """One Chromium for the module; each test gets a fresh context in it."""
+    sync_playwright = pytest.importorskip("playwright.sync_api").sync_playwright
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        try:
+            yield browser
+        finally:
+            browser.close()
+
+
 @pytest.fixture()
-def page(server: str, playwright):
-    browser = playwright.chromium.launch(headless=True)
+def page(server: str, browser):
+    context = browser.new_context(viewport={"width": 1500, "height": 900})
     try:
-        yield Harness(browser.new_page(viewport={"width": 1500, "height": 900}), server)
+        yield Harness(context.new_page(), server)
     finally:
-        browser.close()
+        context.close()
+
+
+def test_tests_without_ui_root_cannot_write_the_served_tree(page):
+    """A test that writes must ask for `ui_root`, which buys it a private tree.
+
+    Every other test shares one server, so a stray write would leak into the
+    tests after it. The shared tree is read-only to turn that into a failure.
+    """
+    page.open()
+    status = page.evaluate(
+        """async () => (await fetch('/api/save?p=notes/plain.txt',
+                                    {method: 'POST', body: 'leaked'})).status"""
+    )
+    assert status >= 400
+    assert (
+        page.evaluate("fetch('/notes/plain.txt?filemill=raw').then(r => r.text())")
+        == "hello"
+    )
 
 
 def test_the_root_column_lists_the_served_directory(page):
@@ -330,11 +410,10 @@ def test_search_label_is_read_aloud_but_not_shown(page):
     assert page.get_by_label("Search file contents").get_attribute("id") == "search-bar"
 
 
-def test_theme_follows_os_colour_scheme_and_keeps_manual_control(server, playwright):
-    browser = playwright.chromium.launch(headless=True)
-    try:
-        for scheme, expected in (("dark", "dark"), ("light", "light")):
-            context = browser.new_context(color_scheme=scheme)
+def test_theme_follows_os_colour_scheme_and_keeps_manual_control(server, browser):
+    for scheme, expected in (("dark", "dark"), ("light", "light")):
+        context = browser.new_context(color_scheme=scheme)
+        try:
             themed = Harness(context.new_page(), server)
             themed.open()
             assert themed.evaluate("root.dataset.theme") == expected
@@ -353,9 +432,8 @@ def test_theme_follows_os_colour_scheme_and_keeps_manual_control(server, playwri
                 themed.locator("#s-theme").get_attribute("aria-checked")
                 == str(manual == "dark").lower()
             )
+        finally:
             context.close()
-    finally:
-        browser.close()
 
 
 def test_long_names_truncate_before_the_extension(page):
@@ -747,7 +825,7 @@ def test_jinja_python_source_is_highlighted_in_the_browser(page):
     assert page.text_content("#preview .pv-text") == SOURCE
 
 
-def test_saved_plaintext_preview_survives_reopen_and_reload(page):
+def test_saved_plaintext_preview_survives_reopen_and_reload(page, ui_root):
     page.open("notes/plain.txt")
     page.wait_for_selector("#pv-edit")
     assert page.inner_text("#pv-content").strip() == "hello"
@@ -2586,7 +2664,7 @@ def test_editor_features_and_failed_save(page):
 
 
 @pytest.mark.parametrize("fails", [False, True])
-def test_editor_late_write_does_not_touch_next_file(page, fails):
+def test_editor_late_write_does_not_touch_next_file(page, ui_root, fails):
     page.open("notes/plain.txt")
     page.click("#pv-edit")
     page.fill("#pv-editor", "saved asynchronously")
@@ -3284,12 +3362,12 @@ def test_context_menu_preserves_keyboard_refresh(page, ui_root):
 
 
 @pytest.mark.parametrize("native", [False, True])
-def test_mobile_fullscreen_back_preserves_preview(server, playwright, native):
-    browser = playwright.chromium.launch()
+def test_mobile_fullscreen_back_preserves_preview(server, browser, native):
+    context = browser.new_context(
+        viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True
+    )
     try:
-        page = browser.new_page(
-            viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True
-        )
+        page = context.new_page()
         page.goto(server + "/notes/plain.txt?filemill=highlight")
         page.wait_for_selector("#pv-content .pv-text")
         if not native:
@@ -3339,16 +3417,16 @@ def test_mobile_fullscreen_back_preserves_preview(server, playwright, native):
             )
             assert page.url == url
     finally:
-        browser.close()
+        context.close()
 
 
 @pytest.mark.parametrize("change", ["reload", "view", "file"])
-def test_mobile_fullscreen_history_after_preview_change(server, playwright, change):
-    browser = playwright.chromium.launch()
+def test_mobile_fullscreen_history_after_preview_change(server, browser, change):
+    context = browser.new_context(
+        viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True
+    )
     try:
-        page = browser.new_page(
-            viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True
-        )
+        page = context.new_page()
         page.goto(server + "/notes/deep/leaf.md?filemill=highlight")
         page.wait_for_selector("#pv-content .pv-text")
         page.evaluate("document.documentElement.requestFullscreen = undefined")
@@ -3393,7 +3471,7 @@ def test_mobile_fullscreen_history_after_preview_change(server, playwright, chan
             timeout=3000,
         )
     finally:
-        browser.close()
+        context.close()
 
 
 TASKS_MD = "# Tasks\n\n- [ ] one\n- [x] two\n\ntext - [ ] kept\n"

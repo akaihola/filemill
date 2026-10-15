@@ -42,3 +42,192 @@ to main outside pull requests.
 - Record a before/after comparison including wall time, summed runner time,
   test counts and outcomes. Faster execution must preserve the quality gate in
   `docs/ARCHITECTURE-REVIEW.md`.
+
+## Implementation plan, 2026-10-14
+
+1. Add structural workflow guards and demonstrate failure on serial scheduling.
+2. Move shared UI and freshness checks into lint; run the three browser suites
+   in a matrix after lint, with fail-fast disabled and locked browser installs.
+3. Validate the quality gate, measure a GitHub Actions run against the baseline,
+   and record counts, outcomes, wall time and summed runner time.
+4. Rebase and merge into main, then complete the tracker pending acceptance.
+
+## Validation, 2026-10-14
+
+The new workflow regression first failed with
+`The three suites still run serially in one job` on the original workflow
+(1 failed, 3 passed). After the matrix change, the workflow and documentation
+guards passed (15 passed). The guards parse YAML and verify the three exact
+commands, working directories, lint dependency, disabled fail-fast, fatal
+failures, unconditional suite execution, locked browser installation, server-only
+ripgrep installation before tests, retained shared checks and publication gating.
+PyYAML is now a locked development dependency for these structural checks.
+
+All six pre-commit hooks and shared model checks passed. The installed Python
+3.14 initially failed mypy because the conditional zstandard dependency is
+absent on that interpreter. Repeating with installed Python 3.13 passed; CI
+retains Python 3.12. No checks were relaxed.
+
+GitHub rejected the branch push (`Permission to akaihola/filemill.git denied`,
+HTTP 403) and workflow dispatch (`Resource not accessible by personal access
+token`, HTTP 403). No updated Actions run or deployment was created. Actual
+CI concurrency, timing and publication behavior remain unverified.
+
+### Historical CI baseline
+
+Run 38155597653 at `ea20d27dad8dd2153e6185e418b7aa2bf0de1edd`, on 2026-10-11:
+
+| Suite | Collected | Outcome | Pytest duration |
+| --- | ---: | --- | ---: |
+| Static bundle | 98 | 98 passed | 210.02 s |
+| Static development | 98 | 98 passed | 214.07 s |
+| Server | 784 | 711 passed, 10 failed, 63 skipped | 450.50 s |
+
+Reported workflow wall time was 932 s (15m 32s). Summed allocated runner time
+was 925 s (15 s lint + 910 s test), calculated from the jobs API's start and
+completion timestamps and excluding skipped publication. The server step took
+452 s including invocation overhead. Publication was skipped.
+
+### Follow-up required
+
+With repository write and Actions dispatch permissions, push this branch and
+run the updated workflow. Record job start/end timestamps and pytest totals,
+confirm all three legs overlap after lint and finish independently, and verify
+a failed leg blocks main publication. Compare workflow wall time and summed
+runner time using the same definitions as the baseline. Preserve every check
+in the architecture review. The local measurement below cannot establish a
+GitHub runner speedup.
+
+### After change: local parallel execution
+
+The three exact workflow commands ran concurrently on the same NixOS host,
+using installed Python 3.13 and the existing Nix Playwright browsers. Each
+command's wall time includes uv and pytest startup. Lint ran separately and
+is excluded from this local measurement.
+
+| Suite | Collected | Outcome | Pytest duration | Process wall time |
+| --- | ---: | --- | ---: | ---: |
+| Static bundle | 116 | 115 passed, 1 failed | 534.62 s | 536.01 s |
+| Static development | 116 | 116 passed | 559.82 s | 560.88 s |
+| Server | 838 | 837 passed, 1 failed | 1162.12 s | 1163.93 s |
+
+| Measurement | Historical CI, serial | Local after change, parallel |
+| --- | ---: | ---: |
+| Wall time | 932 s | 1163.95 s |
+| Summed runner/process time | 925 s | 2260.82 s |
+| Collected test invocations | 980 | 1070 |
+| Passed / failed / skipped | 907 / 10 / 63 | 1068 / 2 / 0 |
+| Overall outcome | Failure; publication skipped | Failure; no publication attempted |
+
+These are different hosts and revisions, with different test counts. This
+comparison records observations, not a CI speedup. The matrix uses three
+separate GitHub runners; this local run shared one host. The increased counts
+include intervening main changes and this task's one new server workflow test.
+Server coverage was 90% combined statement/branch coverage. No tests, coverage
+flags, skips or failure rules were changed to improve timing.
+
+The bundle failure was
+`static/test-ui.py::test_touch_tap_opens_folder_first_time`: the row menu stayed
+hidden after a long press, timing out after 3 seconds. An isolated rerun passed
+(1 passed in 4.99 s); the complete suite result remains failed.
+The server failure was
+`tests/test_browser_new_ui.py::test_a_git_bundle_opens_as_refs_then_files_and_a_file_previews`:
+opening repo.bundle did not populate the next column before a 15-second timeout.
+An isolated rerun also failed (1 failed in 18.58 s). The same test was then
+run from unchanged main using the worktree's Python environment to check
+whether the failure predates the workflow change. That run passed (1 passed
+in 3.81 s), so the cause of the worktree-only timeout remains unresolved; it
+cannot be claimed as a reproduced main failure.
+The frontend and server implementation were unchanged by this task.
+
+The worktree issue remains In Progress. Merge, tracker completion and deployment
+are deferred pending a passing quality gate and the required actual CI
+measurement; user acceptance has not been checked.
+
+### Rebase integration
+
+Main advanced during validation with [91]'s `--durations=20` reporting and
+[92]'s concurrency scope. The rebase preserves both. Workflow guards from those
+changes now check named matrix legs and disabled fail-fast rather than serial
+step names and `!cancelled()` conditions. Publication guards require both lint
+and the full matrix. The local full-suite measurement above preceded this
+rebase and did not include duration reporting. Final structural checks cover
+the integrated workflow; a new complete CI measurement remains required.
+
+Final integrated validation: 19 workflow/documentation tests passed, all six
+pre-commit hooks passed, and no conflict markers remain in the changed files.
+
+## Measured GitHub Actions comparison, 2026-10-15
+
+[Parallel run 38767593452](https://github.com/akaihola/filemill/actions/runs/38767593452)
+tested `ca1446b7172a9cd6d7af17f943b2eafe2fc89bad`. Lint finished at
+16:16:46 UTC. All three matrix jobs started at 16:16:49 UTC on separate
+runners. The bundle job failed at 16:20:48; development continued until
+16:21:13 and server until 16:28:31. This directly verifies independent
+execution after a failed leg. Publication was skipped; YAML regression guards
+also verify lint/matrix dependencies, fatal failures and main-only publication.
+
+The closest successful serial baseline is
+[run 38564017994](https://github.com/akaihola/filemill/actions/runs/38564017994),
+on 2026-10-14 at `9c67d665098875b01da5b7b14be7dc897ad65dd4`.
+
+| Suite | Serial baseline | Parallel run |
+| --- | --- | --- |
+| Static bundle | 116 passed, 239.95 s | 115 passed, 1 failed, 209.65 s |
+| Static development | 116 passed, 241.81 s | 116 passed, 223.51 s |
+| Server | 841 passed, 676.34 s | 842 passed, 666.05 s |
+| Collected invocations | 1073 | 1074 |
+| Workflow wall time | 1239 s (20m 39s) | 725 s (12m 05s) |
+| Summed lint/test runner time | 1211 s | 1221 s |
+| Publication runner time | 15 s, successful | 0 s, skipped |
+| Overall outcome | Success | Failure |
+
+Workflow wall time uses the run's created_at and updated_at timestamps.
+Summed runner time adds non-skipped job start/end durations, including setup
+and cleanup; publication is shown separately. The parallel jobs used 239 s,
+264 s and 702 s; lint used 16 s. Pytest durations in the suite rows exclude
+job setup. Wall time fell by 514 s (41.5%); lint/test runner time increased
+by 10 s (0.8%). This is one observation across runs with different outcomes,
+not a guaranteed speedup. The extra server test is this task's matrix guard.
+All tests were collected, and server statement/branch coverage remained 90%.
+The original failed 2026-10-11 baseline remains recorded above.
+
+The failing bundle test was `static/test-rich.py::test_markdown_viewport`,
+which counted 0 table cells instead of 20 after a preview rebuild. Main had
+already fixed this asynchronous test race in `efa92fd` while the feature branch
+was waiting for push/dispatch permission. The branch is now rebased onto main,
+including that fix and main's shared browser fixtures. The repaired test passed
+locally (1 passed in 5.69 s); all 19 workflow/documentation tests and all six
+pre-commit hooks passed after rebase. No new test repair was added by [90].
+
+The historical notes about denied push/dispatch remain above to explain the
+delay. The user pushed and dispatched the measured run from atom. A passing
+confirmation run of the rebased branch is still required before merge and
+completion. The issue remains In Progress, pending that validation.
+
+### Rebased confirmation run
+
+[PR run 38769517791](https://github.com/akaihola/filemill/actions/runs/38769517791)
+tested rebased commit `45dbcce` with main's existing test repairs and browser
+fixture improvements. Lint passed; all three suites started at 16:30:31 UTC,
+three seconds after lint. Bundle passed all 116 tests in 235.36 s and development
+passed all 116 in 242.99 s. Server collected 843 tests: 842 passed and one failed
+in 475.85 s, with 90% coverage. The added test versus the earlier parallel run
+comes from main's browser-fixture work.
+
+Workflow wall time was 537 s (8m 57s), and summed lint/test runner time was
+1068 s. Publication was skipped. The changed fixtures affect server timing, so
+this run cannot isolate the benefit of parallel scheduling; the earlier
+12m 05s comparison does that more closely.
+
+The Markdown viewport failure was resolved. The remaining failure was
+`tests/test_browser_new_ui.py::test_delete_key_deletes_selected_files_and_directories_but_not_editors`:
+its deletion assertions passed, but `page.errors` contained an HTTP 404 resource
+error. An isolated rerun on the same branch passed in 4.73 s. No application
+code or test assertion was changed for this failure. The Actions API denied
+rerunning the failed job; committing this evidence triggers a fresh PR run.
+The failed complete run remains part of the evidence.
+
+[Draft PR 2](https://github.com/akaihola/filemill/pull/2) was opened to exercise
+the pull-request trigger because direct workflow dispatch remains unauthorized.
+The task remains In Progress until the quality gate passes.
