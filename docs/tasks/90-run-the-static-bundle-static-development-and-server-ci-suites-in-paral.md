@@ -156,3 +156,51 @@ the integrated workflow; a new complete CI measurement remains required.
 
 Final integrated validation: 19 workflow/documentation tests passed, all six
 pre-commit hooks passed, and no conflict markers remain in the changed files.
+
+## Measured GitHub Actions comparison, 2026-10-15
+
+[Parallel run 38767593452](https://github.com/akaihola/filemill/actions/runs/38767593452)
+tested `ca1446b7172a9cd6d7af17f943b2eafe2fc89bad`. Lint finished at
+16:16:46 UTC. All three matrix jobs started at 16:16:49 UTC on separate
+runners. The bundle job failed at 16:20:48; development continued until
+16:21:13 and server until 16:28:31. This directly verifies independent
+execution after a failed leg. Publication was skipped; YAML regression guards
+also verify lint/matrix dependencies, fatal failures and main-only publication.
+
+The closest successful serial baseline is
+[run 38564017994](https://github.com/akaihola/filemill/actions/runs/38564017994),
+on 2026-10-14 at `9c67d665098875b01da5b7b14be7dc897ad65dd4`.
+
+| Suite | Serial baseline | Parallel run |
+| --- | --- | --- |
+| Static bundle | 116 passed, 239.95 s | 115 passed, 1 failed, 209.65 s |
+| Static development | 116 passed, 241.81 s | 116 passed, 223.51 s |
+| Server | 841 passed, 676.34 s | 842 passed, 666.05 s |
+| Collected invocations | 1073 | 1074 |
+| Workflow wall time | 1239 s (20m 39s) | 725 s (12m 05s) |
+| Summed lint/test runner time | 1211 s | 1221 s |
+| Publication runner time | 15 s, successful | 0 s, skipped |
+| Overall outcome | Success | Failure |
+
+Workflow wall time uses the run's created_at and updated_at timestamps.
+Summed runner time adds non-skipped job start/end durations, including setup
+and cleanup; publication is shown separately. The parallel jobs used 239 s,
+264 s and 702 s; lint used 16 s. Pytest durations in the suite rows exclude
+job setup. Wall time fell by 514 s (41.5%); lint/test runner time increased
+by 10 s (0.8%). This is one observation across runs with different outcomes,
+not a guaranteed speedup. The extra server test is this task's matrix guard.
+All tests were collected, and server statement/branch coverage remained 90%.
+The original failed 2026-10-11 baseline remains recorded above.
+
+The failing bundle test was `static/test-rich.py::test_markdown_viewport`,
+which counted 0 table cells instead of 20 after a preview rebuild. Main had
+already fixed this asynchronous test race in `efa92fd` while the feature branch
+was waiting for push/dispatch permission. The branch is now rebased onto main,
+including that fix and main's shared browser fixtures. The repaired test passed
+locally (1 passed in 5.69 s); all 19 workflow/documentation tests and all six
+pre-commit hooks passed after rebase. No new test repair was added by [90].
+
+The historical notes about denied push/dispatch remain above to explain the
+delay. The user pushed and dispatched the measured run from atom. A passing
+confirmation run of the rebased branch is still required before merge and
+completion. The issue remains In Progress, pending that validation.
