@@ -11,10 +11,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [90] Run the static bundle, static development and server CI suites in parallel
-  <!-- hai:{"id":"simple-8b926d81-b116-4839-987a-c05a6e7930a0","createdAt":"2026-10-12T13:32:52.839Z","updatedAt":"2026-10-14T08:22:05.337Z"} -->
-
 ## In Progress
+
+- [~] [90] Run the static bundle, static development and server CI suites in parallel
+  <!-- hai:{"id":"simple-8b926d81-b116-4839-987a-c05a6e7930a0","createdAt":"2026-10-12T13:32:52.839Z","updatedAt":"2026-10-15T16:22:35.350Z"} -->
 
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
