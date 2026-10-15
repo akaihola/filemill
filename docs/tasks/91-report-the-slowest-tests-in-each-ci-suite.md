@@ -179,3 +179,33 @@ race, not a slowdown. It is filed as its own issue.
   [90] lands. It is filed as an issue. Consider pytest workers only after
   that, since every worker would pay the same per-test startup.
 - No timeout needs changing. Neither run lost time to a failed-test timeout.
+
+## Shared fixtures and workers, 2026-10-15
+
+`server/tests/test_browser_new_ui.py` now starts one Chromium and one server
+per module. Each test gets a fresh browser context. The shared server serves
+a read-only tree, so a test that writes without asking for `ui_root` fails;
+asking for `ui_root` gets a writable copy and a private server. Two editor
+tests saved without `ui_root`; the guard caught
+`test_editor_late_write_does_not_touch_next_file`.
+
+Measured locally on gogo (4 cores), whole module, `--durations=0`:
+
+| Fixtures | Workers | Outcome    | Total   | Setup  | Call   | Teardown |
+| -------- | ------- | ---------- | ------- | ------ | ------ | -------- |
+| Per test | 1       | 208 passed | 624.12s | 268.3s | 305.0s | 49.4s    |
+| Shared   | 1       | 209 passed | 339.17s | 37.6s  | 286.0s | 14.4s    |
+| Shared   | 2       | 209 passed | 192.60s | 50.1s  | 315.5s | 15.6s    |
+| Shared   | 4       | 209 passed | 147.01s | 95.1s  | 461.1s | 19.4s    |
+
+The added test is the read-only guard. Worker rows add phases across
+workers; `pytest-xdist` was supplied with `uv run --with pytest-xdist` and is
+not a project dependency. Two workers nearly halve the module; four still
+help but contend for the CPU, so per-test time rises by half. CI runners
+have 4 vCPUs as well, so `-n 2` or `-n auto` in the server step is the next
+candidate, with the rest of the server suite measured under it first.
+
+`test_delete_key_deletes_selected_files_and_directories_but_not_editors`
+fails about one run in six with a console 404 for `/api/raw?p=short.txt`
+after the delete. The per-test fixtures from before this change fail the
+same way, so it is a race in the test or the UI, not in the fixtures.

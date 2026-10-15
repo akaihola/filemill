@@ -3,6 +3,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 SERVER = Path(__file__).parents[1]
 
 
@@ -53,9 +55,79 @@ def test_ci_installs_ripgrep_before_the_server_suite():
     Run 38155597653 (2026-10-11) failed every search test with
     "Search is unavailable: ripgrep is not installed".
     """
-    workflow = (SERVER.parent / ".github" / "workflows" / "publish.yml").read_text()
-    assert workflow.index("apt-get install -y ripgrep") < workflow.index(
-        "name: The server edition"
+    job = yaml.safe_load(
+        (SERVER.parent / ".github" / "workflows" / "publish.yml").read_text()
+    )["jobs"]["test"]
+    steps = job["steps"]
+    install_index = next(
+        i
+        for i, step in enumerate(steps)
+        if "apt-get install -y ripgrep" in step.get("run", "")
+    )
+    assert steps[install_index]["if"] == "matrix.suite == 'server'"
+    assert install_index < next(
+        i for i, step in enumerate(steps) if step.get("run") == "${{ matrix.command }}"
+    )
+
+
+def test_ci_runs_independent_suites_after_lint_and_gates_publication():
+    jobs = yaml.safe_load(
+        (SERVER.parent / ".github" / "workflows" / "publish.yml").read_text()
+    )["jobs"]
+    test = jobs["test"]
+    assert "strategy" in test, "The three suites still run serially in one job"
+    assert test["needs"] == "lint"
+    assert "if" not in test
+    assert test["strategy"]["fail-fast"] is False
+    assert "max-parallel" not in test["strategy"]
+    assert test["strategy"]["matrix"]["include"] == [
+        {
+            "suite": "static-bundle",
+            "command": "uv run --project server pytest static --durations=20",
+            "directory": ".",
+        },
+        {
+            "suite": "static-development",
+            "command": "uv run --project server pytest static --dev --durations=20",
+            "directory": ".",
+        },
+        {
+            "suite": "server",
+            "command": "uv run pytest --cov=src/filemill --cov-branch --cov-report=term-missing --durations=20",
+            "directory": "server",
+        },
+    ]
+    steps = test["steps"]
+    install = next(s for s in steps if "playwright install" in s.get("run", ""))
+    assert (
+        install["run"]
+        == "uv run --project server playwright install --with-deps chromium"
+    )
+    assert "if" not in install
+    suite = steps[-1]
+    assert suite["run"] == "${{ matrix.command }}"
+    assert "if" not in suite
+    assert suite["working-directory"] == "${{ matrix.directory }}"
+    assert not test.get("continue-on-error", False)
+    assert all(not step.get("continue-on-error", False) for step in steps)
+    assert not jobs["lint"].get("continue-on-error", False)
+    assert all(
+        not step.get("continue-on-error", False) for step in jobs["lint"]["steps"]
+    )
+    lint = "\n".join(s.get("run", "") for s in jobs["lint"]["steps"])
+    for check in (
+        "pre-commit run --all-files",
+        "deno fmt --check ui/",
+        "deno lint ui/",
+        "deno run --allow-read=ui/core/model ui/core/model/test.mjs",
+        "./build-index.py --check",
+    ):
+        assert check in lint
+    publish = jobs["publish"]
+    assert set(publish["needs"]) == {"lint", "test"}
+    assert (
+        publish["if"]
+        == "github.ref == 'refs/heads/main' && github.event_name != 'pull_request'"
     )
 
 
@@ -64,7 +136,7 @@ def test_ci_reports_the_slowest_tests_of_each_suite():
 
     Run 38155597653 (2026-10-11) logged only suite totals, so the time spent in
     browser fixtures could not be told apart from the tests. Each suite runs in
-    its own named step, which keeps the three reports apart in the log.
+    its own named matrix leg, which keeps the three reports apart in the log.
     """
     workflow = (SERVER.parent / ".github" / "workflows" / "publish.yml").read_text()
     runs = [
@@ -74,28 +146,22 @@ def test_ci_reports_the_slowest_tests_of_each_suite():
     ]
     assert len(runs) == 3
     assert all("--durations=20" in run for run in runs), runs
-    steps = [
-        line.split("name:", 1)[1].strip()
-        for line in workflow.splitlines()
-        if line.strip().startswith("- name:")
-    ]
-    assert {
-        "Test the bundle",
-        "Test the shared sources",
-        "The server edition",
-    } <= set(steps)
+    job = yaml.safe_load(workflow)["jobs"]["test"]
+    assert job["name"] == "Test ${{ matrix.suite }}"
+    assert len({leg["suite"] for leg in job["strategy"]["matrix"]["include"]}) == 3
 
 
 def test_ci_runs_every_suite_after_an_earlier_suite_fails():
-    """A failing suite must not hide the next suite's results and durations.
+    """A failing matrix leg must not cancel the other suites or their reports.
 
     Run 38534616531 (2026-10-14) failed one static development test and so
-    skipped the server suite entirely. The job still fails either way.
+    skipped the server suite entirely in the earlier serial job.
     """
-    workflow = (SERVER.parent / ".github" / "workflows" / "publish.yml").read_text()
-    for name in ("Test the shared sources", "Install ripgrep", "The server edition"):
-        step = workflow.split(f"- name: {name}\n", 1)[1].split("\n\n", 1)[0]
-        assert "if: ${{ !cancelled() }}" in step, name
+    job = yaml.safe_load(
+        (SERVER.parent / ".github" / "workflows" / "publish.yml").read_text()
+    )["jobs"]["test"]
+    assert job["strategy"]["fail-fast"] is False
+    assert "if" not in job["steps"][-1]
 
 
 def _workflow_concurrency() -> dict[str, str]:
@@ -144,7 +210,7 @@ def test_ci_publishes_only_from_main_after_every_check():
     assert "\n  lint:\n" in jobs
     assert "\n  test:\n    needs: lint\n" in jobs
     assert publish.startswith(
-        "    needs: test\n"
+        "    needs: [lint, test]\n"
         "    if: github.ref == 'refs/heads/main'"
         " && github.event_name != 'pull_request'\n"
     )
