@@ -204,3 +204,30 @@ The historical notes about denied push/dispatch remain above to explain the
 delay. The user pushed and dispatched the measured run from atom. A passing
 confirmation run of the rebased branch is still required before merge and
 completion. The issue remains In Progress, pending that validation.
+
+### Rebased confirmation run
+
+[PR run 38769517791](https://github.com/akaihola/filemill/actions/runs/38769517791)
+tested rebased commit `45dbcce` with main's existing test repairs and browser
+fixture improvements. Lint passed; all three suites started at 16:30:31 UTC,
+three seconds after lint. Bundle passed all 116 tests in 235.36 s and development
+passed all 116 in 242.99 s. Server collected 843 tests: 842 passed and one failed
+in 475.85 s, with 90% coverage. The added test versus the earlier parallel run
+comes from main's browser-fixture work.
+
+Workflow wall time was 537 s (8m 57s), and summed lint/test runner time was
+1068 s. Publication was skipped. The changed fixtures affect server timing, so
+this run cannot isolate the benefit of parallel scheduling; the earlier
+12m 05s comparison does that more closely.
+
+The Markdown viewport failure was resolved. The remaining failure was
+`tests/test_browser_new_ui.py::test_delete_key_deletes_selected_files_and_directories_but_not_editors`:
+its deletion assertions passed, but `page.errors` contained an HTTP 404 resource
+error. An isolated rerun on the same branch passed in 4.73 s. No application
+code or test assertion was changed for this failure. The Actions API denied
+rerunning the failed job; committing this evidence triggers a fresh PR run.
+The failed complete run remains part of the evidence.
+
+[Draft PR 2](https://github.com/akaihola/filemill/pull/2) was opened to exercise
+the pull-request trigger because direct workflow dispatch remains unauthorized.
+The task remains In Progress until the quality gate passes.
