@@ -68,11 +68,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [90] Run the static bundle, static development and server CI suites in parallel
   <!-- hai:{"id":"simple-8b926d81-b116-4839-987a-c05a6e7930a0","createdAt":"2026-10-12T13:32:52.839Z","updatedAt":"2026-10-15T16:51:43.442Z"} -->
 
-- [ ] [*] Share Chromium, and the server where tests allow, across `server/tests/test_browser_new_ui.py`. Per-test startup and teardown cost about 200s of the 611s server suite in run 38630672866 (see [91]). Measure pytest workers afterwards.
-  <!-- hai:{"id":"simple-adb180cf-7f03-46bb-86ca-b374139716ab","createdAt":"2026-10-14T20:37:41.753Z","updatedAt":"2026-10-14T22:20:24.185Z"} -->
+- [x] [*] Share Chromium, and the server where tests allow, across `server/tests/test_browser_new_ui.py`. Per-test startup and teardown cost about 200s of the 611s server suite in run 38630672866 (see [91]). Measure pytest workers afterwards.
+  <!-- hai:{"id":"simple-adb180cf-7f03-46bb-86ca-b374139716ab","createdAt":"2026-10-14T20:37:41.753Z","updatedAt":"2026-10-15T20:17:19.776Z"} -->
 
-- [ ] [*] `static/test-rich.py::test_markdown_viewport` counts `td` cells without waiting after viewport and fullscreen changes; it failed `assert 0 == 20` in the `--dev` suite of run 38630672866.
-  <!-- hai:{"id":"simple-e983b058-8891-4280-9712-04ba9dcbfb61","createdAt":"2026-10-14T20:37:42.533Z","updatedAt":"2026-10-14T21:37:08.382Z"} -->
+- [x] [*] `static/test-rich.py::test_markdown_viewport` counts `td` cells without waiting after viewport and fullscreen changes; it failed `assert 0 == 20` in the `--dev` suite of run 38630672866.
+  <!-- hai:{"id":"simple-e983b058-8891-4280-9712-04ba9dcbfb61","createdAt":"2026-10-14T20:37:42.533Z","updatedAt":"2026-10-15T20:16:19.320Z"} -->
 
 - [ ] [91] Report the slowest tests in each CI suite
   <!-- hai:{"id":"simple-80260468-7074-4230-adda-ff1ce00e1fe5","createdAt":"2026-10-12T13:32:53.680Z","updatedAt":"2026-10-14T13:04:13.619Z"} -->
