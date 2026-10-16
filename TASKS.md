@@ -9,6 +9,15 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- [93] Make main's CI green again: static bundle test failing since 06792cb
+  <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-16T16:48:53.101Z"} -->
+
+- [94] Move the CI workflows to action versions that run on Node.js 24
+  <!-- hai:{"id":"simple-28def403-6427-4ff6-aea8-3643a19d1a61","labels":["steward"],"createdAt":"2026-10-16T16:48:54.367Z","updatedAt":"2026-10-16T16:48:54.367Z"} -->
+
+- [95] Reconcile TASKS.md with the code: 16 In Progress and 109 legacy completions
+  <!-- hai:{"id":"simple-fe5c93cd-f67b-45d1-8352-57667238abe6","labels":["steward"],"createdAt":"2026-10-16T16:48:55.733Z","updatedAt":"2026-10-16T16:48:55.733Z"} -->
+
 ## Scheduled
 
 ## In Progress
@@ -579,7 +588,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 [77]: docs/tasks/77-md-tight-bullet-list-line-spacing.md
 
-<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92 -->
+<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95 -->
 
 [78]: docs/tasks/78-wide-document-scrolls-instead-of-expanding-the-preview.md
 
@@ -610,6 +619,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 [91]: docs/tasks/91-report-the-slowest-tests-in-each-ci-suite.md
 
 [92]: docs/tasks/92-scope-ci-cancellation-to-the-same-branch-or-pull-request.md
+
+[93]: docs/tasks/93-make-main-s-ci-green-again-static-bundle-test-failing-since-06792cb.md
+
+[94]: docs/tasks/94-move-the-ci-workflows-to-action-versions-that-run-on-node-js-24.md
+
+[95]: docs/tasks/95-reconcile-tasks-md-with-the-code-16-in-progress-and-109-legacy-complet.md
 
 ## Rules
 
