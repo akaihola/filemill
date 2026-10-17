@@ -6,10 +6,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [*] From documentation, docstrings and comments, remove references to specific
-  development setups which include e.g. server names and local paths.
-  <!-- hai:{"id":"simple-ea7f9f2b5da73868","updatedAt":"2026-10-17T08:10:22.988Z"} -->
-
 - [95] Reconcile TASKS.md with the code: 16 In Progress and 109 legacy completions
     - Depends on: [96]
   <!-- hai:{"id":"simple-fe5c93cd-f67b-45d1-8352-57667238abe6","labels":["steward"],"createdAt":"2026-10-16T16:48:55.733Z","updatedAt":"2026-10-17T07:09:08.803Z"} -->
@@ -21,6 +17,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-eae59ddd-5222-4dbd-972d-d23258c6db71","createdAt":"2026-10-17T07:56:11.253Z","updatedAt":"2026-10-17T07:58:00.111Z"} -->
 
 ## Scheduled
+
+- [*] From documentation, docstrings and comments, remove references to specific
+  development setups which include e.g. server names and local paths.
+  <!-- hai:{"id":"simple-ea7f9f2b5da73868","updatedAt":"2026-10-17T08:17:39.649Z"} -->
 
 ## In Progress
 
