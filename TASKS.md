@@ -12,13 +12,13 @@ Rules for TASKS.md usage are at the bottom of the file.
   passes
   <!-- hai:{"id":"simple-008dfc0f-048f-4de3-9845-bedc6e858c47","labels":["steward"],"createdAt":"2026-10-17T14:10:56.295Z","updatedAt":"2026-10-17T14:11:25.916Z"} -->
 
-- [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
+## In Progress
+
+- [~] [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
     - Depends on: [29]
 
-  <!-- hai:{"updatedAt":"2026-10-17T12:25:25.718Z"} -->
-
-## In Progress
+      <!-- hai:{"updatedAt":"2026-10-17T16:23:13.942Z"} -->
 
 - [~] [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
   fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
