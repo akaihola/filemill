@@ -20,3 +20,16 @@ Evidence: https://github.com/akaihola/filemill/actions/runs/38957407184
 [93]: 93-make-main-s-ci-green-again-static-bundle-test-failing-since-06792cb.md
 [91]: 91-report-the-slowest-tests-in-each-ci-suite.md
 [90]: 90-run-the-static-bundle-static-development-and-server-ci-suites-in-paral.md
+
+## Plan, 2026-10-17
+
+1. Pause the preview byte read and the editability byte read in browser tests.
+   Delete the selected file or its containing folder while that read is pending.
+   Keep console error checks and check failed HTTP responses.
+2. Track active preview fills in the shared core. Block new fills for entries
+   under a pending deletion. Finish existing fills before calling `FS.remove`.
+3. Repeat the regression and the original keyboard test. Run the server and both
+   static suites, the model checks, and pre-commit. Record the results here.
+
+This change addresses the deletion race within architecture finding A9. It does
+not replace the preview lifecycle or change the filesystem port contract.
