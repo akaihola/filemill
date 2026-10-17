@@ -162,8 +162,17 @@ These three are not tasks, so they are in `docs/` and not in `docs/tasks/`.
 
 MIT
 
-## Native prototype
+## Native shell
 
-The Linux [WebKitGTK prototype](native/README.md) embeds the shared DOM UI
-and supplies native file and history operations. Issue [30] remains blocked
-on its native UI acceptance test. It is not a qualified release.
+The Linux [WebKitGTK shell](native/README.md) runs the shared DOM UI and
+supplies native file, preview and history operations. It needs GTK 3 and
+WebKitGTK 4.1. Build it and open a folder from the repository root:
+
+```bash
+nix-shell native/shell.nix --run 'python3 native/webview/build.py'
+native/webview/build/filemill /path/to/folder
+```
+
+Without a folder argument it opens a folder picker.
+[ADR 0079](docs/adr/0079-native-shell.md) records why this shell was kept
+and its binary size.

@@ -2,6 +2,10 @@
 
 Date: 2026-09-21. Issue: [31](../tasks/31-native-toolkit-evaluation.md).
 
+Update 2026-10-17: the WebView hit-testing failure and the stopped UI
+scenario below were resolved in [ADR 0079](0079-native-shell.md). The
+decision is unchanged.
+
 ## Context
 
 Filemill needs folding Miller columns, keyboard navigation, structured-file columns and offline previews across editions. Preserve the DOM-free model and three ports. [Evidence and official sources](../tasks/31-native-toolkit-evaluation.md#evaluation-evidence) distinguish capabilities from proposed integration work.
