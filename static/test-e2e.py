@@ -116,7 +116,7 @@ async def refresh_and_restore(pg):
         except PlaywrightTimeoutError:
             check("Test folder opened", False, f"timed out waiting for {root.name}")
             return
-        await pg.wait_for_timeout(600)
+        await pg.wait_for_function("path[0]?.kids && document.querySelector('.col .row')")
 
         print("\n── Sort a real folder by size and by date ───────────────────")
         # test-url.py measures the sweep against the origin private file system,
@@ -127,7 +127,7 @@ async def refresh_and_restore(pg):
         await pg.evaluate(COUNT_META)
         await pg.evaluate("__countMeta()")
         await pg.click('.col[data-i="0"] .row:has-text("sized")')
-        await pg.wait_for_timeout(600)
+        await pg.wait_for_function('path[1]?.name === \'sized\' && document.querySelectorAll(\'.col[data-i="1"] .row\').length === 3')
         rows1 = '.col[data-i="1"] .row'
         names = await pg.eval_on_selector_all(rows1, "e => e.map(x => x.title)")
         check("A real folder opens in name order without reading one file",
@@ -136,7 +136,7 @@ async def refresh_and_restore(pg):
 
         await pg.evaluate("setSort('size', true)")
         await pg.wait_for_function("path[1] && path[1].metaDone", timeout=30_000)
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function('document.querySelector(\'.col[data-i="1"] .row\')?.title === \'a-large.txt\'')
         names = await pg.eval_on_selector_all(rows1, "e => e.map(x => x.title)")
         swept = await pg.evaluate("path[1].metaSwept")
         paid = await pg.evaluate("__metas")
@@ -145,7 +145,7 @@ async def refresh_and_restore(pg):
               names == ["a-large.txt", "c-medium.txt", "b-small.txt"], str(names))
 
         await pg.evaluate("setSort('mtime', false)")
-        await pg.wait_for_timeout(500)
+        await pg.wait_for_function('document.querySelector(\'.col[data-i="1"] .row\')?.title === \'c-medium.txt\'')
         names = await pg.eval_on_selector_all(rows1, "e => e.map(x => x.title)")
         again = await pg.evaluate("__metas") - paid
         check("Oldest first orders by the real mtime and reads nothing more",
@@ -155,19 +155,19 @@ async def refresh_and_restore(pg):
 
         print("\n── Refresh against a real folder ────────────────────────────")
         await pg.click('.col[data-i="0"] .row:has-text("notes")')
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("path[1]?.name === 'notes' && path[1]?.kids")
         await pg.keyboard.press("ArrowRight")          # focus the notes column
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function('focusCol === 1')
         before = await pg.eval_on_selector_all('.col[data-i="1"] .row', "e => e.length")
 
         owned(root, root / "notes" / "three.txt").write_text("three\n")
-        await pg.wait_for_timeout(300)
+
         check("A file written on disk is invisible until the app is asked",
               await pg.eval_on_selector_all('.col[data-i="1"] .row',
                                             "e => e.length") == before,
               "no watch API — the read already happened")
         await pg.keyboard.press("F5")
-        await pg.wait_for_timeout(900)
+        await pg.wait_for_function('document.querySelector(\'.col[data-i="1"] .row[title="three.txt"]\')')
         shown = await pg.eval_on_selector_all('.col[data-i="1"] .row',
                                               "e => e.map(x => x.title)")
         check("F5 re-reads the real directory and the new file appears",
@@ -176,10 +176,10 @@ async def refresh_and_restore(pg):
         # Select a file, delete it on disk, refresh: the app must not keep
         # showing a selection that no longer exists anywhere.
         await pg.click('.col[data-i="1"] .row:has-text("two.txt")')
-        await pg.wait_for_timeout(500)
+        await pg.wait_for_function("sel[1] === 'two.txt' && document.querySelector('#pv-content > *')")
         owned(root, root / "notes" / "two.txt").unlink()
         await pg.keyboard.press("F5")
-        await pg.wait_for_timeout(900)
+        await pg.wait_for_function("sel.length === 1 && document.querySelector('#st-refresh').textContent.includes('two.txt is gone')")
         st = await pg.evaluate(STATE)
         say = await pg.inner_text("#st-refresh")
         check("A selected file deleted on disk leaves no selection behind",
@@ -188,7 +188,7 @@ async def refresh_and_restore(pg):
 
         print("\n── The chain comes back after a reload ──────────────────────")
         await pg.click('.col[data-i="1"] .row:has-text("one.txt")')
-        await pg.wait_for_timeout(1000)                # longer than the 400 ms debounce
+        await pg.wait_for_function("async () => (await recallRoots())[0]?.path.join('/') === 'notes/one.txt'")
         want = await pg.evaluate(STATE)
         await pg.reload()
         try:
@@ -197,7 +197,7 @@ async def refresh_and_restore(pg):
             check("Remembered folder re-mounted after a reload", False,
                   "landed on the welcome screen — the grant was dropped")
             return
-        await pg.wait_for_timeout(1200)
+        await pg.wait_for_function("sel[1] === 'one.txt' && document.querySelector('#pv-content > *')")
         got = await pg.evaluate(STATE)
         check("A reload puts the user back on the chain they left",
               got == want, f"left {want}, came back to {got}")
@@ -207,7 +207,7 @@ async def refresh_and_restore(pg):
         owned(root, root / "notes" / "one.txt").unlink()
         await pg.reload()
         await pg.wait_for_function("welcome.hidden && path.length", timeout=20_000)
-        await pg.wait_for_timeout(1200)
+        await pg.wait_for_function("path.length === 2 && path[1]?.name === 'notes' && sel.length === 1")
         got = await pg.evaluate(STATE)
         check("A chain whose file was deleted restores as far as it is real",
               got["path"] == [root.name, "notes"] and got["sel"] == ["notes"],
@@ -248,7 +248,7 @@ async def main():
         pg.on("pageerror", lambda e: errs.append(str(e)))
 
         await pg.goto(f"http://localhost:{PORT}/index.html")
-        await pg.wait_for_timeout(1200)
+        await pg.wait_for_function("async () => { const roots = await recallRoots(); return welcome.hidden ? path.length && !document.querySelector('.spinner') : !roots.length || document.querySelector('#w-recent .rec'); }")
         # The profile is persistent, so a run that stopped halfway through the
         # sort section would leave its key in localStorage and re-order every
         # column the checks below read.
@@ -277,7 +277,7 @@ async def main():
                 sys.exit(1)
 
         await pg.wait_for_function("colCache.get(path[0]) && colCache.get(path[0]).rows.length")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("document.querySelector('.col .row') && !document.querySelector('.spinner')")
         await pg.screenshot(path=str(SHOTS / "01-mounted.png"))
 
         print("\n── Real directory contents ──────────────────────────────────")
@@ -303,7 +303,7 @@ async def main():
         else:
             await pg.eval_on_selector_all(
                 '.col[data-i="0"] .row', f"e => e[{file_row}].click()")
-            await pg.wait_for_timeout(900)
+            await pg.wait_for_function("document.querySelector('#pv-sub')?.textContent.includes('modified')")
             sub = await pg.inner_text("#pv-sub")
             check("Preview shows real size + mtime from getFile()",
                   "modified" in sub and "reading" not in sub, sub)
@@ -319,7 +319,7 @@ async def main():
         else:
             q = target[:3]
             await pg.keyboard.type(q)
-            await pg.wait_for_timeout(400)
+            await pg.wait_for_function('q => sel[0]?.toLowerCase().startsWith(q.toLowerCase())', arg=q)
             landed = await pg.evaluate("sel[0]") or ""
             check(f"Typing “{q}” jumps to a matching row",
                   landed.lower().startswith(q.lower()), f"landed on “{landed}”")
@@ -328,7 +328,7 @@ async def main():
                                                 "e => e.length") > 0)
             await pg.screenshot(path=str(SHOTS / "03-typeahead.png"))
             await pg.keyboard.press("Escape")
-            await pg.wait_for_timeout(200)
+            await pg.wait_for_function("!document.querySelector('mark')")
 
         print("\n── Copy path, real clipboard ────────────────────────────────")
         # test-ui.py stubs navigator.clipboard, so this is the only place the
@@ -338,10 +338,10 @@ async def main():
                                     origin=f"http://localhost:{PORT}")
         await pg.evaluate("getSelection().removeAllRanges()")
         await pg.click('.col[data-i="0"] .row')
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("document.querySelector('#st-path').textContent.trim()")
         shown_path = await pg.inner_text("#st-path")
         await pg.keyboard.press("Control+c")
-        await pg.wait_for_timeout(500)
+        await pg.wait_for_function("document.querySelector('#st-copy').textContent.trim()")
         try:
             pasted = await pg.evaluate("navigator.clipboard.readText()")
         except PlaywrightError as exc:                # a refusal is a result too

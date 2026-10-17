@@ -34,6 +34,7 @@ import tarfile
 import time
 import zipfile
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 import pytest
 
@@ -261,6 +262,7 @@ def _serve(root: Path, log_dir: Path):
     # that says why, and discarding it turns every cause into "did not start".
     log = log_dir / "stderr.log"
     rg_dir = str(Path(shutil.which("rg") or "/usr/bin/rg").parent)
+    git_dir = str(Path(shutil.which("git") or "/usr/bin/git").parent)
     with log.open("wb") as fh:
         proc = subprocess.Popen(
             [
@@ -272,7 +274,10 @@ def _serve(root: Path, log_dir: Path):
                     "log_level='error')"
                 ),
             ],
-            env={"FILEMILL_ROOT": str(root), "PATH": f"{rg_dir}:/usr/bin:/bin"},
+            env={
+                "FILEMILL_ROOT": str(root),
+                "PATH": f"{rg_dir}:{git_dir}:/usr/bin:/bin",
+            },
             stdout=subprocess.DEVNULL,
             stderr=fh,
         )
@@ -339,12 +344,28 @@ class Harness:
         """Open the resource route, where the URL path is the file path."""
         self._pg.goto(f"{self.base}/{path}")
         self._pg.wait_for_function("typeof path !== 'undefined' && path.length >= 1")
-        self._pg.wait_for_timeout(400)
+        names = [unquote(part) for part in urlsplit(path).path.split("/") if part]
+        self._pg.wait_for_function(
+            """names => names.every((name, i) => sel[i] === name)
+              && path.every(node => node.kids !== null && colCache.has(node))
+              && !document.querySelector('.spinner')
+              && document.querySelector('.col .row')
+              && document.fonts.status === 'loaded'""",
+            arg=names,
+        )
 
     def open(self, path: str = "") -> None:
         self._pg.goto(f"{self.base}/n/{path}")
         self._pg.wait_for_function("typeof path !== 'undefined' && path.length >= 1")
-        self._pg.wait_for_timeout(400)
+        names = [unquote(part) for part in urlsplit(path).path.split("/") if part]
+        self._pg.wait_for_function(
+            """names => names.every((name, i) => sel[i] === name)
+              && path.every(node => node.kids !== null && colCache.has(node))
+              && !document.querySelector('.spinner')
+              && document.querySelector('.col .row')
+              && document.fonts.status === 'loaded'""",
+            arg=names,
+        )
 
 
 @pytest.fixture(scope="module")
@@ -465,7 +486,9 @@ def test_clicking_a_folder_opens_its_column(page):
     page.open()
     page.click('.col[data-i="0"] .row:has-text("notes")')
     page.wait_for_selector('.col[data-i="1"]')
-    page.wait_for_timeout(300)
+    page.wait_for_function(
+        "document.querySelectorAll('.col[data-i=\"1\"] .row').length === 3"
+    )
     names = page.eval_on_selector_all(
         '.col[data-i="1"] .row .label', "els => els.map(e => e.textContent)"
     )
@@ -477,13 +500,13 @@ def test_clicking_a_folder_opens_its_column(page):
 def test_the_keyboard_model_is_the_shared_one(page):
     page.open()
     page.click('.col[data-i="0"] .row:has-text("notes")')
-    page.wait_for_timeout(300)
+    page.wait_for_function("sel[0] === 'notes' && path[1]?.kids")
     page.keyboard.press("ArrowRight")
-    page.wait_for_timeout(300)
+    page.wait_for_function("focusCol === 1")
     assert page.evaluate("focusCol") == 1
     scroll = page.evaluate("window.scrollX")
     page.keyboard.press("ArrowLeft")
-    page.wait_for_timeout(300)
+    page.wait_for_function("focusCol === 0")
     assert page.evaluate("focusCol") == 0
     assert page.evaluate("window.scrollX") == scroll
 
@@ -491,7 +514,9 @@ def test_the_keyboard_model_is_the_shared_one(page):
 def test_an_empty_directory_says_so(page):
     page.open()
     page.click('.col[data-i="0"] .row:has-text("empty")')
-    page.wait_for_timeout(400)
+    page.wait_for_function(
+        "document.querySelector('.col[data-i=\"1\"] .col-note')?.textContent.includes('Empty')"
+    )
     assert "Empty" in page.inner_text('.col[data-i="1"] .col-note')
 
 
@@ -962,7 +987,9 @@ def test_metadata_rides_along_with_the_listing(page):
     """No getFile() equivalent on this side: size and mtime arrive with the
     directory, so the pane is filled without a second round-trip."""
     page.open("notes/plain.txt")
-    page.wait_for_timeout(400)
+    page.wait_for_function(
+        "document.querySelector('#pv-sub')?.textContent.includes('5 B')"
+    )
     assert "5 B" in page.inner_text("#pv-sub")
     assert "modified" in page.inner_text("#pv-sub")
 
@@ -970,10 +997,10 @@ def test_metadata_rides_along_with_the_listing(page):
 def test_the_url_path_mirrors_the_file_path(page):
     page.open()
     page.click('.col[data-i="0"] .row:has-text("notes")')
-    page.wait_for_timeout(300)
+    page.wait_for_function("location.pathname.endsWith('/n/notes')")
     assert page.url.endswith("/n/notes")
     page.click('.col[data-i="1"] .row:has-text("plain.txt")')
-    page.wait_for_timeout(300)
+    page.wait_for_function("location.pathname.endsWith('/n/notes/plain.txt')")
     assert page.url.endswith("/n/notes/plain.txt?filemill=render")
 
 
@@ -1160,22 +1187,21 @@ def test_preview_arrows_preserve_layout_then_restore_document_parent(page):
 
 
 def _dial_settled(page) -> float:
-    """Wait until the dial has stopped and its scroll range has been re-based.
-
-    The dial glides (CSS smooth scroll) and re-bases its range SETTLE_MS after
-    the last scroll event, so "settled" is both numbers holding still for
-    longer than that.
-    """
-    prev = None
-    still = 0
-    for _ in range(60):  # 6 s ceiling
-        cur = page.evaluate("[dial(), finder.scrollLeft]")
-        still = still + 1 if cur == prev else 0
-        if still >= 3:
-            return cur[0]
-        prev = cur
-        page.wait_for_timeout(100)
-    raise AssertionError("the dial never settled")
+    """Wait for smooth scrolling and the dial range rebase to settle."""
+    page.evaluate("window.__scrollProbe = {value: null, since: 0}")
+    page.wait_for_function(
+        """() => {
+          const value = JSON.stringify([dial(), finder.scrollLeft,
+            finder.scrollWidth, finder.clientWidth, folded]);
+          const now = performance.now();
+          if (value !== window.__scrollProbe.value) {
+            window.__scrollProbe = {value, since: now};
+          }
+          return now - window.__scrollProbe.since >= 300;
+        }""",
+        timeout=6000,
+    )
+    return page.evaluate("dial()")
 
 
 def _fling(page, direction: int) -> float:
@@ -1463,13 +1489,13 @@ def test_opening_a_folder_from_a_full_width_root_shows_the_new_column(page):
 def test_back_steps_out_of_the_folder_it_entered(page):
     page.open()
     page.click('.col[data-i="0"] .row:has-text("notes")')
-    page.wait_for_timeout(300)
+    page.wait_for_function("sel[0] === 'notes' && path[1]?.kids")
     page.click('.col[data-i="1"] .row:has-text("deep")')
-    page.wait_for_timeout(300)
-    page.wait_for_timeout(400)
+    page.wait_for_function("location.pathname.endsWith('/notes/deep')")
+
     deep_url = page.url
     page.go_back()
-    page.wait_for_timeout(500)
+    page.wait_for_function("sel[0] === 'notes' && path.length === 2")
     assert page.url != deep_url
     assert page.evaluate("sel").count("deep") <= 1
 
@@ -1478,11 +1504,13 @@ def test_stepping_over_sibling_folders_rewrites_history(page):
     """ADR 0050: ↑/↓ over folders in one column opens them without stacking Back."""
     page.open()
     page.click('.col[data-i="0"] .row:has-text("README.md")')
-    page.wait_for_timeout(300)
+    page.wait_for_function("location.pathname.endsWith('/README.md')")
     before = page.evaluate("history.length")
     for key in ("ArrowUp", "ArrowUp", "ArrowDown", "End", "Home"):
         page.keyboard.press(key)
-        page.wait_for_timeout(300)
+        page.wait_for_function(
+            "ROUTER.read().path.join('/') === sel.join('/') && !path.some(n => n.loading)"
+        )
     assert page.evaluate("path.length") == 2
     assert page.evaluate("history.length") == before
 
@@ -1492,11 +1520,11 @@ def test_clicking_across_folders_records_history(page):
     page.open_resource("?f=")
     before = page.evaluate("history.length")
     page.click('.col[data-i="0"] .row:has-text("notes")')
-    page.wait_for_timeout(300)
+    page.wait_for_function("sel[0] === 'notes' && path[1]?.kids")
     page.click('.col[data-i="0"] .row:has-text("code")')
-    page.wait_for_timeout(300)
+    page.wait_for_function("sel[0] === 'code' && path[1]?.kids")
     page.click('.col[data-i="1"] .row:has-text("sample.py")')
-    page.wait_for_timeout(300)
+    page.wait_for_function("location.pathname.endsWith('/code/sample.py')")
     assert page.url.endswith("/code/sample.py?f=&filemill=render")
     assert page.evaluate("history.length") == before + 2
     page.go_back()
@@ -1513,15 +1541,15 @@ def test_clicking_across_folders_records_history(page):
 def test_back_retraces_the_folders_that_were_opened(page):
     page.open()
     page.click('.col[data-i="0"] .row:has-text("notes")')
-    page.wait_for_timeout(300)
+    page.wait_for_function("sel[0] === 'notes' && path[1]?.kids")
     page.click('.col[data-i="1"] .row:has-text("deep")')
-    page.wait_for_timeout(300)
+    page.wait_for_function("sel[1] === 'deep' && path[2]?.kids")
     page.click('.col[data-i="2"] .row:has-text("leaf.md")')
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     page.click('.col[data-i="1"] .row:has-text("plain.txt")')
     page.wait_for_selector("#preview .pv-text")
     page.click('.col[data-i="1"] .row:has-text("short.txt")')
-    page.wait_for_timeout(300)
+    page.wait_for_function("location.pathname.endsWith('/notes/short.txt')")
     assert page.url.endswith("/notes/short.txt?filemill=render")
 
     page.go_back()
@@ -1541,9 +1569,9 @@ def test_alt_arrows_are_left_to_the_browser(page):
     """Alt+←/→ are the browser's Back and Forward; the finder must not eat them."""
     page.open()
     page.click('.col[data-i="0"] .row:has-text("notes")')
-    page.wait_for_timeout(300)
+    page.wait_for_function("sel[0] === 'notes' && path[1]?.kids")
     page.click('.col[data-i="1"] .row:has-text("deep")')
-    page.wait_for_timeout(300)
+    page.wait_for_function("sel[1] === 'deep' && path[2]?.kids")
     prevented = page.evaluate(
         """() => ["ArrowLeft", "ArrowRight"].map((key) => {
             const e = new KeyboardEvent("keydown",
@@ -1568,15 +1596,8 @@ def test_alt_arrows_are_left_to_the_browser(page):
 
 
 def _scroll_settled(page) -> None:
-    """Wait until the smooth scroll of #finder has stopped moving."""
-    prev = None
-    for _ in range(40):  # 40 × 100 ms — a 4 s ceiling
-        cur = page.evaluate("document.getElementById('finder').scrollLeft")
-        if cur == prev:
-            return
-        prev = cur
-        page.wait_for_timeout(100)
-    raise AssertionError("#finder never stopped scrolling")
+    """Wait for the smooth scroll and dial range rebase."""
+    _dial_settled(page)
 
 
 def test_arrow_navigation_folds_but_never_unfolds(page, ui_root):
@@ -1592,9 +1613,9 @@ def test_arrow_navigation_folds_but_never_unfolds(page, ui_root):
     page.set_viewport_size({"width": 1290, "height": 700})
     page.open()
     page.click('.col[data-i="0"] .row[title="w"]')
-    page.wait_for_timeout(300)
+    page.wait_for_function("sel[0] === 'w' && path[1]?.kids")
     page.click('.col[data-i="1"] .row[title="inner"]')
-    page.wait_for_timeout(300)
+    page.wait_for_function("sel[1] === 'inner' && path[2]?.kids")
     page.click('.col[data-i="2"] .row[title="a-wide"]')
     _scroll_settled(page)
     page.evaluate("dialTo(2 * foldUnit() * range(), true)")
@@ -1642,7 +1663,9 @@ def test_a_local_folder_replaces_the_served_tree(page):
     page.open()
     page.evaluate(FAKE_HANDLE)
     page.evaluate("mount(__local())")
-    page.wait_for_timeout(400)
+    page.wait_for_function(
+        "path[0]?.name === 'my-laptop-folder' && document.querySelector('.col .row')"
+    )
     assert page.evaluate("path[0].name") == "my-laptop-folder"
     names = page.eval_on_selector_all(
         '.col[data-i="0"] .row .label', "els => els.map(e => e.textContent)"
@@ -1679,7 +1702,9 @@ def test_local_markdown_is_rendered_in_the_browser(page):
     page.open()
     page.evaluate(FAKE_HANDLE)
     page.evaluate("mount(__local())")
-    page.wait_for_timeout(300)
+    page.wait_for_function(
+        "path[0]?.name === 'my-laptop-folder' && document.querySelector('.col .row')"
+    )
     posts: list[str] = []
     page.on("request", lambda r: posts.append(r.url) if r.method == "POST" else None)
     _click_local(page, "local.md", "#preview .pv-rich h1")
@@ -1762,7 +1787,9 @@ def test_local_source_is_highlighted_without_asking_the_server(page):
     page.open()
     page.evaluate(FAKE_HANDLE)
     page.evaluate("mount(__local())")
-    page.wait_for_timeout(300)
+    page.wait_for_function(
+        "path[0]?.name === 'my-laptop-folder' && document.querySelector('.col .row')"
+    )
     posts: list[str] = []
     page.on("request", lambda r: posts.append(r.url) if r.method == "POST" else None)
     page.click('.col[data-i="0"] .row:has-text("local.py")')
@@ -1779,10 +1806,14 @@ def test_local_mode_stops_writing_the_url(page):
     page.open("notes/plain.txt")
     page.evaluate(FAKE_HANDLE)
     page.evaluate("mount(__local())")
-    page.wait_for_timeout(300)
+    page.wait_for_function(
+        "path[0]?.name === 'my-laptop-folder' && document.querySelector('.col .row')"
+    )
     before = page.url
     page.click('.col[data-i="0"] .row:has-text("local.md")')
-    page.wait_for_timeout(400)
+    page.wait_for_function(
+        "sel[0] === 'local.md' && document.querySelector('#preview .pv-rich')"
+    )
     assert page.url == before
     assert page.url.rstrip("/").endswith("/n")
 
@@ -1792,9 +1823,14 @@ def test_leaving_local_mode_restores_the_served_tree(page):
     root_name = page.evaluate("document.documentElement.dataset.root")
     page.evaluate(FAKE_HANDLE)
     page.evaluate("mount(__local())")
-    page.wait_for_timeout(300)
+    page.wait_for_function(
+        "path[0]?.name === 'my-laptop-folder' && document.querySelector('.col .row')"
+    )
     page.click("#leave-local")
-    page.wait_for_timeout(600)
+    page.wait_for_function(
+        "name => path[0]?.name === name && !document.querySelector('.spinner')",
+        arg=root_name,
+    )
     assert page.evaluate("path[0].name") == root_name
     assert not page.is_visible("#local-badge")
     names = page.eval_on_selector_all(
@@ -1832,7 +1868,9 @@ def test_nothing_is_fetched_from_a_cdn(page):
 
     page.evaluate(FAKE_HANDLE)
     page.evaluate("mount(__local())")
-    page.wait_for_timeout(300)
+    page.wait_for_function(
+        "path[0]?.name === 'my-laptop-folder' && document.querySelector('.col .row')"
+    )
     _click_local(page, "local.md", "#preview .pv-rich")
     # local.py: core/syntax.js colours it in the page, so there is no response
     # to wait for — only the absence of a request.
@@ -1866,7 +1904,7 @@ def test_the_server_edition_registers_core_and_browser_rich_renderers(page):
 def test_no_console_errors(page):
     page.open("notes/deep/leaf.md")
     page.click('.col[data-i="0"] .row:has-text("code")')
-    page.wait_for_timeout(400)
+    page.wait_for_function("sel[0] === 'code' && path[1]?.kids")
     assert page.errors == []
 
 
@@ -1937,7 +1975,7 @@ def test_the_url_names_a_row_inside_a_database(page):
     page.click('.col[data-i="0"] .row:has-text("sample.db")')
     page.wait_for_selector('.col[data-i="1"] .row', timeout=15000)
     page.click('.col[data-i="1"] .row:has-text("users")')
-    page.wait_for_timeout(400)
+    page.wait_for_function("location.pathname.endsWith('/sample.db/users')")
     assert page.url.endswith("/n/sample.db/users")
 
 
@@ -2216,7 +2254,9 @@ def test_a_row_shows_no_invented_size_or_date(page):
 
 def test_a_real_file_still_shows_its_size_and_date(page):
     page.open("notes/plain.txt")
-    page.wait_for_timeout(400)
+    page.wait_for_function(
+        "document.querySelector('#pv-sub')?.textContent.includes('5 B')"
+    )
     assert "5 B" in page.inner_text("#pv-sub")
     assert "modified" in page.inner_text("#pv-sub")
 
@@ -2248,7 +2288,7 @@ def test_the_resource_route_keeps_the_query_while_you_browse(page):
     """router-path.js preserves the query, so the view survives a click."""
     page.open_resource("notes/deep/leaf.md?filemill=render")
     page.click('.col[data-i="0"] .row:has-text("code")')
-    page.wait_for_timeout(400)
+    page.wait_for_function("location.pathname.endsWith('/code')")
     assert page.url.endswith("/code")
 
 

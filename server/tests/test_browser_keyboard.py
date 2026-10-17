@@ -171,14 +171,7 @@ def _wait_for_finder_scroll(page) -> None:
         " return Boolean(f && typeof dial === 'function' && dial() > 0); }",
         timeout=20000,
     )
-    previous = None
-    for _ in range(40):  # 40 x 100 ms, a 4 s ceiling on the smooth scroll
-        current = page.evaluate("() => dial()")
-        if current == previous:
-            return
-        previous = current
-        page.wait_for_timeout(100)
-    raise AssertionError("#finder never stopped scrolling")
+    _dial_settled(page)
 
 
 # ── The shared UI at / ───────────────────────────────────────────────────────
@@ -224,7 +217,7 @@ def _ui_page(base_url: str, mobile: bool = False, viewport: dict | None = None):
             page = browser.new_page(viewport=viewport or {"width": 1400, "height": 900})
         page.goto(base_url)
         page.wait_for_function("typeof path !== 'undefined' && path.length >= 1")
-        page.wait_for_timeout(400)
+        page.wait_for_function("document.querySelector('.col .row')")
         try:
             yield page
         finally:
@@ -232,15 +225,20 @@ def _ui_page(base_url: str, mobile: bool = False, viewport: dict | None = None):
 
 
 def _dial_settled(page) -> None:
-    """Wait until #finder's smooth scroll has stopped moving, at any position."""
-    previous = None
-    for _ in range(40):  # 40 x 100 ms — a 4 s ceiling
-        current = page.evaluate("document.getElementById('finder').scrollLeft")
-        if current == previous:
-            return
-        previous = current
-        page.wait_for_timeout(100)
-    raise AssertionError("#finder never stopped scrolling")
+    """Wait for smooth scrolling and the dial range rebase to settle."""
+    page.evaluate("window.__scrollProbe = {value: null, since: 0}")
+    page.wait_for_function(
+        """() => {
+          const value = JSON.stringify([dial(), finder.scrollLeft,
+            finder.scrollWidth, finder.clientWidth, folded]);
+          const now = performance.now();
+          if (value !== window.__scrollProbe.value) {
+            window.__scrollProbe = {value, since: now};
+          }
+          return now - window.__scrollProbe.since >= 300;
+        }""",
+        timeout=6000,
+    )
 
 
 def _ui_tap(page, col: int, name: str) -> None:
@@ -258,7 +256,15 @@ def _ui_tap(page, col: int, name: str) -> None:
         page.click(sel + ".spine")
         page.wait_for_selector(sel + ":not(.spine)", timeout=20000)
     page.click(f'{sel} .row:has-text("{name}")')
-    page.wait_for_timeout(600)
+    page.wait_for_function(
+        """([i, name]) => sel[i] === name && path.every(n => n.kids !== null)
+          && !document.querySelector('.spinner')
+          && (path[i + 1]?.name === name
+            ? colCache.has(path[i + 1])
+            : document.querySelector('#preview .col-head .name')?.textContent.includes(name)
+              && document.querySelector('#pv-content > *'))""",
+        arg=[col, name],
+    )
 
 
 def _expect_ui_column(page, col: int) -> None:
@@ -367,7 +373,7 @@ def test_arrow_left_keeps_browser_url_in_sync(live_server: str):
         file_url = page.url
 
         page.keyboard.press("ArrowLeft")
-        page.wait_for_timeout(300)
+        page.wait_for_function("focusCol === 0")
         assert page.evaluate("focusCol") == 0
         assert page.url == file_url  # focus is not navigation
 
@@ -412,14 +418,16 @@ def test_rendered_relative_markdown_link_uses_root_relative_url(
             f"{live_server}/my-knowledge/docs/topic.md?filemill=render",
             wait_until="networkidle",
         )
-        page.wait_for_timeout(900)
+        page.wait_for_function("document.querySelector('#preview a')")
 
         preview_link = page.locator(
             '#preview a[href="/my-knowledge/docs/subdir/next.md?filemill=render"]'
         ).first
         assert preview_link.count() == 1
         preview_link.click()
-        page.wait_for_timeout(900)
+        page.wait_for_function(
+            "document.querySelector('#preview .pv-rich h1')?.textContent === 'Next'"
+        )
 
         _expect_url_ending(page, "/my-knowledge/docs/subdir/next.md?filemill=render")
         assert "Next" in page.locator("#preview").inner_text()
@@ -460,26 +468,26 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
     """
     with _ui_page(live_server) as page:
         page.keyboard.press("ArrowDown")  # commit the first row: my-knowledge
-        page.wait_for_timeout(400)
+        page.wait_for_function("sel[0] === 'my-knowledge'")
         assert page.evaluate("sel[0]") == "my-knowledge"
         _expect_ui_column(page, 1)
 
         page.keyboard.press("ArrowRight")  # step in; the remembered row commits
-        page.wait_for_timeout(500)
+        page.wait_for_function("focusCol === 1 && sel[1] === 'docs'")
         assert page.evaluate("focusCol") == 1
         assert page.evaluate("sel[1]") == "docs"
 
         folder_url = page.url
         page.keyboard.press("ArrowLeft")
         page.keyboard.press("ArrowRight")
-        page.wait_for_timeout(500)
+        page.wait_for_function("focusCol === 1 && sel[1] === 'docs'")
         assert page.evaluate("focusCol") == 1
         assert page.evaluate("sel[1]") == "docs"
         assert page.locator('.col[data-i="1"] .row.sel .label').inner_text() == "docs"
         assert page.url == folder_url
 
         page.keyboard.press("ArrowDown")  # docs → AGENTS.md, previewed as a file
-        page.wait_for_timeout(400)
+        page.wait_for_function("sel[1] === 'AGENTS.md'")
         assert page.evaluate("sel[1]") == "AGENTS.md"
         _expect_ui_column(page, 1)
         _expect_preview(page)
@@ -487,7 +495,7 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
         file_url = page.url
         page.keyboard.press("ArrowLeft")
         page.keyboard.press("ArrowRight")
-        page.wait_for_timeout(500)
+        page.wait_for_function("focusCol === 1 && sel[1] === 'AGENTS.md'")
         assert page.evaluate("focusCol") == 1
         assert page.evaluate("sel[1]") == "AGENTS.md"
         assert (
@@ -498,12 +506,12 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
         _expect_preview(page)
 
         page.keyboard.press("ArrowLeft")  # focus out — the column must survive
-        page.wait_for_timeout(300)
+        page.wait_for_function("focusCol === 0")
         assert page.evaluate("focusCol") == 0
         _expect_ui_column(page, 1)
 
         page.keyboard.press("ArrowRight")  # re-enter: the cursor row re-commits
-        page.wait_for_timeout(500)
+        page.wait_for_function("focusCol === 1 && sel[1] === 'AGENTS.md'")
         assert page.evaluate("focusCol") == 1
         assert page.evaluate("sel[1]") == "AGENTS.md"
         _expect_ui_column(page, 1)
@@ -557,9 +565,9 @@ def test_vertical_navigation_preserves_folded_ancestor(live_server: str):
     with _ui_page(live_server) as page:
         page.keyboard.press("ArrowDown")
         page.keyboard.press("ArrowRight")
-        page.wait_for_timeout(500)
+        page.wait_for_function("focusCol === 1 && path.length >= 2")
         page.keyboard.press("ArrowRight")
-        page.wait_for_timeout(500)
+        page.wait_for_function("focusCol === 2 && path.length >= 3")
 
         page.evaluate("""() => {
             const finder = document.getElementById("finder");
@@ -569,7 +577,7 @@ def test_vertical_navigation_preserves_folded_ancestor(live_server: str):
             "() => document.querySelector('.col[data-i=\"0\"]').classList.contains('spine')"
         )
         page.keyboard.press("ArrowDown")
-        page.wait_for_timeout(300)
+        page.wait_for_function("document.querySelector('.col[data-i=\"0\"].spine')")
         assert page.locator('.col[data-i="0"]').evaluate(
             "el => el.classList.contains('spine')"
         )
@@ -689,17 +697,17 @@ def test_arrow_navigation_keeps_fold_animation_running(live_server: str):
     with _ui_page(live_server, mobile=True) as page:
         page.keyboard.press("ArrowDown")
         page.keyboard.press("ArrowRight")
-        page.wait_for_timeout(500)
+        page.wait_for_function("focusCol === 1 && path.length >= 2")
         page.keyboard.press("ArrowRight")
-        page.wait_for_timeout(500)
+        page.wait_for_function("focusCol === 2 && path.length >= 3")
         page.evaluate("finder.scrollLeft = finder.scrollWidth")
         _wait_for_finder_scroll(page)
 
         before = page.evaluate("dial()")
         page.keyboard.press("ArrowLeft")
-        page.wait_for_timeout(50)
+        page.wait_for_function("before => dial() < before", arg=before)
         during = page.evaluate("dial()")
-        page.wait_for_timeout(350)
+        _dial_settled(page)
         after = page.evaluate("dial()")
 
         assert before > during > after
@@ -779,7 +787,7 @@ def test_mobile_long_press_menu_copies_paths_for_files_and_directories(
         row.dispatch_event(
             "pointerdown", {"pointerType": "touch", "clientX": 20, "clientY": 20}
         )
-        page.wait_for_timeout(550)
+        page.wait_for_function("document.querySelector('#row-menu')?.checkVisibility()")
         assert page.locator("#row-menu").is_visible()
         await_copy = page.locator("#row-menu button", has_text="Copy name")
         await_copy.click()
@@ -790,7 +798,7 @@ def test_mobile_long_press_menu_copies_paths_for_files_and_directories(
         file.dispatch_event(
             "pointerdown", {"pointerType": "touch", "clientX": 20, "clientY": 20}
         )
-        page.wait_for_timeout(550)
+        page.wait_for_function("document.querySelector('#row-menu')?.checkVisibility()")
         assert page.locator(
             "#row-menu button", has_text="Copy relative path"
         ).is_visible()
@@ -801,7 +809,7 @@ def test_mobile_long_press_menu_copies_paths_for_files_and_directories(
         file.dispatch_event(
             "pointerdown", {"pointerType": "touch", "clientX": 20, "clientY": 20}
         )
-        page.wait_for_timeout(550)
+        page.wait_for_function("document.querySelector('#row-menu')?.checkVisibility()")
         page.locator("#row-menu button", has_text="Copy absolute path").click()
         assert page.evaluate("navigator.clipboard.readText()").endswith(
             "/my-knowledge/AGENTS.md"
@@ -965,7 +973,6 @@ def test_mobile_directory_restore_runtime_scroll_position_is_stable(
             f"{live_server}/my-knowledge/docs",
             wait_until="networkidle",
         )
-        page.wait_for_timeout(1100)
 
         _expect_ui_column(page, 2)
 
@@ -990,7 +997,6 @@ def test_mobile_file_restore_runtime_scroll_position_is_stable(
             f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
             wait_until="networkidle",
         )
-        page.wait_for_timeout(1100)
 
         _expect_preview(page)
 
@@ -1142,7 +1148,6 @@ def test_mobile_file_restore_scroll_position_is_not_zero(
             f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
             wait_until="networkidle",
         )
-        page.wait_for_timeout(1100)
 
         _wait_for_finder_scroll(page)
         scroll_left = page.evaluate(
@@ -1195,7 +1200,7 @@ def test_mobile_restore_runtime_scroll_regression_is_covered(
             f"{live_server}/my-knowledge/docs",
             wait_until="networkidle",
         )
-        page.wait_for_timeout(1100)
+
         _expect_ui_column(page, 2)
 
         context.close()
@@ -1219,7 +1224,7 @@ def test_mobile_restore_preview_runtime_scroll_regression_is_covered(
             f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
             wait_until="networkidle",
         )
-        page.wait_for_timeout(1100)
+
         _expect_preview(page)
 
         context.close()
@@ -1288,7 +1293,7 @@ def test_mobile_restore_regression_directory_only(
             f"{live_server}/my-knowledge/docs",
             wait_until="networkidle",
         )
-        page.wait_for_timeout(1100)
+
         _expect_ui_column(page, 2)
 
         context.close()
@@ -1312,7 +1317,7 @@ def test_mobile_restore_regression_preview_only(
             f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
             wait_until="networkidle",
         )
-        page.wait_for_timeout(1100)
+
         _expect_preview(page)
 
         context.close()
@@ -1346,7 +1351,6 @@ def test_mobile_restore_behavior_preview_assertions(
             f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
             wait_until="networkidle",
         )
-        page.wait_for_timeout(1100)
 
         _wait_for_finder_scroll(page)
         assert page.evaluate("() => dial()") > 0

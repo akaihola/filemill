@@ -217,7 +217,7 @@ async def boot(pg, base, *, rich=True, stubs=False, vendored=False):
         await pg.evaluate(VENDOR_MAP)
     await pg.evaluate(FAKE)
     await pg.evaluate("mount(__mk())")
-    await pg.wait_for_timeout(250)
+    await pg.wait_for_function("path[0]?.kids && document.querySelector('.col .row')")
 
 
 async def preview(pg, name, timeout=4000, ready=None):
@@ -380,7 +380,7 @@ async def main(bundle, fake_handle, playwright):
               "; ".join(u for u in requests if "pptx" in u))
 
         await pg.reload()
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("document.querySelector('#s-rich')?.getAttribute('aria-checked') === 'false'")
         check("The choice survives a reload — consent is not re-asked",
               await pg.evaluate("localStorage.getItem('filemill.rich')") == "off")
         check("…and the toggle reads back off",
@@ -432,7 +432,7 @@ async def main(bundle, fake_handle, playwright):
         await preview(pg, "note.md")
         before = await pg.evaluate("location.href")
         await pg.click("#pv-content a.wikilink")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("sel[0] === 'Other Note.md' && document.querySelector('#pv-content .pv-rich')")
         check("A wikilink selects the file it names",
               await pg.evaluate("sel[0]") == "Other Note.md",
               str(await pg.evaluate("sel")))
@@ -471,7 +471,7 @@ async def main(bundle, fake_handle, playwright):
         await preview(pg, "note.md")
         await pg.click("#gear")
         await pg.click("#s-rich")
-        await pg.wait_for_timeout(200)
+        await pg.wait_for_function("document.querySelector('#s-rich')?.getAttribute('aria-checked') === 'true'")
         await preview(pg, "code.py")          # move the selection off note.md
         html = await preview(pg, "note.md")
         check("Turning it back on takes effect without a reload",

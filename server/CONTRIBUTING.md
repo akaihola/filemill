@@ -240,13 +240,12 @@ and `POST /api/render`.
 
 ### Wait for an Element, Never for a Duration
 
-`page.wait_for_timeout(900)` is a guess about the load on the machine. On a
-4-core host with four busy loops, 2 of 6 attempts had no `#col-0` at 800 ms.
-`_click_item()` waits for the entry with `page.wait_for_function` and then
-clicks it, so a missing entry raises a `TimeoutError` that names the column.
-Write new browser assertions the same way. A helper that returns quietly when
-it finds nothing turns a slow machine into an assertion failure three lines
-away from the cause.
+Use Playwright `expect` assertions or `page.wait_for_function` predicates for
+navigation, preview content and asynchronous work. Wait for the expected value,
+not merely for an old element to exist. Scroll checks must include the dial's
+range rebase; race checks must observe the delayed operation starting and
+finishing. `tests/test_browser_waits.py` rejects fixed browser waits in the static
+Python scripts and server tests.
 
 ## Submitting changes
 

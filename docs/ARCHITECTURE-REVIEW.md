@@ -110,7 +110,10 @@ Keep these.
   precede a deferred scroll write even with CSS scrolling set to `auto`
   ([93], 2026-10-17). Pre-commit
   runs ruff, ruff format, mypy, deno and the bundle check. The baseline and
-  dispositions are in `docs/testing/remaining-red-tests.md`.
+  dispositions are in `docs/testing/remaining-red-tests.md`. Browser checks in
+  the static Python scripts and server tests wait for observable state, including
+  scroll/dial stability and completed storage writes, rather than fixed sleeps.
+  A source guard prevents fixed browser waits from returning (2026-10-17).
 - Real filesystem tests without a picker: `static/test-url.py` drives the real
   FSA adapter against the origin private file system.
 - Size limits and the image extension list have one home, `ui/core/limits.js`.
@@ -270,7 +273,11 @@ fold or a settings change therefore reads and parses the file again, and resets
 scroll and media. [21] is marked Completed but its cache is not in the source,
 so [29] lacks its prerequisite. `navSeq` guards `choose` and refresh
 (`ui/core/nav.js:50`); `applyPath` uses a shared `applying` flag and mutates the
-path across awaits.
+path across awaits. The condition-based wait audit (2026-10-17) confirmed the
+race: a click on a different folder during a root refresh can leave the old
+child appended to the new chain. The existing static check awaits the refresh
+before clicking and now describes that scenario accurately; overlapping
+navigation remains part of this finding.
 
 **Acceptance.** Resize and fold cause no new provider call. Save, refresh and
 mode change invalidate the preview. A delayed old navigation or preview cannot

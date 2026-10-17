@@ -113,7 +113,7 @@ async def open_at(pg, base, frag=""):
     await pg.evaluate("localStorage.setItem('filemill.rich','off')")
     await pg.evaluate(FAKE)
     await pg.evaluate("mount(__mk())")
-    await pg.wait_for_timeout(250)
+    await pg.wait_for_function("path.length && !document.querySelector('.spinner') && location.hash.includes('r=workspace')")
 
 
 def check(name, cond, detail=""):
@@ -156,15 +156,15 @@ async def main(bundle, fake_handle, opfs_root, playwright):
               await pg.evaluate("location.hash"))
 
         await pg.click('.col[data-i="0"] .row:has-text("mixed")')
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("sel[0] === 'mixed' && path[1]?.kids")
         await pg.click('.col[data-i="1"] .row:has-text("note.md")')
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("location.hash === '#r=workspace&p=mixed/note.md&v=render'")
         check("Selecting a file writes its path to the URL",
               await pg.evaluate("location.hash") == "#r=workspace&p=mixed/note.md&v=render",
               await pg.evaluate("location.hash"))
 
         await pg.click('.col[data-i="1"] .row:has-text("sp ace")')
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("location.hash === '#r=workspace&p=mixed/sp%20ace%20%26%20co.txt&v=render'")
         check("Names with spaces and & are encoded once",
               await pg.evaluate("location.hash")
               == "#r=workspace&p=mixed/sp%20ace%20%26%20co.txt&v=render",
@@ -175,11 +175,11 @@ async def main(bundle, fake_handle, opfs_root, playwright):
         await pg.click('.col[data-i="0"] .row:has-text("mixed")')
         await pg.click('.col[data-i="1"] .row:has-text("note.md")')
         # note.md opens as a column of headings; its own push must land first
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("location.hash === '#r=workspace&p=mixed/note.md&v=render'")
         before = await pg.evaluate("history.length")
         for key in ("ArrowDown", "ArrowUp", "ArrowDown"):
             await pg.keyboard.press(key)
-            await pg.wait_for_timeout(120)
+            await pg.wait_for_function("ROUTER.read().path.join('/') === sel.join('/') && !path.some(n => n.loading)")
         after = await pg.evaluate("history.length")
         check("↑/↓ inside one column rewrite the URL, they do not stack history",
               after == before, f"{before} → {after}")
@@ -213,18 +213,18 @@ async def main(bundle, fake_handle, opfs_root, playwright):
         # ── Back walks folders ───────────────────────────────────────────
         await open_at(pg, base)
         await pg.click('.col[data-i="0"] .row:has-text("deep")')
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("sel[0] === 'deep' && path[1]?.kids")
         await pg.click('.col[data-i="1"] .row:has-text("alpha")')
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("sel[1] === 'alpha' && path[2]?.kids")
         deep_hash = await pg.evaluate("location.hash")
         await pg.go_back()
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("path.length === 2 && sel[0] === 'deep'")
         st = await pg.evaluate("__state()")
         check("Back steps out of the folder it stepped into",
               await pg.evaluate("location.hash") != deep_hash
               and st["sel"] == ["deep"], str(st))
         await pg.go_forward()
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("path.length === 3 && sel[1] === 'alpha'")
         check("Forward returns to it",
               (await pg.evaluate("__state()"))["sel"] == ["deep", "alpha"],
               str(await pg.evaluate("__state()")))
@@ -265,7 +265,8 @@ async def main(bundle, fake_handle, opfs_root, playwright):
             ".getDirectoryHandle('bench')))()")
         await pg.wait_for_function(
             "path.length && path[0].metaDone && colCache.get(path[0])", timeout=60_000)
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function(
+            "document.querySelector('.col[data-i=\"0\"] .row')?.title === visibleKids(path[0])[0]?.name")
         top = await pg.eval_on_selector_all(
             '.col[data-i="0"] .row', "e => e.slice(0,3).map(x => x.title)")
         biggest = await pg.evaluate(

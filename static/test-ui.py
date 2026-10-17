@@ -326,25 +326,23 @@ def check(name, cond, detail=""):
 async def mount(pg, n=0):
     await pg.evaluate(f"mount(__mk({n}))")
     await pg.wait_for_function("path.length===1 && colCache.get(path[0])")
-    await pg.wait_for_timeout(150)
+    await pg.wait_for_function("document.querySelector('.col .row') && !document.querySelector('.spinner')")
+    await scroll_settled(pg)
 
 
-async def scroll_settled(pg, tries=40, step=100):
-    """Wait until #finder has stopped moving, rather than guessing a duration.
-
-    The dial is a CSS smooth scroll (styles.css: `scroll-behavior`), so a
-    scrollLeft write glides for 400-500 ms instead of jumping — a fixed wait
-    samples the animation rather than its result. Returns False if it never
-    settles, so a check can say so instead of failing with no explanation.
-    """
-    prev = None
-    for _ in range(tries):                       # 40 x 100 ms — a 4 s ceiling
-        cur = await pg.evaluate("finder.scrollLeft")
-        if cur == prev:
-            return True
-        prev = cur
-        await pg.wait_for_timeout(step)
-    return False
+async def scroll_settled(pg):
+    """Wait for smooth scrolling and the dial range rebase to settle."""
+    await pg.evaluate("window.__scrollProbe = {value: null, since: 0}")
+    await pg.wait_for_function("""() => {
+          const value = JSON.stringify([dial(), finder.scrollLeft,
+            finder.scrollWidth, finder.clientWidth, folded]);
+          const now = performance.now();
+          if (value !== window.__scrollProbe.value) {
+            window.__scrollProbe = {value, since: now};
+          }
+          return now - window.__scrollProbe.since >= 300;
+        }""", timeout=6000)
+    return True
 
 
 async def editor_feature_checks(pg):
@@ -468,6 +466,7 @@ async def editor_main(bundle, fake_handle, playwright):
 
 
 async def click_row(pg, column, name):
+    await scroll_settled(pg)
     spine = pg.locator(f'.col[data-i="{column}"].spine')
     if await spine.count():
         await spine.click()
@@ -521,7 +520,7 @@ async def main(bundle, fake_handle, playwright):
         # network in CI), and log two console errors — see test-rich.py, which
         # covers both sides of that switch deliberately.
         await pg.evaluate("localStorage.setItem('filemill.rich','off')")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("typeof renderNode === 'function' && RENDERERS.length > 0")
         cases = [
             ("folder", {"dir": True}, ("folder", "none", False)),
             ("data.db", {"vpath": "table"}, ("vfs", "virtual", False)),
@@ -603,7 +602,7 @@ async def main(bundle, fake_handle, playwright):
             "!welcome || welcome.hidden" if getattr(playwright, "native", False) else "welcome.hidden"))
 
         await pg.click('.col[data-i="0"] .row:has-text("mixed")')
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("sel[0] === 'mixed' && path[1]?.kids")
         long = '.col[data-i="1"] .row[title^="this-is-a-very"]'
         visual = await pg.inner_text(long)
         check("Long names keep their extension", visual.rstrip().endswith(".txt") and
@@ -622,16 +621,16 @@ async def main(bundle, fake_handle, playwright):
         print("\n── Directory states ─────────────────────────────────────────")
         for row, expect in (("empty", "Empty"), ("locked", "No permission")):
             await pg.click(f'.col[data-i="0"] .row:has-text("{row}")')
-            await pg.wait_for_timeout(250)
+            await pg.wait_for_function("text => document.querySelector('.col[data-i=\"1\"] .col-note')?.textContent.includes(text)", arg=expect)
             note = await pg.inner_text('.col[data-i="1"] .col-note')
             check(f"{row} directory shows “{expect}”", expect in note, note)
             # A column with no rows has nothing to highlight, so → must not move
             # focus into it — that read as a no-op while killing ↑/↓.
             await pg.keyboard.press("ArrowRight")
-            await pg.wait_for_timeout(250)
+            await pg.wait_for_function('focusCol === 0')
             stayed = await pg.evaluate("focusCol") == 0
             await pg.keyboard.press("ArrowDown")
-            await pg.wait_for_timeout(250)
+            await pg.wait_for_function("name => sel[0] !== name && path[1]?.kids", arg=row)
             st = await pg.evaluate("__state()")
             check(f"→ does not enter the {row} column, ↑/↓ keep working",
                   stayed and st["focusCol"] == 0 and st["sel"][0] != row,
@@ -642,7 +641,7 @@ async def main(bundle, fake_handle, playwright):
             check("Spinner while reading", True)
         except PlaywrightTimeoutError:
             check("Spinner while reading", False, "never appeared")
-        await pg.wait_for_timeout(700)
+        await pg.wait_for_function('document.querySelectorAll(\'.col[data-i="1"] .row\').length === 2')
         check("Entries appear when the read finishes",
               await pg.eval_on_selector_all('.col[data-i="1"] .row', "e=>e.length") == 2)
 
@@ -650,7 +649,7 @@ async def main(bundle, fake_handle, playwright):
         await mount(pg)
         await pg.evaluate("__watchWidths()")
         await pg.click('.col[data-i="0"] .row:has-text("wide")')
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("__w.some(w => w.startsWith('wide:'))")
         widths = [w.split(":")[1] for w in await pg.evaluate("__w") if w.startswith("wide:")]
         check("A column opens at its standard width, without a narrow first frame",
               set(widths) == {"240px"}, ", ".join(widths) or f"never sized: {await pg.evaluate("__w")}")
@@ -660,22 +659,22 @@ async def main(bundle, fake_handle, playwright):
         # big, deep, empty, locked, mixed, slow, then README.md
         await mount(pg)
         await pg.keyboard.press("ArrowDown")          # commits row 0 = "big" (a folder)
-        await pg.wait_for_timeout(200)
+        await pg.wait_for_function("sel[0] === 'big' && path[1]?.kids")
         st = await pg.evaluate("__state()")
         check("↓ onto a folder opens its column but keeps focus",
               st["focusCol"] == 0 and st["path"] == ["workspace", "big"], json.dumps(st))
         stable = await pg.evaluate("[...document.querySelectorAll('.col')].map(c=>Math.round(c.getBoundingClientRect().width))")
         names = []
-        for _ in range(4):
+        for name in ("deep", "empty", "locked", "mixed"):
             await pg.keyboard.press("ArrowDown")
-            await pg.wait_for_timeout(120)
+            await pg.wait_for_function("name => sel[0] === name && path[1]?.kids", arg=name)
             s = await pg.evaluate("__state()")
             names.append(s["sel"][0])
         check("↓ walks down the same column, one row per press",
               names == ["deep", "empty", "locked", "mixed"] and
               (await pg.evaluate("focusCol")) == 0, str(names))
         await pg.keyboard.press("ArrowUp")
-        await pg.wait_for_timeout(120)
+        await pg.wait_for_function("sel[0] === 'locked'")
         check("↑ walks back up the same column",
               (await pg.evaluate("sel[0]")) == "locked" and
               (await pg.evaluate("focusCol")) == 0)
@@ -683,32 +682,32 @@ async def main(bundle, fake_handle, playwright):
               await pg.evaluate("[...document.querySelectorAll('.col')].map(c=>Math.round(c.getBoundingClientRect().width))") == stable,
               json.dumps({"before": stable, "after": await pg.evaluate("[...document.querySelectorAll('.col')].map(c=>Math.round(c.getBoundingClientRect().width))")}))
         await pg.keyboard.press("End")
-        await pg.wait_for_timeout(120)
+        await pg.wait_for_function("sel[0] === 'README.md' && document.querySelector('#pv-content > *')")
         check("End jumps to the last row", (await pg.evaluate("sel[0]")) == "README.md")
         await pg.keyboard.press("Home")
-        await pg.wait_for_timeout(120)
+        await pg.wait_for_function("sel[0] === 'big' && path[1]?.kids")
         check("Home jumps to the first row", (await pg.evaluate("sel[0]")) == "big")
 
         print("\n── Keyboard: → descends, ← comes back ───────────────────────")
         await pg.click('.col[data-i="0"] .row:has-text("deep")')
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("sel[0] === 'deep' && path[1]?.kids")
         check("Clicking a folder also keeps focus in its own column",
               await pg.evaluate("focusCol") == 0)
         await pg.keyboard.press("ArrowRight")         # into "deep"
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function('focusCol === 1')
         check("→ moves focus into the open column", await pg.evaluate("focusCol") == 1)
-        for _ in range(3):
+        for depth in range(2, 5):
             await pg.keyboard.press("ArrowRight")
-            await pg.wait_for_timeout(200)
+            await pg.wait_for_function("depth => focusCol === depth && colCache.get(path[depth])?.rows.length", arg=depth)
         st = await pg.evaluate("__state()")
         check("→ walks all the way to the leaf",
               st["path"] == ["workspace", "deep", "alpha", "beta", "gamma"] and
               st["sel"][-1] == "leaf.txt", json.dumps(st["path"]))
         await pg.keyboard.press("ArrowLeft")
-        await pg.wait_for_timeout(200)
+        await pg.wait_for_function('focusCol === 3')
         check("← moves focus back out", await pg.evaluate("focusCol") == 3)
         await pg.keyboard.press("ArrowRight")
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function('focusCol === 4')
         check("→ returns to the row the column was left on",
               await pg.evaluate("sel[4]") == "leaf.txt" and
               await pg.evaluate("focusCol") == 4)
@@ -716,14 +715,14 @@ async def main(bundle, fake_handle, playwright):
         check("→ focuses the preview from the rightmost column",
               await pg.evaluate("document.activeElement?.id") == "preview")
         await pg.keyboard.press("ArrowLeft")
-        await pg.wait_for_timeout(200)
+        await pg.wait_for_function('focusCol === 4')
         st = await pg.evaluate("__state()")
         check("← from preview restores its containing folder and file",
               st["focusCol"] == 4 and st["sel"][-1] == "leaf.txt" and
               await pg.evaluate("document.querySelector('.col.focus .row.cursor')?.title") == "leaf.txt",
               json.dumps(st))
         await pg.keyboard.press("ArrowRight")
-        await pg.wait_for_timeout(200)
+        await pg.wait_for_function("document.activeElement?.id === 'preview'")
         before = await pg.evaluate("document.querySelector('#preview .pv-body').scrollTop")
         await pg.keyboard.press("PageDown")
         after = await pg.evaluate("document.querySelector('#preview .pv-body').scrollTop")
@@ -751,13 +750,13 @@ async def main(bundle, fake_handle, playwright):
         n = await pg.evaluate("path.length")
         await pg.evaluate("finder.scrollLeft = finder.scrollWidth")
         settled = await scroll_settled(pg)
-        await pg.wait_for_timeout(300)                # the range re-bases
+        await pg.wait_for_function("document.querySelectorAll('.col.spine').length === path.length - 1 && finder.scrollLeft < finder.scrollWidth - finder.clientWidth - 1")
         spines = await pg.eval_on_selector_all(".col.spine", "e=>e.length")
         check("A fling folds every column but the rightmost", spines == n - 1,
               f"{spines} spines of {n}" + ("" if settled else ", scroll never settled"))
         await pg.evaluate("finder.scrollLeft = finder.scrollWidth")
         settled = await scroll_settled(pg)
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("document.querySelectorAll('.col.spine').length === path.length")
         spines = await pg.eval_on_selector_all(".col.spine", "e=>e.length")
         check("The next fling folds the rightmost column too", spines == n,
               f"{spines} spines of {n}" + ("" if settled else ", scroll never settled"))
@@ -802,10 +801,10 @@ async def main(bundle, fake_handle, playwright):
         await pg.set_viewport_size({"width": 390, "height": 700})
         await scroll_settled(pg)
         await pg.click('.col[data-i="0"] .row:has-text("wide")')
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("sel[0] === 'wide' && path[1]?.kids")
         for i in range(5):
             await pg.click(f'.col[data-i="{i + 1}"] .row:has-text("level-{i}-")')
-            await pg.wait_for_timeout(250)
+            await pg.wait_for_function("n => path.length === n && path.at(-1)?.kids", arg=i + 3)
         await scroll_settled(pg)
         touched = await pg.evaluate("""(() => {
           const fr = finder.getBoundingClientRect();
@@ -840,13 +839,12 @@ async def main(bundle, fake_handle, playwright):
         await pg.set_viewport_size({"width": 568, "height": 320})
         await scroll_settled(pg)
         await pg.click('.col[data-i="0"] .row:has-text("wide")')
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("sel[0] === 'wide' && path[1]?.kids")
         for i in range(3):
             await pg.click(f'.col[data-i="{i + 1}"] .row:has-text("level-{i}-")')
-            await pg.wait_for_timeout(250)
+            await pg.wait_for_function("n => path.length === n && path.at(-1)?.kids", arg=i + 3)
         await scroll_settled(pg)
         await pg.set_viewport_size({"width": 375, "height": 812})   # rotate
-        await pg.wait_for_timeout(400)
         await scroll_settled(pg)
         rotated = await pg.evaluate("""(() => {
           const fr = finder.getBoundingClientRect();
@@ -870,10 +868,10 @@ async def main(bundle, fake_handle, playwright):
         await pg.set_viewport_size({"width": 1500, "height": 900})
         await scroll_settled(pg)
         await pg.click('.col[data-i="0"] .row:has-text("wide")')
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("sel[0] === 'wide' && path[1]?.kids")
         for i in range(3):
             await pg.click(f'.col[data-i="{i + 1}"] .row:has-text("level-{i}-")')
-            await pg.wait_for_timeout(250)
+            await pg.wait_for_function("n => path.length === n && path.at(-1)?.kids", arg=i + 3)
         await scroll_settled(pg)
         desktop = await pg.evaluate("""(() => {
           const fr = finder.getBoundingClientRect();
@@ -908,10 +906,10 @@ async def main(bundle, fake_handle, playwright):
             await pg.set_viewport_size({"width": w, "height": h})
             await scroll_settled(pg)
             await pg.click('.col[data-i="0"] .row:has-text("wide")')
-            await pg.wait_for_timeout(250)
+            await pg.wait_for_function("sel[0] === 'wide' && path[1]?.kids")
             for i in range(3):
                 await pg.click(f'.col[data-i="{i + 1}"] .row:has-text("level-{i}-")')
-                await pg.wait_for_timeout(250)
+                await pg.wait_for_function("n => path.length === n && path.at(-1)?.kids", arg=i + 3)
             await scroll_settled(pg)
             m = await pg.evaluate("""(() => {
               const fr = finder.getBoundingClientRect();
@@ -952,10 +950,10 @@ async def main(bundle, fake_handle, playwright):
         await pg.set_viewport_size({"width": 320, "height": 700})
         await scroll_settled(pg)
         await pg.click('.col[data-i="0"] .row:has-text("deep")')
-        await pg.wait_for_timeout(250)
-        for _ in range(4):                           # in to the leaf column
+        await pg.wait_for_function("sel[0] === 'deep' && path[1]?.kids")
+        for depth in range(1, 5):                    # in to the leaf column
             await pg.keyboard.press("ArrowRight")
-            await pg.wait_for_timeout(300)
+            await pg.wait_for_function("depth => focusCol === depth && colCache.get(path[depth])?.rows.length", arg=depth)
         await scroll_settled(pg)
         strip_pos = await pg.evaluate("""(() => {
           const fr = finder.getBoundingClientRect();
@@ -986,11 +984,11 @@ async def main(bundle, fake_handle, playwright):
         await mount(pg)
         await pg.set_viewport_size({"width": 320, "height": 260})
         await pg.click('.col[data-i="0"] .row:has-text("mixed")')
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("sel[0] === 'mixed' && path[1]?.kids")
         await pg.keyboard.press("ArrowRight")
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function('focusCol === 1')
         await pg.keyboard.press("End")
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("document.querySelector('.col.focus .row.cursor')?.title === visibleKids(path[focusCol]).at(-1)?.name")
         seen = await pg.evaluate("""(() => {
           const row = document.querySelector('.col.focus .row.cursor');
           if (!row) return null;
@@ -1006,7 +1004,7 @@ async def main(bundle, fake_handle, playwright):
               seen and seen["scrolled"] > 0, json.dumps(seen))
         end_scroll = seen["scrolled"]
         await pg.keyboard.press("Home")
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("document.querySelector('.col.focus .row.cursor')?.title === visibleKids(path[focusCol])[0]?.name")
         seen = await pg.evaluate("""(() => {
           const row = document.querySelector('.col.focus .row.cursor');
           const body = row.closest('.col-body');
@@ -1024,7 +1022,14 @@ async def main(bundle, fake_handle, playwright):
               and seen["scrolled"] < end_scroll, json.dumps(seen))
 
         await pg.keyboard.press("PageDown")
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("""() => {
+          const col = document.querySelector('.col.focus'), body = col.querySelector('.col-body');
+          const bounds = body.getBoundingClientRect();
+          const rows = [...col.querySelectorAll('.row')].filter(row => {
+            const r = row.getBoundingClientRect(); return r.bottom > bounds.top && r.top < bounds.bottom;
+          });
+          return col.querySelector('.row.cursor') === rows.at(-1);
+        }""")
         first_page = await pg.evaluate("""(() => {
           const col = document.querySelector('.col.focus');
           const body = col.querySelector('.col-body'), b = body.getBoundingClientRect();
@@ -1039,7 +1044,7 @@ async def main(bundle, fake_handle, playwright):
               first_page and first_page["selected"] == first_page["edge"],
               json.dumps(first_page))
         await pg.keyboard.press("PageDown")
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("before => document.querySelector('.col.focus .col-body').scrollTop > before", arg=first_page["scroll"])
         second_page = await pg.evaluate("""(() => {
           const col = document.querySelector('.col.focus');
           const body = col.querySelector('.col-body');
@@ -1051,7 +1056,14 @@ async def main(bundle, fake_handle, playwright):
               and second_page["scroll"] <= second_page["max"] + 1,
               json.dumps(second_page))
         await pg.keyboard.press("PageUp")
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("""() => {
+          const col = document.querySelector('.col.focus'), body = col.querySelector('.col-body');
+          const bounds = body.getBoundingClientRect();
+          const first = [...col.querySelectorAll('.row')].find(row => {
+            const r = row.getBoundingClientRect(); return r.bottom > bounds.top && r.top < bounds.bottom;
+          });
+          return col.querySelector('.row.cursor') === first;
+        }""")
         third_page = await pg.evaluate("""(() => {
           const col = document.querySelector('.col.focus');
           const body = col.querySelector('.col-body'), b = body.getBoundingClientRect();
@@ -1066,14 +1078,14 @@ async def main(bundle, fake_handle, playwright):
               third_page and third_page["selected"] == third_page["edge"],
               json.dumps(third_page))
         await pg.set_viewport_size({"width": 1500, "height": 900})
-        await pg.wait_for_timeout(200)
+        await scroll_settled(pg)
 
         print("\n── Preview ──────────────────────────────────────────────────")
         await mount(pg)
         await pg.click('.col[data-i="0"] .row:has-text("mixed")')
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("sel[0] === 'mixed' && path[1]?.kids")
         await pg.click('.col[data-i="1"] .row:has-text("note.md")')
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("document.querySelector('.pv-text')?.textContent.trim() === '# note'")
         check("Text file previews its contents",
               (await pg.inner_text(".pv-text")).strip() == "# note")
         check("Preview offers fullscreen control",
@@ -1100,7 +1112,7 @@ async def main(bundle, fake_handle, playwright):
         check("Preview shows real size and mtime",
               "B ·" in await pg.inner_text("#pv-sub"), await pg.inner_text("#pv-sub"))
         await pg.click('.col[data-i="1"] .row:has-text("long.txt")')
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("document.querySelector('.pv-text')?.textContent.length > 4000")
         # A text box that stopped at part-height left the rest of the column
         # empty and scrolled on its own, so the column never used its height.
         fit = await pg.evaluate("""() => {
@@ -1114,7 +1126,7 @@ async def main(bundle, fake_handle, playwright):
         check("…the whole preview column scrolls instead",
               fit["column"], json.dumps(fit))
         await pg.click('.col[data-i="1"] .row:has-text("page.html")')
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("document.querySelector('iframe.pv-html')")
         check("HTML file previews in an iframe",
               await pg.is_visible("iframe.pv-html"))
         # 100cqh/100%: the frame must fill one visible screen of .pv-body,
@@ -1128,7 +1140,7 @@ async def main(bundle, fake_handle, playwright):
         check("…sized to one visible screen of the pane",
               all(abs(d) < 2 for d in fit), str(fit))
         await pg.click('.col[data-i="1"] .row:has-text("doc.pdf")')
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("document.querySelector('iframe.pv-pdf')")
         check("PDF file previews in an iframe",
               await pg.is_visible("iframe.pv-pdf"))
         # The same rule as .pv-html: no half-height box inside the pane.
@@ -1141,7 +1153,7 @@ async def main(bundle, fake_handle, playwright):
         check("…sized to one visible screen of the pane",
               all(abs(d) < 2 for d in fit), str(fit))
         await pg.click('.col[data-i="1"] .row:has-text("sub")')
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("document.querySelector('.pv-empty') && path[2]?.name === 'sub'")
         check("Selecting a folder clears the preview",
               await pg.is_visible(".pv-empty"))
 
@@ -1149,7 +1161,7 @@ async def main(bundle, fake_handle, playwright):
         # build loads. Rich previews are off in this suite, so what runs here
         # is the offline path every build falls back to.
         await pg.click('.col[data-i="2"] .row:has-text("a.py")')
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("document.querySelectorAll('.pv-text .hl-kw').length > 0")
         check("Source previews with every token class coloured",
               await pg.eval_on_selector_all(
                   ".pv-text span",
@@ -1185,7 +1197,7 @@ async def main(bundle, fake_handle, playwright):
         # its 88 columns rather than wrap the line; longer lines still wrap at
         # column 88 or later, and a pane narrower than that scrolls .pv-body.
         await pg.set_viewport_size({"width": 900, "height": 700})
-        await pg.wait_for_timeout(300)
+        await scroll_settled(pg)
         w = await pg.evaluate(WIDTH)
         check("Zoomed in, the source preview still holds 88 columns",
               w["code"] >= w["ch88"] - 0.5, json.dumps(w))
@@ -1195,9 +1207,9 @@ async def main(bundle, fake_handle, playwright):
         # alone and must fit the stage — what runs past the right edge is
         # clipped, not scrollable — and the code pans inside .pv-body instead.
         await pg.set_viewport_size({"width": 390, "height": 700})
-        await pg.wait_for_timeout(300)
+        await scroll_settled(pg)
         await pg.evaluate("dialTo(range() * 0.99, true)")
-        await pg.wait_for_timeout(400)
+        await scroll_settled(pg)
         w = await pg.evaluate(WIDTH)
         fits = await pg.evaluate("""(() => {
           const p = document.getElementById('preview').getBoundingClientRect();
@@ -1212,7 +1224,7 @@ async def main(bundle, fake_handle, playwright):
         check("…and the 88 columns pan inside the pane instead of clipping",
               w["sideways"] and w["lines"] == 4, json.dumps(w))
         await pg.set_viewport_size({"width": 1500, "height": 900})
-        await pg.wait_for_timeout(300)
+        await scroll_settled(pg)
         # Both palettes are declared; that they are legible is a screenshot's
         # job, but a theme that never reaches the tokens is a bug this catches.
         colour = "e=>getComputedStyle(e).color"
@@ -1228,7 +1240,7 @@ async def main(bundle, fake_handle, playwright):
         # tail, so the span count is what proves colour reaches the last line:
         # def + return is two keywords per copy, 600 across the 300.
         await pg.click('.col[data-i="2"] .row:has-text("long.py")')
-        await pg.wait_for_timeout(500)
+        await pg.wait_for_function("document.querySelectorAll('.pv-text .hl-kw').length === 600")
         whole = await pg.text_content(".pv-text")
         kw = await pg.eval_on_selector_all(".pv-text .hl-kw", "e=>e.length")
         check("A source file past the old 8 000-character clip previews whole",
@@ -1241,7 +1253,7 @@ async def main(bundle, fake_handle, playwright):
         # decline rather than render — otherwise "whole or absent" has no second
         # half and a 50 MB .sql renders whole.
         await pg.click('.col[data-i="2"] .row:has-text("huge.py")')
-        await pg.wait_for_timeout(500)
+        await pg.wait_for_function("document.querySelector('#pv-content')?.textContent.includes('No inline preview')")
         body = await pg.inner_text("#pv-content")
         check("One byte over TEXT_MAX is declined, not rendered",
               not await pg.is_visible(".pv-text")
@@ -1252,61 +1264,61 @@ async def main(bundle, fake_handle, playwright):
             await pg.click('.col[data-i="1"].spine')
             await scroll_settled(pg)
         await pg.click('.col[data-i="1"] .row:has-text("large.png")')
-        await pg.wait_for_timeout(500)
+        await pg.wait_for_function("document.querySelector('.pv-img')?.naturalWidth > 0")
         check("Oversized PNG still uses the image renderer",
               await pg.evaluate("() => document.querySelector('.pv-img')?.naturalWidth > 0"),
               await pg.inner_text("#pv-content"))
         await pg.click('.col[data-i="1"] .row:has-text("large.jpeg")')
-        await pg.wait_for_timeout(500)
+        await pg.wait_for_function("document.querySelector('.pv-img')?.naturalWidth > 0")
         check("Oversized JPEG still uses the image renderer",
               await pg.evaluate("() => document.querySelector('.pv-img')?.naturalWidth > 0"),
               await pg.inner_text("#pv-content"))
         await pg.click('.col[data-i="1"] .row:has-text("short.txt")')
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("sel[1] === 'short.txt' && document.querySelector('.pv-text')?.textContent === 's'")
         check("A file with no language it knows stays plain",
               await pg.eval_on_selector_all(".pv-text span", "e=>e.length") == 0)
 
         print("\n── JSONL rows ───────────────────────────────────────────────")
         await mount(pg)
         await click_row(pg, 0, "tables")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("path[1]?.name === 'tables' && path[1]?.kids")
         await click_row(pg, 1, "log.jsonl")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("path[2]?.name === 'log.jsonl' && path[2]?.kids")
         check("A .jsonl file opens as a column of rows named by the unique short text key",
               await pg.evaluate("__rows(2)") == ["Second", "First", "Third"],
               str(await pg.evaluate("__rows(2)")))
         await click_row(pg, 2, "Second")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("path[3]?.name === 'Second' && document.querySelector('.pv-json details')")
         check("A row opens as the JSON hierarchical view",
               await pg.evaluate("__rows(3)") == ["id", "title", "ts", "tags"]
               and await pg.locator("#preview .pv-json details").count() > 0)
         await click_row(pg, 3, "tags")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("path[4]?.name === 'tags' && path[4]?.kids")
         check("A JSONL row's nested array remains navigable",
               await pg.evaluate("__rows(4)") == ["0", "1"])
         await click_row(pg, 4, "1")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("path[5]?.name === '1' && path[5]?.kids")
         check("A JSONL array object remains navigable",
               await pg.evaluate("__rows(5)") == ["ok"])
         await pg.evaluate("applyPath(['tables', 'log.jsonl', 'Second'])")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("sel[2] === 'Second' && path[3]?.kids")
         await click_row(pg, 3, "title")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("document.querySelector('.pv-content')?.textContent.trim() === 'Second'")
         check("A JSONL scalar keeps the JSON scalar preview",
               (await pg.inner_text(".pv-content")).strip() == "Second")
         check("…with no invented size or date",
               await pg.inner_text("#pv-sub") == "")
         await pg.evaluate("applyPath(['tables', 'log.jsonl', 'Third'])")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("document.querySelector('#pv-content')?.textContent.includes('2026-01-03')")
         check("A deep link names a row and restores it",
               (await pg.evaluate("sel"))[-1] == "Third"
               and "2026-01-03" in await pg.inner_text("#pv-content"))
         await click_row(pg, 1, "dup.jsonl")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("path[2]?.name === 'dup.jsonl' && path[2]?.kids")
         check("Repeated titles fall back to the unique scalar key",
               await pg.evaluate("__rows(2)") == ["10", "11"], str(await pg.evaluate("__rows(2)")))
         await click_row(pg, 1, "bad.jsonl")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("document.querySelector('#preview .pv-err')?.textContent.includes('Not valid JSONL: line 2')")
         note = await pg.inner_text('#preview .pv-err')
         check("Invalid JSONL becomes a leaf with its error in the preview",
               "Not valid JSONL: line 2" in note
@@ -1333,13 +1345,13 @@ async def main(bundle, fake_handle, playwright):
               and "line 8" in await pg.evaluate("__rows(2)"), err)
         # back where the sections below expect to find note.md
         await click_row(pg, 0, "mixed")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("path[1]?.name === 'mixed' && path[1]?.kids")
 
         print("\n── Edit mode ────────────────────────────────────────────────")
         await click_row(pg, 1, "long.txt")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("document.querySelector('.pv-text')?.textContent.length > 4000")
         await pg.click("#pv-edit")
-        await pg.wait_for_timeout(200)
+        await pg.wait_for_function("document.querySelector('#pv-editor')")
         top = await pg.evaluate("""() => {
           const ta = document.querySelector('#pv-editor');
           return {start: ta.selectionStart, end: ta.selectionEnd,
@@ -1350,13 +1362,13 @@ async def main(bundle, fake_handle, playwright):
               and top["value"] == "a line of plain text\n" * 400,
               json.dumps({**top, "value": f"{len(top['value'])} chars"}))
         await pg.click("#pv-cancel")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("!document.querySelector('#pv-editor') && document.querySelector('.pv-text')")
         await click_row(pg, 1, "sub")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("path[2]?.name === 'sub' && path[2]?.kids")
         await click_row(pg, 2, "long.py")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("document.querySelectorAll('.pv-text .hl-kw').length === 600")
         await pg.click("#pv-edit")
-        await pg.wait_for_timeout(200)
+        await pg.wait_for_function("document.querySelector('#pv-editor')")
         top = await pg.evaluate("""() => {
           const ta = document.querySelector('#pv-editor');
           return {start: ta.selectionStart, end: ta.selectionEnd,
@@ -1367,15 +1379,15 @@ async def main(bundle, fake_handle, playwright):
               and top["value"] == PY_SRC * 300,
               json.dumps({**top, "value": f"{len(top['value'])} chars"}))
         await pg.click("#pv-cancel")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("!document.querySelector('#pv-editor') && document.querySelector('.pv-text')")
         await click_row(pg, 0, "mixed")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("path[1]?.name === 'mixed' && path[1]?.kids")
         await click_row(pg, 1, "note.md")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("document.querySelector('.pv-text')?.textContent.trim() === '# note'")
         check("Text preview offers an Edit button",
               await pg.is_visible("#pv-edit"))
         await pg.click("#pv-edit")
-        await pg.wait_for_timeout(200)
+        await pg.wait_for_function("document.querySelector('#pv-editor')")
         check("Edit opens a textarea with the full text",
               await pg.input_value("#pv-editor") == "# note")
         st = await pg.evaluate("__state()")
@@ -1384,33 +1396,33 @@ async def main(bundle, fake_handle, playwright):
         check("Typing in the editor does not move the columns",
               await pg.evaluate("__state()") == st)
         await pg.click("#pv-cancel")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("!document.querySelector('#pv-editor') && document.querySelector('.pv-text')")
         check("Cancel returns the unchanged read-only preview",
               (await pg.inner_text(".pv-text")).strip() == "# note")
         await pg.click("#pv-edit")
-        await pg.wait_for_timeout(200)
+        await pg.wait_for_function("document.querySelector('#pv-editor')")
         await pg.fill("#pv-editor", "# edited")
         await pg.click("#pv-save")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("document.querySelector('.pv-text')?.textContent.trim() === '# edited'")
         check("Save writes the file and returns to the preview",
               (await pg.inner_text(".pv-text")).strip() == "# edited")
         await click_row(pg, 1, "data.json")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("sel[1] === 'data.json' && document.querySelector('.pv-json')")
         await click_row(pg, 1, "note.md")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("sel[1] === 'note.md' && document.querySelector('.pv-text')?.textContent.trim() === '# edited'")
         check("Saved and reopened text is not modified", await pg.is_hidden("#pv-modified"))
         check("The change survives re-opening the file",
               (await pg.inner_text(".pv-text")).strip() == "# edited")
         await editor_feature_checks(pg)
         check("Editor undo, find, gutter, modified state and failed save", True)
         await click_row(pg, 1, "page.html")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("document.querySelector('iframe.pv-html')")
         check("A non-text preview offers no Edit button",
               await pg.is_hidden("#pv-edit"))
 
         print("\n── JSON preview ─────────────────────────────────────────────")
         await click_row(pg, 1, "nested.json")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("path[2]?.name === 'nested.json' && document.querySelector('.pv-json')")
         check("Ordinary directories keep the folder icon",
               await pg.locator('.col[data-i="1"] .row:has-text("docs") .ico.dir').count() == 1)
         check("Valid JSON opens as an ordered key column",
@@ -1421,30 +1433,30 @@ async def main(bundle, fake_handle, playwright):
               await pg.locator("#preview .pv-json").count() == 1 and
               await pg.locator("#preview details").count() > 0)
         await click_row(pg, 2, "tags")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("path[3]?.name === 'tags' && path[3]?.kids")
         check("Nested arrays open as ordered index rows",
               await pg.evaluate("__rows(3)") == ["0", "1"])
         check("JSON arrays use the [] icon",
               await pg.locator('.col[data-i="2"] .row:has-text("tags") .ico.glyph').count() == 1 and
               await pg.locator('.col[data-i="2"] .row:has-text("tags") .ico.glyph').inner_text() == "[]")
         await click_row(pg, 3, "0")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("document.querySelector('.pv-content')?.textContent.trim() === 'a'")
         check("Scalar JSON values preview in the pane",
               (await pg.inner_text(".pv-content")).strip() == "a")
         await click_row(pg, 2, "meta")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("path[3]?.name === 'meta' && path[3]?.kids")
         check("Nested objects remain navigable",
               await pg.evaluate("__rows(3)") == ["n", "ok", "none"])
         check("JSON objects use the {} icon",
               await pg.locator('.col[data-i="2"] .row:has-text("meta") .ico.glyph').count() == 1 and
               await pg.locator('.col[data-i="2"] .row:has-text("meta") .ico.glyph').inner_text() == "{}")
         await click_row(pg, 2, "items")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("path[3]?.name === 'items' && document.querySelector('.pv-json')")
         check("Arrays expose object child nodes",
               await pg.evaluate("__rows(3)") == ["0"] and
               await pg.locator("#preview .pv-json").count() == 1)
         await click_row(pg, 3, "0")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("path[4]?.name === '0' && path[4]?.kids")
         check("Array object children remain navigable",
               await pg.evaluate("__rows(4)") == ["id", "name"])
         await click_row(pg, 1, "bad.json")
@@ -1459,7 +1471,7 @@ async def main(bundle, fake_handle, playwright):
 
         print("\n── Auto-preview ─────────────────────────────────────────────")
         await pg.click('.col[data-i="1"] .row:has-text("docs")')
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("sel[2] === 'README' && document.querySelector('#preview .col-head .name')?.textContent.includes('README')")
         st = await pg.evaluate("__state()")
         check("Folder with a README auto-previews it, focus unmoved",
               st["sel"] == ["mixed", "docs", "README"] and st["focusCol"] == 1,
@@ -1470,18 +1482,18 @@ async def main(bundle, fake_handle, playwright):
         check("…and named in the preview header",
               "README" in await pg.inner_text("#preview .col-head .name"))
         await pg.keyboard.press("ArrowRight")
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function('focusCol === 2')
         check("→ enters the column on the auto-previewed row",
               await pg.evaluate("focusCol") == 2 and
               await pg.evaluate("sel[2]") == "README")
         await pg.keyboard.press("ArrowLeft")
-        await pg.wait_for_timeout(200)
+        await pg.wait_for_function('focusCol === 1')
         await pg.click('.col[data-i="1"] .row:has-text("site")')
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("sel[2] === 'README.md'")
         check("README.* wins over index.html",
               await pg.evaluate("sel[2]") == "README.md")
         await pg.click('.col[data-i="1"] .row:has-text("web")')
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("sel[2] === 'index.html' && document.querySelector('iframe.pv-html')")
         check("index.html previews when no README exists",
               await pg.evaluate("sel[2]") == "index.html" and
               await pg.is_visible("iframe.pv-html"))
@@ -1490,13 +1502,13 @@ async def main(bundle, fake_handle, playwright):
         # An 88-column preview folds the walked-past root column here; open
         # its spine first, as a user would, before clicking a row in it.
         await pg.evaluate("document.querySelector('.col.spine')?.click()")
-        await pg.wait_for_timeout(300)
+        await scroll_settled(pg)
         await pg.click('.col[data-i="0"] .row:has-text("mixed")')
-        await pg.wait_for_timeout(200)
+        await pg.wait_for_function("path[1]?.name === 'mixed' && path[1]?.kids")
         before = await pg.eval_on_selector_all('.col[data-i="1"] .row', "e=>e.length")
         await pg.click("#gear")
         await pg.click("#s-dot")
-        await pg.wait_for_timeout(200)
+        await pg.wait_for_function('state.dotfiles && document.querySelector(\'.row[title=".dotfile"]\')')
         after = await pg.eval_on_selector_all('.col[data-i="1"] .row', "e=>e.length")
         check("Dotfile toggle reveals hidden entries", after == before + 1, f"{before}→{after}")
         # The Previews group starts hidden and only preview-rich.js (loaded in
@@ -1505,11 +1517,11 @@ async def main(bundle, fake_handle, playwright):
               await pg.evaluate("!document.getElementById('s-previews').hidden"
                                 " && !document.getElementById('s-rich').hidden"))
         await pg.click("#s-density")
-        await pg.wait_for_timeout(200)
+        await pg.wait_for_function("getComputedStyle(document.querySelector('.row')).height === '26px'")
         check("Density toggle changes row height",
               await pg.evaluate("getComputedStyle(document.querySelector('.row')).height") == "26px")
         await pg.click("#s-theme")
-        await pg.wait_for_timeout(200)
+        await pg.wait_for_function("root.dataset.theme === 'dark'")
         check("Dark theme re-colours the icons (cache invalidated)",
               await pg.evaluate("document.documentElement.dataset.theme") == "dark" and
               await pg.evaluate("!!document.querySelector('.ico.seti')"))
@@ -1525,13 +1537,13 @@ async def main(bundle, fake_handle, playwright):
             """Focus the `search` column — type-ahead runs on the focused one."""
             await mount(pg)
             await pg.click('.col[data-i="0"] .row:has-text("search")')
-            await pg.wait_for_timeout(250)
+            await pg.wait_for_function("path[1]?.name === 'search' && path[1]?.kids")
             await pg.keyboard.press("ArrowRight")
-            await pg.wait_for_timeout(250)
+            await pg.wait_for_function('focusCol === 1')
 
         await in_search()
         await pg.keyboard.type("re")
-        await pg.wait_for_timeout(150)
+        await pg.wait_for_function("sel[1] === 'readme.md'")
         # One round-trip, not three: every assertion made between the two typed
         # groups below is time the 1.2 s buffer is running down, and a suite
         # that spends it fails on a feature that works.
@@ -1546,31 +1558,31 @@ async def main(bundle, fake_handle, playwright):
         # Within the idle window the buffer keeps growing: "re" + "l" is one
         # search for "rel", not a fresh search for "l".
         await pg.keyboard.type("l")
-        await pg.wait_for_timeout(150)
+        await pg.wait_for_function("sel[1] === 'release-notes.md'")
         check("A letter typed straight after extends the buffer (“rel”)",
               await pg.evaluate("sel[1]") == "release-notes.md",
               await pg.evaluate("sel[1]"))
-        await pg.wait_for_timeout(1400)          # longer than TA_IDLE = 1200 ms
+        await pg.wait_for_function("!document.querySelector('#st-find').textContent.trim()")
         await pg.keyboard.type("c")
-        await pg.wait_for_timeout(150)
+        await pg.wait_for_function("sel[1] === 'changelog.md'")
         check("A pause starts a new search (“c”, not “relc”)",
               await pg.evaluate("sel[1]") == "changelog.md", await pg.evaluate("sel[1]"))
 
         await in_search()
         await pg.keyboard.type("notes")
-        await pg.wait_for_timeout(150)
+        await pg.wait_for_function("sel[1] === 'notes.txt'")
         check("Prefix outranks substring: “notes” → notes.txt, not beta-notes.md",
               await pg.evaluate("sel[1]") == "notes.txt", await pg.evaluate("sel[1]"))
 
         await in_search()
         await pg.keyboard.type("log")
-        await pg.wait_for_timeout(150)
+        await pg.wait_for_function("sel[1] === 'changelog.md'")
         check("Substring: “log” → changelog.md, which nothing starts with",
               await pg.evaluate("sel[1]") == "changelog.md", await pg.evaluate("sel[1]"))
 
         await in_search()
         await pg.keyboard.type("arp")
-        await pg.wait_for_timeout(150)
+        await pg.wait_for_function("sel[1] === 'Alpha Report.txt'")
         check("Fuzzy: “arp” → Alpha Report.txt",
               await pg.evaluate("sel[1]") == "Alpha Report.txt", await pg.evaluate("sel[1]"))
         check("Fuzzy marks the scattered characters, not a run",
@@ -1578,7 +1590,7 @@ async def main(bundle, fake_handle, playwright):
 
         await in_search()
         await pg.keyboard.type("zz")
-        await pg.wait_for_timeout(150)
+        await pg.wait_for_function("document.querySelector('#st-find').textContent.includes('no match')")
         check("No match says so and moves nothing",
               await pg.evaluate("sel[1]") == "Alpha Report.txt"
               and "no match" in await pg.inner_text("#st-find"),
@@ -1587,31 +1599,31 @@ async def main(bundle, fake_handle, playwright):
         await pg.keyboard.press("Backspace")
         await pg.keyboard.press("Backspace")
         await pg.keyboard.type("re")
-        await pg.wait_for_timeout(150)
+        await pg.wait_for_function("sel[1] === 'readme.md'")
         check("Backspace undoes a typo instead of dropping the search",
               await pg.evaluate("sel[1]") == "readme.md", await pg.evaluate("sel[1]"))
 
         await in_search()
         await pg.keyboard.type("re")
-        await pg.wait_for_timeout(120)
+        await pg.wait_for_function("sel[1] === 'readme.md'")
         await pg.keyboard.press("Escape")
-        await pg.wait_for_timeout(120)
+        await pg.wait_for_function("!document.querySelector('mark') && !document.querySelector('#st-find').textContent.trim()")
         check("Escape abandons the search and clears the marks",
               not await pg.evaluate(marks)
               and not (await pg.inner_text("#st-find")).strip())
 
         await in_search()
         await pg.keyboard.type("re")
-        await pg.wait_for_timeout(120)
+        await pg.wait_for_function("sel[1] === 'readme.md'")
         await pg.keyboard.press("ArrowDown")
-        await pg.wait_for_timeout(150)
+        await pg.wait_for_function("sel[1] === 'release-notes.md' && !document.querySelector('mark')")
         check("↑/↓ still walk the column, and end the search",
               await pg.evaluate("sel[1]") == "release-notes.md"
               and not await pg.evaluate(marks), await pg.evaluate("sel[1]"))
 
         await in_search()
         await pg.keyboard.press("Control+r")     # a browser shortcut, not a search
-        await pg.wait_for_timeout(150)
+        await pg.wait_for_function("!document.querySelector('#st-find').textContent.trim()")
         check("A letter with a modifier held is not type-ahead",
               await pg.evaluate("sel[1]") == "Alpha Report.txt"
               and not (await pg.inner_text("#st-find")).strip(),
@@ -1621,14 +1633,14 @@ async def main(bundle, fake_handle, playwright):
         await mount(pg)
         await pg.evaluate("__clip(false)")
         await pg.click('.col[data-i="0"] .row:has-text("mixed")')
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("path[1]?.name === 'mixed' && path[1]?.kids")
         await pg.click('.col[data-i="1"] .row:has-text("note.md")')
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("document.querySelector('#st-path').textContent === 'mixed/note.md'")
         check("The status strip shows the path in the form it copies",
               await pg.inner_text("#st-path") == "mixed/note.md",
               await pg.inner_text("#st-path"))
         await pg.keyboard.press("Control+c")
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("__clipped.length === 1 && document.querySelector('#st-copy').textContent.includes('Copied')")
         check("⌘C / Ctrl+C copies the selected item's path",
               await pg.evaluate("__clipped") == ["mixed/note.md"],
               str(await pg.evaluate("__clipped")))
@@ -1637,7 +1649,7 @@ async def main(bundle, fake_handle, playwright):
 
         await pg.evaluate("__clip(false)")
         await pg.click("#st-path")
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function('__clipped.length === 1')
         check("Clicking the status path copies it too",
               await pg.evaluate("__clipped") == ["mixed/note.md"],
               str(await pg.evaluate("__clipped")))
@@ -1646,7 +1658,7 @@ async def main(bundle, fake_handle, playwright):
         # worse than no button: the next paste hands over something else.
         await pg.evaluate("__clip(true)")
         await pg.click("#st-path")
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("document.querySelector('#st-copy').textContent.includes('refused')")
         note = await pg.inner_text("#st-copy")
         check("A refused clipboard is visible, not silent", "refused" in note, note)
         check("…and the path is left selected, so the browser's own copy works",
@@ -1663,20 +1675,20 @@ async def main(bundle, fake_handle, playwright):
             """Mount fresh and focus the `refresh` column (row 0 = the `sub` folder)."""
             await mount(pg)
             await pg.click('.col[data-i="0"] .row:has-text("refresh")')
-            await pg.wait_for_timeout(250)
+            await pg.wait_for_function("path[1]?.name === 'refresh' && path[1]?.kids")
             await pg.keyboard.press("ArrowRight")
-            await pg.wait_for_timeout(250)
+            await pg.wait_for_function("focusCol === 1 && sel[1] === 'sub'")
 
         await in_refresh()
         before = await pg.eval_on_selector_all(rows1, "e=>e.length")
         await pg.evaluate("__add(__live, 'three.txt')")
-        await pg.wait_for_timeout(120)
+
         check("A file another program wrote stays invisible until asked",
               await pg.eval_on_selector_all(rows1, "e=>e.length") == before,
               "no watch API exists — which is the whole reason refresh is manual")
         await pg.evaluate("window.__sentinel = 42")
         await pg.keyboard.press("F5")
-        await pg.wait_for_timeout(600)
+        await pg.wait_for_function("document.querySelector('#st-refresh').textContent.includes('1 new')")
         snap = await pg.evaluate(
             "({...__state(), rows: colCache.get(path[1]).rows.length,"
             " sentinel: window.__sentinel,"
@@ -1696,7 +1708,7 @@ async def main(bundle, fake_handle, playwright):
         before = await pg.eval_on_selector_all(rows1, "e=>e.length")
         await pg.evaluate("__add(__live, 'four.txt')")
         await pg.click('.col[data-i="1"] .col-head .rf')
-        await pg.wait_for_timeout(600)
+        await pg.wait_for_function("document.querySelector('#st-refresh').textContent.includes('1 new')")
         check("The ⟳ button on the column header does the same job as F5",
               await pg.eval_on_selector_all(rows1, "e=>e.length") == before + 1)
 
@@ -1709,7 +1721,7 @@ async def main(bundle, fake_handle, playwright):
         # keyboard-only fault.
         await mount(pg)
         await pg.mouse.move(1499, 899)
-        await pg.wait_for_timeout(200)
+        await pg.wait_for_function('document.querySelector(\'.col[data-i="0"].focus .rf\').getBoundingClientRect().width > 0')
         root_col = await pg.evaluate(
             "({cls: document.querySelector('.col[data-i=\"0\"]').className,"
             " w: document.querySelector('.col[data-i=\"0\"] .col-head .rf')"
@@ -1724,12 +1736,12 @@ async def main(bundle, fake_handle, playwright):
         # …and after ← lands focus on a column the dial is folding.
         await pg.set_viewport_size({"width": 760, "height": 700})
         await pg.keyboard.press("Home")
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("sel[0] === 'big'")
         await pg.keyboard.press("ArrowDown")            # "deep"
-        await pg.wait_for_timeout(250)
-        for _ in range(4):                              # walk to the leaf
+        await pg.wait_for_function("sel[0] === 'deep' && path[1]?.kids")
+        for depth in range(1, 5):                       # walk to the leaf
             await pg.keyboard.press("ArrowRight")
-            await pg.wait_for_timeout(350)
+            await pg.wait_for_function("depth => focusCol === depth && colCache.get(path[depth])?.rows.length", arg=depth)
         await pg.mouse.move(759, 699)
         painted = []
         landed = []
@@ -1741,7 +1753,6 @@ async def main(bundle, fake_handle, playwright):
                 "         w: rf ? rf.getBoundingClientRect().width : -1}; })()")
             painted.append((st["cls"], st["w"]))
             await pg.keyboard.press("ArrowLeft")
-            await pg.wait_for_timeout(350)
             await scroll_settled(pg)
             landed.append(await pg.evaluate(
                 "(() => { const el = document.querySelector('.col.focus');"
@@ -1759,7 +1770,7 @@ async def main(bundle, fake_handle, playwright):
               all(s["d"] == s["f"] and s["w"] > s["sp"] for s in landed),
               "; ".join(f"focus {s['f']} folded {s['d']} {s['w']}px" for s in landed))
         await pg.set_viewport_size({"width": 1500, "height": 900})
-        await pg.wait_for_timeout(200)
+        await scroll_settled(pg)
 
         # A re-read replaces every node object in the column, including the one
         # whose preview is on screen. The guard is pvToken, the same counter a
@@ -1767,10 +1778,10 @@ async def main(bundle, fake_handle, playwright):
         # which retires the old one wherever it had got to.
         await in_refresh()
         await pg.keyboard.press("ArrowDown")           # one.txt, contents "1"
-        await pg.wait_for_timeout(500)
+        await pg.wait_for_function("sel[1] === 'one.txt' && document.querySelector('.pv-text')?.textContent.trim() === '1'")
         was = await pg.evaluate("pvToken")
         await pg.keyboard.press("F5")
-        await pg.wait_for_timeout(700)
+        await pg.wait_for_function("old => pvToken > old && document.querySelector('.pv-text')?.textContent.trim() === '1' && document.querySelector('#st-refresh').textContent.includes('no change')", arg=was)
         now = await pg.evaluate("pvToken")
         body = (await pg.inner_text(".pv-text")).strip()
         check("A refresh retires the preview built for the node it replaced, "
@@ -1785,12 +1796,12 @@ async def main(bundle, fake_handle, playwright):
         await in_refresh()
         for _ in range(2):
             await pg.keyboard.press("ArrowDown")
-            await pg.wait_for_timeout(150)
+            await pg.wait_for_function("!document.querySelector('.spinner') && document.querySelector('.pv-text')")
         check("(a file two rows down is selected)",
               await pg.evaluate("sel[1]") == "two.txt", await pg.evaluate("sel[1]"))
         await pg.evaluate("__rm(__live, 'two.txt')")
         await pg.keyboard.press("F5")
-        await pg.wait_for_timeout(600)
+        await pg.wait_for_function("sel.length === 1 && document.querySelector('#st-refresh').textContent.includes('two.txt is gone')")
         snap = await pg.evaluate(
             "({...__state(),"
             " say: document.getElementById('st-refresh').textContent})")
@@ -1798,7 +1809,7 @@ async def main(bundle, fake_handle, playwright):
               snap["sel"] == ["refresh"] and snap["focusCol"] == 1
               and "two.txt is gone" in snap["say"], json.dumps(snap))
         await pg.keyboard.press("ArrowDown")
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("sel[1] === 'sub' && path[2]?.kids")
         check("…so ↓ selects the first remaining row",
               await pg.evaluate("sel[1]") == "sub", await pg.evaluate("sel[1]"))
 
@@ -1808,17 +1819,17 @@ async def main(bundle, fake_handle, playwright):
         async def deep_chain():
             await mount(pg)
             await pg.click('.col[data-i="0"] .row:has-text("refresh")')
-            await pg.wait_for_timeout(250)
-            for _ in range(3):                    # → sub → twig → tip.txt
+            await pg.wait_for_function("path[1]?.name === 'refresh' && path[1]?.kids")
+            for depth in range(1, 4):              # → sub → twig → tip.txt
                 await pg.keyboard.press("ArrowRight")
-                await pg.wait_for_timeout(250)
-            for _ in range(2):                    # ← back out to the `refresh` column
+                await pg.wait_for_function("depth => focusCol === depth && colCache.get(path[depth])?.rows.length", arg=depth)
+            for depth in (2, 1):                  # ← back out to the `refresh` column
                 await pg.keyboard.press("ArrowLeft")
-                await pg.wait_for_timeout(150)
+                await pg.wait_for_function("depth => focusCol === depth", arg=depth)
 
         await deep_chain()
         await pg.keyboard.press("F5")
-        await pg.wait_for_timeout(900)
+        await pg.wait_for_function("document.querySelector('#st-refresh').textContent.includes('no change')")
         st = await pg.evaluate("__state()")
         check("Refreshing a parent keeps the whole chain open below it",
               st["path"] == ["workspace", "refresh", "sub", "twig"]
@@ -1829,7 +1840,7 @@ async def main(bundle, fake_handle, playwright):
         await deep_chain()
         await pg.evaluate("__rm(__live, 'sub')")
         await pg.keyboard.press("F5")
-        await pg.wait_for_timeout(900)
+        await pg.wait_for_function("path.length === 2 && document.querySelector('#st-refresh').textContent.includes('sub is gone')")
         snap = await pg.evaluate(
             "({...__state(), say: document.getElementById('st-refresh').textContent})")
         check("A chain that stopped existing is restored as far as it is real, "
@@ -1844,10 +1855,10 @@ async def main(bundle, fake_handle, playwright):
         # listing — two reads, one field, and the wrong one landing last.
         await mount(pg)
         await pg.click('.col[data-i="0"] .row:has-text("racing")')
-        await pg.wait_for_timeout(150)                 # the 400 ms read is in flight
+        await pg.wait_for_function('path[1]?.loading')
         await pg.evaluate("__add(__race, 'charlie.txt')")
         await pg.evaluate("refreshColumn(1)")
-        await pg.wait_for_timeout(1600)
+        await pg.wait_for_function('!path[1]?.loading && path[1]?.kids.length === 3')
         got = await pg.eval_on_selector_all(rows1, "e=>e.map(x=>x.title)")
         head = (await pg.inner_text('.col[data-i="1"] .count')).strip()
         check("A refresh that lands on a read already in flight waits for it, then "
@@ -1856,25 +1867,23 @@ async def main(bundle, fake_handle, playwright):
               and await pg.evaluate("path[1].loading") is None,
               f"{got}, header says {head}")
 
-        # The other way round: the user clicks somewhere else while a refresh is
-        # still walking the chain back down. Refreshing the root re-reads `slow`
-        # (500 ms), which is a wide enough window to land a click in. Whoever
-        # the user asked for last has to win, and the columns must still agree
-        # with each other — every open column is the child the level above
-        # selected. A half-applied walk shows up here as a chain that does not.
+        # Refreshing the root replaces its nodes and restores the open chain.
+        # A subsequent click must replace that chain completely, leaving every
+        # open column as the child selected by the level above it. evaluate()
+        # awaits refreshColumn's promise; this checks navigation after refresh.
         await mount(pg)
         await pg.click('.col[data-i="0"] .row:has-text("slow")')
-        await pg.wait_for_timeout(900)
+        await pg.wait_for_function("path[1]?.name === 'slow' && path[1]?.kids")
         await pg.keyboard.press("ArrowRight")
-        await pg.wait_for_timeout(300)
-        await pg.evaluate("refreshColumn(0)")       # deliberately not awaited
-        await pg.wait_for_timeout(120)
+        await pg.wait_for_function('focusCol === 1')
+        await pg.evaluate("refreshColumn(0)")
+        await pg.wait_for_function("path[1]?.name === 'slow' && path[1]?.kids && !document.querySelector('.col.busy')")
         await pg.click('.col[data-i="0"] .row:has-text("mixed")')
-        await pg.wait_for_timeout(2500)
+        await pg.wait_for_function("path.length === 2 && path[1]?.name === 'mixed' && sel[1] === 'README'")
         st = await pg.evaluate("__state()")
         coherent = all(st["sel"][i] == st["path"][i + 1]
                        for i in range(len(st["path"]) - 1))
-        check("A click during a refresh wins, and leaves the columns agreeing "
+        check("A click after a refresh leaves the columns agreeing "
               "with each other",
               st["path"] == ["workspace", "mixed"] and st["sel"] == ["mixed", "README"]
               and coherent, json.dumps(st))
@@ -1895,7 +1904,7 @@ async def main(bundle, fake_handle, playwright):
             await pg.evaluate("setSort('name', false)")
             await mount(pg)
             await pg.click('.col[data-i="0"] .row:has-text("sorting")')
-            await pg.wait_for_timeout(300)
+            await pg.wait_for_function("path[1]?.name === 'sorting' && path[1]?.kids")
 
         await in_sorting()
         gets = await pg.evaluate("__gets")
@@ -1905,7 +1914,7 @@ async def main(bundle, fake_handle, playwright):
               f"{gets} getFile() calls — a name is already in the listing")
 
         await pg.evaluate("setSort('size', false)")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("path.every(n => n.metaDone) && !document.querySelector('.col.sorting')")
         gets = await pg.evaluate("__gets")
         # 4 files in `sorting` and 1 (README.md) in the root column beside it.
         # The other nine directories in the tree are not on screen and are not
@@ -1915,13 +1924,13 @@ async def main(bundle, fake_handle, playwright):
               f"{gets} reads: 4 files here, 1 in the root column, 0 elsewhere")
 
         await pg.evaluate("render(true)")
-        await pg.wait_for_timeout(200)
+        await pg.wait_for_function('!path.some(n => n.metaLoading)')
         check("…and a re-render re-reads none of them",
               await pg.evaluate("__gets") == gets,
               f"{await pg.evaluate('__gets') - gets} extra reads")
 
         await pg.evaluate("setSort('size', true)")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("__rows(1)[2] === 'big.bin'")
         desc = await pg.evaluate("__rows(1)")
         check("Descending reverses the order and sweeps nothing a second time",
               desc == SIZE_DESC and await pg.evaluate("__gets") == gets, str(desc))
@@ -1932,14 +1941,14 @@ async def main(bundle, fake_handle, playwright):
               "biggest-first must not answer with a file nobody could open")
 
         await pg.evaluate("setSort('mtime', false)")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("__rows(1)[2] === 'medium.md'")
         check("Modified orders by date, on the sweep the size sort already paid",
               await pg.evaluate("__rows(1)") == MTIME_ASC
               and await pg.evaluate("__gets") == gets,
               "getFile() hands back the size and the mtime together")
 
         await pg.evaluate("setSort('name', true)")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("__rows(1)[0] === 'zeta'")
         check("Folders stay above files under every key, and follow the direction",
               await pg.evaluate("__rows(1)") == NAME_DESC,
               "no port can give a directory a size or an mtime")
@@ -1947,7 +1956,7 @@ async def main(bundle, fake_handle, playwright):
         await pg.evaluate("setSort('name', false)")
         await pg.click("#gear")
         await pg.click("#s-sort-size")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("__rows(1)[2] === 'small.txt'")
         ticked = await pg.evaluate(
             "['name', 'size', 'mtime'].map(k => document.getElementById('s-sort-'+k)"
             ".getAttribute('aria-checked'))")
@@ -1955,7 +1964,7 @@ async def main(bundle, fake_handle, playwright):
               await pg.evaluate("__rows(1)") == SIZE_ASC
               and ticked == ["false", "true", "false"], str(ticked))
         await pg.click("#s-sort-desc")
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("__rows(1)[2] === 'big.bin'")
         check("…and the direction is a separate switch that applies to that key",
               await pg.evaluate("__rows(1)") == SIZE_DESC
               and await pg.evaluate(
@@ -1978,15 +1987,15 @@ async def main(bundle, fake_handle, playwright):
         # left behind would put ↓ on medium.md instead of locked.txt.
         await in_sorting()
         await pg.evaluate("setSort('size', false)")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("path.every(n => n.metaDone) && !document.querySelector('.col.sorting')")
         await pg.keyboard.press("ArrowRight")
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function('focusCol === 1')
         await pg.click('.col[data-i="1"] .row:has-text("small.txt")')
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("sel[1] === 'small.txt'")
         await pg.evaluate("setSort('size', true)")
-        await pg.wait_for_timeout(400)
+        await pg.wait_for_function("__rows(1)[2] === 'big.bin'")
         await pg.keyboard.press("ArrowDown")
-        await pg.wait_for_timeout(250)
+        await pg.wait_for_function("sel[1] === 'locked.txt'")
         check("↓ after a re-sort steps off the row that is still selected, not "
               "off the row number it used to have",
               await pg.evaluate("sel[1]") == "locked.txt",
@@ -1999,13 +2008,13 @@ async def main(bundle, fake_handle, playwright):
         await pg.evaluate("setSort('name', false)")
         await mount(pg)
         await pg.click('.col[data-i="0"] .row:has-text("refresh")')
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("path[1]?.name === 'refresh' && path[1]?.kids")
         await pg.evaluate("__slowMeta(400)")
         await pg.evaluate("setSort('size', false)")
-        await pg.wait_for_timeout(120)                  # the sweep is in flight
+        await pg.wait_for_function('path.some(n => n.metaLoading)')
         await pg.evaluate("__add(__live, 'zero.txt')")  # 8 bytes; one/two are 1
         await pg.evaluate("refreshColumn(1)")
-        await pg.wait_for_timeout(2500)
+        await pg.wait_for_function("path[1]?.metaDone && !document.querySelector('.col.sorting')")
         rows = await pg.evaluate("__rows(1)")
         check("A refresh during a sweep re-reads and sweeps again, rather than "
               "trusting metadata about entries that are gone",
@@ -2024,7 +2033,7 @@ async def main(bundle, fake_handle, playwright):
         await in_sorting()
         await pg.evaluate("__slowMeta(2000)")
         await pg.evaluate("setSort('size', false)")
-        await pg.wait_for_timeout(150)
+        await pg.wait_for_function("document.querySelector('.col.sorting')")
         spinning = await pg.eval_on_selector_all(".col.sorting", "e=>e.length")
         say = (await pg.inner_text("#st-sort")).strip()
         # 5 files, which is exactly the getFile() count the check above pinned:
@@ -2033,7 +2042,7 @@ async def main(bundle, fake_handle, playwright):
               spinning > 0 and "reading 5 files" in say,
               f"{spinning} columns spinning, strip says {say!r}")
         await pg.wait_for_function("!path.some(n => n.metaLoading)", timeout=30_000)
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_function("!document.querySelector('.col.sorting') && document.querySelector('#st-sort').textContent.includes('sorting: 4 files read in')")
         say = (await pg.inner_text("#st-sort")).strip()
         check("…and when the sweep lands the strip names the folder and what it "
               "cost to read",
@@ -2046,9 +2055,9 @@ async def main(bundle, fake_handle, playwright):
         await in_sorting()
         await pg.evaluate("__slowMeta(500)")
         await pg.evaluate("setSort('size', false)")
-        await pg.wait_for_timeout(120)                  # the sweep is in flight
+        await pg.wait_for_function('path.some(n => n.metaLoading)')
         await pg.click('.col[data-i="0"] .row:has-text("mixed")')
-        await pg.wait_for_timeout(1500)                 # long enough for it to land
+        await pg.wait_for_function("!path.some(n => n.metaLoading) && path[0].kids.find(n => n.name === 'sorting').metaDone && sel[1] === 'README'")
         st = await pg.evaluate("__state()")
         coherent = all(st["sel"][i] == st["path"][i + 1]
                        for i in range(len(st["path"]) - 1))
@@ -2060,7 +2069,7 @@ async def main(bundle, fake_handle, playwright):
         await pg.evaluate("__slowMeta(0)")
         gets = await pg.evaluate("__gets")
         await pg.click('.col[data-i="0"] .row:has-text("sorting")')
-        await pg.wait_for_timeout(500)
+        await pg.wait_for_function("path[1]?.name === 'sorting' && path[1]?.metaDone")
         again = await pg.evaluate("__gets") - gets
         check("…but what it read is kept, so stepping back in shows the sorted "
               "column and asks for nothing",
@@ -2073,7 +2082,7 @@ async def main(bundle, fake_handle, playwright):
         await in_sorting()
         await pg.evaluate("__brokenMeta()")
         await pg.evaluate("setSort('size', false)")
-        await pg.wait_for_timeout(700)
+        await pg.wait_for_function("path[1]?.metaDone && !document.querySelector('.col.sorting')")
         rows = await pg.evaluate("__rows(1)")
         check("A port that rejects every read finishes the sweep instead of "
               "spinning for ever, and keeps every row",
@@ -2091,7 +2100,7 @@ async def main(bundle, fake_handle, playwright):
             await pg.click('.col[data-i="0"] .row:has-text("big")')
             await pg.wait_for_function(
                 "colCache.get(path[1]) && colCache.get(path[1]).rows.length > 0", timeout=30_000)
-            await pg.wait_for_timeout(300)
+            await pg.wait_for_function("!document.querySelector('.spinner')")
             dom_rows = await pg.eval_on_selector_all('.col[data-i="1"] .row', "e=>e.length")
             check(f"{n:,} entries: large columns keep only a viewport of rows in the DOM",
                   dom_rows < n if n >= 1000 else dom_rows == n,
@@ -2111,9 +2120,9 @@ async def main(bundle, fake_handle, playwright):
             await pg.click('.col[data-i="0"] .row:has-text("big")')
             await pg.wait_for_function(
                 "colCache.get(path[1]) && colCache.get(path[1]).rows.length > 0", timeout=30_000)
-            await pg.wait_for_timeout(200)
+            await pg.wait_for_function("sel[0] !== null && !document.querySelector('.spinner')")
             await pg.keyboard.press("ArrowRight")     # focus the big column
-            await pg.wait_for_timeout(200)
+            await pg.wait_for_function("focusCol === 1 && colCache.get(path[1])?.rows.length > 0")
             arrow = await pg.evaluate("__keybench(20)")
             hit = await pg.evaluate("__typebench(20, 'f', true)")
             miss = await pg.evaluate("__typebench(20, 'q', false)")
@@ -2160,7 +2169,7 @@ async def main(bundle, fake_handle, playwright):
             # the assertion is on the arrow key measured *after* it.
             sweep = await pg.evaluate("__sweepbench()")
             await pg.evaluate("setSort('size', false)")
-            await pg.wait_for_timeout(300)
+            await pg.wait_for_function('!path.some(n => n.metaLoading)')
             swept_key = await pg.evaluate("__keybench(20)")
             # Two assertions, because a stopwatch alone cannot carry this one.
             #
@@ -2313,7 +2322,7 @@ async def storage_main(bundle, playwright, static_origin, profile):
 
         await pg.evaluate("__remember(['mixed','sub','a.py'])")
         await pg.evaluate("mount(__storedRoot)")
-        await pg.wait_for_timeout(350)
+        await pg.wait_for_function("sel[2] === 'a.py' && path.length === 3")
         st = await pg.evaluate("__state()")
         check("Re-mounting a remembered folder puts the user back on the chain",
               st["path"] == ["workspace", "mixed", "sub"]
@@ -2322,7 +2331,7 @@ async def storage_main(bundle, playwright, static_origin, profile):
         # The case that matters: the folder is still there, the chain is not.
         await pg.evaluate("__remember(['mixed','gone','x.py'])")
         await pg.evaluate("mount(__storedRoot)")
-        await pg.wait_for_timeout(350)
+        await pg.wait_for_function('path.length === 2 && sel.length === 1')
         st = await pg.evaluate("__state()")
         check("A remembered chain that no longer exists restores as far as it is "
               "real, and stops",
@@ -2335,7 +2344,7 @@ async def storage_main(bundle, playwright, static_origin, profile):
         await pg.evaluate("__remember(['mixed','sub'])")
         await pg.evaluate("pendingLoc = {root:'workspace', path:['deep','alpha']}")
         await pg.evaluate("mount(__storedRoot)")
-        await pg.wait_for_timeout(350)
+        await pg.wait_for_function("path[2]?.name === 'alpha'")
         st = await pg.evaluate("__state()")
         check("A link in the address bar beats the remembered chain",
               st["path"] == ["workspace", "deep", "alpha"], json.dumps(st))
@@ -2345,7 +2354,7 @@ async def storage_main(bundle, playwright, static_origin, profile):
         # per-entry cost this app spent a rewrite deleting, in another costume.
         await pg.evaluate("__spySaves()")
         await pg.evaluate("mount(__storedRoot)")
-        await pg.wait_for_timeout(350)
+        await pg.wait_for_function("!document.querySelector('.spinner')")
         start_saves = await pg.evaluate("__saved.length")
         # Both clicks inside one page call, so the 150 ms gap is 150 ms of app
         # time. Driven from here it was two Playwright round-trips wide, and on
@@ -2357,7 +2366,7 @@ async def storage_main(bundle, playwright, static_origin, profile):
           document.querySelector('.col[data-i="1"] .row[title="note.md"]').click();
           return __saved.length;
         })()""")
-        await pg.wait_for_timeout(800)
+        await pg.wait_for_function('__saved.length === 1')
         saved = await pg.evaluate("__saved")
         check("Mounting a folder does not overwrite the chain it just restored",
               start_saves == 0, f"{start_saves} writes during mount")
@@ -2570,7 +2579,7 @@ def test_touch_tap_opens_folder_first_time(bundle, fake_handle, playwright, stat
         cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": point})
         page.locator("#row-menu").wait_for(state="visible", timeout=3000)
         cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
-        page.wait_for_timeout(300)
+        page.wait_for_function("document.querySelector('#row-menu')?.checkVisibility()")
         assert page.locator("#row-menu").is_visible()
         assert page.evaluate("path.length") == 4
         assert page.evaluate("sel[3]") is None
