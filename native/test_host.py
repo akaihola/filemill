@@ -175,6 +175,25 @@ return {clickable: row.contains(hit), hit: hit?.id || hit?.className,
         assert result["clickable"], result
 
 
+def test_row_edge_beside_column_scrollbar_is_clickable(tmp_path):
+    """A scrolling column's scrollbar must not cover its rows' chevrons."""
+    for index in range(40):
+        (tmp_path / f"folder-{index:02}").mkdir()
+    with application(tmp_path) as page:
+        page.call("/window/rect", {"width": 568, "height": 320})
+        result = page.evaluate("""async () => {
+await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+const body = document.querySelector('.col[data-i="0"] .col-body');
+const row = body.querySelector('.row');
+const r = row.getBoundingClientRect();
+const hit = document.elementFromPoint(r.right - 3, r.y + r.height / 2);
+return {clickable: row.contains(hit), hit: hit?.id || hit?.className,
+        scrolls: body.scrollHeight > body.clientHeight, row: r.toJSON()};
+}""")
+        assert result["scrolls"], result
+        assert result["clickable"], result
+
+
 def test_write_preserves_embedded_nul(tmp_path):
     file = tmp_path / "text.txt"
     file.write_text("before")
@@ -198,3 +217,41 @@ def test_ui_driver_reports_console_errors(tmp_path):
         assert errors == [("error", "native failure")]
         asyncio.run(page.evaluate("true"))
         assert len(errors) == 1
+
+
+def test_ui_driver_waits_with_argument(tmp_path):
+    import asyncio
+
+    from ui_driver import NativePage
+
+    (tmp_path / "a.txt").write_text("a")
+    with application(tmp_path) as raw:
+        page = NativePage(raw, tmp_path)
+        asyncio.run(
+            page.wait_for_function(
+                "name => path[0].kids.some(n => n.name === name)", arg="a.txt"
+            )
+        )
+
+
+def test_ui_driver_waits_for_javascript_truthiness(tmp_path):
+    import asyncio
+
+    from ui_driver import NativePage
+
+    with application(tmp_path) as raw:
+        page = NativePage(raw, tmp_path)
+        asyncio.run(page.wait_for_function("[]", timeout=1000))
+
+
+def test_denied_folder_is_recognized_in_any_locale(tmp_path):
+    (tmp_path / "locked").mkdir()
+    (tmp_path / "locked").chmod(0)
+    try:
+        with application(tmp_path, LC_ALL="fi_FI.UTF-8", LANGUAGE="fi") as page:
+            denied = page.evaluate(
+                'async () => { const n = path[0].kids[0]; await FS.ensureLoaded(n); return n.denied; }'
+            )
+    finally:
+        (tmp_path / "locked").chmod(0o700)
+    assert denied == "No permission to read"

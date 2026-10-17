@@ -174,7 +174,14 @@ static gboolean message(WebKitUserContentManager *manager, JSCValue *request,
     }
 finish:
     if (result) { webkit_script_message_reply_return_value(reply, result); g_object_unref(result); }
-    else webkit_script_message_reply_return_error_message(reply, g_strerror(errno));
+    else {
+        /* The errno name is the stable part; g_strerror follows the locale. */
+        int code = errno;
+        const char *name = strerrorname_np(code);
+        char *text = g_strdup_printf("%s: %s", name ? name : "EIO", g_strerror(code));
+        webkit_script_message_reply_return_error_message(reply, text);
+        g_free(text);
+    }
     if (fd >= 0) close(fd);
     g_free(op); g_free(path);
     return TRUE;
@@ -226,6 +233,9 @@ static void started(WebKitWebContext *context, WebKitAutomationSession *session,
 }
 int main(int argc, char **argv) {
     gtk_init(&argc, &argv);
+    /* WebKit's overlay scrollbars catch clicks across a 21px band over the
+       last row and every row's chevron; classic ones take layout space. */
+    g_object_set(gtk_settings_get_default(), "gtk-overlay-scrolling", FALSE, NULL);
     const char *root = g_getenv("FILEMILL_ROOT");
     automation = argc > 1 && !strcmp(argv[1], "--automation");
     if (!automation && argc > 1) root = argv[1];

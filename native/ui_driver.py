@@ -198,8 +198,7 @@ console.error = (...args) => {
             return await self.mount(int(mounting[1]))
         adding = re.fullmatch(r"__add\(__(live|race), '([^']+)'\)", script)
         removing = re.fullmatch(r"__rm\(__(live|race), '([^']+)'\)", script)
-        if adding or removing:
-            match = adding or removing
+        if match := adding or removing:
             file = (
                 self.root / ("refresh" if match[1] == "live" else "racing") / match[2]
             )
@@ -333,10 +332,16 @@ await walk(tree, ''); window.__gets = 0; return files;
     async def wait_for_timeout(self, ms):
         await asyncio.sleep(ms / 1000)
 
-    async def wait_for_function(self, fn, timeout=30000):
+    async def wait_for_function(self, fn, arg=None, timeout=30000):
+        # Playwright waits for JavaScript truthiness: [] passes, as in JS.
+        truthy = f"""async arg => {{
+let value = (0, eval)({json.dumps(fn)});
+if (typeof value === 'function') value = value(arg);
+return !!(await value);
+}}"""
         until = time.monotonic() + timeout / 1000
         while time.monotonic() < until:
-            if await self.evaluate(fn):
+            if await self.evaluate(truthy, arg):
                 return
             await asyncio.sleep(0.05)
         raise TimeoutError(fn)
