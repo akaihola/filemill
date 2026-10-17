@@ -17,7 +17,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [~] [99] Rebase [25]'s pytest migration onto main and merge it once the full suite
   passes
-      <!-- hai:{"id":"simple-008dfc0f-048f-4de3-9845-bedc6e858c47","labels":["steward"],"createdAt":"2026-10-17T14:10:56.295Z","updatedAt":"2026-10-17T17:03:20.221Z"} -->
+      <!-- hai:{"id":"simple-008dfc0f-048f-4de3-9845-bedc6e858c47","labels":["steward"],"createdAt":"2026-10-17T14:10:56.295Z","updatedAt":"2026-10-17T17:26:24.477Z"} -->
 
 - [~] [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
   fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
