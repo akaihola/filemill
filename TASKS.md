@@ -6,13 +6,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+## Scheduled
+
 - [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
     - Depends on: [29]
 
-  <!-- hai:{"updatedAt":"2026-10-17T08:24:51.487Z"} -->
-
-## Scheduled
+  <!-- hai:{"updatedAt":"2026-10-17T12:25:25.718Z"} -->
 
 ## In Progress
 
