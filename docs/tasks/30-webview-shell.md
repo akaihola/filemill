@@ -196,10 +196,9 @@ were clean after the merge. This preserves the unfinished prototype and its
 blocker evidence; [30] remains In Progress because no native binary passes
 the complete UI suite. No completion move is warranted. [31] is unchanged.
 
-Restarted `filemill.service` and `filemill-public.service`, both running from
+Restarted the development service and the public service, both running from
 main's development tree. Both are active. The merged entry module,
-`core/nav.js` and `core/renderers.js` match byte for byte on ports 8334 and
-8336 and through `https://filemill.vempai.men/`. Live Chromium checks pass
+`core/nav.js` and `core/renderers.js` match byte for byte on the development and public listeners and through `https://filemill.vempai.men/`. Live Chromium checks pass
 on all three origins for keyboard navigation with no welcome element and
 HTML preview content whose script cannot access its parent. These checks
 used in-memory preview content and did not modify served files.

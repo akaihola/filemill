@@ -68,7 +68,8 @@ These checks cover the four features, modified-state transitions, failed writes,
 save/reopen/reload, resize, selection restoration, newline normalization,
 composition, and late read/write completion after navigation. The static checks
 use fake file handles. Their `file://` fixture stubs service-worker registration.
-Use the installed Nix browsers; do not run `playwright install`.
+When using a managed browser bundle, select its matching Playwright release
+instead of downloading another browser.
 
 Rebuild and check the generated bundle after UI changes:
 
@@ -131,8 +132,8 @@ Both worktrees were clean before removing the merged feature worktree and branch
 Issue [28] moved unchanged to Completed; every other tracker byte was preserved.
 The pre-existing issue [6] duplication described above remains unchanged.
 
-Restarted `filemill.service` (development tree, port 8334) and
-`filemill-public.service` (port 8336, https://filemill.vempai.men/).
+Restarted the development service (development tree) and
+the public service (public origin).
 Both services are active. The seven changed editor/render/style assets match main
 on both origins and through the public domain. Live Chromium checks passed on the
 development and public deployments using in-memory files, including a save.
@@ -145,8 +146,7 @@ purge was needed. The static bundle is unchanged by this server delivery fix.
 Deployment validation: 13 focused shell/editor tests pass, source lint passes,
 and the static bundle freshness check passes. The complete API suite reports
 55 passes and seven failures; unmodified main reproduces the identical failures.
-Logs: `/tmp/filemill-cache-tests.log`, `/tmp/filemill-cache-api.log`,
-`/tmp/filemill-cache-api-main.log`, and `/tmp/filemill-live-check.log`.
+Validation logs were saved in the temporary directory used for that session.
 
 ## Tracker maintenance on 2026-09-19
 

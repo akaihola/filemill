@@ -140,7 +140,7 @@ the default view and that branch returns before the shell one.
 uv sync
 timeout 1800 uv run pytest     # everything, browser tests included
 
-# Only the real-browser tests. Needs PLAYWRIGHT_BROWSERS_PATH. The two files
+# Only the real-browser tests. Install matching browsers first. The two files
 # together took 246 s on a 4-core host, so budget minutes.
 timeout 1800 uv run pytest tests/test_browser_keyboard.py tests/test_browser_new_ui.py
 ```
@@ -170,19 +170,15 @@ BrowserType.launch: Executable doesn't exist at
 ╚════════════════════════════════════════════════════════════╝
 ```
 
-Ignore that banner. Each Playwright release carries one browser revision.
-Each Nix browser bundle carries one. They must be the same one. The release
-that matches the bundle in `$PLAYWRIGHT_BROWSERS_PATH` is the version in
-`$UV_CONSTRAINT`, and `pyproject.toml` pins that version with a comment that
-records which neighbouring releases were measured to fail. Both neighbours die
-at `BrowserType.launch` with the banner above. `--with "playwright==X"`
-overrides the pin, so run the suites with `uv run pytest` from `server/` instead.
-`playwright install` downloads a fourth copy of a browser that Nix provides.
-Do not run it. When the Nix bundle moves, re-pin from the constraint file:
-
-```bash
-uv lock --upgrade-package "$(grep -E '^playwright[=<>~!]' "$UV_CONSTRAINT")"
-```
+Each Playwright release requires a matching browser revision.
+`--with "playwright==X"` overrides the pin, so run the suites with `uv run pytest`
+from `server/` instead.
+Install the locked release's Chromium with `uv run playwright install chromium`.
+If your environment provides a managed browser bundle, set
+`PLAYWRIGHT_BROWSERS_PATH` to its directory. Verify that its revision matches
+Playwright before running tests. For a bundle such as Nix, select the matching
+Playwright release and update the lock when the bundle changes. Do not download
+another browser to work around a mismatch with a managed bundle.
 
 ### Proxy credentials for the browser tests
 

@@ -141,9 +141,8 @@ uv run --project ../server pytest test-ui.py     # UI, fake handle
 uv run --project ../server pytest test-url.py    # deep links
 uv run --project ../server pytest test-rich.py   # CDN renderers
 #   each also takes --dev, to run against ui/ unbundled
-#   `--project ../server` uses the locked Playwright, the one release whose
-#   browser revision the Nix bundle provides; `--with "playwright==X"` would
-#   override it and fail to launch
+#   `--project ../server` uses the locked Playwright and its browser revision;
+#   `--with "playwright==X"` overrides the lock and can fail to launch
 
 cd server && uv run pytest
 ```

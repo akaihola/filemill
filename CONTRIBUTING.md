@@ -67,6 +67,11 @@ change. Update the documentation in the same commit as the change.
 
 ## Writing
 
+Use repository-relative paths, generic example hosts and disposable directories
+in documentation, docstrings and comments. Do not name a developer's account,
+machine or private checkout. Document environment-specific steps conditionally.
+Keep public project links and paths that form part of the application contract.
+
 Write Markdown in ASD-STE100 Simplified Technical English. Use short sentences,
 common words, the active voice, and one instruction per step. Define a technical
 term before you use it. Use a relative link when the target is in this

@@ -17,28 +17,28 @@ some kind of a preview instead of an error message is displayed.
 
 ## Example cases
 
-All paths are relative to `agent@gogo:/home/agent/`.
+The examples below use generic filenames in place of private source paths.
+The extensions and recorded byte sizes are unchanged.
 
 ### Images that do work correctly
 
-- my-knowledge/pages/Life/Self-Development/assets/2024-09-15%20wheeloflife%20dot%20io%20results.svg
-- my-knowledge/pages/Life/Tottila/assets/*.jpg
-- paivi/documents/kuvat/motivaatiojatkumo/Motivaatiojatkumo_fi.jpg (516225 bytes)
-- paivi/documents/kuvat/motivaatiojatkumo/Motivaatiojatkumo_fi%20(Kopio).png (516225
-  bytes)
-- paivi/documents/kuvat/motivaatiojatkumo/Motivaatiojatkumo.jpg (501402 bytes)
-- paivi/documents/kuvat/motivaatiojatkumo/The%20Motivation%20Continuum.jpeg
-- repos/ai/hermes-agent/website/static/img/dashboard/admin-system-top.png (519615 bytes)
-- repos/ai/hermes-agent/website/static/img/dashboard/admin-channels.png (521851 bytes)
+- `images/results.svg`
+- `images/photos/*.jpg`
+- `images/diagram-fi.jpg` (516225 bytes)
+- `images/diagram-fi%20(copy).png` (516225 bytes)
+- `images/diagram.jpg` (501402 bytes)
+- `images/diagram%20continuum.jpeg`
+- `images/dashboard-system.png` (519615 bytes)
+- `images/dashboard-channels.png` (521851 bytes)
 
 ### Images for which the error `No inline preview for this file type.` is displayed
 
-- my-knowledge/pages/Life/Self-Development/assets/2024-09-29%20Discover%20Your%20Value%20Assessment%20akaihola.png
-- paivi/documents/kuvat/motivaatiojatkumo/Motivaatiojatkumo_fi.png
-- paivi/documents/kuvat/motivaatiojatkumo/Motivaatiojatkumo_NanoBanana.jpeg
-- paivi/documents/kuvat/motivaatiojatkumo/Motivaatiojatkumo_v2.jpg
-- paivi/documents/kuvat/motivaatiojatkumo/Motivaatiojatkumo_v3.jpg
-- repos/ai/kandev/docs/screenshots/review%20dialog.png (528276 bytes)
+- `images/assessment.png`
+- `images/diagram-fi.png`
+- `images/diagram-generated.jpeg`
+- `images/diagram-v2.jpg`
+- `images/diagram-v3.jpg`
+- `images/review%20dialog.png` (528276 bytes)
 
 ## Diagnosis (2026-09-28)
 

@@ -6,7 +6,7 @@ depends-on: []
 
 ## Original report and requirements
 
-A session in `~/prg/filemill-screencast` found this on 2026-10-09 at HEAD
+A review session found this on 2026-10-09 at HEAD
 `7ff1fd2`.
 
 `ui/core/shell.js:21` gives the search label the class `sr-only`:

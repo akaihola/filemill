@@ -6,7 +6,7 @@ depends-on: []
 
 ## Original report and requirements
 
-A session in `~/prg/filemill-screencast` found this on 2026-10-10 at HEAD
+A review session found this on 2026-10-10 at HEAD
 `7ff1fd2`, in an 838 px wide landscape viewport, the README screencast's size.
 
 `#status` (`ui/core/styles.css:1291`) is a 24 px high flex row with

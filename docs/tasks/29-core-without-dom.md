@@ -129,7 +129,7 @@ the merge. Issue [29] moved unchanged to Completed; removing its block from
 the before/after tracker leaves identical text. The four pre-existing
 duplicates recorded above remain unchanged.
 
-Restarted `filemill.service` and `filemill-public.service`; both are active.
+Restarted the development service and the public service; both are active.
 The development server, public origin and https://filemill.vempai.men/ serve
 the merged shell and all nine checked model, renderer and entry assets.
 Live Chromium checks passed on all three endpoints for keyboard navigation,

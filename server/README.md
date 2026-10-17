@@ -61,33 +61,39 @@ expose the server beyond loopback.
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for the development rules.
 
-### Browser test setups on gogo
+### Manual browser test instances
 
-Run these as `agent@gogo`. Create the fixture roots once, then keep one
-foreground process per setup. The ports are reserved for the matching user
-services that will be added separately.
+Run these commands from `server/`. Create disposable fixture roots with
+`mktemp`, then start each server command in a separate terminal. Set
+`FIXTURES` to the printed directory in each terminal. The ports below are
+examples; choose unused ports on your machine.
 
 ```bash
-ssh agent@gogo
-mkdir -p ~/filemill-browser/{ui,keyboard-desktop,keyboard-mobile}
-printf '# Browser UI\n' > ~/filemill-browser/ui/README.md
-mkdir -p ~/filemill-browser/keyboard-desktop/my-knowledge/docs/subdir
-printf '# Topic\n' > ~/filemill-browser/keyboard-desktop/my-knowledge/docs/topic.md
-printf '# Next\n' > ~/filemill-browser/keyboard-desktop/my-knowledge/docs/subdir/next.md
-printf '# Root\n' > ~/filemill-browser/keyboard-desktop/root-note.md
-cp -a ~/filemill-browser/keyboard-desktop/. ~/filemill-browser/keyboard-mobile/
+FIXTURES=$(mktemp -d)
+printf '%s\n' "$FIXTURES"
+mkdir -p "$FIXTURES"/{ui,keyboard-desktop,keyboard-mobile}
+printf '# Browser UI\n' > "$FIXTURES/ui/README.md"
+mkdir -p "$FIXTURES/keyboard-desktop/my-knowledge/docs/subdir"
+printf '# Agent notes\n' > "$FIXTURES/keyboard-desktop/my-knowledge/AGENTS.md"
+printf '# Topic\n\n[Next](subdir/next.md)\n' > "$FIXTURES/keyboard-desktop/my-knowledge/docs/topic.md"
+printf '# Next\n' > "$FIXTURES/keyboard-desktop/my-knowledge/docs/subdir/next.md"
+printf '# Root\n' > "$FIXTURES/keyboard-desktop/root-note.md"
+ln -s my-knowledge "$FIXTURES/keyboard-desktop/prg"
+printf '[Next](~/my-knowledge/docs/subdir/next.md)\n' > "$FIXTURES/keyboard-desktop/home-link.md"
+cp -a "$FIXTURES/keyboard-desktop/." "$FIXTURES/keyboard-mobile/"
 
-cd ~/prg/filemill/server
-uv run filemill ~/filemill-browser/ui --bind 0.0.0.0 --port 8452
-uv run filemill ~/filemill-browser/keyboard-desktop --bind 0.0.0.0 --port 8453
-uv run filemill ~/filemill-browser/keyboard-mobile --bind 0.0.0.0 --port 8454
+uv run filemill "$FIXTURES/ui" --port 8001
+uv run filemill "$FIXTURES/keyboard-desktop" --port 8002
+uv run filemill "$FIXTURES/keyboard-mobile" --port 8003
 ```
 
-Use `:8452` for `test_browser_new_ui.py`, `:8453` for the desktop viewport in
-`test_browser_keyboard.py`, and `:8454` for its touch-sized portrait or
-landscape viewport. Select the viewport in the browser; the HTTP setup is the
-same. Stop foreground processes with Ctrl-C. Use `127.0.0.1` instead of
-`0.0.0.0` for local-only testing on gogo.
+Open `http://127.0.0.1:8001` for the UI fixture, `http://127.0.0.1:8002`
+for the desktop keyboard fixture, or `http://127.0.0.1:8003` for the mobile
+keyboard fixture. These mirror the directory layouts used by
+`test_browser_new_ui.py` and `test_browser_keyboard.py` for manual checks.
+The automated suites create their own temporary roots and choose free ports.
+Select a desktop, portrait or landscape viewport in the browser. Stop each
+server with Ctrl-C, then remove the disposable fixture directory.
 
 Quick start:
 
@@ -95,23 +101,17 @@ Quick start:
 uv sync
 timeout 1800 uv run pytest         # everything, browser tests included
 
-# Only the real-browser tests. Needs PLAYWRIGHT_BROWSERS_PATH. The browser
+# Only the real-browser tests. Install matching browsers first. The browser
 # suite takes minutes on a 4-core host, so budget accordingly.
 timeout 1800 uv run pytest tests/test_browser_keyboard.py tests/test_browser_new_ui.py
 ```
 
-Do not add `--with`. `uv sync` installs the Playwright version that the lock
-pins. That version matches the browsers that Nix provides.
-`uv run --with "playwright==1.57.0"` overrides the lock and fails like this:
-
-```
-BrowserType.launch: Executable doesn't exist at
-  .../chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
-```
-
-The message tells you to run `playwright install`. Do not run it. Nix ships
-the browsers, one revision per bundle, and `pyproject.toml` pins the Playwright
-that matches them.
+Do not add `--with`. `uv sync` installs the locked Playwright version.
+Install its matching Chromium browser with `uv run playwright install chromium`.
+If your environment already provides browsers, set `PLAYWRIGHT_BROWSERS_PATH`
+to their directory and verify that their revision matches the locked release.
+For a managed browser bundle, such as Nix, use that bundle's matching
+Playwright release instead of downloading another browser.
 
 ## Architecture
 

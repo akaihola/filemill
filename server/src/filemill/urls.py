@@ -71,7 +71,7 @@ def _last(params, key: str) -> str | None:
 
     Starlette's ``QueryParams`` is a multidict, so ``?layout=a&layout=b`` has two
     values. Taking the last one makes a rewriting router's appended parameter
-    win, which is the behaviour the gogo router needs when it forwards a request.
+    win when a reverse proxy forwards a request.
     """
     getlist = getattr(params, "getlist", None)
     if getlist is not None:

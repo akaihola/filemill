@@ -6,8 +6,7 @@ depends-on: []
 
 ## Original report and requirements
 
-reStructuredText paragraphs are rendered very narrow. For example
-in`/home/agent/prg/feedtask/README.rst`, a the source for a paragraph is:
+reStructuredText paragraphs are rendered very narrow. For example, a paragraph in a `README.rst` has this source:
 
   ```rst
   A command-line tool to capture stdin and command output for AI tools

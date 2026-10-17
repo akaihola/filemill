@@ -40,7 +40,7 @@ of the earlier JavaScript alternative.
 
 ## Measurement
 
-Measured on the gogo development host on 2026-09-18, Linux 6.12.91 x86_64,
+Measured on a development host on 2026-09-18, Linux 6.12.91 x86_64,
 glibc 2.42, Playwright 1.61.0, headless Chromium 149.0.7827.55. Requests went to
 the pinned jsDelivr URLs without a configured browser proxy or network/CPU
 throttling. No proxy environment variables were present. Upstream CDN caches

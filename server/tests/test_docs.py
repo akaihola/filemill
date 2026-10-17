@@ -139,3 +139,24 @@ def test_adapters_readme_matches_app_http_renderers():
     missing = sorted(names[k] for k in kinds if names[k] not in paragraph)
     assert not missing, f"README omits browser renderers: {missing}"
     assert "only `.pptx`" not in paragraph
+
+
+def test_documentation_uses_portable_development_examples():
+    setup = re.compile(
+        r"\b(?:gogo|atom)\b|/home/(?:agent|akaihola)\b|~/prg/|~/repos/"
+        r"|~/\.config/(?:coding-agents|hai)/|~/\.kandev/"
+        r"|paivi/documents/|my-knowledge/pages/|repos/ai/|UV_CONSTRAINT"
+    )
+    paths = [
+        *ROOT.rglob("*.md"),
+        ROOT / "server/src/filemill/urls.py",
+        ROOT / "server/pyproject.toml",
+    ]
+    found = []
+    for path in paths:
+        if any(part in {".git", ".venv", "vendor"} for part in path.parts):
+            continue
+        for number, line in enumerate(path.read_text().splitlines(), 1):
+            if setup.search(line):
+                found.append(f"{path.relative_to(ROOT)}:{number}: {line.strip()}")
+    assert not found, "Development setup references:\n" + "\n".join(found)

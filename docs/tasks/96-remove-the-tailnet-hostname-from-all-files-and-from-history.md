@@ -1,8 +1,8 @@
 # Remove the tailnet hostname from all files and from history
 
 Antti asked for this on 2026-10-17. Hai removed the same name from its own
-repository in `80ee4c4`. filemill is public on GitHub, and its gogo tailnet
-hostname (the private DNS name that `HAI_ALLOWED_HOSTS` in `~/.config/hai/hai.env`
+repository in `80ee4c4`. filemill is public on GitHub, and its private tailnet
+hostname (the private DNS name that `HAI_ALLOWED_HOSTS` in the private Hai environment file
 holds) appears in current files and in about 200 commits. Never write the name
 itself into a file, commit message, task doc or closing message; refer to it as
 `<tailnet-host>`.
@@ -14,16 +14,20 @@ history with `git log --all --oneline -S'ts[.]net'`.
 
 ## Work
 
+Set `FILEMILL_REPO` to the repository checkout and `BACKUP_DIR` to a private
+backup directory before using the commands below. Mirror names in angle
+brackets are placeholders for the affected clone's remotes.
+
 1. Precondition: issues [93], [94] and [95] depend on this one, so no other
    pacer work should be under way in filemill. Check `git worktree list`; report
    any worktree whose branch has commits that are not on `main`. Those include
-   the Kandev worktrees under `~/.kandev/tasks/`, which Antti may still want.
+   the Kandev-managed worktrees, which Antti may still want.
 2. Replace the name in current files with `<tailnet-host>`, or with a phrase
    that reads well. Commit this on `main` first.
-3. Back up: `git -C ~/prg/filemill bundle create ~/backups/filemill-before-tailnet-rewrite-YYYYMMDD.bundle --all`.
+3. Back up: `git -C "$FILEMILL_REPO" bundle create "$BACKUP_DIR/filemill-before-tailnet-rewrite-YYYYMMDD.bundle" --all`.
 4. Rewrite every ref with `git filter-repo --replace-text`. Keep the mapping
    file out of the repository, for example in `$TMPDIR`; it contains the name.
-   Do the rewrite in a fresh clone, then make `~/prg/filemill` match it
+   Do the rewrite in a fresh clone, then make `"$FILEMILL_REPO"` match it
    (`main` and the branches that still exist). Keep the worktrees working, or
    name the ones that can't be kept.
 5. Verify: `git log --all -S'ts[.]net'` and `git grep 'ts[.]net' $(git rev-list --all)`
@@ -32,22 +36,22 @@ history with `git log --all --oneline -S'ts[.]net'`.
    `docs/tasks/` file or `TASKS.md` cites (`.git/filter-repo/commit-map`), so
    that citations can be followed.
 
-Do not push, and do not touch atom or GitHub.
+Do not push, and do not touch the maintainer host or GitHub.
 
 ## For Antti (after this lands)
 
 - Force-push to GitHub only the two branches it has. The rewrite also rewrote
   the remote-tracking refs, and the steward found both clean on 2026-10-17:
-  `git -C ~/prg/filemill push --force origin main refs/remotes/origin/ci/hai91-durations-all:refs/heads/ci/hai91-durations-all`.
+  `git -C "$FILEMILL_REPO" push --force origin main refs/remotes/origin/ci/hai91-durations-all:refs/heads/ci/hai91-durations-all`.
   The repository has no tags. (This replaces `push --force --all origin`, which
   would also publish 34 local `pacer-*`, `backup/*` and `feature/*` branches.)
-- On atom, discard the old history: `git fetch` and then `git reset --hard origin/main`.
+- On the maintainer host, discard the old history: `git fetch` and then `git reset --hard origin/main`.
   Rebase or recreate any local branches there. On 2026-10-17 at 07:48 UTC, a
-  minute after the rewrite, a push put gogo's `refs/remotes/atom/main` and
-  `refs/remotes/atom/pacer-dbb29e55-…` back on the old history, which still
-  carries the name. No T3 thread ran it; it may have come from atom. Those refs
-  are local and not published, but delete them on gogo once atom is reset
-  (`git -C ~/prg/filemill update-ref -d <ref>`).
+  minute after the rewrite, a push put the development host's `refs/remotes/<mirror>/main` and
+  `refs/remotes/<mirror>/pacer-dbb29e55-…` back on the old history, which still
+  carries the name. No T3 thread ran it; it may have come from the maintainer host. Those refs
+  are local and not published, but delete them on the development host once the maintainer clone is reset
+  (`git -C "$FILEMILL_REPO" update-ref -d <ref>`).
 - GitHub keeps old commits reachable through pull request refs (PR #2) and its
   caches. Only GitHub Support can purge those.
 
@@ -63,8 +67,8 @@ Kandev branch has 3 commits outside main; the browser-test Kandev branch has
 2. Both remain available. All 5 stash entries remain in their original order,
 with additional rewritten refs under `refs/stash-archive/`.
 
-Verified backup: `~/backups/filemill-before-tailnet-rewrite-20261017.bundle`.
-A supplemental `~/backups/filemill-before-tailnet-rewrite-20261017-with-stashes.bundle`
+Verified backup: `$BACKUP_DIR/filemill-before-tailnet-rewrite-20261017.bundle`.
+A supplemental `$BACKUP_DIR/filemill-before-tailnet-rewrite-20261017-with-stashes.bundle`
 also preserves older stash entries that the standard all-refs bundle omits.
 These private backups retain the original sensitive history.
 
@@ -72,7 +76,7 @@ History pickaxe and tracked-tree scans found no unescaped private DNS suffix
 across all 1,925 rewritten commits. The 11 documentation tests, DOM-free model
 checks and static bundle check passed before the rewrite and were rerun after it.
 No application behavior or architecture changed. Nothing was pushed; neither
-atom nor GitHub was accessed. Antti still needs to perform the steps above.
+the maintainer host nor GitHub was accessed. Antti still needs to perform the steps above.
 
 ### Commit citation map
 

@@ -126,9 +126,9 @@ the `file://` welcome screen instead of a folder picker (see below). An
 nothing". Nothing published can read anything: there is no backend, and the
 visitor's browser reads the folder after the visitor grants it.
 
-The workflow runs `playwright install`. That command is **forbidden on the
-dev machines**, where browsers come from the Nix store. On a stock CI runner
-it is the only way to get them.
+The workflow runs `playwright install` to install the locked release's
+browsers. If a development environment provides a managed browser bundle,
+use its matching Playwright release instead of downloading another browser.
 
 ---
 
@@ -207,10 +207,11 @@ ratio, not the milliseconds. The sweep lands at 1.5–2.9× the listing in the
 same run, and the check asserts that ratio, not a wall-clock ceiling. OPFS is
 not the user's own disk. That is `test-e2e.py`'s job.
 
-**Never run `playwright install`.** Pin the version that matches the
-NixOS-installed browsers. That is the version in `$UV_CONSTRAINT`, which
-`server/pyproject.toml` pins; run the suites with `uv run --project server`
-so the lock, not a `--with` override, chooses the release.
+Run the suites with `uv run --project server` so the lock chooses the
+Playwright release. Install its browser with
+`uv run --project server playwright install chromium`. If your environment
+provides a managed browser bundle, set `PLAYWRIGHT_BROWSERS_PATH` and use
+its matching Playwright release instead of downloading another browser.
 
 `test-ui.py` fakes the handle API, which is all the app touches:
 

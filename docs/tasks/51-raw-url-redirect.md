@@ -6,7 +6,7 @@ depends-on: []
 
 ## Original report and requirements
 
-Opening `https://<tailnet-host>:8445/<any path>` without query parameters
-redirects to `https://<tailnet-host>:8445/` and spins `Reading...` for a very
+Opening `https://filemill.example/<any path>` without query parameters
+redirects to `https://filemill.example/` and spins `Reading...` for a very
 long time (if not forever). It should instead return files raw with the correct
 content type.

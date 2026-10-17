@@ -6,7 +6,7 @@ depends-on: []
 
 ## Original report and requirements
 
-A session in `~/prg/filemill-screencast` found these on 2026-10-09 while it read
+A review session found these on 2026-10-09 while it read
 the documents to plan a screencast.
 
 ### Playwright pins
@@ -30,7 +30,7 @@ The comment at `server/pyproject.toml:50-57` is correct. It names 1.61.0 as a
 measured failure.
 
 One version number repeated in six files goes stale again at the next bump.
-Consider one source, for example "the version in `$UV_CONSTRAINT`".
+Consider one source, for example "the locked server dependency".
 
 ### Server renderer note
 

@@ -325,6 +325,13 @@ project. `ui/adapters/README.md` lists the renderers
 against the pin, preserves recorded-failure exemptions, and verifies that the
 server test command runs from `server/`.
 
+Documentation portability pass, 2026-10-17: development instructions use
+portable fixture roots and conditional browser setup. Historical task examples
+use generic hosts and paths while retaining dates, measurements and commit
+citations. `server/tests/test_docs.py` checks for known private setup references.
+This documentation change does not alter application behavior or the remediation
+order above.
+
 ### A12. Smaller defects and audits
 
 - `rt` in `app.py:46` calls `int()` on query values, so `page=bad` is a 500.

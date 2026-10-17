@@ -6,7 +6,7 @@ depends-on: []
 
 ## Original report and requirements
 
-A session in `~/prg/filemill-screencast` found this on 2026-10-10 at HEAD
+A review session found this on 2026-10-10 at HEAD
 `7ff1fd2`.
 
 For a Markdown file, the preview toolbar reads Raw, Rendered, Raw, Source,

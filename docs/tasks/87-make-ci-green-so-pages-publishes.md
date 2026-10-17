@@ -6,7 +6,7 @@ depends-on: []
 
 ## Original report and requirements
 
-A session in `~/prg/filemill-screencast` found this on 2026-10-09.
+A review session found this on 2026-10-09.
 
 GitHub Pages is enabled for `akaihola/filemill` with GitHub Actions as the
 source. <https://akaihola.github.io/filemill/> still returns 404, because no
@@ -86,12 +86,12 @@ finder's smooth scroll had moved.
 ## Blocked on the push, 2026-10-10
 
 Local `main` is fast-forwarded to `5ee500f` and contains the fix. Every push
-from `agent@gogo` returns 403, for `main` and for a feature branch alike,
+from the development account returns 403, for `main` and for a feature branch alike,
 inside and outside the sandbox, although the token reports push permission on
-the repository. Per the push rules in `~/.config/coding-agents/sandbox.md`,
+the repository. Per the push rules in the local agent push policy,
 pushing stops here.
 
-Remaining steps, from `akaihola@atom`:
+Remaining steps, from the maintainer account:
 
 1. `git push origin main`.
 2. Watch the `publish` run. The open question is `test-ui.py::test_storage`

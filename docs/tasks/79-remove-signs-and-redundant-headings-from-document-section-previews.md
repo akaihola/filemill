@@ -23,8 +23,8 @@ passes and one Git bundle timeout. That timeout repeats with the unchanged
 main frontend in this worktree. The same test passes in the canonical checkout.
 It is outside this issue's section presentation change.
 
-Deployment needs a push from `akaihola@atom`. The push rules in
-`~/.config/coding-agents/sandbox.md` prohibit pushing `main` from `agent@gogo`.
+Deployment needs a push from the maintainer account. The push rules in
+the local agent push policy prohibit pushing `main` from the development account.
 
 After the local merge, eight focused bundle and server browser tests pass in
 the canonical checkout, including the Git bundle case. All six pre-commit

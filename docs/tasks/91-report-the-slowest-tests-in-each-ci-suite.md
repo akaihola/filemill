@@ -142,7 +142,7 @@ so a stuck dial fails rather than stalling.
 
 [Run 38630672866](https://github.com/akaihola/filemill/actions/runs/38630672866)
 came from the throwaway draft PR #1, whose root `conftest.py` set
-`config.option.durations = 0`. A conftest change was needed because gogo's
+`config.option.durations = 0`. A conftest change was needed because the development host's
 token cannot push workflow files or dispatch runs. The PR is closed and its
 branch deleted. Rows under 5 ms are omitted by pytest.
 
@@ -189,7 +189,7 @@ asking for `ui_root` gets a writable copy and a private server. Two editor
 tests saved without `ui_root`; the guard caught
 `test_editor_late_write_does_not_touch_next_file`.
 
-Measured locally on gogo (4 cores), whole module, `--durations=0`:
+Measured locally on the development host (4 cores), whole module, `--durations=0`:
 
 | Fixtures | Workers | Outcome    | Total   | Setup  | Call   | Teardown |
 | -------- | ------- | ---------- | ------- | ------ | ------ | -------- |

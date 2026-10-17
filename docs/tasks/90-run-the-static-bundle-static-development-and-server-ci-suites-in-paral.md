@@ -201,7 +201,7 @@ locally (1 passed in 5.69 s); all 19 workflow/documentation tests and all six
 pre-commit hooks passed after rebase. No new test repair was added by [90].
 
 The historical notes about denied push/dispatch remain above to explain the
-delay. The user pushed and dispatched the measured run from atom. A passing
+delay. The user pushed and dispatched the measured run from the maintainer host. A passing
 confirmation run of the rebased branch is still required before merge and
 completion. The issue remains In Progress, pending that validation.
 

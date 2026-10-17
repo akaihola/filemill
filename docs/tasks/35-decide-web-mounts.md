@@ -19,7 +19,7 @@ the root; task [32] deleted `rendering.py`.
 `git grep -n "/w/" -- ui server/src docs README.md` finds one consumer:
 `homeHref` in `ui/adapters/preview-rich.js` rewrites a Markdown `~/x` link to
 `/w/<root-name>/x`. That page is served by the same origin, so it never needs
-CORS. Nothing on the gogo dashboard, in `~/menu`, or in a systemd unit loads a
+CORS. The inspected dashboard, menu and systemd units did not load a
 `/w/` URL from another origin.
 
 ## Decision
