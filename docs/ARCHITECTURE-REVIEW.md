@@ -114,6 +114,10 @@ Keep these.
   the static Python scripts and server tests wait for observable state, including
   scroll/dial stability and completed storage writes, rather than fixed sleeps.
   A source guard prevents fixed browser waits from returning (2026-10-17).
+  The keyboard browser suite writes server logs to a temporary file. An unread
+  subprocess pipe could fill under concurrent load and block directory responses
+  during deep mobile navigation. A small-pipe regression covers this test-harness
+  failure without changing the shared UI ([98], 2026-10-17).
 - Real filesystem tests without a picker: `static/test-url.py` drives the real
   FSA adapter against the origin private file system.
 - Size limits and the image extension list have one home, `ui/core/limits.js`.

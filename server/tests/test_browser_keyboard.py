@@ -8,9 +8,11 @@ from __future__ import annotations
 import os
 import socket
 import subprocess
+import sys
 import time
 from contextlib import contextmanager
 from pathlib import Path
+from tempfile import TemporaryFile
 from textwrap import dedent
 
 import pytest
@@ -75,54 +77,54 @@ def _serve(root: Path):
         "--port",
         str(port),
     ]
-    proc = subprocess.Popen(
-        cmd,
-        cwd=str(Path(__file__).resolve().parents[1]),
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-    )
-
-    base_url = f"http://127.0.0.1:{port}"
-    deadline = time.time() + 15
-    ready = False
-    while time.time() < deadline:
-        try:
-            sock = socket.create_connection(("127.0.0.1", port), timeout=0.5)
-            sock.close()
-            ready = True
-            break
-        except OSError:
-            time.sleep(0.2)
-
-    if not ready:
-        out = ""
-        if proc.stdout is not None:
-            try:
-                out = proc.stdout.read()
-            except Exception:
-                out = ""
-        proc.kill()
-        raise RuntimeError(
-            dedent(
-                f"""\
-                filemill test server did not start on {base_url}
-                output:
-                {out}
-                """
-            )
+    # An unread PIPE blocks the server once access logs fill it. Linux may
+    # give new pipes only two pages when concurrent suites exhaust the quota.
+    with TemporaryFile(mode="w+t") as log:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=str(Path(__file__).resolve().parents[1]),
+            env=env,
+            stdout=log,
+            stderr=subprocess.STDOUT,
+            text=True,
         )
 
-    try:
-        yield base_url
-    finally:
-        proc.terminate()
-        try:
-            proc.wait(timeout=5)
-        except subprocess.TimeoutExpired:
+        base_url = f"http://127.0.0.1:{port}"
+        deadline = time.time() + 15
+        ready = False
+        while time.time() < deadline:
+            try:
+                sock = socket.create_connection(("127.0.0.1", port), timeout=0.5)
+                sock.close()
+                ready = True
+                break
+            except OSError:
+                time.sleep(0.2)
+
+        if not ready:
             proc.kill()
             proc.wait(timeout=5)
+            log.seek(0)
+            out = log.read()
+            raise RuntimeError(
+                dedent(
+                    f"""\
+                    filemill test server did not start on {base_url}
+                    output:
+                    {out}
+                    """
+                )
+            )
+
+        try:
+            yield base_url
+        finally:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=5)
 
 
 @pytest.fixture()
@@ -954,6 +956,28 @@ def test_mobile_landscape_wide_folder_tap_keeps_the_touched_row_on_screen(
         assert m["stageScroll"] == 0, (
             "the pan scrolled #stage instead of moving the strip"
         )
+
+
+@pytest.mark.integration
+@pytest.mark.skipif(sys.platform != "linux", reason="Linux pipe capacity regression")
+def test_mobile_landscape_wide_folder_with_small_server_log_pipe(
+    wide_root: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Concurrent suites can reduce new Linux pipes to two pages."""
+    popen = subprocess.Popen
+
+    def small_pipe(*args, **kwargs):
+        if kwargs.get("stdout") == subprocess.PIPE:
+            kwargs["pipesize"] = 8192
+        return popen(*args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "Popen", small_pipe)
+    with (
+        _serve(wide_root) as base_url,
+        _ui_page(base_url, mobile=True, viewport=MOBILE_LANDSCAPE) as page,
+    ):
+        _tap_wide_chain(page, len(_WIDE_NAMES))
+        assert page.evaluate("path.length") == len(_WIDE_NAMES) + 1
 
 
 @pytest.mark.integration

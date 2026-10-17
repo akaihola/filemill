@@ -45,3 +45,32 @@ temporary environment; it did not exercise navigation.
 3. Keep subprocess diagnostics without blocking requests, then repeat the
    landscape regression with both static suites running concurrently.
 4. Run the keyboard suite and repository checks, and record the result here.
+
+
+## Cause and fix, 2026-10-17
+
+The test server could stop answering requests because its access log filled
+an unread subprocess pipe. This is a test harness failure. No shared UI change
+is required. Linux normally gives these pipes 65,536 bytes on the validation
+host. Concurrent suites can exhaust the per-user pipe page allowance, which
+reduces new pipes to 8,192 bytes. Long directory URLs fill that space.
+
+The keyboard suite now sends stdout and stderr to a temporary file. Startup
+failures still include the captured output. The helper stops the subprocess
+before reading that file, so collecting diagnostics cannot wait for pipe EOF.
+
+The added Linux browser regression limits subprocess log pipes to 8,192 bytes
+and walks all twelve folders. It failed before the fix under Python 3.12.14
+with a 30-second navigation wait timeout. The blocked server was in
+`pipe_write`. An instrumented Python 3.12 reproduction stopped at depth 9
+with that directory appended but `kids === null`, `loading` still set, and
+one spinner. Its 8,192-byte pipe contained 7,972 unread bytes. The next long
+access-log write could not fit, so the directory response did not arrive.
+The blocked depth depends on how much startup and request output precedes it. The same test passes with file-backed logs. A separate 4,096-byte
+reproduction under Python 3.14.7 blocked during initial page loading.
+
+The unchanged landscape test passed in isolation under Python 3.14.7 in
+12.80 seconds and Python 3.12.14 in 12.71 seconds. Both versions use the locked
+Playwright 1.63 and Nix Chromium. Python 3.12 came from the installed Nix
+interpreter and used a separate uv environment. Its Playwright driver started
+without an override. No browser installation or UI change was needed.
