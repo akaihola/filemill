@@ -103,7 +103,10 @@ Keep these.
   suites then run as parallel matrix legs with fail-fast disabled. Publishing
   requires lint and every leg to pass ([90], 2026-10-14). A new run cancels only
   older runs of the same workflow and ref, so pull requests cannot cancel main;
-  only main publishes. Pre-commit
+  only main publishes. The preview threshold browser regression waits for
+  the expected fold count before measuring geometry, since navigation state can
+  precede a deferred scroll write even with CSS scrolling set to `auto`
+  ([93], 2026-10-17). Pre-commit
   runs ruff, ruff format, mypy, deno and the bundle check. The baseline and
   dispositions are in `docs/testing/remaining-red-tests.md`.
 - Real filesystem tests without a picker: `static/test-url.py` drives the real

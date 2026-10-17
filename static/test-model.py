@@ -248,6 +248,8 @@ def test_preview_threshold_folds_only_below_one_third(bundle, playwright, width,
         for key in ["ArrowDown", "ArrowRight", "ArrowRight"]:
             page.keyboard.press(key)
         page.wait_for_function("focusCol === 2 && path.length === 3")
+        # Navigation can finish before the layout's deferred scroll write.
+        page.wait_for_function("expected => folded === expected", arg=folds)
         assert page.evaluate("folded") == folds
         assert page.locator(".col.focus").bounding_box()["width"] == pytest.approx(240)
         box = page.locator("#preview").bounding_box()
