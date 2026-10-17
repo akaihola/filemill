@@ -136,16 +136,22 @@ developer mode for that.
 ## Tests
 
 ```bash
-cd static
-uv run --project ../server pytest test-ui.py     # UI, fake handle
-uv run --project ../server pytest test-url.py    # deep links
-uv run --project ../server pytest test-rich.py   # CDN renderers
-#   each also takes --dev, to run against ui/ unbundled
-#   `--project ../server` uses the locked Playwright and its browser revision;
-#   `--with "playwright==X"` overrides the lock and can fail to launch
-
-cd server && uv run pytest
+uv run pytest                              # both editions
+uv run pytest static/tests --bundle         # generated static bundle, default
+uv run pytest static/tests --dev            # shared sources without a build
+uv run pytest static/tests/test_ui.py       # UI and fake directory handle
+uv run pytest static/tests/test_url.py      # deep links and real OPFS files
+uv run pytest static/tests/test_rich.py     # offline, consent and rich renderers
+(cd server && uv run pytest)                # server tests only
 ```
+
+The root uv workspace uses the shared lock and the pinned Playwright release.
+Install Chromium with `uv run playwright install chromium` if your environment
+has no matching browser bundle. Each static section is a separate pytest test;
+failures report its name and assertion. The fixtures provide isolated pages,
+fake directory handles, an OPFS directory and a loopback HTTP server.
+
+`static/test-e2e.py` remains a manual test with a real folder picker.
 
 ## Goals, review and roadmap
 

@@ -49,12 +49,12 @@ Run the static checks:
 
 ```bash
 static/build-index.py --check
-uv run --project server pytest static
-uv run --project server pytest static --dev
+uv run --project server pytest static/tests --bundle
+uv run --project server pytest static/tests --dev
 ```
 
 Run the Markdown viewport check with `uv run --project server pytest
-static/test-rich.py -k markdown_viewport`. Add `--dev` to test the shared source.
+static/tests/test_rich.py -k markdown_viewport`. Add `--dev` to test the shared source.
 
 Run `pre-commit run --all-files` before you commit. It runs the Python and UI
 formatters and linters, the type checker, and the static bundle check.

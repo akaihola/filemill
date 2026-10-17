@@ -53,7 +53,7 @@ def _free_port() -> int:
         return s.getsockname()[1]
 
 
-# The one file both builds are checked against. static/test-ui.py previews the
+# The one file both builds are checked against. static/tests/test_ui.py previews the
 # same text through the same core/syntax.js and expects the same four classes,
 # which is what "highlighted in both builds" is asserted to mean.
 SOURCE = 'def f():\n    # doc\n    return "s" + 42\n'
@@ -718,7 +718,7 @@ def test_content_search_opens_a_matching_file(page, start, activation):
 def test_fenced_code_is_highlighted_in_the_browser(page):
     """The fence arrives as <pre><code class="language-python"> from Python and
     core/syntax.js colours it — the same classes as a source file, in both
-    builds (static/test-rich.py checks the other one). Paragraphs are left as
+    builds (static/tests/test_rich.py checks the other one). Paragraphs are left as
     the renderer made them: a source newline is whitespace, not a <br>."""
     page.open("README.md")
     page.wait_for_selector("#preview .pv-rich pre code .hl-kw", timeout=15000)
@@ -883,7 +883,7 @@ def test_a_long_source_file_is_highlighted_whole(page):
 
     app-http.js sends anything with a language core/syntax.js knows through
     PreviewLocal, so this file is fetched over /api/raw and coloured in the
-    page — the same branch static/test-ui.py drives against a fake handle.
+    page — the same branch static/tests/test_ui.py drives against a fake handle.
     Asserting the text alone would pass on a build that coloured the head and
     escaped the tail, so the keyword count is the half that matters: def and
     return is two per copy, 600 across the 300.
@@ -2347,8 +2347,9 @@ def test_back_from_raw_restores_the_previous_rendered_file(page):
 
 def test_back_and_forward_restore_folder_preview_and_raw_states(page):
     page.open("notes")
-    page.click('.col[data-i="1"] .row:has-text("deep")')
-    page.click('.col[data-i="2"] .row:has-text("leaf.md")')
+    # Create one preview history entry. Two clicks can also record the
+    # intermediate folder when its response arrives before the second click.
+    page.open_resource("notes/deep/leaf.md?filemill=render")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     assert page.url.endswith("/notes/deep/leaf.md?filemill=render")
     page.click("#pv-raw")

@@ -1,4 +1,4 @@
-"""Only the Playwright operations used by static/test-ui.py, over WebDriver."""
+"""Only the Playwright operations used by static/tests/test_ui.py, over WebDriver."""
 
 import asyncio
 import base64

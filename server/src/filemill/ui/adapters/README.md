@@ -61,7 +61,7 @@ HTML, `.desktop`, WebVTT and coloured text. Each app module registers that list
 first and then its own adapters' entries. `app-fsa.js` adds every entry of
 `preview-rich.js`. `app-http.js` adds Markdown, `.docx`, `.pptx` and the
 `offline` fallback from it; only reStructuredText stays with the Python
-renderer. A new kind is one entry and one test in `static/test-ui.py`.
+renderer. A new kind is one entry and one test in `static/tests/test_ui.py`.
 
 **`ROUTER`** — `read()`, `write(state, replace)`, `onNavigate(cb)`, or `null`
 for no URL sync. Core owns the mapping between a path and the column chain

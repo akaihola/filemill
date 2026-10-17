@@ -47,10 +47,13 @@ dev = [
     "pytest-cov>=5",
     "ruff>=0.11",
     "mypy>=1.15",
+    # mypy checks the compatibility import even on Python 3.14.
+    "zstandard>=0.23",
     # Pin Playwright so tests use a reproducible browser revision. Managed
     # bundles selected by PLAYWRIGHT_BROWSERS_PATH must match this release.
     "playwright~=1.63.0",
     "pyyaml>=6",
+    "pytest-asyncio>=1",
 ]
 
 [tool.ruff]

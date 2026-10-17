@@ -5,10 +5,12 @@ uv run --project server python3 static/measure-rst.py
 Outputs JSON; no stubs, local mirrors or timing assertions.
 """
 import asyncio
+import functools
+import http.server
 import json
 import platform
-import runpy
 import statistics
+import threading
 from pathlib import Path
 
 from playwright.async_api import async_playwright
@@ -38,8 +40,13 @@ one   two
 
 
 async def main():
-    fixture = runpy.run_path(str(HERE / 'test-rich.py'))
-    httpd, port = fixture['serve']()
+    handler = functools.partial(
+        http.server.SimpleHTTPRequestHandler, directory=str(HERE.parent)
+    )
+    httpd = http.server.ThreadingHTTPServer(('127.0.0.1', 0), handler)
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    port = httpd.server_port
     base = f'http://127.0.0.1:{port}/static/index.html'
     runs = []
     try:
@@ -104,6 +111,7 @@ async def main():
                                   'median_cold_ms': statistics.median(r['cold_ms'] for r in runs)}, indent=2))
     finally:
         httpd.shutdown()
+        thread.join()
         httpd.server_close()
 
 

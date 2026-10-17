@@ -81,7 +81,7 @@ that a person can apply.
 - **Maintainability.** A new contributor runs both editions and all tests
   within ten minutes of a clean checkout, with the commands in `README.md`.
 - **Performance.** A directory of 3 000 entries opens, sorts and searches
-  within the budgets in `static/test-ui.py`. A resize does not re-fetch a
+  within the budgets in `static/tests/test_ui.py`. A resize does not re-fetch a
   preview.
 - **Elegance.** Each concept exists in one place. The code says what it does.
   A comment says why, not what.

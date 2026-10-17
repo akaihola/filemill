@@ -113,7 +113,7 @@ Keep these.
   ([93], 2026-10-17). Pre-commit
   runs ruff, ruff format, mypy, deno and the bundle check. The baseline and
   dispositions are in `docs/testing/remaining-red-tests.md`. Browser checks in
-  the static Python scripts and server tests wait for observable state, including
+  the static pytest suite and server tests wait for observable state, including
   scroll/dial stability and completed storage writes, rather than fixed sleeps.
   A source guard prevents fixed browser waits from returning (2026-10-17).
   The keyboard browser suite writes server logs to a temporary file. An unread
@@ -123,7 +123,18 @@ Keep these.
   native scroll-into-view can turn the fold dial and move a mouse-click target
   between press and release. Existing geometry checks remain unchanged; the
   shared UI is unchanged ([98], 2026-10-17).
-- Real filesystem tests without a picker: `static/test-url.py` drives the real
+- Static browser checks run as separate pytest sections under `static/tests/`,
+  with shared page, fake handle, OPFS and HTTP fixtures ([25], 2026-10-17).
+  Root `uv run pytest` runs both editions through a shared uv workspace and lock.
+  The fixed-wait guard scans the moved tests recursively. Copy tests install
+  and pause their clock in one operation, so setup cannot pause in the past.
+  The fold-animation test waits for its navigation setup to finish before
+  measuring the animation, including with slow directory responses.
+  Touch checks also wait for the dial to settle before pressing a row. The
+  Back/Forward regression creates one preview history entry explicitly, so a
+  slower intermediate folder read cannot add an extra setup entry
+  ([99], 2026-10-17).
+- Real filesystem tests without a picker: `static/tests/test_url.py` drives the real
   FSA adapter against the origin private file system.
 - Size limits and the image extension list have one home, `ui/core/limits.js`.
   JSON documents use a separate 8 MiB limit, with a metadata check before

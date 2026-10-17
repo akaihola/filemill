@@ -1,6 +1,6 @@
 # Manual test checklist
 
-`test-ui.py` covers everything a fake handle can reach. `test-e2e.py` checks the
+`tests/test_ui.py` covers everything a fake handle can reach. `test-e2e.py` checks the
 real File System Access API path: folder picking, persisted permissions, file
 metadata, refreshes, and view-state restore. Run it manually when changing that
 path or before a release that relies on it. It is not part of the automated

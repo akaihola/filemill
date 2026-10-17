@@ -5,7 +5,7 @@ depends-on: [99]
 # Check the 19 newest review-queue items against the acceptance policy
 
 Steward issue, 2026-10-17 (decisions D7 and D10 in
-`/home/agent/my-knowledge/agents/steward/decisions.md`). It takes over vault
+`<steward-vault>/agents/steward/decisions.md`). It takes over vault
 [18], whose tracker is blocked. The verdicts feed the steward's next digest,
 so that Antti can accept or reject these items with less checking of his own.
 Antti's first calibration lesson: run the tests a packet names before offering
@@ -33,7 +33,7 @@ and `docs/tasks/` don't count.
 
 For each item, record one line: issue, a one-line outcome, the evidence
 (commits, files, test command with pass and fail counts) and a verdict under
-`/home/agent/my-knowledge/agents/steward/acceptance-policy.md`:
+`<steward-vault>/agents/steward/acceptance-policy.md`:
 
 - **would accept:** all four criteria hold; give the revert command;
 - **left to Antti:** name the criterion or the "Always left to Antti" class;
