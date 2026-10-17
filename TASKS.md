@@ -6,12 +6,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+## Scheduled
+
 - [100] Check the 19 newest review-queue items against the acceptance policy
     - Depends on: [99]
 
-  <!-- hai:{"id":"simple-89e06a37-5045-45d1-be1f-dc45abf1ced6","labels":["steward"],"createdAt":"2026-10-17T17:06:24.317Z","updatedAt":"2026-10-17T17:31:17.748Z"} -->
-
-## Scheduled
+  <!-- hai:{"id":"simple-89e06a37-5045-45d1-be1f-dc45abf1ced6","labels":["steward"],"createdAt":"2026-10-17T17:06:24.317Z","updatedAt":"2026-10-17T18:09:03.142Z"} -->
 
 ## In Progress
 
