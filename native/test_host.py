@@ -250,8 +250,40 @@ def test_denied_folder_is_recognized_in_any_locale(tmp_path):
     try:
         with application(tmp_path, LC_ALL="fi_FI.UTF-8", LANGUAGE="fi") as page:
             denied = page.evaluate(
-                'async () => { const n = path[0].kids[0]; await FS.ensureLoaded(n); return n.denied; }'
+                "async () => { const n = path[0].kids[0]; await FS.ensureLoaded(n); return n.denied; }"
             )
     finally:
         (tmp_path / "locked").chmod(0o700)
     assert denied == "No permission to read"
+
+
+def test_ui_driver_clicks_through_folding_columns(tmp_path):
+    """Like Playwright, wait until a sliding row settles and receives the point."""
+    import asyncio
+
+    from ui_driver import NativePage
+
+    folder = tmp_path / "wide"
+    for level in range(5):
+        folder = folder / f"level-{level}-{'w' * 36}"
+    folder.mkdir(parents=True)
+    (folder / "leaf.txt").write_text("leaf")
+    for index in (1, 2):
+        (tmp_path / "wide" / f"a-quite-long-file-name-{index}.txt").write_text("")
+    with application(tmp_path) as raw:
+        page = NativePage(raw, tmp_path)
+
+        async def drill():
+            await page.set_viewport_size({"width": 390, "height": 700})
+            await page.click('.col[data-i="0"] .row[title="wide"]')
+            await page.wait_for_function("path[1]?.kids")
+            for level in range(5):
+                await page.click(
+                    f'.col[data-i="{level + 1}"] .row[title^="level-{level}-"]'
+                )
+                await page.wait_for_function(
+                    "n => path.length === n && path.at(-1)?.kids", arg=level + 3
+                )
+
+        asyncio.run(drill())
+        assert raw.evaluate("path.at(-1).name").startswith("level-4-")

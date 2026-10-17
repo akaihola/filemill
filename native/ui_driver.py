@@ -40,6 +40,41 @@ QUERY = r"""(selector) => {
     .flatMap(e => match[3].trim() ? [...e.querySelectorAll(match[3])] : [e]);
 }"""
 
+STABLE = r"""async e => {
+const box = () => JSON.stringify(e.getBoundingClientRect());
+const before = box();
+await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+return box() === before;
+}"""
+# Playwright's hit-target interceptor: a pointer event that reaches another
+# element is cancelled, and the click is retried.
+INTERCEPT = r"""e => {
+const types = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'];
+const state = window.__hit = {ok: null};
+const check = event => {
+  if (state.ok !== false && e.contains(event.target)) { state.ok = true; return; }
+  state.ok = false;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+};
+state.done = () => types.forEach(type => removeEventListener(type, check, true));
+types.forEach(type => addEventListener(type, check, true));
+}"""
+HIT = r"""async () => {
+await new Promise(r => setTimeout(r));
+window.__hit.done();
+return window.__hit.ok;
+}"""
+POINT = r"""async e => {
+e.scrollIntoView({block: 'nearest', inline: 'nearest'});
+await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+const r = e.getBoundingClientRect();
+const x = Math.floor((Math.max(0, r.left) + Math.min(innerWidth, r.right)) / 2);
+const y = Math.floor((Math.max(0, r.top) + Math.min(innerHeight, r.bottom)) / 2);
+const hit = document.elementFromPoint(x, y);
+return e.contains(hit) ? {x, y} : null;
+}"""
+
 
 class Locator:
     def __init__(self, page, selector):
@@ -78,49 +113,63 @@ class Locator:
             await asyncio.sleep(0.05)
         raise TimeoutError(self.selector)
 
-    async def click(self, **kwargs):
-        await self.wait_for()
-        element = self.page.raw.call(
-            "/execute/sync",
-            {"script": f"return ({QUERY})(arguments[0])[0]", "args": [self.selector]},
-        )
-        try:
-            self.page.raw.call(
-                "/element/" + element["element-6066-11e4-a52e-4f735466cecf"] + "/click",
-                {},
+    async def click(self, timeout=30000):
+        # Playwright's actionability: wait until the box holds still for two
+        # frames, click, and retry when the events reach another element. A
+        # row can slide while the fold dial settles, and WebDriver's own scroll
+        # into view can be undone by the layout before its click lands.
+        until = time.monotonic() + timeout / 1000
+        while time.monotonic() < until:
+            await self.wait_for(timeout=timeout)
+            if not await self.evaluate(STABLE):
+                continue
+            await self.evaluate(INTERCEPT)
+            element = self.page.raw.call(
+                "/execute/sync",
+                {
+                    "script": f"return ({QUERY})(arguments[0])[0]",
+                    "args": [self.selector],
+                },
             )
-            return
-        except RuntimeError as error:
-            if "element not interactable" not in str(error):
-                raise
-        await self.evaluate("e => e.scrollIntoView({block:'nearest',inline:'nearest'})")
-        await self.page.evaluate(
-            "() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))"
-        )
-        point = await self.evaluate("""e => {
-const r = e.getBoundingClientRect();
-const x = Math.floor((Math.max(0,r.left) + Math.min(innerWidth,r.right))/2);
-const y = Math.floor((Math.max(0,r.top) + Math.min(innerHeight,r.bottom))/2);
-if (!e.contains(document.elementFromPoint(x,y))) throw new Error('Click target is covered: ' + JSON.stringify({x,y,rect:r.toJSON(),target:e.outerHTML.slice(0,150),hit:document.elementFromPoint(x,y)?.outerHTML.slice(0,150)}));
-return {x,y};
-}""")
-        self.page.raw.call(
-            "/actions",
-            {
-                "actions": [
-                    {
-                        "type": "pointer",
-                        "id": "mouse",
-                        "parameters": {"pointerType": "mouse"},
-                        "actions": [
-                            {"type": "pointerMove", **point},
-                            {"type": "pointerDown", "button": 0},
-                            {"type": "pointerUp", "button": 0},
-                        ],
-                    }
-                ]
-            },
-        )
+            try:
+                self.page.raw.call(
+                    "/element/"
+                    + element["element-6066-11e4-a52e-4f735466cecf"]
+                    + "/click",
+                    {},
+                )
+            except RuntimeError as error:
+                if not any(
+                    reason in str(error)
+                    for reason in ("not interactable", "click intercepted")
+                ):
+                    await self.page.evaluate(HIT)
+                    raise
+                # Playwright clicks the centre of the visible part where
+                # WebDriver finds no in-view point; a covered one is retried.
+                point = await self.evaluate(POINT)
+                if point:
+                    self.page.raw.call(
+                        "/actions",
+                        {
+                            "actions": [
+                                {
+                                    "type": "pointer",
+                                    "id": "mouse",
+                                    "parameters": {"pointerType": "mouse"},
+                                    "actions": [
+                                        {"type": "pointerMove", **point},
+                                        {"type": "pointerDown", "button": 0},
+                                        {"type": "pointerUp", "button": 0},
+                                    ],
+                                }
+                            ]
+                        },
+                    )
+            if await self.page.evaluate(HIT):
+                return
+            await asyncio.sleep(0.05)
+        raise TimeoutError(f"{self.selector}: pointer events missed the target")
 
     async def fill(self, text):
         await self.evaluate(
