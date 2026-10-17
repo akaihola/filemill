@@ -46,15 +46,18 @@ const before = box();
 await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 return box() === before;
 }"""
-# Playwright's hit-target interceptor: the first pointer event decides. If it
-# reaches another element, that and every later event are cancelled and the
-# click is retried; a row the click re-renders keeps the rest of its events.
+# Playwright's hit-target interceptor, extended to the click: the press must
+# start on the target and the click must land on it, or both are cancelled and
+# the click is retried. A layout change between press and release sends the
+# click elsewhere. Releases always pass, so nothing stays pressed.
 INTERCEPT = r"""e => {
 const types = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'];
 const state = window.__hit = {ok: null};
 const check = event => {
-  if (state.ok === null) state.ok = e.contains(event.target);
-  if (state.ok) return;
+  const on = e.contains(event.target);
+  if (event.type.endsWith('down')) state.ok ??= on;
+  else if (event.type === 'click' && !on) state.ok = false;
+  if (state.ok !== false || event.type.endsWith('up')) return;
   event.preventDefault();
   event.stopImmediatePropagation();
 };
