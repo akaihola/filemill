@@ -63,7 +63,7 @@ try {
 
 
 @contextmanager
-def application(root, scheme=None):
+def application(root, scheme=None, **environment):
     binary = Path(
         os.environ.get(
             "FILEMILL_NATIVE_BINARY", Path(__file__).parent / "webview/build/filemill"
@@ -88,7 +88,7 @@ def application(root, scheme=None):
             processes.append(process)
             return process
 
-        env = dict(os.environ, FILEMILL_ROOT=str(root))
+        env = dict(os.environ, FILEMILL_ROOT=str(root), **environment)
         if scheme:
             env["FILEMILL_TEST_THEME"] = scheme
         try:

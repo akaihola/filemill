@@ -175,6 +175,25 @@ return {clickable: row.contains(hit), hit: hit?.id || hit?.className,
         assert result["clickable"], result
 
 
+def test_row_edge_beside_column_scrollbar_is_clickable(tmp_path):
+    """A scrolling column's scrollbar must not cover its rows' chevrons."""
+    for index in range(40):
+        (tmp_path / f"folder-{index:02}").mkdir()
+    with application(tmp_path) as page:
+        page.call("/window/rect", {"width": 568, "height": 320})
+        result = page.evaluate("""async () => {
+await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+const body = document.querySelector('.col[data-i="0"] .col-body');
+const row = body.querySelector('.row');
+const r = row.getBoundingClientRect();
+const hit = document.elementFromPoint(r.right - 3, r.y + r.height / 2);
+return {clickable: row.contains(hit), hit: hit?.id || hit?.className,
+        scrolls: body.scrollHeight > body.clientHeight, row: r.toJSON()};
+}""")
+        assert result["scrolls"], result
+        assert result["clickable"], result
+
+
 def test_write_preserves_embedded_nul(tmp_path):
     file = tmp_path / "text.txt"
     file.write_text("before")
@@ -198,3 +217,105 @@ def test_ui_driver_reports_console_errors(tmp_path):
         assert errors == [("error", "native failure")]
         asyncio.run(page.evaluate("true"))
         assert len(errors) == 1
+
+
+def test_ui_driver_waits_with_argument(tmp_path):
+    import asyncio
+
+    from ui_driver import NativePage
+
+    (tmp_path / "a.txt").write_text("a")
+    with application(tmp_path) as raw:
+        page = NativePage(raw, tmp_path)
+        asyncio.run(
+            page.wait_for_function(
+                "name => path[0].kids.some(n => n.name === name)", arg="a.txt"
+            )
+        )
+
+
+def test_ui_driver_waits_for_javascript_truthiness(tmp_path):
+    import asyncio
+
+    from ui_driver import NativePage
+
+    with application(tmp_path) as raw:
+        page = NativePage(raw, tmp_path)
+        asyncio.run(page.wait_for_function("[]", timeout=1000))
+        # A pending promise is a truthy object, not a value to wait for.
+        asyncio.run(
+            page.wait_for_function(
+                "new Promise(resolve => setTimeout(resolve, 2000))", timeout=1000
+            )
+        )
+
+
+def test_denied_folder_is_recognized_in_any_locale(tmp_path):
+    (tmp_path / "locked").mkdir()
+    (tmp_path / "locked").chmod(0)
+    try:
+        with application(tmp_path, LC_ALL="fi_FI.UTF-8", LANGUAGE="fi") as page:
+            denied = page.evaluate(
+                "async () => { const n = path[0].kids[0]; await FS.ensureLoaded(n); return n.denied; }"
+            )
+    finally:
+        (tmp_path / "locked").chmod(0o700)
+    assert denied == "No permission to read"
+
+
+def test_ui_driver_clicks_through_folding_columns(tmp_path):
+    """Like Playwright, wait until a sliding row settles and receives the point."""
+    import asyncio
+
+    from ui_driver import NativePage
+
+    folder = tmp_path / "wide"
+    for level in range(5):
+        folder = folder / f"level-{level}-{'w' * 36}"
+    folder.mkdir(parents=True)
+    (folder / "leaf.txt").write_text("leaf")
+    for index in (1, 2):
+        (tmp_path / "wide" / f"a-quite-long-file-name-{index}.txt").write_text("")
+    with application(tmp_path) as raw:
+        page = NativePage(raw, tmp_path)
+
+        async def drill():
+            await page.set_viewport_size({"width": 390, "height": 700})
+            await page.click('.col[data-i="0"] .row[title="wide"]')
+            await page.wait_for_function("path[1]?.kids")
+            for level in range(5):
+                await page.click(
+                    f'.col[data-i="{level + 1}"] .row[title^="level-{level}-"]'
+                )
+                await page.wait_for_function(
+                    "n => path.length === n && path.at(-1)?.kids", arg=level + 3
+                )
+
+        asyncio.run(drill())
+        assert raw.evaluate("path.at(-1).name").startswith("level-4-")
+
+
+def test_ui_driver_counts_native_file_reads(tmp_path):
+    """__gets mirrors the fake handle's getFile() count through the real port."""
+    import asyncio
+
+    from ui_driver import NativePage
+
+    (tmp_path / "a.txt").write_text("a")
+    with application(tmp_path) as raw:
+        page = NativePage(raw, tmp_path)
+        asyncio.run(page.evaluate("window.__mk = () => null; window.__gets = 0"))
+        raw.evaluate(
+            "async () => { const n = path[0].kids[0]; n.meta = null; await FS.loadMeta(n); await FS.blob(n); }"
+        )
+        assert raw.evaluate("__gets") == 2
+
+
+def test_automation_keeps_no_profile(tmp_path):
+    """Like a new Playwright context: test launches share no stored settings."""
+    root, data, cache = tmp_path / "root", tmp_path / "data", tmp_path / "cache"
+    root.mkdir()
+    with application(root, XDG_DATA_HOME=str(data), XDG_CACHE_HOME=str(cache)) as page:
+        page.evaluate("localStorage.setItem('filemill.sort', 'size')")
+    assert not (data / "filemill").exists()
+    assert not (cache / "filemill").exists()

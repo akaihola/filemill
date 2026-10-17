@@ -2,6 +2,9 @@
 
 Date: 2026-09-21. Issue: [30](../tasks/30-webview-shell.md).
 
+Superseded 2026-10-17 by [ADR 0079](0079-native-shell.md). Overlay
+scrollbars caused the hit failure, and the direct host now passes.
+
 ## Context
 
 The DOM renderer needs a native host with filesystem, preview and routing

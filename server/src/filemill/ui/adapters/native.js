@@ -25,7 +25,7 @@ export const NativeFS = {
         );
         node.ordered = true;
       } catch (error) {
-        node.denied = /Permission denied/.test(String(error))
+        node.denied = /\bEACCES\b/.test(String(error))
           ? "No permission to read"
           : String(error);
         node.kids = [];

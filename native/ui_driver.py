@@ -40,6 +40,45 @@ QUERY = r"""(selector) => {
     .flatMap(e => match[3].trim() ? [...e.querySelectorAll(match[3])] : [e]);
 }"""
 
+STABLE = r"""async e => {
+const box = () => JSON.stringify(e.getBoundingClientRect());
+const before = box();
+await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+return box() === before;
+}"""
+# Playwright's hit-target interceptor, extended to the click: the press must
+# start on the target and the click must land on it, or both are cancelled and
+# the click is retried. A layout change between press and release sends the
+# click elsewhere. Releases always pass, so nothing stays pressed.
+INTERCEPT = r"""e => {
+const types = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'];
+const state = window.__hit = {ok: null};
+const check = event => {
+  const on = e.contains(event.target);
+  if (event.type.endsWith('down')) state.ok ??= on;
+  else if (event.type === 'click' && !on) state.ok = false;
+  if (state.ok !== false || event.type.endsWith('up')) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+};
+state.done = () => types.forEach(type => removeEventListener(type, check, true));
+types.forEach(type => addEventListener(type, check, true));
+}"""
+HIT = r"""async () => {
+await new Promise(r => setTimeout(r));
+window.__hit.done();
+return window.__hit.ok;
+}"""
+POINT = r"""async e => {
+e.scrollIntoView({block: 'nearest', inline: 'nearest'});
+await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+const r = e.getBoundingClientRect();
+const x = Math.floor((Math.max(0, r.left) + Math.min(innerWidth, r.right)) / 2);
+const y = Math.floor((Math.max(0, r.top) + Math.min(innerHeight, r.bottom)) / 2);
+const hit = document.elementFromPoint(x, y);
+return e.contains(hit) ? {x, y} : null;
+}"""
+
 
 class Locator:
     def __init__(self, page, selector):
@@ -78,54 +117,72 @@ class Locator:
             await asyncio.sleep(0.05)
         raise TimeoutError(self.selector)
 
-    async def click(self, **kwargs):
-        await self.wait_for()
-        element = self.page.raw.call(
-            "/execute/sync",
-            {"script": f"return ({QUERY})(arguments[0])[0]", "args": [self.selector]},
-        )
-        try:
-            self.page.raw.call(
-                "/element/" + element["element-6066-11e4-a52e-4f735466cecf"] + "/click",
-                {},
+    async def click(self, timeout=30000):
+        # Playwright's actionability: wait until the box holds still for two
+        # frames, click, and retry when the events reach another element. A
+        # row can slide while the fold dial settles, and WebDriver's own scroll
+        # into view can be undone by the layout before its click lands.
+        until = time.monotonic() + timeout / 1000
+        while time.monotonic() < until:
+            await self.wait_for(timeout=timeout)
+            if not await self.evaluate(STABLE):
+                continue
+            await self.evaluate(INTERCEPT)
+            element = self.page.raw.call(
+                "/execute/sync",
+                {
+                    "script": f"return ({QUERY})(arguments[0])[0]",
+                    "args": [self.selector],
+                },
             )
-            return
-        except RuntimeError as error:
-            if "element not interactable" not in str(error):
-                raise
-        await self.evaluate("e => e.scrollIntoView({block:'nearest',inline:'nearest'})")
-        await self.page.evaluate(
-            "() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))"
-        )
-        point = await self.evaluate("""e => {
-const r = e.getBoundingClientRect();
-const x = Math.floor((Math.max(0,r.left) + Math.min(innerWidth,r.right))/2);
-const y = Math.floor((Math.max(0,r.top) + Math.min(innerHeight,r.bottom))/2);
-if (!e.contains(document.elementFromPoint(x,y))) throw new Error('Click target is covered: ' + JSON.stringify({x,y,rect:r.toJSON(),target:e.outerHTML.slice(0,150),hit:document.elementFromPoint(x,y)?.outerHTML.slice(0,150)}));
-return {x,y};
-}""")
-        self.page.raw.call(
-            "/actions",
-            {
-                "actions": [
-                    {
-                        "type": "pointer",
-                        "id": "mouse",
-                        "parameters": {"pointerType": "mouse"},
-                        "actions": [
-                            {"type": "pointerMove", **point},
-                            {"type": "pointerDown", "button": 0},
-                            {"type": "pointerUp", "button": 0},
-                        ],
-                    }
-                ]
-            },
-        )
+            try:
+                self.page.raw.call(
+                    "/element/"
+                    + element["element-6066-11e4-a52e-4f735466cecf"]
+                    + "/click",
+                    {},
+                )
+            except RuntimeError as error:
+                if not any(
+                    reason in str(error)
+                    for reason in ("not interactable", "click intercepted")
+                ):
+                    await self.page.evaluate(HIT)
+                    raise
+                # Playwright clicks the centre of the visible part where
+                # WebDriver finds no in-view point; a covered one is retried.
+                point = await self.evaluate(POINT)
+                if point:
+                    self.page.raw.call(
+                        "/actions",
+                        {
+                            "actions": [
+                                {
+                                    "type": "pointer",
+                                    "id": "mouse",
+                                    "parameters": {"pointerType": "mouse"},
+                                    "actions": [
+                                        {"type": "pointerMove", **point},
+                                        {"type": "pointerDown", "button": 0},
+                                        {"type": "pointerUp", "button": 0},
+                                    ],
+                                }
+                            ]
+                        },
+                    )
+            if await self.page.evaluate(HIT):
+                return
+            await asyncio.sleep(0.05)
+        raise TimeoutError(f"{self.selector}: pointer events missed the target")
 
     async def fill(self, text):
         await self.evaluate(
             f'e => {{ e.focus(); e.value = {json.dumps(text)}; e.dispatchEvent(new InputEvent("input", {{bubbles:true, inputType:"insertText"}})); }}'
         )
+
+    async def press(self, key):
+        await self.evaluate("e => e.focus()")
+        await self.page.keyboard.press(key)
 
     async def dispatch_event(self, event):
         await self.evaluate(
@@ -198,13 +255,14 @@ console.error = (...args) => {
             return await self.mount(int(mounting[1]))
         adding = re.fullmatch(r"__add\(__(live|race), '([^']+)'\)", script)
         removing = re.fullmatch(r"__rm\(__(live|race), '([^']+)'\)", script)
-        if adding or removing:
-            match = adding or removing
+        if match := adding or removing:
             file = (
                 self.root / ("refresh" if match[1] == "live" else "racing") / match[2]
             )
             if adding:
                 file.write_text(match[2])
+            elif file.is_dir():
+                shutil.rmtree(file)
             else:
                 file.unlink()
         result = self.raw.evaluate(script, arg)
@@ -218,14 +276,20 @@ console.error = (...args) => {
             self.raw.evaluate("""() => {
 if (window.__nativeInstrumented) return;
 window.__nativeInstrumented = true;
-const meta = NativeFS.loadMeta;
-NativeFS.loadMeta = async n => { if (!n.dir && !n.meta) window.__gets++; return meta(n); };
+// Count native file reads where the fake handle counts getFile(). The port
+// wrappers copied loadMeta at startup, so count at the bridge.
+const bridge = webkit.messageHandlers.filemill;
+const post = bridge.postMessage.bind(bridge);
+bridge.postMessage = request => {
+  if (['stat', 'read'].includes(request.op)) window.__gets++;
+  return post(request);
+};
 const load = NativeFS.ensureLoaded;
 NativeFS.ensureLoaded = async n => {
   if (!['slow', 'racing'].includes(n.rel) || n.kids !== null) return load(n);
   if (n.loading) return n.loading;
   const pending = (async () => {
-    await load(n); const kids = n.kids; n.kids = null;
+    await load(n); n.loading = pending; const kids = n.kids; n.kids = null;
     await new Promise(r => setTimeout(r, n.rel === 'slow' ? 500 : 400));
     n.kids = kids; n.loading = null;
   })();
@@ -333,10 +397,17 @@ await walk(tree, ''); window.__gets = 0; return files;
     async def wait_for_timeout(self, ms):
         await asyncio.sleep(ms / 1000)
 
-    async def wait_for_function(self, fn, timeout=30000):
+    async def wait_for_function(self, fn, arg=None, timeout=30000):
+        # Playwright tests JavaScript truthiness without awaiting the result:
+        # [] and a pending promise both pass.
+        truthy = f"""arg => {{
+let value = (0, eval)({json.dumps(fn)});
+if (typeof value === 'function') value = value(arg);
+return !!value;
+}}"""
         until = time.monotonic() + timeout / 1000
         while time.monotonic() < until:
-            if await self.evaluate(fn):
+            if await self.evaluate(truthy, arg):
                 return
             await asyncio.sleep(0.05)
         raise TimeoutError(fn)

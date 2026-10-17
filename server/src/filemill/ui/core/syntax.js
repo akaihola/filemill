@@ -26,6 +26,7 @@
    purpose: the pane has something better than source for it.
    ═══════════════════════════════════════════════════════════════════════════ */
 import { esc } from "./icons.js";
+import { JSON_FOLD_DEPTH } from "./limits.js";
 import { jsonCollapse } from "./model/json-collapse.js";
 import { markdownSource } from "./markdown-source.js";
 import { rstSource } from "./rst-source.js";
@@ -306,6 +307,7 @@ export function jsonHTML(text, context) {
   } catch {
     return null;
   }
+  if (jsonTooDeep(doc)) return null;
   const scalar = (v) =>
     v === null || typeof v === "boolean"
       ? `<span class="hl-kw">${v}</span>`
@@ -343,13 +345,22 @@ export function jsonHTML(text, context) {
     });
     return out + `${pad}${close}${tail}</details>`;
   };
-  /* Nesting deep enough to exhaust the stack is still valid JSON; it is shown
-     as source, the same as anything else this cannot fold. */
-  try {
-    return node(doc, "", "", "", context?.jsonPath || []);
-  } catch {
-    return null;
+  return node(doc, "", "", "", context?.jsonPath || []);
+}
+
+/* Whether `value` nests arrays and objects deeper than JSON_FOLD_DEPTH. Such
+   JSON is valid but shown as source, like anything else that cannot fold. The
+   walk is iterative and stops at the limit, so no engine recurses to its stack
+   limit first: JavaScriptCore spent seconds there on every render. */
+export function jsonTooDeep(value) {
+  const stack = [[value, 1]];
+  while (stack.length) {
+    const [v, depth] = stack.pop();
+    if (v === null || typeof v !== "object") continue;
+    if (depth > JSON_FOLD_DEPTH) return true;
+    for (const child of Object.values(v)) stack.push([child, depth + 1]);
   }
+  return false;
 }
 
 /* Colour the fenced code inside a rendered Markdown fragment. Both markdown-it

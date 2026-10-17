@@ -234,3 +234,86 @@ web application does not gain the native bridge.
    NUL does not truncate a save and that console errors reach the UI test
    assertions. Both pass; they do not replace the still-failing full native
    qualification suite.
+
+## Qualification, 2026-10-17
+
+The direct WebKitGTK host passes `static/test-ui.py::test_ui --native`. All
+220 checks passed in four of five consecutive runs. The fifth hit the known
+WebKit layout stall described below. [ADR 0079] keeps this shell, records its
+size and supersedes [ADR 0065]. The tracker issue moves to Completed /
+Accepted with `[ ]`, pending user acceptance.
+
+### Cause of the blocker
+
+WebKitGTK 2.54.0 reproduced the scrolled-row failure. `#finder` scrolls
+horizontally, yet its client and offset heights were both 260 px, so its
+scrollbar was an overlay. Every point in its bottom 21 px hit `#finder`. A
+new check found the same band at the right edge of a scrolling column, where
+a row's chevron end hit `.col-body`.
+
+`scrollbar-width`, `scrollbar-color`, `scrollbar-gutter`, `overflow-x:
+scroll` and `::-webkit-scrollbar` did not change the band, and
+`GTK_OVERLAY_SCROLLING=0` had no effect. Setting GTK's
+`gtk-overlay-scrolling` to false in the host gives classic scrollbars.
+`#finder`'s client height drops to 239 px, and rows end above the scrollbar.
+
+### Further fixes, each with a failing check first
+
+- Native errors begin with the errno name. Under a Finnish locale, a locked
+  folder showed `Error: Lupa evätty` instead of "No permission to read".
+- Automation sessions use an ephemeral web context. Earlier test runs left
+  a size sort in `~/.local/share/filemill`, and later launches started with
+  it. That directory is the native app's real profile; it was not deleted.
+- `native/shell.nix` exposes libstdc++, which Playwright's greenlet wheel
+  needs before `static/test-ui.py` can import.
+- The UI driver follows Playwright's rules. `wait_for_function` takes `arg`
+  and tests JavaScript truthiness without awaiting a returned promise. A
+  click waits for a stable box; when the press or the click reaches another
+  element, both are cancelled and the click is retried. Read counts come
+  from native `stat` and `read` calls at the bridge, because the port
+  wrappers copy `loadMeta` at startup. The driver also gained
+  `Locator.press`, removes fixture folders and keeps a simulated slow read
+  marked as loading.
+
+The click rule matters at 390 px. When `level-3` opens, column 5 starts at
+x=391 in both Chromium and WebKit, so the next row is off screen. Both
+drivers scroll it into view, and the app returns `#stage` to 0 on its next
+scroll event. In WebKit that reset can arrive between press and release,
+sending the click to `#strip`.
+
+### Deep JSON stalled JavaScriptCore
+
+After those fixes, the full native scenario still failed about two runs in
+five while waiting for the fold dial to settle. Timing every WebDriver call
+showed 2–4 s stalls while `mixed/deep.json` was selected. Inside the page,
+`setTimeout(0)` fired after 2,898 ms. The fixture nests 200,000 arrays.
+JSON was shown as source only after recursion exhausted the stack, and
+JavaScriptCore recursed for seconds first. `JSON.stringify` alone took
+2.5 s before failing, and the preview rebuilt on every render. A 1,001-deep
+check failed first in Chromium. [ADR 0080] adds a fold depth limit, and the
+same render now takes 46 ms in WebKit and 48 ms in Chromium.
+
+### Remaining intermittent failure
+
+After the JSON fix, four of five consecutive native runs passed all 220
+checks. The fifth timed out in `scroll_settled` after the resize back to
+1500 by 900, with `deep.json` selected again. Re-wrapping its 400 KB
+single-line source at a new width takes WebKit 1.4–2.8 s against 10–17 ms in
+Chromium, and `render()` builds a new preview element and reads the file
+twice (finding A9), so a resize pays the cost twice. `overflow-wrap:
+anywhere` and `overflow-wrap: break-word` were no faster. `word-break:
+break-all` was fast but splits words anywhere, so no CSS change was kept. The
+fix belongs to A9's preview reuse, not to this issue.
+
+### Size comparison
+
+The direct host is a 444,520-byte stripped executable with a 334,651-byte
+embedded UI. Tauri 2.11.6 measured 3,053,312 bytes with a 288,920-byte UI on
+2026-09-21. Tauri was not rebuilt. Its locked crate download and LTO release
+build count as heavy work, which this environment runs on another machine.
+Without any of its embedded UI, Tauri is still more than six times the
+direct host's total size, so an equal-input rebuild cannot change the order.
+
+[ADR 0065]: ../adr/0065-native-shell-qualification.md
+[ADR 0079]: ../adr/0079-native-shell.md
+[ADR 0080]: ../adr/0080-json-past-a-fold-depth-limit-is-source.md

@@ -1,14 +1,15 @@
-# Native WebView prototype
+# Native WebView shell
 
-Issue [30] is blocked on a WebKitGTK hit-testing failure. This prototype is
-not a qualified release. Ten native checks pass and one fails. `static/test-ui.py`
-does not finish through the native host. See the [issue evidence](../docs/tasks/30-webview-shell.md).
+A Linux host that runs the shared DOM renderer in WebKitGTK and supplies the
+`FS`, `PREVIEW` and `ROUTER` ports natively. It passes the main
+`static/test-ui.py` scenario through its own ports, with one known
+intermittent failure described under [Checks](#checks). [ADR 0079] records the
+choice over Tauri and the binary size.
 
 ## Build and run
 
 Linux needs a C compiler, Python 3, pkg-config, GTK 3 and WebKitGTK 4.1
-headers and runtime libraries. The measured build uses WebKitGTK 2.52.6.
-From the repository root:
+headers and runtime libraries. From the repository root:
 
 ```bash
 nix-shell native/shell.nix --run 'python3 native/webview/build.py'
@@ -21,10 +22,8 @@ font and icon map. It needs no checkout or Filemill server at run time, but
 it still needs its system libraries. A Nix-built binary needs its Nix store
 runtime closure on the destination machine.
 
-The measured Nix package revision is
-`62c8382960464ceb98ea593cb8321a2cf8f9e3e5`. To use that revision, pass
-`-I nixpkgs=https://github.com/NixOS/nixpkgs/archive/62c8382960464ceb98ea593cb8321a2cf8f9e3e5.tar.gz`
-to `nix-shell`.
+The measured build used GCC 16.2.0, WebKitGTK 2.54.0, GTK 3.24.52 and glibc
+2.44: a 444,520-byte stripped executable with a 334,651-byte embedded UI.
 
 ## Port mapping
 
@@ -37,10 +36,17 @@ to `nix-shell`.
 The native bridge is `webkit.messageHandlers.filemill`. Paths are relative
 to the selected root. The host refuses symlinks and parent traversal. HTML
 previews are sandboxed; top-level navigation stays on the embedded app.
-Writes replace files atomically. Native deletion and persistent recent-folder
-storage are not implemented. File I/O runs on the UI thread in this prototype.
-Raw-file links and on-demand rich-preview assets still need native integration;
-only the embedded core preview path has been qualified by the focused checks.
+Writes replace files atomically. A failed call rejects with the errno name
+first, such as `EACCES: Permission denied`; the text after it follows the
+locale.
+
+The host turns off GTK overlay scrolling. WebKitGTK's overlay scrollbars
+take clicks across a 21 px band over the rows beneath them; classic
+scrollbars take layout space instead.
+
+Native deletion and remembered folders are not implemented. File I/O runs
+on the UI thread. Raw-file links and on-demand rich-preview assets are not
+verified natively; the UI suite runs with rich previews off.
 
 ## Checks
 
@@ -52,14 +58,26 @@ nix-shell native/shell.nix --run 'uv run --project server pytest native/test_hos
 nix-shell native/shell.nix --run 'uv run --project server pytest static/test-ui.py::test_ui --native -q'
 ```
 
-The first command currently has ten passing checks and one failing
-scrolled-row regression. The second stops on the same interaction. The test
-driver writes the existing fixture bytes into temporary files, then exercises
-the native port. It does not substitute fake handles for native reads.
-Metadata instrumentation counts native stat calls. Delay injection and
-fixture mutation live in test support, outside the application.
+The first command runs 18 contract checks. The second runs the 220 checks of
+the main UI scenario in the native host. The test driver writes the
+fixture's bytes into temporary files and exercises the native port; it does
+not substitute fake handles for native reads. Where the fake handle counts
+`getFile()` calls, the driver counts native `stat` and `read` calls. Delay
+injection and fixture mutation live in test support, outside the application.
 
-`--native` changes the main `test_ui` scenario. The other tests in
-`static/test-ui.py` retain their browser adapters, including IndexedDB and
-FSA-specific checks. Later parts of the native UI scenario remain unverified
-until the blocking interaction is fixed.
+The driver follows Playwright's rules for clicks and waits. A click waits for
+a stable box, and pointer events that reach another element are cancelled
+and retried. Predicates are tested for JavaScript truthiness without being
+awaited. Automation sessions use an ephemeral web context, so no setting
+survives from one launch to the next.
+
+One run in five fails while waiting for the fold dial to settle after a
+resize. The 400 KB single-line `deep.json` preview is then selected, and WebKit
+spends seconds wrapping it at each width; see finding A9 in
+`docs/ARCHITECTURE-REVIEW.md`.
+
+`--native` changes only the main `test_ui` scenario. The other tests in
+`static/test-ui.py` keep their browser adapters, including IndexedDB and
+FSA-specific checks.
+
+[ADR 0079]: ../docs/adr/0079-native-shell.md

@@ -30,7 +30,9 @@ status.
   `static/index.html`. The server edition starts at `cli.py` → Uvicorn →
   Starlette in `app.py`, which serves the same `ui/` with an import map and
   answers `/api/*`, `/w/` mounts and root-relative resource URLs. A Linux
-  WebView host (`ui/entry-native.js`, issue [30]) is a prototype.
+  WebKitGTK shell (`native/webview/` → `ui/entry-native.js`, issue [30])
+  supplies the three ports natively and passes the main UI scenario
+  ([ADR 0079], 2026-10-17).
 - **One URL per file.** `urls.py` parses `?filemill=raw|render|highlight`
   and `?layout=full-columns|compressed-columns` ([ADR 0067]). `raw`, the
   default, serves the bytes; every other view serves the shared shell.
@@ -292,6 +294,11 @@ that path, and waits for active fills before `FS.remove` ([97], [ADR 0078],
 after removal. It includes previews of children of a deleted folder. General
 preview reuse and overlapping navigation remain open.
 
+In the native shell on 2026-10-17, one `render()`
+with a 400 KB single-line JSON source selected made a new preview element and
+read the file twice. WebKit then spent 1.4–2.8 s wrapping that line at each
+new width, against 10–17 ms in Chromium. A resize pays this twice ([30]).
+
 **Acceptance.** Resize and fold cause no new provider call. Save, refresh and
 mode change invalidate the preview. A delayed old navigation or preview cannot
 replace the current selection. Related: [39], [40], [64].
@@ -306,6 +313,8 @@ replace the current selection. Related: [39], [40], [64].
   Tar and zip browsing ([ADR 0072]) is bounded: `MAX_MEMBERS` on the index and
   `MEMBER_MAX` on a member read. Git bundle browsing ([ADR 0073]) is bounded:
   `BUNDLE_MAX` on the file, `MEMBER_MAX` on a blob, a timeout per `git` call.
+  JSON folding is bounded by `JSON_FOLD_DEPTH` rather than the engine's stack
+  ([ADR 0080], 2026-10-17).
 
 No load benchmark exists; measure before adding pools or caches.
 
@@ -457,4 +466,6 @@ A12 items can land at any time, each with a focused test.
 [ADR 0076]: adr/0076-a-sideways-wheel-over-the-preview-turns-the-dial-first.md
 [ADR 0077]: adr/0077-preview-views-and-raw-links-work-without-routing.md
 [ADR 0078]: adr/0078-delete-waits-for-active-preview-reads.md
+[ADR 0079]: adr/0079-native-shell.md
+[ADR 0080]: adr/0080-json-past-a-fold-depth-limit-is-source.md
 [remaining red tests]: testing/remaining-red-tests.md
