@@ -279,6 +279,12 @@ child appended to the new chain. The existing static check awaits the refresh
 before clicking and now describes that scenario accurately; overlapping
 navigation remains part of this finding.
 
+Deletion now marks the target path as pending, blocks new preview fills under
+that path, and waits for active fills before `FS.remove` ([97], [ADR 0078],
+2026-10-17). This prevents preview and editability reads from reaching files
+after removal. It includes previews of children of a deleted folder. General
+preview reuse and overlapping navigation remain open.
+
 **Acceptance.** Resize and fold cause no new provider call. Save, refresh and
 mode change invalidate the preview. A delayed old navigation or preview cannot
 replace the current selection. Related: [39], [40], [64].
@@ -443,4 +449,5 @@ A12 items can land at any time, each with a focused test.
 [ADR 0075]: adr/0075-the-scrollbar-spans-one-stop-each-way.md
 [ADR 0076]: adr/0076-a-sideways-wheel-over-the-preview-turns-the-dial-first.md
 [ADR 0077]: adr/0077-preview-views-and-raw-links-work-without-routing.md
+[ADR 0078]: adr/0078-delete-waits-for-active-preview-reads.md
 [remaining red tests]: testing/remaining-red-tests.md

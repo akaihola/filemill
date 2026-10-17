@@ -3180,6 +3180,59 @@ def test_delete_key_deletes_selected_files_and_directories_but_not_editors(
     assert not page.errors
 
 
+@pytest.mark.parametrize("name", ["short.txt", "notes"])
+@pytest.mark.parametrize("read_number", [1, 2])
+def test_delete_waits_for_active_preview_reads(page, ui_root, name, read_number):
+    """Hold the file read until deletion starts, then let the preview finish."""
+    page.open()
+    failed_requests = []
+    page.on(
+        "response", lambda r: failed_requests.append(r.url) if r.status >= 400 else None
+    )
+    page.evaluate(
+        """readNumber => {
+          const blob = FS.blob.bind(FS);
+          let reads = 0;
+          FS.blob = async node => {
+            if ((node.name === 'short.txt' || node.rel === 'notes/plain.txt')
+                && ++reads === readNumber) {
+              FS.blob = blob;
+              window.previewReading = true;
+              await new Promise(resolve => { window.finishPreviewRead = resolve; });
+              const result = await blob(node);
+              window.previewReadFinished = true;
+              return result;
+            }
+            return blob(node);
+          };
+        }""",
+        read_number,
+    )
+    page.locator(f'.col[data-i="0"] .row[aria-label="{name}"]').click()
+    if name == "notes":
+        page.locator('.col[data-i="1"] .row[aria-label="plain.txt"]').click()
+    page.wait_for_function("window.previewReading === true")
+    page.once("dialog", lambda d: d.accept())
+    if name == "notes":
+        # Delete the containing folder while its child preview is reading.
+        page.locator('.col[data-i="0"] .row[aria-label="notes"]').click(button="right")
+        page.get_by_role("menuitem", name="Delete", exact=True).click()
+    else:
+        page.keyboard.press("Delete")
+    # A round trip lets the old implementation remove the file before release.
+    page.evaluate("() => fetch('/api/dir?p=').then(r => r.json())")
+    page.evaluate("() => render()")
+    page.evaluate("() => window.finishPreviewRead()")
+    page.wait_for_function(
+        "name => path[0].kids && !path[0].kids.some(node => node.name === name)",
+        arg=name,
+    )
+    page.wait_for_function("window.previewReadFinished === true")
+    assert not failed_requests
+    assert not (ui_root / name).exists()
+    assert not page.errors
+
+
 @pytest.mark.parametrize("failure", ["remove", "refresh"])
 def test_preview_delete_reports_failure(page, ui_root, failure):
     page.open("notes/plain.txt")

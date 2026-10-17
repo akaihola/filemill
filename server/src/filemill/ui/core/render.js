@@ -75,8 +75,13 @@ export const entryPath = (node, parent) =>
   node.rel ||
   path.slice(1, path.indexOf(parent) + 1).map((n) => n.name).concat(node.name)
     .join("/");
+const pendingPreviews = new Map();
+const isRemovingPath = (root, relative) =>
+  [...(removing.get(root) || [])].some((removed) =>
+    relative === removed || relative.startsWith(removed + "/")
+  );
 const isRemoving = (node, parent) =>
-  removing.get(path[0])?.has(entryPath(node, parent)) || false;
+  isRemovingPath(path[0], entryPath(node, parent));
 
 export function closeRowMenu(restoreFocus = true) {
   const menu = document.getElementById("row-menu");
@@ -110,6 +115,15 @@ export async function deleteEntry(node, parent, button) {
   button.disabled = true;
   let deleted = false;
   try {
+    // Finish reads before removing their files, including a folder's previewed child.
+    // The pending path also prevents renders from starting another fill.
+    await Promise.all(
+      [...pendingPreviews].filter(([, preview]) =>
+        preview.root === deletionRoot &&
+        (preview.relative === relative ||
+          preview.relative.startsWith(relative + "/"))
+      ).map(([reading]) => reading),
+    );
     await filesystem.remove(node);
     deleted = true;
     // Invalidate even a folder left during deletion, so revisiting it is fresh.
@@ -635,6 +649,21 @@ function setupPreviewActions(n) {
 let previewFoldEvents;
 
 async function fillPreview(n) {
+  const parent = path[path.length - 1];
+  if (isRemoving(n, parent)) return;
+  const reading = fillPreviewContent(n);
+  pendingPreviews.set(reading, {
+    root: path[0],
+    relative: entryPath(n, parent),
+  });
+  try {
+    await reading;
+  } finally {
+    pendingPreviews.delete(reading);
+  }
+}
+
+async function fillPreviewContent(n) {
   closeEditor();
   const token = nextPvToken();
   await FS.loadMeta(n);
