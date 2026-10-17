@@ -23,6 +23,7 @@ dev = [
     { name = "python-pptx" },
     { name = "pyyaml", specifier = ">=6" },
     { name = "ruff", specifier = ">=0.11" },
+    { name = "zstandard", specifier = ">=0.23" },
 ]
 
 [[package]]
@@ -258,6 +259,7 @@ dev = [
     { name = "python-pptx" },
     { name = "pyyaml" },
     { name = "ruff" },
+    { name = "zstandard" },
 ]
 
 [package.metadata]
@@ -281,6 +283,7 @@ dev = [
     { name = "python-pptx" },
     { name = "pyyaml", specifier = ">=6" },
     { name = "ruff", specifier = ">=0.11" },
+    { name = "zstandard", specifier = ">=0.23" },
 ]
 
 [[package]]
