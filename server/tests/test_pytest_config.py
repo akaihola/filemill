@@ -8,6 +8,26 @@ import yaml
 SERVER = Path(__file__).parents[1]
 
 
+def test_ci_uses_node24_actions():
+    # Reviewed upstream action metadata, including upload-pages-artifact's
+    # nested upload-artifact action. setup-uv requires a full immutable tag.
+    supported = {
+        "actions/checkout": "v7",
+        "actions/setup-python": "v7",
+        "astral-sh/setup-uv": "v10.3.0",
+        "denoland/setup-deno": "v2",
+        "actions/upload-pages-artifact": "v5",
+        "actions/deploy-pages": "v5",
+    }
+    for path in (SERVER.parent / ".github" / "workflows").glob("*.y*ml"):
+        workflow = yaml.safe_load(path.read_text())
+        for job in workflow["jobs"].values():
+            for step in job.get("steps", []):
+                if "uses" in step:
+                    action, version = step["uses"].rsplit("@", 1)
+                    assert version == supported[action], step["uses"]
+
+
 def test_documented_command_from_server_loads_root_conftest():
     """`cd server && uv run pytest` must elect ../pytest.ini and its conftest.
 

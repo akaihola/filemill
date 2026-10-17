@@ -103,7 +103,9 @@ Keep these.
   suites then run as parallel matrix legs with fail-fast disabled. Publishing
   requires lint and every leg to pass ([90], 2026-10-14). A new run cancels only
   older runs of the same workflow and ref, so pull requests cannot cancel main;
-  only main publishes. The preview threshold browser regression waits for
+  only main publishes. The actions use Node.js 24, including the nested Pages
+  artifact uploader; setup-uv retains cache pruning explicitly ([94],
+  2026-10-17). The preview threshold browser regression waits for
   the expected fold count before measuring geometry, since navigation state can
   precede a deferred scroll write even with CSS scrolling set to `auto`
   ([93], 2026-10-17). Pre-commit

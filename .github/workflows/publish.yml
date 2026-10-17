@@ -31,13 +31,15 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v10.3.0
+        with:
+          prune-cache: true
 
       - uses: denoland/setup-deno@v2
         with:
@@ -81,14 +83,16 @@ jobs:
             command: uv run pytest --cov=src/filemill --cov-branch --cov-report=term-missing --durations=20
             directory: server
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          prune-cache: true
 
       # The tests run under `uv run --project server`, so the browsers must be
       # the ones that project's locked Playwright asks for. A pip install of a
@@ -124,7 +128,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Only the one file. Nothing under ui/ is needed at runtime — that is the
       # point of the bundle — and shipping it would invite links to the unbuilt
@@ -135,9 +139,9 @@ jobs:
           cp static/index.html _site/index.html
           cp static/manifest.json static/sw.js static/icon-192.png static/icon-512.png static/icon.svg _site/
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
       - id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
