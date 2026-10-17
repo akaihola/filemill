@@ -279,8 +279,7 @@ The click rule matters at 390 px. When `level-3` opens, column 5 starts at
 x=391 in both Chromium and WebKit, so the next row is off screen. Both
 drivers scroll it into view, and the app returns `#stage` to 0 on its next
 scroll event. In WebKit that reset can arrive between press and release,
-sending the click to `#strip`. Issue [98] tracks a similar intermittent
-timeout in a Chromium server test.
+sending the click to `#strip`.
 
 ### Deep JSON stalled JavaScriptCore
 
@@ -318,4 +317,3 @@ direct host's total size, so an equal-input rebuild cannot change the order.
 [ADR 0065]: ../adr/0065-native-shell-qualification.md
 [ADR 0079]: ../adr/0079-native-shell.md
 [ADR 0080]: ../adr/0080-json-past-a-fold-depth-limit-is-source.md
-[98]: 98-investigate-mobile-landscape-wide-folder-navigation-timeout.md
