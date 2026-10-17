@@ -9,10 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [93] Make main's CI green again: static bundle test failing since 06792cb
-    - Depends on: [96]
-  <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-17T07:09:01.751Z"} -->
-
 - [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
   <!-- hai:{"id":"simple-28def403-6427-4ff6-aea8-3643a19d1a61","labels":["steward"],"createdAt":"2026-10-16T16:48:54.367Z","updatedAt":"2026-10-17T07:09:05.548Z"} -->
@@ -22,6 +18,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-fe5c93cd-f67b-45d1-8352-57667238abe6","labels":["steward"],"createdAt":"2026-10-16T16:48:55.733Z","updatedAt":"2026-10-17T07:09:08.803Z"} -->
 
 ## Scheduled
+
+- [93] Make main's CI green again: static bundle test failing since 06792cb
+    - Depends on: [96]
+  <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-17T07:47:45.598Z"} -->
 
 ## In Progress
 
