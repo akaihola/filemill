@@ -9,10 +9,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [94] Move the CI workflows to action versions that run on Node.js 24
-    - Depends on: [96]
-  <!-- hai:{"id":"simple-28def403-6427-4ff6-aea8-3643a19d1a61","labels":["steward"],"createdAt":"2026-10-16T16:48:54.367Z","updatedAt":"2026-10-17T07:09:05.548Z"} -->
-
 - [95] Reconcile TASKS.md with the code: 16 In Progress and 109 legacy completions
     - Depends on: [96]
   <!-- hai:{"id":"simple-fe5c93cd-f67b-45d1-8352-57667238abe6","labels":["steward"],"createdAt":"2026-10-16T16:48:55.733Z","updatedAt":"2026-10-17T07:09:08.803Z"} -->
@@ -24,6 +20,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-eae59ddd-5222-4dbd-972d-d23258c6db71","createdAt":"2026-10-17T07:56:11.253Z","updatedAt":"2026-10-17T07:58:00.111Z"} -->
 
 ## Scheduled
+
+- [94] Move the CI workflows to action versions that run on Node.js 24
+    - Depends on: [96]
+  <!-- hai:{"id":"simple-28def403-6427-4ff6-aea8-3643a19d1a61","labels":["steward"],"createdAt":"2026-10-16T16:48:54.367Z","updatedAt":"2026-10-17T08:00:11.512Z"} -->
 
 ## In Progress
 
