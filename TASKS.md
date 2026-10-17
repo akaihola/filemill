@@ -25,9 +25,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [96] Remove the tailnet hostname from all files and from history
-      <!-- hai:{"id":"simple-67027c02-b019-474e-a497-05db579c17c2","labels":["steward"],"createdAt":"2026-10-17T07:08:55.437Z","updatedAt":"2026-10-17T07:44:06.005Z"} -->
-
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
   column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
@@ -79,6 +76,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [96] Remove the tailnet hostname from all files and from history
+      <!-- hai:{"id":"simple-67027c02-b019-474e-a497-05db579c17c2","labels":["steward"],"createdAt":"2026-10-17T07:08:55.437Z","updatedAt":"2026-10-17T07:46:48.011Z"} -->
 
 - [x] [90] Run the static bundle, static development and server CI suites in parallel
   <!-- hai:{"id":"simple-8b926d81-b116-4839-987a-c05a6e7930a0","createdAt":"2026-10-12T13:32:52.839Z","updatedAt":"2026-10-17T07:09:36.159Z"} -->
