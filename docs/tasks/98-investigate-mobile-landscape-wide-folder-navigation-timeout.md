@@ -111,3 +111,40 @@ scrolling during activation. It left the final row outside the viewport after
 the layout settled. It was discarded. Revealing an offscreen row legitimately
 turns the dial, so a frozen dial is not the required invariant. Correct touch
 input and paired event targets are the regression contract.
+
+
+## Validation, 2026-10-17
+
+All browser runs used the locked Playwright 1.63 and Nix Chromium. Python 3.12
+checks used the installed 3.12.14 interpreter in a separate uv environment.
+The original 3.14.7 environment also passed the corrected three-test selection.
+
+- Final acceptance selection, including the paired touch-target assertion:
+  **8 consecutive repetitions, 24 passed**, under Python 3.12. The early
+  repetitions overlapped both static UI entry points on the same host. Every
+  landscape chain checked all twelve press/release target pairs and retained
+  the original final-row visibility checks. No retries hid a failed run.
+- Full server suite after the log fix, collected before the new touch test:
+  **851 passed**, 90% combined statement/branch coverage, 967.59 seconds.
+- Complete keyboard suite with the corrected touch helper: **66 passed,
+  1 failed**, 481.04 seconds. The failure was
+  `test_arrow_navigation_keeps_fold_animation_running`. Its initial
+  ArrowDown/ArrowRight sequence did not reach `focusCol === 1` before the
+  animation check. An isolated rerun under load failed at the same predicate.
+  This test does not call the tap helper. It remains outside this issue.
+- Full static development suite: **116 passed**, 524.95 seconds.
+- Full static bundle suite: **114 passed, 2 setup errors**, 493.47 seconds.
+  The unchanged copy fixture installed its clock and then tried to pause at
+  that same timestamp after time had advanced. Both failed cases passed on
+  rerun, 9.25 seconds. No clock-fixture changes were made.
+- Extra concurrent static UI runs exercised both the bundle and development
+  entry points as load. They hit existing large-directory keystroke budgets.
+  The last pair measured 180.1 ms and 130.7 ms after a size sort. No performance
+  thresholds were changed. These stress failures are separate from the
+  navigation acceptance checks.
+- All pre-commit hooks passed: ruff, ruff format, mypy, Deno format/lint and
+  the committed-bundle check. The DOM-free model checks also passed.
+
+No browser sleeps, forced clicks or relaxed visibility assertions were added.
+The static preview-threshold fix [93] and deletion-preview fix [97] were not
+changed. No application code or deployment assets changed.
