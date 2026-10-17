@@ -242,6 +242,12 @@ def test_ui_driver_waits_for_javascript_truthiness(tmp_path):
     with application(tmp_path) as raw:
         page = NativePage(raw, tmp_path)
         asyncio.run(page.wait_for_function("[]", timeout=1000))
+        # A pending promise is a truthy object, not a value to wait for.
+        asyncio.run(
+            page.wait_for_function(
+                "new Promise(resolve => setTimeout(resolve, 2000))", timeout=1000
+            )
+        )
 
 
 def test_denied_folder_is_recognized_in_any_locale(tmp_path):
@@ -287,3 +293,29 @@ def test_ui_driver_clicks_through_folding_columns(tmp_path):
 
         asyncio.run(drill())
         assert raw.evaluate("path.at(-1).name").startswith("level-4-")
+
+
+def test_ui_driver_counts_native_file_reads(tmp_path):
+    """__gets mirrors the fake handle's getFile() count through the real port."""
+    import asyncio
+
+    from ui_driver import NativePage
+
+    (tmp_path / "a.txt").write_text("a")
+    with application(tmp_path) as raw:
+        page = NativePage(raw, tmp_path)
+        asyncio.run(page.evaluate("window.__mk = () => null; window.__gets = 0"))
+        raw.evaluate(
+            "async () => { const n = path[0].kids[0]; n.meta = null; await FS.loadMeta(n); await FS.blob(n); }"
+        )
+        assert raw.evaluate("__gets") == 2
+
+
+def test_automation_keeps_no_profile(tmp_path):
+    """Like a new Playwright context: test launches share no stored settings."""
+    root, data, cache = tmp_path / "root", tmp_path / "data", tmp_path / "cache"
+    root.mkdir()
+    with application(root, XDG_DATA_HOME=str(data), XDG_CACHE_HOME=str(cache)) as page:
+        page.evaluate("localStorage.setItem('filemill.sort', 'size')")
+    assert not (data / "filemill").exists()
+    assert not (cache / "filemill").exists()

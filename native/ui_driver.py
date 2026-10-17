@@ -46,14 +46,15 @@ const before = box();
 await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 return box() === before;
 }"""
-# Playwright's hit-target interceptor: a pointer event that reaches another
-# element is cancelled, and the click is retried.
+# Playwright's hit-target interceptor: the first pointer event decides. If it
+# reaches another element, that and every later event are cancelled and the
+# click is retried; a row the click re-renders keeps the rest of its events.
 INTERCEPT = r"""e => {
 const types = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'];
 const state = window.__hit = {ok: null};
 const check = event => {
-  if (state.ok !== false && e.contains(event.target)) { state.ok = true; return; }
-  state.ok = false;
+  if (state.ok === null) state.ok = e.contains(event.target);
+  if (state.ok) return;
   event.preventDefault();
   event.stopImmediatePropagation();
 };
@@ -176,6 +177,10 @@ class Locator:
             f'e => {{ e.focus(); e.value = {json.dumps(text)}; e.dispatchEvent(new InputEvent("input", {{bubbles:true, inputType:"insertText"}})); }}'
         )
 
+    async def press(self, key):
+        await self.evaluate("e => e.focus()")
+        await self.page.keyboard.press(key)
+
     async def dispatch_event(self, event):
         await self.evaluate(
             f"e => e.dispatchEvent(new Event({json.dumps(event)}, {{bubbles:true}}))"
@@ -253,6 +258,8 @@ console.error = (...args) => {
             )
             if adding:
                 file.write_text(match[2])
+            elif file.is_dir():
+                shutil.rmtree(file)
             else:
                 file.unlink()
         result = self.raw.evaluate(script, arg)
@@ -266,14 +273,20 @@ console.error = (...args) => {
             self.raw.evaluate("""() => {
 if (window.__nativeInstrumented) return;
 window.__nativeInstrumented = true;
-const meta = NativeFS.loadMeta;
-NativeFS.loadMeta = async n => { if (!n.dir && !n.meta) window.__gets++; return meta(n); };
+// Count native file reads where the fake handle counts getFile(). The port
+// wrappers copied loadMeta at startup, so count at the bridge.
+const bridge = webkit.messageHandlers.filemill;
+const post = bridge.postMessage.bind(bridge);
+bridge.postMessage = request => {
+  if (['stat', 'read'].includes(request.op)) window.__gets++;
+  return post(request);
+};
 const load = NativeFS.ensureLoaded;
 NativeFS.ensureLoaded = async n => {
   if (!['slow', 'racing'].includes(n.rel) || n.kids !== null) return load(n);
   if (n.loading) return n.loading;
   const pending = (async () => {
-    await load(n); const kids = n.kids; n.kids = null;
+    await load(n); n.loading = pending; const kids = n.kids; n.kids = null;
     await new Promise(r => setTimeout(r, n.rel === 'slow' ? 500 : 400));
     n.kids = kids; n.loading = null;
   })();
@@ -382,11 +395,12 @@ await walk(tree, ''); window.__gets = 0; return files;
         await asyncio.sleep(ms / 1000)
 
     async def wait_for_function(self, fn, arg=None, timeout=30000):
-        # Playwright waits for JavaScript truthiness: [] passes, as in JS.
-        truthy = f"""async arg => {{
+        # Playwright tests JavaScript truthiness without awaiting the result:
+        # [] and a pending promise both pass.
+        truthy = f"""arg => {{
 let value = (0, eval)({json.dumps(fn)});
 if (typeof value === 'function') value = value(arg);
-return !!(await value);
+return !!value;
 }}"""
         until = time.monotonic() + timeout / 1000
         while time.monotonic() < until:

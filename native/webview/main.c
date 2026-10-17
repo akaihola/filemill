@@ -246,7 +246,9 @@ int main(int argc, char **argv) {
         root_name = g_path_get_basename(root);
     } else if (automation || !pick_root()) return 2;
     locations = g_ptr_array_new_with_free_func(g_free);
-    WebKitWebContext *context = webkit_web_context_get_default();
+    /* Like a fresh browser context, a test session keeps no stored settings. */
+    WebKitWebContext *context = automation ? webkit_web_context_new_ephemeral()
+                                           : webkit_web_context_get_default();
     webkit_web_context_register_uri_scheme(context, "filemill", resource_request, NULL, NULL);
     webkit_security_manager_register_uri_scheme_as_secure(webkit_web_context_get_security_manager(context), "filemill");
     if (automation) {
