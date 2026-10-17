@@ -299,14 +299,17 @@ window.__spySaves = async () => {
 async def mount(pg, n=0):
     await pg.evaluate(f"mount(__mk({n}))")
     await pg.wait_for_function("path.length===1 && colCache.get(path[0])")
-    await pg.wait_for_function("document.querySelector('.col .row') && !document.querySelector('.spinner')")
+    await pg.wait_for_function(
+        "document.querySelector('.col .row') && !document.querySelector('.spinner')"
+    )
     await scroll_settled(pg)
 
 
 async def scroll_settled(pg):
     """Wait for smooth scrolling and the dial range rebase to settle."""
     await pg.evaluate("window.__scrollProbe = {value: null, since: 0}")
-    await pg.wait_for_function("""() => {
+    await pg.wait_for_function(
+        """() => {
           const value = JSON.stringify([dial(), finder.scrollLeft,
             finder.scrollWidth, finder.clientWidth, folded]);
           const now = performance.now();
@@ -314,7 +317,9 @@ async def scroll_settled(pg):
             window.__scrollProbe = {value, since: now};
           }
           return now - window.__scrollProbe.since >= 300;
-        }""", timeout=6000)
+        }""",
+        timeout=6000,
+    )
     return True
 
 
@@ -568,7 +573,7 @@ async def test_storage(bundle, async_playwright, static_origin, tmp_path):
         # The case that matters: the folder is still there, the chain is not.
         await pg.evaluate("__remember(['mixed','gone','x.py'])")
         await pg.evaluate("mount(__storedRoot)")
-        await pg.wait_for_function('path.length === 2 && sel.length === 1')
+        await pg.wait_for_function("path.length === 2 && sel.length === 1")
         st = await pg.evaluate("__state()")
         assert st["path"] == ["workspace", "mixed"] and st["sel"] == ["mixed"], (
             json.dumps(st)
@@ -599,7 +604,7 @@ async def test_storage(bundle, async_playwright, static_origin, tmp_path):
           document.querySelector('.col[data-i="1"] .row[title="note.md"]').click();
           return __saved.length;
         })()""")
-        await pg.wait_for_function('__saved.length === 1')
+        await pg.wait_for_function("__saved.length === 1")
         saved = await pg.evaluate("__saved")
         assert start_saves == 0, f"{start_saves} writes during mount"
         assert early == 0 and len(saved) == 1, f"{early} early, {len(saved)} total"
@@ -879,7 +884,7 @@ def copy_page(bundle, fake_handle, playwright):
     # The preview's late render rewrites the status path and drops a fallback
     # selection made before it; CI once read that selection empty.
     page.wait_for_selector("#preview .pv-text")
-    page.clock.install(time=1000000)
+    # pause_at installs the clock itself, avoiding a running interval between calls.
     page.clock.pause_at(1000000)
     try:
         yield page
@@ -966,7 +971,11 @@ def test_copy_interaction_reset(copy_page, interaction):
     elif interaction == "selection":
         page.evaluate("sel[1] = 'short.txt'; render()")
     else:
+        page.clock.resume()
         page.evaluate("async () => { await mount(__mk(0)); }")
+        spine = page.locator('.col[data-i="0"].spine')
+        if spine.count():
+            spine.click()
         page.locator('.col[data-i="0"] .row[title="mixed"]').click()
         page.locator('.col[data-i="1"] .row[title="note.md"]').click()
     copied(page, "mixed/short.txt" if interaction == "selection" else "mixed/note.md")
@@ -1264,13 +1273,16 @@ async def test_directory_states(page):
     await mount(pg)
     for row, expect in (("empty", "Empty"), ("locked", "No permission")):
         await pg.click(f'.col[data-i="0"] .row:has-text("{row}")')
-        await pg.wait_for_function("text => document.querySelector('.col[data-i=\"1\"] .col-note')?.textContent.includes(text)", arg=expect)
+        await pg.wait_for_function(
+            "text => document.querySelector('.col[data-i=\"1\"] .col-note')?.textContent.includes(text)",
+            arg=expect,
+        )
         note = await pg.inner_text('.col[data-i="1"] .col-note')
         assert expect in note, note
         # A column with no rows has nothing to highlight, so → must not move
         # focus into it — that read as a no-op while killing ↑/↓.
         await pg.keyboard.press("ArrowRight")
-        await pg.wait_for_function('focusCol === 0')
+        await pg.wait_for_function("focusCol === 0")
         stayed = await pg.evaluate("focusCol") == 0
         await pg.keyboard.press("ArrowDown")
         await pg.wait_for_function("sel[0] !== " + json.dumps(row))
@@ -1281,7 +1293,9 @@ async def test_directory_states(page):
         await pg.wait_for_selector('.col[data-i="1"] .spinner', timeout=2000)
     except PlaywrightTimeoutError:
         assert False, "never appeared"
-    await pg.wait_for_function('document.querySelectorAll(\'.col[data-i="1"] .row\').length === 2')
+    await pg.wait_for_function(
+        "document.querySelectorAll('.col[data-i=\"1\"] .row').length === 2"
+    )
     assert await pg.eval_on_selector_all('.col[data-i="1"] .row', "e=>e.length") == 2, (
         "Entries appear when the read finishes"
     )
@@ -1358,21 +1372,24 @@ async def test_keyboard_horizontal(page):
         "Clicking a folder also keeps focus in its own column"
     )
     await pg.keyboard.press("ArrowRight")  # into "deep"
-    await pg.wait_for_function('focusCol === 1')
+    await pg.wait_for_function("focusCol === 1")
     assert await pg.evaluate("focusCol") == 1, "→ moves focus into the open column"
     for depth in range(2, 5):
         await pg.keyboard.press("ArrowRight")
-        await pg.wait_for_function("depth => focusCol === depth && colCache.get(path[depth])?.rows.length", arg=depth)
+        await pg.wait_for_function(
+            "depth => focusCol === depth && colCache.get(path[depth])?.rows.length",
+            arg=depth,
+        )
     st = await pg.evaluate("__state()")
     assert (
         st["path"] == ["workspace", "deep", "alpha", "beta", "gamma"]
         and st["sel"][-1] == "leaf.txt"
     ), json.dumps(st["path"])
     await pg.keyboard.press("ArrowLeft")
-    await pg.wait_for_function('focusCol === 3')
+    await pg.wait_for_function("focusCol === 3")
     assert await pg.evaluate("focusCol") == 3, "← moves focus back out"
     await pg.keyboard.press("ArrowRight")
-    await pg.wait_for_function('focusCol === 4')
+    await pg.wait_for_function("focusCol === 4")
     assert (
         await pg.evaluate("sel[4]") == "leaf.txt" and await pg.evaluate("focusCol") == 4
     ), "→ returns to the row the column was left on"
@@ -1381,7 +1398,7 @@ async def test_keyboard_horizontal(page):
         "→ focuses the preview from the rightmost column"
     )
     await pg.keyboard.press("ArrowLeft")
-    await pg.wait_for_function('focusCol === 4')
+    await pg.wait_for_function("focusCol === 4")
     st = await pg.evaluate("__state()")
     assert (
         st["focusCol"] == 4
@@ -1425,14 +1442,18 @@ async def test_folding_dial(page):
     n = await pg.evaluate("path.length")
     await pg.evaluate("finder.scrollLeft = finder.scrollWidth")
     settled = await scroll_settled(pg)
-    await pg.wait_for_function("document.querySelectorAll('.col.spine').length === path.length - 1 && finder.scrollLeft < finder.scrollWidth - finder.clientWidth - 1")
+    await pg.wait_for_function(
+        "document.querySelectorAll('.col.spine').length === path.length - 1 && finder.scrollLeft < finder.scrollWidth - finder.clientWidth - 1"
+    )
     spines = await pg.eval_on_selector_all(".col.spine", "e=>e.length")
     assert spines == n - 1, f"{spines} spines of {n}" + (
         "" if settled else ", scroll never settled"
     )
     await pg.evaluate("finder.scrollLeft = finder.scrollWidth")
     settled = await scroll_settled(pg)
-    await pg.wait_for_function("document.querySelectorAll('.col.spine').length === path.length")
+    await pg.wait_for_function(
+        "document.querySelectorAll('.col.spine').length === path.length"
+    )
     spines = await pg.eval_on_selector_all(".col.spine", "e=>e.length")
     assert spines == n, f"{spines} spines of {n}" + (
         "" if settled else ", scroll never settled"
@@ -1481,7 +1502,9 @@ async def test_folding_dial(page):
     await pg.wait_for_function("sel[0] === 'wide' && path[1]?.kids")
     for i in range(5):
         await pg.click(f'.col[data-i="{i + 1}"] .row:has-text("level-{i}-")')
-        await pg.wait_for_function("n => path.length === n && path.at(-1)?.kids", arg=i + 3)
+        await pg.wait_for_function(
+            "n => path.length === n && path.at(-1)?.kids", arg=i + 3
+        )
     await scroll_settled(pg)
     touched = await pg.evaluate("""(() => {
       const fr = finder.getBoundingClientRect();
@@ -1519,7 +1542,9 @@ async def test_folding_dial(page):
     await pg.wait_for_function("sel[0] === 'wide' && path[1]?.kids")
     for i in range(3):
         await pg.click(f'.col[data-i="{i + 1}"] .row:has-text("level-{i}-")')
-        await pg.wait_for_function("n => path.length === n && path.at(-1)?.kids", arg=i + 3)
+        await pg.wait_for_function(
+            "n => path.length === n && path.at(-1)?.kids", arg=i + 3
+        )
     await scroll_settled(pg)
     await pg.set_viewport_size({"width": 375, "height": 812})  # rotate
     await scroll_settled(pg)
@@ -1549,7 +1574,9 @@ async def test_folding_dial(page):
     await pg.wait_for_function("sel[0] === 'wide' && path[1]?.kids")
     for i in range(3):
         await pg.click(f'.col[data-i="{i + 1}"] .row:has-text("level-{i}-")')
-        await pg.wait_for_function("n => path.length === n && path.at(-1)?.kids", arg=i + 3)
+        await pg.wait_for_function(
+            "n => path.length === n && path.at(-1)?.kids", arg=i + 3
+        )
     await scroll_settled(pg)
     desktop = await pg.evaluate("""(() => {
       const fr = finder.getBoundingClientRect();
@@ -1590,7 +1617,9 @@ async def test_folding_dial(page):
         await pg.wait_for_function("sel[0] === 'wide' && path[1]?.kids")
         for i in range(3):
             await pg.click(f'.col[data-i="{i + 1}"] .row:has-text("level-{i}-")')
-            await pg.wait_for_function("n => path.length === n && path.at(-1)?.kids", arg=i + 3)
+            await pg.wait_for_function(
+                "n => path.length === n && path.at(-1)?.kids", arg=i + 3
+            )
         await scroll_settled(pg)
         m = await pg.evaluate("""(() => {
           const fr = finder.getBoundingClientRect();
@@ -1633,9 +1662,12 @@ async def test_folding_dial(page):
     await scroll_settled(pg)
     await pg.click('.col[data-i="0"] .row:has-text("deep")')
     await pg.wait_for_function("sel[0] === 'deep' && path[1]?.kids")
-    for depth in range(1, 5):                    # in to the leaf column
+    for depth in range(1, 5):  # in to the leaf column
         await pg.keyboard.press("ArrowRight")
-        await pg.wait_for_function("depth => focusCol === depth && colCache.get(path[depth])?.rows.length", arg=depth)
+        await pg.wait_for_function(
+            "depth => focusCol === depth && colCache.get(path[depth])?.rows.length",
+            arg=depth,
+        )
     await scroll_settled(pg)
     strip_pos = await pg.evaluate("""(() => {
       const fr = finder.getBoundingClientRect();
@@ -1667,9 +1699,11 @@ async def test_folding_dial(page):
     await pg.click('.col[data-i="0"] .row:has-text("mixed")')
     await pg.wait_for_function("sel[0] === 'mixed' && path[1]?.kids")
     await pg.keyboard.press("ArrowRight")
-    await pg.wait_for_function('focusCol === 1')
+    await pg.wait_for_function("focusCol === 1")
     await pg.keyboard.press("End")
-    await pg.wait_for_function("document.querySelector('.col.focus .row.cursor')?.title === visibleKids(path[focusCol]).at(-1)?.name")
+    await pg.wait_for_function(
+        "document.querySelector('.col.focus .row.cursor')?.title === visibleKids(path[focusCol]).at(-1)?.name"
+    )
     seen = await pg.evaluate("""(() => {
       const row = document.querySelector('.col.focus .row.cursor');
       if (!row) return null;
@@ -1683,7 +1717,9 @@ async def test_folding_dial(page):
     assert seen and seen["scrolled"] > 0, json.dumps(seen)
     end_scroll = seen["scrolled"]
     await pg.keyboard.press("Home")
-    await pg.wait_for_function("document.querySelector('.col.focus .row.cursor')?.title === visibleKids(path[focusCol])[0]?.name")
+    await pg.wait_for_function(
+        "document.querySelector('.col.focus .row.cursor')?.title === visibleKids(path[focusCol])[0]?.name"
+    )
     seen = await pg.evaluate("""(() => {
       const row = document.querySelector('.col.focus .row.cursor');
       const body = row.closest('.col-body');
@@ -1723,7 +1759,10 @@ async def test_folding_dial(page):
         first_page
     )
     await pg.keyboard.press("PageDown")
-    await pg.wait_for_function("before => document.querySelector('.col.focus .col-body').scrollTop > before", arg=first_page["scroll"])
+    await pg.wait_for_function(
+        "before => document.querySelector('.col.focus .col-body').scrollTop > before",
+        arg=first_page["scroll"],
+    )
     second_page = await pg.evaluate("""(() => {
       const col = document.querySelector('.col.focus');
       const body = col.querySelector('.col-body');
@@ -1767,7 +1806,9 @@ async def test_preview(page):
     await pg.click('.col[data-i="0"] .row:has-text("mixed")')
     await pg.wait_for_function("sel[0] === 'mixed' && path[1]?.kids")
     await pg.click('.col[data-i="1"] .row:has-text("note.md")')
-    await pg.wait_for_function("document.querySelector('.pv-text')?.textContent.trim() === '# note'")
+    await pg.wait_for_function(
+        "document.querySelector('.pv-text')?.textContent.trim() === '# note'"
+    )
     assert (await pg.inner_text(".pv-text")).strip() == "# note", (
         "Text file previews its contents"
     )
@@ -1796,7 +1837,9 @@ async def test_preview(page):
     )
     assert "B ·" in await pg.inner_text("#pv-sub"), await pg.inner_text("#pv-sub")
     await pg.click('.col[data-i="1"] .row:has-text("long.txt")')
-    await pg.wait_for_function("document.querySelector('.pv-text')?.textContent.length > 4000")
+    await pg.wait_for_function(
+        "document.querySelector('.pv-text')?.textContent.length > 4000"
+    )
     # A text box that stopped at part-height left the rest of the column
     # empty and scrolled on its own, so the column never used its height.
     fit = await pg.evaluate("""() => {
@@ -1831,14 +1874,18 @@ async def test_preview(page):
     })()""")
     assert all(abs(d) < 2 for d in fit), str(fit)
     await pg.click('.col[data-i="1"] .row:has-text("sub")')
-    await pg.wait_for_function("document.querySelector('.pv-empty') && path[2]?.name === 'sub'")
+    await pg.wait_for_function(
+        "document.querySelector('.pv-empty') && path[2]?.name === 'sub'"
+    )
     assert await pg.is_visible(".pv-empty"), "Selecting a folder clears the preview"
 
     # ── Syntax highlighting — core/syntax.js, the same file the server
     # build loads. Rich previews are off in this suite, so what runs here
     # is the offline path every build falls back to.
     await pg.click('.col[data-i="2"] .row:has-text("a.py")')
-    await pg.wait_for_function("document.querySelectorAll('.pv-text .hl-kw').length > 0")
+    await pg.wait_for_function(
+        "document.querySelectorAll('.pv-text .hl-kw').length > 0"
+    )
     assert (
         await pg.eval_on_selector_all(
             ".pv-text span", "e=>[...new Set(e.map(x=>x.className))].sort().join()"
@@ -1910,7 +1957,9 @@ async def test_preview(page):
     # tail, so the span count is what proves colour reaches the last line:
     # def + return is two keywords per copy, 600 across the 300.
     await pg.click('.col[data-i="2"] .row:has-text("long.py")')
-    await pg.wait_for_function("document.querySelectorAll('.pv-text .hl-kw').length === 600")
+    await pg.wait_for_function(
+        "document.querySelectorAll('.pv-text .hl-kw').length === 600"
+    )
     whole = await pg.text_content(".pv-text")
     kw = await pg.eval_on_selector_all(".pv-text .hl-kw", "e=>e.length")
     assert whole == PY_SRC * 300, f"{len(whole)} chars, expected {len(PY_SRC) * 300}"
@@ -1920,7 +1969,9 @@ async def test_preview(page):
     # decline rather than render — otherwise "whole or absent" has no second
     # half and a 50 MB .sql renders whole.
     await pg.click('.col[data-i="2"] .row:has-text("huge.py")')
-    await pg.wait_for_function("document.querySelector('#pv-content')?.textContent.includes('No inline preview')")
+    await pg.wait_for_function(
+        "document.querySelector('#pv-content')?.textContent.includes('No inline preview')"
+    )
     body = await pg.inner_text("#pv-content")
     assert not await pg.is_visible(".pv-text") and "No inline preview" in body, body[
         :80
@@ -1958,7 +2009,9 @@ async def test_jsonl_rows(page):
         await pg.evaluate("__rows(2)")
     )
     await click_row(pg, 2, "Second")
-    await pg.wait_for_function("typeof renderNode === 'function' && RENDERERS.length > 0")
+    await pg.wait_for_function(
+        "typeof renderNode === 'function' && RENDERERS.length > 0"
+    )
     assert (
         await pg.evaluate("__rows(3)") == ["id", "title", "ts", "tags"]
         and await pg.locator("#preview .pv-json details").count() > 0
@@ -1976,13 +2029,17 @@ async def test_jsonl_rows(page):
     await pg.evaluate("applyPath(['tables', 'log.jsonl', 'Second'])")
     await pg.wait_for_function("sel[2] === 'Second' && path[3]?.kids")
     await click_row(pg, 3, "title")
-    await pg.wait_for_function("document.querySelector('.pv-content')?.textContent.trim() === 'Second'")
+    await pg.wait_for_function(
+        "document.querySelector('.pv-content')?.textContent.trim() === 'Second'"
+    )
     assert (await pg.inner_text(".pv-content")).strip() == "Second", (
         "A JSONL scalar keeps the JSON scalar preview"
     )
     assert await pg.inner_text("#pv-sub") == "", "…with no invented size or date"
     await pg.evaluate("applyPath(['tables', 'log.jsonl', 'Third'])")
-    await pg.wait_for_function("document.querySelector('#pv-content')?.textContent.includes('2026-01-03')")
+    await pg.wait_for_function(
+        "document.querySelector('#pv-content')?.textContent.includes('2026-01-03')"
+    )
     assert (await pg.evaluate("sel"))[
         -1
     ] == "Third" and "2026-01-03" in await pg.inner_text("#pv-content"), (
@@ -1994,7 +2051,9 @@ async def test_jsonl_rows(page):
         await pg.evaluate("__rows(2)")
     )
     await click_row(pg, 1, "bad.jsonl")
-    await pg.wait_for_function("document.querySelector('#preview .pv-err')?.textContent.includes('Not valid JSONL: line 2')")
+    await pg.wait_for_function(
+        "document.querySelector('#preview .pv-err')?.textContent.includes('Not valid JSONL: line 2')"
+    )
     note = await pg.inner_text("#preview .pv-err")
     assert (
         "Not valid JSONL: line 2" in note
@@ -2032,7 +2091,9 @@ async def test_edit_mode(page):
     await pg.click('.col[data-i="0"] .row:has-text("mixed")')
     await pg.wait_for_function("path[1]?.name === 'mixed' && path[1]?.kids")
     await click_row(pg, 1, "long.txt")
-    await pg.wait_for_function("document.querySelector('.pv-text')?.textContent.length > 4000")
+    await pg.wait_for_function(
+        "document.querySelector('.pv-text')?.textContent.length > 4000"
+    )
     await pg.click("#pv-edit")
     await pg.wait_for_function("document.querySelector('#pv-editor')")
     top = await pg.evaluate("""() => {
@@ -2045,11 +2106,15 @@ async def test_edit_mode(page):
         and top["value"] == "a line of plain text\n" * 400
     ), json.dumps({**top, "value": f"{len(top['value'])} chars"})
     await pg.click("#pv-cancel")
-    await pg.wait_for_function("!document.querySelector('#pv-editor') && document.querySelector('.pv-text')")
+    await pg.wait_for_function(
+        "!document.querySelector('#pv-editor') && document.querySelector('.pv-text')"
+    )
     await click_row(pg, 1, "sub")
     await pg.wait_for_function("path[2]?.name === 'sub' && path[2]?.kids")
     await click_row(pg, 2, "long.py")
-    await pg.wait_for_function("document.querySelectorAll('.pv-text .hl-kw').length === 600")
+    await pg.wait_for_function(
+        "document.querySelectorAll('.pv-text .hl-kw').length === 600"
+    )
     await pg.click("#pv-edit")
     await pg.wait_for_function("document.querySelector('#pv-editor')")
     top = await pg.evaluate("""() => {
@@ -2062,11 +2127,15 @@ async def test_edit_mode(page):
         and top["value"] == PY_SRC * 300
     ), json.dumps({**top, "value": f"{len(top['value'])} chars"})
     await pg.click("#pv-cancel")
-    await pg.wait_for_function("!document.querySelector('#pv-editor') && document.querySelector('.pv-text')")
+    await pg.wait_for_function(
+        "!document.querySelector('#pv-editor') && document.querySelector('.pv-text')"
+    )
     await click_row(pg, 0, "mixed")
     await pg.wait_for_function("path[1]?.name === 'mixed' && path[1]?.kids")
     await click_row(pg, 1, "note.md")
-    await pg.wait_for_function("document.querySelector('.pv-text')?.textContent.trim() === '# note'")
+    await pg.wait_for_function(
+        "document.querySelector('.pv-text')?.textContent.trim() === '# note'"
+    )
     assert await pg.is_visible("#pv-edit"), "Text preview offers an Edit button"
     await pg.click("#pv-edit")
     await pg.wait_for_function("document.querySelector('#pv-editor')")
@@ -2080,7 +2149,9 @@ async def test_edit_mode(page):
         "Typing in the editor does not move the columns"
     )
     await pg.click("#pv-cancel")
-    await pg.wait_for_function("!document.querySelector('#pv-editor') && document.querySelector('.pv-text')")
+    await pg.wait_for_function(
+        "!document.querySelector('#pv-editor') && document.querySelector('.pv-text')"
+    )
     assert (await pg.inner_text(".pv-text")).strip() == "# note", (
         "Cancel returns the unchanged read-only preview"
     )
@@ -2088,14 +2159,20 @@ async def test_edit_mode(page):
     await pg.wait_for_function("document.querySelector('#pv-editor')")
     await pg.fill("#pv-editor", "# edited")
     await pg.click("#pv-save")
-    await pg.wait_for_function("document.querySelector('.pv-text')?.textContent.trim() === '# edited'")
+    await pg.wait_for_function(
+        "document.querySelector('.pv-text')?.textContent.trim() === '# edited'"
+    )
     assert (await pg.inner_text(".pv-text")).strip() == "# edited", (
         "Save writes the file and returns to the preview"
     )
     await click_row(pg, 1, "data.json")
-    await pg.wait_for_function("sel[1] === 'data.json' && document.querySelector('.pv-json')")
+    await pg.wait_for_function(
+        "sel[1] === 'data.json' && document.querySelector('.pv-json')"
+    )
     await click_row(pg, 1, "note.md")
-    await pg.wait_for_function("sel[1] === 'note.md' && document.querySelector('.pv-text')?.textContent.trim() === '# edited'")
+    await pg.wait_for_function(
+        "sel[1] === 'note.md' && document.querySelector('.pv-text')?.textContent.trim() === '# edited'"
+    )
     assert await pg.is_hidden("#pv-modified"), "Saved and reopened text is not modified"
     assert (await pg.inner_text(".pv-text")).strip() == "# edited", (
         "The change survives re-opening the file"
@@ -2112,7 +2189,9 @@ async def test_json_preview(page):
     await pg.click('.col[data-i="0"] .row:has-text("mixed")')
     await pg.wait_for_function("path[1]?.name === 'mixed' && path[1]?.kids")
     await click_row(pg, 1, "nested.json")
-    await pg.wait_for_function("path[2]?.name === 'nested.json' && document.querySelector('.pv-json')")
+    await pg.wait_for_function(
+        "path[2]?.name === 'nested.json' && document.querySelector('.pv-json')"
+    )
     assert (
         await pg.locator('.col[data-i="1"] .row:has-text("docs") .ico.dir').count() == 1
     ), "Ordinary directories keep the folder icon"
@@ -2130,7 +2209,9 @@ async def test_json_preview(page):
         and await pg.locator("#preview details").count() > 0
     ), "Selected JSON object keeps its preview beside its children"
     await click_row(pg, 2, "tags")
-    await pg.wait_for_function("document.querySelector('.pv-content')?.textContent.trim() === 'a'")
+    await pg.wait_for_function(
+        "document.querySelector('.pv-content')?.textContent.trim() === 'a'"
+    )
     assert await pg.evaluate("__rows(3)") == ["0", "1"], (
         "Nested arrays open as ordered index rows"
     )
@@ -2143,7 +2224,9 @@ async def test_json_preview(page):
         == "[]"
     ), "JSON arrays use the [] icon"
     await click_row(pg, 3, "0")
-    await pg.wait_for_function("document.querySelector('.pv-content')?.textContent.trim() === 'a'")
+    await pg.wait_for_function(
+        "document.querySelector('.pv-content')?.textContent.trim() === 'a'"
+    )
     assert (await pg.inner_text(".pv-content")).strip() == "a", (
         "Scalar JSON values preview in the pane"
     )
@@ -2161,7 +2244,9 @@ async def test_json_preview(page):
         == "{}"
     ), "JSON objects use the {} icon"
     await click_row(pg, 2, "items")
-    await pg.wait_for_function("path[3]?.name === 'items' && document.querySelector('.pv-json')")
+    await pg.wait_for_function(
+        "path[3]?.name === 'items' && document.querySelector('.pv-json')"
+    )
     assert (
         await pg.evaluate("__rows(3)") == ["0"]
         and await pg.locator("#preview .pv-json").count() == 1
@@ -2189,7 +2274,9 @@ async def test_auto_preview(page):
     await pg.click('.col[data-i="0"] .row:has-text("mixed")')
     await pg.wait_for_function("path[1]?.name === 'mixed' && path[1]?.kids")
     await pg.click('.col[data-i="1"] .row:has-text("docs")')
-    await pg.wait_for_function("sel[2] === 'README' && document.querySelector('#preview .col-head .name')?.textContent.includes('README')")
+    await pg.wait_for_function(
+        "sel[2] === 'README' && document.querySelector('#preview .col-head .name')?.textContent.includes('README')"
+    )
     st = await pg.evaluate("__state()")
     assert st["sel"] == ["mixed", "docs", "README"] and st["focusCol"] == 1, json.dumps(
         st
@@ -2202,17 +2289,19 @@ async def test_auto_preview(page):
         "…and named in the preview header"
     )
     await pg.keyboard.press("ArrowRight")
-    await pg.wait_for_function('focusCol === 2')
+    await pg.wait_for_function("focusCol === 2")
     assert (
         await pg.evaluate("focusCol") == 2 and await pg.evaluate("sel[2]") == "README"
     ), "→ enters the column on the auto-previewed row"
     await pg.keyboard.press("ArrowLeft")
-    await pg.wait_for_function('focusCol === 1')
+    await pg.wait_for_function("focusCol === 1")
     await pg.click('.col[data-i="1"] .row:has-text("site")')
     await pg.wait_for_function("sel[2] === 'README.md'")
     assert await pg.evaluate("sel[2]") == "README.md", "README.* wins over index.html"
     await pg.click('.col[data-i="1"] .row:has-text("web")')
-    await pg.wait_for_function("sel[2] === 'index.html' && document.querySelector('iframe.pv-html')")
+    await pg.wait_for_function(
+        "sel[2] === 'index.html' && document.querySelector('iframe.pv-html')"
+    )
     assert await pg.evaluate("sel[2]") == "index.html" and await pg.is_visible(
         "iframe.pv-html"
     ), "index.html previews when no README exists"
@@ -2232,7 +2321,9 @@ async def test_settings(page):
     before = await pg.eval_on_selector_all('.col[data-i="1"] .row', "e=>e.length")
     await pg.click("#gear")
     await pg.click("#s-dot")
-    await pg.wait_for_function('state.dotfiles && document.querySelector(\'.row[title=".dotfile"]\')')
+    await pg.wait_for_function(
+        "state.dotfiles && document.querySelector('.row[title=\".dotfile\"]')"
+    )
     after = await pg.eval_on_selector_all('.col[data-i="1"] .row', "e=>e.length")
     assert after == before + 1, f"{before}→{after}"
     # The Previews group starts hidden and only preview-rich.js (loaded in
@@ -2242,7 +2333,9 @@ async def test_settings(page):
         " && !document.getElementById('s-rich').hidden"
     ), "Previews group is revealed with its rich toggle"
     await pg.click("#s-density")
-    await pg.wait_for_function("getComputedStyle(document.querySelector('.row')).height === '26px'")
+    await pg.wait_for_function(
+        "getComputedStyle(document.querySelector('.row')).height === '26px'"
+    )
     assert (
         await pg.evaluate("getComputedStyle(document.querySelector('.row')).height")
         == "26px"
@@ -2272,7 +2365,7 @@ async def test_typeahead(page):
         await pg.click('.col[data-i="0"] .row:has-text("search")')
         await pg.wait_for_function("path[1]?.name === 'search' && path[1]?.kids")
         await pg.keyboard.press("ArrowRight")
-        await pg.wait_for_function('focusCol === 1')
+        await pg.wait_for_function("focusCol === 1")
 
     await in_search()
     await pg.keyboard.type("re")
@@ -2320,7 +2413,9 @@ async def test_typeahead(page):
 
     await in_search()
     await pg.keyboard.type("zz")
-    await pg.wait_for_function("document.querySelector('#st-find').textContent.includes('no match')")
+    await pg.wait_for_function(
+        "document.querySelector('#st-find').textContent.includes('no match')"
+    )
     assert await pg.evaluate(
         "sel[1]"
     ) == "Alpha Report.txt" and "no match" in await pg.inner_text("#st-find"), (
@@ -2337,7 +2432,9 @@ async def test_typeahead(page):
     await pg.keyboard.type("re")
     await pg.wait_for_function("sel[1] === 'readme.md'")
     await pg.keyboard.press("Escape")
-    await pg.wait_for_function("!document.querySelector('mark') && !document.querySelector('#st-find').textContent.trim()")
+    await pg.wait_for_function(
+        "!document.querySelector('mark') && !document.querySelector('#st-find').textContent.trim()"
+    )
     assert (
         not await pg.evaluate(marks) and not (await pg.inner_text("#st-find")).strip()
     ), "Escape abandons the search and clears the marks"
@@ -2346,7 +2443,9 @@ async def test_typeahead(page):
     await pg.keyboard.type("re")
     await pg.wait_for_function("sel[1] === 'readme.md'")
     await pg.keyboard.press("ArrowDown")
-    await pg.wait_for_function("sel[1] === 'release-notes.md' && !document.querySelector('mark')")
+    await pg.wait_for_function(
+        "sel[1] === 'release-notes.md' && !document.querySelector('mark')"
+    )
     assert await pg.evaluate("sel[1]") == "release-notes.md" and not await pg.evaluate(
         marks
     ), await pg.evaluate("sel[1]")
@@ -2370,12 +2469,16 @@ async def test_copy_path(page):
     await pg.click('.col[data-i="0"] .row:has-text("mixed")')
     await pg.wait_for_function("path[1]?.name === 'mixed' && path[1]?.kids")
     await pg.click('.col[data-i="1"] .row:has-text("note.md")')
-    await pg.wait_for_function("document.querySelector('#st-path').textContent === 'mixed/note.md'")
+    await pg.wait_for_function(
+        "document.querySelector('#st-path').textContent === 'mixed/note.md'"
+    )
     assert await pg.inner_text("#st-path") == "mixed/note.md", await pg.inner_text(
         "#st-path"
     )
     await pg.keyboard.press("Control+c")
-    await pg.wait_for_function("__clipped.length === 1 && document.querySelector('#st-copy').textContent.includes('Copied')")
+    await pg.wait_for_function(
+        "__clipped.length === 1 && document.querySelector('#st-copy').textContent.includes('Copied')"
+    )
     assert await pg.evaluate("__clipped") == ["mixed/note.md"], str(
         await pg.evaluate("__clipped")
     )
@@ -2385,7 +2488,7 @@ async def test_copy_path(page):
 
     await pg.evaluate("__clip(false)")
     await pg.click("#st-path")
-    await pg.wait_for_function('__clipped.length === 1')
+    await pg.wait_for_function("__clipped.length === 1")
     assert await pg.evaluate("__clipped") == ["mixed/note.md"], str(
         await pg.evaluate("__clipped")
     )
@@ -2394,7 +2497,9 @@ async def test_copy_path(page):
     # worse than no button: the next paste hands over something else.
     await pg.evaluate("__clip(true)")
     await pg.click("#st-path")
-    await pg.wait_for_function("document.querySelector('#st-copy').textContent.includes('refused')")
+    await pg.wait_for_function(
+        "document.querySelector('#st-copy').textContent.includes('refused')"
+    )
     note = await pg.inner_text("#st-copy")
     assert "refused" in note, note
     assert await pg.evaluate("getSelection().toString()") == "mixed/note.md", (
@@ -2426,7 +2531,9 @@ async def test_refresh(page):
     )
     await pg.evaluate("window.__sentinel = 42")
     await pg.keyboard.press("F5")
-    await pg.wait_for_function("document.querySelector('#st-refresh').textContent.includes('1 new')")
+    await pg.wait_for_function(
+        "document.querySelector('#st-refresh').textContent.includes('1 new')"
+    )
     snap = await pg.evaluate(
         "({...__state(), rows: colCache.get(path[1]).rows.length,"
         " sentinel: window.__sentinel,"
@@ -2447,7 +2554,9 @@ async def test_refresh(page):
     before = await pg.eval_on_selector_all(rows1, "e=>e.length")
     await pg.evaluate("__add(__live, 'four.txt')")
     await pg.click('.col[data-i="1"] .col-head .rf')
-    await pg.wait_for_function("document.querySelector('#st-refresh').textContent.includes('1 new')")
+    await pg.wait_for_function(
+        "document.querySelector('#st-refresh').textContent.includes('1 new')"
+    )
     assert await pg.eval_on_selector_all(rows1, "e=>e.length") == before + 1, (
         "The ⟳ button on the column header does the same job as F5"
     )
@@ -2461,7 +2570,9 @@ async def test_refresh(page):
     # keyboard-only fault.
     await mount(pg)
     await pg.mouse.move(1499, 899)
-    await pg.wait_for_function('document.querySelector(\'.col[data-i="0"].focus .rf\').getBoundingClientRect().width > 0')
+    await pg.wait_for_function(
+        "document.querySelector('.col[data-i=\"0\"].focus .rf').getBoundingClientRect().width > 0"
+    )
     root_col = await pg.evaluate(
         "({cls: document.querySelector('.col[data-i=\"0\"]').className,"
         " w: document.querySelector('.col[data-i=\"0\"] .col-head .rf')"
@@ -2478,9 +2589,12 @@ async def test_refresh(page):
     await pg.wait_for_function("sel[0] === 'big'")
     await pg.keyboard.press("ArrowDown")  # "deep"
     await pg.wait_for_function("sel[0] === 'deep' && path[1]?.kids")
-    for depth in range(1, 5):                       # walk to the leaf
+    for depth in range(1, 5):  # walk to the leaf
         await pg.keyboard.press("ArrowRight")
-        await pg.wait_for_function("depth => focusCol === depth && colCache.get(path[depth])?.rows.length", arg=depth)
+        await pg.wait_for_function(
+            "depth => focusCol === depth && colCache.get(path[depth])?.rows.length",
+            arg=depth,
+        )
     await pg.mouse.move(759, 699)
     painted = []
     landed = []
@@ -2519,10 +2633,15 @@ async def test_refresh(page):
     # which retires the old one wherever it had got to.
     await in_refresh()
     await pg.keyboard.press("ArrowDown")  # one.txt, contents "1"
-    await pg.wait_for_function("sel[1] === 'one.txt' && document.querySelector('.pv-text')?.textContent.trim() === '1'")
+    await pg.wait_for_function(
+        "sel[1] === 'one.txt' && document.querySelector('.pv-text')?.textContent.trim() === '1'"
+    )
     was = await pg.evaluate("pvToken")
     await pg.keyboard.press("F5")
-    await pg.wait_for_function("old => pvToken > old && document.querySelector('.pv-text')?.textContent.trim() === '1' && document.querySelector('#st-refresh').textContent.includes('no change')", arg=was)
+    await pg.wait_for_function(
+        "old => pvToken > old && document.querySelector('.pv-text')?.textContent.trim() === '1' && document.querySelector('#st-refresh').textContent.includes('no change')",
+        arg=was,
+    )
     now = await pg.evaluate("pvToken")
     body = (await pg.inner_text(".pv-text")).strip()
     assert now > was and body == "1" and await pg.evaluate("sel[1]") == "one.txt", (
@@ -2536,11 +2655,15 @@ async def test_refresh(page):
     await in_refresh()
     for _ in range(2):
         await pg.keyboard.press("ArrowDown")
-        await pg.wait_for_function("!document.querySelector('.spinner') && document.querySelector('.pv-text')")
+        await pg.wait_for_function(
+            "!document.querySelector('.spinner') && document.querySelector('.pv-text')"
+        )
     assert await pg.evaluate("sel[1]") == "two.txt", await pg.evaluate("sel[1]")
     await pg.evaluate("__rm(__live, 'two.txt')")
     await pg.keyboard.press("F5")
-    await pg.wait_for_function("sel.length === 1 && document.querySelector('#st-refresh').textContent.includes('two.txt is gone')")
+    await pg.wait_for_function(
+        "sel.length === 1 && document.querySelector('#st-refresh').textContent.includes('two.txt is gone')"
+    )
     snap = await pg.evaluate(
         "({...__state(), say: document.getElementById('st-refresh').textContent})"
     )
@@ -2560,16 +2683,21 @@ async def test_refresh(page):
         await mount(pg)
         await pg.click('.col[data-i="0"] .row:has-text("refresh")')
         await pg.wait_for_function("path[1]?.name === 'refresh' && path[1]?.kids")
-        for depth in range(1, 4):              # → sub → twig → tip.txt
+        for depth in range(1, 4):  # → sub → twig → tip.txt
             await pg.keyboard.press("ArrowRight")
-            await pg.wait_for_function("depth => focusCol === depth && colCache.get(path[depth])?.rows.length", arg=depth)
-        for depth in (2, 1):                  # ← back out to the `refresh` column
+            await pg.wait_for_function(
+                "depth => focusCol === depth && colCache.get(path[depth])?.rows.length",
+                arg=depth,
+            )
+        for depth in (2, 1):  # ← back out to the `refresh` column
             await pg.keyboard.press("ArrowLeft")
             await pg.wait_for_function("depth => focusCol === depth", arg=depth)
 
     await deep_chain()
     await pg.keyboard.press("F5")
-    await pg.wait_for_function("document.querySelector('#st-refresh').textContent.includes('no change')")
+    await pg.wait_for_function(
+        "document.querySelector('#st-refresh').textContent.includes('no change')"
+    )
     st = await pg.evaluate("__state()")
     assert st["path"] == ["workspace", "refresh", "sub", "twig"] and st["sel"] == [
         "refresh",
@@ -2582,7 +2710,9 @@ async def test_refresh(page):
     await deep_chain()
     await pg.evaluate("__rm(__live, 'sub')")
     await pg.keyboard.press("F5")
-    await pg.wait_for_function("path.length === 2 && document.querySelector('#st-refresh').textContent.includes('sub is gone')")
+    await pg.wait_for_function(
+        "path.length === 2 && document.querySelector('#st-refresh').textContent.includes('sub is gone')"
+    )
     snap = await pg.evaluate(
         "({...__state(), say: document.getElementById('st-refresh').textContent})"
     )
@@ -2599,10 +2729,10 @@ async def test_refresh(page):
     # listing — two reads, one field, and the wrong one landing last.
     await mount(pg)
     await pg.click('.col[data-i="0"] .row:has-text("racing")')
-    await pg.wait_for_function('path[1]?.loading')
+    await pg.wait_for_function("path[1]?.loading")
     await pg.evaluate("__add(__race, 'charlie.txt')")
     await pg.evaluate("refreshColumn(1)")
-    await pg.wait_for_function('!path[1]?.loading && path[1]?.kids.length === 3')
+    await pg.wait_for_function("!path[1]?.loading && path[1]?.kids.length === 3")
     got = await pg.eval_on_selector_all(rows1, "e=>e.map(x=>x.title)")
     head = (await pg.inner_text('.col[data-i="1"] .count')).strip()
     assert (
@@ -2619,11 +2749,15 @@ async def test_refresh(page):
     await pg.click('.col[data-i="0"] .row:has-text("slow")')
     await pg.wait_for_function("path[1]?.name === 'slow' && path[1]?.kids")
     await pg.keyboard.press("ArrowRight")
-    await pg.wait_for_function('focusCol === 1')
+    await pg.wait_for_function("focusCol === 1")
     await pg.evaluate("refreshColumn(0)")
-    await pg.wait_for_function("path[1]?.name === 'slow' && path[1]?.kids && !document.querySelector('.col.busy')")
+    await pg.wait_for_function(
+        "path[1]?.name === 'slow' && path[1]?.kids && !document.querySelector('.col.busy')"
+    )
     await pg.click('.col[data-i="0"] .row:has-text("mixed")')
-    await pg.wait_for_function("path.length === 2 && path[1]?.name === 'mixed' && sel[1] === 'README'")
+    await pg.wait_for_function(
+        "path.length === 2 && path[1]?.name === 'mixed' && sel[1] === 'README'"
+    )
     st = await pg.evaluate("__state()")
     coherent = all(
         st["sel"][i] == st["path"][i + 1] for i in range(len(st["path"]) - 1)
@@ -2661,7 +2795,9 @@ async def test_sort_options(page):
     )
 
     await pg.evaluate("setSort('size', false)")
-    await pg.wait_for_function("path.every(n => n.metaDone) && !document.querySelector('.col.sorting')")
+    await pg.wait_for_function(
+        "path.every(n => n.metaDone) && !document.querySelector('.col.sorting')"
+    )
     gets = await pg.evaluate("__gets")
     # 4 files in `sorting` and 1 (README.md) in the root column beside it.
     # The other nine directories in the tree are not on screen and are not
@@ -2671,7 +2807,7 @@ async def test_sort_options(page):
     )
 
     await pg.evaluate("render(true)")
-    await pg.wait_for_function('!path.some(n => n.metaLoading)')
+    await pg.wait_for_function("!path.some(n => n.metaLoading)")
     assert await pg.evaluate("__gets") == gets, (
         f"{await pg.evaluate('__gets') - gets} extra reads"
     )
@@ -2735,9 +2871,11 @@ async def test_sort_options(page):
     # left behind would put ↓ on medium.md instead of locked.txt.
     await in_sorting()
     await pg.evaluate("setSort('size', false)")
-    await pg.wait_for_function("path.every(n => n.metaDone) && !document.querySelector('.col.sorting')")
+    await pg.wait_for_function(
+        "path.every(n => n.metaDone) && !document.querySelector('.col.sorting')"
+    )
     await pg.keyboard.press("ArrowRight")
-    await pg.wait_for_function('focusCol === 1')
+    await pg.wait_for_function("focusCol === 1")
     await pg.click('.col[data-i="1"] .row:has-text("small.txt")')
     await pg.wait_for_function("sel[1] === 'small.txt'")
     await pg.evaluate("setSort('size', true)")
@@ -2756,10 +2894,12 @@ async def test_sort_options(page):
     await pg.wait_for_function("path[1]?.name === 'refresh' && path[1]?.kids")
     await pg.evaluate("__slowMeta(400)")
     await pg.evaluate("setSort('size', false)")
-    await pg.wait_for_function('path.some(n => n.metaLoading)')
+    await pg.wait_for_function("path.some(n => n.metaLoading)")
     await pg.evaluate("__add(__live, 'zero.txt')")  # 8 bytes; one/two are 1
     await pg.evaluate("refreshColumn(1)")
-    await pg.wait_for_function("path[1]?.metaDone && !document.querySelector('.col.sorting')")
+    await pg.wait_for_function(
+        "path[1]?.metaDone && !document.querySelector('.col.sorting')"
+    )
     rows = await pg.evaluate("__rows(1)")
     assert (
         rows == ["sub", "one.txt", "two.txt", "zero.txt"]
@@ -2786,7 +2926,9 @@ async def test_sort_options(page):
         f"{spinning} columns spinning, strip says {say!r}"
     )
     await pg.wait_for_function("!path.some(n => n.metaLoading)", timeout=30_000)
-    await pg.wait_for_function("!document.querySelector('.col.sorting') && document.querySelector('#st-sort').textContent.includes('sorting: 4 files read in')")
+    await pg.wait_for_function(
+        "!document.querySelector('.col.sorting') && document.querySelector('#st-sort').textContent.includes('sorting: 4 files read in')"
+    )
     say = (await pg.inner_text("#st-sort")).strip()
     assert (
         "size" in say
@@ -2799,9 +2941,11 @@ async def test_sort_options(page):
     await in_sorting()
     await pg.evaluate("__slowMeta(500)")
     await pg.evaluate("setSort('size', false)")
-    await pg.wait_for_function('path.some(n => n.metaLoading)')
+    await pg.wait_for_function("path.some(n => n.metaLoading)")
     await pg.click('.col[data-i="0"] .row:has-text("mixed")')
-    await pg.wait_for_function("!path.some(n => n.metaLoading) && path[0].kids.find(n => n.name === 'sorting').metaDone && sel[1] === 'README'")
+    await pg.wait_for_function(
+        "!path.some(n => n.metaLoading) && path[0].kids.find(n => n.name === 'sorting').metaDone && sel[1] === 'README'"
+    )
     st = await pg.evaluate("__state()")
     coherent = all(
         st["sel"][i] == st["path"][i + 1] for i in range(len(st["path"]) - 1)
@@ -2827,7 +2971,9 @@ async def test_sort_options(page):
     await in_sorting()
     await pg.evaluate("__brokenMeta()")
     await pg.evaluate("setSort('size', false)")
-    await pg.wait_for_function("path[1]?.metaDone && !document.querySelector('.col.sorting')")
+    await pg.wait_for_function(
+        "path[1]?.metaDone && !document.querySelector('.col.sorting')"
+    )
     rows = await pg.evaluate("__rows(1)")
     assert (
         await pg.eval_on_selector_all(".col.sorting", "e=>e.length") == 0
@@ -2871,9 +3017,13 @@ async def test_render_cost(page):
             "colCache.get(path[1]) && colCache.get(path[1]).rows.length > 0",
             timeout=30_000,
         )
-        await pg.wait_for_function("sel[0] !== null && !document.querySelector('.spinner')")
+        await pg.wait_for_function(
+            "sel[0] !== null && !document.querySelector('.spinner')"
+        )
         await pg.keyboard.press("ArrowRight")  # focus the big column
-        await pg.wait_for_function("focusCol === 1 && colCache.get(path[1])?.rows.length > 0")
+        await pg.wait_for_function(
+            "focusCol === 1 && colCache.get(path[1])?.rows.length > 0"
+        )
         arrow = await pg.evaluate("__keybench(20)")
         hit = await pg.evaluate("__typebench(20, 'f', true)")
         miss = await pg.evaluate("__typebench(20, 'q', false)")
@@ -2922,7 +3072,7 @@ async def test_render_cost(page):
         # the assertion is on the arrow key measured *after* it.
         sweep = await pg.evaluate("__sweepbench()")
         await pg.evaluate("setSort('size', false)")
-        await pg.wait_for_function('!path.some(n => n.metaLoading)')
+        await pg.wait_for_function("!path.some(n => n.metaLoading)")
         swept_key = await pg.evaluate("__keybench(20)")
         # Two assertions, because a stopwatch alone cannot carry this one.
         #
@@ -3014,4 +3164,3 @@ async def test_editor_features(page):
     await pg.wait_for_selector("#pv-editor")
     assert await pg.input_value("#pv-editor") == "saved editor text"
     assert await pg.is_hidden("#pv-modified")
-        await scroll_settled(pg)

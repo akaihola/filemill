@@ -1,6 +1,7 @@
 """The archive provider: one level of a tarball or zip per column."""
 
 import io
+import os
 import tarfile
 import zipfile
 from pathlib import Path
@@ -173,7 +174,11 @@ def test_a_listing_is_cached_until_the_file_changes(tmp_path: Path):
     path.write_bytes(tar_bytes({"one.txt": b"1"}))
     p = ArchiveProvider()
     assert names(p.list_entries(path, "")) == ["one.txt"]
+    before = path.stat()
     path.write_bytes(tar_bytes({"two.txt": b"22"}))
+    # Tar padding keeps the size unchanged; make the cache-key change explicit
+    # even on filesystems where both writes get the same timestamp.
+    os.utime(path, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000_000))
     assert names(p.list_entries(path, "")) == ["two.txt"]
 
 

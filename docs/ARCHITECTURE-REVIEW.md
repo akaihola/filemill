@@ -126,6 +126,9 @@ Keep these.
 - Static browser checks run as separate pytest sections under `static/tests/`,
   with shared page, fake handle, OPFS and HTTP fixtures ([25], 2026-10-17).
   Root `uv run pytest` runs both editions through a shared uv workspace and lock.
+  The fixed-wait guard scans the moved tests recursively. Copy tests install
+  and pause their clock in one operation, so setup cannot pause in the past
+  ([99], 2026-10-17).
 - Real filesystem tests without a picker: `static/tests/test_url.py` drives the real
   FSA adapter against the origin private file system.
 - Size limits and the image extension list have one home, `ui/core/limits.js`.

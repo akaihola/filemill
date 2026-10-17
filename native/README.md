@@ -58,8 +58,8 @@ nix-shell native/shell.nix --run 'uv run --project server pytest native/test_hos
 nix-shell native/shell.nix --run 'uv run --project server pytest static/tests/test_ui.py --native -q'
 ```
 
-The first command runs 18 contract checks. The second runs the 220 checks of
-the main UI scenario in the native host. The test driver writes the
+The first command runs 18 contract checks. The second runs the UI sections
+that use the shared browser fixture in the native host. The test driver writes the
 fixture's bytes into temporary files and exercises the native port; it does
 not substitute fake handles for native reads. Where the fake handle counts
 `getFile()` calls, the driver counts native `stat` and `read` calls. Delay
@@ -76,8 +76,8 @@ resize. The 400 KB single-line `deep.json` preview is then selected, and WebKit
 spends seconds wrapping it at each width; see finding A9 in
 `docs/ARCHITECTURE-REVIEW.md`.
 
-`--native` changes only the main `test_ui` scenario. The other tests in
-`static/tests/test_ui.py` keep their browser adapters, including IndexedDB and
-FSA-specific checks.
+`--native` changes the UI sections that use the shared `browser` fixture.
+Tests that create their own browser keep their browser adapters, including
+IndexedDB and FSA-specific checks.
 
 [ADR 0079]: ../docs/adr/0079-native-shell.md

@@ -83,7 +83,9 @@ async def open_at(pg, base, frag=""):
     await pg.evaluate("localStorage.setItem('filemill.rich','off')")
     await pg.evaluate(FAKE)
     await pg.evaluate("mount(__mk())")
-    await pg.wait_for_function("path.length && !document.querySelector('.spinner') && location.hash.includes('r=workspace')")
+    await pg.wait_for_function(
+        "path.length && !document.querySelector('.spinner') && location.hash.includes('r=workspace')"
+    )
 
 
 def test_fullscreen_survives_resize(bundle, playwright, static_origin):
@@ -121,13 +123,17 @@ async def test_selection_url(page, base):
     await pg.click('.col[data-i="0"] .row:has-text("mixed")')
     await pg.wait_for_function("sel[0] === 'mixed' && path[1]?.kids")
     await pg.click('.col[data-i="1"] .row:has-text("note.md")')
-    await pg.wait_for_function("location.hash === '#r=workspace&p=mixed/note.md&v=render'")
+    await pg.wait_for_function(
+        "location.hash === '#r=workspace&p=mixed/note.md&v=render'"
+    )
     assert (
         await pg.evaluate("location.hash") == "#r=workspace&p=mixed/note.md&v=render"
     ), await pg.evaluate("location.hash")
 
     await pg.click('.col[data-i="1"] .row:has-text("sp ace")')
-    await pg.wait_for_function("location.hash === '#r=workspace&p=mixed/sp%20ace%20%26%20co.txt&v=render'")
+    await pg.wait_for_function(
+        "location.hash === '#r=workspace&p=mixed/sp%20ace%20%26%20co.txt&v=render'"
+    )
     assert (
         await pg.evaluate("location.hash")
         == "#r=workspace&p=mixed/sp%20ace%20%26%20co.txt&v=render"
@@ -141,11 +147,15 @@ async def test_history_replacement(page, base):
     await pg.click('.col[data-i="0"] .row:has-text("mixed")')
     await pg.click('.col[data-i="1"] .row:has-text("note.md")')
     # note.md opens as a column of headings; its own push must land first
-    await pg.wait_for_function("location.hash === '#r=workspace&p=mixed/note.md&v=render'")
+    await pg.wait_for_function(
+        "location.hash === '#r=workspace&p=mixed/note.md&v=render'"
+    )
     before = await pg.evaluate("history.length")
     for key in ("ArrowDown", "ArrowUp", "ArrowDown"):
         await pg.keyboard.press(key)
-        await pg.wait_for_function("ROUTER.read().path.join('/') === sel.join('/') && !path.some(n => n.loading)")
+        await pg.wait_for_function(
+            "ROUTER.read().path.join('/') === sel.join('/') && !path.some(n => n.loading)"
+        )
     after = await pg.evaluate("history.length")
     assert after == before, f"{before} → {after}"
 
@@ -243,7 +253,8 @@ async def test_opfs_sort(page, base, opfs_root):
         "path.length && path[0].metaDone && colCache.get(path[0])", timeout=60_000
     )
     await pg.wait_for_function(
-        "document.querySelector('.col[data-i=\"0\"] .row')?.title === visibleKids(path[0])[0]?.name")
+        "document.querySelector('.col[data-i=\"0\"] .row')?.title === visibleKids(path[0])[0]?.name"
+    )
     top = await pg.eval_on_selector_all(
         '.col[data-i="0"] .row', "e => e.slice(0,3).map(x => x.title)"
     )

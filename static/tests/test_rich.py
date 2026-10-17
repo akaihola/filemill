@@ -484,7 +484,9 @@ async def test_consent_switch(page, base, requests):
     )
 
     await pg.reload()
-    await pg.wait_for_function("document.querySelector('#s-rich')?.getAttribute('aria-checked') === 'false'")
+    await pg.wait_for_function(
+        "document.querySelector('#s-rich')?.getAttribute('aria-checked') === 'false'"
+    )
     assert await pg.evaluate("localStorage.getItem('filemill.rich')") == "off", (
         "The choice survives a reload — consent is not re-asked"
     )
@@ -542,7 +544,9 @@ async def test_wikilinks(page, base, requests):
     await preview(pg, "note.md")
     before = await pg.evaluate("location.href")
     await pg.click("#pv-content a.wikilink")
-    await pg.wait_for_function("sel[0] === 'Other Note.md' && document.querySelector('#pv-content .pv-rich')")
+    await pg.wait_for_function(
+        "sel[0] === 'Other Note.md' && document.querySelector('#pv-content .pv-rich')"
+    )
     assert await pg.evaluate("sel[0]") == "Other Note.md", str(await pg.evaluate("sel"))
     assert (await pg.evaluate("location.href")).split("#")[0] == before.split("#")[0], (
         "…without navigating the page away"
@@ -583,7 +587,9 @@ async def test_consent_retry(page, base, requests):
     await preview(pg, "note.md")
     await pg.click("#gear")
     await pg.click("#s-rich")
-    await pg.wait_for_function("document.querySelector('#s-rich')?.getAttribute('aria-checked') === 'true'")
+    await pg.wait_for_function(
+        "document.querySelector('#s-rich')?.getAttribute('aria-checked') === 'true'"
+    )
     await preview(pg, "code.py")  # move the selection off note.md
     html = await preview(pg, "note.md")
     assert "<h1>Heading</h1>" in html, html[:90]
