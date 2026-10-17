@@ -22,10 +22,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
-  `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
-      <!-- hai:{"id":"simple-1a46227e658d855f","updatedAt":"2026-10-17T11:05:57.607Z"} -->
-
 - [~] [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
   fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
     - Depends on: [12]
@@ -43,6 +39,10 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-17T07:59:20.709Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
+  `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
+      <!-- hai:{"id":"simple-1a46227e658d855f","updatedAt":"2026-10-17T11:30:59.992Z"} -->
 
 - [ ] [95] Reconcile TASKS.md with the code: 16 In Progress and 109 legacy completions
     - Depends on: [96]
