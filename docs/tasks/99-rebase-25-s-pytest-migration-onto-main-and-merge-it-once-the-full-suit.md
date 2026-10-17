@@ -60,5 +60,41 @@ load-sensitive failures on main:
 - The first-touch check waits for the dial to settle before pressing a row.
   Its hover visibility, first-tap and long-press assertions remain unchanged.
 - Development mode: 147 passed in 544.42 s. Model checks and all six
-  pre-commit hooks pass. Pre-commit uses Python 3.13, as in [25]'s validation.
-  The full root run and the required two main rounds are still pending.
+  pre-commit hooks passed at this checkpoint under Python 3.13.
+  The final results below supersede this checkpoint.
+
+## Completion and main validation, 2026-10-17
+
+Merged as `adb7aef3`. Both runs below used that main tree with Python 3.14.
+Each suite ran twice consecutively. The three suites ran in parallel.
+
+| Suite | Tests per run | First run | Second run |
+| --- | ---: | ---: | ---: |
+| server | 853 | 806.51 s | 548.89 s |
+| bundle | 147 | 463.40 s | 490.01 s |
+| dev | 147 | 494.70 s | 506.02 s |
+
+Commands:
+
+```bash
+uv run pytest server/tests -q --tb=short --durations=10
+uv run pytest static/tests --bundle -q --tb=short --durations=10
+uv run pytest static/tests --dev -q --tb=short --durations=10
+```
+
+Before the merge, root `uv run pytest -xq --tb=short --durations=20` passed
+all 1,000 tests in 815.02 s. Development mode passed all 147 tests in 544.42 s.
+
+All six `uvx pre-commit run --all-files` hooks pass on main with Python 3.14.
+The development groups include the existing locked `zstandard` package so
+mypy can check its compatibility imports on Python 3.14. No existing package
+version changed. The model checks and recursive fixed-wait guard pass.
+`grep -r wait_for_timeout static server/tests` returns 1 with no matches.
+
+The portability guard also found two private paths in the new [100]
+description. Only those references and its tracker update time changed.
+All 12 documentation checks then passed.
+
+[25] and [99] are completed pending user acceptance. Their checkboxes remain
+unchecked. [25]'s original worktree and branch remain at `b8e8c588`.
+The temporary rebase worktree and branch were removed after the merge.

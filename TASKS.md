@@ -15,16 +15,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [99] Rebase [25]'s pytest migration onto main and merge it once the full suite
-  passes
-      <!-- hai:{"id":"simple-008dfc0f-048f-4de3-9845-bedc6e858c47","labels":["steward"],"createdAt":"2026-10-17T14:10:56.295Z","updatedAt":"2026-10-17T17:26:24.477Z"} -->
-
-- [~] [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
-  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
-    - Depends on: [12]
-
-      <!-- hai:{"updatedAt":"2026-10-17T08:27:03.708Z"} -->
-
 - [~] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
 
@@ -36,6 +26,16 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-17T07:59:20.709Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [99] Rebase [25]'s pytest migration onto main and merge it once the full suite
+  passes
+      <!-- hai:{"id":"simple-008dfc0f-048f-4de3-9845-bedc6e858c47","labels":["steward"],"createdAt":"2026-10-17T14:10:56.295Z","updatedAt":"2026-10-17T18:08:57.189Z"} -->
+
+- [ ] [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
+  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
+    - Depends on: [12]
+
+      <!-- hai:{"updatedAt":"2026-10-17T18:08:34.601Z"} -->
 
 - [ ] [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.

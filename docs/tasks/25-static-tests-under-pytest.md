@@ -75,3 +75,16 @@ check is one test function. Roadmap phase 7, step 1.
 The server failures are outside this migration's scope. The roadmap's red-suite
 rule blocks merging this branch. Keep task 25 In Progress until that gate is
 resolved; user acceptance remains unchecked.
+
+## Superseding completion, 2026-10-17
+
+[99] rebased this migration onto current main and merged it as `adb7aef3`.
+The root suite passed all 1,000 tests in 815.02 s. The full server suite and
+both static modes then passed twice consecutively on main: 853 server tests
+and 147 tests in each static mode per run. All six pre-commit hooks pass with
+Python 3.14. The fixed-wait search is empty.
+
+See [99's validation](99-rebase-25-s-pytest-migration-onto-main-and-merge-it-once-the-full-suit.md) for the six
+main timings and the regression fixes. These results supersede the merge
+blocker above. The original worktree and branch remain at `b8e8c588`.
+Completed pending user acceptance.
