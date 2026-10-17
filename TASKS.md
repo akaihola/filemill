@@ -24,13 +24,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
+## In Progress
+
+- [~] [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
   fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
     - Depends on: [12]
 
-  <!-- hai:{"updatedAt":"2026-10-17T08:26:37.758Z"} -->
-
-## In Progress
+      <!-- hai:{"updatedAt":"2026-10-17T08:27:03.708Z"} -->
 
 - [~] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
