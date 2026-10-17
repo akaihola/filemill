@@ -18,3 +18,14 @@ the same suites (116/116/843 tests), which suggests a timing-dependent test.
   remaining failures are filed as separate issues.
 
 Found by the steward's review of [90] on 2026-10-16.
+
+## Implementation plan, 2026-10-17
+
+1. Confirm the recorded failure and reproduce the assertion race locally.
+2. Wait for the expected fold state before checking the threshold geometry;
+   keep the shared layout and its single scroll writer unchanged.
+3. Run all three threshold cases 20 consecutive times, then the static bundle
+   and development suites and required checks.
+4. Merge on main, check CI, and complete the tracker pending user acceptance.
+   Report a delivery blocker if the prerequisite history rewrite has not been
+   published; do not force-push the rewritten history.

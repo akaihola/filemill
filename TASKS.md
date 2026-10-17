@@ -19,11 +19,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [93] Make main's CI green again: static bundle test failing since 06792cb
-    - Depends on: [96]
-  <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-17T07:47:45.598Z"} -->
-
 ## In Progress
+
+- [~] [93] Make main's CI green again: static bundle test failing since 06792cb
+    - Depends on: [96]
+
+      <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-17T07:48:12.211Z"} -->
 
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
