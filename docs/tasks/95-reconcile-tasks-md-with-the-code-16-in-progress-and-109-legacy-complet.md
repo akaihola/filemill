@@ -1,3 +1,7 @@
+---
+depends-on: [96]
+---
+
 # Reconcile TASKS.md with the code: In Progress and legacy completions
 
 `## In Progress` holds 16 issues that no pacer thread is working on, and

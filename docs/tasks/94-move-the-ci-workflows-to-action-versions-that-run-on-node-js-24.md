@@ -1,3 +1,7 @@
+---
+depends-on: [96]
+---
+
 # Move the CI workflows to action versions that run on Node.js 24
 
 The workflows still use `actions/checkout@v4`, `actions/setup-python@v5`,

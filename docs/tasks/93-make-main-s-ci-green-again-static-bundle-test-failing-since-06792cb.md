@@ -1,3 +1,7 @@
+---
+depends-on: [96]
+---
+
 # Make main's CI green again
 
 The first `main` run after merging [90] (`06792cb`), run 38772512085, failed in the
