@@ -71,5 +71,5 @@ Validation used Python 3.14.7, Playwright 1.63, and Nix Chromium:
   Python 3.14 required a local install of the optional `zstandard` package for
   mypy to resolve its compatibility import. No dependency files changed.
 
-The fix is ready for local merge. Publishing is deferred because main contains
+The fix is merged locally into main. Publishing is deferred because main contains
 other unpushed commits; pushing main would publish work outside this issue.
