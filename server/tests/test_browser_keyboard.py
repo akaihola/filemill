@@ -699,8 +699,13 @@ def test_vertical_navigation_preserves_full_fold_with_equal_widths(live_server: 
 def test_arrow_navigation_keeps_fold_animation_running(live_server: str):
     with _ui_page(live_server, mobile=True) as page:
         page.keyboard.press("ArrowDown")
+        # This test measures folding after navigation. Wait for the folder
+        # opened by Down before Right can step into it.
+        page.wait_for_function("path[1]?.kids && colCache.get(path[1])?.rows.length")
         page.keyboard.press("ArrowRight")
-        page.wait_for_function("focusCol === 1 && path.length >= 2")
+        page.wait_for_function(
+            "focusCol === 1 && path[2]?.kids && colCache.get(path[2])?.rows.length"
+        )
         page.keyboard.press("ArrowRight")
         page.wait_for_function("focusCol === 2 && path.length >= 3")
         page.evaluate("finder.scrollLeft = finder.scrollWidth")

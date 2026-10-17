@@ -127,7 +127,9 @@ Keep these.
   with shared page, fake handle, OPFS and HTTP fixtures ([25], 2026-10-17).
   Root `uv run pytest` runs both editions through a shared uv workspace and lock.
   The fixed-wait guard scans the moved tests recursively. Copy tests install
-  and pause their clock in one operation, so setup cannot pause in the past
+  and pause their clock in one operation, so setup cannot pause in the past.
+  The fold-animation test waits for its navigation setup to finish before
+  measuring the animation, including with slow directory responses
   ([99], 2026-10-17).
 - Real filesystem tests without a picker: `static/tests/test_url.py` drives the real
   FSA adapter against the origin private file system.
