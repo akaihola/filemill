@@ -6,6 +6,22 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
+  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
+    - Depends on: [12]
+
+  <!-- hai:{"updatedAt":"2026-10-17T08:24:55.728Z"} -->
+
+- [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
+  `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
+  <!-- hai:{"id":"simple-1a46227e658d855f","updatedAt":"2026-10-17T08:24:53.675Z"} -->
+
+- [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
+  the three ports natively. Choose the smallest binary that passes `test-ui.py`.
+    - Depends on: [29]
+
+  <!-- hai:{"updatedAt":"2026-10-17T08:24:51.487Z"} -->
+
 - [97] Fix intermittent preview 404 after deleting the selected file
   <!-- hai:{"id":"simple-5b65e45b-f3ef-448e-85b3-ca938f67c989","createdAt":"2026-10-17T07:51:46.441Z","updatedAt":"2026-10-17T07:51:46.441Z"} -->
 
@@ -13,10 +29,6 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-eae59ddd-5222-4dbd-972d-d23258c6db71","createdAt":"2026-10-17T07:56:11.253Z","updatedAt":"2026-10-17T07:58:00.111Z"} -->
 
 ## Scheduled
-
-- [95] Reconcile TASKS.md with the code: 16 In Progress and 109 legacy completions
-    - Depends on: [96]
-  <!-- hai:{"id":"simple-fe5c93cd-f67b-45d1-8352-57667238abe6","labels":["steward"],"createdAt":"2026-10-16T16:48:55.733Z","updatedAt":"2026-10-17T08:21:02.259Z"} -->
 
 ## In Progress
 
@@ -30,57 +42,64 @@ Rules for TASKS.md usage are at the bottom of the file.
 
       <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-17T07:59:20.709Z"} -->
 
-- [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
-  column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
-  column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
-  3rd party libraries if that helps.
+## Completed / Accepted
 
-- [*] When all folder columns are collapsed, exiting the preview pane using the arrow
-  left key doesn't currently expand the parent folder column (rightmost folder column
-  just before the preview pane). Make sure left arrow always expands the parent folder
-  column.
+- [ ] [95] Reconcile TASKS.md with the code: 16 In Progress and 109 legacy completions
+    - Depends on: [96]
 
-- [*] Treat `.py.j2` as Python.
+      <!-- hai:{"id":"simple-fe5c93cd-f67b-45d1-8352-57667238abe6","labels":["steward"],"createdAt":"2026-10-16T16:48:55.733Z","updatedAt":"2026-10-17T08:26:07.748Z"} -->
 
-- [*] When returning focus back to the containing folder from the preview pane using the
+- [ ] [*] `.py` files are not highlighted at all.
+      <!-- hai:{"id":"simple-5a544fc442d3d2ca","updatedAt":"2026-10-17T08:24:56.244Z"} -->
+
+- [ ] [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
+  `static/FSA-TEST-CHECKLIST.md`.
+      <!-- hai:{"id":"simple-d27ac8852cc5e629","updatedAt":"2026-10-17T08:24:55.227Z"} -->
+
+- [ ] [*] Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
+  what it means.
+      <!-- hai:{"id":"simple-78caa9fe22d090fa","updatedAt":"2026-10-17T08:24:54.740Z"} -->
+
+- [ ] [43] Investigate the 11 server browser failures also reproduced on main.
+      <!-- hai:{"updatedAt":"2026-10-17T08:24:54.209Z"} -->
+
+- [ ] [*] Default `--bind` in `server/src/filemill/cli.py` to `127.0.0.1`. Document it in
+  `SECURITY.md`.
+      <!-- hai:{"id":"simple-d0a68dc82549f87f","updatedAt":"2026-10-17T08:24:53.222Z"} -->
+
+- [ ] [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
+  registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
+      <!-- hai:{"id":"simple-8cc5cb10b6db5cb0","updatedAt":"2026-10-17T08:24:52.790Z"} -->
+
+- [ ] [41] Fix plain-text reStructuredText previews in Source and Rendered modes.
+      <!-- hai:{"updatedAt":"2026-10-17T08:24:52.333Z"} -->
+
+- [ ] [64] Keep subfolder and folded parent widths stable during Up/Down navigation.
+      <!-- hai:{"updatedAt":"2026-10-17T08:24:51.913Z"} -->
+
+- [ ] [*] Add the `Delete` key as a shortcut to delete the current file or directory.
+      <!-- hai:{"id":"simple-733e4b4bae09fdf7","updatedAt":"2026-10-17T08:24:51.066Z"} -->
+
+- [ ] [*] When returning focus back to the containing folder from the preview pane using the
   left arrow key, always keep all ancestor folder columns in the same expanded/collapsed
   state as they are. Currently expanded ancestor folders are collapsed if I hit the left
   arrow key.
+      <!-- hai:{"id":"simple-e604b54e598da82b","updatedAt":"2026-10-17T08:24:50.643Z"} -->
 
-- [*] Add the `Delete` key as a shortcut to delete the current file or directory.
+- [ ] [*] Treat `.py.j2` as Python.
+      <!-- hai:{"id":"simple-2ff9c56170d9a118","updatedAt":"2026-10-17T08:24:50.199Z"} -->
 
-- [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
-  the three ports natively. Choose the smallest binary that passes `test-ui.py`.
-    - Depends on: [29]
+- [ ] [*] When all folder columns are collapsed, exiting the preview pane using the arrow
+  left key doesn't currently expand the parent folder column (rightmost folder column
+  just before the preview pane). Make sure left arrow always expands the parent folder
+  column.
+      <!-- hai:{"id":"simple-ab72d7c18c51fff6","updatedAt":"2026-10-17T08:24:49.775Z"} -->
 
-- [64] Keep subfolder and folded parent widths stable during Up/Down navigation.
-
-- [41] Fix plain-text reStructuredText previews in Source and Rendered modes.
-
-- [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
-  registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
-
-- [*] Default `--bind` in `server/src/filemill/cli.py` to `127.0.0.1`. Document it in
-  `SECURITY.md`.
-
-- [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
-  `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
-
-- [43] Investigate the 11 server browser failures also reproduced on main.
-
-- [*] Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
-  what it means.
-
-- [~] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
-  `static/FSA-TEST-CHECKLIST.md`.
-
-- [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
-  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
-    - Depends on: [12]
-
-- [*] `.py` files are not highlighted at all.
-
-## Completed / Accepted
+- [ ] [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
+  column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
+  column. Solve handling of large `.jsonl` files. Use Fable Medium to solve this. Use
+  3rd party libraries if that helps.
+      <!-- hai:{"id":"simple-0f26b9b92836a26f","updatedAt":"2026-10-17T08:24:49.361Z"} -->
 
 - [ ] [*] From documentation, docstrings and comments, remove references to specific
   development setups which include e.g. server names and local paths.
