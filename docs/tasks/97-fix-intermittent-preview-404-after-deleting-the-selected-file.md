@@ -33,3 +33,43 @@ Evidence: https://github.com/akaihola/filemill/actions/runs/38957407184
 
 This change addresses the deletion race within architecture finding A9. It does
 not replace the preview lifecycle or change the filesystem port contract.
+
+## Result and validation, 2026-10-17
+
+Delete could overtake either byte read in `fillPreview`: preview rendering or
+editability detection. Generation checks prevented stale DOM writes but did not
+keep the file available until these reads finished.
+
+The shared core now tracks active preview fills by root and path. A confirmed
+deletion blocks new fills under that path and waits for existing fills before
+calling `FS.remove`. This includes a preview inside a folder being removed.
+The filesystem port and HTTP error checks stay intact. See
+[ADR 0078](../adr/0078-delete-waits-for-active-preview-reads.md).
+
+The regression pauses each byte read before the request. It deletes the selected
+file or its containing folder, forces another render during deletion, releases
+the read, and checks removal, failed HTTP responses, and console errors.
+
+Validation used Python 3.14.7, Playwright 1.63, and Nix Chromium:
+
+- Red: all four regression cases failed on the old implementation with HTTP 404
+  from `/api/raw?p=short.txt` or `/api/raw?p=notes%2Fplain.txt`.
+- Green: 20 consecutive runs of the four regressions and the original keyboard
+  deletion test passed under concurrent suite load. Total: 100 passes, with no
+  failed preview requests or console errors.
+- Static bundle: 116 passed in 538.91 seconds.
+- Static development: 116 passed in 343.94 seconds on the full rerun. The first
+  run had 115 passes and a clipboard fixture setup error from `Clock.pause_at`:
+  `Cannot fast-forward to the past`. That case passed alone in 2.06 seconds.
+- Server: 849 passed and one failed in 837.78 seconds. The unchanged
+  `test_arrow_navigation_keeps_fold_animation_running` timed out waiting for
+  `focusCol === 1 && path.length >= 2`. The same test failed at the same wait
+  on unchanged main under load, using Python 3.13.14. It passed on the fixed
+  branch in an isolated rerun in 4.90 seconds. This separate navigation failure
+  remains outside issue 97.
+- Model checks, pre-commit formatters, linters, mypy, and bundle checks passed.
+  Python 3.14 required a local install of the optional `zstandard` package for
+  mypy to resolve its compatibility import. No dependency files changed.
+
+The fix is ready for local merge. Publishing is deferred because main contains
+other unpushed commits; pushing main would publish work outside this issue.

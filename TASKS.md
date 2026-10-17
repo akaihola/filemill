@@ -20,7 +20,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## In Progress
 
 - [~] [97] Fix intermittent preview 404 after deleting the selected file
-      <!-- hai:{"id":"simple-5b65e45b-f3ef-448e-85b3-ca938f67c989","createdAt":"2026-10-17T07:51:46.441Z","updatedAt":"2026-10-17T11:34:48.103Z"} -->
+      <!-- hai:{"id":"simple-5b65e45b-f3ef-448e-85b3-ca938f67c989","createdAt":"2026-10-17T07:51:46.441Z","updatedAt":"2026-10-17T11:53:04.395Z"} -->
 
 - [~] [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
   fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
