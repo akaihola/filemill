@@ -56,3 +56,44 @@ checkout@v7, upload-pages-artifact@v5, deploy-pages@v5).
   uses Node.js 24 without changes to the inputs or page_url output used here.
 - [setup-deno v2.0.5](https://github.com/denoland/setup-deno/releases/tag/v2.0.5)
   includes the Node.js 24 migration within the existing v2 major.
+
+## Validation and blocker, 2026-10-17
+
+- Red: the new workflow regression failed on actions/checkout@v4 before the
+  workflow change. Green: all nine configuration tests passed afterwards.
+- Ruff lint/format, Deno format/lint, model tests and bundle freshness passed.
+  Mypy passed on Python 3.13. The initial Python 3.14 run failed to resolve
+  zstandard, which this project's dependency marker excludes on Python 3.14.
+- Upstream action metadata confirms node24 for every JavaScript action,
+  including upload-pages-artifact v5's nested upload-artifact v7 action.
+- GitHub rejected the feature branch push because the configured token lacks
+  workflow scope. SSH also failed with Permission denied (publickey).
+  No CI run could be started, so the no-Node.js-20-annotations acceptance check
+  remains unverified. Deployment and completion are pending CI access;
+  issue [94] stays In Progress and user acceptance remains unchecked.
+- GitHub main is still ff7b314383e7e6df2ad3e4a91bceef8cb16bd35b, before the
+  local [96] history rewrite. Publishing rewritten main is explicitly reserved
+  for the user in [96], so this issue does not force-push main. This is a
+  separate prerequisite for the eventual main CI run and deployment.
+- The full server run was interrupted after a failure in the unchanged
+  test_rendered_relative_markdown_link_uses_root_relative_url browser test.
+  A focused rerun reproduced it: the URL changes to the linked Markdown file
+  but the preview reads "Select a file to preview" instead of "Next".
+  This workflow-only change does not modify that test or application code.
+  Interruption also caused a pytest tmp_path teardown KeyError, so the broad
+  server attempt has no complete suite summary and is not a passing check.
+  The focused test also failed identically on pre-change local main, using a
+  separate Python 3.13 environment, confirming it is a baseline failure.
+
+- Full static bundle suite: 116 passed, one existing Docutils deprecation
+  warning, in 792.70 seconds.
+- Full static development suite: 116 passed, one existing Docutils deprecation
+  warning, in 818.37 seconds.
+
+## Local delivery
+
+Rebased onto local main and merged locally after the workflow regression,
+quality checks and both static suites passed. The server baseline failure
+above remains outside this issue. No GitHub ref was updated, no CI run was
+started and no deployment was performed. Issue [94] remains In Progress until
+its GitHub CI acceptance check can be completed.
