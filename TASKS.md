@@ -6,12 +6,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
-  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
-    - Depends on: [12]
-
-  <!-- hai:{"updatedAt":"2026-10-17T08:24:55.728Z"} -->
-
 - [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
   `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
   <!-- hai:{"id":"simple-1a46227e658d855f","updatedAt":"2026-10-17T08:24:53.675Z"} -->
@@ -29,6 +23,12 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-eae59ddd-5222-4dbd-972d-d23258c6db71","createdAt":"2026-10-17T07:56:11.253Z","updatedAt":"2026-10-17T07:58:00.111Z"} -->
 
 ## Scheduled
+
+- [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
+  fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
+    - Depends on: [12]
+
+  <!-- hai:{"updatedAt":"2026-10-17T08:26:37.758Z"} -->
 
 ## In Progress
 
