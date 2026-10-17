@@ -2347,8 +2347,9 @@ def test_back_from_raw_restores_the_previous_rendered_file(page):
 
 def test_back_and_forward_restore_folder_preview_and_raw_states(page):
     page.open("notes")
-    page.click('.col[data-i="1"] .row:has-text("deep")')
-    page.click('.col[data-i="2"] .row:has-text("leaf.md")')
+    # Create one preview history entry. Two clicks can also record the
+    # intermediate folder when its response arrives before the second click.
+    page.open_resource("notes/deep/leaf.md?filemill=render")
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     assert page.url.endswith("/notes/deep/leaf.md?filemill=render")
     page.click("#pv-raw")

@@ -305,22 +305,27 @@ async def mount(pg, n=0):
     await scroll_settled(pg)
 
 
+SCROLL_SETTLED = """() => {
+  const value = JSON.stringify([dial(), finder.scrollLeft,
+    finder.scrollWidth, finder.clientWidth, folded]);
+  const now = performance.now();
+  if (value !== window.__scrollProbe.value) {
+    window.__scrollProbe = {value, since: now};
+  }
+  return now - window.__scrollProbe.since >= 300;
+}"""
+
+
 async def scroll_settled(pg):
     """Wait for smooth scrolling and the dial range rebase to settle."""
     await pg.evaluate("window.__scrollProbe = {value: null, since: 0}")
-    await pg.wait_for_function(
-        """() => {
-          const value = JSON.stringify([dial(), finder.scrollLeft,
-            finder.scrollWidth, finder.clientWidth, folded]);
-          const now = performance.now();
-          if (value !== window.__scrollProbe.value) {
-            window.__scrollProbe = {value, since: now};
-          }
-          return now - window.__scrollProbe.since >= 300;
-        }""",
-        timeout=6000,
-    )
+    await pg.wait_for_function(SCROLL_SETTLED, timeout=6000)
     return True
+
+
+def sync_scroll_settled(page):
+    page.evaluate("window.__scrollProbe = {value: null, since: 0}")
+    page.wait_for_function(SCROLL_SETTLED, timeout=6000)
 
 
 async def editor_feature_checks(pg):
@@ -843,6 +848,7 @@ def test_touch_tap_opens_folder_first_time(
         shown = """i => [...document.querySelectorAll(`.col[data-i="${i}"] *`)]
           .filter(e => getComputedStyle(e).visibility === 'visible').length"""
         for depth, name in enumerate(["deep", "alpha", "beta"]):
+            sync_scroll_settled(page)
             row = page.locator(f'.col[data-i="{depth}"] .row[aria-label="{name}"]')
             row.wait_for()
             before = page.evaluate(shown, depth)
@@ -850,12 +856,14 @@ def test_touch_tap_opens_folder_first_time(
             assert page.evaluate(shown, depth) == before, (
                 f"hover on {name} reveals content"
             )
+            sync_scroll_settled(page)
             row.tap()
             page.wait_for_function(
                 "n => path.length === n", arg=depth + 2, timeout=3000
             )
             assert page.evaluate(f"sel[{depth}]") == name
         # A long press opens the menu and leaves the folder closed.
+        sync_scroll_settled(page)
         box = page.locator('.col[data-i="3"] .row[aria-label="gamma"]').bounding_box()
         point = [{"x": box["x"] + 20, "y": box["y"] + box["height"] / 2}]
         cdp = page.context.new_cdp_session(page)

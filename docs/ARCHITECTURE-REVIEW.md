@@ -113,7 +113,7 @@ Keep these.
   ([93], 2026-10-17). Pre-commit
   runs ruff, ruff format, mypy, deno and the bundle check. The baseline and
   dispositions are in `docs/testing/remaining-red-tests.md`. Browser checks in
-  the static Python scripts and server tests wait for observable state, including
+  the static pytest suite and server tests wait for observable state, including
   scroll/dial stability and completed storage writes, rather than fixed sleeps.
   A source guard prevents fixed browser waits from returning (2026-10-17).
   The keyboard browser suite writes server logs to a temporary file. An unread
@@ -129,7 +129,10 @@ Keep these.
   The fixed-wait guard scans the moved tests recursively. Copy tests install
   and pause their clock in one operation, so setup cannot pause in the past.
   The fold-animation test waits for its navigation setup to finish before
-  measuring the animation, including with slow directory responses
+  measuring the animation, including with slow directory responses.
+  Touch checks also wait for the dial to settle before pressing a row. The
+  Back/Forward regression creates one preview history entry explicitly, so a
+  slower intermediate folder read cannot add an extra setup entry
   ([99], 2026-10-17).
 - Real filesystem tests without a picker: `static/tests/test_url.py` drives the real
   FSA adapter against the origin private file system.
