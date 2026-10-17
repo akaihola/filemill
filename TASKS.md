@@ -80,8 +80,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Completed / Accepted
 
-- [ ] [90] Run the static bundle, static development and server CI suites in parallel
-  <!-- hai:{"id":"simple-8b926d81-b116-4839-987a-c05a6e7930a0","createdAt":"2026-10-12T13:32:52.839Z","updatedAt":"2026-10-15T16:51:43.442Z"} -->
+- [x] [90] Run the static bundle, static development and server CI suites in parallel
+  <!-- hai:{"id":"simple-8b926d81-b116-4839-987a-c05a6e7930a0","createdAt":"2026-10-12T13:32:52.839Z","updatedAt":"2026-10-17T07:09:36.159Z"} -->
 
 - [x] [*] Share Chromium, and the server where tests allow, across `server/tests/test_browser_new_ui.py`. Per-test startup and teardown cost about 200s of the 611s server suite in run 38630672866 (see [91]). Measure pytest workers afterwards.
   <!-- hai:{"id":"simple-adb180cf-7f03-46bb-86ca-b374139716ab","createdAt":"2026-10-14T20:37:41.753Z","updatedAt":"2026-10-15T20:17:19.776Z"} -->
@@ -89,8 +89,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] [*] `static/test-rich.py::test_markdown_viewport` counts `td` cells without waiting after viewport and fullscreen changes; it failed `assert 0 == 20` in the `--dev` suite of run 38630672866.
   <!-- hai:{"id":"simple-e983b058-8891-4280-9712-04ba9dcbfb61","createdAt":"2026-10-14T20:37:42.533Z","updatedAt":"2026-10-15T20:16:19.320Z"} -->
 
-- [ ] [91] Report the slowest tests in each CI suite
-  <!-- hai:{"id":"simple-80260468-7074-4230-adda-ff1ce00e1fe5","createdAt":"2026-10-12T13:32:53.680Z","updatedAt":"2026-10-14T13:04:13.619Z"} -->
+- [x] [91] Report the slowest tests in each CI suite
+  <!-- hai:{"id":"simple-80260468-7074-4230-adda-ff1ce00e1fe5","createdAt":"2026-10-12T13:32:53.680Z","updatedAt":"2026-10-17T07:09:37.860Z"} -->
 
 - [x] [87] Make CI green so GitHub Pages publishes
   <!-- hai:{"updatedAt":"2026-10-14T13:16:05.732Z"} -->
@@ -139,14 +139,14 @@ Rules for TASKS.md usage are at the bottom of the file.
   if they contain previewable files, show them in the preview pane when navigated to.
   <!-- hai:{"id":"simple-8f807623b9f707fd","updatedAt":"2026-10-11T08:09:29.993Z"} -->
 
-- [ ] [*] A 528 kB JSON file like
+- [x] [*] A 528 kB JSON file like
   https://<tailnet-host>:8445/backups/kasvimuseo-deployment/20261007-010643/backup-manifest.json?f=
   isn't previewed nor navigable hierarchically.
-  <!-- hai:{"id":"simple-fec4c3e94daf7040","updatedAt":"2026-10-07T17:25:48.108Z"} -->
+  <!-- hai:{"id":"simple-fec4c3e94daf7040","updatedAt":"2026-10-17T07:09:40.972Z"} -->
 
-- [ ] [*] Similar to JSON and SQLite files, allow hierarchical navigation of Markdown
+- [x] [*] Similar to JSON and SQLite files, allow hierarchical navigation of Markdown
       and reStructuredText documents based on their headings.
-      <!-- hai:{"id":"simple-f8626c1613849773","updatedAt":"2026-10-07T15:40:08.724Z"} -->
+  <!-- hai:{"id":"simple-f8626c1613849773","updatedAt":"2026-10-17T07:09:42.979Z"} -->
 
 - [x] [77] .md tight bullet list line spacing
       <!-- hai:{"id":"simple-f6220ff8-98cd-48a2-b2ab-4744392be4a7","priority":"none","labels":[],"createdAt":"2026-10-06T18:33:12.894Z","updatedAt":"2026-10-07T15:05:44.592Z"} -->
