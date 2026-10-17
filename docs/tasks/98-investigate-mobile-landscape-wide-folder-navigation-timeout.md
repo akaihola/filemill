@@ -34,3 +34,14 @@ The same test passed on an isolated rerun in 13.75 seconds using the original
 Python 3.14.7 environment. Treat the timeout as intermittent until its cause
 is established. A Python 3.12 rerun could not start Playwright's driver in the
 temporary environment; it did not exercise navigation.
+
+
+## Investigation plan, 2026-10-17
+
+1. Run the unchanged landscape test under Python 3.12 and 3.14.
+2. Reproduce log backpressure with a small Linux subprocess pipe before
+   changing any UI code. The keyboard suite captures server output in an
+   unread pipe, whose capacity can shrink under concurrent process load.
+3. Keep subprocess diagnostics without blocking requests, then repeat the
+   landscape regression with both static suites running concurrently.
+4. Run the keyboard suite and repository checks, and record the result here.
