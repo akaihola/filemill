@@ -6,9 +6,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [97] Fix intermittent preview 404 after deleting the selected file
-  <!-- hai:{"id":"simple-5b65e45b-f3ef-448e-85b3-ca938f67c989","createdAt":"2026-10-17T07:51:46.441Z","updatedAt":"2026-10-17T07:51:46.441Z"} -->
-
 - [98] Investigate mobile landscape wide-folder navigation timeout
   <!-- hai:{"id":"simple-eae59ddd-5222-4dbd-972d-d23258c6db71","createdAt":"2026-10-17T07:56:11.253Z","updatedAt":"2026-10-17T07:58:00.111Z"} -->
 
@@ -19,6 +16,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"updatedAt":"2026-10-17T08:24:51.487Z"} -->
 
 ## Scheduled
+
+- [97] Fix intermittent preview 404 after deleting the selected file
+  <!-- hai:{"id":"simple-5b65e45b-f3ef-448e-85b3-ca938f67c989","createdAt":"2026-10-17T07:51:46.441Z","updatedAt":"2026-10-17T11:34:32.284Z"} -->
 
 ## In Progress
 
