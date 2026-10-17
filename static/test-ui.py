@@ -574,6 +574,12 @@ async def main(bundle, fake_handle, playwright):
             check(f"Entry {kind!r} renders its kind", marker in html, html[:80])
         html = await pg.evaluate(RENDER, ["a.json", "text", '{"a": 1}']) or ""
         check("Entry 'text' shows parsed JSON foldable", "pv-json" in html)
+        # The fold limit, not the engine's stack, decides: JavaScriptCore
+        # recursed for seconds before giving up on deeper documents.
+        deep = "[" * 1001 + "]" * 1001
+        html = await pg.evaluate(RENDER, ["a.json", "text", deep]) or ""
+        check("JSON nested past the fold limit is shown as source in every engine",
+              "pv-json" not in html and "pv-text" in html, html[:80])
         html = await pg.evaluate(RENDER, ["a.vtt", "vtt", "WEBVTT",
                                           {"previewFormat": "raw"}]) or ""
         check("Entry 'vtt' honours the raw view", "preview-raw" in html)

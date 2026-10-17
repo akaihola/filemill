@@ -2507,6 +2507,24 @@ const esc = (s) =>
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]),
   );
 
+/* ═══ core/limits.js ═══ */
+const TEXT_MAX = 512 * 1024;
+const JSON_MAX = 8 * 1024 * 1024;
+/* Deeper JSON is shown as source. Engines differ by orders of magnitude in
+   how deep they recurse before giving up, and how long that takes. */
+const JSON_FOLD_DEPTH = 1000;
+const IMAGE_EXTENSIONS = [
+  "png",
+  "jpg",
+  "jpeg",
+  "gif",
+  "webp",
+  "avif",
+  "bmp",
+  "ico",
+  "svg",
+];
+
 /* ═══ core/model/json-collapse.js ═══ */
 // Patterns replace the preview's prefix, retaining absolute depth and suffix.
 const collapsed = new Map();
@@ -3232,6 +3250,7 @@ function jsonHTML(text, context) {
   } catch {
     return null;
   }
+  if (jsonTooDeep(doc)) return null;
   const scalar = (v) =>
     v === null || typeof v === "boolean"
       ? `<span class="hl-kw">${v}</span>`
@@ -3269,13 +3288,22 @@ function jsonHTML(text, context) {
     });
     return out + `${pad}${close}${tail}</details>`;
   };
-  /* Nesting deep enough to exhaust the stack is still valid JSON; it is shown
-     as source, the same as anything else this cannot fold. */
-  try {
-    return node(doc, "", "", "", context?.jsonPath || []);
-  } catch {
-    return null;
+  return node(doc, "", "", "", context?.jsonPath || []);
+}
+
+/* Whether `value` nests arrays and objects deeper than JSON_FOLD_DEPTH. Such
+   JSON is valid but shown as source, like anything else that cannot fold. The
+   walk is iterative and stops at the limit, so no engine recurses to its stack
+   limit first: JavaScriptCore spent seconds there on every render. */
+function jsonTooDeep(value) {
+  const stack = [[value, 1]];
+  while (stack.length) {
+    const [v, depth] = stack.pop();
+    if (v === null || typeof v !== "object") continue;
+    if (depth > JSON_FOLD_DEPTH) return true;
+    for (const child of Object.values(v)) stack.push([child, depth + 1]);
   }
+  return false;
 }
 
 /* Colour the fenced code inside a rendered Markdown fragment. Both markdown-it
@@ -3555,21 +3583,6 @@ function initSort() {
   loadSort();
   syncSortMenu();
 }
-
-/* ═══ core/limits.js ═══ */
-const TEXT_MAX = 512 * 1024;
-const JSON_MAX = 8 * 1024 * 1024;
-const IMAGE_EXTENSIONS = [
-  "png",
-  "jpg",
-  "jpeg",
-  "gif",
-  "webp",
-  "avif",
-  "bmp",
-  "ico",
-  "svg",
-];
 
 /* ═══ core/file-kind.js ═══ */
 const RICH = new Set(["md", "markdown", "rst", "docx", "pptx"]);
@@ -6627,12 +6640,10 @@ const withVirtualPreview = (provider) => ({
       throw new Error(n.jsonError);
     }
     if (!n.json || n.value === undefined) return provider.render(n);
-    let text;
-    try {
-      text = typeof n.value === "string" ? n.value : JSON.stringify(n.value);
-    } catch {
-      return provider.render({ ...n, dir: false });
-    }
+    if (jsonTooDeep(n.value)) return provider.render({ ...n, dir: false });
+    const text = typeof n.value === "string"
+      ? n.value
+      : JSON.stringify(n.value);
     if (n.value !== null && typeof n.value === "object") {
       const html = jsonHTML(text, n);
       return Promise.resolve(

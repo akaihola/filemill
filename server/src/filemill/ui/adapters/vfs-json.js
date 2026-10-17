@@ -21,7 +21,7 @@ import { esc } from "../core/icons.js";
 import { render } from "../core/render.js";
 import { JSON_MAX, TEXT_MAX } from "../core/limits.js";
 import { classifyFile } from "../core/file-kind.js";
-import { jsonHTML } from "../core/syntax.js";
+import { jsonHTML, jsonTooDeep } from "../core/syntax.js";
 
 const JSONL_LABEL = 60; /* as the server's MAX_LABEL_LEN */
 const JSONL_TEXT = ["title", "name", "description", "summary", "label"];
@@ -285,12 +285,10 @@ export const withVirtualPreview = (provider) => ({
       throw new Error(n.jsonError);
     }
     if (!n.json || n.value === undefined) return provider.render(n);
-    let text;
-    try {
-      text = typeof n.value === "string" ? n.value : JSON.stringify(n.value);
-    } catch {
-      return provider.render({ ...n, dir: false });
-    }
+    if (jsonTooDeep(n.value)) return provider.render({ ...n, dir: false });
+    const text = typeof n.value === "string"
+      ? n.value
+      : JSON.stringify(n.value);
     if (n.value !== null && typeof n.value === "object") {
       const html = jsonHTML(text, n);
       return Promise.resolve(
