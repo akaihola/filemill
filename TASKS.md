@@ -18,11 +18,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [*] From documentation, docstrings and comments, remove references to specific
-  development setups which include e.g. server names and local paths.
-  <!-- hai:{"id":"simple-ea7f9f2b5da73868","updatedAt":"2026-10-17T08:17:39.649Z"} -->
-
 ## In Progress
+
+- [~] [*] From documentation, docstrings and comments, remove references to specific
+  development setups which include e.g. server names and local paths.
+      <!-- hai:{"id":"simple-ea7f9f2b5da73868","updatedAt":"2026-10-17T08:18:16.584Z"} -->
 
 - [~] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
@@ -149,9 +149,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-8f807623b9f707fd","updatedAt":"2026-10-11T08:09:29.993Z"} -->
 
 - [x] [*] A 528 kB JSON file like
-  https://<tailnet-host>:8445/backups/kasvimuseo-deployment/20261007-010643/backup-manifest.json?f=
-  isn't previewed nor navigable hierarchically.
-  <!-- hai:{"id":"simple-fec4c3e94daf7040","updatedAt":"2026-10-17T07:09:40.972Z"} -->
+      https://filemill.example/backups/example/backup-manifest.json?f= isn't
+      previewed nor navigable hierarchically.
+      <!-- hai:{"id":"simple-fec4c3e94daf7040","updatedAt":"2026-10-17T08:20:01.188Z"} -->
 
 - [x] [*] Similar to JSON and SQLite files, allow hierarchical navigation of Markdown
       and reStructuredText documents based on their headings.
