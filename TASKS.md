@@ -20,10 +20,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [*] From documentation, docstrings and comments, remove references to specific
-  development setups which include e.g. server names and local paths.
-      <!-- hai:{"id":"simple-ea7f9f2b5da73868","updatedAt":"2026-10-17T08:18:16.584Z"} -->
-
 - [~] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
 
@@ -85,6 +81,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [*] `.py` files are not highlighted at all.
 
 ## Completed / Accepted
+
+- [ ] [*] From documentation, docstrings and comments, remove references to specific
+  development setups which include e.g. server names and local paths.
+      <!-- hai:{"id":"simple-ea7f9f2b5da73868","updatedAt":"2026-10-17T08:20:32.488Z"} -->
 
 - [ ] [96] Remove the tailnet hostname from all files and from history
       <!-- hai:{"id":"simple-67027c02-b019-474e-a497-05db579c17c2","labels":["steward"],"createdAt":"2026-10-17T07:08:55.437Z","updatedAt":"2026-10-17T07:46:48.011Z"} -->
