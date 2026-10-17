@@ -418,6 +418,7 @@ async def editor_feature_checks(pg):
 
 
 async def click_row(pg, column, name):
+    await scroll_settled(pg)
     spine = pg.locator(f'.col[data-i="{column}"].spine')
     if await spine.count():
         await spine.click()
@@ -1171,6 +1172,9 @@ async def test_file_kinds(page):
 
 async def test_renderer_registry(page, driver):
     pg = page
+    await pg.wait_for_function(
+        "typeof renderNode === 'function' && RENDERERS.length > 0"
+    )
     assert await pg.evaluate("RENDERERS.map(e => e.kind)") == [
         "image",
         "video",
@@ -1214,6 +1218,10 @@ async def test_renderer_registry(page, driver):
         assert marker in html, html[:80]
     html = await pg.evaluate(RENDER, ["a.json", "text", '{"a": 1}']) or ""
     assert "pv-json" in html, "Entry 'text' shows parsed JSON foldable"
+    # The fold limit, rather than the engine stack, bounds recursion.
+    deep = "[" * 1001 + "]" * 1001
+    html = await pg.evaluate(RENDER, ["a.json", "text", deep]) or ""
+    assert "pv-json" not in html and "pv-text" in html, html[:80]
     html = (
         await pg.evaluate(RENDER, ["a.vtt", "vtt", "WEBVTT", {"previewFormat": "raw"}])
         or ""
@@ -1429,7 +1437,8 @@ async def test_folding_dial(page):
     pg = page
     await mount(pg)
     await pg.click('.col[data-i="0"] .row:has-text("deep")')
-    for col in range(2, 6):
+    await pg.wait_for_function("path[1]?.name === 'deep' && path[1]?.kids")
+    for col in range(1, 5):
         await pg.keyboard.press("ArrowRight")
         await pg.wait_for_function("focusCol === " + str(col))
     await pg.keyboard.press("ArrowRight")  # focus the leaf preview
@@ -1992,7 +2001,9 @@ async def test_preview(page):
         "() => document.querySelector('.pv-img')?.naturalWidth > 0"
     ), await pg.inner_text("#pv-content")
     await pg.click('.col[data-i="1"] .row:has-text("short.txt")')
-    await pg.wait_for_function("path[1]?.name === 'tables' && path[1]?.kids")
+    await pg.wait_for_function(
+        "sel[1] === 'short.txt' && document.querySelector('.pv-text')?.textContent === 's'"
+    )
     assert await pg.eval_on_selector_all(".pv-text span", "e=>e.length") == 0, (
         "A file with no language it knows stays plain"
     )
@@ -2002,7 +2013,7 @@ async def test_jsonl_rows(page):
     pg = page
     await mount(pg)
     await click_row(pg, 0, "tables")
-    await pg.wait_for_function("path[3]?.name === 'tags' && path[3]?.kids")
+    await pg.wait_for_function("path[1]?.name === 'tables' && path[1]?.kids")
     await click_row(pg, 1, "log.jsonl")
     await pg.wait_for_function("path[2]?.name === 'log.jsonl' && path[2]?.kids")
     assert await pg.evaluate("__rows(2)") == ["Second", "First", "Third"], str(
@@ -2010,7 +2021,7 @@ async def test_jsonl_rows(page):
     )
     await click_row(pg, 2, "Second")
     await pg.wait_for_function(
-        "typeof renderNode === 'function' && RENDERERS.length > 0"
+        "path[3]?.name === 'Second' && document.querySelector('.pv-json details')"
     )
     assert (
         await pg.evaluate("__rows(3)") == ["id", "title", "ts", "tags"]
@@ -2209,9 +2220,7 @@ async def test_json_preview(page):
         and await pg.locator("#preview details").count() > 0
     ), "Selected JSON object keeps its preview beside its children"
     await click_row(pg, 2, "tags")
-    await pg.wait_for_function(
-        "document.querySelector('.pv-content')?.textContent.trim() === 'a'"
-    )
+    await pg.wait_for_function("path[3]?.name === 'tags' && path[3]?.kids")
     assert await pg.evaluate("__rows(3)") == ["0", "1"], (
         "Nested arrays open as ordered index rows"
     )
