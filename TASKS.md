@@ -6,25 +6,25 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
-  the three ports natively. Choose the smallest binary that passes `test-ui.py`.
-    - Depends on: [29]
-
-  <!-- hai:{"updatedAt":"2026-10-17T08:24:51.487Z"} -->
-
 - [97] Fix intermittent preview 404 after deleting the selected file
   <!-- hai:{"id":"simple-5b65e45b-f3ef-448e-85b3-ca938f67c989","createdAt":"2026-10-17T07:51:46.441Z","updatedAt":"2026-10-17T07:51:46.441Z"} -->
 
 - [98] Investigate mobile landscape wide-folder navigation timeout
   <!-- hai:{"id":"simple-eae59ddd-5222-4dbd-972d-d23258c6db71","createdAt":"2026-10-17T07:56:11.253Z","updatedAt":"2026-10-17T07:58:00.111Z"} -->
 
+- [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
+  the three ports natively. Choose the smallest binary that passes `test-ui.py`.
+    - Depends on: [29]
+
+  <!-- hai:{"updatedAt":"2026-10-17T08:24:51.487Z"} -->
+
 ## Scheduled
 
-- [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
-  `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
-  <!-- hai:{"id":"simple-1a46227e658d855f","updatedAt":"2026-10-17T11:05:33.494Z"} -->
-
 ## In Progress
+
+- [~] [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
+  `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
+      <!-- hai:{"id":"simple-1a46227e658d855f","updatedAt":"2026-10-17T11:05:57.607Z"} -->
 
 - [~] [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
   fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
