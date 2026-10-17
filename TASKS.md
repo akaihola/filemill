@@ -14,12 +14,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
-  the three ports natively. Choose the smallest binary that passes `test-ui.py`.
-    - Depends on: [29]
-
-      <!-- hai:{"updatedAt":"2026-10-17T16:23:13.942Z"} -->
-
 - [~] [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
   fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
     - Depends on: [12]
@@ -37,6 +31,12 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-17T07:59:20.709Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
+  the three ports natively. Choose the smallest binary that passes `test-ui.py`.
+    - Depends on: [29]
+
+      <!-- hai:{"updatedAt":"2026-10-17T16:24:16.554Z"} -->
 
 - [ ] [98] Investigate mobile landscape wide-folder navigation timeout
       <!-- hai:{"id":"simple-eae59ddd-5222-4dbd-972d-d23258c6db71","createdAt":"2026-10-17T07:56:11.253Z","updatedAt":"2026-10-17T12:26:34.042Z"} -->
