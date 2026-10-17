@@ -75,10 +75,11 @@ context reset.
     ├── index.html              ← GENERATED bundle (do not hand-edit)
     ├── index-dev.html          ← dev entry point: loads ../ui/entry-static.js
     ├── build-index.py          ← index-dev.html + the module graph → index.html
-    ├── test-ui.py              ← headless suite, fake handle
-    ├── test-url.py             ← needs a real origin: deep links, and a real
-    │                             filesystem through OPFS
-    ├── test-rich.py            ← CDN renderers: offline/switch/loaded
+    ├── tests/                 ← pytest browser checks and shared fixtures
+    │   ├── conftest.py         ← bundle, HTTP server, fake handle and OPFS
+    │   ├── test_ui.py          ← navigation, previews, editor and performance
+    │   ├── test_url.py         ← deep links and real files through OPFS
+    │   └── test_rich.py        ← offline, consent and loaded renderers
     └── test-e2e.py             ← headed suite, real folder + real picker
 ```
 
@@ -176,21 +177,21 @@ picked roots (`RECENT_MAX`) in the `filemill` database, `kv` store, key
 
 ```bash
 # From the repository root:
-uv run --project server pytest static
-uv run --project server pytest static --dev
+uv run --project server pytest static/tests --bundle
+uv run --project server pytest static/tests --dev
 # Manual only, requires a folder pick and terminal input:
 uv run --project server python static/test-e2e.py
 ```
 
-`test-rich.py` covers the only feature that touches the network. It needs no
+`tests/test_rich.py` covers the only feature that touches the network. It needs no
 network itself. The test aborts `esm.sh` requests to force the offline path.
 The loaded path runs against stub modules served from the same loopback port
-through `window.FILEMILL_CDN`. `test-ui.py` and `test-url.py` switch rich
+through `window.FILEMILL_CDN`. `tests/test_ui.py` and `tests/test_url.py` switch rich
 previews off, because a failed CDN import logs console errors that hide their
 own assertions.
 
-`test-url.py` is separate because it needs a real origin. `history.pushState`
-throws on the opaque origin of a `file://` page, which is the case `test-ui.py`
+`tests/test_url.py` is separate because it needs a real origin. `history.pushState`
+throws on the opaque origin of a `file://` page, which is the case `tests/test_ui.py`
 covers. `navigator.storage.getDirectory()` throws there too, with
 `SecurityError: … unsafe for access within a Web application`. The test serves
 the repo on a loopback port and drives the same fake handle for the links.
@@ -198,7 +199,7 @@ the repo on a loopback port and drives the same fake handle for the links.
 **The origin private file system (OPFS) is how this repo tests real files
 headlessly.** OPFS gives a real `FileSystemDirectoryHandle` with no folder
 dialog: the same `entries()`, `getFile()` and browser-side plumbing as a picked
-folder. `test-url.py` builds 3 000 real files in it (250 at a time; one at a
+folder. `tests/test_url.py` builds 3 000 real files in it (250 at a time; one at a
 time takes 25 s) and runs `FSA` against them. That is the only place where the
 cost of a size sort is visible, because the fake handle answers `getFile()`
 from memory. Measured there at 3 000 files: `entries()` 363–1 117 ms, the
@@ -213,7 +214,7 @@ Playwright release. Install its browser with
 provides a managed browser bundle, set `PLAYWRIGHT_BROWSERS_PATH` and use
 its matching Playwright release instead of downloading another browser.
 
-`test-ui.py` fakes the handle API, which is all the app touches:
+`tests/test_ui.py` fakes the handle API, which is all the app touches:
 
 ```js
 const D = (name, kids) => ({kind:'directory', name,

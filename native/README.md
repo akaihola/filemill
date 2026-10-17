@@ -2,7 +2,7 @@
 
 A Linux host that runs the shared DOM renderer in WebKitGTK and supplies the
 `FS`, `PREVIEW` and `ROUTER` ports natively. It passes the main
-`static/test-ui.py` scenario through its own ports, with one known
+`static/tests/test_ui.py` scenario through its own ports, with one known
 intermittent failure described under [Checks](#checks). [ADR 0079] records the
 choice over Tauri and the binary size.
 
@@ -55,7 +55,7 @@ pointer coordinates match CSS pixels. No browser download is needed.
 
 ```bash
 nix-shell native/shell.nix --run 'uv run --project server pytest native/test_host.py -q'
-nix-shell native/shell.nix --run 'uv run --project server pytest static/test-ui.py::test_ui --native -q'
+nix-shell native/shell.nix --run 'uv run --project server pytest static/tests/test_ui.py --native -q'
 ```
 
 The first command runs 18 contract checks. The second runs the 220 checks of
@@ -77,7 +77,7 @@ spends seconds wrapping it at each width; see finding A9 in
 `docs/ARCHITECTURE-REVIEW.md`.
 
 `--native` changes only the main `test_ui` scenario. The other tests in
-`static/test-ui.py` keep their browser adapters, including IndexedDB and
+`static/tests/test_ui.py` keep their browser adapters, including IndexedDB and
 FSA-specific checks.
 
 [ADR 0079]: ../docs/adr/0079-native-shell.md

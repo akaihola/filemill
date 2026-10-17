@@ -19,32 +19,32 @@ def test_model_renderer_selection(bundle, playwright):
             await mount(dir('model-test', [dir('folder', [file('note.txt')]), file('z.txt')]));
         }""")
         page.wait_for_selector('.col[data-i="0"] .row')
-        page.keyboard.press('ArrowDown')
+        page.keyboard.press("ArrowDown")
         page.wait_for_function("sel[0] === 'folder' && path.length === 2")
-        assert page.evaluate('focusCol') == 0
-        page.keyboard.press('ArrowRight')
+        assert page.evaluate("focusCol") == 0
+        page.keyboard.press("ArrowRight")
         page.wait_for_function("focusCol === 1 && sel[1] === 'note.txt'")
-        page.wait_for_selector('#preview .pv-text')
-        assert page.evaluate('path.map(n => n.name)') == ['model-test', 'folder']
+        page.wait_for_selector("#preview .pv-text")
+        assert page.evaluate("path.map(n => n.name)") == ["model-test", "folder"]
         geometry = """() => [...document.querySelectorAll('.col, #preview')]
             .map(el => el.offsetWidth)"""
         widths = page.evaluate(geometry)
-        page.keyboard.press('ArrowRight')
+        page.keyboard.press("ArrowRight")
         page.wait_for_function("document.activeElement.id === 'preview'")
         assert page.evaluate(geometry) == widths
-        page.keyboard.press('ArrowLeft')
+        page.keyboard.press("ArrowLeft")
         page.wait_for_function("!document.activeElement.closest('#preview')")
         assert page.evaluate("focusCol === 1 && sel[1] === 'note.txt'")
-        if bundle.name == 'index-dev.html':
+        if bundle.name == "index-dev.html":
             assert page.evaluate("""async () => {
                 const model = await import('../ui/core/model/state.js');
                 const links = await import('../ui/core/model/deeplink.js');
                 return model.path === path && model.sel === sel &&
                     links.currentPath().join('/') === 'folder/note.txt';
             }""")
-        page.set_viewport_size({'width': 700, 'height': 700})
+        page.set_viewport_size({"width": 700, "height": 700})
         page.wait_for_function("document.getElementById('finder').clientWidth <= 700")
-        assert page.evaluate('sel[1]') == 'note.txt'
+        assert page.evaluate("sel[1]") == "note.txt"
         # The static file entry already tries to register its HTTP-only worker.
         expected = "Failed to register a ServiceWorker: The URL protocol of the current origin ('file://') is not supported."
         assert all(error == expected for error in errors)
@@ -279,9 +279,7 @@ def test_geometry_changes_preserve_preview_rules(bundle, playwright, activation)
         page.wait_for_function("focusCol === 2 && path.length === 3")
         assert page.evaluate("folded") == 0
         if activation == "partial":
-            page.evaluate(
-                "dialTo(0.25 * foldUnit() * range())"
-            )
+            page.evaluate("dialTo(0.25 * foldUnit() * range())")
         if activation in ["keyboard", "partial"]:
             page.keyboard.press("ArrowUp")
         elif activation == "density":
@@ -318,7 +316,8 @@ def test_left_arrow_reveals_selection(bundle, playwright, count, last, kind):
         page = browser.new_page(viewport={"width": 1000, "height": 500})
         page.goto(bundle.as_uri())
         page.wait_for_function("typeof mount === 'function'")
-        page.evaluate("""async ([kind, count]) => {
+        page.evaluate(
+            """async ([kind, count]) => {
             const dir = (name, kids) => ({kind: 'directory', name,
                 async *entries() {for (const child of kids) yield [child.name, child];}});
             const file = name => ({kind: 'file', name,
@@ -328,13 +327,16 @@ def test_left_arrow_reveals_selection(bundle, playwright, count, last, kind):
                 return kind === 'directory' ? dir(name, [file('note.txt')]) : file(name + '.txt');
             });
             await mount(dir('root', kids));
-        }""", [kind, count])
+        }""",
+            [kind, count],
+        )
         name = f"item-{target:02}" + (".txt" if kind == "file" else "")
         page.keyboard.press("End" if last else "Home")
         page.wait_for_function("name => sel[0] === name", arg=name)
         page.keyboard.press("ArrowRight")
         page.wait_for_function(
-            "document.activeElement.id === 'preview'" if kind == "file"
+            "document.activeElement.id === 'preview'"
+            if kind == "file"
             else "focusCol === 1 && sel[1] === 'note.txt'"
         )
         selection = page.evaluate("({path: path.map(n => n.name), sel: [...sel]})")
@@ -350,12 +352,18 @@ def test_left_arrow_reveals_selection(bundle, playwright, count, last, kind):
         }"""
         assert not page.evaluate(visible)
         page.keyboard.press("ArrowLeft")
-        page.wait_for_function("focusCol === 0 && !document.activeElement.closest('#preview')")
-        assert page.evaluate("({path: path.map(n => n.name), sel: [...sel]})") == selection
+        page.wait_for_function(
+            "focusCol === 0 && !document.activeElement.closest('#preview')"
+        )
+        assert (
+            page.evaluate("({path: path.map(n => n.name), sel: [...sel]})") == selection
+        )
         page.wait_for_function(visible, timeout=2000)
         assert page.evaluate("document.getElementById('stage').scrollLeft") == 0
         page.keyboard.press("ArrowDown" if target == 0 else "ArrowUp")
-        next_name = f"item-{1 if target == 0 else target - 1:02}" + (".txt" if kind == "file" else "")
+        next_name = f"item-{1 if target == 0 else target - 1:02}" + (
+            ".txt" if kind == "file" else ""
+        )
         page.wait_for_function("name => sel[0] === name", arg=next_name)
     finally:
         browser.close()
@@ -476,7 +484,8 @@ def test_mounted_root_paints_visible_rows(bundle, playwright, count):
         page = browser.new_page(viewport={"width": 1000, "height": 900})
         page.goto(bundle.as_uri())
         page.wait_for_function("typeof mount === 'function'")
-        page.evaluate("""async count => {
+        page.evaluate(
+            """async count => {
             await mount({kind: 'directory', name: 'root',
                 async *entries() {
                     for (let i = 0; i < count; i++) {
@@ -485,14 +494,19 @@ def test_mounted_root_paints_visible_rows(bundle, playwright, count):
                             async getFile() {return new File(['hello'], name);}}];
                     }
                 }});
-        }""", count)
-        page.wait_for_function("""() => {
+        }""",
+            count,
+        )
+        page.wait_for_function(
+            """() => {
             const body = document.querySelector('.col[data-i="0"] .col-body');
             const rows = [...body.querySelectorAll('.row')];
             const last = rows.at(-1)?.getBoundingClientRect();
             return rows.length === path[0].kids.length ||
                 last?.bottom >= body.getBoundingClientRect().bottom;
-        }""", timeout=2000)
+        }""",
+            timeout=2000,
+        )
         page.locator('.col[data-i="0"] .row').first.click()
         page.wait_for_function("sel[0] === 'item-0000.txt'")
-        assert page.locator('#preview .pv-text').inner_text() == 'hello'
+        assert page.locator("#preview .pv-text").inner_text() == "hello"

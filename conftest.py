@@ -1,41 +1,7 @@
-import functools
-import http.server
 import sqlite3
-import threading
 from pathlib import Path
 
 import pytest
-
-
-@pytest.fixture
-def bundle(request):
-    name = "index-dev.html" if request.config.getoption("--dev") else "index.html"
-    return Path(__file__).parent / "static" / name
-
-
-@pytest.fixture
-def static_origin():
-    handler = functools.partial(
-        http.server.SimpleHTTPRequestHandler, directory=str(Path(__file__).parent)
-    )
-    with http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler) as server:
-        thread = threading.Thread(target=server.serve_forever, daemon=True)
-        thread.start()
-        try:
-            yield f"http://127.0.0.1:{server.server_port}"
-        finally:
-            server.shutdown()
-            thread.join()
-
-
-@pytest.fixture
-def fake_handle(request):
-    return request.module.FAKE
-
-
-@pytest.fixture
-def opfs_root():
-    return "navigator.storage.getDirectory()"
 
 
 @pytest.fixture
@@ -48,14 +14,6 @@ def playwright():
 @pytest.fixture
 def async_playwright():
     return pytest.importorskip("playwright.async_api")
-
-
-@pytest.fixture(autouse=True)
-def reset_checks(request):
-    for name in ("passed", "failed"):
-        results = getattr(request.module, name, None)
-        if isinstance(results, list):
-            results.clear()
 
 
 @pytest.fixture()
@@ -211,7 +169,9 @@ def archive_client(archive_root: Path):
 
 def pytest_addoption(parser):
     parser.addoption("--native", action="store_true", help="test the native WebView host")
-    parser.addoption("--dev", action="store_true", help="test modular static sources")
+    modes = parser.getgroup("static")
+    modes.addoption("--dev", action="store_true", help="test modular static sources")
+    modes.addoption("--bundle", action="store_true", help="test the bundle (default)")
 
 
 @pytest.fixture(

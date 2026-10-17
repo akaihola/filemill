@@ -74,10 +74,10 @@ jobs:
       matrix:
         include:
           - suite: static-bundle
-            command: uv run --project server pytest static --durations=20
+            command: uv run --project server pytest static/tests --bundle --durations=20
             directory: .
           - suite: static-development
-            command: uv run --project server pytest static --dev --durations=20
+            command: uv run --project server pytest static/tests --dev --durations=20
             directory: .
           - suite: server
             command: uv run pytest --cov=src/filemill --cov-branch --cov-report=term-missing --durations=20

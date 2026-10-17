@@ -123,7 +123,10 @@ Keep these.
   native scroll-into-view can turn the fold dial and move a mouse-click target
   between press and release. Existing geometry checks remain unchanged; the
   shared UI is unchanged ([98], 2026-10-17).
-- Real filesystem tests without a picker: `static/test-url.py` drives the real
+- Static browser checks run as separate pytest sections under `static/tests/`,
+  with shared page, fake handle, OPFS and HTTP fixtures ([25], 2026-10-17).
+  Root `uv run pytest` runs both editions through a shared uv workspace and lock.
+- Real filesystem tests without a picker: `static/tests/test_url.py` drives the real
   FSA adapter against the origin private file system.
 - Size limits and the image extension list have one home, `ui/core/limits.js`.
   JSON documents use a separate 8 MiB limit, with a metadata check before

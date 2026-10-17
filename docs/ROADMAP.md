@@ -273,9 +273,9 @@ waits for a fixed time.
 
 **Steps.**
 
-1. Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under
-   `pytest` with fixtures for the fake handle, the OPFS root and the served
-   bundle. Split the 1 529-line `main()` into one function per section.
+1. Done in [25]. Static checks live under `static/tests/` with pytest
+   fixtures for the fake handle, OPFS root and served bundle. Each former
+   `main()` section is a separate test. Root `uv run pytest` runs both editions.
 2. Replace every `wait_for_timeout` with `wait_for_function` or `expect`.
 3. Run the static and server browser tests through one `conftest.py` and one
    Playwright fixture. Delete the proxy plumbing in

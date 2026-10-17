@@ -103,12 +103,12 @@ def test_ci_runs_independent_suites_after_lint_and_gates_publication():
     assert test["strategy"]["matrix"]["include"] == [
         {
             "suite": "static-bundle",
-            "command": "uv run --project server pytest static --durations=20",
+            "command": "uv run --project server pytest static/tests --bundle --durations=20",
             "directory": ".",
         },
         {
             "suite": "static-development",
-            "command": "uv run --project server pytest static --dev --durations=20",
+            "command": "uv run --project server pytest static/tests --dev --durations=20",
             "directory": ".",
         },
         {
@@ -234,3 +234,31 @@ def test_ci_publishes_only_from_main_after_every_check():
         "    if: github.ref == 'refs/heads/main'"
         " && github.event_name != 'pull_request'\n"
     )
+
+
+def test_static_checks_are_named_pytest_sections():
+    import ast
+    import configparser
+
+    root = SERVER.parent
+    config = configparser.ConfigParser()
+    config.read(root / "pytest.ini")
+    assert config["pytest"]["testpaths"].split() == ["server/tests", "static/tests"]
+    for suite in ("ui", "url", "rich"):
+        assert not (root / "static" / f"test-{suite}.py").exists()
+        tree = ast.parse((root / "static/tests" / f"test_{suite}.py").read_text())
+        functions = [
+            node
+            for node in tree.body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        ]
+        assert not {"main", "check", f"test_{suite}"} & {
+            node.name for node in functions
+        }
+        assert (
+            sum(
+                isinstance(node, ast.AsyncFunctionDef) and node.name.startswith("test_")
+                for node in functions
+            )
+            >= 6
+        )
