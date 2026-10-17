@@ -115,9 +115,12 @@ Keep these.
   scroll/dial stability and completed storage writes, rather than fixed sleeps.
   A source guard prevents fixed browser waits from returning (2026-10-17).
   The keyboard browser suite writes server logs to a temporary file. An unread
-  subprocess pipe could fill under concurrent load and block directory responses
-  during deep mobile navigation. A small-pipe regression covers this test-harness
-  failure without changing the shared UI ([98], 2026-10-17).
+  subprocess pipe could fill under concurrent load and block directory responses.
+  A small-pipe regression covers that failure. Mobile checks send actual touch
+  input. The landscape regression checks paired press/release row targets:
+  native scroll-into-view can turn the fold dial and move a mouse-click target
+  between press and release. Existing geometry checks remain unchanged; the
+  shared UI is unchanged ([98], 2026-10-17).
 - Real filesystem tests without a picker: `static/test-url.py` drives the real
   FSA adapter against the origin private file system.
 - Size limits and the image extension list have one home, `ui/core/limits.js`.

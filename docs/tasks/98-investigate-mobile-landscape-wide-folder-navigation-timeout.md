@@ -35,7 +35,6 @@ Python 3.14.7 environment. Treat the timeout as intermittent until its cause
 is established. A Python 3.12 rerun could not start Playwright's driver in the
 temporary environment; it did not exercise navigation.
 
-
 ## Investigation plan, 2026-10-17
 
 1. Run the unchanged landscape test under Python 3.12 and 3.14.
@@ -46,12 +45,11 @@ temporary environment; it did not exercise navigation.
    landscape regression with both static suites running concurrently.
 4. Run the keyboard suite and repository checks, and record the result here.
 
-
-## Cause and fix, 2026-10-17
+## Investigation and fixes, 2026-10-17
 
 The test server could stop answering requests because its access log filled
 an unread subprocess pipe. This is a test harness failure. No shared UI change
-is required. Linux normally gives these pipes 65,536 bytes on the validation
+was made. Linux normally gives these pipes 65,536 bytes on the validation
 host. Concurrent suites can exhaust the per-user pipe page allowance, which
 reduces new pipes to 8,192 bytes. Long directory URLs fill that space.
 
@@ -66,11 +64,50 @@ with a 30-second navigation wait timeout. The blocked server was in
 with that directory appended but `kids === null`, `loading` still set, and
 one spinner. Its 8,192-byte pipe contained 7,972 unread bytes. The next long
 access-log write could not fit, so the directory response did not arrive.
-The blocked depth depends on how much startup and request output precedes it. The same test passes with file-backed logs. A separate 4,096-byte
-reproduction under Python 3.14.7 blocked during initial page loading.
+The blocked depth depends on how much startup and request output precedes it.
+The original report predates `ffc5dbf4`, which replaced the tap helper's
+600 ms sleep with a loading predicate. That older helper could continue to
+the next row while the preceding directory request was blocked. The current
+helper exposes the same blockage at its loading predicate. The same test
+passes with file-backed logs. A separate 4,096-byte reproduction under Python 3.14.7 blocked during initial page loading.
 
 The unchanged landscape test passed in isolation under Python 3.14.7 in
 12.80 seconds and Python 3.12.14 in 12.71 seconds. Both versions use the locked
 Playwright 1.63 and Nix Chromium. Python 3.12 came from the installed Nix
 interpreter and used a separate uv environment. Its Playwright driver started
 without an override. No browser installation or UI change was needed.
+
+### Mobile input fidelity
+
+The helper also sent mouse clicks on pages configured for touch input. A new
+browser regression records `pointerdown.pointerType` and requires `touch`.
+It failed under Python 3.12 with `['mouse']`. The helper now uses Playwright's
+real touchscreen tap on touch pages, including spine activation. Desktop pages
+still use mouse clicks. All loading and geometry assertions remain intact.
+
+### Missed navigation state
+
+A loaded repetition still timed out after the log fix. Instrumentation then
+reproduced the failure at the last folder under Python 3.12. Mouse-down hit
+the level-11 row in column 11. Mouse-up landed in column 7, and the click
+landed outside any row. The path and selection stayed at level 10. All loaded
+nodes had children, there was no spinner, the row menu was hidden, and there
+were no page errors. This was not a long press or an unfinished folder read.
+
+Playwright's automatic scroll-into-view turns the finder scroll rail, which
+Filemill interprets as its fold dial. A pending layout update can then move
+the row between mouse-down and mouse-up. A diagnostic probe confirmed this:
+the dial changed from 1505 to 1655 pixels before pointer-down. The original
+rest-only geometry assertions missed the lost input target.
+
+The mobile helper now sends real touchscreen input. The landscape regression
+also requires every pointer-down and pointer-up to name the intended row and
+to carry pointer type `touch`. This covers the input contract that the old
+mouse-based helper did not exercise. The original loading and geometry
+assertions remain unchanged. No shared UI navigation race was established.
+
+A preparation experiment tried scrolling first and disabling automatic
+scrolling during activation. It left the final row outside the viewport after
+the layout settled. It was discarded. Revealing an offscreen row legitimately
+turns the dial, so a frozen dial is not the required invariant. Correct touch
+input and paired event targets are the regression contract.

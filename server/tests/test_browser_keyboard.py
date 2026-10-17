@@ -253,11 +253,12 @@ def _ui_tap(page, col: int, name: str) -> None:
     on an unfolded column it costs one `count()` and does nothing.
     """
     _dial_settled(page)
+    activate = page.tap if page.evaluate("navigator.maxTouchPoints > 0") else page.click
     sel = f'.col[data-i="{col}"]'
     if page.locator(sel + ".spine").count():
-        page.click(sel + ".spine")
+        activate(sel + ".spine")
         page.wait_for_selector(sel + ":not(.spine)", timeout=20000)
-    page.click(f'{sel} .row:has-text("{name}")')
+    activate(f'{sel} .row:has-text("{name}")')
     page.wait_for_function(
         """([i, name]) => sel[i] === name && path.every(n => n.kids !== null)
           && !document.querySelector('.spinner')
@@ -892,6 +893,19 @@ def _tap_wide_chain(page, levels: int) -> None:
 
 
 @pytest.mark.integration
+def test_mobile_tap_uses_touch_input(live_server: str):
+    with _ui_page(live_server, mobile=True) as page:
+        page.evaluate("""() => {
+          window.__pointerTypes = [];
+          document.addEventListener('pointerdown', e =>
+            window.__pointerTypes.push(e.pointerType));
+        }""")
+        _ui_tap(page, 0, "my-knowledge")
+        assert page.evaluate("window.__pointerTypes") == ["touch"]
+        assert page.locator("#row-menu").is_hidden()
+
+
+@pytest.mark.integration
 def test_mobile_portrait_wide_folder_tap_keeps_the_touched_row_on_screen(
     wide_live_server: str,
 ):
@@ -938,7 +952,20 @@ def test_mobile_landscape_wide_folder_tap_keeps_the_touched_row_on_screen(
     three — the depth is what makes the case, not the orientation.
     """
     with _ui_page(wide_live_server, mobile=True, viewport=MOBILE_LANDSCAPE) as page:
+        page.evaluate("""() => {
+          window.__tapRows = [];
+          for (const type of ['pointerdown', 'pointerup']) {
+            document.addEventListener(type, e => window.__tapRows.push([
+              type, e.pointerType, e.target.closest('.row')?.getAttribute('aria-label')
+            ]), true);
+          }
+        }""")
         _tap_wide_chain(page, len(_WIDE_NAMES))
+        assert page.evaluate("window.__tapRows") == [
+            [event, "touch", name]
+            for name in _WIDE_NAMES
+            for event in ("pointerdown", "pointerup")
+        ]
 
         m = page.evaluate(_TOUCHED_METRICS)
         assert m["focusCol"] == len(_WIDE_NAMES) - 1
