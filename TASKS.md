@@ -4,10 +4,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Unverified proposals
 
+## Ordered backlog
+
 - [*] From documentation, docstrings and comments, remove references to specific
   development setups which include e.g. server names and local paths.
-
-## Ordered backlog
+  <!-- hai:{"id":"simple-ea7f9f2b5da73868","updatedAt":"2026-10-17T08:10:22.988Z"} -->
 
 - [95] Reconcile TASKS.md with the code: 16 In Progress and 109 legacy completions
     - Depends on: [96]
