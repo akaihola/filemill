@@ -17,6 +17,12 @@ Rules for TASKS.md usage are at the bottom of the file.
     - Depends on: [96]
   <!-- hai:{"id":"simple-fe5c93cd-f67b-45d1-8352-57667238abe6","labels":["steward"],"createdAt":"2026-10-16T16:48:55.733Z","updatedAt":"2026-10-17T07:09:08.803Z"} -->
 
+- [97] Fix intermittent preview 404 after deleting the selected file
+  <!-- hai:{"id":"simple-5b65e45b-f3ef-448e-85b3-ca938f67c989","createdAt":"2026-10-17T07:51:46.441Z","updatedAt":"2026-10-17T07:51:46.441Z"} -->
+
+- [98] Investigate mobile landscape wide-folder navigation timeout
+  <!-- hai:{"id":"simple-eae59ddd-5222-4dbd-972d-d23258c6db71","createdAt":"2026-10-17T07:56:11.253Z","updatedAt":"2026-10-17T07:58:00.111Z"} -->
+
 ## Scheduled
 
 ## In Progress
@@ -24,7 +30,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [~] [93] Make main's CI green again: static bundle test failing since 06792cb
     - Depends on: [96]
 
-      <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-17T07:48:12.211Z"} -->
+      <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-17T07:59:20.709Z"} -->
 
 - [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
@@ -595,7 +601,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 [77]: docs/tasks/77-md-tight-bullet-list-line-spacing.md
 
-<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96 -->
+<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98 -->
 
 [78]: docs/tasks/78-wide-document-scrolls-instead-of-expanding-the-preview.md
 
@@ -634,6 +640,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 [95]: docs/tasks/95-reconcile-tasks-md-with-the-code-16-in-progress-and-109-legacy-complet.md
 
 [96]: docs/tasks/96-remove-the-tailnet-hostname-from-all-files-and-from-history.md
+
+[97]: docs/tasks/97-fix-intermittent-preview-404-after-deleting-the-selected-file.md
+
+[98]: docs/tasks/98-investigate-mobile-landscape-wide-folder-navigation-timeout.md
 
 ## Rules
 

@@ -29,3 +29,64 @@ Found by the steward's review of [90] on 2026-10-16.
 4. Merge on main, check CI, and complete the tracker pending user acceptance.
    Report a delivery blocker if the prerequisite history rewrite has not been
    published; do not force-push the rewritten history.
+
+## Cause and validation, 2026-10-17
+
+Navigation updates `focusCol` and `path` before layout necessarily applies the
+scroll. In `ui/core/layout.js`, `dialTo(..., true)` can defer its write with
+`requestAnimationFrame` when an instant write happened in the same frame.
+CSS `scroll-behavior: auto` does not eliminate that deferral. The test now
+waits for the expected `folded` value before its existing geometry assertions.
+The production layout and its single scroll writer are unchanged.
+
+Red-green evidence:
+
+- Original CI run 38772512085 has the exact `assert 0 == 1` failure.
+- The original test passed 20 ordinary local attempts, confirming that ordinary
+  repetition alone did not reproduce the failure on this machine.
+- Temporarily wrapping animation-frame callbacks to defer them by ten more
+  frames reproduced that same assertion locally before the fix.
+- With the wait added, all three widths passed in bundle and development mode
+  under that same injected delay. The temporary wrapper was then removed.
+- The final bundle test passed 20 consecutive invocations, all three widths
+  each time, for 60 passes. Command:
+
+  ```bash
+  for attempt in {1..20}; do
+    uv run --project server pytest static/test-model.py -k preview_threshold -q || exit "$?"
+  done
+  ```
+
+Ruff lint and format, Deno format and lint, DOM-free model tests and generated
+bundle consistency passed. Mypy passed using Python 3.12, matching CI. The
+default Python 3.14 environment reports a missing `zstandard` import in mypy;
+that dependency is deliberately conditional on Python versions below 3.14.
+
+Additional failures are tracked separately: [97] records the deletion-preview
+404 from the latest main CI run 38957407184; [98] records an unchanged server
+mobile-landscape test timing out at folder depth 11 during concurrent local
+validation. The server suite was stopped after that failure, with 136 passes.
+
+Full static suites passed with the final change:
+
+| Command | Result |
+| --- | --- |
+| `uv run --project server pytest static --durations=20` | 116 passed in 540.77 s |
+| `uv run --project server pytest static --dev --durations=20` | 116 passed in 555.25 s |
+
+Each reported only the existing Docutils `writer_name` deprecation warning.
+The [98] server test passed on its isolated rerun in 13.75 s. The complete
+server suite was not finished after its unrelated failure.
+
+## Delivery status
+
+GitHub main still points at `ff7b314383e7e6df2ad3e4a91bceef8cb16bd35b`,
+which has the pre-[96] history. Local main contains the rewritten history.
+A normal push cannot fast-forward it. Publishing that history rewrite is
+reserved for the user by [96]; this task does not force-push it. The next main
+CI run cannot validate this fix until the rewritten main is published. Keep
+[93] In Progress until that delivery requirement is satisfied.
+
+[96]: 96-remove-the-tailnet-hostname-from-all-files-and-from-history.md
+[97]: 97-fix-intermittent-preview-404-after-deleting-the-selected-file.md
+[98]: 98-investigate-mobile-landscape-wide-folder-navigation-timeout.md
