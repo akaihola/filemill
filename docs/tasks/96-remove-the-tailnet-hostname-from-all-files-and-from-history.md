@@ -36,10 +36,18 @@ Do not push, and do not touch atom or GitHub.
 
 ## For Antti (after this lands)
 
-- Force-push to GitHub: `git -C ~/prg/filemill push --force --all origin` and
-  `--tags`.
+- Force-push to GitHub only the two branches it has. The rewrite also rewrote
+  the remote-tracking refs, and the steward found both clean on 2026-10-17:
+  `git -C ~/prg/filemill push --force origin main refs/remotes/origin/ci/hai91-durations-all:refs/heads/ci/hai91-durations-all`.
+  The repository has no tags. (This replaces `push --force --all origin`, which
+  would also publish 34 local `pacer-*`, `backup/*` and `feature/*` branches.)
 - On atom, discard the old history: `git fetch` and then `git reset --hard origin/main`.
-  Rebase or recreate any local branches there.
+  Rebase or recreate any local branches there. On 2026-10-17 at 07:48 UTC, a
+  minute after the rewrite, a push put gogo's `refs/remotes/atom/main` and
+  `refs/remotes/atom/pacer-dbb29e55-…` back on the old history, which still
+  carries the name. No T3 thread ran it; it may have come from atom. Those refs
+  are local and not published, but delete them on gogo once atom is reset
+  (`git -C ~/prg/filemill update-ref -d <ref>`).
 - GitHub keeps old commits reachable through pull request refs (PR #2) and its
   caches. Only GitHub Support can purge those.
 
