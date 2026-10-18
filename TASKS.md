@@ -32,10 +32,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [~] [104] Make preview content inert: wikilink text and DOCX output (A2)
       <!-- hai:{"id":"simple-fdfa185d-6944-4b3b-acc4-f7b3b2114168","labels":["steward"],"createdAt":"2026-10-18T20:07:21.877Z","updatedAt":"2026-10-18T21:32:25.176Z"} -->
 
-- [~] [103] Close the directory-index path escape and authorize save and delete (A1,
-  A3)
-      <!-- hai:{"id":"simple-ffe76e04-123e-46db-8436-f5563ac5b5d7","labels":["steward"],"createdAt":"2026-10-18T20:07:14.696Z","updatedAt":"2026-10-18T21:54:59.493Z"} -->
-
 - [~] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
 
@@ -47,6 +43,10 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-17T07:59:20.709Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [103] Close the directory-index path escape and authorize save and delete (A1,
+  A3)
+      <!-- hai:{"id":"simple-ffe76e04-123e-46db-8436-f5563ac5b5d7","labels":["steward"],"createdAt":"2026-10-18T20:07:14.696Z","updatedAt":"2026-10-18T21:55:15.099Z"} -->
 
 - [x] [102] Audit the technical roadmap against main and draft the next phase's
   issues
