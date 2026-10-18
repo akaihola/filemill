@@ -24,11 +24,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [105] Correct the current edition and renderer documentation (roadmap Phase 0)
-    - Depends on: [102]
-
-      <!-- hai:{"id":"simple-a03688ad-b2e9-4885-b18d-eaa33c6adb90","labels":["steward"],"createdAt":"2026-10-18T20:07:22.740Z","updatedAt":"2026-10-18T22:00:27.750Z"} -->
-
 - [~] [104] Make preview content inert: wikilink text and DOCX output (A2)
       <!-- hai:{"id":"simple-fdfa185d-6944-4b3b-acc4-f7b3b2114168","labels":["steward"],"createdAt":"2026-10-18T20:07:21.877Z","updatedAt":"2026-10-18T21:32:25.176Z"} -->
 
@@ -43,6 +38,11 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-17T07:59:20.709Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [105] Correct the current edition and renderer documentation (roadmap Phase 0)
+    - Depends on: [102]
+
+      <!-- hai:{"id":"simple-a03688ad-b2e9-4885-b18d-eaa33c6adb90","labels":["steward"],"createdAt":"2026-10-18T20:07:22.740Z","updatedAt":"2026-10-18T22:00:45.320Z"} -->
 
 - [ ] [103] Close the directory-index path escape and authorize save and delete (A1,
   A3)
