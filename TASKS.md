@@ -8,15 +8,15 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [108] Wait for PageDown scrolling in the static keyboard test
-  <!-- hai:{"id":"simple-e9360e81-e2ed-419a-8061-7e3136ecbb92","createdAt":"2026-10-18T21:43:30.456Z","updatedAt":"2026-10-18T22:05:48.841Z"} -->
-
 - [107] Date superseded roadmap and ADR claims (roadmap Phase 0)
     - Depends on: [105]
 
   <!-- hai:{"id":"simple-c54d6a4c-5bfc-417e-bb9c-250b2b875076","labels":["steward"],"createdAt":"2026-10-18T20:07:24.425Z","updatedAt":"2026-10-18T22:05:11.445Z"} -->
 
 ## In Progress
+
+- [~] [108] Wait for PageDown scrolling in the static keyboard test
+      <!-- hai:{"id":"simple-e9360e81-e2ed-419a-8061-7e3136ecbb92","createdAt":"2026-10-18T21:43:30.456Z","updatedAt":"2026-10-18T22:19:49.174Z"} -->
 
 - [~] [104] Make preview content inert: wikilink text and DOCX output (A2)
       <!-- hai:{"id":"simple-fdfa185d-6944-4b3b-acc4-f7b3b2114168","labels":["steward"],"createdAt":"2026-10-18T20:07:21.877Z","updatedAt":"2026-10-18T21:32:25.176Z"} -->
