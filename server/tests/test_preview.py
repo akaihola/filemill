@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 
 import filemill.preview as preview_module
@@ -11,26 +9,6 @@ from filemill.preview import (
     render_preview,
     render_source,
 )
-
-# ── helpers ──────────────────────────────────────────────────────────────────
-
-
-def _make_pptx(
-    path: Path, text: str = "Slide text", bold: bool = False, italic: bool = False
-):
-    from pptx import Presentation
-    from pptx.util import Inches
-
-    prs = Presentation()
-    slide = prs.slides.add_slide(prs.slide_layouts[6])  # blank layout
-    txBox = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(2))
-    p = txBox.text_frame.paragraphs[0]
-    run = p.add_run()
-    run.text = text
-    run.font.bold = bold
-    run.font.italic = italic
-    prs.save(str(path))
-
 
 # ── render_preview dispatch ───────────────────────────────────────────────────
 
@@ -116,63 +94,6 @@ def test_dispatch_no_ext(tmp_path):
     result = render_preview(f)
     assert "preview-unsupported" in result
     assert "(no extension)" in result
-
-
-"""PPTX is covered by the browser adapter tests."""
-'''
-def _fake_libreoffice(monkeypatch, count=2, raises=None):
-    def run(command, **kwargs):
-        if raises:
-            raise raises
-        output = (
-            Path(command[command.index("--outdir") + 1])
-            if "--outdir" in command
-            else Path(command[-1]).parent
-        )
-        if command[0] == "libreoffice":
-            (output / f"{Path(command[-1]).stem}.pdf").write_bytes(b"pdf")
-        else:
-            for i in range(1, count + 1):
-                (output / f"slide-{i}.png").write_bytes(f"slide {i}".encode())
-        return subprocess.CompletedProcess(command, 0)
-
-    monkeypatch.setattr("filemill.preview.subprocess.run", run)
-
-
-def test_preview_pptx_renders_ordered_slide_images(tmp_path, monkeypatch):
-    f = tmp_path / "deck.pptx"
-    f.write_bytes(b"pptx")
-    _fake_libreoffice(monkeypatch)
-    html = _preview_pptx(f)
-    assert html.count("<img ") == 2
-    assert html.index('alt="Slide 1"') < html.index('alt="Slide 2"')
-    assert "data:image/png;base64," in html
-
-
-def test_preview_pptx_conversion_failure_uses_preview_error(tmp_path, monkeypatch):
-    f = tmp_path / "deck.pptx"
-    f.write_bytes(b"pptx")
-    _fake_libreoffice(monkeypatch, raises=FileNotFoundError("libreoffice"))
-    assert "preview-error" in _preview_pptx(f)
-
-
-def test_preview_pptx_empty_paragraph_is_skipped(tmp_path):
-    pytest.skip("PPTX text extraction was replaced by LibreOffice rendering")
-    """A paragraph with no runs produces an empty line_parts list (if branch=False)."""
-    from pptx import Presentation
-    from pptx.util import Inches
-
-    prs = Presentation()
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    txBox = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(2))
-    # First paragraph: has a run with text (covered already)
-    txBox.text_frame.paragraphs[0].add_run().text = "visible"
-    # Second paragraph: no runs → empty line_parts → if branch is False
-    txBox.text_frame.add_paragraph()  # empty paragraph, no runs
-    prs.save(str(tmp_path / "deck.pptx"))
-    html = _preview_pptx(tmp_path / "deck.pptx")
-    assert "visible" in html
-'''
 
 
 # ── _preview_pdf ──────────────────────────────────────────────────────────────

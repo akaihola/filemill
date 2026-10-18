@@ -26,6 +26,11 @@ repos:
         entry: deno lint ui/
         language: system
         pass_filenames: false
+      - id: suppression-links
+        name: Python suppression issue links
+        entry: timeout 1800 uv run --project server pytest -q server/tests/test_suppression_links.py
+        language: system
+        pass_filenames: false
       - id: build-index
         name: build-index.py --check
         entry: static/build-index.py --check

@@ -8,6 +8,7 @@ Navigation levels:
 from __future__ import annotations
 
 import sqlite3
+from contextlib import suppress
 from pathlib import Path
 
 from filemill.vfs import REGISTRY, VFSEntry, _truncate
@@ -213,7 +214,8 @@ class SQLiteProvider:
         # use rowid so the label stays stable even when values repeat later.
         if len(info) > 1:
             first_col = info[0]["name"]
-            try:
+            # Display-key probing is best effort; fall back to rowid on failure.
+            with suppress(Exception):
                 fetch_limit = MAX_ROW_ENTRIES
                 total = con.execute(
                     f"SELECT COUNT(*) FROM (SELECT {_quote_identifier(first_col)} "
@@ -231,8 +233,6 @@ class SQLiteProvider:
                         return _truncate(_val(row[first_col]))
                     except (IndexError, KeyError):
                         pass
-            except Exception:  # noqa: S110 — display-key probing is best effort
-                pass
 
         # Fallback: use _rowid_ alias (set by callers via SELECT rowid AS _rowid_, *)
         try:

@@ -156,6 +156,10 @@ developer mode for that.
 
 ## Tests
 
+Install and run the local quality gate as described in
+[CONTRIBUTING.md](CONTRIBUTING.md#tests). It also checks that Python lint
+suppressions link to focused issues.
+
 ```bash
 uv run pytest                              # both editions
 uv run pytest static/tests --bundle         # generated static bundle, default

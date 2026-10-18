@@ -139,4 +139,7 @@ def is_vfs_file(path: Path) -> bool:
 # ── Provider registration (side-effects) ──────────────────────────────────────
 # These imports MUST remain at the bottom, after all names above are defined.
 # Each provider module does `REGISTRY.register(...)` at import time.
-from filemill.providers import archive, gitbundle, sqlite, vtt_provider  # noqa: F401
+from filemill.providers import archive, gitbundle, sqlite, vtt_provider
+
+# Registration is complete; the registry owns the provider instances.
+del archive, gitbundle, sqlite, vtt_provider

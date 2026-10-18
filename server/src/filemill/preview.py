@@ -1,5 +1,6 @@
 import configparser
 import html as html_lib
+from contextlib import suppress
 from pathlib import Path
 from urllib.parse import quote as urlquote
 
@@ -136,17 +137,17 @@ def _highlight_source(path: Path, ext: str) -> str | None:
                 try:
                     lexer = get_lexer_by_name(ext.lstrip("."))
                 except ClassNotFound:
-                    try:
+                    # No guess means no colour; retain the plain-text fallback.
+                    with suppress(Exception):
                         lexer = guess_lexer(content)
-                    except Exception:  # noqa: S110 — no guess means no colour
-                        pass
                 # Skip TextLexer – unrecognised plain text falls through to <pre>
                 if lexer is not None and not isinstance(lexer, TextLexer):
                     formatter = PygHtmlFormatter(style="friendly", nowrap=False)
                     highlighted = pyg_highlight(content, lexer, formatter)
                     return f'<div class="preview-code">{highlighted}</div>'
-    except Exception:  # noqa: S110 — colour is optional; the <pre> fallback is not
-        pass
+    except Exception:
+        # Colour is optional; the caller's plain-text fallback is not.
+        return None
     return None
 
 

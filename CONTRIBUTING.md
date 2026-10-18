@@ -56,8 +56,28 @@ uv run --project server pytest static/tests --dev
 Run the Markdown viewport check with `uv run --project server pytest
 static/tests/test_rich.py -k markdown_viewport`. Add `--dev` to test the shared source.
 
-Run `pre-commit run --all-files` before you commit. It runs the Python and UI
-formatters and linters, the type checker, and the static bundle check.
+Install the local Git hook and run the gate from the repository root:
+
+```bash
+uvx pre-commit install
+uvx pre-commit run --all-files
+```
+
+The gate runs the Python and UI formatters and linters, the type checker,
+the Python suppression-link guard, and the static bundle check. Each Python
+`noqa` comment must include a focused issue path, for example
+`# noqa: F401 -- docs/tasks/24-split-app-py.md`. Remove an unnecessary
+suppression instead of adding a link to a general audit. The guard scans
+Git-tracked Python files and ignores strings and docstrings.
+
+Ruff infers Python 3.12 from `server/pyproject.toml`'s `requires-python`.
+Do not raise this target to the local interpreter version. CI pins Deno to
+2.6.8; use that version locally too. The lock file selects Ruff and mypy.
+
+The CI lint job runs pre-commit and the shared model checks. The three browser
+suite jobs require lint to pass. Publishing requires lint and all three suites.
+A local hook runs only after installation. These commands do not prove that
+all contributors installed it or that branch protection requires CI.
 
 ## Commits
 

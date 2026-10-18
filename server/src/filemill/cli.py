@@ -8,13 +8,12 @@ import filemill.app as app_module
 from filemill.env import env
 
 cli = typer.Typer(help="Filemill – a column-view file browser and previewer")
+_ROOT_ARGUMENT = typer.Argument(None, help="Root directory to browse")
 
 
 @cli.command()
 def main(
-    root: Path | None = typer.Argument(  # noqa: B008
-        None, help="Root directory to browse"
-    ),
+    root: Path | None = _ROOT_ARGUMENT,
     port: int = typer.Option(8000, help="Port to listen on"),
     live: bool = typer.Option(False, help="Enable live reload"),
     bind: str = typer.Option(

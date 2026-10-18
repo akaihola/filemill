@@ -111,7 +111,12 @@ Keep these.
   the expected fold count before measuring geometry, since navigation state can
   precede a deferred scroll write even with CSS scrolling set to `auto`
   ([93], 2026-10-17). Pre-commit
-  runs ruff, ruff format, mypy, deno and the bundle check. The baseline and
+  runs ruff, ruff format, mypy, deno and the bundle check. Issue [106]
+  adds a Git-tracked Python `noqa` issue-link guard to that gate (2026-10-19).
+  Its six suppression sites now use equivalent unsuppressed code. Provider
+  imports still register in the same order. The disabled Python/LibreOffice
+  PPTX tests and unused helper are removed; browser PPTX checks remain.
+  The baseline and
   dispositions are in `docs/testing/remaining-red-tests.md`. Browser checks in
   the static pytest suite and server tests wait for observable state, including
   scroll/dial stability and completed storage writes, rather than fixed sleeps.
