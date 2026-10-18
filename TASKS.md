@@ -6,13 +6,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+## Scheduled
+
 - [102] Audit the technical roadmap against main and draft the next phase's
   issues
     - Depends on: [101]
 
-  <!-- hai:{"id":"simple-4062970c-4d67-4774-b6d9-969613643e7c","labels":["steward"],"createdAt":"2026-10-18T02:12:21.766Z","updatedAt":"2026-10-18T02:12:45.390Z"} -->
-
-## Scheduled
+  <!-- hai:{"id":"simple-4062970c-4d67-4774-b6d9-969613643e7c","labels":["steward"],"createdAt":"2026-10-18T02:12:21.766Z","updatedAt":"2026-10-18T05:47:11.603Z"} -->
 
 ## In Progress
 
