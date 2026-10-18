@@ -6,10 +6,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [101] Make the browser keyboard tests wait for each opened folder before the
-  next key
-  <!-- hai:{"id":"simple-52f039e0-e22b-4c63-95c2-21d6afb06983","labels":["steward"],"createdAt":"2026-10-18T02:12:12.913Z","updatedAt":"2026-10-18T02:12:44.877Z"} -->
-
 - [102] Audit the technical roadmap against main and draft the next phase's
   issues
     - Depends on: [101]
@@ -17,6 +13,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-4062970c-4d67-4774-b6d9-969613643e7c","labels":["steward"],"createdAt":"2026-10-18T02:12:21.766Z","updatedAt":"2026-10-18T02:12:45.390Z"} -->
 
 ## Scheduled
+
+- [101] Make the browser keyboard tests wait for each opened folder before the
+  next key
+  <!-- hai:{"id":"simple-52f039e0-e22b-4c63-95c2-21d6afb06983","labels":["steward"],"createdAt":"2026-10-18T02:12:12.913Z","updatedAt":"2026-10-18T02:14:39.096Z"} -->
 
 ## In Progress
 
