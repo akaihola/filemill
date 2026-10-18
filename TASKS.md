@@ -6,10 +6,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [108] Wait for PageDown scrolling in the static keyboard test
-  <!-- hai:{"id":"simple-e9360e81-e2ed-419a-8061-7e3136ecbb92","createdAt":"2026-10-18T21:43:30.456Z","updatedAt":"2026-10-18T21:43:30.456Z"} -->
-
 ## Scheduled
+
+- [108] Wait for PageDown scrolling in the static keyboard test
+  <!-- hai:{"id":"simple-e9360e81-e2ed-419a-8061-7e3136ecbb92","createdAt":"2026-10-18T21:43:30.456Z","updatedAt":"2026-10-18T22:05:48.841Z"} -->
 
 - [107] Date superseded roadmap and ADR claims (roadmap Phase 0)
     - Depends on: [105]
