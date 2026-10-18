@@ -1391,6 +1391,10 @@ async def test_keyboard_horizontal(page):
     await pg.wait_for_function("focusCol === 1")
     assert await pg.evaluate("focusCol") == 1, "→ moves focus into the open column"
     for depth in range(2, 5):
+        await pg.wait_for_function(
+            "i => path[i]?.kids && colCache.get(path[i])?.rows.length",
+            arg=depth,
+        )
         await pg.keyboard.press("ArrowRight")
         await pg.wait_for_function(
             "depth => focusCol === depth && colCache.get(path[depth])?.rows.length",
@@ -1447,6 +1451,10 @@ async def test_folding_dial(page):
     await pg.click('.col[data-i="0"] .row:has-text("deep")')
     await pg.wait_for_function("path[1]?.name === 'deep' && path[1]?.kids")
     for col in range(1, 5):
+        await pg.wait_for_function(
+            "i => path[i]?.kids && colCache.get(path[i])?.rows.length",
+            arg=col,
+        )
         await pg.keyboard.press("ArrowRight")
         await pg.wait_for_function("focusCol === " + str(col))
     await pg.keyboard.press("ArrowRight")  # focus the leaf preview

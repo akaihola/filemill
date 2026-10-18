@@ -567,8 +567,11 @@ def test_arrowright_preview_preserves_layout(live_server, viewport, selection):
 def test_vertical_navigation_preserves_folded_ancestor(live_server: str):
     with _ui_page(live_server) as page:
         page.keyboard.press("ArrowDown")
+        page.wait_for_function("path[1]?.kids && colCache.get(path[1])?.rows.length")
         page.keyboard.press("ArrowRight")
-        page.wait_for_function("focusCol === 1 && path.length >= 2")
+        page.wait_for_function(
+            "focusCol === 1 && path[2]?.kids && colCache.get(path[2])?.rows.length"
+        )
         page.keyboard.press("ArrowRight")
         page.wait_for_function("focusCol === 2 && path.length >= 3")
 

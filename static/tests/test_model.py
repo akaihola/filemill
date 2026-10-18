@@ -20,7 +20,9 @@ def test_model_renderer_selection(bundle, playwright):
         }""")
         page.wait_for_selector('.col[data-i="0"] .row')
         page.keyboard.press("ArrowDown")
-        page.wait_for_function("sel[0] === 'folder' && path.length === 2")
+        page.wait_for_function(
+            "sel[0] === 'folder' && path[1]?.kids && colCache.get(path[1])?.rows.length"
+        )
         assert page.evaluate("focusCol") == 0
         page.keyboard.press("ArrowRight")
         page.wait_for_function("focusCol === 1 && sel[1] === 'note.txt'")
@@ -69,6 +71,10 @@ def test_preview_left_preserves_ancestor_folds(bundle, playwright):
         }""")
         for depth in range(5):
             page.keyboard.press("ArrowDown")
+            page.wait_for_function(
+                "i => path[i]?.kids && colCache.get(path[i])?.rows.length",
+                arg=depth + 1,
+            )
             page.keyboard.press("ArrowRight")
             page.wait_for_function("length => sel.length === length", arg=depth + 2)
         page.keyboard.press("ArrowRight")
@@ -101,6 +107,10 @@ def test_preview_left_expands_parent_when_all_columns_are_folded(bundle, playwri
         }""")
         for depth in range(5):
             page.keyboard.press("ArrowDown")
+            page.wait_for_function(
+                "i => path[i]?.kids && colCache.get(path[i])?.rows.length",
+                arg=depth + 1,
+            )
             page.keyboard.press("ArrowRight")
             page.wait_for_function("length => sel.length === length", arg=depth + 2)
         page.keyboard.press("ArrowRight")
@@ -214,8 +224,11 @@ def test_loading_and_navigation_keep_columns_whole(bundle, playwright):
             requestAnimationFrame(sample);
         }""")
         page.locator('.row[title="a"]').click()
+        page.wait_for_function("path[1]?.kids && colCache.get(path[1])?.rows.length")
         page.keyboard.press("ArrowRight")
-        page.wait_for_function("focusCol === 1")
+        page.wait_for_function(
+            "focusCol === 1 && path[2]?.kids && colCache.get(path[2])?.rows.length"
+        )
         page.keyboard.press("ArrowRight")
         page.wait_for_selector('.col[data-i="3"] .spinner')
         page.evaluate("finishRead()")
@@ -245,8 +258,13 @@ def test_preview_threshold_folds_only_below_one_third(bundle, playwright, width,
             await mount(dir('root', [dir('a', [dir('b', [file])])]));
             finder.style.scrollBehavior = 'auto';
         }""")
-        for key in ["ArrowDown", "ArrowRight", "ArrowRight"]:
-            page.keyboard.press(key)
+        page.keyboard.press("ArrowDown")
+        for depth in (1, 2):
+            page.wait_for_function(
+                "i => path[i]?.kids && colCache.get(path[i])?.rows.length",
+                arg=depth,
+            )
+            page.keyboard.press("ArrowRight")
         page.wait_for_function("focusCol === 2 && path.length === 3")
         # Navigation can finish before the layout's deferred scroll write.
         page.wait_for_function("expected => folded === expected", arg=folds)
@@ -333,6 +351,10 @@ def test_left_arrow_reveals_selection(bundle, playwright, count, last, kind):
         name = f"item-{target:02}" + (".txt" if kind == "file" else "")
         page.keyboard.press("End" if last else "Home")
         page.wait_for_function("name => sel[0] === name", arg=name)
+        if kind == "directory":
+            page.wait_for_function(
+                "path[1]?.kids && colCache.get(path[1])?.rows.length"
+            )
         page.keyboard.press("ArrowRight")
         page.wait_for_function(
             "document.activeElement.id === 'preview'"
