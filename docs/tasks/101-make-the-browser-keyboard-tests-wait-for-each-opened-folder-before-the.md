@@ -280,9 +280,8 @@ and both static modes. Each invocation ran one test function:
 uv run --project server pytest <module>::<test> -q --tb=short --durations=20 [--bundle|--dev]
 ```
 
-The mode argument is omitted for the server test. Module abbreviations in
-the table refer to the full paths in the audit headings above. Ranges are
-pytest elapsed seconds per invocation, including parameterized cases.
+The mode argument is omitted for the server test. Ranges are pytest elapsed
+seconds per invocation, including parameterized cases.
 
 | Module / test | Mode | Runs | Elapsed seconds |
 | --- | --- | --- | --- |
@@ -306,7 +305,7 @@ pytest elapsed seconds per invocation, including parameterized cases.
 
 Total: 175 passing parameterized test cases.
 
-### Full server validation and remaining blocker
+### Full server validation before rebase
 
 From `server/`, after the concurrent baseline finished:
 
@@ -327,10 +326,48 @@ files, this description and [101]'s tracker moves. No reply had arrived
 when validation finished, so [102]'s description remains unchanged.
 The guard itself is unchanged.
 
-Two consecutive full-suite passes have **not** been achieved. The second
-run is deferred until the known documentation failure is corrected.
-[101] remains In Progress; it is not marked complete or accepted, and the
-branch is not merged. No push, deployment or service restart was performed.
+At this point, two consecutive full-suite passes had not been achieved.
+The second run was deferred until the documentation failure was corrected.
+[101] remained In Progress and the branch was not merged. No push,
+deployment or service restart was performed.
 
-Implementation commits: `7a9be163` records the plan and audit; `6eac522b`
+Before rebase, implementation commits: `7a9be163` records the plan and audit; `6eac522b`
 adds the readiness waits. The final evidence is committed separately.
+
+### Rebased validation, 2026-10-18
+
+The steward corrected [102]'s private path on main in `3425fbe5`. This
+branch rebased cleanly onto that commit. [102]'s description was not
+changed by this branch. The portability guard then passed in 0.18 s.
+This resolves the earlier blocker without changing the guard or scope.
+The rebased implementation commit is `cd42c383`.
+
+Both full static browser suites were rerun after the rebase, alongside
+the first server run:
+
+| Command from repository root | Result | Pytest elapsed |
+| --- | --- | --- |
+| `uv run --project server pytest static/tests --bundle --durations=20` | 147 passed, 1 warning | 582.34 s |
+| `uv run --project server pytest static/tests --dev --durations=20` | 147 passed, 1 warning | 604.00 s |
+
+The tracker rules do not require two full static-suite passes. The issue
+requires two consecutive full server-suite passes; those also exercise
+both server browser modules. The five isolated reruns of every changed
+test were already completed before this documentation-only rebase.
+
+The full server suite then passed twice consecutively on the rebased
+branch. Both invocations ran from `server/` with the same command:
+
+```bash
+uv run pytest tests --durations=20
+```
+
+| Consecutive run | Result | Pytest elapsed | Process wall time |
+| --- | --- | --- | --- |
+| 1 | 853 passed, 3 warnings | 759.82 s | 761.29 s |
+| 2 | 853 passed, 3 warnings | 533.63 s | 534.74 s |
+
+The first run overlapped the static browser suites; the second followed
+immediately after it. No test or product code changed between the runs.
+All acceptance checks for [101] are satisfied. Completion remains pending
+user acceptance and must retain `[ ]` in Completed / Accepted.
