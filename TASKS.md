@@ -18,12 +18,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [106] Link or remove every lint suppression and the obsolete PPTX skip
-  (roadmap Phase 1)
-    - Depends on: [102]
-
-      <!-- hai:{"id":"simple-bf3779d1-478d-46a3-858d-498dde815c5f","labels":["steward"],"createdAt":"2026-10-18T20:07:23.528Z","updatedAt":"2026-10-18T22:01:29.059Z"} -->
-
 - [~] [104] Make preview content inert: wikilink text and DOCX output (A2)
       <!-- hai:{"id":"simple-fdfa185d-6944-4b3b-acc4-f7b3b2114168","labels":["steward"],"createdAt":"2026-10-18T20:07:21.877Z","updatedAt":"2026-10-18T21:32:25.176Z"} -->
 
@@ -38,6 +32,12 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-17T07:59:20.709Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [106] Link or remove every lint suppression and the obsolete PPTX skip
+  (roadmap Phase 1)
+    - Depends on: [102]
+
+      <!-- hai:{"id":"simple-bf3779d1-478d-46a3-858d-498dde815c5f","labels":["steward"],"createdAt":"2026-10-18T20:07:23.528Z","updatedAt":"2026-10-18T22:04:20.512Z"} -->
 
 - [ ] [105] Correct the current edition and renderer documentation (roadmap Phase 0)
     - Depends on: [102]
