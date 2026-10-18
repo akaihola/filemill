@@ -37,3 +37,17 @@ regression.
 Keep the keyboard navigation, preview focus and positive scrolling assertions.
 Wait for observable scrolling where appropriate; do not add fixed sleeps or
 relax the gate. Validate both static modes under concurrent browser-test load.
+
+## Implementation plan, 2026-10-19
+
+1. Run the horizontal keyboard test with normal scrolling and with scroll
+   writes deferred across animation frames. Confirm that the unchanged
+   immediate assertion fails in the deferred case.
+2. Wait for each scroll key to move the preview in the expected direction.
+   Keep all navigation, focus and positive scroll assertions.
+3. Run the root, static bundle and static development suites concurrently.
+   Run the repository quality gate. Record results before completion.
+
+The deferred case failed at PageDown with `0 -> 0`; the normal case passed.
+This proves that the immediate read can race a deferred scroll write. It does
+not establish the browser's cause for the original intermittent failure.
