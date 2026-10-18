@@ -6,12 +6,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [106] Link or remove every lint suppression and the obsolete PPTX skip
-  (roadmap Phase 1)
-    - Depends on: [102]
-
-  <!-- hai:{"id":"simple-bf3779d1-478d-46a3-858d-498dde815c5f","labels":["steward"],"createdAt":"2026-10-18T20:07:23.528Z","updatedAt":"2026-10-18T20:07:23.528Z"} -->
-
 - [107] Date superseded roadmap and ADR claims (roadmap Phase 0)
     - Depends on: [105]
 
@@ -21,6 +15,12 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-e9360e81-e2ed-419a-8061-7e3136ecbb92","createdAt":"2026-10-18T21:43:30.456Z","updatedAt":"2026-10-18T21:43:30.456Z"} -->
 
 ## Scheduled
+
+- [106] Link or remove every lint suppression and the obsolete PPTX skip
+  (roadmap Phase 1)
+    - Depends on: [102]
+
+  <!-- hai:{"id":"simple-bf3779d1-478d-46a3-858d-498dde815c5f","labels":["steward"],"createdAt":"2026-10-18T20:07:23.528Z","updatedAt":"2026-10-18T22:01:08.063Z"} -->
 
 ## In Progress
 
