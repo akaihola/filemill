@@ -14,11 +14,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [101] Make the browser keyboard tests wait for each opened folder before the
-  next key
-  <!-- hai:{"id":"simple-52f039e0-e22b-4c63-95c2-21d6afb06983","labels":["steward"],"createdAt":"2026-10-18T02:12:12.913Z","updatedAt":"2026-10-18T02:14:39.096Z"} -->
-
 ## In Progress
+
+- [~] [101] Make the browser keyboard tests wait for each opened folder before the
+  next key
+      <!-- hai:{"id":"simple-52f039e0-e22b-4c63-95c2-21d6afb06983","labels":["steward"],"createdAt":"2026-10-18T02:12:12.913Z","updatedAt":"2026-10-18T02:15:05.901Z"} -->
 
 - [~] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
