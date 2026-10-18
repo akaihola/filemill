@@ -5,7 +5,9 @@
 Filemill is a column-view file browser and previewer in the style of macOS
 Finder. The server edition serves it as a Starlette web application. Click a
 column entry to open a directory. Files preview inline: Markdown, DOCX, PPTX,
-PDF, images, plain text, and code with syntax highlighting.
+PDF, images, plain text, and code with syntax highlighting. PPTX shows extracted
+slide text. See the [root edition/renderer table](../README.md) for current
+capabilities, network behavior and implementation links.
 
 ### Source layout
 
@@ -16,12 +18,11 @@ src/filemill/
 ├── cli.py          # Typer CLI entry point
 ├── env.py          # FILEMILL_* variables, PYKOFINDER_* fallback
 ├── paths.py        # resolve_safe() and the named-mount map
-├── preview.py      # Preview dispatcher (md / docx / pptx / pdf / img / code / raw)
+├── preview.py      # Server RST, media and source preview dispatcher
 ├── pwa.py          # /manifest.json, /sw.js and /icons/ handlers
-├── rendering.py    # markdown-it-py instance with plugins
 ├── urls.py         # View state and canonical URLs
 ├── vfs.py          # Virtual-filesystem registry + provider protocol
-├── providers/      # VFS backends (SQLite, JSON, VTT)
+├── providers/      # VFS backends (SQLite, VTT, archives, Git bundles)
 ├── static/         # Bundled PWA assets (manifest.json, sw.js, icons/)
 └── ui/             # The shared frontend; the repo root's ui/ symlinks here
 
@@ -35,7 +36,6 @@ tests/
 ├── test_providers_sqlite.py  # SQLite VFS provider unit tests
 ├── test_pytest_config.py     # Server runs elect ../pytest.ini and ../conftest.py
 ├── test_pwa.py               # PWA assets (manifest, SW, icons, head tags)
-├── test_rendering.py         # Markdown pipeline
 ├── test_resolve_safe.py      # Path-safety logic (paths.resolve_safe)
 ├── test_resource_routes.py   # The one directory rule in resource()
 ├── test_resource_safety.py   # Path containment in resource()
@@ -47,17 +47,10 @@ tests/
 
 ### The shared UI
 
-The frontend is `src/filemill/ui/`. The repository root's `../ui/` is a
-symlink to it. Both paths reach one directory. The static edition builds its
-single-file bundle from it, and this package serves it. The two editions are
-one application. The only difference is the adapters that the shared `core/`
-receives:
-
-| | **static** | **server** (here) |
-| --- | --- | --- |
-| filesystem | File System Access API | `GET /api/dir` |
-| preview | text/image, in the browser | `GET /api/preview` — **this module's renderers**; a database row travels as JSON on its `/api/dir` entry and the client draws it |
-| router | `#r=root&p=a/b.md` | `/n/a/b.md` |
+The [root README](../README.md) is the current edition/renderer reference.
+The frontend lives in `src/filemill/ui/`, with the repository's `../ui/`
+symlink pointing to it. The static builder concatenates that same module graph;
+the server serves it through [`app.py`](src/filemill/app.py).
 
 Virtual filesystems use the same adapter. A `.db` file lists as a directory
 when its provider yields entries. Its children carry a **`vpath`**: a path
@@ -70,26 +63,19 @@ virtual nodes exist.
 separates them and validates a deep link. The joined form exists only in the
 address bar.
 
-This is why `preview.py`, `rendering.py`, `vfs.py` and `providers/` have no
-JavaScript port, and why `POST /api/render` exists. When the browser opens a
-*local* folder, the server cannot read it. The page posts the bytes, and the
-same markdown-it-py, Pygments and mammoth pipeline renders them.
+[`app-http.js`](../ui/adapters/app-http.js) selects browser rendering for
+Markdown, DOCX and PPTX. Local-folder bytes stay in the browser rather than
+being uploaded to a render endpoint. RST local-folder routing remains an A8
+limit, documented in the root README.
 
-**`src/filemill/ui/` is the shared frontend itself, not a copy.** A wheel
-cannot reach outside its package at runtime, so the frontend is inside the
-package and the repository root's `../ui/` is a symlink. Edit it through either
-path. There is no copy to refresh.
-
-`wheel-exclude` in `pyproject.toml` keeps three static-only adapters out of
-the wheel: `app-fsa.js`, `preview-rich.js` and `router-hash.js`. The server
-shell loads the adapters listed in `_UI_ADAPTERS` in `app.py`.
-
-One repository and one set of files means that a UI change lands in both
-editions in one commit. `ui/adapters/README.md` documents the three ports.
+[`pyproject.toml`](pyproject.toml) excludes static/native entry points and
+adapters from the wheel. The server's module graph, including `preview-rich.js`
+and its vendored dependencies, ships inside the package. There is no packaging
+copy of the shared UI to refresh.
 
 The shared UI is mounted at `UI_BASE = "/n/"`, and the resource route serves
 it too. `index()` hands `/` to `resource()`. A directory, `/` included,
-returns `_ui_shell(state, "/")`. The URL path is the file path relative to
+without an index returns `_ui_shell(state, "/")`. The URL path is the file path relative to
 ROOT, with no prefix. A bare file path returns its own bytes, because `raw` is
 the default view and that branch returns before the shell one.
 `filemill=render` or `highlight` puts the shell around a file.
@@ -98,25 +84,28 @@ the default view and that branch returns before the shell one.
 
 ### Key invariants
 
-- All routes stay under a configurable `ROOT` directory. `resolve_safe()` in
-  `paths.py` refuses every path that escapes the root, symlinks included.
+- [`paths.py`](src/filemill/paths.py) checks paths against the root and allowed
+  direct-child symlink bookmark zones. [`app.py`](src/filemill/app.py) also
+  validates the final directory index. Mutation routes check Origin, Host and
+  a per-process token before path resolution or body consumption. See
+  [SECURITY.md](../SECURITY.md). A2, A4 and A5 remain open.
 - Static `/w/` URLs use named mounts. The root directory is `/w/<ROOT.name>/...`.
   Each direct symlink child of ROOT is `/w/<symlink-name>/...`.
 - There is no JavaScript build step.
 - Every path in the `/api/*` and `/n/` routes is **relative to ROOT**.
   `api.rel_to_abs` refuses an absolute path, because `ROOT / "/etc/passwd"` is
   `/etc/passwd`. `resolve_safe()` then checks containment.
-- The shared UI fetches nothing from the network in this edition. `ui/` serves
-  every asset, and Python renders the previews.
+- Browser renderer dependencies for Markdown and DOCX are served locally.
+  Document references can still request external resources; see the root README.
 - A keyboard handler that changes columns or the preview must update the
   browser URL. The URL and the visible Finder state must agree.
 - `src/filemill/static/` holds the PWA assets `/manifest.json`, `/sw.js` and
   `/icons/*`. `_reorder_routes()` puts them, `/ui/`, `/n/` and `/api/*` before
   The static catch-all route. Without that, the catch-all swallows
   every `.js` and `.css` the shared UI asks for, and the page is blank.
-- The UI shell registers the service worker. The worker bypasses non-GET
-  requests and `/api/*`, so it cannot cache file data or intercept local-file
-  uploads.
+- The UI shell registers the [service worker](src/filemill/static/sw.js).
+  It bypasses non-GET and `/api/*` requests but caches other same-origin URLs,
+  including document bytes. Cache isolation and offline misses remain A5 work.
 
 ---
 
@@ -124,8 +113,10 @@ the default view and that branch returns before the shell one.
 
 - **TDD (red-green)** – write a failing test first, then make it pass. Do not
   write production code without a failing test.
-- **Full test coverage** – every new or changed behaviour has a test. The
-  suite runs at 100% branch coverage. Unit and integration tests use pytest.
+- **Coverage** – every new or changed behaviour has a test.
+  [CI](../.github/workflows/publish.yml) measures branch coverage with
+  `--cov=src/filemill --cov-branch --cov-report=term-missing`; it sets no
+  coverage percentage threshold. Unit and integration tests use pytest.
 - **Documentation stays current** – update `README.md` and the root `TASKS.md`
   in the same change.
 - **Simplify** – look for a simpler form on every pass. Less code is better
@@ -192,9 +183,11 @@ never prints.
 itself, so those tests pass with no network. Measured on a host with no proxy
 credentials given to Chromium: 34 passed in 95 s.
 
-### Two Measurements of the Local-Folder Tests Disagree
+### Historical local-folder measurements
 
-The disagreement is unresolved, and both conditions are reproducible. On
+Superseded 2026-10-19. The upload renderer and the two named Python-rendering
+tests were removed when rendering moved to the browser. The following records
+the 2026-08-18 investigation, not current test instructions. On
 2026-08-18 one agent recorded 27 passed in 115 s and 118 s on a 4-core host.
 `test_local_files_are_still_rendered_by_python` and
 `test_local_source_is_still_highlighted_by_pygments` passed three times alone
@@ -206,8 +199,7 @@ The second agent's runs showed that `POST /api/render` completes, and that
 `#preview .pv-rich h1` never appears. Slowness and the round trip are not the
 cause.
 
-Look at `ui/adapters/preview-upload.js`. It has two branches that are silent
-by design:
+The former `ui/adapters/preview-upload.js` had two silent branches:
 
 ```js
 if (!r.ok) return PreviewLocal.render(node);   /* draws no .pv-rich */
@@ -229,14 +221,10 @@ injected; a count of 1 means the server rendered something without that element
 in it. First 300 bytes: '<div class="preview-error">no heading here</div>'
 ```
 
-If you hit this, run those two tests and paste the message. It names the
-status and the first 300 bytes the server sent. That is the cause, not a
-timeout.
-
-`test_nothing_is_fetched_from_a_cdn` holds the shared UI to that. It watches
-both halves. The served half goes through `preview-http.js` and
-`GET /api/preview`. The local-folder half goes through `preview-upload.js`
-and `POST /api/render`.
+Current served and local-folder preview tests are in
+[`test_browser_new_ui.py`](tests/test_browser_new_ui.py), including
+`test_nothing_is_fetched_from_a_cdn`. Renderer selection is implemented in
+[`app-http.js`](../ui/adapters/app-http.js).
 
 ### Wait for an Element, Never for a Duration
 

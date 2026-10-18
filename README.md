@@ -18,9 +18,27 @@ ports declared in [`ui/core/ports.js`](ui/core/ports.js):
 
 | | **static** | **server** |
 | --- | --- | --- |
-| filesystem | File System Access API | `GET /api/dir` |
-| preview | markdown-it / mammoth, fetched on demand | the same, served from `ui/vendor/`; `GET /api/preview` for the rest |
-| router | `#r=root&p=a/b.md` | `/n/a/b.md` — the path *is* the file path |
+| filesystem | File System Access API, including permitted saves and deletes | HTTP API for served files; FSA for Open local folder |
+| Markdown / DOCX | Browser markdown-it / mammoth, pinned CDN downloads controlled by the rich-preview switch | Same browser renderers, vendored under `/ui/vendor/`, independent of the switch |
+| reStructuredText | Browser Pyodide + docutils, pinned CDN download controlled by the switch | Python docutils for served files and archive members |
+| PowerPoint | Browser extracts slide text locally, without a download or consent switch | Same slide-text extraction, including archive members |
+| source highlighting | Shared browser `core/syntax.js` | Same browser highlighter for known languages; Python Pygments on server preview/source routes |
+| router | `#r=root&p=a/b.md` | Root-relative file path, for example `/a/b.md`; `/n/` also serves the shell |
+
+The renderer choices are implemented in
+[`app-fsa.js`](ui/adapters/app-fsa.js),
+[`app-http.js`](ui/adapters/app-http.js),
+[`preview-rich.js`](ui/adapters/preview-rich.js) and
+[`preview.py`](server/src/filemill/preview.py). The server's
+[`app.py`](server/src/filemill/app.py) maps browser dependencies to vendored
+modules. PPTX previews show slide numbers and extracted paragraph text, without
+slide layout, images or animations. DOCX conversion produces HTML rather than
+an exact Office page layout.
+
+Open local folder uses browser renderers for Markdown, DOCX and PPTX. Its RST
+routing still incorrectly requests the server preview, which cannot read a
+browser-owned file. This is the open A8 limit in the
+[architecture review](docs/ARCHITECTURE-REVIEW.md).
 
 The ports also set the cost of each edition. A sort by size needs a size per
 row. The server listing has the size. The File System Access API gives names
@@ -53,8 +71,10 @@ inside the preview, so every column stays reachable.
 One repository holds both editions. Two copies of one UI drift apart one bug
 fix at a time. A fix to `ui/` is a fix to both editions in one commit.
 
-> The server edition was called **pykofinder**. `FILEMILL_ROOT` and the other
-> `FILEMILL_*` variables are current. The `PYKOFINDER_*` names still work.
+> The server edition was called **pykofinder**. `FILEMILL_*` environment
+> lookup retains `PYKOFINDER_*` fallbacks through
+> [`env.py`](server/src/filemill/env.py). CLI arguments and ASGI configuration
+> differ; see the [server startup table](server/README.md#usage).
 
 ## static — one file, no server, no install
 
@@ -71,13 +91,18 @@ python3 -m http.server 8000 -d ..     # then …
 bundle to GitHub Pages. `showDirectoryPicker()` needs a secure context, so the
 file opened from disk cannot open a folder. An `https://` page can.
 
-Rich previews (Markdown, .docx, reStructuredText, .pptx) load from a CDN on
-first use. A switch in ⚙ turns them off. This is the only network access.
-reStructuredText runs docutils on Pyodide, a 13 MB one-time download.
-PowerPoint files open in `pptx-vanilla-viewer`, a 4 MB one-time download.
-Offline, the preview shows the raw source, or says that the viewer is
-unavailable for a `.pptx` file. Every CDN URL carries a version pin; see
-[ADR 0040](docs/adr/0040-version-pins-on-every-cdn-url.md).
+Markdown, DOCX and reStructuredText load pinned renderer modules from a CDN
+on first use when the remembered rich-preview switch is on, its default.
+The switch in settings disables these downloads. Pyodide runs docutils for
+RST, about 6 MB transferred and 13 MB unpacked as recorded in
+[ADR 0002](docs/adr/0002-rst-in-browser.md). If loading fails, the renderer
+tries a bounded text fallback and an offline note. Binary DOCX bytes may have
+no readable text fallback. PPTX slide-text extraction works without the CDN.
+See [`preview-rich.js`](ui/adapters/preview-rich.js) for the pins, consent
+check, extraction and fallback paths.
+
+Folder reads stay in the browser. Network access includes application loading,
+renderer downloads and resources referenced by documents, such as images. The rich-preview switch is not a general network blocker.
 
 Use the [manual FSA test checklist](static/FSA-TEST-CHECKLIST.md) for visual
 checks and the headed real-folder check.
@@ -92,17 +117,13 @@ uv sync && uv run filemill [ROOT]
 #   localhost:8000/     ← the shared UI, and "Open local folder…"
 ```
 
-Markdown and `.docx` render in the browser here too, from the pinned
-markdown-it and mammoth modules the server serves out of `ui/vendor/` — nothing
-is fetched from a CDN for them, and the ⚙ switch does not apply to them. Python
-renders reStructuredText, Pygments source and the JSON virtual filesystem, and
-reads inside tar and zip archives, which open as columns of their members, and
-lists Git `.bundle` files by their refs and trees through `git`. The
-result goes into the shared preview pane. SQLite rows arrive as JSON and the
-shared JSON view draws them. A local folder opened from the served page posts
-uses the same browser PreviewRich renderer. PowerPoint files are
-the one exception: both editions open them in the browser with
-`pptx-vanilla-viewer` from the CDN.
+The edition/renderer table above applies to served files and Open local folder.
+JSON and JSONL navigation runs in the shared browser adapters. Python providers
+browse SQLite, WebVTT, tar/zip archives and Git bundles, the last through `git`.
+Archive member bytes reach the browser renderers for Markdown, DOCX and PPTX;
+RST members use Python. See [`vfs.py`](server/src/filemill/vfs.py),
+[`app-http.js`](ui/adapters/app-http.js) and
+[`vfs-json.js`](ui/adapters/vfs-json.js).
 
 Markdown source previews (`?filemill=highlight`) keep the original text and
 color headings, code, URLs, and links. Links are clickable. Served relative

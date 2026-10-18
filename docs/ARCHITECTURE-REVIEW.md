@@ -347,23 +347,33 @@ Truncated text is never editable as if complete. Related: [49], [60].
 
 ### A11. Current documents contradict the code
 
-- `README.md:69-98` and `server/README.md:5,14` promise a CDN PPTX viewer;
-  `preview-rich.js` extracts slide text locally.
-- `server/CONTRIBUTING.md` describes the removed `rendering.py`, `/api/render`
-  and `preview-upload.js`, and claims 100 % branch coverage that CI does not
-  enforce.
-- `static/AGENTS.md:5-8` says the static edition has no network and only reads
-  the granted folder; FSA writes and deletes, and rich renderers load from a
-  CDN. [ADR 0034] says nothing writes; [ADR 0005] specifies the removed
-  `node.lastSel`.
+- Corrected 2026-10-19 ([105]): `README.md` now records the edition/renderer
+  matrix and links to renderer selection, extraction and server implementations.
+  PPTX extracts slide text locally without a CDN viewer. Static Markdown/DOCX
+  and Pyodide RST downloads follow the remembered rich-preview switch; server
+  Markdown/DOCX dependencies are vendored and served RST uses Python.
+  Browser-owned RST routing remains A8.
+- Corrected 2026-10-19 ([105]): `server/CONTRIBUTING.md` links the shared facts,
+  removes current instructions for the retired upload pipeline, and describes
+  CI's branch coverage measurement without claiming a 100% threshold. Its old
+  local-folder measurements remain explicitly historical.
+- Corrected 2026-10-19 ([105]): `static/AGENTS.md` documents FSA writes/deletes,
+  permission requests, renderer downloads and document resource requests.
+  [ADR 0034]'s read-only description and [ADR 0005]'s removed `node.lastSel`
+  remain historical corrections for [107].
 - `docs/ROADMAP.md` still orders the HTMX deletion and adding ruff, mypy and
   pre-commit, all done. Where it disagrees with this plan, this plan wins.
-- `server/README.md:41-44`: `FILEMILL_ROOT` and `FILEMILL_LIVE` do not select
-  the CLI root or live mode as described.
+- Corrected 2026-10-19 ([105]): `server/README.md` distinguishes CLI root,
+  bind and live options from direct ASGI environment lookup, citing `cli.py`,
+  `app.py` and `env.py`. Service-starting examples were verified against code
+  without starting or restarting a service.
 - The CORS and write-authority descriptions in `SECURITY.md` and `CHANGELOG.md`
   were corrected with [103] on 2026-10-19. Caching remediation remains A5.
 - In `TASKS.md`, the In Progress item to default `--bind` to `127.0.0.1` is
   already true in `cli.py`.
+
+The [105] documentation corrections leave A2, A4 and A5 open; A1/A3
+are resolved by [103]. No renderer or security behavior changed.
 
 **Acceptance.** Each fix corrects its documents. A final pass checks every
 advertised command in a clean environment and dates superseded ADRs.

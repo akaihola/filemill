@@ -3,9 +3,16 @@
 ## What this project is
 
 A file manager that browses a **real local folder** in **Miller columns**. It
-ships as one self-contained `index.html`. There is no network, no server and
-no example content. The app opens on a folder picker. It shows only the
-directory that the user grants, read through the File System Access API.
+ships as one generated `index.html` and needs no application backend. The app
+opens on a folder picker. It reads granted folders through the File System
+Access API. [`fsa.js`](../ui/adapters/fsa.js) also implements saves and recursive
+deletes, requesting read/write permission when needed. It is not read-only.
+
+The [root edition/renderer table](../README.md) describes network behavior.
+[`preview-rich.js`](../ui/adapters/preview-rich.js) loads pinned Markdown,
+DOCX and RST dependencies from CDNs when the remembered rich-preview switch
+is enabled, its default. PPTX text extraction needs no download. Documents can
+also reference network resources; that switch does not block all network use.
 
 The UI comes from the "Trail" Miller-columns design study: column headers with
 counts, three selection states, a drawn trail between selected rows, and
@@ -183,7 +190,7 @@ uv run --project server pytest static/tests --dev
 uv run --project server python static/test-e2e.py
 ```
 
-`tests/test_rich.py` covers the only feature that touches the network. It needs no
+`tests/test_rich.py` covers renderer downloads and consent. It needs no external
 network itself. The test aborts `esm.sh` requests to force the offline path.
 The loaded path runs against stub modules served from the same loopback port
 through `window.FILEMILL_CDN`. `tests/test_ui.py` and `tests/test_url.py` switch rich

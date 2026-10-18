@@ -2,11 +2,11 @@
 
 Filemill is a column-view file browser and previewer. The server edition is a
 local web application in Python. Click a column entry to open a directory.
-Previews for Markdown, DOCX, PPTX, PDF, images, plain text and source code show
-inline.
+Previews show inline. PPTX previews extract slide text; they do not reproduce
+slide layout.
 
-The [repository README](../README.md) describes the two editions and their
-shared ports. This document covers the Python edition.
+The [repository README](../README.md) has the current edition/renderer table
+and implementation links. This document covers the Python edition.
 
 ## Features
 
@@ -18,11 +18,11 @@ shared ports. This document covers the Python edition.
 - **Finder URLs** – the URL path is the file path relative to the root, for example `/docs/readme.md`. A deep link opens any location. `/sample.db/users/1` opens one database row
 - **Dotfiles** – add `?hidden=show` to the URL to show them
 - **Keyboard navigation** – `↑↓` move in a column; `→`/`Enter` open; `←` goes back; `Home`/`End`/`PgUp`/`PgDn` scroll
-- **Live reload** – the `--live` flag restarts the server on code changes
+- **Live reload** – the `--live` CLI flag enables Uvicorn reload, as implemented in [cli.py](src/filemill/cli.py)
 - **`.desktop` files** – show as a link card
 - **Symlink bookmarks** – a direct symlink child of the root opens as a bookmark, and its target subtree is browsable
 - **Open local folder…** – the served page can browse a folder on your machine through the File System Access API. PreviewRich renders local previews in the browser.
-- **PWA** – installable. Includes a Web App Manifest, a service worker and an icon set. The worker caches the app shell (stale-while-revalidate) and never caches `/api/` responses
+- **PWA** – installable, with a manifest, service worker and icons. The [worker](src/filemill/static/sw.js) bypasses `/api/` but also caches document and mount URLs. A5 remains open; cold offline recovery is not reliable. See the [architecture review](../docs/ARCHITECTURE-REVIEW.md).
 
 ## Installation
 
@@ -38,10 +38,19 @@ uv run filemill [OPTIONS] [ROOT]
 
 | Option          | Default   | Env var             | Description                      |
 | --------------- | --------- | ------------------- | -------------------------------- |
-| `ROOT`          | `$PWD`    | `FILEMILL_ROOT`   | Root directory to browse         |
+| `ROOT`          | `$PWD`    | –   | Root directory to browse         |
 | `--port`        | `8000`    | –                   | TCP port to listen on            |
 | `--bind` / `-b` | `127.0.0.1` | `FILEMILL_BIND` | Network interface to bind to |
-| `--live`        | off       | `FILEMILL_LIVE=1` | Enable auto-reload (development) |
+| `--live`        | off       | – | Enable auto-reload (development) |
+
+[`cli.py`](src/filemill/cli.py) resolves the positional root, defaulting to
+the working directory, and passes `--port`, `--bind` and `--live` to Uvicorn.
+`FILEMILL_ROOT` does not select the CLI root; `FILEMILL_LIVE` does not enable
+CLI reload. For direct ASGI loading, [`app.py`](src/filemill/app.py) reads
+`FILEMILL_ROOT`, defaulting to the home directory. CLI reload passes its resolved
+root through that variable. [`env.py`](src/filemill/env.py) provides legacy
+`PYKOFINDER_*` fallbacks; the CLI bind default uses that lookup, while an explicit
+`--bind` takes precedence.
 
 ## Installed PWA
 
@@ -53,8 +62,10 @@ uv run filemill [ROOT]
 ```
 
 The default listener is `127.0.0.1:8000`, so only this machine can reach it.
-The PWA cannot start a native process. When the service is stopped, the app
-shows the command above and a retry button. Use `--bind` only when you want to
+The PWA cannot start a native process. The
+[recovery page](src/filemill/static/sw.js) offers a start command and retry
+button, but A5 means an uncached offline navigation may not reach it.
+Use `--bind` only when you want to
 expose the server beyond loopback.
 
 ## Development
@@ -115,30 +126,14 @@ Playwright release instead of downloading another browser.
 
 ## Architecture
 
-```
-src/filemill/
-├── app.py          # Starlette app and routes
-├── api.py          # /api/dir, /api/search, /api/raw, /api/preview
-├── cli.py          # Typer CLI entry point
-├── env.py          # FILEMILL_* variables, PYKOFINDER_* fallback
-├── paths.py        # resolve_safe() and the named-mount map
-├── preview.py      # Preview dispatcher (md / docx / pptx / pdf / img / code / raw)
-├── pwa.py          # /manifest.json, /sw.js and /icons/ handlers
-├── rendering.py    # markdown-it-py instance with plugins
-├── urls.py         # View state and canonical URLs
-├── vfs.py          # Virtual-filesystem registry + provider protocol
-├── providers/      # VFS backends: SQLite, VTT, archives (tar, zip), Git bundles
-├── static/         # Bundled PWA assets: manifest.json, sw.js, icons/
-└── ui/             # The shared frontend; the repo root's ui/ symlinks here
-```
-
-The server serves the shared Miller-columns UI at `/` and at `/n/`. The UI
-source is `src/filemill/ui/`. The repository root's [`../ui/`](../ui) is a
-symlink to it. There is one set of files and no packaging copy. Read
-[CONTRIBUTING.md](CONTRIBUTING.md).
-
-> The package was **pykofinder**. `PYKOFINDER_ROOT`, `PYKOFINDER_BIND` and
-> `PYKOFINDER_LIVE` still work, so an existing setup keeps running.
+The [root README](../README.md) describes the shared ports, renderer choices
+and the single frontend under `src/filemill/ui/`. The
+[contributor guide](CONTRIBUTING.md#source-layout) maps the Python modules.
+[`app.py`](src/filemill/app.py) serves the shell at `/n/` and root-relative
+render/highlight URLs; bare file URLs serve bytes, and directory indexes take
+precedence over the shell. Symlink containment and mutation authorization were
+fixed in [103](../docs/tasks/103-close-the-directory-index-path-escape-and-authorize-save-and-delete-a1.md).
+See [SECURITY.md](../SECURITY.md) for write authority and remaining trust limits.
 
 ## License
 

@@ -160,3 +160,32 @@ def test_documentation_uses_portable_development_examples():
             if setup.search(line):
                 found.append(f"{path.relative_to(ROOT)}:{number}: {line.strip()}")
     assert not found, "Development setup references:\n" + "\n".join(found)
+
+
+@pytest.mark.parametrize(
+    ("document", "obsolete"),
+    [
+        ("README.md", "pptx-vanilla-viewer"),
+        ("server/README.md", "rendering.py"),
+        ("server/CONTRIBUTING.md", "rendering.py"),
+        ("server/CONTRIBUTING.md", "POST /api/render"),
+        ("server/CONTRIBUTING.md", "preview-upload.js"),
+        ("server/CONTRIBUTING.md", "100% branch coverage"),
+        ("static/AGENTS.md", "There is no network"),
+    ],
+)
+def test_current_edition_guidance_drops_retired_claims(document, obsolete):
+    text = (ROOT / document).read_text()
+    # Recorded measurements remain evidence, not current run instructions.
+    current = text.split("### Historical local-folder measurements", 1)[0]
+    assert obsolete not in current
+
+
+def test_cli_documentation_distinguishes_arguments_from_asgi_environment():
+    readme = (ROOT / "server/README.md").read_text()
+    rows = [
+        line.split("|")[1:-1] for line in readme.splitlines() if line.startswith("|")
+    ]
+    options = {cells[0].strip(): cells for cells in rows}
+    assert options["`ROOT`"][2].strip() == "–"
+    assert options["`--live`"][2].strip() == "–"
