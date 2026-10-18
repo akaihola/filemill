@@ -5,7 +5,7 @@ depends-on: [101]
 # Audit the technical roadmap against main and draft the next phase's issues
 
 Steward issue, 2026-10-18. Goal: agentic-leverage (filemill is a tier-1
-project in `/home/agent/my-knowledge/pages/Goals.md`). filemill's Ordered
+project in `<steward-vault>/Goals.md`). filemill's Ordered
 backlog and Unverified proposals are empty, while `docs/ROADMAP.md` lays out
 nine phases, each "small enough for one task", with "Done when" checks.
 Nothing records which phases are done since [25], [87], [93], [99] and
