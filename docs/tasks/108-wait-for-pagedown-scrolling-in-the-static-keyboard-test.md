@@ -85,3 +85,8 @@ three animation frames. There are no fixed sleeps or application changes.
   deprecation warnings. This includes both keyboard cases and the tests that
   failed in separate static runs. Both static modes ran under concurrent
   browser load. The complete set of separate static runs was not all green.
+- The full runs above used the base before issue [104] reached main.
+  After rebasing onto `4e74ac69` and merging this test change, both keyboard
+  cases passed concurrently in each mode again: bundle in 7.46 s and
+  development in 7.58 s. The pre-commit gate also passed on the merged tree.
+  The full suites were not repeated after that rebase.
