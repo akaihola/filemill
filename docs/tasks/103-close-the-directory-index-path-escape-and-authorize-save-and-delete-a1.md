@@ -42,3 +42,50 @@ their acceptance criteria are this issue's.
 - Root `uv run pytest`, both static modes and `uvx pre-commit run
   --all-files` pass; record the commands and timings here.
 - Security fix: acceptance stays with Antti.
+
+
+## Implementation, 2026-10-19
+
+- Resolve the implicit index against the request's zones before FileResponse.
+  Preserve direct-root bookmark symlinks. The 24-case matrix covers resource,
+  raw, implicit index and mount routes with inside and outside targets.
+- Authorize save and delete before path resolution or body consumption. Require
+  matching Origin/Host and X-Filemill-Token, with loopback defaults and exact
+  space-separated FILEMILL_ORIGINS for proxies and LAN binds. The shell supplies
+  a random per-process token; the HTTP adapter sends it for both mutations.
+- ADR 0081 records the policy, derived-file audit and remaining same-origin
+  HTML, filesystem-race, A2, A4 and A5 limits. SECURITY.md and CHANGELOG.md now
+  distinguish CORS response-read restrictions from write authorization.
+- Red evidence: the initial server regression run had 23 failures and 199 passes
+  in 6.03 s, including both escaping implicit indexes and unauthorized writes.
+  Both two-origin browser cases overwrote the canary before the fix, failing
+  in 11.09 s. After the fix both browser cases passed in 6.16 s.
+
+Acceptance remains with Antti. No push, deployment, running-instance restart or
+remote configuration change is part of this work.
+
+
+## Final validation, 2026-10-19
+
+Wall times include command startup; suites ran concurrently. No gate or
+assertion was weakened.
+
+| Command | Result | Wall time |
+| --- | --- | --- |
+| `uv run pytest` | 1,059 passed | 1187.33 s |
+| `uv run pytest static/tests --bundle` | 147 passed | 529.77 s |
+| `uv run pytest static/tests --dev` | 147 passed on full rerun | 484.59 s |
+| `uvx pre-commit run --all-files` | all six hooks passed | 7.92 s |
+
+The first development-mode run had 1 failure and 146 passes in 544.91 s wall
+time. The unchanged `test_keyboard_horizontal` read scrollTop immediately after
+PageDown and saw `0 -> 0`. [108] records the intermittent reproduction under
+concurrent test load. A single check on unchanged main passed in 6.44 s pytest
+time, then the complete development-mode rerun passed. No static source or test
+was changed for [103]. Existing Docutils deprecation warnings remain.
+
+A final manual review checked authorization before path/body access, strict
+Origin/Host matching including explicit port zero, duplicate headers, stale
+and missing tokens, local and configured proxy success, and final-file zone
+validation. Security acceptance remains with Antti; leave the acceptance box
+unchecked.
