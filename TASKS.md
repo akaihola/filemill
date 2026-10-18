@@ -6,9 +6,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [104] Make preview content inert: wikilink text and DOCX output (A2)
-  <!-- hai:{"id":"simple-fdfa185d-6944-4b3b-acc4-f7b3b2114168","labels":["steward"],"createdAt":"2026-10-18T20:07:21.877Z","updatedAt":"2026-10-18T20:07:21.877Z"} -->
-
 - [105] Correct the current edition and renderer documentation (roadmap Phase 0)
     - Depends on: [102]
 
@@ -26,6 +23,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-c54d6a4c-5bfc-417e-bb9c-250b2b875076","labels":["steward"],"createdAt":"2026-10-18T20:07:24.425Z","updatedAt":"2026-10-18T20:07:24.425Z"} -->
 
 ## Scheduled
+
+- [104] Make preview content inert: wikilink text and DOCX output (A2)
+  <!-- hai:{"id":"simple-fdfa185d-6944-4b3b-acc4-f7b3b2114168","labels":["steward"],"createdAt":"2026-10-18T20:07:21.877Z","updatedAt":"2026-10-18T21:31:40.288Z"} -->
 
 ## In Progress
 
