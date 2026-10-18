@@ -27,11 +27,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [103] Close the directory-index path escape and authorize save and delete (A1,
-  A3)
-  <!-- hai:{"id":"simple-ffe76e04-123e-46db-8436-f5563ac5b5d7","labels":["steward"],"createdAt":"2026-10-18T20:07:14.696Z","updatedAt":"2026-10-18T21:29:47.752Z"} -->
-
 ## In Progress
+
+- [~] [103] Close the directory-index path escape and authorize save and delete (A1,
+  A3)
+      <!-- hai:{"id":"simple-ffe76e04-123e-46db-8436-f5563ac5b5d7","labels":["steward"],"createdAt":"2026-10-18T20:07:14.696Z","updatedAt":"2026-10-18T21:30:23.535Z"} -->
 
 - [~] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
