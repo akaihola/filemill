@@ -36,6 +36,7 @@ import { FS } from "../core/ports.js";
 import { markdownHref } from "../core/markdown-links.js";
 import { render } from "../core/render.js";
 import { renderNode } from "../core/renderers.js";
+import { safeURL } from "../core/model/safe-url.js";
 import { path, splitName, state, visibleKids } from "../core/model/state.js";
 
 const offerRichToggle = (get, set) => {
@@ -183,22 +184,41 @@ async function markdown(text, node) {
     /* filemill renders [[PageName]]; markdown-it has no such plugin, and the
        rule is small enough that matching it is cheaper than finding one. The
        target is resolved by the shared navigator, not by the browser, so the
-       link stays inside the app. */
+       link stays inside the app. A match becomes link tokens and the text
+       around it stays a text token, which markdown-it escapes like any other:
+       a wikilink must not turn its neighbours into markup (A2). */
+    const WIKILINK = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
     mdInstance.core.ruler.push("wikilink", (state) => {
+      const text = (content) =>
+        Object.assign(new state.Token("text", "", 0), { content });
       for (const tok of state.tokens) {
         if (tok.type !== "inline") continue;
-        for (const child of tok.children) {
-          if (child.type !== "text" || !child.content.includes("[[")) continue;
-          child.type = "html_inline";
-          child.content = child.content.replace(
-            /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,
-            (_, target, label) =>
-              `<a class="wikilink" href="#" data-wiki="${
-                esc(target.trim())
-              }">` +
-              `${esc((label || target).trim())}</a>`,
-          );
-        }
+        tok.children = tok.children.flatMap((child) => {
+          if (child.type !== "text" || !child.content.includes("[[")) {
+            return [child];
+          }
+          const out = [];
+          let at = 0;
+          for (const m of child.content.matchAll(WIKILINK)) {
+            if (m.index > at) out.push(text(child.content.slice(at, m.index)));
+            const open = new state.Token("link_open", "a", 1);
+            open.attrs = [
+              ["class", "wikilink"],
+              ["href", "#"],
+              ["data-wiki", m[1].trim()],
+            ];
+            out.push(
+              open,
+              text((m[2] || m[1]).trim()),
+              new state.Token("link_close", "a", -1),
+            );
+            at = m.index + m[0].length;
+          }
+          if (at < child.content.length) {
+            out.push(text(child.content.slice(at)));
+          }
+          return out;
+        });
       }
     });
   }
@@ -258,10 +278,45 @@ async function rst(text) {
   /* docutils writes `.. code-block:: x` as <pre class="code x literal-block">
      <code>; hlFences looks for <pre><code class="language-x">, the shape the
      Markdown renderers emit. Same colours for the same fence, either syntax. */
-  return html.replace(
+  return inert(html.replace(
     /<pre class="code (\S+) literal-block"><code>/g,
     '<pre><code class="language-$1">',
-  );
+  ));
+}
+
+/* ── Converter output ────────────────────────────────────────────────────── */
+/* docutils and mammoth escape a document's text but write a link's target as
+   the document gives it, javascript: included, and their HTML lands in this
+   page (A2). So an event handler never stays, a link keeps its target only
+   when core/model/safe-url.js allows it, and a picture may also be inline
+   image data. A .docx can carry a style map naming any element, so its output
+   may also keep only the tags and attributes mammoth itself writes; any other
+   element is replaced by its contents. DOMParser builds an inert document:
+   nothing in it loads or runs while it is checked. */
+const DOCX = {
+  tags: new Set(
+    ("a br dd div dl dt em h1 h2 h3 h4 h5 h6 img li ol p pre s strong sub sup " +
+      "table tbody td th thead tr u ul").split(" "),
+  ),
+  attrs: new Set(["alt", "colspan", "href", "id", "rowspan", "src"]),
+};
+
+function inert(html, allow) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  for (const el of doc.body.querySelectorAll("*")) {
+    if (allow && !allow.tags.has(el.localName)) {
+      el.replaceWith(...el.childNodes);
+      continue;
+    }
+    for (const { name, value } of [...el.attributes]) {
+      if (
+        (allow && !allow.attrs.has(name)) || name.startsWith("on") ||
+        (name === "href" && !safeURL(value)) ||
+        (name === "src" && !safeURL(value) && !/^data:image\//i.test(value))
+      ) el.removeAttribute(name);
+    }
+  }
+  return doc.body.innerHTML;
 }
 
 /* ── The entries ─────────────────────────────────────────────────────────── */
@@ -344,7 +399,7 @@ const docxHTML = async (_node, blob) => {
   const { value } = await mammoth.convertToHtml(
     { arrayBuffer: await blob.arrayBuffer() },
   );
-  return `<div class="pv-rich">${value}</div>`;
+  return `<div class="pv-rich">${inert(value, DOCX)}</div>`;
 };
 
 /* A text renderer: oversize files take the plain path, like the local one. */

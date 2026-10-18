@@ -43,6 +43,87 @@ def _docx(text: str) -> str:
     return base64.b64encode(buf.getvalue()).decode()
 
 
+# A .docx whose hyperlinks point where the document says, and one picture:
+# mammoth passes a link's target through as written (A2).
+DOCX_LINKS = [
+    ("run", "javascript:window.__xss=6"),
+    ("page", "data:text/html,x"),
+    ("web", "https://example.com/"),
+    ("mail", "mailto:a@example.com"),
+]
+PIXEL = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+
+
+def _docx_links() -> str:
+    ns = (
+        'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+        'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
+        'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" '
+        'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+        'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"'
+    )
+    rel = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+    links = "".join(
+        f'<w:p><w:hyperlink r:id="rL{i}"><w:r><w:t>{label}</w:t></w:r>'
+        "</w:hyperlink></w:p>"
+        for i, (label, _) in enumerate(DOCX_LINKS)
+    )
+    picture = (
+        '<w:p><w:r><w:drawing><wp:inline><wp:docPr id="1" name="Picture" '
+        'descr="a pixel"/><a:graphic><a:graphicData uri="http://schemas.'
+        'openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:blipFill>'
+        '<a:blip r:embed="rImg"/></pic:blipFill></pic:pic></a:graphicData>'
+        "</a:graphic></wp:inline></w:drawing></w:r></w:p>"
+    )
+    rels = (
+        "".join(
+            f'<Relationship Id="rL{i}" Type="{rel}/hyperlink" Target="{target}" '
+            'TargetMode="External"/>'
+            for i, (_, target) in enumerate(DOCX_LINKS)
+        )
+        + f'<Relationship Id="rImg" Type="{rel}/image" Target="media/pixel.png"/>'
+    )
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr(
+            "[Content_Types].xml",
+            (
+                '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.'
+                'openxmlformats.org/package/2006/content-types"><Default Extension="xml" '
+                'ContentType="application/xml"/><Default Extension="png" '
+                'ContentType="image/png"/><Override PartName="/word/document.xml" '
+                'ContentType="application/vnd.openxmlformats-officedocument.'
+                'wordprocessingml.document.main+xml"/></Types>'
+            ),
+        )
+        z.writestr(
+            "_rels/.rels",
+            (
+                '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://'
+                'schemas.openxmlformats.org/package/2006/relationships"><Relationship '
+                f'Id="rId1" Type="{rel}/officeDocument" Target="word/document.xml"/>'
+                "</Relationships>"
+            ),
+        )
+        z.writestr(
+            "word/_rels/document.xml.rels",
+            (
+                '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://'
+                f'schemas.openxmlformats.org/package/2006/relationships">{rels}'
+                "</Relationships>"
+            ),
+        )
+        z.writestr("word/media/pixel.png", base64.b64decode(PIXEL))
+        z.writestr(
+            "word/document.xml",
+            (
+                f'<?xml version="1.0" encoding="UTF-8"?><w:document {ns}><w:body>'
+                f"{links}{picture}</w:body></w:document>"
+            ),
+        )
+    return base64.b64encode(buf.getvalue()).decode()
+
+
 def _pptx():
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as z:
@@ -52,7 +133,8 @@ def _pptx():
     return base64.b64encode(buf.getvalue()).decode()
 
 
-FAKE = r"""
+FAKE = (
+    r"""
 window.__mk = () => {
   const F = (name, text) => ({kind:'file', name,
     getFile: async () => new File([text], name, {lastModified: Date.parse('2026-08-01')})});
@@ -72,9 +154,21 @@ window.__mk = () => {
     F('data.json', '{"items":["json value"],"count":2}'),
     B('deck.pptx', '__PPTX__'),
     F('broken.pptx', 'bad'),
+    // A2: markup that must stay text, with and without a wikilink beside it.
+    F('inert.md', 'Text <img src=x onerror="window.__xss=1"> beside [[Other Note|the note]], ' +
+      '`<b>code</b>`, [sib](sib.md) and a note[^1].\n\n' +
+      'No wikilink: <img src=x onerror="window.__xss=2">\n\n' +
+      'Malformed: [[ <img src=x onerror="window.__xss=3"> and [[x]\n\n' +
+      '[^1]: a <i>note</i>\n'),
+    B('links.docx', '__DOCX_LINKS__'),
+    F('script.desktop', '[Desktop Entry]\nType=Link\nName=Bad\nURL=javascript:window.__xss=4\n'),
+    F('web.desktop', '[Desktop Entry]\nType=Link\nName=Web\nURL=https://example.com/\n'),
   ]);
 };
-""".replace("__DOCX__", _docx("Hello docx")).replace("__PPTX__", _pptx())
+""".replace("__DOCX__", _docx("Hello docx"))
+    .replace("__PPTX__", _pptx())
+    .replace("__DOCX_LINKS__", _docx_links())
+)
 
 # Enough of each library's shape to prove the plumbing: the loader, the plugin
 # chaining, the highlight hook, and where the output lands. Faithfulness to the
@@ -115,6 +209,7 @@ export async function loadPyodide() {
     runPythonAsync: async (_code, options) => {
       await new Promise(resolve => setTimeout(resolve, 10));
       if (window.__pyFail === 'render') throw Error('render failed');
+      if (window.__pyHTML) return window.__pyHTML;
       const text = options?.globals.src ?? src;
       const escaped = text.replaceAll('&', '&amp;').replaceAll('<', '&lt;');
       return '<section><h1>Heading</h1><p>Some <em>rst</em> text.</p>' +
@@ -578,6 +673,82 @@ async def test_vendored_renderers(page, base, requests):
     assert 'href="sib.md"' in html, html[:300]
     html = await preview(pg, "doc.docx", ready=".pv-rich")
     assert "<p>Hello docx</p>" in html and "pv-rich" in html, html[:120]
+
+
+INERT = """(() => {
+  const c = document.querySelector('#pv-content');
+  return {
+    markup: c.querySelectorAll('img, i, b, [onerror]').length,
+    xss: window.__xss ?? null,
+    text: c.innerText,
+    wiki: [...c.querySelectorAll('a.wikilink')]
+      .map((a) => [a.dataset.wiki, a.textContent, a.getAttribute('href')]),
+    code: c.querySelector('code')?.textContent,
+    sib: !!c.querySelector('a[href="sib.md"]'),
+    footnote: !!c.querySelector('.footnote-ref') && !!c.querySelector('.footnotes'),
+  };
+})()"""
+
+LINKS = """[...document.querySelectorAll('#pv-content a')]
+  .map((a) => [a.textContent.trim(), a.getAttribute('href')])"""
+
+
+async def test_markdown_stays_inert(page, base, requests):
+    pg = page
+    # ── crafted Markdown is text, beside a wikilink or not (A2) ──────
+    await boot(pg, base, rich=False, vendored=True)
+    html = await preview(pg, "inert.md", ready=".pv-rich")
+    found = await pg.evaluate(INERT)
+    assert found["markup"] == 0 and found["xss"] is None, html
+    assert found["text"].count('<img src=x onerror="window.__xss=') == 3, found
+    assert "[[x]" in found["text"], "A malformed wikilink stays as typed"
+    assert found["wiki"] == [["Other Note", "the note", "#"]], found
+    assert found["code"] == "<b>code</b>", found
+    assert found["sib"] and found["footnote"], found
+
+
+async def test_unsafe_urls_are_not_links(page, base, requests):
+    pg = page
+    # ── a link keeps its target only on the safe-protocol list (A2) ──
+    await boot(pg, base, rich=False, vendored=True)
+    html = await preview(pg, "links.docx", ready=".pv-rich a")
+    assert await pg.evaluate(LINKS) == [
+        ["run", None],
+        ["page", None],
+        ["web", "https://example.com/"],
+        ["mail", "mailto:a@example.com"],
+    ], html
+    assert await pg.get_attribute("#pv-content img", "src") == (
+        f"data:image/png;base64,{PIXEL}"
+    ), "A picture in the document still shows"
+    assert await pg.get_attribute("#pv-content img", "alt") == "a pixel", html
+
+    html = await preview(pg, "script.desktop", ready=".pv-link")
+    assert await pg.evaluate(LINKS) == [], html
+    assert "javascript:window.__xss=4" in await pg.inner_text("#pv-content"), html
+    html = await preview(pg, "web.desktop", ready=".pv-link")
+    assert await pg.evaluate(LINKS) == [
+        ["https://example.com/", "https://example.com/"]
+    ], html
+    assert await pg.evaluate("window.__xss ?? null") is None
+
+
+async def test_rst_links_keep_only_safe_urls(page, base, requests):
+    pg = page
+    # ── docutils writes a target as given; the page drops unsafe ones ─
+    await boot(pg, base, rich=True, stubs=True)
+    await pg.evaluate(
+        """window.__pyHTML = '<p><a class="reference external"'
+          + ' href="javascript:window.__xss=5">run</a> <a class="reference'
+          + ' external" href="https://example.com/">web</a> <a class="reference'
+          + ' internal" href="#heading">up</a></p>'"""
+    )
+    html = await preview(pg, "doc.rst", ready=".pv-rich a")
+    assert await pg.evaluate(LINKS) == [
+        ["run", None],
+        ["web", "https://example.com/"],
+        ["up", "#heading"],
+    ], html
 
 
 async def test_consent_retry(page, base, requests):

@@ -1,3 +1,5 @@
+import html as html_lib
+
 import pytest
 
 import filemill.preview as preview_module
@@ -34,6 +36,21 @@ def test_dispatch_rst(tmp_path):
     html = render_preview(f)
     assert "<h1" in html
     assert "Some <em>rst</em> text." in html
+
+
+def test_rst_links_keep_only_safe_urls(tmp_path):
+    """docutils writes a link target as the document gives it (A2)."""
+    f = tmp_path / "note.rst"
+    f.write_text(
+        "`run <javascript:alert(1)>`_ `page <data:text/html,x>`_ "
+        "`web <https://example.com/>`_ `mail <mailto:a@example.com>`_ "
+        "`sib <sib.rst>`_\n"
+    )
+    html = render_preview(f)
+    assert "javascript:" not in html and "data:text" not in html, html
+    assert ">run</a>" in html and ">page</a>" in html, html
+    assert 'href="https://example.com/"' in html, html
+    assert 'href="mailto:' in html and 'href="sib.rst"' in html, html
 
 
 def test_source_rst_is_syntax_highlighted(tmp_path):
@@ -204,6 +221,25 @@ def test_preview_desktop_no_comment_no_paragraph(tmp_path):
     f = tmp_path / "link.desktop"
     f.write_text("[Desktop Entry]\nType=Link\nURL=https://ex.com\nName=Ex\n")
     assert "color:#aaa" not in _preview_desktop(f)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "javascript:alert(1)",
+        "JavaScript:alert(1)",
+        "java\tscript:alert(1)",
+        "data:text/html,<b>x</b>",
+        "vbscript:msgbox(1)",
+    ],
+)
+def test_preview_desktop_unsafe_url_is_text(tmp_path, url):
+    """Only a safe protocol becomes a link; the rest is shown, not followed."""
+    f = tmp_path / "link.desktop"
+    f.write_text(f"[Desktop Entry]\nType=Link\nURL={url}\nName=Ex\n")
+    html = _preview_desktop(f)
+    assert "href" not in html, html
+    assert html_lib.escape(url) in html, html
 
 
 def test_preview_desktop_non_link_type(tmp_path):

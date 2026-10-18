@@ -42,11 +42,28 @@ No wildcard origins are accepted and no CORS access is granted. See
 
 The token authorizes browser requests, not users. Root HTML executes on the
 Filemill origin and can fetch the shell to obtain the token. Only serve trusted
-HTML on that origin. Preview injection remains an open risk under A2; the token
-does not protect against same-origin scripts. Use authenticated access control
-before exposing the server to untrusted clients. Tokens change on process
-restart; a stale cached shell fails authorization until refreshed. Service
-worker document caching remains open under A5.
+HTML on that origin; see below. The token does not protect against same-origin
+scripts. Use authenticated access control before exposing the server to
+untrusted clients. Tokens change on process restart; a stale cached shell fails
+authorization until refreshed. Service worker document caching remains open
+under A5.
+
+## HTML files at the server root
+
+The server serves a `.html` file under the root as a web page at its own URL,
+and a folder's `index.html` at the folder's URL. These pages are what lets a
+built site or an HTML report in the root work as a website. They come from the
+same origin as Filemill, and Filemill does not sandbox them. A script in such a
+page can do anything the web interface can: read every file through `/api/*`,
+`/w/` and root URLs, fetch the shell for its token, and save or delete files.
+Only serve a root whose HTML you trust, as you would for any static web server.
+
+The preview pane is a different boundary. It shows an HTML file in an iframe
+with `sandbox=""`, so the file's scripts do not run there. Markdown,
+reStructuredText, `.docx` and `.desktop` previews are inserted into the page as
+inert markup. Markup in their text stays text, and a link keeps its target only
+for `http:`, `https:`, `mailto:` or a scheme-less address. A `.desktop` URL
+with any other protocol is shown and not linked.
 
 ## Report a vulnerability
 

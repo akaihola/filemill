@@ -17,6 +17,7 @@ import { esc } from "./icons.js";
 import { hlHTML, hlLang, jsonHTML } from "./syntax.js";
 import { TEXT_MAX } from "./limits.js";
 import { classifyFile } from "./file-kind.js";
+import { safeURL } from "./model/safe-url.js";
 
 let pvURL = null;
 
@@ -102,11 +103,16 @@ function desktopCard(text) {
     if (i > 0) e[s.slice(0, i).trim()] = s.slice(i + 1).trim();
   }
   if (e.Type !== "Link" || !e.URL) return null;
+  /* Any other protocol is shown, not followed: a javascript: URL would run as
+     this page (A2). */
   const url = esc(e.URL);
+  const link = safeURL(e.URL)
+    ? `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
+    : url;
   return `<div class="pv-link">
       <h3>${esc(e.Name || "")}</h3>
       ${e.Comment ? `<p class="sub">${esc(e.Comment)}</p>` : ""}
-      <p>🔗 <a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a></p>
+      <p>🔗 ${link}</p>
     </div>`;
 }
 

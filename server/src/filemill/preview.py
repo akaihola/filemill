@@ -1,5 +1,6 @@
 import configparser
 import html as html_lib
+import re
 from contextlib import suppress
 from pathlib import Path
 from urllib.parse import quote as urlquote
@@ -20,6 +21,35 @@ from filemill.vfs import classify_path
 SYNTAX_SIZE_LIMIT = 512 * 1024  # 512 KB
 RAW_SIZE_LIMIT = SYNTAX_SIZE_LIMIT
 MAX_LINE_LENGTH = 10_000
+
+# The protocols a preview may link to (A2); a scheme-less address resolves
+# against the page, so it may stay too. Browsers drop tabs, newlines and leading
+# controls before they read a scheme, so the literal value is tested: one that
+# does not start with a listed protocol must have no colon before its first
+# slash, query or fragment. ui/core/model/safe-url.js is the browser's copy.
+SAFE_PROTOCOLS = ("http:", "https:", "mailto:")
+_SCHEME_LIKE = re.compile(r"[^/?#]*:")
+
+# docutils escapes and double-quotes every attribute value, and with raw input
+# off nothing else writes markup into its output, so a quoted href or src there
+# is always one of its own.
+_URL_ATTR = re.compile(r' (href|src)="([^"]*)"')
+
+
+def safe_url(url: str) -> bool:
+    """Whether *url* may be a link target in a preview."""
+    return url.lower().startswith(SAFE_PROTOCOLS) or not _SCHEME_LIKE.match(url)
+
+
+def _safe_links(html: str) -> str:
+    """Drop each link target, or picture source, that is not a safe URL."""
+
+    def keep(m: re.Match[str]) -> str:
+        url = html_lib.unescape(m[2])
+        ok = safe_url(url) or (m[1] == "src" and url.lower().startswith("data:image/"))
+        return m[0] if ok else ""
+
+    return _URL_ATTR.sub(keep, html)
 
 
 def valid_text(data: bytes, reject_wide: bool = True) -> str | None:
@@ -185,7 +215,7 @@ def _preview_rst(path: Path, lines: tuple[int, int] | None = None) -> str:
         title = (
             f"<h1>{html_lib.escape(parts['title'])}</h1>" if parts.get("title") else ""
         )
-        body = title + parts["body"]
+        body = title + _safe_links(parts["body"])
         return f'<div class="preview-rst">{body}</div>'
     except Exception as e:
         return (
@@ -241,7 +271,15 @@ def _preview_desktop(path: Path) -> str:
         if entry_type != "Link" or not url:
             return f'<div class="preview-unsupported"><em>Desktop entry type: {html_lib.escape(entry_type or "unknown")} — no URL to open.</em></div>'
 
-        safe_url = html_lib.escape(url)
+        # Any other protocol is shown, not followed: a javascript: URL would run
+        # as the page (A2).
+        shown = html_lib.escape(url)
+        link = (
+            f'<a href="{shown}" target="_blank" rel="noopener noreferrer"'
+            f' style="color:#4a9eff;">{shown}</a>'
+            if safe_url(url)
+            else shown
+        )
 
         icon_html = ""
         if icon.startswith(("http://", "https://")):
@@ -260,8 +298,7 @@ def _preview_desktop(path: Path) -> str:
   </div>
   {comment_html}
   <div style="word-break:break-all;">
-    🔗 <a href="{safe_url}" target="_blank" rel="noopener noreferrer"
-          style="color:#4a9eff;">{safe_url}</a>
+    🔗 {link}
   </div>
 </div>"""
     except Exception as e:

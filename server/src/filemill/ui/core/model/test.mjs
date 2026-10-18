@@ -28,6 +28,7 @@ import {
 import { keyAction, nextRow, pageSelection } from "./keyboard.js";
 import { currentPath, locationState, walkPath } from "./deeplink.js";
 import { toggleTask } from "./markdown-tasks.js";
+import { safeURL } from "./safe-url.js";
 
 assert.equal(typeof globalThis.document, "undefined");
 const file = (name) => ({ name, dir: false });
@@ -585,3 +586,30 @@ for (const name of ["README", "README.md", "index.html"]) {
   autoPreview(parent);
   assert.deepEqual(sel, [name], `folders still auto-select ${name}`);
 }
+
+/* A preview links to a safe protocol or a scheme-less address only (A2). */
+for (
+  const url of [
+    "https://example.com/",
+    "HTTP://example.com/",
+    "mailto:a@example.com",
+    "sib.md",
+    "../a/b:c",
+    "#top",
+    "?q=1",
+    "/abs",
+    "",
+  ]
+) assert.ok(safeURL(url), url);
+for (
+  const url of [
+    "javascript:alert(1)",
+    "JavaScript:alert(1)",
+    " javascript:alert(1)",
+    "java\tscript:alert(1)",
+    "\u0001javascript:alert(1)",
+    "data:text/html,x",
+    "vbscript:msgbox(1)",
+    "file:///etc/passwd",
+  ]
+) assert.ok(!safeURL(url), url);

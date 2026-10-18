@@ -40,8 +40,9 @@ status.
   including `FS.node`, `FS.blob`, optional `FS.write`, `FS.remove` and
   `ROUTER.write(state, replace)`. Each edition supplies adapters.
 - **A DOM-free model.** `ui/core/model/` holds state, selection, sort, folding,
-  keyboard mapping, deep links, JSON folds and Markdown task toggles, tested by
-  `ui/core/model/test.mjs`. The rest of `ui/core/` is a DOM-coupled singleton.
+  keyboard mapping, deep links, JSON folds, Markdown task toggles and the
+  previews' safe-URL rule ([ADR 0082]), tested by `ui/core/model/test.mjs`. The
+  rest of `ui/core/` is a DOM-coupled singleton.
 - **One fold dial with stops.** Horizontal scroll is a dial, not a translation
   ([ADR 0021]). The scrollbar spans one stop each way and is re-based once a
   scroll settles, so a fling lands on the next stop; left of natural the
@@ -160,7 +161,7 @@ Keep these.
 | ID  | P  | Finding                                                   | Effort / risk | Depends on |
 | --- | -- | --------------------------------------------------------- | ------------- | ---------- |
 | A1  | P1 | Resolved 2026-10-19: index containment [103]               | S / low       | —          |
-| A2  | P1 | Preview content can execute as Filemill                   | M / medium    | with A3    |
+| A2  | P1 | Resolved 2026-10-19: inert previews [104]                  | M / medium    | with A3    |
 | A3  | P1 | Resolved 2026-10-19: mutation policy [103]                 | M / medium    | —          |
 | A4  | P1 | Saves are neither atomic nor conflict-checked             | M / medium    | A1, A3     |
 | A5  | P1 | Service workers cache file bytes and break offline misses | M / medium    | —          |
@@ -210,13 +211,36 @@ URLs in DOCX output and `.desktop` links do not execute. Bare-HTML web serving
 at the server root keeps working and its trust boundary is documented in
 `SECURITY.md`.
 
+Resolved 2026-10-19 ([104], [ADR 0082]):
+
+- A wikilink is now markdown-it link tokens, and the text beside it stays an
+  escaped text token. Malformed wikilinks stay text.
+- Preview link targets pass one safe-protocol rule, `ui/core/model/safe-url.js`
+  with a copy in `preview.py`: `http:`, `https:`, `mailto:` or scheme-less.
+  `.docx` output keeps only mammoth's tags and attributes. Browser-rendered
+  reStructuredText and `.docx` lose event handlers and unsafe `href` and `src`
+  values. Server-rendered reStructuredText loses unsafe `href` and `src`
+  values. Both `.desktop` renderers show an unsafe URL as text.
+- The same audit found that docutils writes `javascript:` link targets as
+  given. Both reStructuredText renderers now apply the rule.
+- `SECURITY.md` names the bare-HTML trust boundary, and
+  `server/tests/test_resource_routes.py` keeps that serving working.
+- Tests: `static/tests/test_rich.py` (crafted Markdown with and without a
+  wikilink, `.docx`, `.desktop` and browser reStructuredText links),
+  `server/tests/test_preview.py` (server reStructuredText and `.desktop`) and
+  `ui/core/model/test.mjs` (the rule's edge cases).
+- Unchanged: `exposeCore()` still shares FS and state with any script in the
+  app page. A bare HTML page at the root already has the same origin, so it
+  gains nothing from it.
+
 ### A3. Save and delete accept unrelated origins
 
 Resolved 2026-10-19 ([103], [ADR 0081]). Both routes check Origin, Host and a
 per-process mutation token before path resolution or body consumption. The HTTP
 adapter sends the shell token. Two-origin browser tests cover local and
 configured reverse-proxy writes. Same-origin hostile HTML remains trusted
-content and A2 remains open. The following evidence describes the earlier code.
+content and A2 remains open; [104] resolved A2 later on 2026-10-19. The
+following evidence describes the earlier code.
 
 `POST /api/save` and `DELETE /api/delete` (`app.py:306-323`) have no Origin,
 Host or token check. On 2026-09-19 a `text/plain` POST with an unrelated Origin
@@ -378,7 +402,8 @@ Truncated text is never editable as if complete. Related: [49], [60].
   already true in `cli.py`.
 
 The [105] documentation corrections leave A2, A4 and A5 open; A1/A3
-are resolved by [103]. No renderer or security behavior changed.
+are resolved by [103]. No renderer or security behavior changed. [104]
+resolved A2 later on 2026-10-19.
 
 **Acceptance.** Each fix corrects its documents. A final pass checks every
 advertised command in a clean environment and dates superseded ADRs.
@@ -453,9 +478,10 @@ updates. Security steps can start at once. Never weaken a gate to pass it.
    per-instance mutation token, validated before the body is read, with
    configured origins for reverse proxies. Tests: symlink matrix over resource,
    raw, index and mount routes; two-origin browser requests.
-2. **Make preview content inert** (A2). Rewrite wikilinks as link tokens or
-   escape all untouched text. Sanitize DOCX output and URL-bearing fields with
-   an explicit safe-protocol list. Do not add a security framework.
+2. **Make preview content inert** (A2). Done 2026-10-19 ([104], [ADR 0082]).
+   Rewrite wikilinks as link tokens or escape all untouched text. Sanitize
+   DOCX output and URL-bearing fields with an explicit safe-protocol list. Do
+   not add a security framework.
 3. **Make saves atomic and conflict-checked** (A4). Write to a temporary file in
    the same directory and replace. Carry a revision from read to save; reject
    stale writes. For FSA, recheck before writing and abort on failure. Document
@@ -510,3 +536,4 @@ A12 items can land at any time, each with a focused test.
 [remaining red tests]: testing/remaining-red-tests.md
 
 [ADR 0081]: adr/0081-authorize-server-mutations.md
+[ADR 0082]: adr/0082-previews-link-only-to-safe-protocols.md

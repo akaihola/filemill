@@ -52,6 +52,13 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - JSON keys and CSV labels ending in `.md` or `.markdown` remain data values
   and records instead of advertising document heading columns.
 
+### Security
+
+- Previews no longer run markup or links from the files they show. Text beside
+  a Markdown wikilink stays text. Links in `.docx`, reStructuredText and
+  `.desktop` previews keep their targets only for `http:`, `https:`, `mailto:`
+  or a scheme-less address ([ADR 0082]).
+
 ## [0.1.0] - 2026-09-15
 
 ### Added
@@ -65,3 +72,4 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 [ADR 0050]: docs/adr/0050-history-pushes-on-entering-a-column-rewrites-otherwise.md
 [ADR 0072]: docs/adr/0072-archives-browse-by-their-members.md
+[ADR 0082]: docs/adr/0082-previews-link-only-to-safe-protocols.md
