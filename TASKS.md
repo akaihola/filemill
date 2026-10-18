@@ -24,10 +24,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [104] Make preview content inert: wikilink text and DOCX output (A2)
-  <!-- hai:{"id":"simple-fdfa185d-6944-4b3b-acc4-f7b3b2114168","labels":["steward"],"createdAt":"2026-10-18T20:07:21.877Z","updatedAt":"2026-10-18T21:31:40.288Z"} -->
-
 ## In Progress
+
+- [~] [104] Make preview content inert: wikilink text and DOCX output (A2)
+      <!-- hai:{"id":"simple-fdfa185d-6944-4b3b-acc4-f7b3b2114168","labels":["steward"],"createdAt":"2026-10-18T20:07:21.877Z","updatedAt":"2026-10-18T21:32:25.176Z"} -->
 
 - [~] [103] Close the directory-index path escape and authorize save and delete (A1,
   A3)
