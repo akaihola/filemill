@@ -2,6 +2,7 @@ import hashlib
 import inspect
 import json
 import re
+import secrets
 import subprocess
 from html import escape
 from pathlib import Path
@@ -17,7 +18,7 @@ from starlette.responses import (
 )
 from starlette.routing import Route
 
-from filemill import api, paths, pwa, urls
+from filemill import api, mutations, paths, pwa, urls
 from filemill.env import env
 from filemill.preview import render_preview
 
@@ -29,6 +30,7 @@ ROOT: Path = Path(env("ROOT", str(Path.home())))
 
 app = Starlette()
 app.state.root = None
+app.state.mutation_token = secrets.token_urlsafe(32)
 
 
 def rt(path: str, methods: list[str] | None = None):
@@ -204,6 +206,7 @@ def _ui_shell(state, base: str, hidden: bool = False):
         "data-root": _root().name or "/",
         "data-absolute": _root().resolve().as_posix(),
         "data-api": "/api",
+        "data-mutation-token": app.state.mutation_token,
         "data-base": base,
         "data-filemill": state.view,
         "data-layout": state.layout,
@@ -216,7 +219,8 @@ def _ui_shell(state, base: str, hidden: bool = False):
         f'{key}="{escape(str(value), quote=True)}"' for key, value in attrs.items()
     )
     title = escape(_root().name or "Filemill")
-    return HTMLResponse(f'''<!doctype html>
+    return HTMLResponse(
+        f'''<!doctype html>
 <html {attr_text}><head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0770C9">
@@ -224,7 +228,9 @@ def _ui_shell(state, base: str, hidden: bool = False):
 <link rel="stylesheet" href="{_UI_ASSETS["/ui/core/styles.css"]}"><script src="{_UI_ASSETS["/ui/vendor/seti-map.js"]}"></script>
 <script type="importmap">{_UI_IMPORTS}</script>
 <script>{_VENDOR_MAP_JS}</script><script>{pwa.SW_REGISTER_JS}</script><title>{title}</title>
-</head><body><script src="{_UI_ASSETS[f"/ui/{_UI_ENTRY}"]}" type="module"></script></body></html>''')
+</head><body><script src="{_UI_ASSETS[f"/ui/{_UI_ENTRY}"]}" type="module"></script></body></html>''',
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @rt(UI_BASE)
@@ -334,6 +340,8 @@ def api_preview(request, p: str = "", lines: str = "", v: str = ""):
 @rt("/api/save", methods=["POST"])
 async def api_save(request, p: str = ""):
     """Overwrite a text file — the preview pane's Edit → Save."""
+    if not mutations.authorized(request):
+        return JSONResponse({"error": "Forbidden"}, status_code=403)
     target = _api_target(p, _zones(request))
     if target is None:
         return JSONResponse({"error": "Not found"}, status_code=404)
@@ -342,7 +350,9 @@ async def api_save(request, p: str = ""):
 
 @rt("/api/delete", methods=["DELETE"])
 def api_delete(request, p: str = ""):
-    """Delete one real file or directory after the normal root check."""
+    """Delete one real file or directory after authorization and the root check."""
+    if not mutations.authorized(request):
+        return JSONResponse({"error": "Forbidden"}, status_code=403)
     candidate = api.rel_to_abs(p, _root())
     if candidate is None or _resolve(str(candidate), _zones(request)) is None:
         return JSONResponse({"error": "Not found"}, status_code=404)
@@ -404,7 +414,7 @@ def resource(request, path: str = ""):
         /docs/readme.md/                    redirects to filemill=render
 
     GET only. PLAN-19 §3 makes the router-facing surface read-only, and
-    Filemill never writes a file under any route.
+    mutation routes are authorized separately.
     """
     state = urls.parse_state(request.query_params)
     found = _resource_target(path, _zones(request))
@@ -432,7 +442,10 @@ def resource(request, path: str = ""):
         # a request for Filemill, so it falls through to the listing.
         index_file = target / "index.html"
         if not request.query_params and index_file.is_file():
-            return FileResponse(str(index_file), media_type="text/html")
+            resolved_index = _resolve(str(index_file), _zones(request))
+            if resolved_index is None:
+                return HTMLResponse("Not found", status_code=404)
+            return FileResponse(str(resolved_index), media_type="text/html")
         # A directory has no bytes, so every view value opens the shell on it.
         return _ui_shell(state, "/", request.query_params.get("hidden") == "show")
 

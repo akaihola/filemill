@@ -592,8 +592,22 @@ def test_a_url_can_name_a_member_inside_an_archive(archive_client, archive_root:
 # ── /api/save ────────────────────────────────────────────────────────────────
 
 
-def test_save_overwrites_and_returns_a_fresh_stat(client, tmp_root: Path):
-    r = client.post("/api/save?p=readme.md", content=b"# changed\n")
+@pytest.fixture()
+def mutation_client(client, monkeypatch):
+    monkeypatch.setenv("FILEMILL_ORIGINS", "http://testserver")
+    from filemill.app import app
+
+    client.headers.update(
+        {
+            "Origin": "http://testserver",
+            "X-Filemill-Token": app.state.mutation_token,
+        }
+    )
+    return client
+
+
+def test_save_overwrites_and_returns_a_fresh_stat(mutation_client, tmp_root: Path):
+    r = mutation_client.post("/api/save?p=readme.md", content=b"# changed\n")
     assert r.status_code == 200
     assert (tmp_root / "readme.md").read_bytes() == b"# changed\n"
     j = r.json()
@@ -601,43 +615,53 @@ def test_save_overwrites_and_returns_a_fresh_stat(client, tmp_root: Path):
     assert j["mod"] > 0
 
 
-def test_save_allows_unknown_extension_utf8_and_rejects_binary(client, tmp_root: Path):
+def test_save_allows_unknown_extension_utf8_and_rejects_binary(
+    mutation_client, tmp_root: Path
+):
     (tmp_root / ".gitconfig").write_text("name = old\n")
     assert (
-        client.post(
+        mutation_client.post(
             "/api/save?p=.gitconfig", content="name = Åsa\n".encode()
         ).status_code
         == 200
     )
     (tmp_root / "binary").write_bytes(b"x\0y")
-    assert client.post("/api/save?p=binary", content=b"z").status_code == 415
-    assert client.post("/api/save?p=.gitconfig", content=b"x\0y").status_code == 415
+    assert mutation_client.post("/api/save?p=binary", content=b"z").status_code == 415
+    assert (
+        mutation_client.post("/api/save?p=.gitconfig", content=b"x\0y").status_code
+        == 415
+    )
 
 
-def test_save_rejects_insanely_wide_text(client, tmp_root: Path):
+def test_save_rejects_insanely_wide_text(mutation_client, tmp_root: Path):
     (tmp_root / "wide").write_text("x" * 10_001)
-    assert client.post("/api/save?p=wide", content=b"short").status_code == 415
+    assert mutation_client.post("/api/save?p=wide", content=b"short").status_code == 415
 
 
-def test_save_refuses_paths_outside_root(client, tmp_root: Path):
+def test_save_refuses_paths_outside_root(mutation_client, tmp_root: Path):
     (tmp_root.parent / "outside.txt").write_text("secret")
-    assert client.post("/api/save?p=../outside.txt", content=b"x").status_code == 404
-    assert client.post("/api/save?p=/etc/passwd", content=b"x").status_code == 404
+    assert (
+        mutation_client.post("/api/save?p=../outside.txt", content=b"x").status_code
+        == 404
+    )
+    assert (
+        mutation_client.post("/api/save?p=/etc/passwd", content=b"x").status_code == 404
+    )
     assert (tmp_root.parent / "outside.txt").read_text() == "secret"
 
 
-def test_save_only_overwrites_existing_files(client, tmp_root: Path):
+def test_save_only_overwrites_existing_files(mutation_client, tmp_root: Path):
     """Edit mode edits what it previews — no create, and no directories."""
-    assert client.post("/api/save?p=new.txt", content=b"x").status_code == 404
+    assert mutation_client.post("/api/save?p=new.txt", content=b"x").status_code == 404
     assert not (tmp_root / "new.txt").exists()
-    assert client.post("/api/save?p=subdir", content=b"x").status_code == 404
+    assert mutation_client.post("/api/save?p=subdir", content=b"x").status_code == 404
 
 
-def test_save_caps_the_body_size(client, tmp_root: Path):
+def test_save_caps_the_body_size(mutation_client, tmp_root: Path):
     from filemill.api import RENDER_MAX
 
     assert (
-        client.post(
+        mutation_client.post(
             "/api/save?p=readme.md", content=b"x" * (RENDER_MAX + 1)
         ).status_code
         == 413
@@ -645,34 +669,34 @@ def test_save_caps_the_body_size(client, tmp_root: Path):
     assert (tmp_root / "readme.md").read_text() == "# Hello\n**world**\n"
 
 
-def test_delete_removes_files_and_directories(client, tmp_root: Path):
+def test_delete_removes_files_and_directories(mutation_client, tmp_root: Path):
     (tmp_root / "gone.txt").write_text("bye")
     (tmp_root / "gone-dir").mkdir()
     (tmp_root / "gone-dir" / "nested.txt").write_text("bye")
-    assert client.delete("/api/delete?p=gone.txt").json() == {"deleted": True}
-    assert client.delete("/api/delete?p=gone-dir").json() == {"deleted": True}
+    assert mutation_client.delete("/api/delete?p=gone.txt").json() == {"deleted": True}
+    assert mutation_client.delete("/api/delete?p=gone-dir").json() == {"deleted": True}
     assert not (tmp_root / "gone.txt").exists()
     assert not (tmp_root / "gone-dir").exists()
 
 
-def test_delete_rejects_missing_and_root(client, tmp_root: Path):
-    assert client.delete("/api/delete?p=missing").status_code == 404
-    assert client.delete("/api/delete?p=").status_code == 404
+def test_delete_rejects_missing_and_root(mutation_client, tmp_root: Path):
+    assert mutation_client.delete("/api/delete?p=missing").status_code == 404
+    assert mutation_client.delete("/api/delete?p=").status_code == 404
 
 
-def test_delete_removes_a_symlink_without_following_it(client, tmp_root: Path):
+def test_delete_removes_a_symlink_without_following_it(mutation_client, tmp_root: Path):
     outside = tmp_root.parent / "outside-delete-target"
     outside.mkdir()
     (outside / "keep.txt").write_text("keep")
     (tmp_root / "linked").symlink_to(outside, target_is_directory=True)
-    assert client.delete("/api/delete?p=linked").json() == {"deleted": True}
+    assert mutation_client.delete("/api/delete?p=linked").json() == {"deleted": True}
     assert not (tmp_root / "linked").exists()
     assert (outside / "keep.txt").exists()
 
 
-def test_delete_removes_a_broken_symlink(client, tmp_root: Path):
+def test_delete_removes_a_broken_symlink(mutation_client, tmp_root: Path):
     (tmp_root / "broken").symlink_to(tmp_root / "missing")
-    assert client.delete("/api/delete?p=broken").json() == {"deleted": True}
+    assert mutation_client.delete("/api/delete?p=broken").json() == {"deleted": True}
     assert not (tmp_root / "broken").is_symlink()
 
 

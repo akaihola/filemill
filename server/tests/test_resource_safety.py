@@ -295,3 +295,32 @@ def test_root_prefix_sibling_is_denied_for_every_view_and_layout(
     resp = _client().get(f"/%2e%2e/menuEVIL/evil.txt{_query(view, layout)}")
     assert resp.status_code == 404
     assert "EVIL-CANARY" not in resp.text
+
+
+@pytest.mark.parametrize("route", ["resource", "raw", "index", "mount"])
+@pytest.mark.parametrize("location", ["nested", "bookmark", "root"])
+@pytest.mark.parametrize("destination", ["inside", "outside"])
+def test_index_symlink_matrix(escape_tree, route, location, destination):
+    root = escape_tree["root"]
+    parent = {"nested": root / "docs", "bookmark": escape_tree["dir_a"], "root": root}[
+        location
+    ]
+    target = (
+        root / "real_file.txt"
+        if destination == "inside"
+        else escape_tree["outside"] / "secret.txt"
+    )
+    (parent / "index.html").symlink_to(target)
+    relative = {"nested": "docs/", "bookmark": "bookmark/", "root": ""}[location]
+    explicit = relative + "index.html"
+    url = {
+        "resource": "/" + explicit,
+        "raw": "/api/raw?" + urlencode({"p": explicit}),
+        "index": "/" + relative,
+        "mount": f"/w/{root.name}/" + explicit,
+    }[route]
+    response = _client().get(url)
+    # A direct-root symlink is an intentional bookmark, including a file.
+    allowed = destination == "inside" or location == "root"
+    assert response.status_code == (200 if allowed else 404)
+    assert (target.read_text() in response.text) == allowed

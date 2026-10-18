@@ -154,9 +154,9 @@ Keep these.
 
 | ID  | P  | Finding                                                   | Effort / risk | Depends on |
 | --- | -- | --------------------------------------------------------- | ------------- | ---------- |
-| A1  | P1 | Implicit `index.html` bypasses path containment           | S / low       | —          |
+| A1  | P1 | Resolved 2026-10-19: index containment [103]               | S / low       | —          |
 | A2  | P1 | Preview content can execute as Filemill                   | M / medium    | with A3    |
-| A3  | P1 | Save and delete accept unrelated origins                  | M / medium    | —          |
+| A3  | P1 | Resolved 2026-10-19: mutation policy [103]                 | M / medium    | —          |
 | A4  | P1 | Saves are neither atomic nor conflict-checked             | M / medium    | A1, A3     |
 | A5  | P1 | Service workers cache file bytes and break offline misses | M / medium    | —          |
 | A6  | P2 | Virtual-path round trip is unverified                     | S / low       | —          |
@@ -170,6 +170,12 @@ Keep these.
 Effort: S is up to a day, M one to three days.
 
 ### A1. The directory index escapes the root check
+
+Resolved 2026-10-19 ([103], [ADR 0081]). The final index file is resolved with
+the request zones before serving. The resource/raw/index/mount symlink matrix
+covers in-root files, nested escapes and direct-root bookmarks. Other derived
+file responses were audited; see the ADR. The evidence below describes the
+earlier code.
 
 `app.py:405-407` (`resource`) validates the requested directory, then sends
 `target / "index.html"` through `FileResponse` without resolving it. On
@@ -200,6 +206,12 @@ at the server root keeps working and its trust boundary is documented in
 `SECURITY.md`.
 
 ### A3. Save and delete accept unrelated origins
+
+Resolved 2026-10-19 ([103], [ADR 0081]). Both routes check Origin, Host and a
+per-process mutation token before path resolution or body consumption. The HTTP
+adapter sends the shell token. Two-origin browser tests cover local and
+configured reverse-proxy writes. Same-origin hostile HTML remains trusted
+content and A2 remains open. The following evidence describes the earlier code.
 
 `POST /api/save` and `DELETE /api/delete` (`app.py:306-323`) have no Origin,
 Host or token check. On 2026-09-19 a `text/plain` POST with an unrelated Origin
@@ -348,8 +360,8 @@ Truncated text is never editable as if complete. Related: [49], [60].
   pre-commit, all done. Where it disagrees with this plan, this plan wins.
 - `server/README.md:41-44`: `FILEMILL_ROOT` and `FILEMILL_LIVE` do not select
   the CLI root or live mode as described.
-- `SECURITY.md` and `CHANGELOG.md` overstate the CORS change (A3) and omit write
-  authority and caching (A5).
+- The CORS and write-authority descriptions in `SECURITY.md` and `CHANGELOG.md`
+  were corrected with [103] on 2026-10-19. Caching remediation remains A5.
 - In `TASKS.md`, the In Progress item to default `--bind` to `127.0.0.1` is
   already true in `cli.py`.
 
@@ -420,7 +432,8 @@ Do not reopen these without new evidence.
 Each step is one reviewable change with its own regression tests and document
 updates. Security steps can start at once. Never weaken a gate to pass it.
 
-1. **Close the path escape and authorize mutations** (A1, A3). Validate the
+1. **Close the path escape and authorize mutations** (A1, A3). Resolved
+   2026-10-19 in [103], [ADR 0081]. Validate the
    final index file with the request's zones. Add an Origin/Host check and a
    per-instance mutation token, validated before the body is read, with
    configured origins for reverse proxies. Tests: symlink matrix over resource,
@@ -480,3 +493,5 @@ A12 items can land at any time, each with a focused test.
 [ADR 0079]: adr/0079-native-shell.md
 [ADR 0080]: adr/0080-json-past-a-fold-depth-limit-is-source.md
 [remaining red tests]: testing/remaining-red-tests.md
+
+[ADR 0081]: adr/0081-authorize-server-mutations.md

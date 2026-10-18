@@ -255,7 +255,7 @@ def ui_root(shared_root: Path, tmp_path: Path) -> Path:
 
 
 @contextlib.contextmanager
-def _serve(root: Path, log_dir: Path):
+def _serve(root: Path, log_dir: Path, origins: str = ""):
     """Run the real app in a subprocess — TestClient cannot serve a browser."""
     port = _free_port()
     # Keep stderr: when this does not come up, its traceback is the only thing
@@ -276,6 +276,7 @@ def _serve(root: Path, log_dir: Path):
             ],
             env={
                 "FILEMILL_ROOT": str(root),
+                "FILEMILL_ORIGINS": origins,
                 "PATH": f"{rg_dir}:{git_dir}:/usr/bin:/bin",
             },
             stdout=subprocess.DEVNULL,
@@ -398,7 +399,9 @@ def test_tests_without_ui_root_cannot_write_the_served_tree(page):
     page.open()
     status = page.evaluate(
         """async () => (await fetch('/api/save?p=notes/plain.txt',
-                                    {method: 'POST', body: 'leaked'})).status"""
+                                    {method: 'POST', body: 'leaked', headers: {
+                                        'X-Filemill-Token': document.documentElement.dataset.mutationToken
+                                    }})).status"""
     )
     assert status >= 400
     assert (
@@ -3754,3 +3757,73 @@ def test_left_return_ignores_preview_heading_names(
     assert ("GROUP INTRO" if nested else "PREFACE") in content
     if nested:
         assert "PREFACE" not in content
+
+
+@pytest.mark.parametrize("proxy", [False, True], ids=["local", "reverse-proxy"])
+def test_mutations_from_two_browser_origins(browser, ui_root, tmp_path, proxy):
+    """An attacker cannot write; the shipped HTTP adapter can save and delete."""
+    origin = "https://files.example"
+    with (
+        _serve(ui_root, tmp_path, origin if proxy else "") as backend,
+        browser.new_context(service_workers="block") as context,
+    ):
+        if proxy:
+            # TLS-terminating proxy: preserve Host, no forwarded headers.
+            def forward(route):
+                headers = {**route.request.headers, "host": "files.example"}
+                response = route.fetch(
+                    url=backend + route.request.url.removeprefix(origin),
+                    headers=headers,
+                )
+                route.fulfill(response=response)
+
+            context.route(origin + "/**", forward)
+        else:
+            origin = backend
+        page = context.new_page()
+        page.goto(origin + "/n/notes/plain.txt")
+        page.wait_for_function("typeof path !== 'undefined' && path.length >= 1")
+        token = page.locator("html").get_attribute("data-mutation-token")
+        attacker = context.new_page()
+        attacker.route(
+            "https://unrelated.example/",
+            lambda route: route.fulfill(
+                content_type="text/html", body="<html>attacker</html>"
+            ),
+        )
+        attacker.goto("https://unrelated.example/")
+        # A simple no-CORS POST reaches the handler even without preflight.
+        attacker.evaluate(
+            """async origin => {
+            try { await fetch(origin + '/api/save?p=notes/plain.txt', {
+                method: 'POST', mode: 'no-cors', body: 'attacker'
+            }); } catch (_) { /* browser may hide the denial */ }
+        }""",
+            origin,
+        )
+        assert (ui_root / "notes/plain.txt").read_text() == "hello"
+        # Also try a preflighted DELETE carrying a stolen token.
+        attacker.evaluate(
+            """async ({origin, token}) => {
+            try { await fetch(origin + '/api/delete?p=notes/plain.txt', {
+                method: 'DELETE', headers: {'X-Filemill-Token': token || ''}
+            }); } catch (_) { /* blocked by CORS */ }
+        }""",
+            {"origin": origin, "token": token},
+        )
+        assert (ui_root / "notes/plain.txt").exists()
+        status = page.evaluate("""async () => (await fetch(
+            '/api/delete?p=notes/plain.txt', {method: 'DELETE'})).status""")
+        assert status == 403
+        # Exercise the shipped adapter, including its token header.
+        page.evaluate("""async () => {
+            const { HTTP } = await import('/ui/adapters/http.js');
+            const node = {rel: 'notes/plain.txt'};
+            await HTTP.write(node, 'authorized');
+        }""")
+        assert (ui_root / "notes/plain.txt").read_text() == "authorized"
+        page.evaluate("""async () => {
+            const { HTTP } = await import('/ui/adapters/http.js');
+            await HTTP.remove({rel: 'notes/plain.txt'});
+        }""")
+        assert not (ui_root / "notes/plain.txt").exists()

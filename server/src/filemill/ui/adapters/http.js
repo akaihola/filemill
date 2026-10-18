@@ -141,6 +141,10 @@ export const HTTP = {
   async write(node, text) {
     const r = await fetch(`${API}/save?p=${encodeURIComponent(node.rel)}`, {
       method: "POST",
+      headers: {
+        "X-Filemill-Token": document.documentElement.dataset.mutationToken ||
+          "",
+      },
       body: text,
     });
     if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
@@ -151,6 +155,10 @@ export const HTTP = {
     if (node.vpath) throw new Error("Virtual entries cannot be deleted");
     const r = await fetch(`${API}/delete?p=${encodeURIComponent(node.rel)}`, {
       method: "DELETE",
+      headers: {
+        "X-Filemill-Token": document.documentElement.dataset.mutationToken ||
+          "",
+      },
     });
     if (!r.ok) {
       let message = `${r.status} ${r.statusText}`;

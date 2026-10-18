@@ -24,9 +24,16 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Removed
 
 - The `Access-Control-Allow-Origin: *` header on `/w/` named-mount responses.
-  Other origins can no longer read files through the server.
+  Browser scripts on other origins cannot read those responses. Removing CORS
+  headers did not prevent cross-origin writes.
 
 ### Fixed
+
+- Implicit directory indexes now pass the same containment check as explicit
+  file URLs, including nested symlinks and bookmark mounts.
+- Save and delete now require matching Origin/Host and a per-process mutation
+  token before reading request bodies. The shipped UI sends the token;
+  FILEMILL_ORIGINS configures public reverse-proxy and LAN origins.
 
 - Resizing remaps widened columns to the available fold-dial stops. Fractional
   column widths reach each stop with one fling instead of requiring an extra swipe.
