@@ -6,6 +6,29 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- [103] Close the directory-index path escape and authorize save and delete (A1,
+  A3)
+  <!-- hai:{"id":"simple-ffe76e04-123e-46db-8436-f5563ac5b5d7","labels":["steward"],"createdAt":"2026-10-18T20:07:14.696Z","updatedAt":"2026-10-18T20:07:14.696Z"} -->
+
+- [104] Make preview content inert: wikilink text and DOCX output (A2)
+  <!-- hai:{"id":"simple-fdfa185d-6944-4b3b-acc4-f7b3b2114168","labels":["steward"],"createdAt":"2026-10-18T20:07:21.877Z","updatedAt":"2026-10-18T20:07:21.877Z"} -->
+
+- [105] Correct the current edition and renderer documentation (roadmap Phase 0)
+    - Depends on: [102]
+
+  <!-- hai:{"id":"simple-a03688ad-b2e9-4885-b18d-eaa33c6adb90","labels":["steward"],"createdAt":"2026-10-18T20:07:22.740Z","updatedAt":"2026-10-18T20:07:22.740Z"} -->
+
+- [106] Link or remove every lint suppression and the obsolete PPTX skip
+  (roadmap Phase 1)
+    - Depends on: [102]
+
+  <!-- hai:{"id":"simple-bf3779d1-478d-46a3-858d-498dde815c5f","labels":["steward"],"createdAt":"2026-10-18T20:07:23.528Z","updatedAt":"2026-10-18T20:07:23.528Z"} -->
+
+- [107] Date superseded roadmap and ADR claims (roadmap Phase 0)
+    - Depends on: [105]
+
+  <!-- hai:{"id":"simple-c54d6a4c-5bfc-417e-bb9c-250b2b875076","labels":["steward"],"createdAt":"2026-10-18T20:07:24.425Z","updatedAt":"2026-10-18T20:07:24.425Z"} -->
+
 ## Scheduled
 
 ## In Progress
@@ -641,7 +664,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 [77]: docs/tasks/77-md-tight-bullet-list-line-spacing.md
 
-<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102 -->
+<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107 -->
 
 [78]: docs/tasks/78-wide-document-scrolls-instead-of-expanding-the-preview.md
 
@@ -692,6 +715,16 @@ Rules for TASKS.md usage are at the bottom of the file.
 [101]: docs/tasks/101-make-the-browser-keyboard-tests-wait-for-each-opened-folder-before-the.md
 
 [102]: docs/tasks/102-audit-the-technical-roadmap-against-main-and-draft-the-next-phase-s-is.md
+
+[103]: docs/tasks/103-close-the-directory-index-path-escape-and-authorize-save-and-delete-a1.md
+
+[104]: docs/tasks/104-make-preview-content-inert-wikilink-text-and-docx-output-a2.md
+
+[105]: docs/tasks/105-correct-the-current-edition-and-renderer-documentation-roadmap-phase-0.md
+
+[106]: docs/tasks/106-link-or-remove-every-lint-suppression-and-the-obsolete-pptx-skip-roadm.md
+
+[107]: docs/tasks/107-date-superseded-roadmap-and-adr-claims-roadmap-phase-0.md
 
 ## Rules
 
