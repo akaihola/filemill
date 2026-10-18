@@ -140,6 +140,10 @@ Keep these.
   Back/Forward regression creates one preview history entry explicitly, so a
   slower intermediate folder read cannot add an extra setup entry
   ([99], 2026-10-17).
+  The horizontal keyboard test waits for preview scroll movement after each
+  scroll key. It covers normal writes and writes deferred across animation
+  frames, with the same navigation, focus and directional assertions
+  ([108], 2026-10-19).
 - Real filesystem tests without a picker: `static/tests/test_url.py` drives the real
   FSA adapter against the origin private file system.
 - Size limits and the image extension list have one home, `ui/core/limits.js`.

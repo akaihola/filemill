@@ -51,3 +51,37 @@ relax the gate. Validate both static modes under concurrent browser-test load.
 The deferred case failed at PageDown with `0 -> 0`; the normal case passed.
 This proves that the immediate read can race a deferred scroll write. It does
 not establish the browser's cause for the original intermittent failure.
+
+## Implementation and validation, 2026-10-19
+
+The test now waits for `scrollTop` to move in the expected direction after
+PageDown, ArrowUp, ArrowDown and PageUp. All existing navigation, preview
+focus and directional scroll assertions remain. The regression runs the same
+scenario with normal scrolling and with the real `scrollBy` deferred across
+three animation frames. There are no fixed sleeps or application changes.
+
+- Red: before the waits, development mode had one pass and one failure. The
+  deferred case failed at the PageDown assertion with `0 -> 0`.
+- Green: concurrent targeted runs passed both cases in each static mode.
+  Development took 8.79 s; bundle took 9.21 s.
+- The first full concurrent run passed both keyboard cases in each mode.
+  Bundle had 146 passes and two unrelated timeouts in 692.16 s. Development
+  had 147 passes and one unrelated timeout in 724.07 s. Typeahead timed out
+  in both modes; the 8 MiB scalar JSON preview timed out in bundle mode.
+  Both tests and the application code are unchanged by this issue.
+- Focused checks on unchanged canonical main passed under browser load.
+  The scalar JSON bundle case took 31.50 s. Typeahead passed in both modes,
+  taking 9.74 s for bundle and 10.14 s for development.
+- The repository pre-commit gate, direct static-test Ruff checks and shared
+  model checks passed. The first gate run detected a documentation edit
+  during its execution. A second run passed with no concurrent edits.
+- A second pair of full static runs overlapped the root browser suite.
+  Both keyboard cases passed in each mode again. Bundle had 147 passes and
+  one typeahead timeout in 651.87 s. Development had 147 passes and one RST
+  viewport failure in 639.66 s. Chromium rejected a viewport resize with
+  `Browser.setWindowBounds`: restore the window to normal state first.
+  These failures remain outside this issue's scope. No gate was relaxed.
+- The full root run passed all 1,079 tests in 1526.03 s with four Docutils
+  deprecation warnings. This includes both keyboard cases and the tests that
+  failed in separate static runs. Both static modes ran under concurrent
+  browser load. The complete set of separate static runs was not all green.

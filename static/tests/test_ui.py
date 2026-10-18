@@ -1379,7 +1379,8 @@ async def test_keyboard_vertical(page):
     assert (await pg.evaluate("sel[0]")) == "big", "Home jumps to the first row"
 
 
-async def test_keyboard_horizontal(page):
+@pytest.mark.parametrize("deferred_scroll", [False, True], ids=["normal", "deferred"])
+async def test_keyboard_horizontal(page, deferred_scroll):
     pg = page
     await mount(pg)
     await pg.click('.col[data-i="0"] .row:has-text("deep")')
@@ -1428,19 +1429,43 @@ async def test_keyboard_horizontal(page):
     ), json.dumps(st)
     await pg.keyboard.press("ArrowRight")
     await pg.wait_for_function("document.activeElement?.id === 'preview'")
+    if deferred_scroll:
+        # Model a scroll write that lands after the keyboard round trip.
+        await pg.evaluate("""() => {
+          const body = document.querySelector('#preview .pv-body');
+          const scrollBy = body.scrollBy.bind(body);
+          body.scrollBy = options => requestAnimationFrame(() =>
+            requestAnimationFrame(() => requestAnimationFrame(() => scrollBy(options))));
+        }""")
     before = await pg.evaluate("document.querySelector('#preview .pv-body').scrollTop")
     await pg.keyboard.press("PageDown")
+    await pg.wait_for_function(
+        "before => document.querySelector('#preview .pv-body').scrollTop > before",
+        arg=before,
+    )
     after = await pg.evaluate("document.querySelector('#preview .pv-body').scrollTop")
     assert after > before, f"{before} -> {after}"
     await pg.keyboard.press("ArrowUp")
+    await pg.wait_for_function(
+        "after => document.querySelector('#preview .pv-body').scrollTop < after",
+        arg=after,
+    )
     restored = await pg.evaluate(
         "document.querySelector('#preview .pv-body').scrollTop"
     )
     assert restored < after, f"{after} -> {restored}"
     await pg.keyboard.press("ArrowDown")
+    await pg.wait_for_function(
+        "restored => document.querySelector('#preview .pv-body').scrollTop > restored",
+        arg=restored,
+    )
     down = await pg.evaluate("document.querySelector('#preview .pv-body').scrollTop")
     assert down > restored, f"{restored} -> {down}"
     await pg.keyboard.press("PageUp")
+    await pg.wait_for_function(
+        "down => document.querySelector('#preview .pv-body').scrollTop < down",
+        arg=down,
+    )
     up = await pg.evaluate("document.querySelector('#preview .pv-body').scrollTop")
     assert up < down, f"{down} -> {up}"
 
