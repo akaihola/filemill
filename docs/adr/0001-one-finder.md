@@ -2,6 +2,18 @@
 
 Status: accepted
 
+## Partial supersession, 2026-10-19, issue [107]
+
+The shared finder decision still applies. The upload-render route and Python
+Markdown/DOCX rendering below describe the original implementation, not
+current instructions. Task [32] moved Markdown/DOCX to browser renderers with
+vendored modules. `ui/adapters/app-http.js` selects those renderers;
+`server/src/filemill/app.py` no longer registers `POST /api/render`, and
+`preview-upload.js` is gone. `GET /api/preview` remains for served RST and
+virtual previews, including archive members. See the current
+[edition/renderer matrix](../../README.md).
+Keep the original measurements below as evidence of the finder migration.
+
 ## Context
 
 Filemill had two finder implementations. The HTMX finder and the JavaScript

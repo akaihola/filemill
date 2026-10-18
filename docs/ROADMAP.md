@@ -4,6 +4,27 @@ This roadmap closes the gap between `docs/ARCHITECTURE-REVIEW.md` and
 `docs/GOALS.md`. Phases are in dependency order. Do them in order. Each phase
 is small enough for one task in `TASKS.md`.
 
+## Status index, 2026-10-19
+
+There are ten phases, 0–9. Status below starts from [102]'s audit of main
+`26a77d60` on 2026-10-18 and includes later main through `25bc4d4e`.
+See [the audit](tasks/102-audit-the-technical-roadmap-against-main-and-draft-the-next-phase-s-is.md)
+for every step's evidence. [105] corrects edition/renderer guidance; [106]
+closes the suppression/obsolete-skip check; [103]/[104] resolve A1–A3.
+[108] adds condition-based keyboard scroll waits.
+
+The original goals, steps and checks below remain the policy record. Paths,
+commands and assertions in delivered or superseded steps describe their old
+baseline; use [CONTRIBUTING.md](../CONTRIBUTING.md) for current commands.
+The architecture review takes precedence when its remediation order conflicts
+with this sequence. Remaining work uses bounded issues. Local validation does
+not establish remote CI or user acceptance.
+
+The one-task-per-phase policy above remains pending Antti's decision. Its
+size claim fails: Phases 0 and 1 already span [93]/[94], [105], [106] and
+[107]. The under-40-line ADR and four-dependency/1,500-line server policies
+also remain; their failed checks are explicit in Phases 2 and 6.
+
 Each phase has the same shape:
 
 - **Goal**: what is true when the phase is done.
@@ -16,6 +37,12 @@ The model projects are not chosen for size. They are chosen because each one
 does one thing with a discipline we want. Copy the discipline, not the code.
 
 ## Phase 0: green and honest
+
+Status 2026-10-19: Partly done. Steps 0–4, 6 and 7 are implemented. ADR 0067 retires
+step 2's layout. [105] and [107] correct step 5's current/historical claims;
+the task 2 file and editor-cursor item are already retired, with dated
+corrections in [107]. [99]/[101] record green local suites. [93]/[94] still
+need CI proof for delivered main, so Phase 0's delivery check stays open.
 
 **Goal.** Both test suites are green on `main`. Every document describes the
 code as it is. Nothing in the tree is a corpse.
@@ -68,6 +95,13 @@ same change, so two implementations never live side by side.
 
 ## Phase 1: gates
 
+Status 2026-10-19: Partly done. Steps 1–6 are implemented. [106] removes the six
+unlinked suppressions and obsolete PPTX skip identified by [102], and adds a
+Python suppression-link guard to the existing gate. Its gate has seven hooks after adding the guard.
+Deno is pinned in CI; Ruff infers Python from requires-python. Exact delivered
+main CI proof remains under [93]/[94]. Local hooks do not prove branch
+protection or hook installation for every contributor.
+
 **Goal.** A formatting or lint error cannot be committed or merged.
 
 **Why now.** Every later phase moves a lot of code. Automatic formatting
@@ -98,6 +132,14 @@ No `# noqa` exists without a link to an issue.
 formatting a non-discussion from the first release. We want the same silence.
 
 ## Phase 2: one source of truth for documents
+
+Status 2026-10-19: Partly done. Steps 1, 2 and 6 are implemented. [105] consolidates
+shared edition facts; [107] dates superseded claims. Duplication and unchecked
+claims remain under 3 and 7. Step 4 is absent from the original numbering.
+The under-40-line ADR policy remains and fails: [102] measured fourteen ADRs
+at least 40 lines, including ADR 0064 at 162. Before this patch, later main
+has sixteen such ADRs, including new ADRs 0081/0082. Preserve measurements
+while the policy decision is pending. [102]'s prose/code line ratio passes.
 
 **Goal.** Each fact lives in one document. Every document is in Simplified
 Technical English. There are fewer lines of prose than lines of code.
@@ -133,6 +175,11 @@ and a changelog per release. Django: documents change in the same commit as
 the code, and old behaviour has a written deprecation path.
 
 ## Phase 3: make the shared UI a module graph
+
+Status 2026-10-19: Partly done. Steps 1–5, 7 and 8 are implemented; step 6 misses
+some node fields. The DOM-free package is now `ui/core/model/`, where
+`sortKids` can be imported. Core vpath checks and HTTP search coupling
+remain; [102] records passing bundle and acyclic-module checks.
 
 **Goal.** `ui/core/` can be imported without an HTML file, without a DOM
 order and without any adapter. The dependency graph is explicit.
@@ -176,6 +223,12 @@ on its own. Zig: no hidden globals; what a file uses, it names.
 
 ## Phase 4: state and render discipline
 
+Status 2026-10-19: Partly done. Steps 2, 3 and 5 are implemented; step 1's preview
+reuse is open and step 4's constants cleanup is partial. `applyScroll` remains
+the coordinator of the four extracted helpers. A9 and ADR 0079 record preview
+recreation and native resize cost. Splitting helpers did not satisfy the
+literal `applyScroll` deletion check.
+
 **Goal.** A render is cheap and predictable. The preview is fetched once per
 selection. Every number has a name.
 
@@ -205,6 +258,11 @@ claim stopped being true.
 
 ## Phase 5: one file kind and one order
 
+Status 2026-10-19: Done implementation. [6]/[7] implement classification tables and
+adapter-owned order, including descending name order. Their "still open"
+wording below is historical. This does not imply user acceptance of related
+tracker entries.
+
 **Goal.** "What kind of thing is this entry?" and "in what order do entries
 appear?" are each answered in one place per side.
 
@@ -219,6 +277,21 @@ that both sides share by value.
 **Done when.** The acceptance criteria in those two files hold.
 
 ## Phase 6: a minimal server
+
+Status 2026-10-19: Partly done. Steps 3, 6 and conditional step 7 are complete;
+steps 1, 2, 4 and 5 retain work. Markdown/DOCX use vendored browser modules;
+RST and archive consumers still use the preview API. `/w/` is a same-origin
+mount without CORS. Do not restore the removed upload renderer or live reload.
+
+The original budgets remain and fail. [102] measured 2,491 production Python
+lines; main through `25bc4d4e` has 2,597, counting all `.py` direct children
+and descendants of `server/src/filemill/`. The target is below 1,500.
+`server/pyproject.toml` lists six runtime dependencies: starlette, uvicorn,
+pygments, docutils, typer and conditional zstandard. This fails both the
+four-dependency count and the named set below; python-pptx is now test-only.
+Two function-local zstandard imports remain for Python compatibility, failing
+the zero-local-import check. These failures await a policy decision; this
+status note does not waive them or authorize deleting supported behavior.
 
 **Goal.** The Python server does only what a browser cannot: list a
 directory, serve bytes, save a file, read SQLite and serve the shell. Every
@@ -268,6 +341,12 @@ same Markdown file shows the same HTML in both editions.
 
 ## Phase 7: one test harness
 
+Status 2026-10-19: Partly done. Steps 1, 2 and 4 are implemented; 3 and 5 remain
+partial. [25]/[99] move the old static scripts into `static/tests/` and root
+pytest; [99]/[101] record passing root, bundle and dev suites. No fixed browser
+waits remain. Separate browser lifecycles persist, and a root `pytest -n auto`
+pass is not established. Parallel CI suites do not prove it.
+
 **Goal.** One command runs every test. A failure names its check. No test
 waits for a fixed time.
 
@@ -293,6 +372,12 @@ own suite: assert on conditions, never on clocks.
 
 ## Phase 8: preview and editing to world class
 
+Status 2026-10-19: Requested implementations in steps 1–4 are done. Registry,
+CSV/video/browser PPTX text extraction, RST evaluation and editor modules
+exist. Step 2's unconditional preview-API removal is overtaken by RST/VTT
+and archive consumers. Full office fidelity remains a product goal; save
+atomicity/conflicts remain A4 work. Browser-owned RST routing remains A8.
+
 **Goal.** Preview and editing are a table, not a ladder, and the table is the
 same in both editions.
 
@@ -312,6 +397,12 @@ same in both editions.
 **Done when.** Adding a preview kind is one entry in one table plus one test.
 
 ## Phase 9: native shells
+
+Status 2026-10-19: Prototype steps 1–3 are done. [29] supplies the model;
+[30]/ADR 0079 qualify WebKitGTK; [31]/ADR 0066 retain WebView over widgets.
+ADR 0079 records 220 UI checks passing in 4/5 runs and remaining native limits.
+This is a Linux prototype. Cross-platform application release parity remains
+future work.
 
 **Goal.** One native shell runs the same core with native ports.
 

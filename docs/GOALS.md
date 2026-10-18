@@ -36,8 +36,10 @@ folder, on the device they have.
    machine through the File System Access API and ships as one HTML file.
    Both must look the same and behave the same.
 5. **Native applications later.** Filemill must become a native macOS, GNOME
-   and Windows application with the same feature set. This is not built yet.
-   It shapes the architecture now. The core must not depend on where a node
+   and Windows application with the same feature set. A Linux WebKitGTK
+   prototype exists as of 2026-10-19, [30] and ADR 0079. Cross-platform native
+   applications with feature parity remain future work. This goal shapes the
+   architecture now. The core must not depend on where a node
    comes from. It must not depend on the browser DOM more than necessary.
 
 ## Implicit goals we found in the code

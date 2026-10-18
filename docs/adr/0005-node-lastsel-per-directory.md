@@ -2,6 +2,15 @@
 
 Date: 2026-08-16
 
+## Supersession, 2026-10-19, issue [107]
+
+Task [22] replaced this storage contract. `ui/core/model/selection.js` stores
+selected names in `sel[i]`; `ui/core/model/state.js:rowIndex` derives row
+indices. Current source has no `node.lastSel`. Do not restore that field to
+satisfy the original decision. Its decision and measurement below are the
+historical contract; current selection behavior is defined by the model and
+its tests in `ui/core/model/test.mjs`.
+
 ## Context
 
 The static edition needs a documented decision for this design choice.
