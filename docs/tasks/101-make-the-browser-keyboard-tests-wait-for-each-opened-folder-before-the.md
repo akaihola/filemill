@@ -371,3 +371,7 @@ The first run overlapped the static browser suites; the second followed
 immediately after it. No test or product code changed between the runs.
 All acceptance checks for [101] are satisfied. Completion remains pending
 user acceptance and must retain `[ ]` in Completed / Accepted.
+
+After validation, the rebased branch was merged into main by fast-forward.
+The hai-tasks CLI moved [101] to Completed / Accepted with `[ ]`, preserving
+user acceptance as false. No push, deployment or service restart was performed.
