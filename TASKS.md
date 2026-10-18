@@ -8,12 +8,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [107] Date superseded roadmap and ADR claims (roadmap Phase 0)
+## In Progress
+
+- [~] [107] Date superseded roadmap and ADR claims (roadmap Phase 0)
     - Depends on: [105]
 
-  <!-- hai:{"id":"simple-c54d6a4c-5bfc-417e-bb9c-250b2b875076","labels":["steward"],"createdAt":"2026-10-18T20:07:24.425Z","updatedAt":"2026-10-18T22:05:11.445Z"} -->
-
-## In Progress
+      <!-- hai:{"id":"simple-c54d6a4c-5bfc-417e-bb9c-250b2b875076","labels":["steward"],"createdAt":"2026-10-18T20:07:24.425Z","updatedAt":"2026-10-18T22:54:13.687Z"} -->
 
 - [~] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
