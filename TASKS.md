@@ -8,12 +8,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [102] Audit the technical roadmap against main and draft the next phase's
-  issues
-    - Depends on: [101]
-
-  <!-- hai:{"id":"simple-4062970c-4d67-4774-b6d9-969613643e7c","labels":["steward"],"createdAt":"2026-10-18T02:12:21.766Z","updatedAt":"2026-10-18T05:47:11.603Z"} -->
-
 ## In Progress
 
 - [~] [94] Move the CI workflows to action versions that run on Node.js 24
@@ -27,6 +21,12 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-17T07:59:20.709Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [102] Audit the technical roadmap against main and draft the next phase's
+  issues
+    - Depends on: [101]
+
+      <!-- hai:{"id":"simple-4062970c-4d67-4774-b6d9-969613643e7c","labels":["steward"],"createdAt":"2026-10-18T02:12:21.766Z","updatedAt":"2026-10-18T05:51:33.774Z"} -->
 
 - [ ] [101] Make the browser keyboard tests wait for each opened folder before the
   next key
