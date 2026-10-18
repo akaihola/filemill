@@ -4,11 +4,17 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Unverified proposals
 
+## Ordered backlog
+
 - [101] Make the browser keyboard tests wait for each opened folder before the
   next key
-  <!-- hai:{"id":"simple-52f039e0-e22b-4c63-95c2-21d6afb06983","labels":["steward"],"createdAt":"2026-10-18T02:12:12.913Z","updatedAt":"2026-10-18T02:12:12.913Z"} -->
+  <!-- hai:{"id":"simple-52f039e0-e22b-4c63-95c2-21d6afb06983","labels":["steward"],"createdAt":"2026-10-18T02:12:12.913Z","updatedAt":"2026-10-18T02:12:44.877Z"} -->
 
-## Ordered backlog
+- [102] Audit the technical roadmap against main and draft the next phase's
+  issues
+    - Depends on: [101]
+
+  <!-- hai:{"id":"simple-4062970c-4d67-4774-b6d9-969613643e7c","labels":["steward"],"createdAt":"2026-10-18T02:12:21.766Z","updatedAt":"2026-10-18T02:12:45.390Z"} -->
 
 ## Scheduled
 
@@ -635,7 +641,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 [77]: docs/tasks/77-md-tight-bullet-list-line-spacing.md
 
-<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101 -->
+<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102 -->
 
 [78]: docs/tasks/78-wide-document-scrolls-instead-of-expanding-the-preview.md
 
@@ -684,6 +690,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 [100]: docs/tasks/100-check-the-19-newest-review-queue-items-against-the-acceptance-policy.md
 
 [101]: docs/tasks/101-make-the-browser-keyboard-tests-wait-for-each-opened-folder-before-the.md
+
+[102]: docs/tasks/102-audit-the-technical-roadmap-against-main-and-draft-the-next-phase-s-is.md
 
 ## Rules
 
