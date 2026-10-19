@@ -64,6 +64,10 @@ status.
   in a vertical swipe does not turn the dial. While the dial takes a sideways
   swipe, its vertical drift does not scroll the document ([ADR 0084], [110],
   2026-10-19).
+  A glide waiting for its frame starts only if no later dial write replaced
+  it. A layout that finds the dial already at its resting place stops a glide
+  still heading elsewhere. A mount during a refresh's glide therefore no
+  longer folds the focused root ([ADR 0022], [113], 2026-10-20).
 - **Virtual filesystems.** JSON, JSONL and CSV are browser adapters
   (`ui/adapters/vfs-json.js`, `vfs-csv.js`). Markdown and reStructuredText
   browse by their headings the same way (`vfs-doc.js`, outline in
@@ -158,7 +162,10 @@ Keep these.
   The horizontal keyboard test waits for preview scroll movement after each
   scroll key. It covers normal writes and writes deferred across animation
   frames, with the same navigation, focus and directional assertions
-  ([108], 2026-10-19).
+  ([108], 2026-10-19). It also waits for the re-rendered preview's text
+  before its first scroll key. The server ←/→ URL check waits for the render
+  that opens each selection and reads `location.href`, because `page.url` can
+  trail in-page history writes ([113], 2026-10-20).
 - Real filesystem tests without a picker: `static/tests/test_url.py` drives the real
   FSA adapter against the origin private file system.
 - In the browser, size limits and the image extension list have one home,
@@ -360,7 +367,8 @@ local-folder and virtual modes. Existing issues [10], [38], [41], [42], [56] and
 `renderPreview` (`ui/core/render.js:462-471`) builds a new element and calls
 `PREVIEW.revoke()` on every `render()` unless an editor is open. A resize, a
 fold or a settings change therefore reads and parses the file again, and resets
-scroll and media. [21] is marked Completed but its cache is not in the source.
+scroll and media. So does ← from the preview: a scroll key pressed before the
+new fill lands has nothing to scroll ([113], 2026-10-20). [21] is marked Completed but its cache is not in the source.
 [29]–[31] were completed without it. `navSeq` guards `choose` and refresh
 (`ui/core/nav.js:50`); `applyPath` uses a shared `applying` flag and mutates the
 path across awaits. The condition-based wait audit (2026-10-17) confirmed the
@@ -562,6 +570,7 @@ A12 items can land at any time, each with a focused test.
 
 [ADR 0005]: adr/0005-node-lastsel-per-directory.md
 [ADR 0021]: adr/0021-horizontal-scroll-fold-dial-not-translation.md
+[ADR 0022]: adr/0022-the-dial-s-resting-place-never-folds-the-focused-column-nor-anything-r.md
 [ADR 0034]: adr/0034-read-only-mode-read.md
 [ADR 0050]: adr/0050-history-pushes-on-entering-a-column-rewrites-otherwise.md
 [ADR 0063]: adr/0063-installed-pwa-server-recovery.md
