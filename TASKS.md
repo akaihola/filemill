@@ -842,7 +842,9 @@ Below, `<filename>@<branch>` means you must operate on the file in the specified
 3. Merge and deploy (typically by last steps of a task workflow)
 
 - Rebase the worktree feature branch on `main` and resolve any conflicts.
-- Merge the rebased branch on `main`, and remove the worktree and branch.
+- Merge the rebased branch on `main`.
+- Keep the worktree and branch after merging. Remove them only when the user
+  explicitly requests it.
 - Move the issue from `## In Progress` to `## Completed / Accepted` in `TASKS.md@main`
   with `[ ]`, pending user acceptance, and commit.
 - Do any deployment steps if defined in the general development worklow.
