@@ -3,11 +3,12 @@
 
    core/ is the shared UI and knows nothing about where its nodes come from;
    adapters/ chooses. This file names the adapters of the local-folder flavour
-   and the app module that wires them (app-fsa.js), which is the only module
-   that runs anything at load time. entry-server.js is the counterpart.
+   and the app module that wires them (app-fsa.js). entry-server.js and
+   entry-native.js are the counterparts.
 
-   Import order is evaluation order. dom-renderer.js first: it pulls in shell.js (the
-   markup every other module queries) and, through the core cycle, the rest.
+   Import order is evaluation order. shell.js first: it inserts the markup every
+   other module queries. dom-renderer.js next takes its element handles and,
+   through the core cycle, pulls in the rest.
    static/build-index.py walks this graph and inlines it in the same order.
    ═══════════════════════════════════════════════════════════════════════════ */
 import "./core/shell.js";

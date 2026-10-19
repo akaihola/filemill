@@ -89,10 +89,11 @@ def render_preview(
 
     This is the *rendered* representation: it dispatches on suffix, so
     reStructuredText arrives as HTML and a PDF as its viewer. ``render_source``
-    is the other side of that same file — see ``filemill.urls`` for the
-    contract they implement. Markdown and .docx are not dispatched here: the
-    browser renders them from the modules in ui/vendor/, so they fall through
-    to coloured or raw source like any other text.
+    below is the source side, but no route calls it: ``?filemill=highlight``
+    serves the shell, and the browser shows the source. Markdown and .docx are
+    not dispatched here: the browser renders them from the modules in
+    ui/vendor/, so they fall through to coloured or raw source like any other
+    text.
 
     *state* is accepted for callers that have a request's ``ViewState``; no
     renderer reads it since the Markdown renderer moved to the browser.
@@ -128,11 +129,11 @@ def render_preview(
 def render_source(path: Path) -> str:
     """Return the file's own text, syntax-highlighted and never interpreted.
 
-    ``render_preview`` dispatches on suffix, so a .md file becomes rendered HTML
-    there and a .html file becomes a page. This is what ``filemill=
-    highlighted`` asks for instead: the characters the author typed, coloured but
-    not obeyed. Escaping happens in both branches below, so a file that contains
-    markup shows that markup rather than running it.
+    ``render_preview`` dispatches on suffix, so a .html file becomes a page
+    there. This returns the characters the author typed instead, coloured but
+    not obeyed. Only tests call it: ``?filemill=highlight`` serves the shell,
+    and the browser shows the source. Escaping happens in both branches below,
+    so a file that contains markup shows that markup rather than running it.
 
     Falls through the same two steps as ``render_preview``: Pygments first, then
     a plain ``<pre>``, then an explicit "no source view" note for bytes that are

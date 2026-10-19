@@ -5,7 +5,7 @@
    is which adapters they hand it, and where the root comes from — here the
    server already has one, so there is no welcome screen to get past.
 
-   "Open local folder…" is the reason this file is not just three lines: the
+   "Open Folder…" is the reason this file is not just three lines: the
    page can re-point the FS and PREVIEW ports at the browser's own filesystem
    at runtime and keep every other thing about the app identical. Nothing in
    core/ notices.
@@ -71,8 +71,9 @@ initSettings();
 
 /* The renderer table, core first. Markdown, .docx and .pptx are drawn in the
    browser here too — the first two from the modules the shell serves out of
-   /ui/vendor/ (see ui/vendor/README.md), .pptx from its CDN viewer. Only
-   reStructuredText stays with the Python renderer. `offline` is the fallback
+   /ui/vendor/ (see ui/vendor/README.md); .pptx needs no module, its slide text
+   is extracted in the page. Only reStructuredText stays with the Python
+   renderer. `offline` is the fallback
    the rich entries name when a module does not arrive. */
 addRenderers([
   ...CORE_RENDERERS,
@@ -106,9 +107,9 @@ const PreviewHTTP = {
   },
 };
 
-/* Markdown, .docx and .pptx render in the browser in this edition too, from
-   the modules the shell lists in FILEMILL_CDN (Markdown and .docx are served
-   from /ui/vendor/, see ui/vendor/README.md). This sits inside withHighlighting
+/* Markdown, .docx and .pptx render in the browser in this edition too:
+   Markdown and .docx from the modules the shell lists in FILEMILL_CDN (served
+   from /ui/vendor/, see ui/vendor/README.md), .pptx with no module. This sits inside withHighlighting
    so that ?filemill=highlight still shows a Markdown file as coloured source.
    A member of an archive is no exception: FS.blob fetches its bytes with its
    vpath (adapters/http.js), so the same renderer draws it from those. */

@@ -2,6 +2,10 @@
 
 Date: 2026-10-07.
 
+Note 2026-10-19, issue [109]: the runtime `zstandard` dependency is limited to
+Python before 3.14. The development groups install it on every version, so
+mypy can check the compatibility import (`server/pyproject.toml`).
+
 ## Context
 
 A `.tar.zst` backup holds files the user wants to look at: a manifest, a
@@ -83,3 +87,5 @@ slow to open and slow to preview from, in proportion to its size.
 
 [84]: ../tasks/84-json-member-in-archive-shows-chevron-but-does-not-open.md
 [86]: ../tasks/86-markdown-in-archives-is-not-rendered.md
+
+[ADR 0070]: 0070-documents-browse-by-headings.md

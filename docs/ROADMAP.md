@@ -16,6 +16,10 @@ closes the suppression/obsolete-skip check; [103]/[104] resolve A1–A3.
 The original goals, steps and checks below remain the policy record. Paths,
 commands and assertions in delivered or superseded steps describe their old
 baseline; use [CONTRIBUTING.md](../CONTRIBUTING.md) for current commands.
+The open checks below still name `static/test-ui.py`, `test-url.py` and
+`test-rich.py`. Since `587752b4` (2026-10-17) these are
+`static/tests/test_ui.py`, `test_url.py` and `test_rich.py`, run with
+`--bundle`, `--dev` or `--native`.
 The architecture review takes precedence when its remediation order conflicts
 with this sequence. Remaining work uses bounded issues. Local validation does
 not establish remote CI or user acceptance.
@@ -41,8 +45,10 @@ does one thing with a discipline we want. Copy the discipline, not the code.
 Status 2026-10-19: Partly done. Steps 0–4, 6 and 7 are implemented. ADR 0067 retires
 step 2's layout. [105] and [107] correct step 5's current/historical claims;
 the task 2 file and editor-cursor item are already retired, with dated
-corrections in [107]. [99]/[101] record green local suites. [93]/[94] still
-need CI proof for delivered main, so Phase 0's delivery check stays open.
+corrections in [107]. [109] corrects the remaining stale claims in
+`server/README.md` and `server/CONTRIBUTING.md` (2026-10-19). [99]/[101]
+record green local suites. [93]/[94] still need CI proof for delivered main,
+so Phase 0's delivery check stays open.
 
 **Goal.** Both test suites are green on `main`. Every document describes the
 code as it is. Nothing in the tree is a corpse.
@@ -98,9 +104,9 @@ same change, so two implementations never live side by side.
 Status 2026-10-19: Partly done. Steps 1–6 are implemented. [106] removes the six
 unlinked suppressions and obsolete PPTX skip identified by [102], and adds a
 Python suppression-link guard to the existing gate. Its gate has seven hooks after adding the guard.
-Deno is pinned in CI; Ruff infers Python from requires-python. Exact delivered
-main CI proof remains under [93]/[94]. Local hooks do not prove branch
-protection or hook installation for every contributor.
+[CONTRIBUTING.md](../CONTRIBUTING.md#tests) describes the gate, its pins and
+what local hooks do not prove. Exact delivered main CI proof remains under
+[93]/[94].
 
 **Goal.** A formatting or lint error cannot be committed or merged.
 
@@ -178,8 +184,9 @@ the code, and old behaviour has a written deprecation path.
 
 Status 2026-10-19: Partly done. Steps 1–5, 7 and 8 are implemented; step 6 misses
 some node fields. The DOM-free package is now `ui/core/model/`, where
-`sortKids` can be imported. Core vpath checks and HTTP search coupling
-remain; [102] records passing bundle and acyclic-module checks.
+`sortKids` can be imported from `ui/core/model/sort.js`. The `grep` check
+below needs `-r` to search the directory. Core vpath checks and HTTP search
+coupling remain; [102] records passing bundle and acyclic-module checks.
 
 **Goal.** `ui/core/` can be imported without an HTML file, without a DOM
 order and without any adapter. The dependency graph is explicit.
@@ -281,7 +288,9 @@ that both sides share by value.
 Status 2026-10-19: Partly done. Steps 3, 6 and conditional step 7 are complete;
 steps 1, 2, 4 and 5 retain work. Markdown/DOCX use vendored browser modules;
 RST and archive consumers still use the preview API. `/w/` is a same-origin
-mount without CORS. Do not restore the removed upload renderer or live reload.
+mount without CORS. Do not restore the removed upload renderer or the browser
+live reload over `/sse/reload` (`cb453a00`). `filemill --live` is Uvicorn's
+reload and stays.
 
 The original budgets remain and fail. [102] measured 2,491 production Python
 lines; main through `25bc4d4e` has 2,597, counting all `.py` direct children

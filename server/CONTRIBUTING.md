@@ -14,9 +14,10 @@ capabilities, network behavior and implementation links.
 ```
 src/filemill/
 ├── app.py          # Starlette app and routes
-├── api.py          # JSON/fragment API behind the shared UI (/api/*)
+├── api.py          # /api/* request handlers behind the shared UI
 ├── cli.py          # Typer CLI entry point
 ├── env.py          # FILEMILL_* variables, PYKOFINDER_* fallback
+├── mutations.py    # Origin, Host and token checks for save and delete
 ├── paths.py        # resolve_safe() and the named-mount map
 ├── preview.py      # Server RST, media and source preview dispatcher
 ├── pwa.py          # /manifest.json, /sw.js and /icons/ handlers
@@ -29,9 +30,15 @@ src/filemill/
 tests/
 ├── test_api.py               # /api/* contract + the shared UI's shell
 ├── test_app.py               # Route-level integration tests
+├── test_archive_provider.py  # tar and zip VFS provider unit tests
 ├── test_browser_keyboard.py  # Keyboard navigation, driven in a real browser
 ├── test_browser_new_ui.py    # The shared UI, driven in a real browser
+├── test_browser_waits.py     # Rejects fixed browser waits in the test sources
 ├── test_cli.py               # CLI smoke tests
+├── test_docs.py              # Documents agree with the pins and the code
+├── test_file_kind.py         # Server file classification
+├── test_gitbundle_provider.py # Git bundle VFS provider unit tests
+├── test_mutation_policy.py   # Save and delete authorization
 ├── test_preview.py           # Preview rendering (all file types)
 ├── test_providers_sqlite.py  # SQLite VFS provider unit tests
 ├── test_pytest_config.py     # Server runs elect ../pytest.ini and ../conftest.py
@@ -40,6 +47,7 @@ tests/
 ├── test_resource_routes.py   # The one directory rule in resource()
 ├── test_resource_safety.py   # Path containment in resource()
 ├── test_routes_new.py        # Additional route coverage
+├── test_suppression_links.py # Python noqa comments link to an issue
 ├── test_urls.py              # View state and canonical URLs
 ├── test_vfs.py               # VFS registry and provider protocol
 └── test_vtt_provider.py      # VTT VFS provider unit tests
@@ -88,7 +96,7 @@ the default view and that branch returns before the shell one.
   direct-child symlink bookmark zones. [`app.py`](src/filemill/app.py) also
   validates the final directory index. Mutation routes check Origin, Host and
   a per-process token before path resolution or body consumption. See
-  [SECURITY.md](../SECURITY.md). A2, A4 and A5 remain open.
+  [SECURITY.md](../SECURITY.md). A4 and A5 remain open.
 - Static `/w/` URLs use named mounts. The root directory is `/w/<ROOT.name>/...`.
   Each direct symlink child of ROOT is `/w/<symlink-name>/...`.
 - There is no JavaScript build step.
@@ -101,11 +109,13 @@ the default view and that branch returns before the shell one.
   browser URL. The URL and the visible Finder state must agree.
 - `src/filemill/static/` holds the PWA assets `/manifest.json`, `/sw.js` and
   `/icons/*`. `_reorder_routes()` puts them, `/ui/`, `/n/` and `/api/*` before
-  The static catch-all route. Without that, the catch-all swallows
-  every `.js` and `.css` the shared UI asks for, and the page is blank.
+  the resource catch-all route, `/{path:path}`. Without that, the catch-all
+  swallows every `.js` and `.css` the shared UI asks for, and the page is blank.
 - The UI shell registers the [service worker](src/filemill/static/sw.js).
-  It bypasses non-GET and `/api/*` requests but caches other same-origin URLs,
-  including document bytes. Cache isolation and offline misses remain A5 work.
+  It bypasses non-GET and `/api/*` requests and sends navigations to the
+  network, with a recovery page when the server does not answer. It caches
+  other same-origin GETs, such as images and `/w/` files that a page embeds.
+  Cache isolation and offline misses remain A5 work.
 
 ---
 
@@ -142,9 +152,8 @@ would become the rootdir and hide those fixtures. `tests/test_pytest_config.py`
 checks this.
 
 > **Important:** wrap `uv run pytest` in a shell-level timeout when a script or
-> an agent tool calls it. A misbehaving SSE streaming test can block without
-> end (see issue #17, fix hanging SSE test). Use 1800 seconds, not 120: the
-> browser tests alone take about 9 minutes.
+> an agent tool calls it. A hung browser test can block without end. Use 1800
+> seconds, not 120: the browser tests alone take about 9 minutes.
 
 ### Do Not Pass `--with playwright==…`
 
@@ -171,17 +180,13 @@ Playwright before running tests. For a bundle such as Nix, select the matching
 Playwright release and update the lock when the bundle changes. Do not download
 another browser to work around a mismatch with a managed bundle.
 
-### Proxy credentials for the browser tests
+### No proxy for the browser tests
 
-`_proxy_from_env()` in `tests/test_browser_keyboard.py` reads `$HTTPS_PROXY`
-and passes its credentials to Chromium. Chromium reads the variable but drops
-the username and password in it. Behind an authenticated proxy the symptom is
-`407 Proxy Authentication Required` in the *browser* console, which pytest
-never prints.
-
-`tests/test_browser_new_ui.py` drives the shared UI, which serves every asset
-itself, so those tests pass with no network. Measured on a host with no proxy
-credentials given to Chromium: 34 passed in 95 s.
+The browser tests hand no proxy to Chromium (`_ui_page` in
+`tests/test_browser_keyboard.py`). The shared UI serves every asset itself, so
+the tests need no network, and `test_nothing_is_fetched_from_a_cdn` in
+`tests/test_browser_new_ui.py` keeps it that way. Measured on a host with no
+proxy credentials given to Chromium: 34 passed in 95 s.
 
 ### Historical local-folder measurements
 

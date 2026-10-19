@@ -9,8 +9,9 @@
    CORE_RENDERERS is what the browser can do from the bytes alone, with no
    download and no server: images, PDF and HTML as object URLs, .desktop as a
    link card, WebVTT as a transcript, and everything else as coloured text.
-   Both editions register this list at boot; each app module adds the entries
-   of its own adapters after it (adapters/app-fsa.js, adapters/app-http.js).
+   Every edition registers this list at boot; each app module adds the entries
+   of its own adapters after it (adapters/app-fsa.js, adapters/app-http.js,
+   adapters/app-native.js).
    Adding a kind is one entry here or in an adapter, plus one test.
    ═══════════════════════════════════════════════════════════════════════════ */
 import { esc } from "./icons.js";

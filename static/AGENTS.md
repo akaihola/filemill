@@ -73,7 +73,7 @@ context reset.
 │   │   ├── router-path.js  ← ROUTER: /a/b.md                 (server)
 │   │   ├── storage.js      ← IndexedDB: remembered folders
 │   │   ├── app-fsa.js      ← boot: picker, welcome screen    (static)
-│   │   └── app-http.js     ← boot: server root + Open local folder…
+│   │   └── app-http.js     ← boot: server root + Open Folder…
 │   └── vendor/             ← Seti icon map + WOFF font (MIT)
 ├── server/                 ← the Python server; see its CONTRIBUTING.md
 └── static/                 ← THIS PROJECT
@@ -124,8 +124,8 @@ without a check.
 
 ## Publishing
 
-`.github/workflows/publish.yml` tests every push and deploys `index.html`, and
-only that file, to GitHub Pages from `main`.
+`.github/workflows/publish.yml` tests every push and deploys `index.html`, with
+the PWA manifest, service worker and icons, to GitHub Pages from `main`.
 
 Pages is the right target for a technical reason. `showDirectoryPicker()`
 needs a **secure context**. A downloaded `index.html` opened from disk shows
@@ -216,10 +216,8 @@ same run, and the check asserts that ratio, not a wall-clock ceiling. OPFS is
 not the user's own disk. That is `test-e2e.py`'s job.
 
 Run the suites with `uv run --project server` so the lock chooses the
-Playwright release. Install its browser with
-`uv run --project server playwright install chromium`. If your environment
-provides a managed browser bundle, set `PLAYWRIGHT_BROWSERS_PATH` and use
-its matching Playwright release instead of downloading another browser.
+Playwright release. [`server/CONTRIBUTING.md`](../server/CONTRIBUTING.md#running-tests)
+covers browser setup.
 
 `tests/test_ui.py` fakes the handle API, which is all the app touches:
 

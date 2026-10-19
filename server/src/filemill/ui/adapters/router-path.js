@@ -1,13 +1,14 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Router — the real URL path, for the server build.
 
-       /src/filemill/app.py
+       server/src/filemill/app.py
 
-   The path *is* the file path relative to the browsed root: no mount prefix,
-   no ?path=, nothing in the address bar that is not the file you are looking
-   at. Query parameters stay free for representation and layout state
-   (filemill, layout) and are preserved verbatim through every
-   navigation, because they say how to show the file, not which one.
+   The path *is* the file path relative to the browsed root, after BASE ("/",
+   or "/n/"): no ?path=, nothing in the address bar that is not the file you
+   are looking at. Query parameters stay free for representation and layout
+   state, because they say how to show the file, not which one. write() sets
+   `filemill` from the router state's view; every other parameter, such as
+   `layout`, is preserved verbatim through every navigation.
 
    Needs a server that serves the app shell for any path under BASE — which is
    the same requirement as any history-API single-page app.

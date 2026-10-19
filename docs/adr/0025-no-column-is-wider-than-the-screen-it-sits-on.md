@@ -2,6 +2,14 @@
 
 Date: 2026-09-02
 
+## Partial supersession, 2026-10-19, issue [109]
+
+The decision still holds, through other code. `measure()` and its 380 px
+ceiling are gone, and `render()` no longer clamps `widths`. Since `fe3a2306`,
+`folderWidth()` in `ui/core/dom-renderer.js` gives every folder column one
+width: `20em` on a desktop, or a share of the finder's width on a phone. See
+[ADR 0062](0062-narrow-screen-layout-model.md).
+
 ## Context
 
 The static edition needs a documented decision for this design choice.
@@ -17,3 +25,5 @@ No column is wider than the screen it sits on
 ## Consequences
 
 The static edition follows this decision. The measurement above records the basis for maintaining and evaluating it.
+
+[109]: ../tasks/109-check-filemill-s-docs-and-adr-statuses-against-the-code-and-fix-what-d.md

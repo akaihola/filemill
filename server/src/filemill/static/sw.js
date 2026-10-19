@@ -1,10 +1,12 @@
 /* filemill service worker
  *
  * Strategy:
- *   - App shell (/) and static assets (icons, manifest) → cache-first,
- *     updated in background (stale-while-revalidate).
- *   - Dynamic API responses → network-only; never cached.
- *   - Everything else → network-first with shell fallback.
+ *   - /api/ and /sse/ → network-only; never cached.
+ *   - Navigations → network-only. When the server does not answer, an
+ *     inline recovery page with a retry button.
+ *   - Every other same-origin GET → stale-while-revalidate: the cached copy
+ *     answers at once, and the network refreshes it. The app shell (/), the
+ *     manifest and the icons are precached.
  */
 
 const CACHE = "filemill-v1";

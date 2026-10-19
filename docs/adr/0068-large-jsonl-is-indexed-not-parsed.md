@@ -2,6 +2,10 @@
 
 Status: accepted, 2026-09-19.
 
+Number note, 2026-10-19, issue [109]: two ADRs carry the number 0068. This one
+is about large JSONL files; [the other](0068-scroll-whole-directory-listings.md)
+is about whole directory listings. Name the file when you link to either.
+
 ## Context
 
 A `.jsonl` file opened as a column of rows. `ui/adapters/vfs-json.js` read the

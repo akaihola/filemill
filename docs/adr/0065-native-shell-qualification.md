@@ -5,6 +5,10 @@ Date: 2026-09-21. Issue: [30](../tasks/30-webview-shell.md).
 Superseded 2026-10-17 by [ADR 0079](0079-native-shell.md). Overlay
 scrollbars caused the hit failure, and the direct host now passes.
 
+Note 2026-10-19, issue [109]: on `main` the `git log` command below prints
+nothing unless it has `--full-history`. It finds `f73912b4`, the commit that
+[ADR 0079](0079-native-shell.md) names.
+
 ## Context
 
 The DOM renderer needs a native host with filesystem, preview and routing
@@ -41,3 +45,5 @@ Fix the focused regression and finish the native UI run before selecting a
 shell. Rebuild both candidates with identical UI inputs for the final size
 comparison. Raw links and rich assets also need native integration. Issue
 [31] remains untouched; no native widget renderer has been evaluated.
+
+[31]: ../tasks/31-native-toolkit-evaluation.md

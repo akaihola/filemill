@@ -19,11 +19,13 @@ client can also fetch the UI token and authorize writes.
 
 `/w/<root-name>/...` serves the raw bytes of a file under the root directory,
 and `/w/<symlink-name>/...` does the same for each symlink that sits directly in
-the root. Every path still passes the root check above. The route exists for the
-web interface's own `~/` links. The server sends no CORS headers, so browser
-scripts on another origin cannot read the responses. This does not prevent
-requests from reaching the server or authorize writes. If you need cross-origin reads, put a reverse proxy that adds the headers in
-front of a bind you trust.
+the root. Every path still passes the root check above. The route stays for
+existing links; the web interface no longer makes them, because a Markdown `~/`
+link now resolves against the root at `/`. The server sends no CORS headers, so
+browser scripts on another origin cannot read the responses. This does not
+prevent requests from reaching the server or authorize writes. If you need
+cross-origin reads, put a reverse proxy that adds the headers in front of a
+bind you trust.
 
 ## Save and delete authorization
 
@@ -40,13 +42,11 @@ header at the proxy. Explicit HTTPS origins work over HTTP backend connections.
 No wildcard origins are accepted and no CORS access is granted. See
 [ADR 0081](docs/adr/0081-authorize-server-mutations.md) for the complete policy.
 
-The token authorizes browser requests, not users. Root HTML executes on the
-Filemill origin and can fetch the shell to obtain the token. Only serve trusted
-HTML on that origin; see below. The token does not protect against same-origin
-scripts. Use authenticated access control before exposing the server to
-untrusted clients. Tokens change on process restart; a stale cached shell fails
-authorization until refreshed. Service worker document caching remains open
-under A5.
+The token authorizes browser requests, not users, and does not protect against
+same-origin scripts; see [HTML files at the server root](#html-files-at-the-server-root).
+Use authenticated access control before exposing the server to untrusted
+clients. Tokens change on process restart; a stale cached shell fails
+authorization until refreshed. Service worker caching remains open under A5.
 
 ## HTML files at the server root
 
@@ -61,9 +61,12 @@ Only serve a root whose HTML you trust, as you would for any static web server.
 The preview pane is a different boundary. It shows an HTML file in an iframe
 with `sandbox=""`, so the file's scripts do not run there. Markdown,
 reStructuredText, `.docx` and `.desktop` previews are inserted into the page as
-inert markup. Markup in their text stays text, and a link keeps its target only
-for `http:`, `https:`, `mailto:` or a scheme-less address. A `.desktop` URL
-with any other protocol is shown and not linked.
+inert markup. Markup in their text stays text. In reStructuredText, `.docx` and
+`.desktop` previews a link keeps its target only for `http:`, `https:`,
+`mailto:` or a scheme-less address, and a `.desktop` URL with any other
+protocol is shown and not linked. Markdown links keep markdown-it's validation,
+and `markdownHref` also rejects `javascript:`, `vbscript:`, `file:` and `data:`
+targets. See [ADR 0082](docs/adr/0082-previews-link-only-to-safe-protocols.md).
 
 ## Report a vulnerability
 

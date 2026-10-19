@@ -3,7 +3,7 @@
 
    The counterpart of entry-static.js: the same core/, the server's adapters,
    and app-http.js to wire them. Both filesystem adapters are present because
-   "Open local folder…" switches between them at runtime; app-http.js is what
+   "Open Folder…" switches between them at runtime; app-http.js is what
    selects. server/src/filemill/app.py emits one <script type="module"> for
    this file and nothing else.
    ═══════════════════════════════════════════════════════════════════════════ */

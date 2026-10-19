@@ -71,8 +71,8 @@ export function columnMetrics(sizes, count, progress, focus, gutter, spine) {
    leftmost columns widen to fill the finder, one fewer at each stop. */
 const STOP_TOLERANCE = 0.5; // scroll positions are whole pixels, stops are not
 
-/* How many natural columns fit beside the preview reserve: 3.8 on a 1440px
-   laptop ("almost four"), 1.2 on a portrait phone. */
+/* How many natural columns fit beside the preview reserve, floored: 3 on a
+   1440px laptop (3.8 before flooring), 1 on a portrait phone (1.2). */
 export const fitCount = (width, viewport, preview, gutter) =>
   Math.max(1, Math.floor((viewport - preview - gutter) / (width + gutter)));
 export const fillWidth = (count, viewport, gutter) =>

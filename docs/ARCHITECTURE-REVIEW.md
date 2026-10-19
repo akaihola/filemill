@@ -1,6 +1,7 @@
 # Architecture review and remediation plan
 
-Checked against commit `6ca2580` on 2026-09-25. This document replaces the
+Checked against commit `1cb03863` on 2026-09-25; before [96]'s history rewrite
+it was `6ca2580`. This document replaces the
 reviews of 2026-09-05 and 2026-09-19. It keeps only the findings that the
 current code still shows, merges the findings the two reviews shared, and gives
 one remediation order. `docs/GOALS.md` states the target. `TASKS.md` records
@@ -12,8 +13,8 @@ status.
   wider exposure. P2: the next correctness and reliability work. P3: cleanups
   and audits.
 - **Evidence.** Paths are relative to `server/src/filemill/` unless they start
-  with `static/`, `docs/` or `.github/`; `static/` means the repository's
-  top-level `static/`. `ui/` is the symlinked shared frontend. Line numbers are
+  with `static/`, `docs/`, `.github/`, `server/` or `native/`, which are
+  repository paths; `static/` means the repository's top-level `static/`. `ui/` is the symlinked shared frontend. Line numbers are
   for the commit above.
 - **Verification.** This consolidation re-read the cited code. It did not rerun
   the browser reproductions of 2026-09-19. A finding that was a structural risk
@@ -62,9 +63,10 @@ status.
 - **Virtual filesystems.** JSON, JSONL and CSV are browser adapters
   (`ui/adapters/vfs-json.js`, `vfs-csv.js`). Markdown and reStructuredText
   browse by their headings the same way (`vfs-doc.js`, outline in
-  `ui/core/model/headings.js`, [ADR 0070]). SQLite, WebVTT, archives
+  `ui/core/model/headings.js`, [ADR 0070]). SQLite, archives
   (tar, compressed tar and zip, [ADR 0072]) and Git bundles (through `git`,
-  [ADR 0073]) are server providers registered in `vfs.py`. An archive member
+  [ADR 0073]) are server providers registered in `vfs.py`. The WebVTT provider
+  registered there lists no entries; the browser renders transcripts. An archive member
   or a bundle blob has bytes of its own, so `vfs.py` has a second protocol,
   `VFSMemberProvider`, and `/api/preview` and `/api/raw` take the member's
   virtual path as `v`. `HTTP.blob` sends it too, so a JSON or JSONL member
@@ -102,19 +104,18 @@ Keep these.
 - The quality gate runs. CI runs `deno fmt --check`, `deno lint`, the model
   tests, `build-index.py --check`, both static suites (bundle and `--dev`) and
   the server suite with coverage (`.github/workflows/publish.yml`), each with
-  `--durations=20`. Shared UI and bundle checks run in lint; all three browser
-  suites then run as parallel matrix legs with fail-fast disabled. Publishing
-  requires lint and every leg to pass ([90], 2026-10-14). A new run cancels only
+  `--durations=20`. [CONTRIBUTING.md](../CONTRIBUTING.md#tests) describes the
+  lint job, the three parallel browser suites and the publish gate ([90],
+  2026-10-14). A new run cancels only
   older runs of the same workflow and ref, so pull requests cannot cancel main;
   only main publishes. The actions use Node.js 24, including the nested Pages
   artifact uploader; setup-uv retains cache pruning explicitly ([94],
   2026-10-17). The preview threshold browser regression waits for
   the expected fold count before measuring geometry, since navigation state can
   precede a deferred scroll write even with CSS scrolling set to `auto`
-  ([93], 2026-10-17). Pre-commit
-  runs ruff, ruff format, mypy, deno and the bundle check. Issue [106]
-  adds a Git-tracked Python `noqa` issue-link guard to that gate (2026-10-19).
-  Its six suppression sites now use equivalent unsuppressed code. Provider
+  ([93], 2026-10-17). Issue [106] adds the `noqa` issue-link guard that
+  CONTRIBUTING.md describes to the pre-commit gate (2026-10-19). Its six
+  suppression sites now use equivalent unsuppressed code. Provider
   imports still register in the same order. The disabled Python/LibreOffice
   PPTX tests and unused helper are removed; browser PPTX checks remain.
   The baseline and
@@ -129,10 +130,9 @@ Keep these.
   native scroll-into-view can turn the fold dial and move a mouse-click target
   between press and release. Existing geometry checks remain unchanged; the
   shared UI is unchanged ([98], 2026-10-17).
-- Static browser checks run as separate pytest sections under `static/tests/`,
-  with shared page, fake handle, OPFS and HTTP fixtures ([25], 2026-10-17).
-  Root `uv run pytest` runs both editions through a shared uv workspace and lock.
-  The fixed-wait guard scans the moved tests recursively. Copy tests install
+- Static browser checks run as separate pytest tests under `static/tests/`;
+  the README's [Tests](../README.md#tests) section lists the commands and
+  fixtures ([25], 2026-10-17). The fixed-wait guard scans the moved tests recursively. Copy tests install
   and pause their clock in one operation, so setup cannot pause in the past.
   The fold-animation test waits for its navigation setup to finish before
   measuring the animation, including with slow directory responses.
@@ -146,7 +146,10 @@ Keep these.
   ([108], 2026-10-19).
 - Real filesystem tests without a picker: `static/tests/test_url.py` drives the real
   FSA adapter against the origin private file system.
-- Size limits and the image extension list have one home, `ui/core/limits.js`.
+- In the browser, size limits and the image extension list have one home,
+  `ui/core/limits.js`. The server keeps its own: `IMAGE_EXTENSIONS` in
+  `vfs.py`, without `avif`, `bmp` and `ico`, and the 512 KiB
+  `SYNTAX_SIZE_LIMIT` in `preview.py` (A12, corrected 2026-10-19 by [109]).
   JSON documents use a separate 8 MiB limit, with a metadata check before
   fetching and a blob check before parsing ([ADR 0071], 2026-10-07).
 - The server binds to `127.0.0.1` by default (`cli.py:21`).
@@ -158,7 +161,8 @@ Keep these.
 - Keep the shared UI and the concatenating builder. Do not add a framework,
   bundler, ORM or general `ViewSpec` without a failing, measured case.
 - Keep native work ([29] → [30] → [31], [ADR 0066]) behind a stable browser
-  preview lifecycle (A9).
+  preview lifecycle (A9). Status 2026-10-19: [29]–[31] are complete with A9
+  still open; A9 below records the native cost.
 
 ## Findings
 
@@ -273,9 +277,12 @@ permission behaviour of the replacement is defined and tested.
 
 ### A5. Service workers cache file bytes and break offline misses
 
-In `server/src/filemill/static/sw.js` and `static/sw.js`, every same-origin GET
-outside `/api/` goes cache-first, so root-relative files and `/w/` bytes are
-cached, including `no-store` responses (server `:90`, static `:70`). A cached
+In `static/sw.js`, every same-origin GET outside `/api/` is answered from the
+cache first, navigations included. `server/src/filemill/static/sw.js` sends
+navigations to the network, with an inline recovery page when that fails, and
+answers every other same-origin GET from the cache first (corrected
+2026-10-19, [109]). So root-relative files and `/w/` bytes that a page embeds
+are cached, including `no-store` responses (server `:90`, static `:70`). A cached
 response wins over the fresh one, so the first read after a save can be stale.
 `cached || networkFetch || new Response(...)` (server `:96`, static `:76`) tests
 the promise, so an offline miss resolves to `null`. Activation deletes every
@@ -335,8 +342,8 @@ local-folder and virtual modes. Existing issues [10], [38], [41], [42], [56] and
 `renderPreview` (`ui/core/render.js:462-471`) builds a new element and calls
 `PREVIEW.revoke()` on every `render()` unless an editor is open. A resize, a
 fold or a settings change therefore reads and parses the file again, and resets
-scroll and media. [21] is marked Completed but its cache is not in the source,
-so [29] lacks its prerequisite. `navSeq` guards `choose` and refresh
+scroll and media. [21] is marked Completed but its cache is not in the source.
+[29]–[31] were completed without it. `navSeq` guards `choose` and refresh
 (`ui/core/nav.js:50`); `applyPath` uses a shared `applying` flag and mutates the
 path across awaits. The condition-based wait audit (2026-10-17) confirmed the
 race: a click on a different folder during a root refresh can leave the old
@@ -380,12 +387,9 @@ Truncated text is never editable as if complete. Related: [49], [60].
 
 ### A11. Current documents contradict the code
 
-- Corrected 2026-10-19 ([105]): `README.md` now records the edition/renderer
-  matrix and links to renderer selection, extraction and server implementations.
-  PPTX extracts slide text locally without a CDN viewer. Static Markdown/DOCX
-  and Pyodide RST downloads follow the remembered rich-preview switch; server
-  Markdown/DOCX dependencies are vendored and served RST uses Python.
-  Browser-owned RST routing remains A8.
+- Corrected 2026-10-19 ([105]): `README.md` now records the
+  [edition/renderer matrix](../README.md) and links to renderer selection,
+  extraction and server implementations. Browser-owned RST routing remains A8.
 - Corrected 2026-10-19 ([105]): `server/CONTRIBUTING.md` links the shared facts,
   removes current instructions for the retired upload pipeline, and describes
   CI's branch coverage measurement without claiming a 100% threshold. Its old
@@ -395,12 +399,15 @@ Truncated text is never editable as if complete. Related: [49], [60].
   Corrected 2026-10-19 ([107]): ADRs 0001, 0005 and 0034 now date the
   superseded upload-render route, lastSel storage and read-only application
   contract, with replacing code/task references and original evidence intact.
-- Corrected 2026-10-19 ([107]): `docs/ROADMAP.md` is a dated status index for
-  all ten phases. Original steps and policies remain, with failed ADR-size,
-  server-budget and one-task-per-phase checks explicit. This review's
-  remediation order still takes precedence. [107] records dated corrections
-  for task 2 and the completed editor-cursor item, both retired in `c7b7f38b`.
-  GOALS acknowledges the Linux prototype without changing the native goal.
+- Corrected 2026-10-19 ([107]): `docs/ROADMAP.md` is a dated
+  [status index](ROADMAP.md#status-index-2026-10-19) for all ten phases, and
+  [107] records dated corrections for task 2 and the completed editor-cursor
+  item. GOALS acknowledges the Linux prototype without changing the native
+  goal.
+- Corrected 2026-10-19 ([109]): a pass over `README.md`, `SECURITY.md`, GOALS,
+  the roadmap, this review, `docs/testing/`, the ADRs and the docstrings of the
+  modules they describe fixed the statements the code contradicts. ADRs that
+  later code or ADRs replaced now say so. The issue lists the open questions.
 - Corrected 2026-10-19 ([105]): `server/README.md` distinguishes CLI root,
   bind and live options from direct ASGI environment lookup, citing `cli.py`,
   `app.py` and `env.py`. Service-starting examples were verified against code
@@ -415,10 +422,11 @@ The [105] documentation corrections leave A2, A4 and A5 open; A1/A3
 are resolved by [103]. No renderer or security behavior changed. [104]
 resolved A2 later on 2026-10-19.
 
-Remaining after [107], 2026-10-19: A4/A5 and A6–A10 remain open, including
-browser-owned RST routing and preview reuse. Phase 2 document consolidation
-and the pending roadmap policy decisions remain. [93]/[94] still own exact
-main CI delivery proof. This documentation patch resolves no security behavior.
+Remaining after [109], 2026-10-19: A4/A5 and A6–A10 remain open, including
+browser-owned RST routing and preview reuse. The
+[roadmap status index](ROADMAP.md#status-index-2026-10-19) records the open
+roadmap work, policy decisions and CI proof. These documentation patches
+resolve no security behavior.
 
 **Acceptance.** Each fix corrects its documents. A final pass checks every
 advertised command in a clean environment. [107] dates the three named
@@ -442,8 +450,10 @@ order above.
 
 ### A12. Smaller defects and audits
 
-- `rt` in `app.py:46` calls `int()` on query values, so `page=bad` is a 500.
-  Return 400.
+- Resolved 2026-09-26: `rt` in `app.py:46` called `int()` on query values, so
+  `page=bad` was a 500. `30cbef21` ([ADR 0068]) removed the only `int`
+  parameter, `page`; `page=bad` is now ignored. The `int()` branch stays,
+  unused.
 - `kvPut` (`ui/adapters/storage.js:45-46`) is not awaited to transaction
   completion, and `rememberRoot` read-modify-writes across awaits. Multi-tab
   updates can be lost.
@@ -453,8 +463,10 @@ order above.
   resolution and client validation as JSONL paths ([ADR 0071]).
 - `<div class="preview-error">` is built by hand in seven places across the
   server.
-- The server shells out: ripgrep for search, `git` for bundles. Neither is
-  checked at start-up; search fails per request, bundles are plain files.
+- The server shells out: ripgrep for search, `git` for bundles. Neither
+  absence is reported at start-up. `providers/gitbundle.py` looks `git` up
+  once at import and, without it, leaves bundles plain files; search fails per
+  request.
 - Core knows the server: `ui/core/search.js:35` builds `/api/search` URLs. VTT
   parsing and file classification exist in both Python and JavaScript.
 - Rows are clickable `div`s without full list semantics. No assistive technology

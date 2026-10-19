@@ -12,7 +12,8 @@
    (timestamp, id…), and falling back to the line number. Unique because the
    selection, the URL and applyPath all name a row by it.
 
-   A JSONL file over TEXT_MAX is never parsed whole (ADR 0068). One pass over the
+   A JSONL file over TEXT_MAX is never parsed whole
+   (docs/adr/0068-large-jsonl-is-indexed-not-parsed.md). One pass over the
    blob's byte stream records the span of each line; rows are named by line
    number and a row's record is parsed from its slice only when it is opened
    or previewed. A bad line fails on its own row, not the file.

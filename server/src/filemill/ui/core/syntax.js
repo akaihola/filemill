@@ -6,7 +6,7 @@
    coloured only when a Python process is behind it would have to be written
    twice — once here for the single file, once there for the served page.
    Colouring the text in the browser instead means both builds run *this*
-   file, and a folder reached through "Open local folder…" is coloured on the
+   file, and a folder reached through "Open Folder…" is coloured on the
    server build too, though the server has never seen a byte of it.
 
    This is not a parser. Four token classes — comment, string, number, keyword

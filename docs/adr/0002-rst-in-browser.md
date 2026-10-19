@@ -2,6 +2,17 @@
 
 Status: accepted, 2026-09-14.
 
+## Partial supersession, 2026-10-19, issue [109]
+
+The Pyodide renderer still serves the static edition. Two statements below
+are no longer true. The server edition imports `preview-rich.js`
+(`ui/adapters/app-http.js`, since `f6d4b081`) but leaves reStructuredText out
+of its registry. It sends a served `.rst` file to `/api/preview`, where
+docutils renders it (`_preview_rst` in `server/src/filemill/preview.py`,
+routed since `9fba9118`). The renderer registry exists
+(`ui/core/renderers.js`). See [ADR 0064](0064-rst-browser-evaluation.md) and
+[ADR 0070](0070-documents-browse-by-headings.md).
+
 ## Context
 
 The static edition renders Markdown and `.docx` in the browser with libraries
@@ -72,3 +83,5 @@ tried first.
 - Issue [27] in `TASKS.md` asked for this experiment behind a renderer
   registry that does not exist yet; this ADR records its measurements
   without the registry.
+
+[109]: ../tasks/109-check-filemill-s-docs-and-adr-statuses-against-the-code-and-fix-what-d.md

@@ -2,6 +2,9 @@
 
 Date: 2026-10-17. Issue: [30]. Supersedes [ADR 0065].
 
+Path update, 2026-10-19, issue [109]: `static/test-ui.py` below is now
+`static/tests/test_ui.py` (`587752b4`).
+
 ## Context
 
 Issue [30] asks for one native shell that runs the shared DOM renderer,

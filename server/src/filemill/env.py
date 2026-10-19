@@ -6,8 +6,9 @@ a poor trade for a nicer prefix, so ``FILEMILL_ROOT`` wins and
 ``PYKOFINDER_ROOT`` still works. The fallback can go once nothing sets the old
 names.
 
-Its own module because ``cli.py`` needs it at import time — a Typer option
-default is evaluated then — without importing the application.
+Its own module so that ``cli.py``, ``app.py`` and ``mutations.py`` share one
+lookup. ``cli.py`` needs it at import time, because a Typer option default is
+evaluated then.
 """
 
 from __future__ import annotations

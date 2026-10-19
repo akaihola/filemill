@@ -1,6 +1,6 @@
 # ADR 0078: Delete waits for active preview reads
 
-Date: 2026-10-17.
+Date: 2026-10-17. Issue: [97].
 
 ## Context
 

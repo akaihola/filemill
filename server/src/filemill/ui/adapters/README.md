@@ -1,4 +1,4 @@
-# Adapters — how one UI serves two apps
+# Adapters — how one UI serves every edition
 
 `../core/model/` owns nodes and column state, selection, sorting, folding
 arithmetic, keyboard actions and deep links. It has no browser dependencies.
@@ -8,24 +8,27 @@ keep source-specific loading and browser URL transport. Everything
 source-specific is here, behind the three ports declared in
 [`../core/ports.js`](../core/ports.js).
 
-Both editions load these files from here, through one entry module each:
-`../entry-static.js` and `../entry-server.js`. Each entry names the adapters of
-its edition and the app module that wires them. `static/` inlines the import
-graph into its single-file bundle. `server/` serves the modules from its
-package, which is where this directory is. The repository root's `ui/` is a
-symlink to it. Neither edition has its own version to drift.
+Every edition loads these files from here, through one entry module each:
+`../entry-static.js`, `../entry-server.js` and `../entry-native.js`. Each entry
+names the adapters of its edition and the app module that wires them. `static/`
+inlines the import graph into its single-file bundle. `server/` serves the
+modules from its package, which is where this directory is. The repository
+root's `ui/` is a symlink to it. No edition has its own version to drift.
+
+The table below covers the two browser editions. The native shell's adapters are
+`native.js` and `app-native.js`; see the repository's `native/README.md`.
 
 Pick a different set of adapters and the same UI browses something else. That is
 the whole mechanism. There is no framework under it.
 
-|            | **static** (one HTML file)                       | **server** (Python)                                        |
-| ---------- | ------------------------------------------------ | ---------------------------------------------------------- |
-| filesystem | `fsa.js` — File System Access API                | `http.js` — `GET /api/dir`                                 |
-| preview    | `preview-local.js` — the core renderer table     | `preview-local.js` + `preview-rich.js` — browser renderers |
-| router     | `router-hash.js` — `#r=root&p=a/b.md`            | `router-path.js` — `/a/b.md`                               |
-| boot       | `app-fsa.js` — picker + welcome screen           | `app-http.js` — root comes from the server                 |
-| extra      | `preview-rich.js` — renderers fetched from a CDN | `preview-rich.js` — local bytes, browser renderer          |
-|            | `storage.js` — remembered roots in IndexedDB     |                                                            |
+|            | **static** (one HTML file)                       | **server** (Python)                                                                                |
+| ---------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| filesystem | `fsa.js` — File System Access API                | `http.js` — `GET /api/dir`                                                                         |
+| preview    | `preview-local.js` — the core renderer table     | `preview-local.js` + `preview-rich.js`; `PreviewHTTP` in `app-http.js` for RST and archive members |
+| router     | `router-hash.js` — `#r=root&p=a/b.md`            | `router-path.js` — `/a/b.md`                                                                       |
+| boot       | `app-fsa.js` — picker + welcome screen           | `app-http.js` — root comes from the server                                                         |
+| extra      | `preview-rich.js` — renderers fetched from a CDN | `preview-rich.js` — local bytes, browser renderer                                                  |
+|            | `storage.js` — remembered roots in IndexedDB     |                                                                                                    |
 
 ## The ports
 
@@ -70,12 +73,13 @@ it. Only the transport differs.
 
 ## Why the renderers are not ported
 
-`preview-http.js` is the reason `preview.py`, `vfs.py` and `providers/` have no
-JavaScript port. docutils, Pygments and the virtual filesystems keep running
-where they run, and their HTML lands in the same pane. Markdown and `.docx` are
-the exception: both editions render them with `preview-rich.js`, the server
-edition from the pinned modules in `ui/vendor/` (its shell sets `FILEMILL_CDN`
-to those paths), so `rendering.py` and mammoth are gone from the server.
+`PreviewHTTP` in `app-http.js` is the reason `preview.py`, `vfs.py` and
+`providers/` have no JavaScript port. docutils, Pygments and the virtual
+filesystems keep running where they run, and their HTML lands in the same pane.
+Markdown and `.docx` are the exception: both editions render them with
+`preview-rich.js`, the server edition from the pinned modules in `ui/vendor/`
+(its shell sets `FILEMILL_CDN` to those paths), so `rendering.py` and mammoth
+are gone from the server.
 
 When the _server_ edition opens a local folder, the server cannot read it.
 PreviewRich renders the bytes in the browser. Local-folder mode is therefore not
@@ -89,16 +93,17 @@ imports markdown-it, mammoth, or Pyodide with docutils for reStructuredText from
 a CDN the first time a file needs one. A bundle with them would be eight times
 bigger, or sixty times with the Python runtime. A remembered switch controls it,
 because the app's promise is that your folder does not leave the browser, and
-this is the one thing that talks to the network. Every failure falls back to
-`preview-local.js`, so offline costs fidelity, not the pane.
+this is the one download a preview starts. A failed download falls back to the
+core text renderer through the `offline` entry, so offline costs fidelity, not
+the pane.
 
 ## Syntax highlighting is neither of those
 
 Both editions colour source files and fenced code the same way, in
 `core/syntax.js`: no download, no switch, no Python. Every provider reaches it.
-`preview-local.js` colours the text it escapes. `app-http.js` wraps the
-server-side provider in use, so a file with a known language is read through
-`FS.blob` and highlighted here. `hlFences` colours the
+`preview-local.js` colours the text it escapes. `app-http.js` wraps its provider
+in `withHighlighting`, so under `?filemill=highlight` a file with a known
+language is read through `FS.blob` and highlighted here. `hlFences` colours the
 `<pre><code class="language-x">` blocks that every Markdown renderer emits,
 after `fillPreview` puts them in the pane. The server keeps what it renders
 better: reStructuredText. A virtual path is never diverted, because only the

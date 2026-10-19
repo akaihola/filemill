@@ -96,3 +96,4 @@ started a press may end it.
 
 [ADR 0021]: 0021-horizontal-scroll-fold-dial-not-translation.md
 [ADR 0022]: 0022-the-dial-s-resting-place-never-folds-the-focused-column-nor-anything-r.md
+[81]: ../tasks/81-horizontal-scrolling-fold-stops.md

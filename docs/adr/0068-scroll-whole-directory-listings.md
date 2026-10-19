@@ -2,6 +2,10 @@
 
 Date: 2026-09-26.
 
+Number note, 2026-10-19, issue [109]: two ADRs carry the number 0068. This one
+is about whole directory listings; [the other](0068-large-jsonl-is-indexed-not-parsed.md)
+is about large JSONL files. Name the file when you link to either.
+
 ## Context
 
 `/api/dir` sliced listings at 500 entries and the column showed a

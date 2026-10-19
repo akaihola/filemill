@@ -2128,17 +2128,18 @@ window.SETI = {
 <script type="module">
 /* ═══ core/shell.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
-   The chrome — top bar, stage, status strip, welcome screen.
+   The chrome — top bar, stage, status strip.
 
    In JavaScript rather than in the HTML file because there are two HTML files
    (a static one and one the server emits) and this markup has to be the same
    in both. A shared *file* would need a build step or a fetch; the static build
-   can afford neither, since it has to keep running unbuilt from src/ and, once
+   can afford neither, since it has to keep running unbuilt from
+   static/index-dev.html and, once
    bundled, from a file:// page with no network at all.
 
    So: one page structure, emitted before anything queries it. Every id below is
-   part of the contract core/ relies on — state.js takes its element handles the
-   moment it loads, which is why this script comes first.
+   part of the contract core/ relies on — dom-renderer.js takes its element
+   handles the moment it loads, which is why this script comes first.
    ═══════════════════════════════════════════════════════════════════════════ */
 document.body.insertAdjacentHTML(
   "afterbegin",
@@ -2395,7 +2396,11 @@ const previewTarget = () => finder.clientWidth / 3;
        vpath      virtual path inside rel (JSON key, table, or row)
        ordered    boolean; preserve the adapter's documented child order when true
        icon       string; explicit icon glyph
-       previewFormat string; requested preview format
+       previewFormat string; requested preview format; read by the WebVTT
+                  renderer, set by no adapter
+       fileKind   cached classifyFile() result; core/render.js classifies the
+                  node itself when it is unset
+       abs        absolute server path; set by the HTTP adapter
        csv        boolean; this node is a CSV virtual directory or a row in one
        jsonl      boolean; this node is a JSONL virtual directory
        json       boolean; this node is a JSON virtual directory or value
@@ -2443,7 +2448,8 @@ const previewTarget = () => finder.clientWidth / 3;
      in core/renderers.js — one entry per kind, shared by both editions.
 
    ── ROUTER ─ the address bar ───────────────────────────────────────────────
-     read()          → {root, path:[names…]} | null    the location right now
+     read()          → {root, path:[names…], view} | null
+                                                       the location right now
      write(state, replace) → void                      reflect state, no reload;
                                     use replaceState when replace is true,
                                     pushState otherwise
@@ -2451,7 +2457,7 @@ const previewTarget = () => finder.clientWidth / 3;
      Set to null to run with no URL syncing at all.
 
    RouterPath.base is the trailing-slash base URL used by the path router. It
-   comes from the current script's data-base attribute, or "/", and is used to
+   comes from the <html> element's data-base attribute, or "/", and is used to
    strip/add the server mount prefix. It is not part of router state.
    ═══════════════════════════════════════════════════════════════════════════ */
 let FS = null, PREVIEW = null, ROUTER = null;
@@ -2954,7 +2960,7 @@ function rstSource(text, highlight) {
    coloured only when a Python process is behind it would have to be written
    twice — once here for the single file, once there for the served page.
    Colouring the text in the browser instead means both builds run *this*
-   file, and a folder reached through "Open local folder…" is coloured on the
+   file, and a folder reached through "Open Folder…" is coloured on the
    server build too, though the server has never seen a byte of it.
 
    This is not a parser. Four token classes — comment, string, number, keyword
@@ -4116,8 +4122,8 @@ function columnMetrics(sizes, count, progress, focus, gutter, spine) {
    leftmost columns widen to fill the finder, one fewer at each stop. */
 const STOP_TOLERANCE = 0.5; // scroll positions are whole pixels, stops are not
 
-/* How many natural columns fit beside the preview reserve: 3.8 on a 1440px
-   laptop ("almost four"), 1.2 on a portrait phone. */
+/* How many natural columns fit beside the preview reserve, floored: 3 on a
+   1440px laptop (3.8 before flooring), 1 on a portrait phone (1.2). */
 const fitCount = (width, viewport, preview, gutter) =>
   Math.max(1, Math.floor((viewport - preview - gutter) / (width + gutter)));
 const fillWidth = (count, viewport, gutter) =>
@@ -6372,7 +6378,8 @@ document.addEventListener("keydown", (e) => {
    (timestamp, id…), and falling back to the line number. Unique because the
    selection, the URL and applyPath all name a row by it.
 
-   A JSONL file over TEXT_MAX is never parsed whole (ADR 0068). One pass over the
+   A JSONL file over TEXT_MAX is never parsed whole
+   (docs/adr/0068-large-jsonl-is-indexed-not-parsed.md). One pass over the
    blob's byte stream records the span of each line; rows are named by line
    number and a row's record is parsed from its slice only when it is opened
    or previewed. A bad line fails on its own row, not the file.
@@ -7249,10 +7256,11 @@ async function mountRoot(node, title = node.name) {
 
 /* ═══ adapters/fsa.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
-   Filesystem adapter — File System Access API, read-only, one level at a time.
+   Filesystem adapter — File System Access API, one level at a time.
 
    Fills the FS port (see core/ports.js). Nodes carry the handle they came
-   from; nothing else in the app ever touches it.
+   from; nothing else in the app ever touches it. write() and remove() ask for
+   readwrite permission first; reading needs only the picker's grant.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const FSA_COLLATOR = new Intl.Collator(undefined, { numeric: true });
@@ -7293,7 +7301,8 @@ const FSA = {
     return node.loading;
   },
 
-  /* File metadata is a separate round-trip per file — only fetched on preview. */
+  /* File metadata is a separate round-trip per file — fetched on preview, or
+     per row when the sort is by size or modified time (core/sort.js). */
   async loadMeta(node) {
     if (node.dir || node.meta) return;
     try {
@@ -7365,8 +7374,9 @@ const safeURL = (url) =>
    CORE_RENDERERS is what the browser can do from the bytes alone, with no
    download and no server: images, PDF and HTML as object URLs, .desktop as a
    link card, WebVTT as a transcript, and everything else as coloured text.
-   Both editions register this list at boot; each app module adds the entries
-   of its own adapters after it (adapters/app-fsa.js, adapters/app-http.js).
+   Every edition registers this list at boot; each app module adds the entries
+   of its own adapters after it (adapters/app-fsa.js, adapters/app-http.js,
+   adapters/app-native.js).
    Adding a kind is one entry here or in an adapter, plus one test.
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -7584,8 +7594,8 @@ async function renderNode(
    limit: what is previewed at all is previewed entire.
 
    Rich rendering (Markdown, docx, pptx) is a *different provider*, not a
-   bigger version of this one: see preview-http.js for the server-rendered
-   variant, and preview-rich.js for the downloaded one. This one renders only
+   bigger version of this one: see PreviewHTTP in app-http.js for the
+   server-rendered variant, and preview-rich.js for the browser one. This one renders only
    the core table, so a switched-off rich renderer leaves a .md as text.
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -7599,8 +7609,8 @@ const PreviewLocal = {
        port hands back a lazy File, so blob.size below costs nothing there — but
        HTTP.blob (adapters/http.js) does `await r.blob()`, which buffers the
        whole response, and by then a 400 MB .sql is already in memory. node.meta
-       is filled by fillPreview before any provider runs, the same thing canEdit
-       leans on. The blob.size test in the text entry stays: this one is only
+       is filled by fillPreview before any provider runs, the same thing
+       editableText leans on. The blob.size test in the text entry stays: this one is only
        as good as the listing's size, and the limit should not depend on that
        being right. */
     if (
@@ -7637,6 +7647,7 @@ const withHighlighting = (provider) => ({
    needs one is previewed, and cached for the session. The server edition
    serves the Markdown and .docx modules itself from ui/vendor/ and points
    FILEMILL_CDN at them, so there nothing is fetched from a third party.
+   .pptx is here too, with no library: its slide text is extracted in the page.
 
    Source files and fenced code are not on that list. They are coloured by
    core/syntax.js, in the page, with no download and no switch to find —
@@ -7644,15 +7655,16 @@ const withHighlighting = (provider) => ({
    exactly the offline build the app is built to be. What is left here is what
    genuinely needs a library.
 
-   Which means this is the one thing in filemill that talks to the network, and
-   the app's whole pitch is that your folder does not. So:
+   Which means this is the one download a preview can start, and the app's
+   whole pitch is that your folder does not leave the machine. So:
 
      · it is a setting, off-switchable, and the choice is remembered — consent
        that resets on every reload is not consent;
      · nothing about the file is ever *sent*. The request is for the library,
        not with your content;
-     · every failure falls back to PreviewLocal — the raw <pre>, or nothing for
-       a binary — so offline is a downgrade in fidelity, never a broken pane.
+     · a failed download falls back to the core text renderer through the
+       `offline` entry below — the raw <pre> with a note, or nothing for a
+       binary — so offline is a downgrade in fidelity, never a broken pane.
 
    Version pins are deliberate: "@latest" would mean a preview that renders
    differently next week, and a supply chain that can change under you.
@@ -7687,8 +7699,9 @@ const CDN = {
   "pyodide": "https://cdn.jsdelivr.net/pyodide/v0.29.4/full/pyodide.mjs",
 };
 
-/* Tests point this at local stubs — there is no other way to exercise the
-   loaded path without a network. */
+/* The server edition points this at its vendored modules, and tests point it
+   at local stubs — there is no other way to exercise the loaded path without a
+   network. */
 const cdn = (name) =>
   (globalThis.FILEMILL_CDN && globalThis.FILEMILL_CDN[name]) || CDN[name];
 
@@ -8540,11 +8553,12 @@ function exposeCore() {
 
    core/ is the shared UI and knows nothing about where its nodes come from;
    adapters/ chooses. This file names the adapters of the local-folder flavour
-   and the app module that wires them (app-fsa.js), which is the only module
-   that runs anything at load time. entry-server.js is the counterpart.
+   and the app module that wires them (app-fsa.js). entry-server.js and
+   entry-native.js are the counterparts.
 
-   Import order is evaluation order. dom-renderer.js first: it pulls in shell.js (the
-   markup every other module queries) and, through the core cycle, the rest.
+   Import order is evaluation order. shell.js first: it inserts the markup every
+   other module queries. dom-renderer.js next takes its element handles and,
+   through the core cycle, pulls in the rest.
    static/build-index.py walks this graph and inlines it in the same order.
    ═══════════════════════════════════════════════════════════════════════════ */
 

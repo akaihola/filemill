@@ -2,6 +2,15 @@
 
 Date: 2026-08-30
 
+## Partial supersession, 2026-10-19, issue [109]
+
+[ADR 0072](0072-archives-browse-by-their-members.md) made one exception in the
+server edition. An archive member that the browser does not render, and every
+member under `?filemill=highlight`, gets its coloured source from the server
+through Pygments (`withServerVirtualPreview` in `ui/adapters/app-http.js`,
+`_highlight_source` in `server/src/filemill/preview.py`, since `97ca55f1`).
+Files on disk and local folders still use `core/syntax.js` in every edition.
+
 ## Context
 
 The static edition needs a documented decision for this design choice.
@@ -17,3 +26,5 @@ One implementation colours source in both builds, offline, in either theme — a
 ## Consequences
 
 The static edition follows this decision. The measurement above records the basis for maintaining and evaluating it.
+
+[109]: ../tasks/109-check-filemill-s-docs-and-adr-statuses-against-the-code-and-fix-what-d.md

@@ -9,7 +9,7 @@ server/tests/test_api.py::test_directory_at_page_limit_keeps_small_response	fixt
 server/tests/test_api.py::test_html_preview_iframe_uses_the_canonical_file_path	broken behavior: preview omitted canonical nested resource URL
 server/tests/test_browser_keyboard.py::test_arrow_left_keeps_browser_url_in_sync	obsolete bare-file URL assertion; rendered view parameter is retained
 server/tests/test_browser_keyboard.py::test_nested_column_navigation_keeps_root_mount_in_url	obsolete bare-file URL assertion; rendered view parameter is retained
-server/tests/test_browser_keyboard.py::test_legacy_query_url_canonicalizes_after_nested_navigation	obsolete legacy /f/ route disabled in 0cae978; removed
+server/tests/test_browser_keyboard.py::test_legacy_query_url_canonicalizes_after_nested_navigation	obsolete legacy /f/ route disabled in 9e931c5d; removed
 server/tests/test_browser_keyboard.py::test_rendered_relative_markdown_link_uses_root_relative_url	obsolete /f/ entry URL; use root-relative rendered resource
 server/tests/test_browser_keyboard.py::test_rendered_home_markdown_link_uses_the_symlink_mount_once	broken behavior: duplicated mount prefix in home Markdown link
 server/tests/test_browser_keyboard.py::test_mobile_directory_restore_runtime_scroll_position_is_stable	obsolete /f/ restore URL and HTMX selector; retain runtime scroll assertions

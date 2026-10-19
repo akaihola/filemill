@@ -1,10 +1,23 @@
 # Remaining red tests
 
+Historical record of the 2026-09-20 red-test task. Its node IDs, commands and
+counts describe that baseline, not current instructions; current test commands
+are in [CONTRIBUTING.md](../../CONTRIBUTING.md#tests).
+
+Updated 2026-10-19 ([109]): commit IDs below name the history that [96]
+rewrote. 58 of the [failure inventory](remaining-red-tests.tsv)'s 256 node IDs
+no longer resolve: the four static scripts became `static/tests/` in
+`587752b4`, the 44 `no-columns` safety cases and three layout route tests left
+with the layout in `ca94b450`, the two pagination tests became one listing test
+in `187ddc89`, and the rest were renamed or retired in `f0a2d734`, `e0349caa`,
+`fe9b9335` and `9cca50fb`. The `server/.venv` commands predate the root uv
+workspace (`587752b4`).
+
 ## Baseline and execution
 
-This task started from `2163673`, after rebasing onto main on 2026-09-20.
+This task started from `e142c2e4`, after rebasing onto main on 2026-09-20.
 The project memory baseline spans September 15–19. Its counts overlap and
-must not be added together. The root-row fix is already present in `055f4f6`.
+must not be added together. The root-row fix is already present in `95e7ca17`.
 
 Before runner repairs:
 
@@ -15,8 +28,8 @@ Before runner repairs:
 - Static suite functions call `sys.exit(0)` on success, which pytest treats as
   a failure. The old CI script commands do not call those functions at all.
 - Importing `static/test-e2e.py` launches an interactive browser and waits for
-  folder selection and terminal input. It now has a main guard. It remains a
-  manual check and is not part of the autonomous suite.
+  folder selection and terminal input. It now has a main guard; see
+  [CONTRIBUTING.md](../../CONTRIBUTING.md#tests) for its manual use.
 - The browser fixtures require `python-pptx`, now a development dependency.
 
 The full rich suite already calls `rst_checks`; the full UI suite already calls
@@ -41,7 +54,7 @@ route tests affected by CLI state leakage. Individual node IDs are recorded in
 | `test_large_directory_is_paginated_in_stable_order`, `test_directory_at_page_limit_keeps_small_response` | Fixture drift. Test an isolated subdirectory with exactly 501 or 500 entries instead of relying on the shared root's file count. |
 | `test_html_preview_iframe_uses_the_canonical_file_path` | Broken behavior. `/api/preview` omitted the root-relative URL when dispatching, so nested HTML/PDF/image previews fell back to a basename. Pass the encoded, HTML-escaped canonical URL. |
 | `test_shared_ui_explains_unavailable_server` | Obsolete inline-script assumption after ES module extraction. Follow the shell's entry module and assert the served adapter contains the unavailable-server text. |
-| Legacy `/f/` navigation and mobile restore tests | Routes were intentionally disabled in `0cae978`. Remove the legacy-query test and its unused HTMX helpers; retain nested navigation coverage and port restore tests to root-relative shared-UI URLs/selectors. Bare file URLs now return bytes, so preview tests explicitly request `filemill=render`. |
+| Legacy `/f/` navigation and mobile restore tests | Routes were intentionally disabled in `9e931c5d`. Remove the legacy-query test and its unused HTMX helpers; retain nested navigation coverage and port restore tests to root-relative shared-UI URLs/selectors. Bare file URLs now return bytes, so preview tests explicitly request `filemill=render`. |
 | Four focused-preview scroll checks | Invalid fixture: the selected leaf held only one short line. Give it scrollable content so all four directional assertions exercise the intended behavior. |
 | Registry kinds assertion | Intentional MP4 renderer addition. Include `video` in the expected registry. |
 | `large.png` / `large.jpeg` click timeout | Wrong fixture column: images are in `mixed`, column 1, not its `sub` directory at column 2. Correct the selectors. |
@@ -57,13 +70,13 @@ route tests affected by CLI state leakage. Individual node IDs are recorded in
 | Static hash URL assertions | Task [58] preserves preview mode; expect `v=render`. Exercise same-folder history replacement using file-to-file arrow moves, not moves into directories. |
 | Native fullscreen resize race | Wait for native fullscreen entry/exit before continuing the keyboard test. Previously the second Enter could race the first asynchronous browser request. |
 | Raw navigation and query persistence assertions | Tasks [51]/[58] intentionally serve bytes for Raw, preserve the previous rendered file for Back, and remove the file view parameter for a directory. Test those contracts with correct containing-column indices. |
-| Preview focus fold assertion | Commit `1257b46` intentionally removed `foldAll()` and added keyboard coverage for preserving layout on preview entry, superseding task [47]. Assert unchanged fold count and restoration of the actual containing column, covered separately by the parent-selection tests. |
+| Preview focus fold assertion | Commit `9f773f0c` intentionally removed `foldAll()` and added keyboard coverage for preserving layout on preview entry, superseding task [47]. Assert unchanged fold count and restoration of the actual containing column, covered separately by the parent-selection tests. |
 | Folder fixture includes short.txt | Update the listing expectation to include the file deliberately added to the shared fixture. |
 | Filename-dependent folding precondition | Task [64] made column widths fixed. Deliberately fold two ancestors, navigate to the sibling directory, and assert folding and equal widths are retained. |
 | Wide-chain row selector | `:text-is` on the nested label did not match the row. Select its exact `title`, preserving the layout assertions. |
 | Restoring a file adds a phantom root history entry | Initial mount rendered an unloaded root and wrote its URL before restoring the deep link. Suppress URL writes until the root listing is loaded. |
 | `/n/` ignores highlighted view | The shell always used a default ViewState. Parse its query parameters like the resource route. |
-| Home Markdown mount prefix | The selected mount remained in the relative path, duplicating it. Consume that segment and preserve rendered Markdown navigation. |
+| Home Markdown mount prefix | The selected mount remained in the relative path, duplicating it. Consume that segment and preserve rendered Markdown navigation. Superseded 2026-09-24 by `1bf99afa`: `~/` now resolves against the served root, with `?f`. |
 | Static bundle font 404 | Real bundler bug. The font regex assumed one CSS line and stopped inlining the font after formatting. Accept whitespace before `format`, including a newline. |
 | Plain unknown-language assertion | Markdown is now a known language. Use the existing plain `.txt` fixture to retain the fallback assertion. |
 | Deep JSON source fallback | Real regression exposed after the earlier aborts were fixed. JSON.stringify can overflow before the renderer fallback runs. Fall back to the original file provider, and escape serializable values when recursive formatting reaches its limit. |
@@ -79,7 +92,7 @@ route tests affected by CLI state leakage. Individual node IDs are recorded in
 
 ## Validation
 
-On 2026-09-20, at `b6059f5`:
+On 2026-09-20, at `b6059f5`, a pre-rebase commit that is not in the repository:
 
 - Full suite: `timeout 1800 server/.venv/bin/python -m pytest -c pytest.ini --rootdir=. static server/tests -x -q --tb=short` — **746 passed**, no skips, 636.72 s.
 - Final collection: **746 tests** (38 static, 708 server). The rich and UI suites include RST and editor checks; storage restoration is a separate collected test.
@@ -102,14 +115,15 @@ The coverage run also reported three SQLite `ResourceWarning`s during scalar
 preview tests, in addition to the Docutils warning. They were not suppressed;
 all applicable gates passed. No automated check remains blocked.
 
-The unchanged issue remains In Progress for the later merge workflow. Removing
+The unchanged issue remained In Progress for the later merge workflow; it moved
+to Completed / Accepted in `59377696` the same day. Removing
 that one bullet from both tracker versions leaves byte-identical main text.
 Browser checks ran sequentially with the installed Nix browser; CI retains its
 normal browser installation step.
 
 ## AI review on current main
 
-The implementation was rebased onto `179af97` during review. Main had added
+The implementation was rebased onto `874faa13` during review. Main had added
 JSON collapse memory and a shared Markdown link resolver since the original
 verification above. Conflict resolution preserves both features:
 
@@ -119,6 +133,8 @@ verification above. Conflict resolution preserves both features:
   and highlighted Markdown. Both modes now have explicit mount-prefix
   regression coverage. Home Markdown destinations retain `filemill=render`,
   matching ordinary Markdown links instead of returning raw file bytes.
+  Superseded 2026-09-24 by `1bf99afa`: `~/path` resolves to `/path?f`, and no
+  mount segment remains.
 - New Markdown token checks and real-OPFS storage checks are both collected.
   Generated bundle conflicts were resolved by rebuilding from shared sources.
 
@@ -126,7 +142,7 @@ The first focused review run passed 410 tests. After the second rebase, 37
 focused JSON-collapse, Markdown, history, highlighting and PPTX checks passed.
 All six pre-commit hooks and the Deno model checks passed on the combined code.
 The complete combined suite passed **761 tests**, no skips, in 825.50 s at
-`5cfb6a8`. Its only warning was the existing Docutils pending deprecation.
+`fe9b9335`. Its only warning was the existing Docutils pending deprecation.
 The modular static suite passed **45 tests**, no skips, in 214.87 s.
 The combined collection is 761 tests: 45 static and 716 server. The original
 coverage result above remains the pre-rebase measurement; all 716 current
@@ -148,7 +164,7 @@ regressions; the interactive folder-picker E2E remains a manual check.
 | Root column paints immediately | Open a small folder, then a folder with at least 1,000 entries. Rows should appear immediately; scroll to the last entry. |
 | Nested media previews use the correct URL | Open HTML, PDF and image files in nested folders, including names containing spaces or `&`. Each preview should load. |
 | Source view and history retain the selected file | Toggle HTML or VTT between rendered and highlighted views. Navigate through folders and files, then use Back and Forward. Open Raw and return with Back; the prior preview should return. |
-| Home Markdown links avoid a repeated mount name | In rendered and highlighted Markdown, follow a `~/mount/path.md` link for an existing mount. It should open the target as rendered Markdown. |
+| Home Markdown links avoid a repeated path segment | In rendered and highlighted Markdown, follow a `~/path.md` link. It should open the target as rendered Markdown. |
 | PowerPoint text preserves whitespace | Preview a PPTX slide containing multiple lines and spaced words. The text should retain its boundaries. |
 | Deep JSON remains readable | Open JSON nested deeply enough to exceed structured preview limits. Its source should remain readable. For ordinary JSON, collapse a node, leave and return; its collapse state should remain. |
 | Descending names respect directory grouping | Select descending name order. Both directory and file groups should reverse, with directories still first. |

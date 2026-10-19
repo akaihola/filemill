@@ -1,4 +1,9 @@
-"""WebVTT transcript provider."""
+"""WebVTT transcript provider.
+
+It claims ``.vtt`` files but lists no entries, so a transcript stays a plain
+file. The browser renders transcripts (``ui/core/renderers.js``). No route
+calls ``render_preview`` below; only tests do.
+"""
 
 from __future__ import annotations
 

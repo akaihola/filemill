@@ -1224,8 +1224,8 @@ def _column_widths(page) -> list[float]:
 def test_flings_stop_at_each_fold_stop(page):
     """[81] A fast swipe lands on the next stop, not at the end of the dial.
 
-    Left of natural: the rightmost column whole over spines, every column a
-    spine, the preview alone. Right of natural: three, then two columns fill
+    Right of natural: the rightmost column whole over spines, every column a
+    spine, the preview alone. Left of natural: three, then two columns fill
     the finder and the preview leaves the screen; a desktop never widens to one.
     """
     page.open("notes/deep/leaf.md")

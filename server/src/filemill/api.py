@@ -1,16 +1,22 @@
-"""JSON/fragment API behind the shared Miller-columns UI.
+"""Request handlers behind the shared Miller-columns UI.
 
-The UI in ``ui/`` is filemill's, unchanged. It reaches a filesystem through
-three small ports; this module fills the two that need a server:
+The UI in ``ui/`` reaches a filesystem through three small ports. ``app.py``
+routes these requests to this module:
 
-    GET  /api/dir?p=<rel>      → {"entries": [{name, dir, size, mod}], "denied"}
-    GET  /api/raw?p=<rel>      → the bytes, with a detected media type
-    POST /api/save?p=<rel>     → overwrite the file with the request body
+    GET    /api/dir?p=<rel>&v=<vpath>     → {"entries": [{name, dir, size, mod,
+                                             …}], "denied"}
+    GET    /api/raw?p=<rel>&v=<vpath>     → the bytes, with a detected media type
+    GET    /api/preview?p=<rel>&v=<vpath> → HTML for RST and archive members
+    GET    /api/search?q=<text>&p=<rel>   → content matches from ripgrep
+    POST   /api/save?p=<rel>              → overwrite the file with the body
+    DELETE /api/delete?p=<rel>            → remove the file or folder
+
+``v`` is optional and names a path inside a virtual filesystem.
 
 ``p`` is always **relative to ROOT** — that is the whole point of the new URL
 contract, and it is also what makes the API safe to state: there is no request
 shape that names an absolute filesystem path, so there is nothing to smuggle.
-Every path still goes through ``_resolve_safe`` afterwards, because a relative
+Every path still goes through ``paths.resolve_safe`` afterwards, because a relative
 path can still climb with ``..`` and ROOT can still contain symlinks.
 
 When the browser has granted a folder the server cannot see, the UI renders the
@@ -127,7 +133,7 @@ def rel_to_abs(rel: str, root: Path) -> Path | None:
     Absolute inputs are rejected outright rather than normalised: ``Path("/a") /
     "/etc/passwd"`` is ``/etc/passwd``, so treating an absolute ``p`` as
     root-relative would hand out the whole disk. Containment is still checked by
-    the caller's ``_resolve_safe``; this is the guard that has to come first.
+    the caller's ``paths.resolve_safe``; this is the guard that has to come first.
     """
     rel = (rel or "").strip()
     if rel.startswith(("/", "\\")):
@@ -142,7 +148,8 @@ def dir_json(target: Path) -> JSONResponse:
 
     Sizes and mtimes ride along with the listing. The File System Access API
     needs a separate call per file for those, which is why the static build only
-    fetches them on preview — here they are free, so the preview pane is
+    fetches them on preview or for a size or time sort — here they are free, so
+    the preview pane is
     populated before its provider has said anything.
     """
     entries, denied = [], None

@@ -18,7 +18,7 @@ Rules that hold for every value:
 - ``?filemill``, ``?filemill=``, and ``?f`` mean ``?filemill=render``.
 - An unrecognised value uses the default and never changes the requested path.
 - A repeated value uses the last occurrence, then the two rules above.
-- No query value reaches the filesystem. ``_resolve_safe()`` sees the path and
+- No query value reaches the filesystem. ``resolve_safe()`` sees the path and
   nothing else, so no combination of view and layout can widen what it allows.
 """
 

@@ -7,6 +7,7 @@
    needs one is previewed, and cached for the session. The server edition
    serves the Markdown and .docx modules itself from ui/vendor/ and points
    FILEMILL_CDN at them, so there nothing is fetched from a third party.
+   .pptx is here too, with no library: its slide text is extracted in the page.
 
    Source files and fenced code are not on that list. They are coloured by
    core/syntax.js, in the page, with no download and no switch to find —
@@ -14,15 +15,16 @@
    exactly the offline build the app is built to be. What is left here is what
    genuinely needs a library.
 
-   Which means this is the one thing in filemill that talks to the network, and
-   the app's whole pitch is that your folder does not. So:
+   Which means this is the one download a preview can start, and the app's
+   whole pitch is that your folder does not leave the machine. So:
 
      · it is a setting, off-switchable, and the choice is remembered — consent
        that resets on every reload is not consent;
      · nothing about the file is ever *sent*. The request is for the library,
        not with your content;
-     · every failure falls back to PreviewLocal — the raw <pre>, or nothing for
-       a binary — so offline is a downgrade in fidelity, never a broken pane.
+     · a failed download falls back to the core text renderer through the
+       `offline` entry below — the raw <pre> with a note, or nothing for a
+       binary — so offline is a downgrade in fidelity, never a broken pane.
 
    Version pins are deliberate: "@latest" would mean a preview that renders
    differently next week, and a supply chain that can change under you.
@@ -68,8 +70,9 @@ const CDN = {
   "pyodide": "https://cdn.jsdelivr.net/pyodide/v0.29.4/full/pyodide.mjs",
 };
 
-/* Tests point this at local stubs — there is no other way to exercise the
-   loaded path without a network. */
+/* The server edition points this at its vendored modules, and tests point it
+   at local stubs — there is no other way to exercise the loaded path without a
+   network. */
 const cdn = (name) =>
   (globalThis.FILEMILL_CDN && globalThis.FILEMILL_CDN[name]) || CDN[name];
 

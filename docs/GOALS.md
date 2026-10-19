@@ -48,28 +48,35 @@ These goals are not written in the task brief. The code and the existing
 documents show them. We keep them.
 
 - **One shared UI, zero drift.** `ui/` is one set of files. One commit reaches
-  both editions. See `README.md` and `docs/tasks/3-remove-duplicate-ui-source.md`.
-- **Privacy by default.** The static edition sends nothing. The one network
-  feature, rich renderers from a CDN, sits behind a remembered switch. See
-  the decisions table in `static/AGENTS.md`.
+  both editions. See [Working on the shared UI](../README.md#working-on-the-shared-ui).
+- **Privacy by default.** Folder contents stay in the browser in the static
+  edition. Its renderer downloads from a CDN sit behind a remembered switch.
+  Application loading and resources that documents reference, such as images,
+  also use the network. See the [static edition notes](../README.md#static--one-file-no-server-no-install)
+  and ADRs [0035](adr/0035-rich-renderers-lazy-loaded-from-a-cdn-not-bundled.md)
+  and [0036](adr/0036-but-behind-a-remembered-switch-defaulting-on.md).
 - **No build step for development. No framework. No bundler.** The dev page
   loads the sources directly. See `static/index-dev.html` and
   `ui/adapters/README.md`.
-- **Offline reduces fidelity, never function.** Every renderer failure falls
-  back to a plain preview. See `ui/adapters/preview-rich.js`.
+- **Offline reduces fidelity, never function.** A Markdown, reStructuredText
+  or DOCX renderer that fails to load falls back to the file's text with an
+  offline note. Binary DOCX bytes may have no readable text. See
+  `ui/adapters/preview-rich.js`.
 - **Large directories stay fast.** The tests set budgets at 3 000 entries.
-  Columns are cached as DOM. One `Intl.Collator` is reused. See
-  `ui/core/render.js` and `ui/core/sort.js`.
+  Columns are cached as DOM. Name sorting reuses one `Intl.Collator` per
+  module instead of `localeCompare` per call. See `ui/core/render.js` and
+  `ui/core/model/sort.js`.
 - **Keyboard first. URL always in sync.** Every location has a deep link.
-  See `ui/core/deeplink.js` and `ui/adapters/router-*.js`.
+  The server edition's Open Folder mode is the exception: it has no
+  router, because a URL path names a file under the server's root. See
+  `ui/core/deeplink.js`, `ui/adapters/router-*.js` and `ui/adapters/app-http.js`.
 - **The URL path is the file path** in the server edition. See
   `server/src/filemill/urls.py`.
-- **Decisions are recorded with their measurements.** See the decisions
-  table in `static/AGENTS.md`.
+- **Decisions are recorded with their measurements.** See `docs/adr/`.
 - **Few dependencies, each pin explained.** See `server/pyproject.toml`.
 - **The served root is a boundary.** No request escapes it. The app asks for
-  write permission only when the user edits. See `_resolve_safe` in
-  `server/src/filemill/app.py` and `ui/adapters/fsa.js`.
+  write permission only when the user saves or deletes. See `resolve_safe` in
+  `server/src/filemill/paths.py` and `ui/adapters/fsa.js`.
 - **Installable and portable.** A PWA manifest, one bundled file, published to
   GitHub Pages. See `.github/workflows/publish.yml`.
 
@@ -102,9 +109,10 @@ These are choices, not omissions. Do not add them without a recorded decision.
   deliverable.
 - No telemetry.
 - No network use without consent.
-- No feature in one edition that the other edition cannot have. Two
-  exceptions exist today: the SQLite virtual filesystem and PPTX preview,
-  because only Python can read them. They are gaps to close, not a design.
+- No feature in one edition that the other edition cannot have. Exceptions
+  exist today: content search and the SQLite, archive and Git bundle virtual
+  filesystems run only in the server edition, because their readers are
+  Python, ripgrep or `git`. They are gaps to close, not a design.
 
 ## Related documents
 

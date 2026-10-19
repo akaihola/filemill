@@ -1,8 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Filesystem adapter — a server, over fetch.
 
-   Fills the FS port (see core/ports.js). The counterpart of fsa.js: same node
-   shape, same two calls, so core/ cannot tell the difference.
+   Fills the FS port (see core/ports.js). The counterpart of fsa.js: the same
+   port, so core/ cannot tell the difference.
 
    One round-trip returns names, kinds, sizes and mtimes together, so unlike the
    File System Access API there is no per-file syscall — loadMeta is already

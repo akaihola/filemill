@@ -2,6 +2,20 @@
 
 Status: accepted, 2026-09-18. Issue [27], after registry issue [26].
 
+## Status update, 2026-10-19, issue [109]
+
+The decision still holds for the static edition. Since `9fba9118`
+(2026-09-19), the server edition renders a served `.rst` file with docutils on
+the server again (`PreviewHTTP` in `ui/adapters/app-http.js`, `_preview_rst` in
+`server/src/filemill/preview.py`; see
+[ADR 0070](0070-documents-browse-by-headings.md)). The Context's plain-text
+fallback for served RST and the closing note about the demo server describe
+the code before that change. `static/test-rich.py` and its `--rst` option were
+removed in `587752b4`; run the focused checks with
+`uv run --project server pytest static/tests/test_rich.py --bundle -k rst`,
+and again with `--dev`. Run `static/measure-rst.py` through
+`uv run --project server`, not `--with`, so the lock selects Playwright.
+
 ## Context
 
 The repository already contains docutils on Pyodide and an `rst` entry in
@@ -160,3 +174,7 @@ a note directive and a table.
 The server edition at `filemill.vempai.men` retains current main's source
 preview for RST; use the static edition above to test this renderer.
 Performance reproduction and interpretation are in Measurement above.
+
+[109]: ../tasks/109-check-filemill-s-docs-and-adr-statuses-against-the-code-and-fix-what-d.md
+[26]: ../tasks/26-renderer-registry.md
+[27]: ../tasks/27-rst-in-browser.md

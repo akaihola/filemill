@@ -35,7 +35,11 @@
        vpath      virtual path inside rel (JSON key, table, or row)
        ordered    boolean; preserve the adapter's documented child order when true
        icon       string; explicit icon glyph
-       previewFormat string; requested preview format
+       previewFormat string; requested preview format; read by the WebVTT
+                  renderer, set by no adapter
+       fileKind   cached classifyFile() result; core/render.js classifies the
+                  node itself when it is unset
+       abs        absolute server path; set by the HTTP adapter
        csv        boolean; this node is a CSV virtual directory or a row in one
        jsonl      boolean; this node is a JSONL virtual directory
        json       boolean; this node is a JSON virtual directory or value
@@ -83,7 +87,8 @@
      in core/renderers.js — one entry per kind, shared by both editions.
 
    ── ROUTER ─ the address bar ───────────────────────────────────────────────
-     read()          → {root, path:[names…]} | null    the location right now
+     read()          → {root, path:[names…], view} | null
+                                                       the location right now
      write(state, replace) → void                      reflect state, no reload;
                                     use replaceState when replace is true,
                                     pushState otherwise
@@ -91,7 +96,7 @@
      Set to null to run with no URL syncing at all.
 
    RouterPath.base is the trailing-slash base URL used by the path router. It
-   comes from the current script's data-base attribute, or "/", and is used to
+   comes from the <html> element's data-base attribute, or "/", and is used to
    strip/add the server mount prefix. It is not part of router state.
    ═══════════════════════════════════════════════════════════════════════════ */
 export let FS = null, PREVIEW = null, ROUTER = null;

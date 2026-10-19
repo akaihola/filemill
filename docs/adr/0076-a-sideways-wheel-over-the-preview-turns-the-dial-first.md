@@ -58,3 +58,4 @@ which the same gesture reaches first.
 
 [ADR 0021]: 0021-horizontal-scroll-fold-dial-not-translation.md
 [ADR 0075]: 0075-the-scrollbar-spans-one-stop-each-way.md
+[78]: ../tasks/78-wide-document-scrolls-instead-of-expanding-the-preview.md

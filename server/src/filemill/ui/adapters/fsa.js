@@ -1,8 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Filesystem adapter — File System Access API, read-only, one level at a time.
+   Filesystem adapter — File System Access API, one level at a time.
 
    Fills the FS port (see core/ports.js). Nodes carry the handle they came
-   from; nothing else in the app ever touches it.
+   from; nothing else in the app ever touches it. write() and remove() ask for
+   readwrite permission first; reading needs only the picker's grant.
    ═══════════════════════════════════════════════════════════════════════════ */
 import { classifyFile } from "../core/file-kind.js";
 
@@ -44,7 +45,8 @@ export const FSA = {
     return node.loading;
   },
 
-  /* File metadata is a separate round-trip per file — only fetched on preview. */
+  /* File metadata is a separate round-trip per file — fetched on preview, or
+     per row when the sort is by size or modified time (core/sort.js). */
   async loadMeta(node) {
     if (node.dir || node.meta) return;
     try {

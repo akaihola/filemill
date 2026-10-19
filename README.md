@@ -18,11 +18,11 @@ ports declared in [`ui/core/ports.js`](ui/core/ports.js):
 
 | | **static** | **server** |
 | --- | --- | --- |
-| filesystem | File System Access API, including permitted saves and deletes | HTTP API for served files; FSA for Open local folder |
+| filesystem | File System Access API, including permitted saves and deletes | HTTP API for served files; FSA for Open Folder |
 | Markdown / DOCX | Browser markdown-it / mammoth, pinned CDN downloads controlled by the rich-preview switch | Same browser renderers, vendored under `/ui/vendor/`, independent of the switch |
 | reStructuredText | Browser Pyodide + docutils, pinned CDN download controlled by the switch | Python docutils for served files and archive members |
 | PowerPoint | Browser extracts slide text locally, without a download or consent switch | Same slide-text extraction, including archive members |
-| source highlighting | Shared browser `core/syntax.js` | Same browser highlighter for known languages; Python Pygments on server preview/source routes |
+| source highlighting | Shared browser `core/syntax.js` | Same browser highlighter; Python Pygments colours archive members through `/api/preview` |
 | router | `#r=root&p=a/b.md` | Root-relative file path, for example `/a/b.md`; `/n/` also serves the shell |
 
 The renderer choices are implemented in
@@ -35,7 +35,7 @@ modules. PPTX previews show slide numbers and extracted paragraph text, without
 slide layout, images or animations. DOCX conversion produces HTML rather than
 an exact Office page layout.
 
-Open local folder uses browser renderers for Markdown, DOCX and PPTX. Its RST
+Open Folder uses browser renderers for Markdown, DOCX and PPTX. Its RST
 routing still incorrectly requests the server preview, which cannot read a
 browser-owned file. This is the open A8 limit in the
 [architecture review](docs/ARCHITECTURE-REVIEW.md).
@@ -86,7 +86,8 @@ python3 -m http.server 8000 -d ..     # then …
 #   localhost:8000/static/index.html       ← the bundle
 ```
 
-`index.html` is generated and committed. It is the whole deliverable.
+`index.html` is generated and committed. It is the whole application; GitHub
+Pages also gets the PWA manifest, service worker and icons beside it.
 `./build-index.py --check` fails when the bundle is stale. CI publishes the
 bundle to GitHub Pages. `showDirectoryPicker()` needs a secure context, so the
 file opened from disk cannot open a folder. An `https://` page can.
@@ -114,12 +115,15 @@ See [`static/AGENTS.md`](static/AGENTS.md).
 ```bash
 cd server
 uv sync && uv run filemill [ROOT]
-#   localhost:8000/     ← the shared UI, and "Open local folder…"
+#   localhost:8000/     ← the shared UI, and "Open Folder…"
 ```
 
-The edition/renderer table above applies to served files and Open local folder.
+A directory URL with an `index.html` in it, `/` included, serves that page.
+Add any query, such as `/?f`, to open the shared UI there instead.
+
+The edition/renderer table above applies to served files and Open Folder.
 JSON and JSONL navigation runs in the shared browser adapters. Python providers
-browse SQLite, WebVTT, tar/zip archives and Git bundles, the last through `git`.
+browse SQLite, tar/zip archives and Git bundles, the last through `git`.
 Archive member bytes reach the browser renderers for Markdown, DOCX and PPTX;
 RST members use Python. See [`vfs.py`](server/src/filemill/vfs.py),
 [`app-http.js`](ui/adapters/app-http.js) and
@@ -146,13 +150,8 @@ Edit `ui/`. It is a symlink to `server/src/filemill/ui/`. A wheel cannot reach
 outside its package, so the files live in the server package. There is one set
 of files and nothing to keep in sync.
 
-```bash
-(cd static && ./build-index.py)      # rebuild the bundle
-```
-
-The bundle is generated and committed, so it can go stale. CI runs
-`./build-index.py --check`. A checkout needs symlink support. Windows needs
-developer mode for that.
+Rebuild the static bundle after a change, as the static section above shows.
+A checkout needs symlink support. Windows needs developer mode for that.
 
 ## Tests
 
@@ -171,8 +170,8 @@ uv run pytest static/tests/test_rich.py     # offline, consent and rich renderer
 ```
 
 The root uv workspace uses the shared lock and the pinned Playwright release.
-Install Chromium with `uv run playwright install chromium` if your environment
-has no matching browser bundle. Each static section is a separate pytest test;
+[`server/CONTRIBUTING.md`](server/CONTRIBUTING.md#running-tests) covers browser
+setup. Each static section is a separate pytest test;
 failures report its name and assertion. The fixtures provide isolated pages,
 fake directory handles, an OPFS directory and a loopback HTTP server.
 
@@ -187,7 +186,8 @@ fake directory handles, an OPFS directory and a loopback HTTP server.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — the order in which we close the gap.
 
 These three are not tasks, so they are in `docs/` and not in `docs/tasks/`.
-`TASKS.md` links the roadmap as one backlog item.
+`TASKS.md` issues that implement the roadmap name its phase, for example
+`(roadmap Phase 0)`.
 
 ## License
 
@@ -196,14 +196,7 @@ MIT
 ## Native shell
 
 The Linux [WebKitGTK shell](native/README.md) runs the shared DOM UI and
-supplies native file, preview and history operations. It needs GTK 3 and
-WebKitGTK 4.1. Build it and open a folder from the repository root:
-
-```bash
-nix-shell native/shell.nix --run 'python3 native/webview/build.py'
-native/webview/build/filemill /path/to/folder
-```
-
-Without a folder argument it opens a folder picker.
+supplies native file, preview and history operations. Its README has the
+requirements and build commands.
 [ADR 0079](docs/adr/0079-native-shell.md) records why this shell was kept
 and its binary size.

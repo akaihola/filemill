@@ -26,7 +26,7 @@ import re
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).parent          # filemill/
+HERE = Path(__file__).parent          # static/
 UI = HERE.parent / "ui"               # the shared frontend, one level up
 
 IMPORT = re.compile(r'^import\s*(?:\{[^}]*\}\s*from\s*)?"(\.[^"]+)";\n?', re.M)

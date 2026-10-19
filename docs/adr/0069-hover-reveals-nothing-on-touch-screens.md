@@ -2,6 +2,9 @@
 
 Date: 2026-10-04.
 
+Path update, 2026-10-19, issue [109]: `static/test-ui.py` below is now
+`static/tests/test_ui.py` (`587752b4`).
+
 ## Context
 
 On an iPad, the user had to tap a folder two times to open it in the next

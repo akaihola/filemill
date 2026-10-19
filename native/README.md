@@ -16,10 +16,10 @@ nix-shell native/shell.nix --run 'python3 native/webview/build.py'
 native/webview/build/filemill /path/to/folder
 ```
 
-Without a directory argument, the host opens a native folder picker. The
-Open Folder button changes the root. The executable embeds the shared UI,
-font and icon map. It needs no checkout or Filemill server at run time, but
-it still needs its system libraries. A Nix-built binary needs its Nix store
+Without a directory argument, the host opens `FILEMILL_ROOT`, or a native
+folder picker when that is unset. The Open Folder button changes the root. The
+executable embeds the shared UI, font and icon map. It needs no checkout or
+Filemill server at run time, but it still needs its system libraries. A Nix-built binary needs its Nix store
 runtime closure on the destination machine.
 
 The measured build used GCC 16.2.0, WebKitGTK 2.54.0, GTK 3.24.52 and glibc

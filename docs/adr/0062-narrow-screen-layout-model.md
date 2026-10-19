@@ -2,6 +2,13 @@
 
 Date: 2026-09-19
 
+## Extension, 2026-10-19, issue [109]
+
+[ADR 0075](0075-the-scrollbar-spans-one-stop-each-way.md) (2026-10-11) added
+dial stops left of natural, where the leftmost columns widen to fill the
+finder (`widenedSizes` in `ui/core/layout.js`, `fillWidth` in
+`ui/core/model/folding.js`). The widths below are the natural widths.
+
 ## Context
 
 Folder-name measurements and content-dependent preview targets changed column
@@ -61,3 +68,5 @@ Long names truncate instead of widening columns. More ancestors can remain
 visible on desktop than with the old content-based preview target. Deep-spine
 panning tests need longer paths because phone columns are narrower. Changes to
 these rules must update this ADR and both editions' geometry checks.
+
+[109]: ../tasks/109-check-filemill-s-docs-and-adr-statuses-against-the-code-and-fix-what-d.md

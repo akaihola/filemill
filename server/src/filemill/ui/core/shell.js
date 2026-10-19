@@ -1,15 +1,16 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   The chrome — top bar, stage, status strip, welcome screen.
+   The chrome — top bar, stage, status strip.
 
    In JavaScript rather than in the HTML file because there are two HTML files
    (a static one and one the server emits) and this markup has to be the same
    in both. A shared *file* would need a build step or a fetch; the static build
-   can afford neither, since it has to keep running unbuilt from src/ and, once
+   can afford neither, since it has to keep running unbuilt from
+   static/index-dev.html and, once
    bundled, from a file:// page with no network at all.
 
    So: one page structure, emitted before anything queries it. Every id below is
-   part of the contract core/ relies on — state.js takes its element handles the
-   moment it loads, which is why this script comes first.
+   part of the contract core/ relies on — dom-renderer.js takes its element
+   handles the moment it loads, which is why this script comes first.
    ═══════════════════════════════════════════════════════════════════════════ */
 document.body.insertAdjacentHTML(
   "afterbegin",

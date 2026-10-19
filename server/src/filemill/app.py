@@ -22,10 +22,11 @@ from filemill import api, mutations, paths, pwa, urls
 from filemill.env import env
 from filemill.preview import render_preview
 
-# HTML file extensions that get a "View as web page" button in the preview
+# Unused since the HTMX finder and its "View as web page" button were removed.
 _HTML_EXTS = {".html", ".htm"}
 
-# Overridden by cli.py before serve() is called.
+# Used when app.state.root is unset: direct ASGI loading, and cli.py --live,
+# which passes its resolved root through FILEMILL_ROOT.
 ROOT: Path = Path(env("ROOT", str(Path.home())))
 
 app = Starlette()
@@ -102,16 +103,16 @@ def web_static(request, path: str):
 # rather than two that resemble each other. Its core/ is source-agnostic; the
 # adapters ui/entry-server.js names point it at this server.
 #
-# Mounted under /n/ during the migration. Cutting over is changing UI_BASE to
-# "/" and letting the catch-all serve the shell — at which point the URL path
-# *is* the file path relative to ROOT, with no prefix at all.
+# The resource route below serves the shell at each file's own path, with base
+# "/", so the URL path *is* the file path relative to ROOT. UI_BASE, /n/, still
+# serves the shell too.
 
 UI_BASE = "/n/"
 _UI_DIR: Path = Path(__file__).parent / "ui"
 
 # The shell loads one module, ui/entry-server.js, which imports the core and
 # this edition's adapters in dependency order. Both filesystem adapters are in
-# that graph because "Open local folder…" switches between them at runtime;
+# that graph because "Open Folder…" switches between them at runtime;
 # app-http.js is what selects. The static edition's entry-static.js names the
 # other set — see ui/adapters/README.md.
 _UI_ENTRY = "entry-server.js"
@@ -131,7 +132,7 @@ _UI_IMPORTS = json.dumps(
 
 @rt("/ui/{path:path}")
 def ui_asset(path: str):
-    """Serve a vendored UI file."""
+    """Serve a shared UI module or asset, including ui/vendor/."""
     parts = [p for p in path.split("/") if p not in ("", ".", "..")]
     target = _UI_DIR.joinpath(*parts)
     if not parts or not target.is_file():
@@ -163,8 +164,8 @@ except OSError:
 # names, or from a CDN when it names none. This edition serves the Markdown and
 # .docx modules itself — ui/vendor/README.md lists the pins — so a document
 # renders with nothing fetched from a third party, and the rich-preview switch
-# does not apply to them. reStructuredText stays with Python; .pptx keeps its
-# CDN viewer.
+# does not apply to them. reStructuredText stays with Python. .pptx needs no
+# module: preview-rich.js extracts its slide text in the browser.
 _VENDOR_MAP_JS = (
     "window.FILEMILL_CDN = "
     + json.dumps(
@@ -361,7 +362,7 @@ def api_delete(request, p: str = ""):
     return api.delete_file(candidate)
 
 
-# ── The root-relative resource route (PLAN-19) ───────────────────────────────
+# ── The root-relative resource route ─────────────────────────────────────────
 #
 # Every route above this line is addressed by a prefix that names a *mechanism*:
 # /w/ is a static mount, /api/ is JSON, /n/ is the shared UI. Those names are
@@ -413,8 +414,8 @@ def resource(request, path: str = ""):
         /docs/readme.md?filemill=highlight  the shell; the client shows source
         /docs/readme.md/                    redirects to filemill=render
 
-    GET only. PLAN-19 §3 makes the router-facing surface read-only, and
-    mutation routes are authorized separately.
+    GET only. The router-facing surface is read-only, and mutation routes are
+    authorized separately.
     """
     state = urls.parse_state(request.query_params)
     found = _resource_target(path, _zones(request))
