@@ -27,7 +27,9 @@ fragments" since D67.
       same section preview when loaded fresh, in the server edition. Any path whose
       first missing segment comes after an existing `.md` or `.rst` file gets the app
       shell, not a 404.
-- [ ] `<file>.md?f#<slug>` opens the file and scrolls its preview to the heading with
-      that id (markdown-it-anchor's slug), so agents can write GitHub-style anchors.
+- [ ] `<file>.md?f#<slug>` opens the file and scrolls its preview to the heading whose
+      GitHub slug is `<slug>` (lowercase, punctuation dropped, spaces as hyphens), so
+      one anchor works on both GitHub and Filemill. Where markdown-it-anchor's id
+      differs, such as for "Q1: scope", both forms work.
 - [ ] A heading that doesn't exist falls back to the whole file, not to an error page.
 - [ ] Browser tests cover a fresh load of both forms.
