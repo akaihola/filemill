@@ -6,13 +6,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [114] Sandbox HTML previews of archive members as SECURITY.md promises
-  <!-- hai:{"id":"simple-19e1170a-8c5b-4b30-935e-64b054b39407","labels":["steward","security"],"createdAt":"2026-10-19T17:58:36.228Z","updatedAt":"2026-10-19T17:58:36.228Z"} -->
-
 - [115] Propose plain answers to the docs check's twelve remaining questions
   <!-- hai:{"id":"simple-e25533eb-a765-42e3-8e41-b1e7e16d1b0e","labels":["steward","review"],"createdAt":"2026-10-19T17:58:46.533Z","updatedAt":"2026-10-19T17:58:46.533Z"} -->
 
 ## Scheduled
+
+- [114] Sandbox HTML previews of archive members as SECURITY.md promises
+  <!-- hai:{"id":"simple-19e1170a-8c5b-4b30-935e-64b054b39407","labels":["steward","security"],"createdAt":"2026-10-19T17:58:36.228Z","updatedAt":"2026-10-19T23:55:10.610Z"} -->
 
 ## In Progress
 
