@@ -90,3 +90,10 @@ CI run cannot validate this fix until the rewritten main is published. Keep
 [96]: 96-remove-the-tailnet-hostname-from-all-files-and-from-history.md
 [97]: 97-fix-intermittent-preview-404-after-deleting-the-selected-file.md
 [98]: 98-investigate-mobile-landscape-wide-folder-navigation-timeout.md
+
+## User acceptance, 2026-10-19
+
+The user explicitly accepted [93] and requested settling its thread. This
+acceptance supersedes the earlier instruction to retain In Progress status.
+The delivery status above records the blocker observed on 2026-10-17; no new
+CI or publication verification was performed as part of this acceptance.

@@ -27,12 +27,12 @@ Rules for TASKS.md usage are at the bottom of the file.
 
       <!-- hai:{"id":"simple-28def403-6427-4ff6-aea8-3643a19d1a61","labels":["steward"],"createdAt":"2026-10-16T16:48:54.367Z","updatedAt":"2026-10-17T08:00:57.885Z"} -->
 
-- [~] [93] Make main's CI green again: static bundle test failing since 06792cb
+## Completed / Accepted
+
+- [x] [93] Make main's CI green again: static bundle test failing since 06792cb
     - Depends on: [96]
 
-      <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-17T07:59:20.709Z"} -->
-
-## Completed / Accepted
+      <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-19T18:13:46.054Z"} -->
 
 - [ ] [110] Confusing diagonal scroll
       <!-- hai:{"id":"simple-03b8dad8-ef8f-463e-a43d-6e54a152efdd","priority":"none","labels":[],"createdAt":"2026-10-19T15:11:32.244Z","updatedAt":"2026-10-19T17:46:26.403Z"} -->
