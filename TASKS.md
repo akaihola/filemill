@@ -6,10 +6,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [112] Section links and heading fragments don't open the heading
-  <!-- hai:{"id":"simple-7c134768-10d6-422d-87d7-0354b53e8de5","labels":["steward"],"createdAt":"2026-10-19T16:06:43.116Z","updatedAt":"2026-10-19T16:07:19.902Z"} -->
-
 ## Scheduled
+
+- [112] Section links and heading fragments don't open the heading
+  <!-- hai:{"id":"simple-7c134768-10d6-422d-87d7-0354b53e8de5","labels":["steward"],"createdAt":"2026-10-19T16:06:43.116Z","updatedAt":"2026-10-19T17:37:09.259Z"} -->
 
 ## In Progress
 
