@@ -13,9 +13,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [110] Confusing diagonal scroll
-      <!-- hai:{"id":"simple-03b8dad8-ef8f-463e-a43d-6e54a152efdd","priority":"none","labels":[],"createdAt":"2026-10-19T15:11:32.244Z","updatedAt":"2026-10-19T16:35:23.131Z"} -->
-
 - [~] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
 
@@ -27,6 +24,9 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-17T07:59:20.709Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [110] Confusing diagonal scroll
+      <!-- hai:{"id":"simple-03b8dad8-ef8f-463e-a43d-6e54a152efdd","priority":"none","labels":[],"createdAt":"2026-10-19T15:11:32.244Z","updatedAt":"2026-10-19T17:46:26.403Z"} -->
 
 - [ ] [111] Renders HTML comments in Markdown documents
       <!-- hai:{"id":"simple-6a0e8d6a-4429-4924-bff3-b5437909a311","priority":"none","labels":[],"createdAt":"2026-10-19T15:48:38.147Z","updatedAt":"2026-10-19T16:59:40.375Z"} -->
