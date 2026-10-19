@@ -52,8 +52,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] [108] Wait for PageDown scrolling in the static keyboard test
       <!-- hai:{"id":"simple-e9360e81-e2ed-419a-8061-7e3136ecbb92","createdAt":"2026-10-18T21:43:30.456Z","updatedAt":"2026-10-19T09:55:41.941Z"} -->
 
-- [ ] [104] Make preview content inert: wikilink text and DOCX output (A2)
-      <!-- hai:{"id":"simple-fdfa185d-6944-4b3b-acc4-f7b3b2114168","labels":["steward"],"createdAt":"2026-10-18T20:07:21.877Z","updatedAt":"2026-10-18T22:45:44.521Z"} -->
+- [x] [104] Make preview content inert: wikilink text and DOCX output (A2)
+      <!-- hai:{"id":"simple-fdfa185d-6944-4b3b-acc4-f7b3b2114168","labels":["steward"],"createdAt":"2026-10-18T20:07:21.877Z","updatedAt":"2026-10-19T19:03:24.424Z"} -->
 
 - [x] [106] Link or remove every lint suppression and the obsolete PPTX skip
   (roadmap Phase 1)
