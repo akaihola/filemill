@@ -26,8 +26,6 @@ finished on 10-17:
    or Playwright's slow motion) rather than raising timeouts blindly.
 3. Fix the cause, in the app or the test, and say which and why. Keep the
    assertions' intent.
-4. Add a dated note to [93] and [94]'s task files: the run above, what it showed,
-   and that both finish when `main`'s CI is green on GitHub.
 
 ## Constraints and acceptance
 
@@ -40,3 +38,5 @@ finished on 10-17:
   suite at a time.
 - The three suites pass locally, including each fixed test 10 times in a row
   under the constrained conditions used in step 2.
+
+Antti accepted [93] and [94] at about 21:08 on 2026-10-19 without waiting for green CI, so this issue doesn't touch them.

@@ -7,7 +7,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 ## Ordered backlog
 
 - [113] Fix the five tests that failed in GitHub CI after the history push
-  <!-- hai:{"id":"simple-633e3e56-0c80-48dc-940c-9c4d23e9ebb8","labels":["steward"],"createdAt":"2026-10-19T17:55:35.768Z","updatedAt":"2026-10-19T17:55:35.768Z"} -->
+  <!-- hai:{"id":"simple-633e3e56-0c80-48dc-940c-9c4d23e9ebb8","labels":["steward"],"createdAt":"2026-10-19T17:55:35.768Z","updatedAt":"2026-10-19T18:11:34.348Z"} -->
 
 - [114] Sandbox HTML previews of archive members as SECURITY.md promises
   <!-- hai:{"id":"simple-19e1170a-8c5b-4b30-935e-64b054b39407","labels":["steward","security"],"createdAt":"2026-10-19T17:58:36.228Z","updatedAt":"2026-10-19T17:58:36.228Z"} -->
