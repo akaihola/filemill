@@ -14,10 +14,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [113] Fix the five tests that failed in GitHub CI after the history push
-  <!-- hai:{"id":"simple-633e3e56-0c80-48dc-940c-9c4d23e9ebb8","labels":["steward"],"createdAt":"2026-10-19T17:55:35.768Z","updatedAt":"2026-10-19T20:47:48.488Z"} -->
-
 ## In Progress
+
+- [~] [113] Fix the five tests that failed in GitHub CI after the history push
+      <!-- hai:{"id":"simple-633e3e56-0c80-48dc-940c-9c4d23e9ebb8","labels":["steward"],"createdAt":"2026-10-19T17:55:35.768Z","updatedAt":"2026-10-19T20:48:00.718Z"} -->
 
 - [~] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
