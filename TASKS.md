@@ -12,6 +12,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [111] Renders HTML comments in Markdown documents
   <!-- hai:{"id":"simple-6a0e8d6a-4429-4924-bff3-b5437909a311","priority":"none","labels":[],"createdAt":"2026-10-19T15:48:38.147Z","updatedAt":"2026-10-19T15:48:38.147Z"} -->
 
+- [112] Section links and heading fragments don't open the heading
+  <!-- hai:{"id":"simple-7c134768-10d6-422d-87d7-0354b53e8de5","labels":["steward"],"createdAt":"2026-10-19T16:06:43.116Z","updatedAt":"2026-10-19T16:06:43.116Z"} -->
+
 ## Scheduled
 
 ## In Progress
@@ -677,7 +680,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 [77]: docs/tasks/77-md-tight-bullet-list-line-spacing.md
 
-<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111 -->
+<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112 -->
 
 [78]: docs/tasks/78-wide-document-scrolls-instead-of-expanding-the-preview.md
 
@@ -746,6 +749,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 [110]: docs/tasks/110-confusing-diagonal-scroll.md
 
 [111]: docs/tasks/111-renders-html-comments-in-markdown-documents.md
+
+[112]: docs/tasks/112-section-links-and-heading-fragments-don-t-open-the-heading.md
 
 ## Rules
 
