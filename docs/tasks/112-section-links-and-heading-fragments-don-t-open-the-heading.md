@@ -33,3 +33,16 @@ fragments" since D67.
       differs, such as for "Q1: scope", both forms work.
 - [ ] A heading that doesn't exist falls back to the whole file, not to an error page.
 - [ ] Browser tests cover a fresh load of both forms.
+
+## Implementation plan (2026-10-19)
+
+1. Test section URLs through the resource route and fresh browser loads.
+   The current `api.split_vfs` already accepts document sections. Keep its
+   containment checks and use regression tests to preserve this behavior.
+2. Keep existing heading IDs. Add GitHub fragment aliases during Markdown
+   rendering. Resolve fragments after the asynchronous preview is ready.
+   Scroll only the preview body, so the column layout does not move.
+3. Test missing headings, punctuation, duplicate headings, and both fragment
+   forms. Run the local quality gate and the affected browser suites.
+4. Merge into main. Move the canonical issue to Completed / Accepted with
+   user acceptance unchecked.
