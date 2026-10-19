@@ -748,6 +748,27 @@ async function fillPreviewContent(n) {
     signal: previewFoldEvents.signal,
   });
   hlFences(host);
+  const fragment = ROUTER?.read()?.fragment;
+  if (fragment) {
+    try {
+      const decoded = decodeURIComponent(fragment);
+      const headings = [
+        ...host.querySelectorAll(".pv-markdown [data-github-slug]"),
+      ];
+      const heading = headings.find((h) => h.dataset.githubSlug === decoded) ||
+        headings.find((h) => h.id === fragment || h.id === decoded);
+      if (heading) {
+        await document.fonts.ready;
+        if (token !== pvToken || !host.isConnected) return;
+        const body = host.closest(".pv-body");
+        body.scrollTop += heading.getBoundingClientRect().top -
+          body.getBoundingClientRect().top;
+      }
+    } catch {
+      /* A malformed percent escape is an unknown fragment: keep the file open. */
+    }
+  }
+
   const btn = document.getElementById("pv-edit");
   if (btn) {
     btn.hidden = true;

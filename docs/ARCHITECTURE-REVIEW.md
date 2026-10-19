@@ -95,6 +95,13 @@ status.
   Document sections show their heading text without a row icon. Their previews
   omit the file summary heading and divider, leaving the document's own heading
   at the top of the content ([79], 2026-10-11).
+  Section resource URLs have fresh-load HTTP and browser coverage ([112],
+  [ADR 0085], 2026-10-19). The existing `api.split_vfs` route accepts document sections;
+  heading existence stays with the browser. A missing section at any depth
+  restores the whole document in the DOM-free deep-link model.
+  Markdown previews preserve their
+  renderer IDs and add GitHub fragment aliases. The path router supplies the
+  fragment, and the DOM renderer scrolls the preview body after fonts are ready.
 - **Persistence.** Files are the only durable data. The browser keeps recent
   folder handles in IndexedDB, settings in localStorage, navigation in history
   and application assets in Cache Storage.
@@ -575,3 +582,5 @@ A12 items can land at any time, each with a focused test.
 
 [ADR 0083]: adr/0083-hide-markdown-comments.md
 [ADR 0084]: adr/0084-a-wheel-gesture-keeps-the-axis-it-started-on.md
+
+[ADR 0085]: adr/0085-markdown-heading-fragments-scroll-the-preview.md

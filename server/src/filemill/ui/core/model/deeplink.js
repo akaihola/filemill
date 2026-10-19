@@ -61,10 +61,22 @@ export async function walkPath(names, ensureLoaded, wantFocus) {
       const node = kids[ri];
       sel[i] = node.name;
       setState({ focusCol: i }); /* focus stays on the column holding it */
-      if (!node.dir) break;
+      if (!node.dir) {
+        complete = i === names.length - 1;
+        break;
+      }
       await ensureLoaded(node);
       if (!node.dir) break; /* a virtual wrapper declined it while reading */
       path.push(node);
+    }
+    if (!complete) {
+      const documentIndex = path.findIndex((node) => node.doc);
+      if (documentIndex >= 0) {
+        /* A broken section link opens the file, rather than a parent section. */
+        path.splice(documentIndex + 1);
+        sel.splice(documentIndex);
+        setState({ focusCol: Math.max(0, documentIndex - 1) });
+      }
     }
     return complete;
   } finally {

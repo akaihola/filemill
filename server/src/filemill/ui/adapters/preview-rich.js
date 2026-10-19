@@ -144,6 +144,23 @@ async function markdown(text, node) {
          one, and a focusable heading landing in a fullscreen preview nudges
          the stage sideways for a frame. Same ids as before, nothing else. */
       .use(anchor, { tabIndex: false });
+    /* Preserve markdown-it-anchor IDs and give GitHub links their own alias.
+       Allocate aliases across the whole document, including repeated titles. */
+    mdInstance.core.ruler.push("github_fragments", (state) => {
+      const used = new Set();
+      state.tokens.forEach((token, i) => {
+        if (token.type !== "heading_open") return;
+        const title = state.tokens[i + 1].children
+          .filter((t) => t.type === "text" || t.type === "code_inline")
+          .map((t) => t.content).join("");
+        const base = title.toLowerCase()
+          .replace(/[^\p{L}\p{M}\p{N} _-]/gu, "").replace(/ /g, "-");
+        let slug = base, suffix = 0;
+        while (used.has(slug)) slug = `${base}-${++suffix}`;
+        used.add(slug);
+        token.attrSet("data-github-slug", slug);
+      });
+    });
     /* Parse comments without enabling raw HTML. Parser rules leave code and
        escaped delimiters alone and preserve source line numbers for tasks. */
     mdInstance.inline.ruler.before("html_inline", "comment", (state) => {

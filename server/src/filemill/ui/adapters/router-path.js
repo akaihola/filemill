@@ -26,6 +26,7 @@ export const RouterPath = {
   read() {
     if (!location.pathname.startsWith(BASE)) return null;
     return {
+      fragment: location.hash.slice(1),
       root: null, /* the server decides the root; a URL cannot pick one */
       path: location.pathname.slice(BASE.length).split("/")
         .filter(Boolean).map(decodeURIComponent),

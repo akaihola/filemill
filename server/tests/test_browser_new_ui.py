@@ -3980,3 +3980,72 @@ def test_mutations_from_two_browser_origins(browser, ui_root, tmp_path, proxy):
             await HTTP.remove({rel: 'notes/plain.txt'});
         }""")
         assert not (ui_root / "notes/plain.txt").exists()
+
+
+@pytest.mark.parametrize("extension", ["md", "rst"])
+def test_document_section_url_loads_fresh(page, ui_root, extension):
+    text = (
+        "# Guide\n\nintro\n\n## Work\n\nwork body\n\n### Child\n\nchild body\n\n## Other\n\nother body\n"
+        if extension == "md"
+        else "Guide\n=====\n\nintro\n\nWork\n----\n\nwork body\n\nChild\n~~~~~\n\nchild body\n\nOther\n-----\n\nother body\n"
+    )
+    (ui_root / f"sections.{extension}").write_text(text)
+    page.open_resource(f"sections.{extension}/Work/Child?f=&filemill=render")
+    content = page.locator("#pv-content")
+    expect(content).to_contain_text("child body")
+    expect(content).not_to_contain_text("work body")
+    expect(content).not_to_contain_text("other body")
+
+
+@pytest.mark.parametrize(
+    ("fragment", "title", "occurrence"),
+    [
+        ("work", "Work", 0),
+        ("q1-scope", "Q1: scope", 0),
+        ("q1%3A-scope", "Q1: scope", 0),
+        ("q1-scope-1", "Q1: scope", 1),
+        ("caf%C3%A9--tea", "Café & tea!", 0),
+        ("missing", None, 0),
+        ("%ZZ", None, 0),
+    ],
+)
+def test_markdown_heading_fragment_loads_fresh(
+    page, ui_root, fragment, title, occurrence
+):
+    (ui_root / "fragments.md").write_text(
+        "# Guide\n\n"
+        + "intro paragraph\n\n" * 100
+        + "## Work\n\nwork body\n\n"
+        + "middle paragraph\n\n" * 100
+        + "## Q1: scope\n\nscope body\n\n"
+        + "middle paragraph\n\n" * 100
+        + "## Q1: scope\n\nsecond scope body\n\n"
+        + "middle paragraph\n\n" * 100
+        + "## Café & `tea`!\n\ntea body\n\n"
+        + "end paragraph\n\n" * 100
+    )
+    page.open_resource(f"fragments.md?f#{fragment}")
+    expect(page.locator("#pv-content")).to_contain_text("scope body")
+    if title is None:
+        assert page.locator("#preview .pv-body").evaluate("e => e.scrollTop") == 0
+    else:
+        page.wait_for_function(
+            """([title, occurrence]) => {
+              const body = document.querySelector('#preview .pv-body');
+              const heading = [...body.querySelectorAll('h2')].filter(h => h.textContent === title)[occurrence];
+              const top = heading?.getBoundingClientRect().top;
+              const rect = body.getBoundingClientRect();
+              return body.scrollTop > 0 && top >= rect.top - 1 && top < rect.top + 60;
+            }""",
+            arg=[title, occurrence],
+        )
+
+
+@pytest.mark.parametrize(
+    "section", ["Missing", "Guide/Missing", "Guide/Install/Missing"]
+)
+def test_missing_section_loads_the_whole_document(page, section):
+    response = page.goto(f"{page.base}/guide.md/{section}?f")
+    assert response.status == 200
+    expect(page.locator("#pv-content")).to_contain_text("intro")
+    expect(page.locator("#pv-content")).to_contain_text("steps")

@@ -2448,8 +2448,9 @@ const previewTarget = () => finder.clientWidth / 3;
      in core/renderers.js — one entry per kind, shared by both editions.
 
    ── ROUTER ─ the address bar ───────────────────────────────────────────────
-     read()          → {root, path:[names…], view} | null
+     read()          → {root, path:[names…], view, fragment?} | null
                                                        the location right now
+     fragment        optional; encoded heading fragment from a path router
      write(state, replace) → void                      reflect state, no reload;
                                     use replaceState when replace is true,
                                     pushState otherwise
@@ -4033,10 +4034,22 @@ async function walkPath(names, ensureLoaded, wantFocus) {
       const node = kids[ri];
       sel[i] = node.name;
       setState({ focusCol: i }); /* focus stays on the column holding it */
-      if (!node.dir) break;
+      if (!node.dir) {
+        complete = i === names.length - 1;
+        break;
+      }
       await ensureLoaded(node);
       if (!node.dir) break; /* a virtual wrapper declined it while reading */
       path.push(node);
+    }
+    if (!complete) {
+      const documentIndex = path.findIndex((node) => node.doc);
+      if (documentIndex >= 0) {
+        /* A broken section link opens the file, rather than a parent section. */
+        path.splice(documentIndex + 1);
+        sel.splice(documentIndex);
+        setState({ focusCol: Math.max(0, documentIndex - 1) });
+      }
     }
     return complete;
   } finally {
@@ -5534,6 +5547,27 @@ async function fillPreviewContent(n) {
     signal: previewFoldEvents.signal,
   });
   hlFences(host);
+  const fragment = ROUTER?.read()?.fragment;
+  if (fragment) {
+    try {
+      const decoded = decodeURIComponent(fragment);
+      const headings = [
+        ...host.querySelectorAll(".pv-markdown [data-github-slug]"),
+      ];
+      const heading = headings.find((h) => h.dataset.githubSlug === decoded) ||
+        headings.find((h) => h.id === fragment || h.id === decoded);
+      if (heading) {
+        await document.fonts.ready;
+        if (token !== pvToken || !host.isConnected) return;
+        const body = host.closest(".pv-body");
+        body.scrollTop += heading.getBoundingClientRect().top -
+          body.getBoundingClientRect().top;
+      }
+    } catch {
+      /* A malformed percent escape is an unknown fragment: keep the file open. */
+    }
+  }
+
   const btn = document.getElementById("pv-edit");
   if (btn) {
     btn.hidden = true;
@@ -7825,6 +7859,23 @@ async function markdown(text, node) {
          one, and a focusable heading landing in a fullscreen preview nudges
          the stage sideways for a frame. Same ids as before, nothing else. */
       .use(anchor, { tabIndex: false });
+    /* Preserve markdown-it-anchor IDs and give GitHub links their own alias.
+       Allocate aliases across the whole document, including repeated titles. */
+    mdInstance.core.ruler.push("github_fragments", (state) => {
+      const used = new Set();
+      state.tokens.forEach((token, i) => {
+        if (token.type !== "heading_open") return;
+        const title = state.tokens[i + 1].children
+          .filter((t) => t.type === "text" || t.type === "code_inline")
+          .map((t) => t.content).join("");
+        const base = title.toLowerCase()
+          .replace(/[^\p{L}\p{M}\p{N} _-]/gu, "").replace(/ /g, "-");
+        let slug = base, suffix = 0;
+        while (used.has(slug)) slug = `${base}-${++suffix}`;
+        used.add(slug);
+        token.attrSet("data-github-slug", slug);
+      });
+    });
     /* Parse comments without enabling raw HTML. Parser rules leave code and
        escaped delimiters alone and preserve source line numbers for tasks. */
     mdInstance.inline.ruler.before("html_inline", "comment", (state) => {

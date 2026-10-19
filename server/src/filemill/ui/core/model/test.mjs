@@ -563,6 +563,21 @@ assert.equal(previewNode(), document_);
 sel[1] = "Intro";
 assert.equal(previewNode(), section);
 assert.equal(locationState("highlight", null).location.view, "highlight");
+/* A missing heading anywhere in a section URL restores the whole document. */
+const group = { name: "Group", dir: true, section: {}, kids: [section] };
+document_.kids.push(group);
+for (
+  const suffix of [["Missing"], ["Group", "Missing"], [
+    "Group",
+    "Intro",
+    "Missing",
+  ]]
+) {
+  setState({ path: [shelf], sel: [], focusCol: 0 });
+  assert.equal(await walkPath(["guide.md", ...suffix], async () => {}), false);
+  assert.equal(previewNode(), document_);
+  assert.deepEqual(currentPath(), ["guide.md"]);
+}
 const readmeDoc = { name: "README.md", dir: true, doc: true, kids: [] };
 const library = { name: "library", dir: true, kids: [readmeDoc, file("b")] };
 setState({ path: [library], sel: [], focusCol: 0 });
