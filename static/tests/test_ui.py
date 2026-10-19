@@ -1429,6 +1429,14 @@ async def test_keyboard_horizontal(page, deferred_scroll):
     ), json.dumps(st)
     await pg.keyboard.press("ArrowRight")
     await pg.wait_for_function("document.activeElement?.id === 'preview'")
+    # ← from the preview re-rendered it (A9), and its text arrives after an
+    # asynchronous read. A scroll key pressed before then has nothing to
+    # scroll, and the wait for movement below can only time out.
+    await pg.wait_for_function(
+        """() => { const body = document.querySelector('#preview .pv-body');
+          return body?.querySelector('.pv-text')?.textContent.startsWith('leaf')
+            && body.scrollHeight > body.clientHeight; }"""
+    )
     if deferred_scroll:
         # Model a scroll write that lands after the keyboard round trip.
         await pg.evaluate("""() => {

@@ -480,32 +480,43 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
         assert page.evaluate("focusCol") == 1
         assert page.evaluate("sel[1]") == "docs"
 
-        folder_url = page.url
+        # A selection's URL is written by the render that opens it. A folder or
+        # a Markdown file opens once its listing or headings are read, or after
+        # the 50 ms grace, so each URL below is read after that render. They
+        # are read from the page: page.url follows the browser's navigation
+        # events, which can trail what the page has already done.
+        open_docs = "focusCol === 1 && sel[1] === 'docs' && path[2]?.name === 'docs'"
+        page.wait_for_function(open_docs)
+        folder_url = page.evaluate("location.href")
         page.keyboard.press("ArrowLeft")
         page.keyboard.press("ArrowRight")
-        page.wait_for_function("focusCol === 1 && sel[1] === 'docs'")
+        page.wait_for_function(open_docs)
         assert page.evaluate("focusCol") == 1
         assert page.evaluate("sel[1]") == "docs"
         assert page.locator('.col[data-i="1"] .row.sel .label').inner_text() == "docs"
-        assert page.url == folder_url
+        assert page.evaluate("location.href") == folder_url
 
         page.keyboard.press("ArrowDown")  # docs → AGENTS.md, previewed as a file
-        page.wait_for_function("sel[1] === 'AGENTS.md'")
+        open_notes = (
+            "focusCol === 1 && sel[1] === 'AGENTS.md' && document.querySelector("
+            "'#preview .col-head .name')?.textContent.includes('AGENTS.md')"
+        )
+        page.wait_for_function(open_notes)
         assert page.evaluate("sel[1]") == "AGENTS.md"
         _expect_ui_column(page, 1)
         _expect_preview(page)
 
-        file_url = page.url
+        file_url = page.evaluate("location.href")
         page.keyboard.press("ArrowLeft")
         page.keyboard.press("ArrowRight")
-        page.wait_for_function("focusCol === 1 && sel[1] === 'AGENTS.md'")
+        page.wait_for_function(open_notes)
         assert page.evaluate("focusCol") == 1
         assert page.evaluate("sel[1]") == "AGENTS.md"
         assert (
             page.locator('.col[data-i="1"] .row.sel .label').text_content()
             == "AGENTS.md"
         )
-        assert page.url == file_url
+        assert page.evaluate("location.href") == file_url
         _expect_preview(page)
 
         page.keyboard.press("ArrowLeft")  # focus out — the column must survive
