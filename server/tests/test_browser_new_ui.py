@@ -371,11 +371,13 @@ class Harness:
 
 
 @pytest.fixture(scope="module")
-def browser():
-    """One Chromium for the module; each test gets a fresh context in it."""
+def browser(request):
+    """One browser per engine; each test gets a fresh context in it."""
     sync_playwright = pytest.importorskip("playwright.sync_api").sync_playwright
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = getattr(p, getattr(request, "param", "chromium")).launch(
+            headless=True
+        )
         try:
             yield browser
         finally:
@@ -3997,6 +3999,7 @@ def test_document_section_url_loads_fresh(page, ui_root, extension):
     expect(content).not_to_contain_text("other body")
 
 
+@pytest.mark.parametrize("browser", ["chromium", "firefox"], indirect=True)
 @pytest.mark.parametrize(
     ("fragment", "title", "occurrence"),
     [
@@ -4024,21 +4027,24 @@ def test_markdown_heading_fragment_loads_fresh(
         + "## Café & `tea`!\n\ntea body\n\n"
         + "end paragraph\n\n" * 100
     )
-    page.open_resource(f"fragments.md?f#{fragment}")
-    expect(page.locator("#pv-content")).to_contain_text("scope body")
-    if title is None:
-        assert page.locator("#preview .pv-body").evaluate("e => e.scrollTop") == 0
-    else:
-        page.wait_for_function(
-            """([title, occurrence]) => {
-              const body = document.querySelector('#preview .pv-body');
-              const heading = [...body.querySelectorAll('h2')].filter(h => h.textContent === title)[occurrence];
-              const top = heading?.getBoundingClientRect().top;
-              const rect = body.getBoundingClientRect();
-              return body.scrollTop > 0 && top >= rect.top - 1 && top < rect.top + 60;
-            }""",
-            arg=[title, occurrence],
-        )
+    # First load, service-worker-controlled load, then a warm cache load.
+    for _ in range(3):
+        page.open_resource(f"fragments.md?f#{fragment}")
+        expect(page.locator("#pv-content")).to_contain_text("scope body")
+        if title is None:
+            assert page.locator("#preview .pv-body").evaluate("e => e.scrollTop") == 0
+        else:
+            page.wait_for_function(
+                """([title, occurrence]) => {
+                  const body = document.querySelector('#preview .pv-body');
+                  const heading = [...body.querySelectorAll('h2')].filter(h => h.textContent === title)[occurrence];
+                  const top = heading?.getBoundingClientRect().top;
+                  const rect = body.getBoundingClientRect();
+                  return body.scrollTop > 0 && top >= rect.top - 1 && top < rect.top + 60;
+                }""",
+                arg=[title, occurrence],
+            )
+        page.wait_for_function("navigator.serviceWorker.controller !== null")
 
 
 @pytest.mark.parametrize(

@@ -105,6 +105,10 @@ jobs:
       - name: Install the locked Playwright's browsers
         run: uv run --project server playwright install --with-deps chromium
 
+      - name: Install Firefox for server fragment checks
+        if: matrix.suite == 'server'
+        run: uv run --project server playwright install --with-deps firefox
+
       # The server shells out to ripgrep for content search; the runner image
       # does not ship it, and without it every search test gets a 503.
       - name: Install ripgrep

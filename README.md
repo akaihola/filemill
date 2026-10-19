@@ -159,6 +159,10 @@ Edit `ui/`. It is a symlink to `server/src/filemill/ui/`. A wheel cannot reach
 outside its package, so the files live in the server package. There is one set
 of files and nothing to keep in sync.
 
+Restart a running server after you update UI files. The server computes asset
+version URLs at startup. A browser reload without a server restart can reuse
+older cached UI files.
+
 Rebuild the static bundle after a change, as the static section above shows.
 A checkout needs symlink support. Windows needs developer mode for that.
 

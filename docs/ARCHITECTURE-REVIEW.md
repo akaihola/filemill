@@ -102,6 +102,10 @@ status.
   Markdown previews preserve their
   renderer IDs and add GitHub fragment aliases. The path router supplies the
   fragment, and the DOM renderer scrolls the preview body after fonts are ready.
+  Fragment browser checks cover Chromium and Firefox with fresh and warm
+  service-worker caches. A running server must restart after UI updates so
+  its startup asset-version map matches the served files ([112] follow-up,
+  2026-10-19).
 - **Persistence.** Files are the only durable data. The browser keeps recent
   folder handles in IndexedDB, settings in localStorage, navigation in history
   and application assets in Cache Storage.

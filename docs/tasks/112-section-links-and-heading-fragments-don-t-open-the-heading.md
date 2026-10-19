@@ -75,3 +75,22 @@ Validation:
 
 [ADR 0085](../adr/0085-markdown-heading-fragments-scroll-the-preview.md) records
 fragment routing and preview scrolling. Completion awaits user acceptance.
+
+## Firefox follow-up (2026-10-19)
+
+The user reported that Firefox 157 on NixOS scrolled only after a hard reload.
+Normal address-bar navigation kept the preview at the top. Fresh Firefox 155
+checks passed, including the original example links against the live server.
+
+The running server advertised startup asset hashes that did not match its
+updated UI files. A hard reload bypassed the old cached modules. Restarting the
+local server refreshed the version URLs. The user then confirmed that all
+example links scrolled correctly. The scrolling implementation did not change.
+
+Fragment checks now run in Chromium and Firefox. Each case checks a fresh load,
+a service-worker-controlled load, and a load with a warm cache. CI installs
+Firefox for the server suite. README now states that a running server must
+restart after UI updates.
+
+Validation: 14 cross-browser fragment cases passed, 30 documentation and pytest
+configuration checks passed, and the pre-commit gate passed.
