@@ -1,0 +1,1 @@
+If an `.md` file contains `<!-- HTML comments -->`, Filemill renders them visible in the preview. They should be hidden.

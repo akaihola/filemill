@@ -1,0 +1,1 @@
+Often when I scroll the preview pane up and down on a touchpad, my fingers move slightly horizontally as well, causing the column layout to change. Lock the scroll to happen only along the initial axis of the scroll gesture.
