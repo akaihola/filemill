@@ -10,10 +10,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [109] Check filemill's docs and ADR statuses against the code, and fix what
-  disagrees
-      <!-- hai:{"id":"simple-b148aec7-49a8-44df-88c0-13a18617b1d3","labels":["steward"],"createdAt":"2026-10-19T08:08:26.389Z","updatedAt":"2026-10-19T08:10:43.285Z"} -->
-
 - [~] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
 
@@ -25,6 +21,10 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-17T07:59:20.709Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [109] Check filemill's docs and ADR statuses against the code, and fix what
+  disagrees
+      <!-- hai:{"id":"simple-b148aec7-49a8-44df-88c0-13a18617b1d3","labels":["steward"],"createdAt":"2026-10-19T08:08:26.389Z","updatedAt":"2026-10-19T08:41:04.372Z"} -->
 
 - [ ] [107] Date superseded roadmap and ADR claims (roadmap Phase 0)
     - Depends on: [105]
