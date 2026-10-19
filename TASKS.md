@@ -22,9 +22,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Completed / Accepted
 
-- [ ] [109] Check filemill's docs and ADR statuses against the code, and fix what
+- [x] [109] Check filemill's docs and ADR statuses against the code, and fix what
   disagrees
-      <!-- hai:{"id":"simple-b148aec7-49a8-44df-88c0-13a18617b1d3","labels":["steward"],"createdAt":"2026-10-19T08:08:26.389Z","updatedAt":"2026-10-19T08:41:04.372Z"} -->
+      <!-- hai:{"id":"simple-b148aec7-49a8-44df-88c0-13a18617b1d3","labels":["steward"],"createdAt":"2026-10-19T08:08:26.389Z","updatedAt":"2026-10-19T14:05:44.760Z"} -->
 
 - [x] [107] Date superseded roadmap and ADR claims (roadmap Phase 0)
     - Depends on: [105]
@@ -37,16 +37,16 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [104] Make preview content inert: wikilink text and DOCX output (A2)
       <!-- hai:{"id":"simple-fdfa185d-6944-4b3b-acc4-f7b3b2114168","labels":["steward"],"createdAt":"2026-10-18T20:07:21.877Z","updatedAt":"2026-10-18T22:45:44.521Z"} -->
 
-- [ ] [106] Link or remove every lint suppression and the obsolete PPTX skip
+- [x] [106] Link or remove every lint suppression and the obsolete PPTX skip
   (roadmap Phase 1)
     - Depends on: [102]
 
-      <!-- hai:{"id":"simple-bf3779d1-478d-46a3-858d-498dde815c5f","labels":["steward"],"createdAt":"2026-10-18T20:07:23.528Z","updatedAt":"2026-10-18T22:04:20.512Z"} -->
+      <!-- hai:{"id":"simple-bf3779d1-478d-46a3-858d-498dde815c5f","labels":["steward"],"createdAt":"2026-10-18T20:07:23.528Z","updatedAt":"2026-10-19T14:05:45.290Z"} -->
 
-- [ ] [105] Correct the current edition and renderer documentation (roadmap Phase 0)
+- [x] [105] Correct the current edition and renderer documentation (roadmap Phase 0)
     - Depends on: [102]
 
-      <!-- hai:{"id":"simple-a03688ad-b2e9-4885-b18d-eaa33c6adb90","labels":["steward"],"createdAt":"2026-10-18T20:07:22.740Z","updatedAt":"2026-10-18T22:00:45.320Z"} -->
+      <!-- hai:{"id":"simple-a03688ad-b2e9-4885-b18d-eaa33c6adb90","labels":["steward"],"createdAt":"2026-10-18T20:07:22.740Z","updatedAt":"2026-10-19T14:05:45.809Z"} -->
 
 - [ ] [103] Close the directory-index path escape and authorize save and delete (A1,
   A3)
