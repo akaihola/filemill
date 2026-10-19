@@ -78,7 +78,7 @@ Each reported only the existing Docutils `writer_name` deprecation warning.
 The [98] server test passed on its isolated rerun in 13.75 s. The complete
 server suite was not finished after its unrelated failure.
 
-## Delivery status
+## Delivery blocker, 2026-10-17
 
 GitHub main still points at `ff7b314383e7e6df2ad3e4a91bceef8cb16bd35b`,
 which has the pre-[96] history. Local main contains the rewritten history.
@@ -87,6 +87,20 @@ reserved for the user by [96]; this task does not force-push it. The next main
 CI run cannot validate this fix until the rewritten main is published. Keep
 [93] In Progress until that delivery requirement is satisfied.
 
+## Delivery confirmed, 2026-10-19
+
+The rewritten history and the threshold fix are now on GitHub main. The
+[94] follow-up repaired the remaining browser failures and published main
+`7da2e69`. [Run 39318918168](https://github.com/akaihola/filemill/actions/runs/39318918168)
+passed lint, all 157 bundle tests, all 157 development tests, all 939 server
+tests and the Pages deployment. The six served assets match the commit.
+
+The three threshold cases were rerun 20 consecutive times on this main,
+together with the four geometry cases: 140 passes, including 60 threshold
+passes. No gate or assertion was relaxed. [93] is complete and awaits user
+acceptance. [94] records the detailed local and remote validation.
+
 [96]: 96-remove-the-tailnet-hostname-from-all-files-and-from-history.md
 [97]: 97-fix-intermittent-preview-404-after-deleting-the-selected-file.md
 [98]: 98-investigate-mobile-landscape-wide-folder-navigation-timeout.md
+[94]: 94-move-the-ci-workflows-to-action-versions-that-run-on-node-js-24.md

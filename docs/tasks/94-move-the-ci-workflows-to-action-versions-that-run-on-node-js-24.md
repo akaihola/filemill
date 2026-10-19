@@ -90,7 +90,7 @@ checkout@v7, upload-pages-artifact@v5, deploy-pages@v5).
 - Full static development suite: 116 passed, one existing Docutils deprecation
   warning, in 818.37 seconds.
 
-## Local delivery
+## Local delivery, 2026-10-17
 
 Rebased onto local main and merged locally after the workflow regression,
 quality checks and both static suites passed. The server baseline failure
@@ -121,17 +121,57 @@ and the Pages deployment before completing this issue.
   directory is still loading. Wait for the expected URL before recording it.
   Keep the column, selection and URL equality assertions.
 
-GitHub completion and deployment verification are pending this follow-up.
+The completed follow-up is recorded below.
 
 The first full local check passed both static modes (156 tests each). The
 server run had 938 passes and one failure: the new reset delayed the initial
 widening range until the settle timer. A focused immediate-range regression
 also failed with `dial() === 0` after a leftward fling. The layout reset now
 clears that timer, so the first render establishes the range immediately.
-The existing server widening test and the new regression must both pass.
+The existing server widening test and the new regression both pass.
 
 The first follow-up GitHub run also exposed the same measurement race in
 `test_geometry_changes_preserve_preview_rules[mouse]` in both static modes:
 the scroll position reached its target before the scroll event updated the
 columns. Wait for the expected fold count before measuring preview geometry.
 Keep the existing preview-width assertion.
+
+## Completed validation and deployment, 2026-10-19
+
+Fixes `318fbc0` and `7da2e69` are on main. The
+[main run 39318918168](https://github.com/akaihola/filemill/actions/runs/39318918168)
+passed lint, both static suites, the server suite and publishing:
+
+- Static bundle: 157 passed, one existing Docutils warning, 232.21 s.
+- Static development: 157 passed, one existing Docutils warning, 220.49 s.
+- Server: 939 passed, four existing Docutils warnings, 393.23 s. Combined
+  statement and branch coverage is 91%.
+- Pages: upload-pages-artifact v5 and deploy-pages v5 both passed.
+  Deployment 7184272188 names commit `7da2e6917bc3c326ff7f4fe80551028dca227f48`.
+- Every job's annotations were inspected. There are no Node.js 20 warnings.
+  The only annotations are GitHub's Ubuntu 26 runner-image migration notice.
+- Every JavaScript action's upstream manifest uses node24, including the
+  exact upload-artifact revision nested in upload-pages-artifact v5.
+
+All six published files at <https://akaihola.github.io/filemill/> returned
+HTTP 200 and matched the commit's bytes: the bundle, manifest, service worker
+and three icons. The bundle's SHA-256 is
+`ccb0c91ca5b4c11a7539f6efe0acf2524ada180420f5deb5a5df8e645d949dc3`.
+
+Local validation with Python 3.12 also passed:
+
+- Bundle: 157 passed in 219.95 s.
+- Development: 157 passed in 232.05 s.
+- Server: 939 passed in 366.59 s, with 91% coverage.
+- The seven preview-threshold and geometry cases passed 20 consecutive
+  invocations against the bundle: 140 passes, including [93]'s 60 threshold
+  cases. The full static runs exercised both modes concurrently with server
+  tests.
+- All seven pre-commit hooks, direct static-test Ruff checks and the shared
+  model checks passed. No tests were skipped and no assertions were weakened.
+
+[94] is complete and awaits user acceptance. The earlier CI access and
+history-rewrite blockers are resolved. The same green main run closes [93]'s
+delivery requirement.
+
+[93]: 93-make-main-s-ci-green-again-static-bundle-test-failing-since-06792cb.md

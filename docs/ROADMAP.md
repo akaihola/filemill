@@ -7,7 +7,8 @@ is small enough for one task in `TASKS.md`.
 ## Status index, 2026-10-19
 
 There are ten phases, 0–9. Status below starts from [102]'s audit of main
-`26a77d60` on 2026-10-18 and includes later main through `25bc4d4e`.
+`26a77d60` on 2026-10-18 and includes later main through `25bc4d4e`, plus
+[93]/[94]'s CI delivery at `7da2e69`.
 See [the audit](tasks/102-audit-the-technical-roadmap-against-main-and-draft-the-next-phase-s-is.md)
 for every step's evidence. [105] corrects edition/renderer guidance; [106]
 closes the suppression/obsolete-skip check; [103]/[104] resolve A1–A3.
@@ -47,8 +48,10 @@ step 2's layout. [105] and [107] correct step 5's current/historical claims;
 the task 2 file and editor-cursor item are already retired, with dated
 corrections in [107]. [109] corrects the remaining stale claims in
 `server/README.md` and `server/CONTRIBUTING.md` (2026-10-19). [99]/[101]
-record green local suites. [93]/[94] still need CI proof for delivered main,
-so Phase 0's delivery check stays open.
+record green local suites. [93]/[94] now record
+[green main CI and Pages deployment](https://github.com/akaihola/filemill/actions/runs/39318918168)
+at `7da2e69`, closing Phase 0's delivery check. A11's final documentation
+command audit remains open.
 
 **Goal.** Both test suites are green on `main`. Every document describes the
 code as it is. Nothing in the tree is a corpse.
@@ -105,8 +108,8 @@ Status 2026-10-19: Partly done. Steps 1–6 are implemented. [106] removes the s
 unlinked suppressions and obsolete PPTX skip identified by [102], and adds a
 Python suppression-link guard to the existing gate. Its gate has seven hooks after adding the guard.
 [CONTRIBUTING.md](../CONTRIBUTING.md#tests) describes the gate, its pins and
-what local hooks do not prove. Exact delivered main CI proof remains under
-[93]/[94].
+what local hooks do not prove. [93]/[94] record the green delivered-main run.
+Installation of local hooks and enforced branch protection remain unproven.
 
 **Goal.** A formatting or lint error cannot be committed or merged.
 
