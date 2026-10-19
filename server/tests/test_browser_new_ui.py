@@ -532,6 +532,37 @@ def test_the_markdown_preview_is_rendered_in_the_browser(page):
     assert "Readme" in page.inner_text("#preview .pv-rich h1")
 
 
+@pytest.mark.parametrize("extension", ["md", "markdown"])
+def test_markdown_comments_hide_without_changing_task_source_lines(
+    page, ui_root, extension
+):
+    source = (
+        "# Comments\n\n<!-- secret\n\n- [ ] Hidden task\n-->\n\n"
+        "- [ ] Visible <!-- inline secret -->task\n"
+    )
+    name = f"comments.{extension}"
+    document = ui_root / name
+    document.write_text(source)
+    page.open(name)
+    content = page.locator("#preview .pv-markdown")
+    content.wait_for()
+    assert "secret" not in content.inner_text()
+    assert "Hidden task" not in content.inner_text()
+    box = content.locator("input.task-list-item-checkbox:not([disabled])")
+    box.wait_for()
+    assert box.count() == 1
+    assert box.get_attribute("data-source-line") == "7"
+    box.check()
+    page.wait_for_function(
+        "!document.querySelector('#preview input.task-list-item-checkbox').disabled"
+    )
+    assert document.read_text() == source.replace("- [ ] Visible", "- [x] Visible")
+    page.locator("#pv-view").click()
+    page.locator("#preview .pv-text").wait_for()
+    assert page.locator("#preview .pv-text").text_content() == document.read_text()
+    assert not page.errors
+
+
 def test_mp4_preview_uses_a_video_control(page):
     page.open("clip.mp4")
     page.wait_for_selector("#preview video.pv-video")

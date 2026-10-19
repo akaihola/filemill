@@ -177,6 +177,8 @@ STUBS = {
     "markdown-it.js": """
 export default class MarkdownIt {
   constructor(o) { this.options = o; this.renderer = { rules: {} }; this.core = { ruler: { push: (n, f) => { this._rule = f; } } }; }
+  inline = { ruler: { before() {} } };
+  block = { ruler: { before() {} } };
   use() { return this; }
   render(src) {
     const first = src.split('\\n')[0].replace(/^#\\s*/, '');

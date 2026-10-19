@@ -144,6 +144,40 @@ async function markdown(text, node) {
          one, and a focusable heading landing in a fullscreen preview nudges
          the stage sideways for a frame. Same ids as before, nothing else. */
       .use(anchor, { tabIndex: false });
+    /* Parse comments without enabling raw HTML. Parser rules leave code and
+       escaped delimiters alone and preserve source line numbers for tasks. */
+    mdInstance.inline.ruler.before("html_inline", "comment", (state) => {
+      if (!state.src.startsWith("<!--", state.pos)) return false;
+      const end = state.src.indexOf("-->", state.pos + 4);
+      if (end < 0) return false;
+      state.pos = end + 3;
+      return true;
+    });
+    mdInstance.block.ruler.before(
+      "html_block",
+      "comment",
+      (state, start, end, silent) => {
+        if (state.sCount[start] - state.blkIndent >= 4) return false;
+        const pos = state.bMarks[start] + state.tShift[start];
+        if (!state.src.startsWith("<!--", pos)) return false;
+        if (silent) return true;
+        let line = start;
+        while (line < end) {
+          if (state.sCount[line] < state.blkIndent && !state.isEmpty(line)) {
+            break;
+          }
+          const from = line === start ? pos + 4 : state.bMarks[line];
+          const closed = state.src.slice(from, state.eMarks[line]).includes(
+            "-->",
+          );
+          line++;
+          if (closed) break;
+        }
+        state.line = line;
+        return true;
+      },
+      { alt: ["paragraph", "reference", "blockquote"] },
+    );
     const validateLink = mdInstance.validateLink;
     mdInstance.validateLink = (href) =>
       validateLink(href) &&

@@ -89,3 +89,63 @@ def test_static_raw_link_releases_previous_bytes(browser_preview):
         "async url => { try { await fetch(url); return false; } catch { return true; } }",
         old_url,
     )
+
+
+@pytest.mark.parametrize("extension", ["md", "markdown"])
+def test_markdown_comments_are_hidden_only_in_rendered_view(
+    bundle, playwright, static_origin, extension
+):
+    source = (
+        "# Comments\n\n"
+        "Before <!-- inline **secret** [[Hidden]] -->after.\n\n"
+        "Paragraph\n<!-- interrupt secret -->\nAfter block.\n\n"
+        "> <!-- quote secret\n>\n> Hidden quote\n> -->\n> Visible quote.\n\n"
+        "- item\n\n  <!-- list secret\n\n  Hidden list\n  -->\n\n  Visible item.\n\n"
+        "<!-- block secret\n\n# Hidden heading\n\n- [ ] Hidden task\n-->\n\n"
+        "Visible **text**.\n\n"
+        "`<!-- inline code -->`\n\n"
+        "```html\n<!-- fenced code -->\n```\n\n"
+        "    <!-- indented code -->\n\n"
+        "&lt;!-- escaped text --&gt;\n\n"
+        "<b>literal HTML</b>\n\n"
+        "<!-- unfinished secret\n\nHidden to end\n"
+    )
+    with playwright.chromium.launch() as browser:
+        page = browser.new_page()
+        page.goto(f"{static_origin}/static/{bundle.name}")
+        page.evaluate(VENDOR_MAP)
+        page.evaluate(
+            """async ([name, source]) => {
+              document.documentElement.dataset.filemill = 'render';
+              await mount({kind: 'directory', name: 'vault', async *entries() {
+                yield [name, {kind: 'file', name,
+                  async getFile() { return new File([source], name); }}];
+              }});
+            }""",
+            [f"comments.{extension}", source],
+        )
+        page.locator('.col[data-i="0"] .row').click()
+        content = page.locator("#preview .pv-markdown")
+        content.wait_for()
+        text = content.inner_text()
+        assert "secret" not in text
+        assert "Hidden" not in text
+        assert "Before after." in text
+        assert "Visible quote." in text
+        assert "Visible item." in text
+        assert content.locator("strong").inner_text() == "text"
+        assert content.locator("code").all_text_contents() == [
+            "<!-- inline code -->",
+            "<!-- fenced code -->\n",
+            "<!-- indented code -->\n",
+        ]
+        assert "<!-- escaped text -->" in text
+        assert "<b>literal HTML</b>" in text
+        assert content.locator("b, input").count() == 0
+        page.locator("#pv-view").click()
+        page.locator("#preview .pv-text").wait_for()
+        assert page.locator("#preview .pv-text").text_content() == source
+        assert (
+            page.locator("#pv-raw").evaluate("async a => (await fetch(a.href)).text()")
+            == source
+        )

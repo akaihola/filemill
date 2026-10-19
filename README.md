@@ -65,6 +65,10 @@ in both editions, including the server's Open Folder mode. Source shows the
 original text without changing the selection. Raw opens a browser-owned file
 in a new tab and a served file at its raw URL.
 
+Rendered Markdown hides HTML comments. Source and Raw keep them. Comments
+inside code stay visible. Other raw HTML stays escaped. See
+[ADR 0083](docs/adr/0083-hide-markdown-comments.md).
+
 Markdown text and code wrap on portrait phones. Wide Markdown tables scroll
 inside the preview, so every column stays reachable.
 

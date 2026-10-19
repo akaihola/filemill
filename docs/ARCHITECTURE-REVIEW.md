@@ -229,6 +229,9 @@ Resolved 2026-10-19 ([104], [ADR 0082]):
   reStructuredText and `.docx` lose event handlers and unsafe `href` and `src`
   values. Server-rendered reStructuredText loses unsafe `href` and `src`
   values. Both `.desktop` renderers show an unsafe URL as text.
+- Markdown comment rules hide inline and block comments without enabling raw
+  HTML ([111], [ADR 0083], 2026-10-19). Code, Source and Raw retain comment
+  text. Source line numbers still identify task checkboxes.
 - The same audit found that docutils writes `javascript:` link targets as
   given. Both reStructuredText renderers now apply the rule.
 - `SECURITY.md` names the bare-HTML trust boundary, and
@@ -565,3 +568,5 @@ A12 items can land at any time, each with a focused test.
 
 [ADR 0081]: adr/0081-authorize-server-mutations.md
 [ADR 0082]: adr/0082-previews-link-only-to-safe-protocols.md
+
+[ADR 0083]: adr/0083-hide-markdown-comments.md
