@@ -1498,6 +1498,16 @@ async def test_mount_stops_previous_fold(page):
     assert await page.locator('.col[data-i="0"] .row[title="refresh"]').is_visible()
 
 
+async def test_new_root_has_its_widening_range_immediately(page):
+    await page.set_viewport_size({"width": 390, "height": 844})
+    position = await page.evaluate("""async () => {
+      await mount(__mk(0));
+      finder.scrollTo({left: 0, behavior: 'instant'});
+      return dial();
+    }""")
+    assert position < 0
+
+
 async def test_instant_dial_move_supersedes_deferred_glide(page):
     await mount(page)
     await page.evaluate("""() => {

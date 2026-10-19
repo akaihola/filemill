@@ -16,7 +16,9 @@ where both values must be zero.
 Keep `layout.js` as the single scroll writer. Each smooth callback checks that
 its glide is still current before it writes. An instant move cancels the
 current glide. Mounting a root uses that instant move to reset the dial before
-the first render. A restored path then uses the existing layout rules.
+the first render. The reset clears the old settle timer, so the first layout
+establishes the new scrollbar range at once. A restored path then uses the
+existing layout rules.
 
 ## Consequences
 

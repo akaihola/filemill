@@ -63,7 +63,9 @@ status.
   A new root resets the dial through the layout module. Deferred smooth-scroll
   callbacks check that their glide is still current, so an old move cannot
   override a later instant move or hide a newly mounted root ([94],
-  [ADR 0084], 2026-10-19). General navigation cancellation remains A9.
+  [ADR 0084], 2026-10-19). The reset clears the old settle timer so the first
+  layout establishes the new scrollbar range. General navigation cancellation
+  remains A9.
 - **Virtual filesystems.** JSON, JSONL and CSV are browser adapters
   (`ui/adapters/vfs-json.js`, `vfs-csv.js`). Markdown and reStructuredText
   browse by their headings the same way (`vfs-doc.js`, outline in
@@ -150,7 +152,9 @@ Keep these.
   ([108], 2026-10-19).
   The [94] follow-up also waits for scrollable preview content before sending
   the key and tests delayed file reads. The server keyboard cycle waits for
-  the expected URL before recording its comparison value.
+  the expected URL before recording its comparison value. Preview geometry
+  checks wait for the fold count, since the native scroll position can change
+  before the scroll event repaints the columns.
 - Real filesystem tests without a picker: `static/tests/test_url.py` drives the real
   FSA adapter against the origin private file system.
 - In the browser, size limits and the image extension list have one home,

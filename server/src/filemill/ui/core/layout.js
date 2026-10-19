@@ -160,6 +160,12 @@ let settleTimer = 0;
 let mouseDown = false, touching = false;
 let gliding = null; // the smooth dialTo in flight; a scroll write would cut it
 let wheeling = false; // the dial took this wheel gesture from the preview
+export function resetDial() {
+  dialTo(0, false);
+  clearTimeout(settleTimer);
+  settleTimer = 0; // the new root's first layout must establish its range now
+}
+
 function scheduleSettle() {
   clearTimeout(settleTimer);
   settleTimer = setTimeout(settle, SETTLE_MS);

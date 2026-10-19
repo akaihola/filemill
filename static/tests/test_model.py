@@ -312,6 +312,9 @@ def test_geometry_changes_preserve_preview_rules(bundle, playwright, activation)
             arg=position,
             timeout=2000,
         )
+        if activation != "partial":
+            # scrollLeft changes before its scroll event updates the columns.
+            page.wait_for_function("folded === 1")
         assert page.locator(".col.focus").bounding_box()["width"] == pytest.approx(
             260 if activation == "density" else 240
         )

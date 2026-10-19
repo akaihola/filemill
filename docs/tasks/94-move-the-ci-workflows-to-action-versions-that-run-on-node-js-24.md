@@ -100,7 +100,7 @@ its GitHub CI acceptance check can be completed.
 
 ## Completion follow-up, 2026-10-19
 
-The user published the rewritten history. Main is now `a0bfd95`. Its
+The rewritten history is now published. The first main run was at `a0bfd95`. Its
 [publish run 39292689552](https://github.com/akaihola/filemill/actions/runs/39292689552)
 passed lint without Node.js 20 annotations. Both static suites failed keyboard
 scrolling and refresh; the server suite failed the parent-column URL check.
@@ -122,3 +122,16 @@ and the Pages deployment before completing this issue.
   Keep the column, selection and URL equality assertions.
 
 GitHub completion and deployment verification are pending this follow-up.
+
+The first full local check passed both static modes (156 tests each). The
+server run had 938 passes and one failure: the new reset delayed the initial
+widening range until the settle timer. A focused immediate-range regression
+also failed with `dial() === 0` after a leftward fling. The layout reset now
+clears that timer, so the first render establishes the range immediately.
+The existing server widening test and the new regression must both pass.
+
+The first follow-up GitHub run also exposed the same measurement race in
+`test_geometry_changes_preserve_preview_rules[mouse]` in both static modes:
+the scroll position reached its target before the scroll event updated the
+columns. Wait for the expected fold count before measuring preview geometry.
+Keep the existing preview-width assertion.
