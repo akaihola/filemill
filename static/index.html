@@ -4388,15 +4388,19 @@ function dialTo(x, smooth) {
       now,
     );
   }
+  const glide = smooth ? { target: x, waits: 0 } : null;
+  gliding = glide;
   if (!smooth) writeScroll(Math.round(x - base));
   else {
     // No behavior: the stylesheet decides (smooth unless reduced motion), so
     // the glide is a CSS motion, and instant where the user asked for that.
-    const go = () => finder.scrollTo({ left: Math.round(x - base) });
+    // A glide waiting for its frame starts only if nothing has replaced it.
+    const go = () => {
+      if (gliding === glide) finder.scrollTo({ left: Math.round(x - base) });
+    };
     if (written) requestAnimationFrame(go);
     else go();
   }
-  gliding = smooth ? { target: x, waits: 0 } : null;
   scheduleSettle();
 }
 
@@ -4513,6 +4517,10 @@ function layout(keepScroll) {
   const rest = resting ? restingPlace(target, position, keepScroll) : target;
   if (rest !== target) {
     dialTo(rest, true);
+  } else if (resting && gliding && Math.abs(gliding.target - rest) > 0.5) {
+    // Already at rest, but an earlier glide, queued or not yet moving, would
+    // carry the dial off it: a mount right after a refresh folded the root.
+    dialTo(rest, false);
   } else if (!gliding && !settleTimer) {
     // The same place on a new geometry: refit the range to it now, unless a
     // scroll is under way — settling will, and a fling must not re-base early.

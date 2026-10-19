@@ -2819,6 +2819,38 @@ async def test_refresh(page):
     ), json.dumps(st)
 
 
+# A refresh can end on an instant dial write and a glide towards the resting
+# place it computed, the glide queued for the next frame or started but not yet
+# moved. The new root's resting place is where the dial already sits, so a
+# mount in that window issued no scroll of its own, the old glide landed, and
+# the focused root folded into a spine: test_refresh's next click then waited
+# 30 s on a hidden row (CI run 39292689552).
+GLIDES = {
+    "queued": "dialTo(0, false); dialTo(fold, true); return mount(__mk(0));",
+    "started": """dialTo(0, false);
+      return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => {
+        dialTo(fold, true); r(mount(__mk(0))); })));""",
+}
+
+
+@pytest.mark.parametrize("glide", list(GLIDES))
+async def test_mount_stops_a_glide_that_would_fold_the_root(page, glide):
+    pg = page
+    await mount(pg)
+    await pg.evaluate(
+        "body => new Function('fold', body)(Math.round(foldUnit() * range()))",
+        GLIDES[glide],
+    )
+    await pg.wait_for_function("path.length === 1 && colCache.get(path[0])")
+    await scroll_settled(pg)
+    st = await pg.evaluate(
+        "({folded, dial: dial(), cls: document.querySelector('.col[data-i=\"0\"]').className})"
+    )
+    assert st["folded"] == 0 and "spine" not in st["cls"], json.dumps(st)
+    await pg.click('.col[data-i="0"] .row:has-text("refresh")')
+    await pg.wait_for_function("path[1]?.name === 'refresh'")
+
+
 async def test_sort_options(page):
     pg = page
     # The `sorting` folder is built so that every ordering below disagrees
