@@ -60,6 +60,10 @@ status.
   Native fullscreen and its layout fallback give the preview the gesture
   immediately, before the wheel latch is checked, because the preview already
   fills the screen ([78] independent-review fix, 2026-10-11).
+  A wheel gesture keeps the axis it took in its first 6 px. Sideways drift
+  in a vertical swipe does not turn the dial. While the dial takes a sideways
+  swipe, its vertical drift does not scroll the document ([ADR 0084], [110],
+  2026-10-19).
 - **Virtual filesystems.** JSON, JSONL and CSV are browser adapters
   (`ui/adapters/vfs-json.js`, `vfs-csv.js`). Markdown and reStructuredText
   browse by their headings the same way (`vfs-doc.js`, outline in
@@ -570,3 +574,4 @@ A12 items can land at any time, each with a focused test.
 [ADR 0082]: adr/0082-previews-link-only-to-safe-protocols.md
 
 [ADR 0083]: adr/0083-hide-markdown-comments.md
+[ADR 0084]: adr/0084-a-wheel-gesture-keeps-the-axis-it-started-on.md

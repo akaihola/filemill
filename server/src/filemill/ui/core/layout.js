@@ -55,6 +55,7 @@ import {
 import { paintTrail } from "./trail.js";
 
 const SETTLE_MS = 180; // longer than the gaps between a fling's wheel events
+const AXIS_SLOP = 6; // px a wheel gesture travels before it takes an axis
 
 export const stripSpan = (k) => columnSpan(widths, k, GUTTER(), SPINE());
 export const foldUnit = () => foldStep(path.length);
@@ -157,6 +158,8 @@ let settleTimer = 0;
 let mouseDown = false, touching = false;
 let gliding = null; // the smooth dialTo in flight; a scroll write would cut it
 let wheeling = false; // the dial took this wheel gesture from the preview
+let wheelAxis = null; // "x" or "y": the axis this wheel gesture started on
+let travelX = 0, travelY = 0; // how far it went before it took that axis
 function scheduleSettle() {
   clearTimeout(settleTimer);
   settleTimer = setTimeout(settle, SETTLE_MS);
@@ -164,6 +167,8 @@ function scheduleSettle() {
 function settle() {
   settleTimer = 0;
   wheeling = false; // the gesture is over; the next may go to the preview
+  wheelAxis = null; // and may go along either axis
+  travelX = travelY = 0;
   // A held finger or a scrollbar drag keeps its range until it lets go.
   if (mouseDown || touching) return;
   // A glide on a busy machine may not have started yet; wait for it.
@@ -376,6 +381,29 @@ function previewWheel(e) {
   return wheeling;
 }
 
+/* The innermost scroller under the wheel that can still move along axis in
+   the direction of delta. #finder, the dial, is the last one, except in
+   fullscreen: the preview fills the screen there, and the dial behind it
+   must not turn. */
+function scrollerAlong(el, axis, delta) {
+  const [size, client, offset, overflow] = axis === "x"
+    ? ["scrollWidth", "clientWidth", "scrollLeft", "overflowX"]
+    : ["scrollHeight", "clientHeight", "scrollTop", "overflowY"];
+  const last = (pvFullscreen && el.closest?.("#preview")) || finder;
+  for (;; el = el.parentElement) {
+    // More than a pixel: a fractional line height overflows by one.
+    const room = delta > 0 ? el[size] - el[client] - el[offset] : el[offset];
+    if (room > 1 && /auto|scroll/.test(getComputedStyle(el)[overflow])) {
+      return el;
+    }
+    if (el === last) return null;
+  }
+}
+
+// deltaMode: 0 pixels, 1 lines, 2 pages
+const wheelPixels = (e, delta, page) =>
+  delta * (e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? page : 1);
+
 export function initLayout(render) {
   finder.addEventListener("scroll", () => {
     applyScroll();
@@ -387,16 +415,40 @@ export function initLayout(render) {
   finder.addEventListener("wheel", (e) => {
     gliding = null; // the browser drops a glide on user input
     scheduleSettle();
-    if (!e.deltaX || Math.abs(e.deltaX) < Math.abs(e.deltaY)) return;
-    if (!previewWheel(e)) return;
+    if (e.ctrlKey) return; // a pinch or Ctrl+wheel zooms; it is no scroll
+    /* A gesture keeps the axis it started on ([110], ADR 0084): fingers
+       scrolling a document drift sideways, and that must not turn the dial.
+       The axis is the way the gesture went further in its first AXIS_SLOP
+       pixels. Until then its events go nowhere: the browser would latch
+       them to whichever scroller can take any part of the first one. */
+    const { deltaX: dx, deltaY: dy } = e;
+    if (!dx && !dy) return;
+    if (!wheelAxis) {
+      travelX += Math.abs(wheelPixels(e, dx, finder.clientWidth));
+      travelY += Math.abs(wheelPixels(e, dy, finder.clientHeight));
+      if (Math.max(travelX, travelY) < AXIS_SLOP && e.cancelable) {
+        e.preventDefault();
+        return;
+      }
+      wheelAxis = travelX > travelY ? "x" : "y";
+    }
+    const x = wheelAxis === "x";
+    if (x && e.cancelable && previewWheel(e)) {
+      e.preventDefault();
+      const left = wheelPixels(e, dx, finder.clientWidth);
+      finder.scrollBy({ left, behavior: "instant" });
+      return;
+    }
+    /* Along its axis the browser scrolls the event. Drift across it is
+       dropped by scrolling the axis by hand, unless the browser has latched
+       a scroller and no longer lets the event be cancelled. */
+    if (!(x ? dy : dx) || !e.cancelable) return;
     e.preventDefault();
-    // deltaMode: 0 pixels, 1 lines, 2 pages
-    const px = e.deltaMode === 1
-      ? 40
-      : e.deltaMode === 2
-      ? finder.clientWidth
-      : 1;
-    finder.scrollBy({ left: e.deltaX * px, behavior: "instant" });
+    const delta = x ? dx : dy;
+    const el = delta && scrollerAlong(e.target, wheelAxis, delta);
+    if (!el) return;
+    const px = wheelPixels(e, delta, x ? el.clientWidth : el.clientHeight);
+    el.scrollBy({ [x ? "left" : "top"]: px, behavior: "instant" });
   });
   finder.addEventListener("touchmove", () => {
     gliding = null;

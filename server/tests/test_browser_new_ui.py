@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import itertools
 import json
 import random
 import shutil
@@ -1461,8 +1462,9 @@ def test_fullscreen_releases_a_latched_preview_wheel(page):
             throw new Error('Fullscreen unavailable');
         };
         const pre = document.querySelector('#preview .pv-markdown pre');
+        // Past AXIS_SLOP ([110]), so the first wheel fixes the gesture's axis.
         const wheel = () => new WheelEvent('wheel', {
-            deltaX: 1, bubbles: true, cancelable: true,
+            deltaX: 10, bubbles: true, cancelable: true,
         });
         const first = wheel();
         pre.dispatchEvent(first);
@@ -1476,6 +1478,126 @@ def test_fullscreen_releases_a_latched_preview_wheel(page):
     assert result["claimed"]
     assert not result["retained"]
     assert result["after"] == result["before"]
+
+
+def _swipe(page, selector: str, deltas) -> list[float]:
+    """One touchpad gesture over selector; returns the ms between its wheels.
+
+    A gap past SETTLE_MS (180 ms) ends the gesture early, so the assertions
+    after a swipe report the gaps.
+    """
+    box = page.locator(selector).bounding_box()
+    page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+    page.evaluate("""() => {
+        if (!window.__wheels) addEventListener('wheel',
+            e => __wheels.push(e.timeStamp), {capture: true, passive: true});
+        window.__wheels = [];
+    }""")
+    for dx, dy in deltas:
+        page.mouse.wheel(dx, dy)
+    stamps = page.evaluate("__wheels")
+    assert len(stamps) == len(deltas)
+    return [b - a for a, b in itertools.pairwise(stamps)]
+
+
+def test_a_vertical_swipe_over_the_preview_ignores_sideways_drift(page):
+    """[110] A gesture keeps the axis it started on.
+
+    Fingers scrolling a document up and down drift sideways now and then;
+    that drift must not turn the dial. Neither may a fresh downward swipe at
+    the end of the document, which the browser alone would hand to the
+    finder because the document cannot scroll further down.
+    """
+    page.open("code/long.py")
+    body = page.locator("#preview .pv-body")
+    page.wait_for_selector("#preview .pv-text .hl-kw", timeout=15000)
+    page.evaluate("dialTo(0)")
+    assert _dial_settled(page) == 0
+    assert body.evaluate("e => e.scrollHeight > e.clientHeight + 200")
+
+    gaps = _swipe(page, "#preview .pv-body", [(0, 40), (6, 3), (4, 30), (0, 40)])
+    page.wait_for_function("document.querySelector('#preview .pv-body').scrollTop > 0")
+    assert _dial_settled(page) == 0, gaps
+
+    body.evaluate("e => { e.scrollTop = e.scrollHeight; }")
+    _dial_settled(page)
+    gaps = _swipe(page, "#preview .pv-body", [(3, 40), (0, 40), (5, 2)])
+    assert _dial_settled(page) == 0, gaps
+
+
+def test_a_sideways_swipe_over_the_preview_ignores_vertical_drift(page, ui_root):
+    """[110] The dial takes the whole sideways gesture; the document stays put.
+
+    Each wheel here moves the dial and lays the preview out again, so the
+    document is light: re-wrapping long.py on a busy machine would hold the
+    next wheel past SETTLE_MS and split the swipe.
+    """
+    paragraphs = "".join(f"Paragraph {n}.\n\n" for n in range(1, 121))
+    (ui_root / "tall.md").write_text("# Tall\n\n" + paragraphs)
+    page.open("tall.md")
+    body = page.locator("#preview .pv-body")
+    page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
+    page.evaluate("dialTo(0)")
+    assert _dial_settled(page) == 0
+    assert body.evaluate("e => e.scrollHeight > e.clientHeight + 200")
+
+    gaps = _swipe(
+        page, "#preview .pv-body", [(40, 0), (30, 4), (3, 6), (0, 20), (20, 0)]
+    )
+    assert abs(_dial_settled(page) - 93) <= 1, gaps
+    assert body.evaluate("e => e.scrollTop") == 0, gaps
+
+
+def test_a_swipe_takes_its_axis_after_a_few_pixels(page):
+    """[110] A noisy start does not hand a vertical swipe to the dial.
+
+    The first events of a swipe are small; one that happens to lean sideways
+    must not fix the axis for the whole gesture.
+    """
+    page.open("code/long.py")
+    page.wait_for_selector("#preview .pv-text .hl-kw", timeout=15000)
+    page.evaluate("dialTo(0)")
+    assert _dial_settled(page) == 0
+
+    gaps = _swipe(page, "#preview .pv-body", [(1, 0), (2, 1), (0, 40), (0, 40)])
+    page.wait_for_function("document.querySelector('#preview .pv-body').scrollTop > 0")
+    assert _dial_settled(page) == 0, gaps
+
+
+def test_a_pinch_over_the_preview_is_left_to_the_browser(page):
+    """[110] Ctrl+wheel zooms; neither the dial nor the axis lock takes it."""
+    page.open("wide.md")
+    page.wait_for_selector("#preview .pv-markdown pre")
+    page.evaluate("dialTo(0)")
+    assert _dial_settled(page) == 0
+    result = page.evaluate("""() => {
+        const pre = document.querySelector('#preview .pv-markdown pre');
+        const pinch = new WheelEvent('wheel', {
+            deltaX: 20, deltaY: 3, ctrlKey: true, bubbles: true, cancelable: true,
+        });
+        pre.dispatchEvent(pinch);
+        return {prevented: pinch.defaultPrevented, dial: dial()};
+    }""")
+    assert result == {"prevented": False, "dial": 0}
+
+
+def test_a_vertical_swipe_over_a_column_ignores_sideways_drift(page):
+    """[110] The finder holds the lock, so a column list keeps its axis too."""
+    page.open("big.jsonl/line 2")
+    column = '.col[data-i="1"] .col-body'
+    body = page.locator(column)
+    page.evaluate("dialTo(0)")
+    assert _dial_settled(page) == 0
+    assert body.evaluate("e => e.scrollHeight > e.clientHeight + 200")
+
+    gaps = _swipe(page, column, [(0, 40), (6, 3), (4, 30), (0, 40)])
+    page.wait_for_function(f"document.querySelector('{column}').scrollTop > 0")
+    assert _dial_settled(page) == 0, gaps
+
+    body.evaluate("e => { e.scrollTop = e.scrollHeight; }")
+    _dial_settled(page)
+    gaps = _swipe(page, column, [(3, 40), (0, 40), (5, 2)])
+    assert _dial_settled(page) == 0, gaps
 
 
 def test_arrow_right_from_a_widened_stop_steps_back_to_natural(page):
