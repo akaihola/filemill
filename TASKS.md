@@ -17,10 +17,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [112] Section links and heading fragments don't open the heading
-  <!-- hai:{"id":"simple-7c134768-10d6-422d-87d7-0354b53e8de5","labels":["steward"],"createdAt":"2026-10-19T16:06:43.116Z","updatedAt":"2026-10-19T17:37:09.259Z"} -->
-
 ## In Progress
+
+- [~] [112] Section links and heading fragments don't open the heading
+      <!-- hai:{"id":"simple-7c134768-10d6-422d-87d7-0354b53e8de5","labels":["steward"],"createdAt":"2026-10-19T16:06:43.116Z","updatedAt":"2026-10-19T18:43:56.793Z"} -->
 
 - [~] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
@@ -37,8 +37,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] [110] Confusing diagonal scroll
       <!-- hai:{"id":"simple-03b8dad8-ef8f-463e-a43d-6e54a152efdd","priority":"none","labels":[],"createdAt":"2026-10-19T15:11:32.244Z","updatedAt":"2026-10-19T18:14:16.303Z"} -->
 
-- [ ] [111] Renders HTML comments in Markdown documents
-      <!-- hai:{"id":"simple-6a0e8d6a-4429-4924-bff3-b5437909a311","priority":"none","labels":[],"createdAt":"2026-10-19T15:48:38.147Z","updatedAt":"2026-10-19T16:59:40.375Z"} -->
+- [x] [111] Renders HTML comments in Markdown documents
+      <!-- hai:{"id":"simple-6a0e8d6a-4429-4924-bff3-b5437909a311","priority":"none","labels":[],"createdAt":"2026-10-19T15:48:38.147Z","updatedAt":"2026-10-19T18:18:03.621Z"} -->
 
 - [x] [109] Check filemill's docs and ADR statuses against the code, and fix what
   disagrees
