@@ -60,5 +60,19 @@ on the loaded host and split the swipe.
 `test_fullscreen_releases_a_latched_preview_wheel` wheels 10 px instead of
 1 px, past the slop.
 
+Final run on the loaded development host (load average 8–10 on four
+threads): the server suite passed 941 tests and the static suites passed
+151 with `--bundle` and 150 with `--dev`. Two failures did not involve the
+wheel listener:
+
+- `test_docs.py::test_documentation_uses_portable_development_examples`
+  cannot read the sandbox-masked `.claude/loop.md`. All 20 `test_docs.py`
+  tests pass outside the sandbox.
+- `test_keyboard_horizontal[normal]` in `--dev` timed out waiting for
+  PageDown to scroll the preview. Both of its cases passed in three reruns.
+
+The model checks, `deno fmt --check`, `deno lint`, ruff, ruff format,
+mypy, the suppression-link guard and `build-index.py --check` pass.
+
 [ADR 0076]: ../adr/0076-a-sideways-wheel-over-the-preview-turns-the-dial-first.md
 [ADR 0084]: ../adr/0084-a-wheel-gesture-keeps-the-axis-it-started-on.md
