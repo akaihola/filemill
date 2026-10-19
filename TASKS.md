@@ -26,8 +26,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Completed / Accepted
 
-- [ ] [112] Section links and heading fragments don't open the heading
-      <!-- hai:{"id":"simple-7c134768-10d6-422d-87d7-0354b53e8de5","labels":["steward"],"createdAt":"2026-10-19T16:06:43.116Z","updatedAt":"2026-10-19T19:43:57.458Z"} -->
+- [x] [112] Section links and heading fragments don't open the heading
+      <!-- hai:{"id":"simple-7c134768-10d6-422d-87d7-0354b53e8de5","labels":["steward"],"createdAt":"2026-10-19T16:06:43.116Z","updatedAt":"2026-10-19T20:47:32.805Z"} -->
 
 - [x] [93] Make main's CI green again: static bundle test failing since 06792cb
     - Depends on: [96]
