@@ -60,6 +60,10 @@ status.
   Native fullscreen and its layout fallback give the preview the gesture
   immediately, before the wheel latch is checked, because the preview already
   fills the screen ([78] independent-review fix, 2026-10-11).
+  A new root resets the dial through the layout module. Deferred smooth-scroll
+  callbacks check that their glide is still current, so an old move cannot
+  override a later instant move or hide a newly mounted root ([94],
+  [ADR 0084], 2026-10-19). General navigation cancellation remains A9.
 - **Virtual filesystems.** JSON, JSONL and CSV are browser adapters
   (`ui/adapters/vfs-json.js`, `vfs-csv.js`). Markdown and reStructuredText
   browse by their headings the same way (`vfs-doc.js`, outline in
@@ -144,6 +148,9 @@ Keep these.
   scroll key. It covers normal writes and writes deferred across animation
   frames, with the same navigation, focus and directional assertions
   ([108], 2026-10-19).
+  The [94] follow-up also waits for scrollable preview content before sending
+  the key and tests delayed file reads. The server keyboard cycle waits for
+  the expected URL before recording its comparison value.
 - Real filesystem tests without a picker: `static/tests/test_url.py` drives the real
   FSA adapter against the origin private file system.
 - In the browser, size limits and the image extension list have one home,
@@ -570,3 +577,4 @@ A12 items can land at any time, each with a focused test.
 [ADR 0082]: adr/0082-previews-link-only-to-safe-protocols.md
 
 [ADR 0083]: adr/0083-hide-markdown-comments.md
+[ADR 0084]: adr/0084-new-fold-moves-cancel-older-glides.md

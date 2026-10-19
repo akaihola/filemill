@@ -470,6 +470,17 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
     without closing anything — which is exactly what this asserts.
     """
     with _ui_page(live_server) as page:
+        page.evaluate("""() => {
+          const ensureLoaded = FS.ensureLoaded.bind(FS);
+          FS.ensureLoaded = async node => {
+            if (node.name === 'docs' && node.kids === null) {
+              for (let i = 0; i < 12; i++) {
+                await new Promise(requestAnimationFrame);
+              }
+            }
+            return ensureLoaded(node);
+          };
+        }""")
         page.keyboard.press("ArrowDown")  # commit the first row: my-knowledge
         page.wait_for_function("sel[0] === 'my-knowledge'")
         assert page.evaluate("sel[0]") == "my-knowledge"
@@ -480,13 +491,17 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
         assert page.evaluate("focusCol") == 1
         assert page.evaluate("sel[1]") == "docs"
 
-        folder_url = page.url
+        folder_url = f"{live_server}/my-knowledge/docs"
+        page.wait_for_function("path[2]?.name === 'docs' && path[2]?.kids")
+        page.wait_for_url(folder_url)
+        assert page.url == folder_url
         page.keyboard.press("ArrowLeft")
         page.keyboard.press("ArrowRight")
         page.wait_for_function("focusCol === 1 && sel[1] === 'docs'")
         assert page.evaluate("focusCol") == 1
         assert page.evaluate("sel[1]") == "docs"
         assert page.locator('.col[data-i="1"] .row.sel .label').inner_text() == "docs"
+        page.wait_for_url(folder_url)
         assert page.url == folder_url
 
         page.keyboard.press("ArrowDown")  # docs → AGENTS.md, previewed as a file

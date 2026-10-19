@@ -140,15 +140,18 @@ export function dialTo(x, smooth) {
       now,
     );
   }
+  const glide = smooth ? { target: x, waits: 0 } : null;
+  gliding = glide;
   if (!smooth) writeScroll(Math.round(x - base));
   else {
     // No behavior: the stylesheet decides (smooth unless reduced motion), so
     // the glide is a CSS motion, and instant where the user asked for that.
-    const go = () => finder.scrollTo({ left: Math.round(x - base) });
+    const go = () => {
+      if (gliding === glide) finder.scrollTo({ left: Math.round(x - base) });
+    };
     if (written) requestAnimationFrame(go);
     else go();
   }
-  gliding = smooth ? { target: x, waits: 0 } : null;
   scheduleSettle();
 }
 

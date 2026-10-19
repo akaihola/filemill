@@ -56,6 +56,9 @@ on the current item. Use the arrow keys to choose an action, Enter to run it,
 and Escape to close the menu. Delete asks for confirmation before it removes
 the item and refreshes its folder. Deleting a folder also removes its contents.
 
+Opening a folder resets the fold dial, so its root rows stay visible even if
+the previous folder was still scrolling.
+
 The preview toolbar has a Fullscreen button. The preview stays in fullscreen
 when the browser resizes. Use Exit fullscreen or the browser fullscreen exit
 control to return to the file browser.

@@ -1379,9 +1379,21 @@ async def test_keyboard_vertical(page):
     assert (await pg.evaluate("sel[0]")) == "big", "Home jumps to the first row"
 
 
-@pytest.mark.parametrize("deferred_scroll", [False, True], ids=["normal", "deferred"])
-async def test_keyboard_horizontal(page, deferred_scroll):
+@pytest.mark.parametrize("deferred", ["none", "scroll", "preview"])
+async def test_keyboard_horizontal(page, deferred):
     pg = page
+    if deferred == "preview":
+        await pg.evaluate("""() => {
+          const blob = FS.blob.bind(FS);
+          FS.blob = async node => {
+            if (node.name === 'leaf.txt') {
+              for (let i = 0; i < 12; i++) {
+                await new Promise(requestAnimationFrame);
+              }
+            }
+            return blob(node);
+          };
+        }""")
     await mount(pg)
     await pg.click('.col[data-i="0"] .row:has-text("deep")')
     await pg.wait_for_function("sel[0] === 'deep' && path[1]?.kids")
@@ -1429,7 +1441,12 @@ async def test_keyboard_horizontal(page, deferred_scroll):
     ), json.dumps(st)
     await pg.keyboard.press("ArrowRight")
     await pg.wait_for_function("document.activeElement?.id === 'preview'")
-    if deferred_scroll:
+    await pg.wait_for_function("""() => {
+      const body = document.querySelector('#preview .pv-body');
+      return body?.querySelector('.pv-text')?.textContent.includes('scrollable line') &&
+        body.scrollHeight > body.clientHeight;
+    }""")
+    if deferred == "scroll":
         # Model a scroll write that lands after the keyboard round trip.
         await pg.evaluate("""() => {
           const body = document.querySelector('#preview .pv-body');
@@ -1468,6 +1485,29 @@ async def test_keyboard_horizontal(page, deferred_scroll):
     )
     up = await pg.evaluate("document.querySelector('#preview .pv-body').scrollTop")
     assert up < down, f"{down} -> {up}"
+
+
+async def test_mount_stops_previous_fold(page):
+    await mount(page)
+    await page.evaluate("""async () => {
+      dialTo(range(), true);
+      await mount(__mk(0));
+    }""")
+    await scroll_settled(page)
+    assert await page.evaluate("folded") == 0
+    assert await page.locator('.col[data-i="0"] .row[title="refresh"]').is_visible()
+
+
+async def test_instant_dial_move_supersedes_deferred_glide(page):
+    await mount(page)
+    await page.evaluate("""() => {
+      dialTo(range(), false);
+      dialTo(range() / 2, true);
+      dialTo(0, false);
+    }""")
+    await scroll_settled(page)
+    assert await page.evaluate("dial()") == 0
+    assert await page.evaluate("folded") == 0
 
 
 async def test_folding_dial(page):

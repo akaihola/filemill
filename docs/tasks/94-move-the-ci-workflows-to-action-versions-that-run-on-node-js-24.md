@@ -97,3 +97,28 @@ quality checks and both static suites passed. The server baseline failure
 above remains outside this issue. No GitHub ref was updated, no CI run was
 started and no deployment was performed. Issue [94] remains In Progress until
 its GitHub CI acceptance check can be completed.
+
+## Completion follow-up, 2026-10-19
+
+The user published the rewritten history. Main is now `a0bfd95`. Its
+[publish run 39292689552](https://github.com/akaihola/filemill/actions/runs/39292689552)
+passed lint without Node.js 20 annotations. Both static suites failed keyboard
+scrolling and refresh; the server suite failed the parent-column URL check.
+Publishing was skipped.
+
+The follow-up plan is to reproduce each failure, add focused regressions,
+repair the causes, run the quality gates, then push and verify all CI jobs
+and the Pages deployment before completing this issue.
+
+- Delaying the leaf preview by twelve animation frames reproduced the
+  PageDown timeout. Wait for the actual scrollable content before the key.
+- The refresh failure reproduced locally. Mounting during a fold left the
+  root hidden. A focused mount test failed with `folded === 1`; another test
+  showed a deferred glide overriding a later instant move (`dial() === 125`).
+  Keep the scroll writer in layout, cancel superseded callbacks and reset the
+  dial on root mount. See [ADR 0084](../adr/0084-new-fold-moves-cancel-older-glides.md).
+- The server test can capture the previous folder URL while the selected
+  directory is still loading. Wait for the expected URL before recording it.
+  Keep the column, selection and URL equality assertions.
+
+GitHub completion and deployment verification are pending this follow-up.
