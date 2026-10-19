@@ -26,13 +26,13 @@ Rules for TASKS.md usage are at the bottom of the file.
   disagrees
       <!-- hai:{"id":"simple-b148aec7-49a8-44df-88c0-13a18617b1d3","labels":["steward"],"createdAt":"2026-10-19T08:08:26.389Z","updatedAt":"2026-10-19T08:41:04.372Z"} -->
 
-- [ ] [107] Date superseded roadmap and ADR claims (roadmap Phase 0)
+- [x] [107] Date superseded roadmap and ADR claims (roadmap Phase 0)
     - Depends on: [105]
 
-      <!-- hai:{"id":"simple-c54d6a4c-5bfc-417e-bb9c-250b2b875076","labels":["steward"],"createdAt":"2026-10-18T20:07:24.425Z","updatedAt":"2026-10-18T22:56:16.589Z"} -->
+      <!-- hai:{"id":"simple-c54d6a4c-5bfc-417e-bb9c-250b2b875076","labels":["steward"],"createdAt":"2026-10-18T20:07:24.425Z","updatedAt":"2026-10-19T09:55:42.505Z"} -->
 
-- [ ] [108] Wait for PageDown scrolling in the static keyboard test
-      <!-- hai:{"id":"simple-e9360e81-e2ed-419a-8061-7e3136ecbb92","createdAt":"2026-10-18T21:43:30.456Z","updatedAt":"2026-10-18T22:46:46.154Z"} -->
+- [x] [108] Wait for PageDown scrolling in the static keyboard test
+      <!-- hai:{"id":"simple-e9360e81-e2ed-419a-8061-7e3136ecbb92","createdAt":"2026-10-18T21:43:30.456Z","updatedAt":"2026-10-19T09:55:41.941Z"} -->
 
 - [ ] [104] Make preview content inert: wikilink text and DOCX output (A2)
       <!-- hai:{"id":"simple-fdfa185d-6944-4b3b-acc4-f7b3b2114168","labels":["steward"],"createdAt":"2026-10-18T20:07:21.877Z","updatedAt":"2026-10-18T22:45:44.521Z"} -->
@@ -58,9 +58,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
       <!-- hai:{"id":"simple-4062970c-4d67-4774-b6d9-969613643e7c","labels":["steward"],"createdAt":"2026-10-18T02:12:21.766Z","updatedAt":"2026-10-18T19:44:21.344Z"} -->
 
-- [ ] [101] Make the browser keyboard tests wait for each opened folder before the
+- [x] [101] Make the browser keyboard tests wait for each opened folder before the
   next key
-      <!-- hai:{"id":"simple-52f039e0-e22b-4c63-95c2-21d6afb06983","labels":["steward"],"createdAt":"2026-10-18T02:12:12.913Z","updatedAt":"2026-10-18T05:27:58.144Z"} -->
+      <!-- hai:{"id":"simple-52f039e0-e22b-4c63-95c2-21d6afb06983","labels":["steward"],"createdAt":"2026-10-18T02:12:12.913Z","updatedAt":"2026-10-19T09:55:41.397Z"} -->
 
 - [ ] [100] Check the 19 newest review-queue items against the acceptance policy
     - Depends on: [99]
