@@ -14,10 +14,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [110] Confusing diagonal scroll
-  <!-- hai:{"id":"simple-03b8dad8-ef8f-463e-a43d-6e54a152efdd","priority":"none","labels":[],"createdAt":"2026-10-19T15:11:32.244Z","updatedAt":"2026-10-19T16:35:08.992Z"} -->
-
 ## In Progress
+
+- [~] [110] Confusing diagonal scroll
+      <!-- hai:{"id":"simple-03b8dad8-ef8f-463e-a43d-6e54a152efdd","priority":"none","labels":[],"createdAt":"2026-10-19T15:11:32.244Z","updatedAt":"2026-10-19T16:35:23.131Z"} -->
 
 - [~] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
