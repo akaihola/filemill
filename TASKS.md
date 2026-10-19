@@ -16,15 +16,15 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [113] Fix the five tests that failed in GitHub CI after the history push
-      <!-- hai:{"id":"simple-633e3e56-0c80-48dc-940c-9c4d23e9ebb8","labels":["steward"],"createdAt":"2026-10-19T17:55:35.768Z","updatedAt":"2026-10-19T20:48:00.718Z"} -->
-
 - [~] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
 
       <!-- hai:{"id":"simple-28def403-6427-4ff6-aea8-3643a19d1a61","labels":["steward"],"createdAt":"2026-10-16T16:48:54.367Z","updatedAt":"2026-10-17T08:00:57.885Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [113] Fix the five tests that failed in GitHub CI after the history push
+      <!-- hai:{"id":"simple-633e3e56-0c80-48dc-940c-9c4d23e9ebb8","labels":["steward"],"createdAt":"2026-10-19T17:55:35.768Z","updatedAt":"2026-10-19T22:13:46.825Z"} -->
 
 - [x] [112] Section links and heading fragments don't open the heading
       <!-- hai:{"id":"simple-7c134768-10d6-422d-87d7-0354b53e8de5","labels":["steward"],"createdAt":"2026-10-19T16:06:43.116Z","updatedAt":"2026-10-19T20:47:32.805Z"} -->
