@@ -11,10 +11,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [114] Sandbox HTML previews of archive members as SECURITY.md promises
-  <!-- hai:{"id":"simple-19e1170a-8c5b-4b30-935e-64b054b39407","labels":["steward","security"],"createdAt":"2026-10-19T17:58:36.228Z","updatedAt":"2026-10-19T23:55:10.610Z"} -->
-
 ## In Progress
+
+- [~] [114] Sandbox HTML previews of archive members as SECURITY.md promises
+      <!-- hai:{"id":"simple-19e1170a-8c5b-4b30-935e-64b054b39407","labels":["steward","security"],"createdAt":"2026-10-19T17:58:36.228Z","updatedAt":"2026-10-19T23:55:21.005Z"} -->
 
 - [~] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
