@@ -46,10 +46,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [117] Show an expandable server-offline indicator with cached content
-      <!-- hai:{"id":"simple-2815036e-03d8-491d-a901-3794c92f18de","labels":["steward"],"createdAt":"2026-10-20T07:12:40.437Z","updatedAt":"2026-10-20T10:05:01.699Z"} -->
-
 ## Completed / Accepted
+
+- [ ] [117] Show an expandable server-offline indicator with cached content
+      <!-- hai:{"id":"simple-2815036e-03d8-491d-a901-3794c92f18de","labels":["steward"],"createdAt":"2026-10-20T07:12:40.437Z","updatedAt":"2026-10-20T12:30:03.578Z"} -->
 
 - [ ] [118] Hide the ineffective server preview switch from docs question 3
       <!-- hai:{"id":"simple-1161fe2f-92b3-4ea4-99a6-9b511726259b","labels":["steward"],"createdAt":"2026-10-20T07:12:41.306Z","updatedAt":"2026-10-20T11:15:39.997Z"} -->
