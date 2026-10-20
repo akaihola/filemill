@@ -37,3 +37,21 @@ Steward issue, 2026-10-20 10:40, from part Q2 of the steward's decision 30, "The
   authorization first, as ADR 0081 requires.
 - ADR 0087 records the rule. `server/README.md`, `SECURITY.md`, `CHANGELOG.md`
   and `docs/ARCHITECTURE-REVIEW.md` describe it.
+
+## Result, 2026-10-20
+
+Done as planned in a582448 and 39353c9, with
+[ADR 0087](../adr/0087-a-public-instance-never-lists-or-serves-hidden-paths.md).
+An adversarial review found four gaps before merge, all fixed with tests: a
+leading space before a hidden name, a bookmark named like the root, an
+`index.html` whose answer revealed whether a hidden target existed, and a
+root below a bookmark's hidden folder losing its own files. The ADR records
+the remaining over-refusals.
+
+Validation: `server/tests/test_public_mode.py` (164 tests) covers each file
+route with `.git/config`, `.claude/settings.json` and `a/.b/c`, symlinks in
+both directions, encoded and whitespace forms, archive members and private
+mode. The full suite passed, 1307 tests; after the rebase the focused files
+passed, 549 tests. A browser check of a `--public` server with
+`?hidden=show` showed no hidden rows. No push, deploy or service restart; the
+nixos-config issue turns the option on for the public site.

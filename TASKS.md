@@ -55,10 +55,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [128] Never list or serve hidden files on a public instance
-      <!-- hai:{"id":"simple-9104b865-c208-4bfe-bc8c-92ac37a361d3","labels":["steward"],"createdAt":"2026-10-20T07:26:36.286Z","updatedAt":"2026-10-20T07:41:00.947Z"} -->
-
 ## Completed / Accepted
+
+- [ ] [128] Never list or serve hidden files on a public instance
+      <!-- hai:{"id":"simple-9104b865-c208-4bfe-bc8c-92ac37a361d3","labels":["steward"],"createdAt":"2026-10-20T07:26:36.286Z","updatedAt":"2026-10-20T08:46:16.991Z"} -->
 
 - [ ] [115] Propose plain answers to the docs check's twelve remaining questions
       <!-- hai:{"id":"simple-e25533eb-a765-42e3-8e41-b1e7e16d1b0e","labels":["steward","review"],"createdAt":"2026-10-19T17:58:46.533Z","updatedAt":"2026-10-20T07:16:46.096Z"} -->
