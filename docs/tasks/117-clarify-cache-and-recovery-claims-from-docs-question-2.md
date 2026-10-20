@@ -47,3 +47,31 @@ records the decision and the cache policy.
 - [ui/editor/editor.js](../../ui/editor/editor.js) does not open a stale node,
   so an offline copy cannot be saved over newer bytes.
 - The static edition's worker is unchanged. A5 stays open for it.
+
+### Validation, 2026-10-20
+
+- Red first: on the base commit the new browser tests failed with no
+  indicator, `Failed to fetch` for offline API reads, an online read returning
+  the older `hello` instead of `newer`, and activation deleting another app's
+  cache. The shell-marker unit test failed without `X-Filemill-Shell`.
+- A high-effort review found that an offline copy of a heading-browsed
+  document stayed editable, and that a refusal after offline reads skipped the
+  reread. Two tests failed for those before the fixes. The same pass led to
+  shell borrowing without `hidden` or `layout` switches, exact-version module
+  copies, serialised cache writes and a HEAD heartbeat. A test that routes
+  `/api/raw` now uses a page without the worker, because Playwright cannot
+  route requests a worker answers.
+- Server suite: 1137 passed. `test_documentation_uses_portable_development_examples`
+  fails only inside the agent sandbox, which masks `.claude/loop.md`; with the
+  sandbox off, `server/tests/test_docs.py` passed 21 of 21.
+- Static suites: 160 passed with `--bundle` and 160 with `--dev`.
+- After rebasing onto `main` with
+  [hiding the ineffective server preview switch](118-hide-the-ineffective-server-preview-switch-from-docs-question-3.md):
+  server suite 1139 passed (the docs guard 21 of 21 with the sandbox off) and
+  static `--bundle` 160 passed.
+- Lint gates: ruff, ruff format, mypy, `deno fmt --check ui/`,
+  `deno lint ui/`, the model tests and `static/build-index.py --check` pass.
+- One run of the full server suite timed out a Firefox fragment check under
+  load; all 14 fragment cases passed on rerun and in the next full run.
+- Screenshots at 1280×720 and 390×844 showed the expanded details wrapping
+  inside the viewport with the label unclipped.

@@ -135,4 +135,6 @@ indicator by click, keyboard and touch on a phone viewport, untruncated
 details, warm startup from copies, uncached destinations, fresh online reads,
 cache preservation on activation, failed saves and deletes, a refused change
 after an unseen restart, the reconnecting state, and recovery with refreshed
-content and a fresh token.
+content and a fresh token. Two more, added after review, failed first: the
+offline copy of a document browsed by its headings stays read-only, and a
+refusal after offline reads still reads them again on recovery.
