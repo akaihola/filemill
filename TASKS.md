@@ -34,9 +34,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [123] Clarify conditional test skips from docs question 9
-      <!-- hai:{"id":"simple-c33756b3-3ea8-4a89-9352-60eaf73faf0e","labels":["steward"],"createdAt":"2026-10-20T07:12:45.801Z","updatedAt":"2026-10-20T13:37:48.758Z"} -->
-
 - [~] [122] Clarify deliberate test delays from docs question 8
       <!-- hai:{"id":"simple-e47a58f3-193e-4296-83a9-cfa00f27371b","labels":["steward"],"createdAt":"2026-10-20T07:12:44.920Z","updatedAt":"2026-10-20T13:22:03.268Z"} -->
 
@@ -44,6 +41,9 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-20T13:03:29.269Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [123] Clarify conditional test skips from docs question 9
+      <!-- hai:{"id":"simple-c33756b3-3ea8-4a89-9352-60eaf73faf0e","labels":["steward"],"createdAt":"2026-10-20T07:12:45.801Z","updatedAt":"2026-10-20T13:42:21.575Z"} -->
 
 - [ ] [119] Offer manual copying in a pop-up when clipboard access fails
       <!-- hai:{"id":"simple-ee263a83-cc2f-41ec-9040-d4a5c0a8e93b","labels":["steward"],"createdAt":"2026-10-20T07:12:42.185Z","updatedAt":"2026-10-20T12:53:55.453Z"} -->
