@@ -237,3 +237,31 @@ def test_decision_records_arrive_with_the_change():
 def test_icon_comments_do_not_require_a_missing_generator(document):
     """[127]: the committed icon assets have no tracked generator."""
     assert "build-seti-map.py" not in (ROOT / document).read_text()
+
+
+def test_waiting_policy_distinguishes_slow_input_from_readiness():
+    roadmap = (ROOT / "docs/ROADMAP.md").read_text()
+    phase = roadmap.split("## Phase 7:", 1)[1].split("## Phase 8:", 1)[0]
+    phase = " ".join(phase.split())
+    assert "No test waits for a fixed time." not in phase
+    assert "[condition-based waiting]" in phase
+    assert (
+        "[condition-based waiting]: ../server/CONTRIBUTING.md"
+        "#wait-for-an-element-never-for-a-duration" in roadmap
+    )
+    guidance = (ROOT / "server/CONTRIBUTING.md").read_text()
+    policy = guidance.split("### Wait for an Element, Never for a Duration", 1)[1]
+    policy = " ".join(policy.split("## Submitting changes", 1)[0].split())
+    # Keep the guarded API name out of this test source.
+    wait_parts = ("wait_for", "timeout")
+    for concept in (
+        "test input",
+        "not synchronization",
+        "test_declined_json_member_recovers_after_refresh",
+        "loading/error state",
+        "DOM conditions",
+        "_".join(wait_parts),
+        "does not ban every sleep",
+        "A delay alone does not prove overlap",
+    ):
+        assert concept in policy, f"Waiting policy must explain {concept}"

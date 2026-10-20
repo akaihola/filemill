@@ -205,6 +205,9 @@ fake directory handles, an OPFS directory and a loopback HTTP server.
 
 `static/test-e2e.py` remains a manual test with a real folder picker.
 
+Browser tests use [condition-based waiting] for readiness. Deliberate response
+delays can supply slow test input.
+
 ## Goals, review and roadmap
 
 - [`docs/GOALS.md`](docs/GOALS.md) — what Filemill must become, and the
@@ -231,3 +234,5 @@ and its binary size.
 
 [the clipboard decision]: docs/adr/0048-a-refused-clipboard-selects-the-path-instead.md
 [the JSON refresh decision]: docs/adr/0041-core-adapters-three-ports.md#refresh-invalidation-2026-10-21
+
+[condition-based waiting]: server/CONTRIBUTING.md#wait-for-an-element-never-for-a-duration

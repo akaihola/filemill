@@ -87,6 +87,9 @@ suite jobs require lint to pass. Publishing requires lint and all three suites.
 A local hook runs only after installation. These commands do not prove that
 all contributors installed it or that branch protection requires CI.
 
+Use [condition-based waiting] for browser readiness. Deliberate response delays
+can supply slow test input.
+
 ## Commits
 
 Use a Conventional Commit prefix: `feat:`, `fix:`, `test:`, `docs:`,
@@ -107,3 +110,5 @@ repository.
 
 [the static JSON tests]: static/tests/test_json_collapse.py
 [the served UI tests]: server/tests/test_browser_new_ui.py
+
+[condition-based waiting]: server/CONTRIBUTING.md#wait-for-an-element-never-for-a-duration

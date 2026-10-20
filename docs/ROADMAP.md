@@ -355,12 +355,13 @@ same Markdown file shows the same HTML in both editions.
 
 Status 2026-10-19: Partly done. Steps 1, 2 and 4 are implemented; 3 and 5 remain
 partial. [25]/[99] move the old static scripts into `static/tests/` and root
-pytest; [99]/[101] record passing root, bundle and dev suites. No fixed browser
-waits remain. Separate browser lifecycles persist, and a root `pytest -n auto`
-pass is not established. Parallel CI suites do not prove it.
+pytest; [99]/[101] record passing root, bundle and dev suites. No
+`wait_for_timeout` calls remain in the guarded test sources. Separate browser
+lifecycles persist, and a root `pytest -n auto` pass is not established. Parallel CI suites do not prove it.
 
-**Goal.** One command runs every test. A failure names its check. No test
-waits for a fixed time.
+**Goal.** One command runs every test. A failure names its check. Tests use
+[condition-based waiting] for readiness. Delayed responses may supply slow test
+input; elapsed time must not decide that an operation is ready or complete.
 
 **Steps.**
 
@@ -368,6 +369,9 @@ waits for a fixed time.
    fixtures for the fake handle, OPFS root and served bundle. Each former
    `main()` section is a separate test. Root `uv run pytest` runs both editions.
 2. Replace every `wait_for_timeout` with `wait_for_function` or `expect`.
+   The [browser-wait guard] rejects that API, not every sleep. Keep deliberate
+   response delays as test input. Observe start and finish conditions to prove
+   overlap; a delay alone is not proof.
 3. Run the static and server browser tests through one `conftest.py` and one
    Playwright fixture. Delete the proxy plumbing in
    `test_browser_keyboard.py`; nothing loads from a CDN any more.
@@ -457,3 +461,6 @@ port.
 [Git bundle provider tests]: ../server/tests/test_gitbundle_provider.py
 [129]: tasks/129-remove-the-obsolete-w-and-n-url-routes.md
 [rules for changes]: ARCHITECTURE-REVIEW.md#rules-for-changes
+
+[condition-based waiting]: ../server/CONTRIBUTING.md#wait-for-an-element-never-for-a-duration
+[browser-wait guard]: ../server/tests/test_browser_waits.py

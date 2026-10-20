@@ -33,7 +33,7 @@ tests/
 ├── test_archive_provider.py  # tar and zip VFS provider unit tests
 ├── test_browser_keyboard.py  # Keyboard navigation, driven in a real browser
 ├── test_browser_new_ui.py    # The shared UI, driven in a real browser
-├── test_browser_waits.py     # Rejects fixed browser waits in the test sources
+├── test_browser_waits.py     # Rejects Playwright duration-wait calls
 ├── test_cli.py               # CLI smoke tests
 ├── test_docs.py              # Documents agree with the pins and the code
 ├── test_file_kind.py         # Server file classification
@@ -241,8 +241,20 @@ Use Playwright `expect` assertions or `page.wait_for_function` predicates for
 navigation, preview content and asynchronous work. Wait for the expected value,
 not merely for an old element to exist. Scroll checks must include the dial's
 range rebase; race checks must observe the delayed operation starting and
-finishing. `tests/test_browser_waits.py` rejects fixed browser waits in the static
-Python scripts and server tests.
+finishing. Do not use a sleep to guess when the UI is ready.
+
+A deliberate response delay is test input, not synchronization. For example,
+`test_declined_json_member_recovers_after_refresh` in [the served UI tests]
+delays a response by 0.2 seconds to supply slow input. Its loading/error state
+predicate and DOM conditions determine completion: the chevron and pending
+column disappear, the preview shows the error, and refresh restores the member.
+The delay does not establish that the pending column opened before rejection.
+A delay alone does not prove overlap; a race test must observe the delayed
+operation starting and finishing.
+
+The [browser-wait guard] scans static Python scripts and server tests for
+`wait_for_timeout`. It does not ban every sleep or prove that all other waits
+are correct. Slow input is allowed; arbitrary readiness sleeps are not.
 
 ## Submitting changes
 
@@ -250,3 +262,6 @@ Python scripts and server tests.
 2. Follow the TDD cycle above.
 3. Update `README.md`, `CONTRIBUTING.md` and the root `TASKS.md`.
 4. Mark the issue completed before you commit.
+
+[the served UI tests]: tests/test_browser_new_ui.py
+[browser-wait guard]: tests/test_browser_waits.py

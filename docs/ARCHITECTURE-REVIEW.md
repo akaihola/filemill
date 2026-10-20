@@ -116,7 +116,10 @@ Keep these boundaries and checks.
   coverage. Only main publishes; cancellation is scoped to workflow and ref.
   [CONTRIBUTING.md][contributing] describes the same gate. These are configured
   gates; the local results above do not claim a fresh full CI run.
-- Tests now wait for observable browser state. Static checks live in
+- Tests use observable browser state for readiness. Delayed responses can
+  supply test input, as the [waiting guidance] explains. The source guard
+  rejects `wait_for_timeout`; it does not ban every sleep or prove overlap.
+  Static checks live in
   [static/tests/][static-tests]. [The remaining-test record][remaining-tests]
   separates historical failures from current work. Keep the tests that guard
   log-pipe backpressure, touch input, scroll settlement and worker recovery.
@@ -628,3 +631,5 @@ one new P2 finding; no new P1 finding was established in this pass.
 [ADR 0089]: adr/0089-an-offline-server-shows-older-copies-with-an-indicator.md
 [ports-decision]: adr/0041-core-adapters-three-ports.md#refresh-invalidation-2026-10-21
 [bundle-tests]: ../server/tests/test_gitbundle_provider.py
+
+[waiting guidance]: ../server/CONTRIBUTING.md#wait-for-an-element-never-for-a-duration

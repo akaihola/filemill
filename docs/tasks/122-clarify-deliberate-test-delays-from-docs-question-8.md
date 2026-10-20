@@ -25,3 +25,12 @@ The policy distinguishes test input from synchronization and does not excuse arb
    delays and assertions. Update the architecture review and test-guide links.
 3. Run the documentation and browser-wait guard tests. Review the diff, merge
    onto main and complete the tracker entry pending acceptance.
+
+## Validation (2026-10-21)
+
+- The new documentation check failed before the policy update.
+- Documentation and browser-wait guard tests: 28 passed.
+- The full pre-commit gate passed, including Python/UI checks, suppression
+  links and static bundle consistency. The diff has no whitespace errors.
+- Browser response delays and assertions are unchanged. The full server suite
+  was not run for this documentation-only change.
