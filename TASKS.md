@@ -43,10 +43,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [128] Never list or serve hidden files on a public instance
-  <!-- hai:{"id":"simple-9104b865-c208-4bfe-bc8c-92ac37a361d3","labels":["steward"],"createdAt":"2026-10-20T07:26:36.286Z","updatedAt":"2026-10-20T07:26:36.286Z"} -->
-
 ## Scheduled
+
+- [128] Never list or serve hidden files on a public instance
+  <!-- hai:{"id":"simple-9104b865-c208-4bfe-bc8c-92ac37a361d3","labels":["steward"],"createdAt":"2026-10-20T07:26:36.286Z","updatedAt":"2026-10-20T07:40:39.616Z"} -->
 
 ## In Progress
 
