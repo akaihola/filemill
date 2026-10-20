@@ -138,6 +138,9 @@ Keep these.
 
 - The three ports and the shared frontend. There is one copy of `ui/`.
 - Decisions are recorded with their measurements in `docs/adr/`.
+- Clipboard refusals use one native modal dialog in the shared browser UI.
+  It preserves the exact copy value and full error for manual copying, including
+  menu targets that are not selected ([119], [ADR 0048], 2026-10-20).
 - The quality gate runs. CI runs `deno fmt --check`, `deno lint`, the model
   tests, `build-index.py --check`, both static suites (bundle and `--dev`) and
   the server suite with coverage (`.github/workflows/publish.yml`), each with
@@ -669,3 +672,7 @@ A12 items can land at any time, each with a focused test.
 [ADR 0087]: adr/0087-a-public-instance-never-lists-or-serves-hidden-paths.md
 [ADR 0088]: adr/0088-remove-named-mount-and-alternate-shell-routes.md
 [ADR 0089]: adr/0089-an-offline-server-shows-older-copies-with-an-indicator.md
+
+[ADR 0048]: adr/0048-a-refused-clipboard-selects-the-path-instead.md
+
+[119]: tasks/119-document-the-menu-copy-exception-from-docs-question-4.md

@@ -56,6 +56,10 @@ uv run --project server pytest static/tests --dev
 Run the Markdown viewport check with `uv run --project server pytest
 static/tests/test_rich.py -k markdown_viewport`. Add `--dev` to test the shared source.
 
+Copy checks cover successful rotation, native text copying and the manual-copy
+dialog after refusal. Run them in both static modes with `-k copy`. The narrow
+dialog checks use touch input and keep long paths and error messages intact.
+
 Install the local Git hook and run the gate from the repository root:
 
 ```bash

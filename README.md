@@ -160,6 +160,10 @@ GitHub heading slugs: lowercase, with punctuation removed and spaces changed to
 hyphens. For example, `Q1: scope` uses `#q1-scope`. Existing renderer fragments
 such as `#q1%3A-scope` also work. An unknown heading keeps the whole file open.
 
+If the browser refuses clipboard access, Filemill opens a manual-copy dialog.
+The exact value is selected in a text field. Use the browser copy command or
+touch selection menu, then close the dialog. See [the clipboard decision].
+
 ## Working on the shared UI
 
 Edit `ui/`. It is a symlink to `server/src/filemill/ui/`. A wheel cannot reach
@@ -220,3 +224,5 @@ supplies native file, preview and history operations. Its README has the
 requirements and build commands.
 [ADR 0079](docs/adr/0079-native-shell.md) records why this shell was kept
 and its binary size.
+
+[the clipboard decision]: docs/adr/0048-a-refused-clipboard-selects-the-path-instead.md

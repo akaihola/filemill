@@ -86,6 +86,14 @@ document.body.insertAdjacentHTML(
     </span>
   </div>
   <div id="row-menu" role="menu" hidden></div>
+  <dialog id="copy-dialog" aria-labelledby="copy-title" aria-describedby="copy-instructions copy-reason">
+    <h2 id="copy-title">Copy manually</h2>
+    <p id="copy-instructions"></p>
+    <label for="copy-value">Text to copy</label>
+    <textarea id="copy-value" readonly rows="4"></textarea>
+    <form method="dialog"><button type="submit">Close</button></form>
+    <p id="copy-reason"></p>
+  </dialog>
 </div>
 
 `,
