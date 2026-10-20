@@ -47,10 +47,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [117] Show an expandable server-offline indicator with cached content
-  <!-- hai:{"id":"simple-2815036e-03d8-491d-a901-3794c92f18de","labels":["steward"],"createdAt":"2026-10-20T07:12:40.437Z","updatedAt":"2026-10-20T10:04:39.514Z"} -->
-
 ## In Progress
+
+- [~] [117] Show an expandable server-offline indicator with cached content
+      <!-- hai:{"id":"simple-2815036e-03d8-491d-a901-3794c92f18de","labels":["steward"],"createdAt":"2026-10-20T07:12:40.437Z","updatedAt":"2026-10-20T10:05:01.699Z"} -->
 
 ## Completed / Accepted
 
