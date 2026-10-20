@@ -274,3 +274,273 @@ that link to their explanation.
 - `node ui/core/model/test.mjs`: passed.
 - `static/build-index.py --check`: up to date; the bundle diff is comments.
 - Browser suites were not rerun: no code line changed.
+
+## Proposed answers, 2026-10-19
+
+Prepared for [115]; checked against `cbcd8baf` on 2026-10-20. The heading
+date follows the request. These are recommendations for review, not approved
+decisions or implemented fixes. The original questions above remain historical.
+Question 1 belongs to [114]. Each proposed change below has its own `steward`
+issue in Unverified proposals; question 7 needs no change.
+
+### Question 2 — Cache scope and offline recovery
+
+**Recommendation — change the text; keep A5 open.** Limit the stale-read
+claim to embedded resources fetched outside the API, such as document images
+and `/w/` files; normal preview and editor reads use the uncached API.
+Describe both recovery paths: an active server worker supplies an inline page
+for failed non-API navigations, while an already loaded shell retries a failed
+root mount. A first visit without a controlling worker has no such fallback.
+Describe old mutation tokens as an open-page or stored-shell problem after a
+restart, not proof that ordinary navigation serves a cached shell.
+Draft: [117].
+
+**Evidence.** `HTTP.blob` in `ui/adapters/http.js` reads `/api/raw`, and
+`server/src/filemill/static/sw.js` bypasses API requests but caches other
+same-origin non-navigation GETs; `87bc1f5d` added the navigation recovery branch
+and the source checks in `server/tests/test_pwa.py`, as ADR 0063 now records.
+`showServerUnavailable` in `ui/adapters/app-http.js` retries the mount, while
+ADR 0081 and `test_token_changes_invalidate_existing_shells` in
+`server/tests/test_mutation_policy.py` establish the separate restart-token
+problem; the unresolved cache-isolation and non-navigation offline-miss defects
+still justify A5.
+
+**For Antti:** Can saved files look out of date, and can the app help when the
+server is stopped — warn about stored pictures and other content inside
+documents, and explain when the retry page works.
+
+### Question 3 — A switch with no effect in the server edition
+
+**Recommendation — change the code and its decision note.** Hide the
+rich-preview download switch in the server edition, including Open Folder
+mode, while its registered renderers need no third-party download. Keep the
+switch where it controls downloads in the static and native editions.
+Draft: [118].
+
+**Evidence.** `59672dd6` introduced the vendored-module bypass now described
+by ADRs 0035/0036 and checked by
+`static/tests/test_rich.py::test_vendored_renderers` with the switch off.
+`offerRichToggle` in `ui/adapters/preview-rich.js` still exposes the switch
+unconditionally, although `ui/adapters/app-http.js` uses vendored Markdown
+and DOCX, built-in PPTX extraction and server RST.
+
+**For Antti:** Should the server show a preview-download switch that changes
+nothing — hide it there.
+
+### Question 4 — Clipboard refusal from a row menu
+
+**Recommendation — change the text.** Record the intentional menu exception
+in ADR 0048: a refused menu copy keeps the menu open and reports the failure,
+without selecting text. Retain text selection for refused keyboard and status
+path copies. Draft: [119].
+
+**Evidence.** `45a78db0` introduced the explicit-menu distinction in
+`ui/core/nav.js::copyPath`, after ADR 0048 was written.
+`static/tests/test_ui.py::test_copy_menu_refusal_keeps_menu` requires an open
+menu and no text selection, while `test_copy_refusal_fallback` checks selection
+of the refused value for keyboard copying.
+
+**For Antti:** If copying from a file's menu fails, should the path become
+selected text — keep the menu open with an error, and keep manual text
+copying as the keyboard fallback.
+
+### Question 5 — Search after opening a local folder
+
+**Recommendation — change the code and record the behavior.** Hide and
+disable server content search while a browser-owned folder is mounted, clear
+its results, and cancel pending work so late results cannot reappear.
+Restore it on return to the served tree; adding local content search is
+separate work. Draft: [120].
+
+**Evidence.** `6ed49a2c` added server-only search, and
+`test_content_search_opens_a_matching_file` in
+`server/tests/test_browser_new_ui.py` checks served files.
+`ui/core/search.js` checks `data-root` only at module load and always calls
+`/api/search`, whereas `ui/adapters/app-http.js::mount` changes the filesystem
+and sets the router to null without removing that attribute or disabling
+search, so results concern the wrong tree and their activation expects a
+router that no longer exists.
+
+**For Antti:** Should search still look through the server's files after I
+open a folder on my computer — hide it until I return to the server's folder.
+
+### Question 6 — A folder named api
+
+**Recommendation — change the text and strengthen the test.** Describe
+collisions with exact API endpoint paths, not a reservation of the whole
+prefix. Keep ordinary files under an `api` directory reachable; test both
+the endpoint and a non-conflicting file. Other wildcard routes retain their
+own collision rules. Draft: [121].
+
+**Evidence.** The resource-route change `5eadcfdb` introduced the broad
+comment, but the routes and `_reorder_routes` in `server/src/filemill/app.py`
+give exact API endpoints priority before the resource catch-all.
+`server/tests/test_resource_routes.py::test_named_route_wins_over_a_directory_of_the_same_name`
+creates `api/note.txt` but requests only `/api/dir`, so its assertion does not
+establish its docstring's claim that the whole directory is unreachable.
+
+**For Antti:** Should a folder become inaccessible just because its name
+matches part of an internal web address — keep ordinary files accessible and
+correct the explanation.
+
+### Question 7 — The alternate browsing address
+
+**Recommendation — no code or text change needed.** Keep `/n/` as a supported
+alternate shell base and retain root-relative file addresses as the normal
+resource URLs. Removing it would break existing links and test entry points
+without helping this documentation task.
+
+**Evidence.** `5eadcfdb` added root-relative resource URLs while retaining
+`UI_BASE = "/n/"`, and `ui/adapters/router-path.js` explicitly handles both
+bases, consistent with ADR 0043's path-based server navigation.
+`server/tests/test_pwa.py` checks the `/n/` shell, and
+`server/tests/test_browser_new_ui.py` opens and navigates through it, while
+`server/tests/test_resource_routes.py` covers root-relative representations.
+
+**For Antti:** Should we remove an older browsing address that still works
+and may be bookmarked — keep it.
+
+### Question 8 — Deliberately slow test responses
+
+**Recommendation — change the text.** Say that tests must wait for observable
+state rather than pause for an assumed completion time. Allow deliberate
+response delays as test input; do not claim the source guard bans every sleep
+or that elapsed time alone proves a race occurred. Draft: [122].
+
+**Evidence.** `7ddeab00` added the 0.2-second delay inside the intercepted
+response in `test_declined_json_member_recovers_after_refresh` in
+`server/tests/test_browser_new_ui.py`; the assertions wait for the node's
+loading/error state and the resulting UI.
+`server/tests/test_browser_waits.py`, introduced in `ffc5dbf4`, rejects
+`wait_for_timeout`, not all sleeps, so ROADMAP Phase 7's blanket wording is
+broader than the guard or the test's purpose.
+
+**For Antti:** May a test deliberately make a file load slowly to check how
+the app responds — yes, but it must judge success by what the app does.
+
+### Question 9 — Conditional test skips
+
+**Recommendation — change the policy text.** Require issue links for tests
+disabled because of an unresolved defect or unfinished work. Allow stated
+platform and optional-tool prerequisites without inventing a defect issue;
+required CI prerequisites must still be installed and their checks must run.
+Draft: [123].
+
+**Evidence.** `9fa13dbe` added a Linux pipe-capacity regression whose
+`skipif` excludes other platforms, while `68325e9d` added the two Git
+prerequisite skips in the bundle browser and provider suites.
+ADR 0073 and `server/src/filemill/providers/gitbundle.py` make Git an optional
+capability, and `test_without_git_a_bundle_is_a_plain_file` describes its
+fallback, so these conditions do not mean a known defect is being hidden.
+
+**For Antti:** Should a test need a bug report when it cannot run on this
+computer — no, explain the missing requirement and reserve bug links for
+tests disabled by unfinished work.
+
+### Question 10 — Reasons for dependency versions
+
+**Recommendation — change the text and configuration comments, not the
+versions.** Distinguish minimum versions, deliberate version restrictions
+and the exact releases recorded in the lockfile. Explain meaningful
+restrictions, including the build-backend range and Python-dependent archive
+library; mark inherited minimums as unverified where history gives no reason
+instead of inventing compatibility claims or pinning everything.
+Draft: [124].
+
+**Evidence.** `server/pyproject.toml` mixes unconstrained runtime dependencies,
+development minimums and a Playwright release restriction, while `uv.lock`
+records exact versions; `server/tests/test_docs.py` checks the Playwright
+guidance, not compatibility at every declared minimum.
+History identifies the Playwright browser match (`875b032b`), archive
+compatibility (`b91a3d8c`, ADR 0072) and the later mypy comment (`f26da085`),
+but inherited bounds from `26d515b9` and `eec53713` do not by themselves prove
+that each lower limit was tested.
+
+**For Antti:** Should we explain why particular versions of extra software
+are required — yes, explain deliberate limits and be honest when an old
+minimum has no verified reason.
+
+### Question 11 — What network consent covers
+
+**Recommendation — change the text.** Replace the blanket consent claim
+with the actual boundary: the remembered switch controls third-party renderer
+downloads and defaults on; it does not block document images or other
+referenced resources. Preserve the no-telemetry rule and local file
+processing claim, and state that external resources contact their hosts.
+A general resource-permission system would need a separate product decision.
+Draft: [125].
+
+**Evidence.** GOALS introduced the broad claim in `d08f3b84`, but [109]'s
+`f488ccab` corrected its privacy paragraph, README and ADR 0036 to distinguish
+renderer downloads from document resource requests.
+`ui/adapters/preview-rich.js` gates renderer loading, allows safe image
+sources and inserts rendered document HTML, while the consent tests in
+`static/tests/test_rich.py` check renderer requests rather than a general
+network block; ADR 0082's safe-URL rule also permits HTTP(S) resources.
+
+**For Antti:** Does turning off preview downloads also stop documents from
+loading pictures from the internet — no, make that limit clear in the promise.
+
+### Question 12 — When to record a decision
+
+**Recommendation — change the text.** Use “in the same change” for decisions
+that change a port or behavior, and make ROADMAP link to that rule. Preserve
+the stronger contribution guidance to commit the explanation with the change.
+Draft: [126].
+
+**Evidence.** ROADMAP's “same day” rule came from `88f87563`, whereas the
+consolidated architecture review `d5b0a55e` requires an ADR “in the same
+change,” and CONTRIBUTING requires documentation in the same commit.
+Recent behavior fixes such as `9d90ed3f` include code, tests and ADR updates
+together, demonstrating the reviewable unit that the stricter wording describes.
+
+**For Antti:** Should the reason for a behavior change arrive with the change
+or later that day — include it with the change.
+
+### Question 13 — The missing icon-map generator
+
+**Recommendation — change the comments.** Describe the checked-in Seti map
+and its recorded upstream sources in both the icon module and map header;
+state that its generator is not in this repository. Keep the assets and
+licence, and regenerate the static bundle if its copied comments change.
+Do not invent a replacement build tool. Draft: [127].
+
+**Evidence.** `git blame` traces the generator claim in `ui/core/icons.js`
+to the UI import `69be0ef6`, but `git log --all --full-history` for
+`build-seti-map.py` at any depth finds no tracked script.
+`ui/vendor/seti-map.js` repeats the claim and records the Seti UI and VS Code
+sources, while the existing browser icon checks and `static/build-index.py`
+use the committed assets without that generator.
+
+**For Antti:** Should we build a missing tool just because an old comment
+names it — no, correct the comment to describe the icon data we actually keep.
+
+
+### Validation for [115], 2026-10-20
+
+- Baseline: `timeout 1800 uv run pytest -q tests/test_docs.py` from `server/`:
+  20 passed.
+- After the additions: `timeout 1800 uv run pytest -q tests/test_docs.py
+  tests/test_pwa.py tests/test_resource_routes.py tests/test_mutation_policy.py
+  tests/test_browser_waits.py` from `server/`: 133 passed.
+- `timeout 1800 uvx pre-commit run --all-files`: all seven hooks passed.
+- Temporary TestClient probes confirmed that `/api/note.txt` serves an ordinary
+  file, `/api/dir` remains an endpoint, and `/n/` opens the shell even when the
+  root contains an index page.
+- Structure check: twelve answers, eleven `steward` drafts naming their source
+  questions, and the original audit preserved byte for byte.
+- No behavior changes; browser suites were not rerun. No push.
+
+[114]: 114-sandbox-html-previews-of-archive-members-as-security-md-promises.md
+[115]: 115-propose-plain-answers-to-the-docs-check-s-twelve-remaining-questions.md
+[117]: 117-clarify-cache-and-recovery-claims-from-docs-question-2.md
+[118]: 118-hide-the-ineffective-server-preview-switch-from-docs-question-3.md
+[119]: 119-document-the-menu-copy-exception-from-docs-question-4.md
+[120]: 120-disable-server-search-in-local-folders-from-docs-question-5.md
+[121]: 121-clarify-api-path-collisions-from-docs-question-6.md
+[122]: 122-clarify-deliberate-test-delays-from-docs-question-8.md
+[123]: 123-clarify-conditional-test-skips-from-docs-question-9.md
+[124]: 124-explain-dependency-constraints-from-docs-question-10.md
+[125]: 125-clarify-network-consent-scope-from-docs-question-11.md
+[126]: 126-align-decision-timing-rules-from-docs-question-12.md
+[127]: 127-correct-icon-generator-claims-from-docs-question-13.md
