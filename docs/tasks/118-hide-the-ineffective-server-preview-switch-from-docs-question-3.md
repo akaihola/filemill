@@ -16,3 +16,13 @@ Hide the rich-preview download switch in the server edition while its active ren
 ## Acceptance
 
 Server tests cover both modes and retained rendering, and static consent tests still pass. No general network-blocking claim or new settings framework is introduced.
+
+## Implementation plan, 2026-10-20
+
+- Add browser regressions for served files and the Open Folder button with
+  `filemill.rich` stored as `off`. Check the hidden setting and Markdown/DOCX.
+- Initialize consent UI after each edition registers its renderers. Show it
+  only when a registered rich renderer needs a third-party module.
+- Keep the renderer and consent checks unchanged. Update ADR 0036, the current
+  server guidance and the architecture review. Rebuild the static bundle.
+- Run the server regressions, static consent checks, and repository gates.
