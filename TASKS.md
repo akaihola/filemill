@@ -41,10 +41,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [119] Offer manual copying in a pop-up when clipboard access fails
-  <!-- hai:{"id":"simple-ee263a83-cc2f-41ec-9040-d4a5c0a8e93b","labels":["steward"],"createdAt":"2026-10-20T07:12:42.185Z","updatedAt":"2026-10-20T11:18:35.209Z"} -->
-
 ## In Progress
+
+- [~] [119] Offer manual copying in a pop-up when clipboard access fails
+      <!-- hai:{"id":"simple-ee263a83-cc2f-41ec-9040-d4a5c0a8e93b","labels":["steward"],"createdAt":"2026-10-20T07:12:42.185Z","updatedAt":"2026-10-20T12:33:30.662Z"} -->
 
 ## Completed / Accepted
 
