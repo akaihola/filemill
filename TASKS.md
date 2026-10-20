@@ -33,9 +33,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [134] Refresh JSON columns from the current file (architecture review A13)
-      <!-- hai:{"id":"simple-fc2b70cd-7598-47b9-8b82-4004d374afcd","labels":["steward"],"createdAt":"2026-10-20T19:38:03.173Z","updatedAt":"2026-10-20T21:27:12.418Z"} -->
-
 - [~] [133] Protect saves from truncation and stale overwrites (architecture review
   A4)
       <!-- hai:{"id":"simple-7fc0721d-e6cf-4c12-91b0-2758fd68f09c","labels":["steward"],"createdAt":"2026-10-20T19:37:48.890Z","updatedAt":"2026-10-20T20:27:03.412Z"} -->
@@ -47,6 +44,9 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-20T13:03:29.269Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [134] Refresh JSON columns from the current file (architecture review A13)
+      <!-- hai:{"id":"simple-fc2b70cd-7598-47b9-8b82-4004d374afcd","labels":["steward"],"createdAt":"2026-10-20T19:38:03.173Z","updatedAt":"2026-10-20T22:05:23.091Z"} -->
 
 - [ ] [132] Re-check the architecture review against current main
       <!-- hai:{"id":"simple-2a087add-53a0-4c65-9b64-6b413aae4b4f","labels":["steward","review"],"createdAt":"2026-10-20T17:18:18.462Z","updatedAt":"2026-10-20T18:04:52.988Z"} -->
