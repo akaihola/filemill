@@ -21,9 +21,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
   <!-- hai:{"id":"simple-d1776999-2a2c-4870-936a-9620915aee07","labels":["steward"],"createdAt":"2026-10-20T08:12:02.201Z","updatedAt":"2026-10-20T08:12:29.949Z"} -->
 
-- [134] Refresh JSON columns from the current file (architecture review A13)
-  <!-- hai:{"id":"simple-fc2b70cd-7598-47b9-8b82-4004d374afcd","labels":["steward"],"createdAt":"2026-10-20T19:38:03.173Z","updatedAt":"2026-10-20T19:38:03.173Z"} -->
-
 - [135] Keep bundle repositories alive through active reads (architecture review
   A14)
   <!-- hai:{"id":"simple-ad2e83e1-1884-4c57-afb0-fc279fdbafd6","labels":["steward"],"createdAt":"2026-10-20T19:38:05.190Z","updatedAt":"2026-10-20T19:38:05.190Z"} -->
@@ -33,6 +30,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-2987e143-caeb-4d71-9d71-d4ad75a184de","labels":["steward","security"],"createdAt":"2026-10-20T19:38:07.298Z","updatedAt":"2026-10-20T19:38:07.298Z"} -->
 
 ## Scheduled
+
+- [134] Refresh JSON columns from the current file (architecture review A13)
+  <!-- hai:{"id":"simple-fc2b70cd-7598-47b9-8b82-4004d374afcd","labels":["steward"],"createdAt":"2026-10-20T19:38:03.173Z","updatedAt":"2026-10-20T21:26:55.225Z"} -->
 
 ## In Progress
 
