@@ -16,3 +16,18 @@ Steward issue, 2026-10-21 01:55. Goal: agentic-leverage (filemill is a tier 1 pr
 - Leave the branches of [120], [122] and [133] alone; the steward resumes those workers after this merges.
 - Memory: before each command, wait up to 10 minutes for `MemAvailable` of at least 2 GiB; if it doesn't come, start the command anyway when at least 1.5 GiB is available. Stop a running command when `MemAvailable` falls below 1 GiB or swap grows by more than 512 MiB. Run one heavy command at a time, and bound any background job you start.
 - Acceptance: 20 of 20 isolated runs pass, the full server suite is green, and the issue file and commit message name the cause.
+
+## Implementation plan (2026-10-21)
+
+- Run the unchanged test in 20 separate pytest processes on current main,
+  recording push/replace URLs and history length with an external probe.
+- Trace the open-chain history key and asynchronous document loading; capture
+  a deterministic failing regression before changing production behavior.
+- Fix the cause within the shared navigation boundary, retaining all Back and
+  Forward expectations. Regenerate the static bundle if shared code changes.
+- Repeat the isolated test 20 times, run the complete server suite and the
+  required lint/model/bundle checks, then merge and complete pending acceptance.
+
+All commands use a memory gate and monitor: start at 2 GiB available (or
+1.5 GiB after ten minutes), terminate below 1 GiB or on swap growth over
+512 MiB. Only one heavy command runs at a time.
