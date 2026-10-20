@@ -29,3 +29,32 @@ A refused menu copy closes the menu and exposes the complete intended value for 
 - Close the menu before copying. Restore the original focus after dismissal.
 - Check narrow layouts, long values, keyboard copying and successful rotation.
 - Update ADR 0048, the architecture review and the generated static bundle.
+
+## Result, 2026-10-20
+
+Menu copy commands close the menu before the clipboard write. A refused write
+opens the shared native dialog for menu, keyboard and status-path copies. The
+labelled, read-only text field contains the exact value and selects all of it.
+The dialog shows the full error and native-copy instructions. Long content wraps
+and scrolls. Escape and Close restore the prior focus. Native text copying does
+not call the clipboard API again. The footer keeps a short failure notice.
+
+## Validation
+
+- Red: all six new menu cases failed because the dialog did not exist. The cases
+  cover each command on an unselected row at desktop and narrow widths.
+- Green: nine source dialog checks, four source status-copy checks and thirteen
+  bundle checks passed in the final focused reruns. Narrow checks use real touch
+  input. They include long paths, long error messages, selection and dismissal.
+- Earlier copy runs passed 26 checks in each static mode, including successful
+  rotation, native text copying, stale requests and interaction resets. The
+  refused-copy assertions were then corrected and passed in the focused reruns.
+- Five server keyboard/status checks and two server menu/copy checks passed.
+- All pre-commit checks, shared model checks and the generated-bundle check passed.
+- The full suites were attempted, then interrupted. A server Markdown-link test
+  failed on both this branch and unchanged main. The large-JSON source case
+  failed during the broad run, then passed alone on both main and this branch.
+  The broad bundle run passed 31 checks before interruption. These results do
+  not establish a complete suite pass.
+- The T3 preview could not open because its host lacks browser libraries. Browser
+  validation used the repository's managed Chromium setup.

@@ -1634,13 +1634,16 @@ def test_status_bar_items_stay_on_one_line_when_hints_do_not_fit(
                     page.locator("#st-copy").inner_text().startswith("Copied level-0-")
                 )
             elif result == "refused":
-                assert "press Ctrl+C again" in page.locator("#st-copy").inner_text()
+                assert "Copy manually" in page.locator("#st-copy").inner_text()
                 assert (
-                    page.evaluate("getSelection().toString()")
+                    page.get_by_label("Text to copy", exact=True).input_value()
                     == page.locator("#st-path").inner_text()
                 )
             elif result == "refresh":
                 assert page.locator("#st-refresh").inner_text().startswith("Deleted")
+
+            if result == "refused":
+                page.keyboard.press("Escape")
 
             items = page.evaluate(_STATUS_ITEMS)
             wrapped = [i["text"] for i in items if i["wraps"]]

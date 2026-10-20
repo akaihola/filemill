@@ -231,12 +231,8 @@ export function renderCrumbs() {
    ⌘C copies the focused item; repeated copies rotate through relative path,
    full path and name. Clicking the status path copies the displayed location.
 
-   navigator.clipboard.writeText can be refused: a browser policy, a page the
-   user has not touched yet, an insecure context with no clipboard object at
-   all. A silent refusal is the worst outcome, because the next paste hands over
-   whatever was on the clipboard before and nothing says so. So a refusal says
-   so and selects the path, which leaves the browser's own ⌘C one keystroke
-   away — the fallback needs no permission because the user presses it. */
+   A refused write opens a manual-copy dialog with the exact value and error.
+   Its selected text uses the browser's native copy command. */
 /* One transient line in the status strip, per slot, cleared on a timer. A
    success can flash; a refusal or a loss stays long enough to be read and acted
    on, because it is asking the user to do something about it. */
@@ -261,14 +257,6 @@ document.addEventListener("pointerdown", (event) => {
 }, true);
 
 const sayCopy = (msg, ok) => saySt("st-copy", msg, ok);
-
-function selectPath() {
-  const r = document.createRange();
-  r.selectNodeContents(document.getElementById("st-path"));
-  const s = getSelection();
-  s.removeAllRanges();
-  s.addRange(r);
-}
 
 const COPY_WINDOW_MS = 5000;
 let copyCycle = null;
@@ -335,16 +323,16 @@ export async function copyPath(node, parent, mode, displayedPath) {
     return true;
   } catch (err) {
     if (request !== copyRequest || !sameCopySelection(selection)) return false;
-    // Keep the manual browser-copy fallback on the value that was refused.
-    if (mode === undefined) {
-      document.getElementById("st-path").textContent = text;
-      selectPath();
-    }
-    sayCopy(
-      `clipboard refused (${err.name || "error"})` +
-        (mode === undefined ? ` — press ${COPY_KEY} again` : ""),
-      false,
-    );
+    const dialog = document.getElementById("copy-dialog");
+    const field = document.getElementById("copy-value");
+    document.getElementById("copy-reason").textContent = `${
+      err.name || "Error"
+    }: ${err.message || String(err)}`;
+    field.value = text;
+    dialog.showModal();
+    field.focus();
+    field.select();
+    sayCopy("Clipboard refused — Copy manually", false);
     return false;
   }
 }
@@ -354,10 +342,14 @@ const MAC = /Mac|iP(hone|ad)/.test(
 );
 const COPY_KEY = MAC ? "⌘C" : "Ctrl+C";
 document.getElementById("kbd-copy").textContent = COPY_KEY;
+document.getElementById("copy-instructions").textContent =
+  `Press ${COPY_KEY} to copy the selected text, or use your device's text selection menu. Then close this pop-up.`;
+document.getElementById("copy-dialog").addEventListener("keydown", (event) => {
+  event.stopPropagation();
+});
 document.getElementById("st-path").onclick = () => {
   const parent = path[path.length - 1];
   const node = parent?.kids?.find((n) => n.name === sel[path.length - 1]);
-  // A refused rotated copy can leave a different value selected in this slot.
   const text = document.getElementById("st-path").textContent;
   return node ? copyPath(node, parent, undefined, text) : path.length > 1 &&
     copyPath(parent, path[path.length - 2], undefined, text);
@@ -493,9 +485,7 @@ document.addEventListener("keydown", (e) => {
     return;
   }
 
-  /* ⌘C / Ctrl+C. A live text selection wins: the user highlighted something and
-     asked for *that*, and after a refused copy the selected path is exactly
-     what the second press has to reach. */
+  /* ⌘C / Ctrl+C. A live text selection uses native browser copying. */
   if (action === "copy") {
     e.preventDefault();
     return void copyPath();

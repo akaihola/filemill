@@ -881,9 +881,11 @@ def test_touch_tap_opens_folder_first_time(
 
 
 @pytest.fixture
-def copy_page(bundle, fake_handle, playwright):
+def copy_page(bundle, fake_handle, playwright, request):
     browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
-    page = browser.new_page(viewport={"width": 1000, "height": 700})
+    touch = getattr(request.node, "callspec", None)
+    touch = bool(touch and touch.params.get("width") == 390)
+    page = browser.new_page(viewport={"width": 1000, "height": 700}, has_touch=touch)
     page.goto(bundle.as_uri())
     page.evaluate("localStorage.setItem('filemill.rich','off')")
     page.evaluate(fake_handle)
@@ -1024,14 +1026,23 @@ def test_copy_refusal_fallback(copy_page, variant):
     values = ["mixed/note.md", "/mixed/note.md", "note.md"]
     for value in values[:variant]:
         copied(page, value)
+    page.locator("#gear").focus()
     page.evaluate("__clip(true)")
     page.keyboard.press("Control+c")
     page.wait_for_function(
         "document.querySelector('#st-copy').textContent.includes('refused')"
     )
-    assert page.evaluate("getSelection().toString()") == values[variant]
+    assert (
+        page.get_by_label("Text to copy", exact=True).input_value() == values[variant]
+    )
     page.keyboard.press("Control+c")
     assert page.evaluate("__clipped.length") == 1
+    if variant == 0:
+        page.get_by_role("button", name="Close", exact=True).click()
+    else:
+        page.keyboard.press("Escape")
+    assert page.locator("#copy-dialog").is_hidden()
+    assert page.locator("#gear").evaluate("el => document.activeElement === el")
 
 
 def test_copy_pending_reset_and_missing_clipboard(copy_page):
@@ -1051,7 +1062,9 @@ def test_copy_pending_reset_and_missing_clipboard(copy_page):
     page.wait_for_function(
         "document.querySelector('#st-copy').textContent.includes('refused')"
     )
-    assert page.evaluate("getSelection().toString()") == "/mixed/note.md"
+    assert (
+        page.get_by_label("Text to copy", exact=True).input_value() == "/mixed/note.md"
+    )
 
 
 def test_copy_status_truncates(copy_page):
@@ -1073,12 +1086,13 @@ def test_copy_preserves_native_text_copy(copy_page):
     copied(page, "mixed/note.md")
     page.evaluate("""() => {
       const input = document.body.appendChild(document.createElement('textarea'));
+      input.id = 'native-copy-test';
       input.value = 'selected text'; input.focus(); input.select();
     }""")
     page.keyboard.press("Control+c")
     assert page.evaluate("__clipped") == ["mixed/note.md"]
     page.evaluate(
-        "document.activeElement.blur(); document.querySelector('textarea').remove()"
+        "document.activeElement.blur(); document.querySelector('#native-copy-test').remove()"
     )
     page.evaluate("""() => {
       const range = document.createRange();
@@ -1105,16 +1119,61 @@ def test_copy_late_completion_does_not_replace_new_cycle(copy_page):
     copied(page, "note.md")
 
 
-def test_copy_menu_refusal_keeps_menu(copy_page):
+@pytest.mark.parametrize("width", [1000, 390])
+@pytest.mark.parametrize(
+    "label,mode",
+    [("Copy name", 2), ("Copy relative path", 0), ("Copy absolute path", 1)],
+)
+def test_copy_menu_refusal_dialog(copy_page, width, label, mode):
     page = copy_page
-    page.evaluate("__clip(true)")
-    page.locator('.col[data-i="1"] .row[title="short.txt"]').click(button="right")
-    page.get_by_role("menuitem", name="Copy relative path", exact=True).click()
-    page.wait_for_function(
-        "document.querySelector('#st-copy').textContent.includes('refused')"
+    page.set_viewport_size({"width": width, "height": 700})
+    absolute = "/" + "long directory/" * 100 + "short.txt"
+    reason = "Clipboard permission denied. " * 100
+    page.evaluate(
+        "([absolute, reason]) => { path[1].kids.find(n => n.name === 'short.txt').abs = absolute; __clip(false); navigator.clipboard.writeText = async t => { __clipped.push(t); throw new DOMException(reason, 'NotAllowedError'); }; }",
+        [absolute, reason],
     )
-    assert page.locator("#row-menu").is_visible()
-    assert page.evaluate("getSelection().toString()") == ""
+    target = page.locator('.col[data-i="1"] .row[title="short.txt"]')
+    if width == 390:
+        box = target.bounding_box()
+        cdp = page.context.new_cdp_session(page)
+        cdp.send(
+            "Input.dispatchTouchEvent",
+            {
+                "type": "touchStart",
+                "touchPoints": [
+                    {"x": box["x"] + 20, "y": box["y"] + box["height"] / 2}
+                ],
+            },
+        )
+        page.clock.run_for(501)
+        cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
+        page.get_by_role("menuitem", name=label, exact=True).tap()
+    else:
+        target.click(button="right")
+        page.get_by_role("menuitem", name=label, exact=True).click()
+    dialog = page.get_by_role("dialog", name="Copy manually")
+    dialog.wait_for(timeout=3000)
+    assert page.locator("#row-menu").is_hidden()
+    field = page.get_by_label("Text to copy", exact=True)
+    value = ["mixed/short.txt", absolute, "short.txt"][mode]
+    assert field.input_value() == value
+    assert field.evaluate(
+        "el => document.activeElement === el && el.selectionStart === 0 && el.selectionEnd === el.value.length"
+    )
+    assert dialog.locator("#copy-reason").inner_text() == "NotAllowedError: " + reason
+    assert "Ctrl+C" in dialog.inner_text()
+    assert dialog.evaluate(
+        "el => { const r = el.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight && el.scrollHeight > el.clientHeight; }"
+    )
+    count = page.evaluate("__clipped.length")
+    page.keyboard.press("Control+c")
+    assert page.evaluate("__clipped.length") == count
+    assert dialog.is_visible()
+    assert page.evaluate("sel[1]") == "note.md"
+    page.keyboard.press("Escape")
+    assert not dialog.is_visible()
+    assert page.evaluate("document.activeElement === document.body")
 
 
 def test_copy_current_folder_after_breadcrumb(copy_page):
@@ -1142,11 +1201,16 @@ def test_copy_status_click_after_refused_rotation(copy_page, variant, directory)
     page.wait_for_function(
         "document.querySelector('#st-copy').textContent.includes('refused')"
     )
+    assert (
+        page.get_by_label("Text to copy", exact=True).input_value()
+        == ([relative, "/" + relative, relative.split("/")[-1]][variant])
+    )
+    page.keyboard.press("Escape")
     displayed = page.locator("#st-path").inner_text()
     page.evaluate("__clip(false)")
     page.locator("#st-path").click()
     assert page.evaluate("__clipped") == [displayed]
-    copied(page, relative)
+    copied(page, "/" + displayed)
 
 
 async def test_file_kinds(page):
@@ -2626,8 +2690,9 @@ async def test_copy_path(page):
     )
     note = await pg.inner_text("#st-copy")
     assert "refused" in note, note
-    assert await pg.evaluate("getSelection().toString()") == "mixed/note.md", (
-        await pg.evaluate("getSelection().toString()")
+    assert (
+        await pg.get_by_label("Text to copy", exact=True).input_value()
+        == "mixed/note.md"
     )
 
 

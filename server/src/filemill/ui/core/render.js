@@ -172,9 +172,8 @@ export function openRowMenu(node, parent, row, event) {
   menu.querySelectorAll("button").forEach((button) =>
     button.onclick = async () => {
       suppressClick = false;
-      if (await actions.copyPath(node, parent, Number(button.dataset.copy))) {
-        closeRowMenu();
-      }
+      closeRowMenu();
+      await actions.copyPath(node, parent, Number(button.dataset.copy));
     }
   );
   if (FS.remove && !node.vpath) {
