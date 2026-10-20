@@ -50,10 +50,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [129] Remove the obsolete /w/ and /n/ URL routes
-  <!-- hai:{"id":"simple-0ee9510c-1d58-4841-a0ec-bad006c0fd85","labels":["steward"],"createdAt":"2026-10-20T08:11:59.096Z","updatedAt":"2026-10-20T09:42:02.100Z"} -->
-
 ## In Progress
+
+- [~] [129] Remove the obsolete /w/ and /n/ URL routes
+      <!-- hai:{"id":"simple-0ee9510c-1d58-4841-a0ec-bad006c0fd85","labels":["steward"],"createdAt":"2026-10-20T08:11:59.096Z","updatedAt":"2026-10-20T09:42:20.015Z"} -->
 
 ## Completed / Accepted
 
