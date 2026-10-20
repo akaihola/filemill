@@ -4138,7 +4138,8 @@ def test_mutations_from_two_browser_origins(browser, ui_root, tmp_path, proxy):
         page.evaluate("""async () => {
             const { HTTP } = await import('/ui/adapters/http.js');
             const node = {rel: 'notes/plain.txt'};
-            await HTTP.write(node, 'authorized');
+            const blob = await HTTP.blob(node);
+            await HTTP.write(node, 'authorized', blob.revision);
         }""")
         assert (ui_root / "notes/plain.txt").read_text() == "authorized"
         page.evaluate("""async () => {
@@ -4295,7 +4296,9 @@ def _save_through_the_adapter(page, text: str) -> None:
         dedent("""\
             async text => {
                 const { HTTP } = await import('/ui/adapters/http.js');
-                await HTTP.write({rel: 'notes/plain.txt'}, text);
+                const node = {rel: 'notes/plain.txt'};
+                const blob = await HTTP.blob(node);
+                await HTTP.write(node, text, blob.revision);
             }"""),
         text,
     )
@@ -4395,7 +4398,12 @@ def test_warm_startup_offline_reuses_marked_copies(browser, ui_root, tmp_path):
         with _serve(ui_root, tmp_path, port=port) as base:
             page = Harness(context.new_page(), base)
             _installed(page)
-            _copies(page, page.url, "/api/dir?p=notes", "/api/raw?p=notes%2Fplain.txt")
+            _copies(
+                page,
+                page.url,
+                "/api/dir?p=notes",
+                "/api/raw?p=notes%2Fplain.txt&snapshot=1",
+            )
             expect(page.locator("#pv-edit")).to_be_visible()
         # The installed app starts while its server is stopped.
         page.reload()
@@ -4410,7 +4418,7 @@ def test_warm_startup_offline_reuses_marked_copies(browser, ui_root, tmp_path):
             page.evaluate(
                 dedent("""\
                     async () => {
-                        const r = await fetch('/api/raw?p=notes%2Fplain.txt');
+                        const r = await fetch('/api/raw?p=notes%2Fplain.txt&snapshot=1');
                         return r.headers.get('X-Filemill-Offline');
                     }""")
             )
@@ -4621,7 +4629,7 @@ def test_an_offline_copy_of_a_document_is_read_only(browser, ui_root, tmp_path):
         with _serve(ui_root, tmp_path, port=port) as base:
             page = Harness(context.new_page(), base)
             _installed(page, "README.md")
-            _copies(page, page.url, "/api/raw?p=README.md")
+            _copies(page, page.url, "/api/raw?p=README.md&snapshot=1")
             expect(page.locator("#pv-edit")).to_be_visible()
         page.reload()
         expect(page.locator(STATUS_LABEL)).to_have_text("Server offline")
@@ -4746,3 +4754,17 @@ def test_public_ui_has_no_mutation_actions(ui_root, tmp_path, browser):
             ).to_be_hidden()
         finally:
             context.close()
+
+
+def test_stale_save_keeps_draft_and_external_bytes(page, ui_root):
+    page.open("notes/plain.txt")
+    page.click("#pv-edit")
+    page.fill("#pv-editor", "my draft")
+    (ui_root / "notes/plain.txt").write_text("external change")
+    page.click("#pv-save")
+    page.wait_for_function(
+        "document.querySelector('#pv-edit-err')?.textContent.includes('Conflict')"
+    )
+    assert page.input_value("#pv-editor") == "my draft"
+    assert not page.eval_on_selector("#pv-editor", "e => e.readOnly")
+    assert (ui_root / "notes/plain.txt").read_text() == "external change"

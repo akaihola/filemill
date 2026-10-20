@@ -43,6 +43,11 @@ and reads the current file or archive member, including for a nested column. The
 selection walk closes removed paths. The preview shows current values or a parse
 error with current source text. See [the refresh port decision].
 
+Editable Blobs carry the revision of their bytes. `write(node, text, expected)`
+requires that revision and rejects conflicts. The editor keeps its draft and its
+original revision after an error. The HTTP, browser-owned and native ports
+implement this contract. Document wrappers pass it through. See [ADR 0090].
+
 Directory adapters own entry order. The contract is directories first, then
 case-insensitive names, with the adapter's tie-breaker. An adapter sets
 `ordered` when its loaded children follow that order; shared sorting preserves
@@ -117,3 +122,5 @@ server can read one.
 
 [JSON adapter]: vfs-json.js
 [the refresh port decision]: ../../../../../docs/adr/0041-core-adapters-three-ports.md#refresh-invalidation-2026-10-21
+
+[ADR 0090]: ../../../../../docs/adr/0090-revision-checked-file-replacement.md

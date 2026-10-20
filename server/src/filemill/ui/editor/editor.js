@@ -23,7 +23,7 @@ export function editingPreview(node) {
   return null;
 }
 
-export async function editableText(node) {
+export async function editableSnapshot(node) {
   if (
     !FS.write || !classifyFile(node.name, node).editable ||
     (node.meta?.size ?? 0) > TEXT_MAX
@@ -37,11 +37,15 @@ export async function editableText(node) {
     );
     return !text.includes("\0") &&
         text.split(/\r?\n/).every((line) => line.length <= EDIT_MAX_LINE)
-      ? text
+      ? { text, revision: blob.revision }
       : null;
   } catch (_) {
     return null;
   }
+}
+
+export async function editableText(node) {
+  return (await editableSnapshot(node))?.text ?? null;
 }
 
 export async function openEditor(node, current, refresh) {
@@ -49,9 +53,10 @@ export async function openEditor(node, current, refresh) {
   const edit = document.getElementById("pv-edit");
   if (edit.disabled) return;
   edit.disabled = true;
-  const text = await editableText(node);
+  const snapshot = await editableSnapshot(node);
   edit.disabled = false;
-  if (!current() || text === null) return;
+  if (!current() || snapshot === null) return;
+  const { text, revision } = snapshot;
   const pane = document.getElementById("preview");
   const host = pane.querySelector("#pv-content");
   const mark = pane.querySelector("#pv-modified");
@@ -100,7 +105,7 @@ export async function openEditor(node, current, refresh) {
     save.disabled = ta.readOnly = true;
     error.textContent = "";
     try {
-      await FS.write(node, submitted);
+      await FS.write(node, submitted, revision);
       if (live()) refresh();
     } catch (err) {
       if (!live()) return;

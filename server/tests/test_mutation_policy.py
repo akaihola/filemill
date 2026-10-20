@@ -86,6 +86,7 @@ def test_authorized_mutations(tmp_root, monkeypatch, origin):
             "Origin": origin,
             "Host": origin.split("://", 1)[1],
             "X-Filemill-Token": token,
+            "If-Match": client.get("/api/raw?p=readme.md&snapshot=1").headers["etag"],
         }
         assert (
             client.post(
@@ -111,6 +112,9 @@ def test_proxy_does_not_require_forwarded_headers(tmp_root, monkeypatch):
                 headers={
                     "Origin": "https://files.example",
                     "X-Filemill-Token": token,
+                    "If-Match": client.get("/api/raw?p=readme.md&snapshot=1").headers[
+                        "etag"
+                    ],
                 },
             ).status_code
             == 200
@@ -137,6 +141,9 @@ def test_origin_must_match_host_and_configuration(tmp_root, monkeypatch, origin)
                 headers={
                     "Origin": origin,
                     "X-Filemill-Token": token,
+                    "If-Match": client.get("/api/raw?p=readme.md&snapshot=1").headers[
+                        "etag"
+                    ],
                 },
             ).status_code
             == 403
@@ -186,6 +193,9 @@ def test_invalid_origins_are_denied(tmp_root, origin):
                 headers={
                     "Origin": origin,
                     "X-Filemill-Token": token,
+                    "If-Match": client.get("/api/raw?p=readme.md&snapshot=1").headers[
+                        "etag"
+                    ],
                 },
             ).status_code
             == 403

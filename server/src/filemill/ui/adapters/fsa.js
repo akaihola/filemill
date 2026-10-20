@@ -7,6 +7,14 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { classifyFile } from "../core/file-kind.js";
 
+const revisionOf = async (blob) =>
+  Array.from(
+    new Uint8Array(
+      await crypto.subtle.digest("SHA-256", await blob.arrayBuffer()),
+    ),
+    (b) => b.toString(16).padStart(2, "0"),
+  ).join("");
+
 const FSA_COLLATOR = new Intl.Collator(undefined, { numeric: true });
 
 const fsaNode = (name, handle, parent = null) => ({
@@ -67,21 +75,39 @@ export const FSA = {
      whether the node came from a handle or a URL. */
   async blob(node) {
     await FSA.loadMeta(node);
-    return node.file || null;
+    const blob = node.file || null;
+    if (blob) blob.revision = node.revision = await revisionOf(blob);
+    return blob;
   },
 
   /* Optional — see ports.js. A picked folder can be written back through its
      handles; the permission prompt is the browser's own. */
-  async write(node, text) {
+  async write(node, text, expected = node.revision) {
     if (
       node.handle.requestPermission &&
       await node.handle.requestPermission({ mode: "readwrite" }) !== "granted"
     ) {
       throw new Error("No permission to write");
     }
+    const current = await node.handle.getFile();
+    if (!expected || expected !== await revisionOf(current)) {
+      throw new Error("Conflict: file changed; draft kept");
+    }
     const w = await node.handle.createWritable();
-    await w.write(text);
-    await w.close();
+    try {
+      await w.write(text);
+      // A picker grants no compare-and-swap primitive. Recheck before commit.
+      if (expected !== await revisionOf(await node.handle.getFile())) {
+        throw new Error("Conflict: file changed; draft kept");
+      }
+      await w.close();
+    } catch (error) {
+      try {
+        await w.abort();
+      } catch (_) { /* Preserve the original error. */ }
+      throw error;
+    }
+    node.revision = await revisionOf(new Blob([text]));
     node.file = null; /* stale — reread on the next preview */
     node.meta = null;
   },

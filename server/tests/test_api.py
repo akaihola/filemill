@@ -632,7 +632,15 @@ def mutation_client(client, monkeypatch):
 
 
 def test_save_overwrites_and_returns_a_fresh_stat(mutation_client, tmp_root: Path):
-    r = mutation_client.post("/api/save?p=readme.md", content=b"# changed\n")
+    r = mutation_client.post(
+        "/api/save?p=readme.md",
+        content=b"# changed\n",
+        headers={
+            "If-Match": mutation_client.get("/api/raw?p=readme.md&snapshot=1").headers[
+                "etag"
+            ]
+        },
+    )
     assert r.status_code == 200
     assert (tmp_root / "readme.md").read_bytes() == b"# changed\n"
     j = r.json()
@@ -646,7 +654,13 @@ def test_save_allows_unknown_extension_utf8_and_rejects_binary(
     (tmp_root / ".gitconfig").write_text("name = old\n")
     assert (
         mutation_client.post(
-            "/api/save?p=.gitconfig", content="name = Åsa\n".encode()
+            "/api/save?p=.gitconfig",
+            content="name = Åsa\n".encode(),
+            headers={
+                "If-Match": mutation_client.get(
+                    "/api/raw?p=.gitconfig&snapshot=1"
+                ).headers["etag"]
+            },
         ).status_code
         == 200
     )

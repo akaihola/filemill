@@ -6,6 +6,9 @@ on 2026-10-20 for [the architecture re-check][132]. This replaces the
 then. [docs/GOALS.md][goals] states the target; [TASKS.md][tracker] records
 work and acceptance separately.
 
+A4 and the architecture summary were updated on 2026-10-21 for
+[the save-safety task][133]. Other findings retain the re-check above.
+
 ## How to read this review
 
 - **Severity.** P1: fix before relying on the build for ordinary writable use
@@ -63,11 +66,14 @@ work and acceptance separately.
   Shared middleware checks Host before every route, using loopback names and
   exact `FILEMILL_ORIGINS` authorities. Public instances omit the token and
   HTTP write/remove capabilities and refuse all mutations with 403.
-  Save and delete authorize before reading a body or changing files. Bare HTML
+  Save and delete authorize before reading a body or changing files. Saves use
+  bounded body acquisition and revision-checked atomic replacement ([ADR 0090]).
+  Bare HTML
   remains trusted same-origin content under [SECURITY.md][security].
 - **Three ports, mutable nodes.** [ui/core/ports.js][ports], lines 10–99,
   declares FS, PREVIEW and ROUTER. Optional capabilities include writes,
-  deletion, raw URLs and a stale-read flag. Nodes also carry adapter-specific
+  deletion, raw URLs and a stale-read flag. Editable Blobs carry a revision;
+  writes reject a different expected revision. Nodes also carry adapter-specific
   parsing and metadata state. Browser JSON, CSV and document wrappers compose
   around each filesystem. The interface hides byte access and gives JSON
   refresh invalidation to the adapter. Preview lifetime remains A9.
@@ -150,7 +156,7 @@ reviewable changes with focused regressions.
 
 | ID | P | Status | Remaining finding | Effort / risk |
 | --- | --- | --- | --- | --- |
-| A4 | P1 | Open | Saves can truncate or overwrite newer content | M / medium |
+| A4 | P1 | Changed | Save protection implemented; baseline history test blocks the suite gate | M / medium |
 | A5 | P1 | Changed | Static worker freshness, misses and cache ownership | M / medium |
 | A6 | P2 | Changed | Virtual identity is still a display name | M / medium |
 | A7 | P2 | Changed | SQLite keys collide; provider failures look empty | M / medium |
@@ -164,21 +170,52 @@ reviewable changes with focused regressions.
 
 ### A4. Saves can truncate or overwrite newer content
 
-**Status: open, P1.** [server/src/filemill/api.py][api], lines 358–375,
-checks the size and text, then calls `target.write_bytes(data)`. Failure after
-truncation can lose the old file. No revision travels from read to save.
-[server/src/filemill/app.py][app], lines 354–361, buffers the entire request
-before the size check and calls blocking save code on the event loop.
-[ui/adapters/fsa.js][fsa], lines 70–81, has no external-change check or
-explicit abort after a failed write. Native already requests consistent,
-durable replacement ([native/webview/main.c][native-host], lines 151–170),
-but its write port also has no expected revision.
+**Status: changed, P1; implementation complete, suite gate blocked.** The [save-safety task][133]
+adds revision-checked replacement across HTTP, browser-owned folders and native.
+[server/src/filemill/api.py][api] writes a same-directory temporary file, flushes
+and fsyncs it, checks the revision again, then renames it over the target.
+[server/src/filemill/app.py][app] bounds the body while receiving and runs the
+save in a worker thread. Authorization still runs before body acquisition.
 
-**Acceptance.** A failed server write leaves the old bytes intact. Stale writes
-fail with a conflict while retaining the draft. Specify symlink, hard-link,
-ownership and permission behavior for replacement. Recheck browser-owned files
-before writing and abort failed streams. Preserve [the editor task][28]’s
-explicit navigation-discard policy. Authorization from A3 remains in place.
+Editable byte snapshots carry an opaque revision through the [filesystem
+port][ports]. Editors pin it to the draft; document wrappers and task toggles
+carry it to save. Conflicts keep the editor text. [ui/adapters/fsa.js][fsa]
+checks content hashes before opening a stream and before closing it, and aborts
+failed streams. [The native host][native-host] checks stat revisions before
+its existing GLib replacement.
+
+[ADR 0090] specifies symlink, hard-link, ownership and permission behavior.
+Server saves serialize within one process. External writers can still race a
+final check and rename; neither the browser picker nor POSIX rename provides
+compare-and-swap. The decision records that limit and power-loss semantics.
+Explicit navigation-discard behavior and A3 authorization remain unchanged.
+
+**Validation, 2026-10-21.** Regressions cover partial temporary writes, failed
+fsync and rename, missing and stale revisions, concurrent saves, changes during
+flush, streamed body limits, worker-thread execution, supported link/metadata
+rules, browser external changes and stream abort, and draft retention. The
+initial regressions failed before the corresponding fixes. A later regression
+also caught a post-rename metadata lookup reporting failure after commit; the
+reply is now prepared before rename. Ordinary raw Range downloads remain intact.
+
+- **Static:** 169 checks passed in development mode and 169 in bundled mode.
+- **Native:** 19 bridge checks and both shared editor scenarios passed.
+- **Server:** 1,165 checks passed; the only remaining failure was
+  `test_back_retraces_the_folders_that_were_opened`. The same check failed on
+  unchanged main at `5034567a`. A diagnostic recorded a separate `/notes/deep`
+  history entry; the second Back landed there instead of `/notes`. An isolated
+  uninstrumented baseline rerun passed, but a later uninstrumented baseline run
+  reproduced the failure too. This is intermittent. No production navigation
+  change is included in this task. The save, mutation authorization,
+  offline-read and draft-retention checks passed.
+- **Memory:** suites started with at least 2 GiB available and ran one at a time.
+  No suite was stopped for the 1 GiB floor or 512 MiB swap-growth limit. One
+  partial server run was intentionally restarted after correcting its shell
+  environment; it had 136 passes before interruption.
+
+The full-suite gate remains blocked by the baseline history failure. Keep A4
+changed until that gate passes or its acceptance requirement is explicitly
+revised. The editor's navigation-discard policy and A3 authorization are intact.
 
 ### A5. The static service worker retains the old policy
 
@@ -339,7 +376,8 @@ bound all work was too strong.
 
 - **Search and saves.** [server/src/filemill/api.py][api], lines 70–127,
   captures all ripgrep output before taking 100 matches. A timeout exists;
-  client abort does not cancel the child. Request buffering remains in A4.
+  client abort does not cancel the child. Save bodies are now bounded while
+  receiving under A4.
 - **File reads.** [server/src/filemill/preview.py][preview], lines 74–77 and
   201–205, reads whole files before validating or slicing. Rich previews fetch
   the blob before their text gate ([ui/adapters/preview-rich.js][rich], lines
@@ -521,9 +559,10 @@ browser request authorization, not user authentication or safe file replacement.
 Keep P1 work first. The resolved containment and preview-injection repairs are
 regression requirements, not new implementation steps.
 
-1. **Protect saves (A4).** Add atomic server replacement and revisions across
-   supported write ports. Enforce request-size limits while reading. Retain
-   drafts on conflict. This no longer waits for A1/A3: both are resolved.
+1. **Protect saves (A4).** The implementation and focused regressions are
+   complete. The baseline history-navigation failure still blocks the required
+   full-suite gate. Resolve that validation blocker before marking A4 resolved;
+   do not expand this save task into A9 navigation work.
 2. **Repair the static worker (A5).** Fix freshness, valid offline fallback,
    scoped ownership and installed upgrades. Preserve the server’s accepted
    offline-copy policy. Coordinate routing/cache classification with
@@ -674,3 +713,7 @@ one new P2 finding; no new P1 finding was established in this pass.
 [137]: tasks/137-fix-the-intermittent-back-failure-in-test-back-retraces-the-folders-th.md
 [139]: tasks/139-stop-rst-previews-and-search-results-from-injecting-live-markup-securi.md
 [security-review]: reviews/2026-10-21-security-review.md
+
+
+[133]: tasks/133-protect-saves-from-truncation-and-stale-overwrites-architecture-review.md
+[ADR 0090]: adr/0090-revision-checked-file-replacement.md

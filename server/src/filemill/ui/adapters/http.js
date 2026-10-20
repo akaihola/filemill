@@ -137,10 +137,13 @@ export const HTTP = {
   async blob(node) {
     const v = node.vpath ? `&v=${encodeURIComponent(node.vpath)}` : "";
     const r = await serverFetch(
-      `${API}/raw?p=${encodeURIComponent(node.rel)}${v}`,
+      `${API}/raw?p=${encodeURIComponent(node.rel)}${v}&snapshot=1`,
     );
     node.stale = offlineCopy(r) || undefined;
-    return r.ok ? await r.blob() : null;
+    if (!r.ok) return null;
+    const blob = await r.blob();
+    blob.revision = node.revision = r.headers.get("etag");
+    return blob;
   },
 
   rawURL(node) {
@@ -154,20 +157,28 @@ export const HTTP = {
 
   /* Optional — see ports.js. POST the whole new content; the reply carries the
      fresh {size, mod}, so the pane's sub-line stays truthful after a save. */
-  async write(node, text) {
+  async write(node, text, expected = node.revision) {
     const r = await serverFetch(
       `${API}/save?p=${encodeURIComponent(node.rel)}`,
       {
         method: "POST",
         headers: {
+          "If-Match": expected || "",
           "X-Filemill-Token": document.documentElement.dataset.mutationToken ||
             "",
         },
         body: text,
       },
     );
-    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    if (!r.ok) {
+      let message = `${r.status} ${r.statusText}`;
+      try {
+        message = `${r.status} ${(await r.json()).error || r.statusText}`;
+      } catch (_) { /* Keep the status when a proxy returns a text error. */ }
+      throw new Error(message);
+    }
     node.meta = await r.json();
+    node.revision = node.meta.revision;
   },
 
   async remove(node) {

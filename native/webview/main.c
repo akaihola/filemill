@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdint.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include "build/resource.h"
@@ -48,6 +49,15 @@ static void set_number(JSCValue *object, const char *name, double number) {
     jsc_value_object_set_property(object, name, value);
     g_object_unref(value);
 }
+/* Include inode identity and nanosecond times; replacing equal-size bytes is
+ * still a new revision. Symlinks remain forbidden by open_relative(). */
+static char *file_revision(const struct stat *info) {
+    return g_strdup_printf("%ju-%ju-%ju-%jd-%ld-%jd-%ld",
+        (uintmax_t)info->st_dev, (uintmax_t)info->st_ino, (uintmax_t)info->st_size,
+        (intmax_t)info->st_mtim.tv_sec, info->st_mtim.tv_nsec,
+        (intmax_t)info->st_ctim.tv_sec, info->st_ctim.tv_nsec);
+}
+
 static gboolean pick_root(void) {
     GtkWidget *dialog = gtk_file_chooser_dialog_new("Open Folder", NULL,
         GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER, "Cancel", GTK_RESPONSE_CANCEL,
@@ -145,10 +155,26 @@ static gboolean message(WebKitUserContentManager *manager, JSCValue *request,
             while ((count = read(fd, buffer, sizeof(buffer))) > 0) g_byte_array_append(bytes, buffer, count);
             if (count == 0) {
                 char *encoded = g_base64_encode(bytes->data, bytes->len);
-                result = jsc_value_new_string(context, encoded); g_free(encoded);
+                struct stat after;
+                char *before_revision = file_revision(&info);
+                if (!fstat(fd, &after)) {
+                    char *revision = file_revision(&after);
+                    if (!strcmp(before_revision, revision)) {
+                        result = jsc_value_new_object(context, NULL, NULL);
+                        set_string(result, "bytes", encoded);
+                        set_string(result, "revision", revision);
+                    } else errno = ESTALE;
+                    g_free(revision);
+                }
+                g_free(before_revision); g_free(encoded);
             }
             g_byte_array_unref(bytes);
         } else if (!strcmp(op, "write") && S_ISREG(info.st_mode) && *path) {
+            char *expected = string_property(request, "revision");
+            char *actual = file_revision(&info);
+            gboolean matches = expected && !strcmp(expected, actual);
+            g_free(expected); g_free(actual);
+            if (!matches) { errno = ESTALE; goto finish; }
             JSCValue *value = jsc_value_object_get_property(request, "text");
             if (jsc_value_is_string(value)) {
                 GBytes *bytes = jsc_value_to_string_as_bytes(value);
@@ -160,10 +186,24 @@ static gboolean message(WebKitUserContentManager *manager, JSCValue *request,
                 if (parent_fd >= 0) {
                     char *target = g_strdup_printf("/proc/self/fd/%d/%s", parent_fd, name);
                     GError *error = NULL;
-                    if (g_file_set_contents_full(target, text ? text : "", length,
+                    /* GLib replaces one directory entry: other hard links keep
+                     * old bytes. Mode is preserved; ownership and other metadata
+                     * follow GLib's replacement contract; preservation is not guaranteed. */
+                    struct stat current;
+                    char *original_revision = file_revision(&info);
+                    char *current_revision = fstatat(parent_fd, name, &current, AT_SYMLINK_NOFOLLOW)
+                        ? NULL : file_revision(&current);
+                    if (!current_revision || strcmp(original_revision, current_revision)) errno = ESTALE;
+                    else if (g_file_set_contents_full(target, text ? text : "", length,
                         G_FILE_SET_CONTENTS_CONSISTENT | G_FILE_SET_CONTENTS_DURABLE,
-                        info.st_mode & 0777, &error)) result = jsc_value_new_null(context);
-                    else { errno = EIO; g_clear_error(&error); }
+                        info.st_mode & 0777, &error)) {
+                        if (!fstatat(parent_fd, name, &current, AT_SYMLINK_NOFOLLOW)) {
+                            char *revision = file_revision(&current);
+                            result = jsc_value_new_string(context, revision);
+                            g_free(revision);
+                        }
+                    } else { errno = EIO; g_clear_error(&error); }
+                    g_free(original_revision); g_free(current_revision);
                     g_free(target); close(parent_fd);
                 }
                 g_free(parent); g_free(name);

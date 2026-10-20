@@ -324,8 +324,11 @@ def api_search(request, q: str = "", p: str = ""):
 
 
 @rt("/api/raw")
-def api_raw(request, p: str = "", v: str = ""):
-    """Serve a file's bytes — or, with ``v``, one member's bytes from inside it."""
+def api_raw(request, p: str = "", v: str = "", snapshot: str = ""):
+    """Serve file bytes, or one member's bytes with ``v``.
+
+    ``snapshot=1`` binds bounded editor reads to an ETag from the same open file.
+    """
     target = _api_target(p, _zones(request), v)
     if target is None:
         return HTMLResponse("Not found", status_code=404)
@@ -333,7 +336,7 @@ def api_raw(request, p: str = "", v: str = ""):
         if not target.is_file():
             return HTMLResponse("Not found", status_code=404)
         return api.member_raw_response(target, v)
-    return api.raw_response(target)
+    return api.raw_response(target, snapshot=snapshot == "1")
 
 
 @rt("/api/preview")
@@ -375,7 +378,14 @@ async def api_save(request, p: str = ""):
     target = _api_target(p, _zones(request))
     if target is None:
         return JSONResponse({"error": "Not found"}, status_code=404)
-    return api.save_file(target, await request.body())
+    data = bytearray()
+    async for chunk in request.stream():
+        if len(data) + len(chunk) > api.RENDER_MAX:
+            return JSONResponse({"error": "Too large"}, status_code=413)
+        data.extend(chunk)
+    return await run_in_threadpool(
+        api.save_file, target, bytes(data), request.headers.get("if-match")
+    )
 
 
 @rt("/api/delete", methods=["DELETE"])

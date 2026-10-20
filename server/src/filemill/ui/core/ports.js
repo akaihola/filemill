@@ -32,6 +32,7 @@
    Existing adapter or virtual-filesystem fields:
        handle     File System Access API handle
        parent     parent File System Access API handle, when available
+       revision   latest read/save revision; editors pin the Blob revision
        file       cached File from handle.getFile()
        rel        server root-relative path
        vpath      virtual path inside rel (JSON key, table, or row)
@@ -66,11 +67,14 @@
      loadMeta(node)     → Promise   fills node.meta (or records {error}); may
                                     be a no-op when the listing has metadata
      blob(node)         → Promise<Blob|null> returns file bytes for preview, or
-                                    null when the file cannot be read
+                                    null when the file cannot be read. Editable Blobs
+                                    carry an opaque revision for that snapshot
      rawURL(node)       → string|null optional; URL for the file's raw bytes.
                                     Without it, core uses blob(node) and owns
                                     the resulting object URL.
-   write(node, text)  → Promise   optional; overwrite the file with `text`.
+   write(node, text, expected) → Promise optional; replace only if the
+                                    expected Blob revision still matches. Reject
+                                    conflicts; callers keep their draft.
                                     A port without it is read-only — the
                                     preview pane then offers no Edit action.
    remove(node)       → Promise   optional; delete a selected real file or

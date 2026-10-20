@@ -1,6 +1,6 @@
 import { FS } from "../core/ports.js";
 import { toggleTask } from "../core/model/markdown-tasks.js";
-import { editableText } from "./editor.js";
+import { editableSnapshot } from "./editor.js";
 
 const BOX = "input.task-list-item-checkbox[data-source-line][data-source-text]";
 
@@ -18,7 +18,8 @@ export function enableTaskToggles(host, node, current, report) {
     const focused = document.activeElement === box;
     for (const b of boxes()) b.disabled = true;
     try {
-      const text = await editableText(node);
+      const snapshot = await editableSnapshot(node);
+      const text = snapshot?.text ?? null;
       const next = text === null ? null : toggleTask(
         text,
         Number(box.dataset.sourceLine),
@@ -32,7 +33,7 @@ export function enableTaskToggles(host, node, current, report) {
         return;
       }
       try {
-        await FS.write(node, next);
+        await FS.write(node, next, snapshot.revision);
         // The box now stands for the rewritten line; a second click needs it.
         const source = box.dataset.sourceText;
         box.dataset.sourceText = toggleTask(source, 0, box.checked, source);

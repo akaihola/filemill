@@ -44,11 +44,19 @@ export const NativeFS = {
     }
   },
   async blob(node) {
-    const bytes = await nativeCall("read", { path: node.rel });
-    return new Blob([Uint8Array.from(atob(bytes), (c) => c.charCodeAt(0))]);
+    const result = await nativeCall("read", { path: node.rel });
+    const blob = new Blob([
+      Uint8Array.from(atob(result.bytes), (c) => c.charCodeAt(0)),
+    ]);
+    blob.revision = node.revision = result.revision;
+    return blob;
   },
-  async write(node, text) {
-    await nativeCall("write", { path: node.rel, text });
+  async write(node, text, expected = node.revision) {
+    node.revision = await nativeCall("write", {
+      path: node.rel,
+      text,
+      revision: expected,
+    });
     node.meta = null;
   },
 };

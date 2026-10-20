@@ -2516,6 +2516,7 @@ const previewTarget = () => finder.clientWidth / 3;
    Existing adapter or virtual-filesystem fields:
        handle     File System Access API handle
        parent     parent File System Access API handle, when available
+       revision   latest read/save revision; editors pin the Blob revision
        file       cached File from handle.getFile()
        rel        server root-relative path
        vpath      virtual path inside rel (JSON key, table, or row)
@@ -2550,11 +2551,14 @@ const previewTarget = () => finder.clientWidth / 3;
      loadMeta(node)     → Promise   fills node.meta (or records {error}); may
                                     be a no-op when the listing has metadata
      blob(node)         → Promise<Blob|null> returns file bytes for preview, or
-                                    null when the file cannot be read
+                                    null when the file cannot be read. Editable Blobs
+                                    carry an opaque revision for that snapshot
      rawURL(node)       → string|null optional; URL for the file's raw bytes.
                                     Without it, core uses blob(node) and owns
                                     the resulting object URL.
-   write(node, text)  → Promise   optional; overwrite the file with `text`.
+   write(node, text, expected) → Promise optional; replace only if the
+                                    expected Blob revision still matches. Reject
+                                    conflicts; callers keep their draft.
                                     A port without it is read-only — the
                                     preview pane then offers no Edit action.
    remove(node)       → Promise   optional; delete a selected real file or
@@ -3956,7 +3960,7 @@ function editingPreview(node) {
   return null;
 }
 
-async function editableText(node) {
+async function editableSnapshot(node) {
   if (
     !FS.write || !classifyFile(node.name, node).editable ||
     (node.meta?.size ?? 0) > TEXT_MAX
@@ -3970,11 +3974,15 @@ async function editableText(node) {
     );
     return !text.includes("\0") &&
         text.split(/\r?\n/).every((line) => line.length <= EDIT_MAX_LINE)
-      ? text
+      ? { text, revision: blob.revision }
       : null;
   } catch (_) {
     return null;
   }
+}
+
+async function editableText(node) {
+  return (await editableSnapshot(node))?.text ?? null;
 }
 
 async function openEditor(node, current, refresh) {
@@ -3982,9 +3990,10 @@ async function openEditor(node, current, refresh) {
   const edit = document.getElementById("pv-edit");
   if (edit.disabled) return;
   edit.disabled = true;
-  const text = await editableText(node);
+  const snapshot = await editableSnapshot(node);
   edit.disabled = false;
-  if (!current() || text === null) return;
+  if (!current() || snapshot === null) return;
+  const { text, revision } = snapshot;
   const pane = document.getElementById("preview");
   const host = pane.querySelector("#pv-content");
   const mark = pane.querySelector("#pv-modified");
@@ -4033,7 +4042,7 @@ async function openEditor(node, current, refresh) {
     save.disabled = ta.readOnly = true;
     error.textContent = "";
     try {
-      await FS.write(node, submitted);
+      await FS.write(node, submitted, revision);
       if (live()) refresh();
     } catch (err) {
       if (!live()) return;
@@ -4077,7 +4086,8 @@ function enableTaskToggles(host, node, current, report) {
     const focused = document.activeElement === box;
     for (const b of boxes()) b.disabled = true;
     try {
-      const text = await editableText(node);
+      const snapshot = await editableSnapshot(node);
+      const text = snapshot?.text ?? null;
       const next = text === null ? null : toggleTask(
         text,
         Number(box.dataset.sourceLine),
@@ -4091,7 +4101,7 @@ function enableTaskToggles(host, node, current, report) {
         return;
       }
       try {
-        await FS.write(node, next);
+        await FS.write(node, next, snapshot.revision);
         // The box now stands for the rewritten line; a second click needs it.
         const source = box.dataset.sourceText;
         box.dataset.sourceText = toggleTask(source, 0, box.checked, source);
@@ -7437,14 +7447,15 @@ const withDocuments = (fs) => ({
     const file = asFile(node);
     const blob = await fs.blob(file);
     node.stale = file.stale;
+    node.revision = blob?.revision;
     return blob;
   },
 
   ...(fs.write && {
     /* The save goes to the file; the sections it was browsed by are stale
        the moment it lands, so an open outline is rebuilt from the new text. */
-    async write(node, text) {
-      await fs.write(node, text);
+    async write(node, text, expected = node.revision) {
+      await fs.write(node, text, expected);
       if (node.doc && node.kids !== null) {
         node.lines = text.split("\n");
         node.kids = sections(text, classifyFile(node.name).preview)
@@ -7569,6 +7580,14 @@ async function mountRoot(node, title = node.name) {
    readwrite permission first; reading needs only the picker's grant.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+const revisionOf = async (blob) =>
+  Array.from(
+    new Uint8Array(
+      await crypto.subtle.digest("SHA-256", await blob.arrayBuffer()),
+    ),
+    (b) => b.toString(16).padStart(2, "0"),
+  ).join("");
+
 const FSA_COLLATOR = new Intl.Collator(undefined, { numeric: true });
 
 const fsaNode = (name, handle, parent = null) => ({
@@ -7629,21 +7648,39 @@ const FSA = {
      whether the node came from a handle or a URL. */
   async blob(node) {
     await FSA.loadMeta(node);
-    return node.file || null;
+    const blob = node.file || null;
+    if (blob) blob.revision = node.revision = await revisionOf(blob);
+    return blob;
   },
 
   /* Optional — see ports.js. A picked folder can be written back through its
      handles; the permission prompt is the browser's own. */
-  async write(node, text) {
+  async write(node, text, expected = node.revision) {
     if (
       node.handle.requestPermission &&
       await node.handle.requestPermission({ mode: "readwrite" }) !== "granted"
     ) {
       throw new Error("No permission to write");
     }
+    const current = await node.handle.getFile();
+    if (!expected || expected !== await revisionOf(current)) {
+      throw new Error("Conflict: file changed; draft kept");
+    }
     const w = await node.handle.createWritable();
-    await w.write(text);
-    await w.close();
+    try {
+      await w.write(text);
+      // A picker grants no compare-and-swap primitive. Recheck before commit.
+      if (expected !== await revisionOf(await node.handle.getFile())) {
+        throw new Error("Conflict: file changed; draft kept");
+      }
+      await w.close();
+    } catch (error) {
+      try {
+        await w.abort();
+      } catch (_) { /* Preserve the original error. */ }
+      throw error;
+    }
+    node.revision = await revisionOf(new Blob([text]));
     node.file = null; /* stale — reread on the next preview */
     node.meta = null;
   },

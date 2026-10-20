@@ -113,9 +113,27 @@ links keep markdown-it's validation, and `markdownHref` also rejects
 file's name and matching line as text. See
 [ADR 0082](docs/adr/0082-previews-link-only-to-safe-protocols.md).
 
+## Save replacement and conflicts
+
+A save requires the revision returned with the editable bytes. A stale save
+fails and the editor keeps the draft. Server saves use a flushed, fsynced
+same-directory temporary file and atomic rename. Pre-rename failures keep the
+old file. The server follows authorized symlink targets, keeps other hard links
+on the old inode, and preserves owner, group and mode bits or fails. ACLs and
+extended attributes are not copied. A read-only target remains read-only.
+
+The server serializes saves within one process. Use one worker. External
+writers can still race the final check and rename; neither POSIX rename nor
+the browser picker provides an atomic revision check and replacement. The
+browser rechecks content and aborts failed streams. Native replacement retains
+its GLib semantics, without an ownership-preservation guarantee.
+See [the replacement decision] for the complete policy and power-loss limits.
+
 ## Report a vulnerability
 
 Report security issues through [GitHub private vulnerability
 reporting](https://github.com/akaihola/filemill/security/advisories/new). Do not
 put passwords, tokens, private files, or other secrets in the report. Give the
 affected version or commit, the steps to reproduce, and the impact.
+
+[the replacement decision]: docs/adr/0090-revision-checked-file-replacement.md

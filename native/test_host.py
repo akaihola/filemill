@@ -58,7 +58,7 @@ def test_failed_write_preserves_contents(tmp_path):
     file.chmod(0o400)
     with application(tmp_path) as page:
         assert page.evaluate(
-            'async () => { try { await nativeCall("write", {path:"read-only.txt", text:"lost"}); return false; } catch { return true; } }'
+            'async () => { try { const b = await nativeCall("read", {path:"read-only.txt"}); await nativeCall("write", {path:"read-only.txt", text:"lost", revision:b.revision}); return false; } catch { return true; } }'
         )
     assert file.read_text() == "keep these bytes"
 
@@ -199,7 +199,7 @@ def test_write_preserves_embedded_nul(tmp_path):
     file.write_text("before")
     with application(tmp_path) as page:
         page.evaluate(
-            'async () => { await FS.write(path[0].kids[0], "before\\u0000after é"); }'
+            'async () => { await FS.blob(path[0].kids[0]); await FS.write(path[0].kids[0], "before\\u0000after é"); }'
         )
     assert file.read_bytes() == "before\0after é".encode()
 
@@ -319,3 +319,13 @@ def test_automation_keeps_no_profile(tmp_path):
         page.evaluate("localStorage.setItem('filemill.sort', 'size')")
     assert not (data / "filemill").exists()
     assert not (cache / "filemill").exists()
+
+
+def test_native_stale_save_keeps_external_bytes(tmp_path):
+    file = tmp_path / "text.txt"
+    file.write_text("old")
+    with application(tmp_path) as page:
+        page.evaluate('async () => { window.n = path[0].kids[0]; window.b = await nativeCall("read", {path:n.rel}); }')
+        file.write_text("external")
+        assert page.evaluate('async () => { try { await nativeCall("write", {path:n.rel, text:"draft", revision:b.revision}); return false; } catch (e) { return String(e).includes("ESTALE"); } }')
+    assert file.read_text() == "external"

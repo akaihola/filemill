@@ -36,7 +36,10 @@ The measured build used GCC 16.2.0, WebKitGTK 2.54.0, GTK 3.24.52 and glibc
 The native bridge is `webkit.messageHandlers.filemill`. Paths are relative
 to the selected root. The host refuses symlinks and parent traversal. HTML
 previews are sandboxed; top-level navigation stays on the embedded app.
-Writes replace files atomically. A failed call rejects with the errno name
+Reads return bytes and a revision. Writes require that revision and replace
+files atomically. A changed or missing revision rejects with `ESTALE`; the editor
+keeps the draft. See [ADR 0090] for replacement metadata rules and external-writer
+race limits. A failed call rejects with the errno name
 first, such as `EACCES: Permission denied`; the text after it follows the
 locale.
 
@@ -58,7 +61,7 @@ nix-shell native/shell.nix --run 'uv run --project server pytest native/test_hos
 nix-shell native/shell.nix --run 'uv run --project server pytest static/tests/test_ui.py --native -q'
 ```
 
-The first command runs 18 contract checks. The second runs the UI sections
+The first command runs 19 contract checks. The second runs the UI sections
 that use the shared browser fixture in the native host. The test driver writes the
 fixture's bytes into temporary files and exercises the native port; it does
 not substitute fake handles for native reads. Where the fake handle counts
@@ -81,3 +84,5 @@ Tests that create their own browser keep their browser adapters, including
 IndexedDB and FSA-specific checks.
 
 [ADR 0079]: ../docs/adr/0079-native-shell.md
+
+[ADR 0090]: ../docs/adr/0090-revision-checked-file-replacement.md

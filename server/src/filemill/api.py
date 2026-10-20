@@ -25,6 +25,7 @@ file in the browser through the same PreviewRich provider as the static edition.
 
 from __future__ import annotations
 
+import hashlib
 import html as html_lib
 import json
 import mimetypes
@@ -32,13 +33,14 @@ import os
 import shutil
 import subprocess
 import tempfile
+import threading
 from collections.abc import Callable
 from pathlib import Path
 from typing import cast
 
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
-from filemill.preview import read_text, render_preview, valid_text
+from filemill.preview import render_preview, valid_text
 from filemill.vfs import (
     REGISTRY,
     VFSMember,
@@ -292,11 +294,45 @@ def split_vfs(rel: str, root: Path, resolve) -> tuple[str, str] | None:
     return ("", "") if not parts else None
 
 
-def raw_response(target: Path) -> Response:
-    """Serve a file's bytes with a guessed media type."""
+def file_revision(data: bytes) -> str:
+    """A strong ETag for a byte snapshot, independent of filesystem timestamps."""
+    return f'"{hashlib.sha256(data).hexdigest()}"'
+
+
+def raw_response(target: Path, *, snapshot: bool = False) -> Response:
+    """With snapshot=True, bind bounded editor bytes to a strong ETag.
+
+    Ordinary downloads retain FileResponse streaming and Range support. Large
+    snapshots also stream, but exceed the editor limit and carry no edit revision.
+    """
     if not target.is_file():
         return HTMLResponse("Not found", status_code=404)
     media, _ = mimetypes.guess_type(target.name)
+    if not snapshot:
+        return FileResponse(
+            str(target),
+            media_type=media or "application/octet-stream",
+            headers={"Cache-Control": "no-store"},
+        )
+    with target.open("rb") as source:
+        before = os.fstat(source.fileno())
+        if before.st_size <= RENDER_MAX:
+            data = source.read(RENDER_MAX + 1)
+            after = os.fstat(source.fileno())
+            if (before.st_size, before.st_mtime_ns, before.st_ctime_ns) != (
+                after.st_size,
+                after.st_mtime_ns,
+                after.st_ctime_ns,
+            ):
+                return JSONResponse(
+                    {"error": "Conflict: file changed during read"}, status_code=409
+                )
+            if len(data) <= RENDER_MAX:
+                return Response(
+                    data,
+                    media_type=media or "application/octet-stream",
+                    headers={"Cache-Control": "no-store", "ETag": file_revision(data)},
+                )
     return FileResponse(
         str(target),
         media_type=media or "application/octet-stream",
@@ -355,24 +391,84 @@ def member_preview_response(target: Path, vpath: str, preview_url: str) -> Respo
     return HTMLResponse(html, headers={"Cache-Control": "no-store"})
 
 
-def save_file(target: Path, data: bytes) -> Response:
-    """Overwrite an existing file with the posted bytes.
+# shortcut: serialize saves in this process; use a shared lock if multi-worker
+# serving is introduced. External writers require the final revision recheck.
+_save_lock = threading.Lock()
 
-    Only a file that already exists is writable: edit mode edits what it
-    previews, so there is no create, no mkdir, and no new name to validate.
+
+def save_file(target: Path, data: bytes, expected: str | None = None) -> Response:
+    """Replace an existing text file after checking its read revision.
+
+    Resolve symlinks to the authorized target; keep the symlink itself. Replace
+    one directory entry, so other hard links retain the old inode and bytes.
+    Preserve uid, gid and permission bits, or fail before replacement. ACLs and
+    extended attributes are not copied. A same-directory temporary file is
+    flushed and fsynced before rename. All pre-rename failures retain old bytes.
+    Filemill saves serialize; unrelated writers cannot be locked by this API.
     """
-    if not target.is_file():
-        return JSONResponse({"error": "Not found"}, status_code=404)
-    if len(data) > RENDER_MAX:
-        return JSONResponse({"error": "Too large"}, status_code=413)
-    if read_text(target) is None or valid_text(data) is None:
-        return JSONResponse({"error": "Not editable"}, status_code=415)
-    try:
-        target.write_bytes(data)
-    except OSError as exc:
-        return JSONResponse({"error": str(exc)}, status_code=500)
-    st = target.stat()
-    return JSONResponse({"size": st.st_size, "mod": int(st.st_mtime * 1000)})
+    with _save_lock:
+        temporary = None
+        try:
+            target = target.resolve()
+            if not target.is_file():
+                return JSONResponse({"error": "Not found"}, status_code=404)
+            if len(data) > RENDER_MAX:
+                return JSONResponse({"error": "Too large"}, status_code=413)
+            with target.open("rb") as source:
+                current_data = source.read(RENDER_MAX + 1)
+            if valid_text(current_data) is None or valid_text(data) is None:
+                return JSONResponse({"error": "Not editable"}, status_code=415)
+            if not expected:
+                return JSONResponse(
+                    {"error": "Read revision required"}, status_code=428
+                )
+            original = target.stat()
+            if expected != file_revision(current_data):
+                return JSONResponse(
+                    {"error": "Conflict: file changed; draft kept"}, status_code=409
+                )
+            # Retain the existing file's write-permission check, without truncation.
+            fd = os.open(target, os.O_WRONLY)
+            os.close(fd)
+            with tempfile.NamedTemporaryFile(
+                dir=target.parent, prefix=".filemill-", delete=False
+            ) as output:
+                temporary = Path(output.name)
+                output.write(data)
+                output.flush()
+                current = os.fstat(output.fileno())
+                if (current.st_uid, current.st_gid) != (
+                    original.st_uid,
+                    original.st_gid,
+                ):
+                    os.fchown(output.fileno(), original.st_uid, original.st_gid)
+                os.fchmod(output.fileno(), original.st_mode & 0o7777)
+                os.fsync(output.fileno())
+                st = os.fstat(output.fileno())
+            with target.open("rb") as source:
+                latest = source.read(RENDER_MAX + 1)
+            if expected != file_revision(latest):
+                return JSONResponse(
+                    {"error": "Conflict: file changed; draft kept"}, status_code=409
+                )
+            # Prepare the reply before the commit point: no fallible metadata
+            # lookup may turn a successful replacement into a reported failure.
+            response = JSONResponse(
+                {
+                    "size": st.st_size,
+                    "mod": int(st.st_mtime * 1000),
+                    "revision": file_revision(data),
+                },
+                headers={"ETag": file_revision(data)},
+            )
+            os.replace(temporary, target)
+            temporary = None
+            return response
+        except OSError as exc:
+            return JSONResponse({"error": str(exc)}, status_code=500)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
 
 
 def delete_file(target: Path) -> Response:

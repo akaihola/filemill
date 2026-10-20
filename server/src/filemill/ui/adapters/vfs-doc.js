@@ -116,14 +116,15 @@ export const withDocuments = (fs) => ({
     const file = asFile(node);
     const blob = await fs.blob(file);
     node.stale = file.stale;
+    node.revision = blob?.revision;
     return blob;
   },
 
   ...(fs.write && {
     /* The save goes to the file; the sections it was browsed by are stale
        the moment it lands, so an open outline is rebuilt from the new text. */
-    async write(node, text) {
-      await fs.write(node, text);
+    async write(node, text, expected = node.revision) {
+      await fs.write(node, text, expected);
       if (node.doc && node.kids !== null) {
         node.lines = text.split("\n");
         node.kids = sections(text, classifyFile(node.name).preview)
