@@ -31,10 +31,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [134] Refresh JSON columns from the current file (architecture review A13)
-  <!-- hai:{"id":"simple-fc2b70cd-7598-47b9-8b82-4004d374afcd","labels":["steward"],"createdAt":"2026-10-20T19:38:03.173Z","updatedAt":"2026-10-20T21:26:55.225Z"} -->
-
 ## In Progress
+
+- [~] [134] Refresh JSON columns from the current file (architecture review A13)
+      <!-- hai:{"id":"simple-fc2b70cd-7598-47b9-8b82-4004d374afcd","labels":["steward"],"createdAt":"2026-10-20T19:38:03.173Z","updatedAt":"2026-10-20T21:27:12.418Z"} -->
 
 - [~] [133] Protect saves from truncation and stale overwrites (architecture review
   A4)
