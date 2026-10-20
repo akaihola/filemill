@@ -25,9 +25,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [132] Re-check the architecture review against current main
-      <!-- hai:{"id":"simple-2a087add-53a0-4c65-9b64-6b413aae4b4f","labels":["steward","review"],"createdAt":"2026-10-20T17:18:18.462Z","updatedAt":"2026-10-20T17:48:33.380Z"} -->
-
 - [~] [122] Clarify deliberate test delays from docs question 8
       <!-- hai:{"id":"simple-e47a58f3-193e-4296-83a9-cfa00f27371b","labels":["steward"],"createdAt":"2026-10-20T07:12:44.920Z","updatedAt":"2026-10-20T13:22:03.268Z"} -->
 
@@ -35,6 +32,9 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-20T13:03:29.269Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [132] Re-check the architecture review against current main
+      <!-- hai:{"id":"simple-2a087add-53a0-4c65-9b64-6b413aae4b4f","labels":["steward","review"],"createdAt":"2026-10-20T17:18:18.462Z","updatedAt":"2026-10-20T18:04:52.988Z"} -->
 
 - [ ] [131] Close the gaps found in five older review items
       <!-- hai:{"id":"simple-c79b828d-b1d0-4776-82e2-0e9bdf1d6bed","labels":["steward"],"createdAt":"2026-10-20T14:12:31.533Z","updatedAt":"2026-10-20T15:06:22.878Z"} -->
