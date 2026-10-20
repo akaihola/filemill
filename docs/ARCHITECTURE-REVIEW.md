@@ -361,11 +361,12 @@ clearing remembered folder handles. The earlier acceptance, "viewing a file
 adds no document bytes to Cache Storage", no longer applies.
 
 Partly resolved 2026-10-20 ([117], [ADR 0089]). The server worker is
-network-first for every request it handles and keeps complete answers as
-offline copies: shells marked `X-Filemill-Shell`, UI assets by path, and up to
-200 reads of at most 2 MiB. It answers from a copy, marked
-`X-Filemill-Offline`, only when the server does not answer or a proxy answers
-502–504, and otherwise a valid 503 or the recovery page. It precaches nothing
+network-first for every request it handles but exact content-hashed UI
+module URLs, and keeps complete answers as offline copies: shells marked
+`X-Filemill-Shell`, UI assets by path, and up to 200 reads of at most 2 MiB.
+It answers from a copy, marked `X-Filemill-Offline`, only when the server does
+not answer or a proxy answers 502–504, and otherwise a valid 503 or the
+recovery page. It precaches nothing
 and deletes only `filemill-v1` and older `filemill-server-*` caches.
 `ui/adapters/server-status.js` turns those answers into the top-bar
 indicator, probes past the worker for recovery and a fresh mutation token,

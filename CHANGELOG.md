@@ -29,7 +29,8 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - Large directories scroll in one virtualized column instead of paging.
-- The server edition's service worker asks the server first for every read.
+- The server edition's service worker asks the server first for every read
+  but a content-hashed UI module.
   Its copies answer only when the server does not, marked as offline copies.
   It no longer precaches `/`, which could be a user's `index.html`.
 

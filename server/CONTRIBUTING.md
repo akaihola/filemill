@@ -111,9 +111,10 @@ the default view and that branch returns before the shell one.
   the resource catch-all route, `/{path:path}`. Without that, the catch-all
   swallows every `.js` and `.css` the shared UI asks for, and the page is blank.
 - The UI shell registers the [service worker](src/filemill/static/sw.js).
-  It asks the network first for every GET it handles and keeps complete
-  answers as offline copies: shell pages marked `X-Filemill-Shell`, UI assets,
-  listings, file bytes and previews. Only when the server does not answer does
+  It asks the network first for every GET it handles, except an exact
+  content-hashed `/ui/` module URL, and keeps complete answers as offline
+  copies: shell pages marked `X-Filemill-Shell`, UI assets, listings, file
+  bytes and previews. Only when the server does not answer does
   it reply with a copy marked `X-Filemill-Offline`, or a valid 503 without one.
   Non-GET, `/api/search`, Range and `cache: "no-store"` requests bypass it.
   [`server-status.js`](../ui/adapters/server-status.js) turns those answers

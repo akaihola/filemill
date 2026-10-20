@@ -16,8 +16,9 @@
        refused       the server answered 403 to a change
        recovered     answering again after being offline; brief
 
-   The probe fetches the shell, past the worker, and takes its mutation token:
-   a restarted server has a new one, and the old one would refuse every save.
+   After a failure, the probe fetches the shell, past the worker, and takes its
+   mutation token: a restarted server has a new one, and the old one would
+   refuse every save. While the server answers, a HEAD every 30 s suffices.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const OFFLINE_HEADER = "X-Filemill-Offline";
@@ -104,23 +105,28 @@ function unreachable(init) {
   set("offline");
 }
 
-/* Ask the server, past the service worker, and take a fresh mutation token. */
+/* Ask the server, past the service worker. While it answers, a HEAD will do;
+   after a failure, the shell itself, for its fresh mutation token. */
 export function probe() {
   if (probing) return probing;
   if (state === "offline") set("reconnecting");
   probing = (async () => {
     try {
       const base = document.documentElement.dataset.base || "/";
+      const head = state === "online" || state === "recovered";
       const response = await fetch(`${base}?filemill=render`, {
+        method: head ? "HEAD" : "GET",
         cache: "no-store",
       });
       if (UNAVAILABLE.includes(response.status)) throw new ServerOffline();
-      const shell = new DOMParser().parseFromString(
-        await response.text(),
-        "text/html",
-      );
-      const token = shell.documentElement.dataset.mutationToken;
-      if (token) document.documentElement.dataset.mutationToken = token;
+      if (!head) {
+        const shell = new DOMParser().parseFromString(
+          await response.text(),
+          "text/html",
+        );
+        const token = shell.documentElement.dataset.mutationToken;
+        if (token) document.documentElement.dataset.mutationToken = token;
+      }
       answered();
     } catch {
       set("offline");
@@ -134,7 +140,9 @@ export function probe() {
 
 function answered() {
   if (state === "online" || state === "recovered") return;
-  if (state === "refused") return set("online");
+  /* A refusal is an answer, but reads answered offline before it still need
+     reading again. */
+  if (state === "refused" && !readOffline) return set("online");
   const refresh = readOffline;
   readOffline = false;
   set("recovered");

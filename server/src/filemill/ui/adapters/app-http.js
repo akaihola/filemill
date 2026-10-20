@@ -71,7 +71,9 @@ const welcome = document.getElementById("welcome");
 /* When the server answers again after reads were answered offline, read the
    location again: every node from those reads is replaced, and the URL, which
    kept the location an offline walk could not reach, is walked once more. A
-   local folder on screen has nothing of the server's to refresh. */
+   local folder on screen has nothing of the server's to refresh. No editor is
+   lost: an offline read comes from navigation, which closes the editor ([28]),
+   and an offline copy never opens one (`stale`). */
 initServerStatus((refresh) => {
   if (refresh && document.getElementById("local-badge").hidden) mountServer();
 });

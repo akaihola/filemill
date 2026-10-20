@@ -22,7 +22,7 @@ and implementation links. This document covers the Python edition.
 - **`.desktop` files** – show as a link card
 - **Symlink bookmarks** – a direct symlink child of the root opens as a bookmark, and its target subtree is browsable
 - **Open Folder…** – the served page can browse a folder on your machine through the File System Access API. PreviewRich renders local previews in the browser.
-- **PWA** – installable, with a manifest, service worker and icons. The [worker](src/filemill/static/sw.js) asks the server first for every read, so an online read is never an older copy, and keeps what it read as offline copies. While the server is offline, folders and files read earlier stay readable, read-only, and an indicator in the top bar says so. See [Installed PWA](#installed-pwa).
+- **PWA** – installable, with a manifest, service worker and icons. The [worker](src/filemill/static/sw.js) asks the server first for every read but a content-hashed UI module, so an online read is never an older copy, and keeps what it read as offline copies. While the server is offline, folders and files read earlier stay readable, read-only, and an indicator in the top bar says so. See [Installed PWA](#installed-pwa).
 
 ## Installation
 
@@ -86,7 +86,8 @@ what that means, the start command and **Retry now**. Filemill also retries
 every 5 seconds. When the server answers again, the indicator says
 **Server back online**, and folders and files read while it was offline are
 read again. A restarted server has a new mutation token; the page fetches it,
-so saving works without a reload.
+so saving works without a reload. After a restart the page did not notice, a
+save shows **Change refused**; Retry now fetches the new token.
 
 After one visit under the installed worker, opening the app while the server
 is stopped shows the copies of the folders and files read before, with the

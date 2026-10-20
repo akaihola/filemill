@@ -29,8 +29,9 @@ Older content is visibly identified while the server is offline; details and ins
 records the decision and the cache policy.
 
 - The server worker, [server/src/filemill/static/sw.js](../../server/src/filemill/static/sw.js),
-  is network-first. It keeps shells marked `X-Filemill-Shell`, UI assets by
-  path and up to 200 reads of at most 2 MiB. It answers from a copy, marked
+  is network-first, except for exact content-hashed module URLs. It keeps
+  shells marked `X-Filemill-Shell`, UI assets by path and up to 200 reads of
+  at most 2 MiB. It answers from a copy, marked
   `X-Filemill-Offline: copy`, only when the server does not answer or a proxy
   answers 502–504. Otherwise it gives a valid 503 marked `miss`, the recovery
   page for a navigation. Activation deletes only `filemill-v1` and older

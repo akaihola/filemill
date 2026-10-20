@@ -36,6 +36,7 @@ import tarfile
 import time
 import zipfile
 from pathlib import Path
+from textwrap import dedent
 from urllib.parse import parse_qs, unquote, urlsplit
 
 import pytest
@@ -4178,26 +4179,30 @@ def _copies(page, *urls: str) -> None:
 
 def _fits(page, selector: str) -> bool:
     """Nothing in *selector* is clipped, ellipsised or outside the viewport."""
-    return page.locator(selector).evaluate("""e => {
-        const r = e.getBoundingClientRect();
-        const inside = r.left >= 0 && r.top >= 0 &&
-            r.right <= innerWidth && r.bottom <= innerHeight;
-        const clipped = [e, ...e.querySelectorAll('*')]
-            .filter(x => getComputedStyle(x).display !== 'inline')
-            .some(x => x.scrollWidth > x.clientWidth + 1 ||
-                       x.scrollHeight > x.clientHeight + 1 ||
-                       getComputedStyle(x).textOverflow === 'ellipsis' &&
-                       x.scrollWidth > x.clientWidth);
-        return inside && !clipped;
-    }""")
+    return page.locator(selector).evaluate(
+        dedent("""\
+            e => {
+                const r = e.getBoundingClientRect();
+                const inside = r.left >= 0 && r.top >= 0 &&
+                    r.right <= innerWidth && r.bottom <= innerHeight;
+                const clipped = [e, ...e.querySelectorAll('*')]
+                    .filter(x => getComputedStyle(x).display !== 'inline')
+                    .some(x => x.scrollWidth > x.clientWidth + 1 ||
+                               x.scrollHeight > x.clientHeight + 1 ||
+                               getComputedStyle(x).textOverflow === 'ellipsis' &&
+                               x.scrollWidth > x.clientWidth);
+                return inside && !clipped;
+            }""")
+    )
 
 
 def _save_through_the_adapter(page, text: str) -> None:
     page.evaluate(
-        """async text => {
-            const { HTTP } = await import('/ui/adapters/http.js');
-            await HTTP.write({rel: 'notes/plain.txt'}, text);
-        }""",
+        dedent("""\
+            async text => {
+                const { HTTP } = await import('/ui/adapters/http.js');
+                await HTTP.write({rel: 'notes/plain.txt'}, text);
+            }"""),
         text,
     )
 
@@ -4308,10 +4313,13 @@ def test_warm_startup_offline_reuses_marked_copies(browser, ui_root, tmp_path):
         # An offline copy is read-only: it may be older than the file.
         expect(page.locator("#pv-edit")).to_be_hidden()
         assert (
-            page.evaluate("""async () => {
-            const r = await fetch('/api/raw?p=notes%2Fplain.txt');
-            return r.headers.get('X-Filemill-Offline');
-        }""")
+            page.evaluate(
+                dedent("""\
+                    async () => {
+                        const r = await fetch('/api/raw?p=notes%2Fplain.txt');
+                        return r.headers.get('X-Filemill-Offline');
+                    }""")
+            )
             == "copy"
         )
         page.click('.col[data-i="0"] .row[aria-label="code"]')
@@ -4341,10 +4349,13 @@ def test_uncached_destinations_get_valid_offline_answers(browser, ui_root, tmp_p
         with _serve(ui_root, tmp_path, port=port) as base:
             page = Harness(context.new_page(), base)
             _installed(page)
-        miss = page.evaluate("""async () => {
-            const r = await fetch('/api/dir?p=never-read');
-            return [r.status, r.headers.get('X-Filemill-Offline')];
-        }""")
+        miss = page.evaluate(
+            dedent("""\
+                async () => {
+                    const r = await fetch('/api/dir?p=never-read');
+                    return [r.status, r.headers.get('X-Filemill-Offline')];
+                }""")
+        )
         assert miss == [503, "miss"]
         # A bare file URL serves bytes, which the worker never keeps for a page.
         response = page.goto(base + "/code/sample.py")
@@ -4373,42 +4384,51 @@ def test_online_reads_never_answer_with_an_older_copy(page, ui_root):
 def test_worker_activation_removes_only_obsolete_filemill_caches(page):
     # A page of the same origin that does not register the worker.
     page.goto(page.base + "/manifest.json")
-    page.evaluate("""async () => {
-        await (await caches.open('filemill-v1')).put('/legacy', new Response('old'));
-        await (await caches.open('another-app')).put('/keep', new Response('mine'));
-        await new Promise((resolve, reject) => {
-            const open = indexedDB.open('filemill', 1);
-            open.onupgradeneeded = e => e.target.result.createObjectStore('kv');
-            open.onsuccess = e => {
-                const tx = e.target.result.transaction('kv', 'readwrite');
-                tx.objectStore('kv').put('remembered', 'roots');
-                tx.oncomplete = resolve;
-                tx.onerror = () => reject(tx.error);
-            };
-            open.onerror = () => reject(open.error);
-        });
-    }""")
+    page.evaluate(
+        dedent("""\
+            async () => {
+                await (await caches.open('filemill-v1')).put('/legacy', new Response('old'));
+                await (await caches.open('another-app')).put('/keep', new Response('mine'));
+                await new Promise((resolve, reject) => {
+                    const open = indexedDB.open('filemill', 1);
+                    open.onupgradeneeded = e => e.target.result.createObjectStore('kv');
+                    open.onsuccess = e => {
+                        const tx = e.target.result.transaction('kv', 'readwrite');
+                        tx.objectStore('kv').put('remembered', 'roots');
+                        tx.oncomplete = resolve;
+                        tx.onerror = () => reject(tx.error);
+                    };
+                    open.onerror = () => reject(open.error);
+                });
+            }""")
+    )
     page.open()
     page.wait_for_function("navigator.serviceWorker.controller !== null")
     names = page.evaluate("caches.keys()")
     assert "another-app" in names
     assert "filemill-v1" not in names
     assert (
-        page.evaluate("""async () => {
-        const keep = await (await caches.open('another-app')).match('/keep');
-        return keep && keep.text();
-    }""")
+        page.evaluate(
+            dedent("""\
+                async () => {
+                    const keep = await (await caches.open('another-app')).match('/keep');
+                    return keep && keep.text();
+                }""")
+        )
         == "mine"
     )
     assert (
-        page.evaluate("""() => new Promise((resolve, reject) => {
-        const open = indexedDB.open('filemill', 1);
-        open.onsuccess = e => {
-            const get = e.target.result.transaction('kv').objectStore('kv').get('roots');
-            get.onsuccess = () => resolve(get.result);
-            get.onerror = () => reject(get.error);
-        };
-    })""")
+        page.evaluate(
+            dedent("""\
+                () => new Promise((resolve, reject) => {
+                    const open = indexedDB.open('filemill', 1);
+                    open.onsuccess = e => {
+                        const get = e.target.result.transaction('kv').objectStore('kv').get('roots');
+                        get.onsuccess = () => resolve(get.result);
+                        get.onerror = () => reject(get.error);
+                    };
+                })""")
+        )
         == "remembered"
     )
 
@@ -4495,5 +4515,68 @@ def test_reconnecting_shows_while_the_server_is_asked(browser, ui_root, tmp_path
         assert held
         held[0].abort()
         expect(page.locator(STATUS_LABEL)).to_have_text("Server offline")
+    finally:
+        context.close()
+
+
+def test_an_offline_copy_of_a_document_is_read_only(browser, ui_root, tmp_path):
+    """A Markdown file browsed by its headings is read through a copy of its node."""
+    port = _free_port()
+    context = browser.new_context(viewport={"width": 1500, "height": 900})
+    try:
+        with _serve(ui_root, tmp_path, port=port) as base:
+            page = Harness(context.new_page(), base)
+            _installed(page, "README.md")
+            _copies(page, page.url, "/api/raw?p=README.md")
+            expect(page.locator("#pv-edit")).to_be_visible()
+        page.reload()
+        expect(page.locator(STATUS_LABEL)).to_have_text("Server offline")
+        expect(page.locator("#pv-content")).to_contain_text("line one")
+        expect(page.locator("#pv-edit")).to_be_hidden()
+        assert (
+            page.evaluate("path[0].kids.find(n => n.name === 'README.md').stale")
+            is True
+        )
+    finally:
+        context.close()
+
+
+def test_a_refusal_after_offline_reads_still_rereads_them(browser, ui_root, tmp_path):
+    port = _free_port()
+    context = browser.new_context(
+        viewport={"width": 1500, "height": 900}, service_workers="block"
+    )
+    try:
+        with _serve(ui_root, tmp_path, port=port) as base:
+            page = Harness(context.new_page(), base)
+            page.open("notes/plain.txt")
+        held = []
+        page.route(re.compile(r"/\?filemill=render$"), lambda r: held.append(r))
+        page.click('.col[data-i="0"] .row[aria-label="code"]')
+        expect(page.locator('.col[data-i="1"] .col-note')).to_contain_text(NOT_OFFLINE)
+        with _serve(ui_root, tmp_path, port=port):
+            # The restarted server refuses the old token before any probe lands.
+            page.evaluate(
+                dedent("""\
+                    async () => {
+                        const { HTTP } = await import('/ui/adapters/http.js');
+                        try { await HTTP.write({rel: 'notes/plain.txt'}, 'x'); }
+                        catch (_) { /* refused */ }
+                    }""")
+            )
+            expect(page.locator(STATUS_LABEL)).to_have_text("Change refused")
+            page.click(STATUS_TOGGLE)
+            page.click(STATUS_RETRY)
+            deadline = time.monotonic() + 15
+            while not held and time.monotonic() < deadline:
+                page.evaluate("0")  # deliver the held probe's route event
+            assert held
+            for route in held:
+                route.continue_()
+            page.unroute(re.compile(r"/\?filemill=render$"))
+            expect(
+                page.locator('.col[data-i="1"] .row[aria-label="sample.py"]')
+            ).to_be_visible()
+            assert (ui_root / "notes/plain.txt").read_text() == "hello"
     finally:
         context.close()

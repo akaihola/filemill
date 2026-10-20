@@ -53,10 +53,10 @@ No wildcard origins are accepted and no CORS access is granted. See
 The token authorizes browser requests, not users, and does not protect against
 same-origin scripts; see [HTML files at the server root](#html-files-at-the-server-root).
 Use authenticated access control before exposing the server to untrusted
-clients. Tokens change on process restart. An open page fetches the shell
-again when the server answers after being offline, and every 30 seconds, and
-takes the new token from it. Until then a save gets 403 and the page shows
-"Change refused" with a Retry now button that fetches it.
+clients. Tokens change on process restart. When the server answers again
+after being offline, an open page fetches the shell and takes the new token
+from it. After a restart the page did not notice, a save gets 403 and the page
+shows "Change refused" with a Retry now button that fetches the token.
 
 ## Offline copies in the browser
 

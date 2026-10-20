@@ -14,7 +14,9 @@
  *           client writes (?filemill=render or highlight) gets the shell of
  *           another address when its own was never loaded.
  *   assets  /ui/, the manifest and the icons, one copy per path, so the
- *           shell's versioned module URLs find the newest copy.
+ *           shell's versioned module URLs find the newest copy. A module URL
+ *           carries its content hash (?v=), so the copy of that exact URL
+ *           answers at once: it cannot be older than the server's.
  *   reads   listings, file bytes and previews: READS_MAX entries of at most
  *           COPY_MAX bytes each, the least recently stored dropped first.
  * Never handled: requests other than GET, other origins, /api/search, /sse/,
@@ -37,6 +39,8 @@ const READS_MAX = 200;
 const COPY_MAX = 2 * 1024 * 1024;
 
 const OFFLINE = "X-Filemill-Offline";
+/* The URL an asset copy was read from; its key is the path alone. */
+const SOURCE = "X-Filemill-Source";
 /* What a proxy answers when the Filemill server behind it does not. */
 const UNAVAILABLE = [502, 503, 504];
 
@@ -98,10 +102,19 @@ self.addEventListener("fetch", (event) => {
 
   event.respondWith(
     ASSET_PREFIXES.some((p) => url.pathname.startsWith(p))
-      ? read(event, ASSETS, url.origin + url.pathname, Infinity)
+      ? asset(event, url)
       : read(event, READS, request.url, READS_MAX),
   );
 });
+
+async function asset(event, url) {
+  const key = url.origin + url.pathname;
+  if (url.searchParams.has("v")) {
+    const copy = await (await caches.open(ASSETS)).match(key);
+    if (copy?.headers.get(SOURCE) === url.href) return copy;
+  }
+  return read(event, ASSETS, key, Infinity);
+}
 
 /* The server's answer, or undefined when the server could not give one. */
 async function network(request) {
@@ -128,7 +141,9 @@ async function navigate(event, url) {
 }
 
 /* The shell differs between addresses only by the view, layout and hidden
-   switches in the query, so a view address can borrow another one's. A bare
+   switches in the query, so a view address can borrow another one's: one
+   with the same query, or else one without layout or hidden switches, so
+   that a borrowed shell never shows dotfiles nobody asked for. A bare
    address may name file bytes or a user's index.html; it gets only its own. */
 async function shellFor(url) {
   const cache = await caches.open(SHELL);
@@ -137,17 +152,22 @@ async function shellFor(url) {
   if (!["render", "highlight"].includes(url.searchParams.get("filemill"))) {
     return undefined;
   }
-  const keys = await cache.keys();
-  const key = keys.findLast((k) => new URL(k.url).search === url.search) ||
-    keys.at(-1);
-  return key && cache.match(key);
+  const keys = (await cache.keys()).map((k) => new URL(k.url));
+  const plain = (k) =>
+    !k.searchParams.has("hidden") && !k.searchParams.has("layout");
+  const key = keys.findLast((k) => k.search === url.search) ||
+    keys.findLast(plain);
+  return key && cache.match(key.href);
 }
 
 async function read(event, name, key, max) {
   const response = await network(event.request);
   if (response) {
     if (keepable(response)) {
-      event.waitUntil(keep(name, key, response.clone(), max));
+      const copy = name === ASSETS
+        ? sourced(response.clone(), event.request.url)
+        : response.clone();
+      event.waitUntil(keep(name, key, copy, max));
     }
     return response;
   }
@@ -161,22 +181,30 @@ const keepable = (response) =>
   response.status === 200 && response.type === "basic" &&
   Number(response.headers.get("Content-Length") ?? Infinity) <= COPY_MAX;
 
-/* Store a copy as the newest entry; past `max` entries, drop the oldest. */
-async function keep(name, key, response, max) {
-  const cache = await caches.open(name);
-  await cache.delete(key);
-  await cache.put(key, response);
-  const keys = await cache.keys();
-  if (keys.length > max) {
-    await Promise.all(
-      keys.slice(0, keys.length - max).map((k) => cache.delete(k)),
-    );
-  }
+/* Store a copy as the newest entry; past `max` entries, drop the oldest.
+   One write at a time, so two trims never both drop the same oldest slots. */
+let writing = Promise.resolve();
+function keep(name, key, response, max) {
+  writing = writing.then(async () => {
+    const cache = await caches.open(name);
+    await cache.delete(key);
+    await cache.put(key, response);
+    const keys = await cache.keys();
+    if (keys.length > max) {
+      await Promise.all(
+        keys.slice(0, keys.length - max).map((k) => cache.delete(k)),
+      );
+    }
+  }).catch(() => {});
+  return writing;
 }
 
-function marked(response, kind) {
+const marked = (response, kind) => withHeader(response, OFFLINE, kind);
+const sourced = (response, url) => withHeader(response, SOURCE, url);
+
+function withHeader(response, name, value) {
   const headers = new Headers(response.headers);
-  headers.set(OFFLINE, kind);
+  headers.set(name, value);
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,

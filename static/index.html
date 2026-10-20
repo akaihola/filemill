@@ -7304,7 +7304,12 @@ const withDocuments = (fs) => ({
 
   async blob(node) {
     if (node.section) return new Blob([sectionText(node)]);
-    return fs.blob(node.doc ? asFile(node) : node);
+    if (!node.doc) return fs.blob(node);
+    /* The read marks what it read; `stale` belongs to the document node. */
+    const file = asFile(node);
+    const blob = await fs.blob(file);
+    node.stale = file.stale;
+    return blob;
   },
 
   ...(fs.write && {
