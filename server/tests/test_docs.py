@@ -229,3 +229,11 @@ def test_decision_records_arrive_with_the_change():
     assert "[rules for changes]: ARCHITECTURE-REVIEW.md#rules-for-changes" in roadmap
     contributing = (ROOT / "CONTRIBUTING.md").read_text()
     assert "Update the documentation in the same commit as the change." in contributing
+
+
+@pytest.mark.parametrize(
+    "document", ["ui/core/icons.js", "ui/vendor/seti-map.js", "static/index.html"]
+)
+def test_icon_comments_do_not_require_a_missing_generator(document):
+    """[127]: the committed icon assets have no tracked generator."""
+    assert "build-seti-map.py" not in (ROOT / document).read_text()

@@ -477,6 +477,10 @@ Truncated text is never editable as if complete. Related: [49], [60].
 
 ### A11. Current documents contradict the code
 
+- Corrected 2026-10-20 ([icon map provenance]): the icon comments describe
+  the committed map and its recorded Seti UI and VS Code sources. No icon-map
+  generator is tracked. The map, font and licensing are unchanged.
+
 - Clarified 2026-10-20 ([dependency constraints]): GOALS distinguishes declared
   floors, bounded versions and exact lockfile selections. Dependency comments
   retain the browser-match and mypy reasons and mark unverified compatibility
@@ -692,3 +696,4 @@ A12 items can land at any time, each with a focused test.
 [roadmap skip policy]: ROADMAP.md#how-we-keep-it-this-way
 
 [dependency constraints]: tasks/124-explain-dependency-constraints-from-docs-question-10.md
+[icon map provenance]: tasks/127-correct-icon-generator-claims-from-docs-question-13.md

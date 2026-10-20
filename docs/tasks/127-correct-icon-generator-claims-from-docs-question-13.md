@@ -16,3 +16,19 @@ Correct stale generator comments instead of inventing a new build tool.
 ## Acceptance
 
 No current instruction depends on build-seti-map.py, assets and behavior are unchanged, and docs tests plus [static/build-index.py](../../static/build-index.py?f) --check pass.
+
+## Completion — 2026-10-20
+
+The two icon headers now describe the committed map and the absence of a
+tracked generator. The recorded Seti UI and VS Code sources remain intact.
+The static bundle contains the same corrected comments.
+
+- **Red:** the new guard in [the documentation tests] failed for both source
+  headers and the static bundle before the correction.
+- **Green:** all 26 documentation tests and all seven pre-commit checks pass.
+  The bundle check passes.
+- **Preservation:** restoring only the two old headers makes both source
+  files and the static bundle byte-identical to their previous versions.
+  The map, font, licensing and runtime behavior are unchanged.
+
+[the documentation tests]: ../../server/tests/test_docs.py
