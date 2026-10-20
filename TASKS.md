@@ -32,10 +32,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [123] Clarify conditional test skips from docs question 9
-  <!-- hai:{"id":"simple-c33756b3-3ea8-4a89-9352-60eaf73faf0e","labels":["steward"],"createdAt":"2026-10-20T07:12:45.801Z","updatedAt":"2026-10-20T13:37:16.618Z"} -->
-
 ## In Progress
+
+- [~] [123] Clarify conditional test skips from docs question 9
+      <!-- hai:{"id":"simple-c33756b3-3ea8-4a89-9352-60eaf73faf0e","labels":["steward"],"createdAt":"2026-10-20T07:12:45.801Z","updatedAt":"2026-10-20T13:37:48.758Z"} -->
 
 - [~] [122] Clarify deliberate test delays from docs question 8
       <!-- hai:{"id":"simple-e47a58f3-193e-4296-83a9-cfa00f27371b","labels":["steward"],"createdAt":"2026-10-20T07:12:44.920Z","updatedAt":"2026-10-20T13:22:03.268Z"} -->
