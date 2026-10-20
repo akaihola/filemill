@@ -38,10 +38,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [120] Disable server search in local folders from docs question 5
-  <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-20T13:03:10.603Z"} -->
-
 ## In Progress
+
+- [~] [120] Disable server search in local folders from docs question 5
+      <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-20T13:03:29.269Z"} -->
 
 ## Completed / Accepted
 
