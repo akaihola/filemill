@@ -18,6 +18,8 @@ dev = [
     "playwright",
     "pyyaml>=6",
     "pytest-asyncio>=1",
+    "types-docutils>=0.23.0.20260923",
+    "types-pygments>=2.21.0.20260819",
 ]
 
 [tool.uv.sources]

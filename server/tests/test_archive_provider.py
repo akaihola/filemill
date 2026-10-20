@@ -2,6 +2,8 @@
 
 import io
 import os
+import runpy
+import sys
 import tarfile
 import zipfile
 from pathlib import Path
@@ -187,3 +189,23 @@ def test_the_archive_provider_is_registered(tmp_path: Path):
 
     assert REGISTRY.get(tmp_path / "x.tar.zst") is not None
     assert REGISTRY.get(tmp_path / "x.zip") is not None
+
+
+@pytest.mark.parametrize("stdlib", [False, True])
+def test_zstd_backends_are_selected_at_import(monkeypatch, stdlib):
+    if stdlib and sys.version_info < (3, 14):
+        pytest.skip("compression.zstd requires Python 3.14")
+    if stdlib:
+        # The package is optional on 3.14: block it, including cached imports.
+        monkeypatch.setitem(sys.modules, "zstandard", None)
+    else:
+        monkeypatch.setattr(sys, "version_info", (3, 13))
+    from filemill import vfs
+    from filemill.providers import archive
+
+    monkeypatch.setattr(vfs, "REGISTRY", vfs.VFSRegistry())
+    backend = runpy.run_path(archive.__file__)
+    data = b"archive compatibility backend\n"
+    compressed = backend["zstd_compress"](data)
+    with backend["_zstd_reader"](io.BytesIO(compressed)) as reader:
+        assert reader.read() == data

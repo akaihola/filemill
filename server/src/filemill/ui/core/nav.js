@@ -258,7 +258,7 @@ document.addEventListener("pointerdown", (event) => {
 
 const sayCopy = (msg, ok) => saySt("st-copy", msg, ok);
 
-const COPY_WINDOW_MS = 5000;
+const COPY_WINDOW_MS = 5000; // Repeated copies cycle formats within one short interaction.
 let copyCycle = null;
 let copyRequest = 0;
 const copySelection = () => ({ path: [...path], sel: [...sel], focusCol });

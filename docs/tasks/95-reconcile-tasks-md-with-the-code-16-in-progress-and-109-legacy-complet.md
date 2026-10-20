@@ -190,7 +190,7 @@ work or certify every old test-suite-wide completion criterion today.
 | L097 | [28] Grow the editor behind the `FS.write` port: undo, find, a line gutter and a "modified… | Implemented; leave unchecked | `ui/editor/undo.js`, `find.js`, `gutter.js`, `modified.js`, `editor.js`; `static/test-ui.py::editor_feature_checks` exercises each feature behind FS.write. |
 | L098 | [27] Try reStructuredText rendering in the browser with Pyodide or a WASM tool, behind the… | Implemented; leave unchecked | `7c98b7be`, `docs/adr/0064-rst-browser-evaluation.md`, `static/measure-rst.py`; real-runtime sizes, cold/warm times, consent, concurrent-source isolation and parser safety are documented. |
 | L099 | [*] Render `.pptx` in the browser: unzip the file and show the slide text, as one registr… | Partial; preview API deletion superseded | `ui/adapters/preview-rich.js::pptxHTML` extracts ZIP/XML slide text; Python PPTX renderer/runtime dependency are gone. However `/api/preview` still exists for RST and archive members in `server/src/filemill/app.py`; the task literal delete-all-preview-API goal is no longer satisfied. |
-| L100 | [24] Reduce `app.py` to routing: move `_resolve_safe` and the symlink map to `paths.py` an… | Implemented; leave unchecked | `server/src/filemill/paths.py`, `pwa.py`, `app.py`; containment/mount helpers and PWA routes moved to dedicated modules and no function-local imports remain in production Python. |
+| L100 | [24] Reduce `app.py` to routing: move `_resolve_safe` and the symlink map to `paths.py` an… | Partial at audit; leave unchecked | `server/src/filemill/paths.py`, `pwa.py`, `app.py`; containment/mount helpers and PWA routes moved to dedicated modules but two function-local `zstandard` imports remain in the [archive provider]. The 2026-10-17 claim that production had no such imports was incorrect; they were introduced by `97ca55f1` on 2026-10-07. |
 | L101 | [33] Keep the URL contract, drop the server-side representations: the server sends bytes f… | Partial; server representations remain | `server/src/filemill/app.py::resource` serves bytes or shell, but `server/src/filemill/preview.py` still contains render_source/_highlight_source and imports Pygments; RST and archive-member representations still use `/api/preview`. The proposed all-client rendering end state is only partly reached. |
 | L102 | [35] Decide the fate of the `/w/` named mounts and their CORS middleware: delete them, or … | Implemented; leave unchecked | `docs/tasks/35-decide-web-mounts.md`, `SECURITY.md`, `server/src/filemill/app.py`; explicit decision retains same-origin mounts and removes permissive CORS middleware. Architecture A3 separately notes that no CORS is not write authorization. |
 | L103 | [32] Render Markdown and `.docx` in the browser in the server edition too. Serve the pinne… | Implemented; leave unchecked | `ui/vendor/`, `ui/adapters/preview-rich.js`, `ui/adapters/app-http.js`; Markdown/DOCX render in both editions from pinned server-vendored modules, and rendering.py plus Python Markdown/DOCX deps are gone. Later link regressions are separate issues. |
@@ -278,3 +278,17 @@ reported, not repaired by this documentation task.
   previews, without the requested viewer. Steward: explicitly accept the local
   alternative or reopen the viewer requirement; correct the stale README claim
   through A11 in separate work.
+
+
+### Correction, 2026-10-20 ([131])
+
+L100 overstated the import cleanup at the audit snapshot. The two archive
+imports were already present, so this was an audit error, not a regression.
+[131] moves the compatibility import to module scope, guarded by the Python
+version: Python 3.14+ uses its standard library and needs no third-party
+package at runtime. L041’s remaining tuning constants are now named and
+explained. L093’s direct mypy check now has Docutils and Pygments stubs.
+These repairs do not change user acceptance or the other audit findings.
+
+[archive provider]: ../../server/src/filemill/providers/archive.py
+[131]: 131-close-the-gaps-found-in-five-older-review-items.md

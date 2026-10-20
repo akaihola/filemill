@@ -4429,6 +4429,13 @@ function paintTrail() {
 
 const SETTLE_MS = 180; // longer than the gaps between a fling's wheel events
 const AXIS_SLOP = 6; // px a wheel gesture travels before it takes an axis
+const PIXEL_SLOP = 0.5; // Half a pixel rounds to the same native scroll position.
+const FOLD_EPSILON = 1e-9; // Floating-point noise must not cross a whole fold stop.
+const MIN_SCROLL_RANGE = 1; // Keep a native scrollbar even when its range rounds away.
+const GLIDE_SLOP = 1; // A native glide can stop one pixel short of its target.
+const SCROLLER_SLOP = 1; // Fractional line heights can overflow by one pixel.
+const WHEEL_LINE_PX = 40; // Line-mode wheels use a readable text-line increment.
+const FOCUS_COLUMNS = 2; // Keep the focused column and the child it opened visible.
 
 const stripSpan = (k) => columnSpan(widths, k, GUTTER(), SPINE());
 const foldUnit = () => foldStep(path.length);
@@ -4444,7 +4451,7 @@ const dial = () => base + finder.scrollLeft;
 /* The columns that fill the finder at a widened dial position: between two
    stops, the wider of the two. */
 function wideCount(x) {
-  const j = Math.ceil(-foldPosition(x, unit()) - 1e-9);
+  const j = Math.ceil(-foldPosition(x, unit()) - FOLD_EPSILON);
   return j > 0 ? counts[Math.min(j, counts.length) - 1] : 0;
 }
 
@@ -4481,7 +4488,9 @@ function setRange(from, to, x) {
   // Relative to the finder, so a resize never shrinks the range under the
   // dial — Chrome would clamp scrollLeft to the new end and base would lie.
   // Size from the adjusted base so the native endpoint rounds to the stop.
-  const width = `calc(100% + ${Math.max(1, Math.round(to - next))}px)`;
+  const width = `calc(100% + ${
+    Math.max(MIN_SCROLL_RANGE, Math.round(to - next))
+  }px)`;
   [rangeFrom, rangeTo] = [from, to];
   if (
     next === base && rail.style.width === width &&
@@ -4506,7 +4515,7 @@ function rebase() {
    range to hold both ends of the move; settling narrows it again. */
 function dialTo(x, smooth) {
   const now = dial();
-  if (x < rangeFrom - 0.5 || x > rangeTo + 0.5) {
+  if (x < rangeFrom - PIXEL_SLOP || x > rangeTo + PIXEL_SLOP) {
     const around = dialWindow(stops, x);
     setRange(
       Math.min(rangeFrom, around.lower, now),
@@ -4559,7 +4568,7 @@ function settle() {
   if (mouseDown || touching) return;
   // A glide on a busy machine may not have started yet; wait for it.
   if (
-    gliding && Math.abs(dial() - gliding.target) > 1 &&
+    gliding && Math.abs(dial() - gliding.target) > GLIDE_SLOP &&
     gliding.waits++ < GLIDE_WAITS
   ) {
     scheduleSettle();
@@ -4572,7 +4581,7 @@ function settle() {
 function advancePreviewFold() {
   const maximum = range();
   const x = dial();
-  if (!path.length || x >= maximum - 0.5) return false;
+  if (!path.length || x >= maximum - PIXEL_SLOP) return false;
   const step = unit();
   const next = Math.floor(foldPosition(x, step)) + 1;
   // Land each key synchronously so rapid presses cannot reuse a partial fold.
@@ -4590,7 +4599,7 @@ let scrollColumns = 0;
    the fewest ancestor folds that fit the preview reserve. */
 function restingPlace(x, position, keepScroll) {
   if (x < 0) {
-    const needed = Math.min(path.length, focusCol + 2);
+    const needed = Math.min(path.length, focusCol + FOCUS_COLUMNS);
     if (wideCount(x) >= needed) return x;
     const j = counts.filter((n) => n >= needed).length;
     return -j * unit();
@@ -4652,7 +4661,9 @@ function layout(keepScroll) {
   const rest = resting ? restingPlace(target, position, keepScroll) : target;
   if (rest !== target) {
     dialTo(rest, true);
-  } else if (resting && gliding && Math.abs(gliding.target - rest) > 0.5) {
+  } else if (
+    resting && gliding && Math.abs(gliding.target - rest) > PIXEL_SLOP
+  ) {
     // Already at rest, but an earlier glide, queued or not yet moving, would
     // carry the dial off it: a mount right after a refresh folded the root.
     dialTo(rest, false);
@@ -4767,7 +4778,7 @@ function revealRow(row) {
 function previewWheel(e) {
   if (pvFullscreen || !e.target.closest?.("#preview")) return false;
   if (wheeling) return true;
-  wheeling = dial() < range() - 0.5;
+  wheeling = dial() < range() - PIXEL_SLOP;
   return wheeling;
 }
 
@@ -4783,7 +4794,9 @@ function scrollerAlong(el, axis, delta) {
   for (;; el = el.parentElement) {
     // More than a pixel: a fractional line height overflows by one.
     const room = delta > 0 ? el[size] - el[client] - el[offset] : el[offset];
-    if (room > 1 && /auto|scroll/.test(getComputedStyle(el)[overflow])) {
+    if (
+      room > SCROLLER_SLOP && /auto|scroll/.test(getComputedStyle(el)[overflow])
+    ) {
       return el;
     }
     if (el === last) return null;
@@ -4792,7 +4805,12 @@ function scrollerAlong(el, axis, delta) {
 
 // deltaMode: 0 pixels, 1 lines, 2 pages
 const wheelPixels = (e, delta, page) =>
-  delta * (e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? page : 1);
+  delta *
+  (e.deltaMode === WheelEvent.DOM_DELTA_LINE
+    ? WHEEL_LINE_PX
+    : e.deltaMode === WheelEvent.DOM_DELTA_PAGE
+    ? page
+    : 1);
 
 function initLayout(render) {
   finder.addEventListener("scroll", () => {
@@ -4993,8 +5011,15 @@ let cacheSig = null;
 const CACHE_MAX = 24; // Retain enough nearby columns without growing memory unbounded.
 const MAX_DEPTH = 5; // Keep depth styling within the available visual scale.
 const SCROLL_HINT_PADDING = 4; // Show the affordance only when content exceeds the viewport.
-const VIRTUAL_ROWS = 1000;
-const LONG_PRESS_MS = 500;
+const VIRTUAL_ROWS = 1000; // Virtualize only lists large enough to make full DOM rows costly.
+const LONG_PRESS_MS = 500; // A held touch opens the menu without treating a tap as a hold.
+const MENU_EDGE_PX = 8; // Keep the context menu clear of the viewport edges.
+const ROW_OVERSCAN = 10; // Extra rows above and below prevent blanks during scrolling.
+const ROW_MARGINS = 2; // Row pitch includes both the top and bottom gap.
+const COPY_NAME = 2; // Copy formats follow the relative, absolute, name cycle.
+const COPY_RELATIVE = 0; // The relative path starts the copy cycle.
+const COPY_ABSOLUTE = 1; // The absolute path is the second copy format.
+const PRIMARY_BUTTON = 0; // Only the primary mouse button can start a long press.
 const touchUI = () =>
   matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
 
@@ -5004,7 +5029,7 @@ const touchUI = () =>
 function rowStep() {
   const css = getComputedStyle(document.documentElement);
   return parseFloat(css.getPropertyValue("--row-h")) +
-    2 * parseFloat(css.getPropertyValue("--row-gap"));
+    ROW_MARGINS * parseFloat(css.getPropertyValue("--row-gap"));
 }
 
 let longPressTimer;
@@ -5105,9 +5130,9 @@ function openRowMenu(node, parent, row, event) {
   menuFocus = document.activeElement;
   const menu = document.getElementById("row-menu");
   menu.innerHTML = [
-    ["Copy name", 2],
-    ["Copy relative path", 0],
-    ["Copy absolute path", 1],
+    ["Copy name", COPY_NAME],
+    ["Copy relative path", COPY_RELATIVE],
+    ["Copy absolute path", COPY_ABSOLUTE],
   ].map(([label, mode]) =>
     `<button type="button" role="menuitem" data-copy="${mode}">${label}</button>`
   ).join("");
@@ -5138,10 +5163,16 @@ function openRowMenu(node, parent, row, event) {
   const x = event?.clientX ?? bounds.left;
   const y = event?.clientY ?? bounds.bottom;
   menu.style.left = `${
-    Math.max(8, Math.min(x, innerWidth - menu.offsetWidth - 8))
+    Math.max(
+      MENU_EDGE_PX,
+      Math.min(x, innerWidth - menu.offsetWidth - MENU_EDGE_PX),
+    )
   }px`;
   menu.style.top = `${
-    Math.max(8, Math.min(y, innerHeight - menu.offsetHeight - 8))
+    Math.max(
+      MENU_EDGE_PX,
+      Math.min(y, innerHeight - menu.offsetHeight - MENU_EDGE_PX),
+    )
   }px`;
   row.setAttribute("aria-expanded", "true");
   menu.querySelector("button").focus({ preventScroll: true });
@@ -5252,7 +5283,10 @@ function buildCol(node) {
       actions.choose(+el.dataset.i, k);
     };
     row.onpointerdown = (event) => {
-      if (!touchUI() || (event.pointerType === "mouse" && event.button !== 0)) {
+      if (
+        !touchUI() ||
+        (event.pointerType === "mouse" && event.button !== PRIMARY_BUTTON)
+      ) {
         return;
       }
       clearTimeout(longPressTimer);
@@ -5290,10 +5324,13 @@ function buildCol(node) {
      it before revealRow scrolls to it, and render() runs in between. */
   const paintRange = (evict) => {
     if (!virtual) return;
-    const first = Math.max(0, Math.floor(body.scrollTop / ROW_STEP) - 10);
+    const first = Math.max(
+      0,
+      Math.floor(body.scrollTop / ROW_STEP) - ROW_OVERSCAN,
+    );
     const last = Math.min(
       kids.length,
-      Math.ceil((body.scrollTop + body.clientHeight) / ROW_STEP) + 10,
+      Math.ceil((body.scrollTop + body.clientHeight) / ROW_STEP) + ROW_OVERSCAN,
     );
     if (evict) {
       for (const i of live) {
@@ -6269,7 +6306,7 @@ document.addEventListener("pointerdown", (event) => {
 
 const sayCopy = (msg, ok) => saySt("st-copy", msg, ok);
 
-const COPY_WINDOW_MS = 5000;
+const COPY_WINDOW_MS = 5000; // Repeated copies cycle formats within one short interaction.
 let copyCycle = null;
 let copyRequest = 0;
 const copySelection = () => ({ path: [...path], sel: [...sel], focusCol });

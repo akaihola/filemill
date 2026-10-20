@@ -17,3 +17,62 @@ Leave the other five items of that list alone: they depend on removing `/api/pre
 - Each of the five conditions holds on `main`, or its reason is written down.
 - The repository gate and the focused tests for the touched files pass.
 - No pushes or deploys.
+
+
+## Implementation, 2026-10-20
+
+- Correct the historical import claim in [the reconciliation]. The imports
+  existed at its snapshot; they were not a later regression.
+- Condense [ADR 0036] to 37 lines, keeping its original decision and both
+  dated corrections.
+- Name the remaining UI thresholds, wheel conversion, menu spacing, copy
+  formats and row overscan. Add one-line reasons to the tuning constants.
+  [Model state] already names its formatting precision and unit constants.
+  Zero/one bounds, index steps and unit exponents remain ordinary arithmetic.
+- Add Docutils and Pygments stubs to the development groups in the
+  [server configuration] and its [workspace mirror], and update the [lock file].
+- Move the [archive provider] compatibility import to module scope. The
+  Python-version guard keeps the package optional on Python 3.14+. Type
+  checking sees the compatibility API on every supported Python version.
+
+## Validation
+
+The new structural checks first failed on the two local imports, the 46-line
+ADR and unnamed or unexplained UI tuning values. Direct mypy first reported
+four missing-stub errors. After the changes, the focused archive, document
+and structural checks pass. Backend round trips cover the compatibility
+package and the standard library with the optional package blocked.
+
+Final results:
+
+- `uvx pre-commit run --all-files`: all seven hooks pass.
+- `uv run --project server mypy server/src` from the repository root and
+  `uv run mypy src` from the server project: 16 source files pass. The root
+  workspace command `uv run mypy server/src` also passes.
+- Focused archive, documentation and structural tests: 47 pass.
+- `node ui/core/model/test.mjs`: model checks pass.
+- Browser selection covering folds, wheel state, virtual rows and menu copy:
+  18 pass with `--bundle`. With `--dev`, 17 pass and the narrow-folder walk
+  in `test_folding_dial` times out. That test passes alone on retry (42.49 s).
+  No browser test or assertion was changed to obtain the pass.
+- `git diff --check`: passes.
+
+The focused commands are:
+
+```bash
+uv run --project server pytest -q server/tests/test_review_conditions.py server/tests/test_archive_provider.py server/tests/test_docs.py
+uv run --project server pytest static/tests/test_model.py static/tests/test_ui.py --bundle -q -k 'virtual or folding or fold or wheel or copy_menu_unselected or long_press'
+uv run --project server pytest static/tests/test_model.py static/tests/test_ui.py --dev -q -k 'virtual or folding or fold or wheel or copy_menu_unselected or long_press'
+uv run --project server pytest static/tests/test_ui.py --dev -q -k test_folding_dial
+```
+
+No acceptance checkboxes change. No push or deployment is part of this work.
+
+[the reconciliation]: 95-reconcile-tasks-md-with-the-code-16-in-progress-and-109-legacy-complet.md
+[ADR 0036]: ../adr/0036-but-behind-a-remembered-switch-defaulting-on.md
+[Model state]: ../../ui/core/model/state.js
+[lock file]: ../../uv.lock
+[archive provider]: ../../server/src/filemill/providers/archive.py
+
+[server configuration]: ../../server/pyproject.toml
+[workspace mirror]: ../../pyproject.toml

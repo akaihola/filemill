@@ -56,6 +56,13 @@ import { paintTrail } from "./trail.js";
 
 const SETTLE_MS = 180; // longer than the gaps between a fling's wheel events
 const AXIS_SLOP = 6; // px a wheel gesture travels before it takes an axis
+const PIXEL_SLOP = 0.5; // Half a pixel rounds to the same native scroll position.
+const FOLD_EPSILON = 1e-9; // Floating-point noise must not cross a whole fold stop.
+const MIN_SCROLL_RANGE = 1; // Keep a native scrollbar even when its range rounds away.
+const GLIDE_SLOP = 1; // A native glide can stop one pixel short of its target.
+const SCROLLER_SLOP = 1; // Fractional line heights can overflow by one pixel.
+const WHEEL_LINE_PX = 40; // Line-mode wheels use a readable text-line increment.
+const FOCUS_COLUMNS = 2; // Keep the focused column and the child it opened visible.
 
 export const stripSpan = (k) => columnSpan(widths, k, GUTTER(), SPINE());
 export const foldUnit = () => foldStep(path.length);
@@ -71,7 +78,7 @@ export const dial = () => base + finder.scrollLeft;
 /* The columns that fill the finder at a widened dial position: between two
    stops, the wider of the two. */
 function wideCount(x) {
-  const j = Math.ceil(-foldPosition(x, unit()) - 1e-9);
+  const j = Math.ceil(-foldPosition(x, unit()) - FOLD_EPSILON);
   return j > 0 ? counts[Math.min(j, counts.length) - 1] : 0;
 }
 
@@ -108,7 +115,9 @@ function setRange(from, to, x) {
   // Relative to the finder, so a resize never shrinks the range under the
   // dial — Chrome would clamp scrollLeft to the new end and base would lie.
   // Size from the adjusted base so the native endpoint rounds to the stop.
-  const width = `calc(100% + ${Math.max(1, Math.round(to - next))}px)`;
+  const width = `calc(100% + ${
+    Math.max(MIN_SCROLL_RANGE, Math.round(to - next))
+  }px)`;
   [rangeFrom, rangeTo] = [from, to];
   if (
     next === base && rail.style.width === width &&
@@ -133,7 +142,7 @@ function rebase() {
    range to hold both ends of the move; settling narrows it again. */
 export function dialTo(x, smooth) {
   const now = dial();
-  if (x < rangeFrom - 0.5 || x > rangeTo + 0.5) {
+  if (x < rangeFrom - PIXEL_SLOP || x > rangeTo + PIXEL_SLOP) {
     const around = dialWindow(stops, x);
     setRange(
       Math.min(rangeFrom, around.lower, now),
@@ -186,7 +195,7 @@ function settle() {
   if (mouseDown || touching) return;
   // A glide on a busy machine may not have started yet; wait for it.
   if (
-    gliding && Math.abs(dial() - gliding.target) > 1 &&
+    gliding && Math.abs(dial() - gliding.target) > GLIDE_SLOP &&
     gliding.waits++ < GLIDE_WAITS
   ) {
     scheduleSettle();
@@ -199,7 +208,7 @@ function settle() {
 export function advancePreviewFold() {
   const maximum = range();
   const x = dial();
-  if (!path.length || x >= maximum - 0.5) return false;
+  if (!path.length || x >= maximum - PIXEL_SLOP) return false;
   const step = unit();
   const next = Math.floor(foldPosition(x, step)) + 1;
   // Land each key synchronously so rapid presses cannot reuse a partial fold.
@@ -217,7 +226,7 @@ let scrollColumns = 0;
    the fewest ancestor folds that fit the preview reserve. */
 function restingPlace(x, position, keepScroll) {
   if (x < 0) {
-    const needed = Math.min(path.length, focusCol + 2);
+    const needed = Math.min(path.length, focusCol + FOCUS_COLUMNS);
     if (wideCount(x) >= needed) return x;
     const j = counts.filter((n) => n >= needed).length;
     return -j * unit();
@@ -279,7 +288,9 @@ export function layout(keepScroll) {
   const rest = resting ? restingPlace(target, position, keepScroll) : target;
   if (rest !== target) {
     dialTo(rest, true);
-  } else if (resting && gliding && Math.abs(gliding.target - rest) > 0.5) {
+  } else if (
+    resting && gliding && Math.abs(gliding.target - rest) > PIXEL_SLOP
+  ) {
     // Already at rest, but an earlier glide, queued or not yet moving, would
     // carry the dial off it: a mount right after a refresh folded the root.
     dialTo(rest, false);
@@ -394,7 +405,7 @@ export function revealRow(row) {
 function previewWheel(e) {
   if (pvFullscreen || !e.target.closest?.("#preview")) return false;
   if (wheeling) return true;
-  wheeling = dial() < range() - 0.5;
+  wheeling = dial() < range() - PIXEL_SLOP;
   return wheeling;
 }
 
@@ -410,7 +421,9 @@ function scrollerAlong(el, axis, delta) {
   for (;; el = el.parentElement) {
     // More than a pixel: a fractional line height overflows by one.
     const room = delta > 0 ? el[size] - el[client] - el[offset] : el[offset];
-    if (room > 1 && /auto|scroll/.test(getComputedStyle(el)[overflow])) {
+    if (
+      room > SCROLLER_SLOP && /auto|scroll/.test(getComputedStyle(el)[overflow])
+    ) {
       return el;
     }
     if (el === last) return null;
@@ -419,7 +432,12 @@ function scrollerAlong(el, axis, delta) {
 
 // deltaMode: 0 pixels, 1 lines, 2 pages
 const wheelPixels = (e, delta, page) =>
-  delta * (e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? page : 1);
+  delta *
+  (e.deltaMode === WheelEvent.DOM_DELTA_LINE
+    ? WHEEL_LINE_PX
+    : e.deltaMode === WheelEvent.DOM_DELTA_PAGE
+    ? page
+    : 1);
 
 export function initLayout(render) {
   finder.addEventListener("scroll", () => {

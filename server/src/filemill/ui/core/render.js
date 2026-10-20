@@ -51,8 +51,15 @@ let cacheSig = null;
 const CACHE_MAX = 24; // Retain enough nearby columns without growing memory unbounded.
 const MAX_DEPTH = 5; // Keep depth styling within the available visual scale.
 const SCROLL_HINT_PADDING = 4; // Show the affordance only when content exceeds the viewport.
-const VIRTUAL_ROWS = 1000;
-const LONG_PRESS_MS = 500;
+const VIRTUAL_ROWS = 1000; // Virtualize only lists large enough to make full DOM rows costly.
+const LONG_PRESS_MS = 500; // A held touch opens the menu without treating a tap as a hold.
+const MENU_EDGE_PX = 8; // Keep the context menu clear of the viewport edges.
+const ROW_OVERSCAN = 10; // Extra rows above and below prevent blanks during scrolling.
+const ROW_MARGINS = 2; // Row pitch includes both the top and bottom gap.
+const COPY_NAME = 2; // Copy formats follow the relative, absolute, name cycle.
+const COPY_RELATIVE = 0; // The relative path starts the copy cycle.
+const COPY_ABSOLUTE = 1; // The absolute path is the second copy format.
+const PRIMARY_BUTTON = 0; // Only the primary mouse button can start a long press.
 const touchUI = () =>
   matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
 
@@ -62,7 +69,7 @@ const touchUI = () =>
 function rowStep() {
   const css = getComputedStyle(document.documentElement);
   return parseFloat(css.getPropertyValue("--row-h")) +
-    2 * parseFloat(css.getPropertyValue("--row-gap"));
+    ROW_MARGINS * parseFloat(css.getPropertyValue("--row-gap"));
 }
 
 let longPressTimer;
@@ -163,9 +170,9 @@ export function openRowMenu(node, parent, row, event) {
   menuFocus = document.activeElement;
   const menu = document.getElementById("row-menu");
   menu.innerHTML = [
-    ["Copy name", 2],
-    ["Copy relative path", 0],
-    ["Copy absolute path", 1],
+    ["Copy name", COPY_NAME],
+    ["Copy relative path", COPY_RELATIVE],
+    ["Copy absolute path", COPY_ABSOLUTE],
   ].map(([label, mode]) =>
     `<button type="button" role="menuitem" data-copy="${mode}">${label}</button>`
   ).join("");
@@ -196,10 +203,16 @@ export function openRowMenu(node, parent, row, event) {
   const x = event?.clientX ?? bounds.left;
   const y = event?.clientY ?? bounds.bottom;
   menu.style.left = `${
-    Math.max(8, Math.min(x, innerWidth - menu.offsetWidth - 8))
+    Math.max(
+      MENU_EDGE_PX,
+      Math.min(x, innerWidth - menu.offsetWidth - MENU_EDGE_PX),
+    )
   }px`;
   menu.style.top = `${
-    Math.max(8, Math.min(y, innerHeight - menu.offsetHeight - 8))
+    Math.max(
+      MENU_EDGE_PX,
+      Math.min(y, innerHeight - menu.offsetHeight - MENU_EDGE_PX),
+    )
   }px`;
   row.setAttribute("aria-expanded", "true");
   menu.querySelector("button").focus({ preventScroll: true });
@@ -310,7 +323,10 @@ function buildCol(node) {
       actions.choose(+el.dataset.i, k);
     };
     row.onpointerdown = (event) => {
-      if (!touchUI() || (event.pointerType === "mouse" && event.button !== 0)) {
+      if (
+        !touchUI() ||
+        (event.pointerType === "mouse" && event.button !== PRIMARY_BUTTON)
+      ) {
         return;
       }
       clearTimeout(longPressTimer);
@@ -348,10 +364,13 @@ function buildCol(node) {
      it before revealRow scrolls to it, and render() runs in between. */
   const paintRange = (evict) => {
     if (!virtual) return;
-    const first = Math.max(0, Math.floor(body.scrollTop / ROW_STEP) - 10);
+    const first = Math.max(
+      0,
+      Math.floor(body.scrollTop / ROW_STEP) - ROW_OVERSCAN,
+    );
     const last = Math.min(
       kids.length,
-      Math.ceil((body.scrollTop + body.clientHeight) / ROW_STEP) + 10,
+      Math.ceil((body.scrollTop + body.clientHeight) / ROW_STEP) + ROW_OVERSCAN,
     );
     if (evict) {
       for (const i of live) {

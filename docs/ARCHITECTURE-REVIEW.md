@@ -138,6 +138,12 @@ Keep these.
 
 - The three ports and the shared frontend. There is one copy of `ui/`.
 - Decisions are recorded with their measurements in `docs/adr/`.
+- The [older review repairs] (2026-10-20) keep archive imports at module
+  scope, selecting standard-library Zstandard on Python 3.14+ and the package
+  on older Python. Both backends have round-trip tests. Direct mypy has
+  Docutils/Pygments stubs. UI tuning values have names and reasons; ADR 0036
+  retains its consent decisions in fewer than 40 lines. These repairs leave
+  the open findings below unchanged.
 - Clipboard refusals use one native modal dialog in the shared browser UI.
   It preserves the exact copy value and full error for manual copying, including
   menu targets that are not selected ([119], [ADR 0048], 2026-10-20).
@@ -697,3 +703,5 @@ A12 items can land at any time, each with a focused test.
 
 [dependency constraints]: tasks/124-explain-dependency-constraints-from-docs-question-10.md
 [icon map provenance]: tasks/127-correct-icon-generator-claims-from-docs-question-13.md
+
+[older review repairs]: tasks/131-close-the-gaps-found-in-five-older-review-items.md

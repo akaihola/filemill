@@ -15,7 +15,7 @@ import zipfile
 from collections.abc import Iterator
 from functools import lru_cache
 from pathlib import Path
-from typing import IO, cast
+from typing import IO, TYPE_CHECKING, cast
 
 from filemill.vfs import (
     REGISTRY,
@@ -49,27 +49,25 @@ ZSTD_SUFFIXES = (".tar.zst", ".tzst")
 # package before that. pyproject.toml requires the package on older interpreters.
 if sys.version_info >= (3, 14):
     from compression import zstd as _zstd
-else:  # pragma: no cover - exercised on CI's 3.12 only
+else:
     _zstd = None
+
+# Type checking also needs the compatibility API on Python 3.14.
+if sys.version_info < (3, 14) or TYPE_CHECKING:
+    import zstandard
 
 
 def zstd_compress(data: bytes) -> bytes:
     """Compress bytes with zstd; tests build fixtures with it."""
     if _zstd is not None:
         return _zstd.compress(data)
-    import zstandard  # pragma: no cover
-
-    return zstandard.ZstdCompressor().compress(data)  # pragma: no cover
+    return zstandard.ZstdCompressor().compress(data)
 
 
 def _zstd_reader(fh: IO[bytes]) -> IO[bytes]:
     if _zstd is not None:
         return cast(IO[bytes], _zstd.ZstdFile(fh))
-    import zstandard  # pragma: no cover
-
-    return cast(
-        IO[bytes], zstandard.ZstdDecompressor().stream_reader(fh)
-    )  # pragma: no cover
+    return cast(IO[bytes], zstandard.ZstdDecompressor().stream_reader(fh))
 
 
 def _kind(path: Path) -> str | None:
