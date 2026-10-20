@@ -26,9 +26,17 @@ a root listing asks every bundle whether it is non-empty, and that must cost a
 header read, not a process and a copy of the pack. `git` reads the rest. At
 the first tree listing the provider unbundles the file into a temporary bare
 repository, then lists with `git ls-tree` and reads with `git cat-file`. The
-repository lives as long as its cache entry, keyed by path, size and mtime,
-and goes with it; nothing else is written. Every call runs with the user's Git
-configuration hidden and prompting off.
+eight-entry cache is keyed by path, size and mtime. Each tree or blob read
+also holds the temporary-directory owner through its last Git call. Eviction
+releases only the cache's ownership. The directory is removed after the last
+active read releases it; nothing else is written. Concurrent reads can share
+an owner. Every call runs with the user's Git configuration hidden and
+prompting off, with the existing 60-second deadline.
+
+Git execution failures and timeouts propagate to the existing provider error
+path. A failed listing reports `denied`, rather than an empty successful tree.
+Blob metadata uses `cat-file --batch-check` with NUL-delimited input. A missing
+object remains a missing member; a command failure raises an error.
 
 The work is bounded. A bundle over `BUNDLE_MAX` (512 MiB) is a plain file,
 because unbundling copies the pack. A blob over `MEMBER_MAX` (16 MiB) is

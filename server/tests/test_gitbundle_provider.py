@@ -71,12 +71,13 @@ def test_a_tree_lists_one_level_only(bundle: Path):
     assert names(p.list_entries(bundle, "heads/main/src/pkg")) == ["__init__.py"]
 
 
-def test_a_missing_path_or_a_file_lists_nothing(bundle: Path):
+def test_unknown_refs_list_nothing_and_invalid_trees_report_errors(bundle: Path):
     p = GitBundleProvider()
     assert p.list_entries(bundle, "nope") == []
     assert p.list_entries(bundle, "heads/nope") == []
-    assert p.list_entries(bundle, "heads/main/nope") == []
-    assert p.list_entries(bundle, "heads/main/top.txt") == []
+    for vpath in ("heads/main/nope", "heads/main/top.txt"):
+        with pytest.raises(RuntimeError, match="Git ls-tree failed"):
+            p.list_entries(bundle, vpath)
     assert p.list_entries(bundle, "heads/main/../x") == []
 
 
@@ -127,7 +128,6 @@ def test_listing_refs_reads_the_header_only(bundle: Path, monkeypatch):
     p = GitBundleProvider()
     assert names(p.list_entries(bundle, "")) == ["HEAD", "heads", "tags"]
     assert names(p.list_entries(bundle, "heads")) == ["main"]
-    assert p.list_entries(bundle, "heads/main") == []
 
 
 def test_an_incremental_bundle_lists_nothing(tmp_path: Path, bundle_builder):
@@ -165,3 +165,124 @@ def test_the_provider_is_registered(tmp_path: Path):
     from filemill.vfs import REGISTRY
 
     assert isinstance(REGISTRY.get(tmp_path / "x.bundle"), GitBundleProvider)
+
+
+@pytest.mark.parametrize("operation", ["tree", "blob"])
+def test_eviction_during_a_read_keeps_the_repository(bundle, monkeypatch, operation):
+    from filemill.providers import gitbundle as gb
+
+    before = (bundle.read_bytes(), bundle.stat())
+    gb._repo.cache_clear()
+    original = gb._git
+    acquired = []
+
+    def evict(repo, *args, **kwargs):
+        if args[0] == "ls-tree" or args[:2] == ("cat-file", "blob"):
+            acquired.append(repo)
+            stat = bundle.stat()
+            for offset in range(1, 9):
+                gb._repo(str(bundle), stat.st_mtime_ns + offset, stat.st_size)
+            assert gb._repo.cache_info().currsize == 8
+        return original(repo, *args, **kwargs)
+
+    monkeypatch.setattr(gb, "_git", evict)
+    try:
+        provider = GitBundleProvider()
+        if operation == "tree":
+            assert names(provider.list_entries(bundle, "HEAD")) == [
+                "docs",
+                "src",
+                "top.txt",
+            ]
+        else:
+            assert provider.member(bundle, "HEAD/top.txt").data == MEMBERS["top.txt"]
+        assert len(acquired) == 1
+        assert not acquired[0].exists()
+        assert bundle.read_bytes() == before[0]
+        assert bundle.stat().st_mtime_ns == before[1].st_mtime_ns
+    finally:
+        gb._repo.cache_clear()
+
+
+def test_concurrent_reads_release_the_last_owner(bundle, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event, local
+
+    from filemill.providers import gitbundle as gb
+
+    gb._repo.cache_clear()
+    stat = bundle.stat()
+    owner = gb._repo(str(bundle), stat.st_mtime_ns, stat.st_size)
+    repo_path = Path(owner.name)
+    del owner
+    ready = [Event(), Event()]
+    release = [Event(), Event()]
+    original = gb._git
+    reader = local()
+
+    def read(index):
+        reader.index = index
+        return GitBundleProvider().member(bundle, "HEAD/top.txt")
+
+    def pause(repo, *args, **kwargs):
+        if args[:2] == ("cat-file", "blob"):
+            index = reader.index
+            ready[index].set()
+            assert release[index].wait(10)
+        return original(repo, *args, **kwargs)
+
+    monkeypatch.setattr(gb, "_git", pause)
+    with ThreadPoolExecutor(max_workers=2, thread_name_prefix="bundle") as pool:
+        futures = [pool.submit(read, index) for index in range(2)]
+        try:
+            assert all(event.wait(10) for event in ready)
+            for offset in range(1, 9):
+                gb._repo(str(bundle), stat.st_mtime_ns + offset, stat.st_size)
+            assert repo_path.exists()
+            release[0].set()
+            assert futures[0].result(timeout=10).data == MEMBERS["top.txt"]
+            assert repo_path.exists()
+            release[1].set()
+            assert futures[1].result(timeout=10).data == MEMBERS["top.txt"]
+            assert not repo_path.exists()
+        finally:
+            for event in release:
+                event.set()
+            gb._repo.cache_clear()
+
+
+@pytest.mark.parametrize("failure", ["exit", "timeout", "oserror"])
+@pytest.mark.parametrize("command", ["init", "bundle", "ls-tree"])
+def test_git_failures_reach_the_listing_error_field(
+    bundle, monkeypatch, failure, command
+):
+    import json
+
+    from filemill.api import vfs_dir_json
+    from filemill.providers import gitbundle as gb
+
+    original = gb.subprocess.run
+    failed_repos = []
+
+    def fail(*args, **kwargs):
+        if args[0][3] != command:
+            return original(*args, **kwargs)
+        failed_repos.append(Path(args[0][2]))
+        assert kwargs["timeout"] == gb.GIT_TIMEOUT
+        assert kwargs["env"]["GIT_TERMINAL_PROMPT"] == "0"
+        assert kwargs["env"]["GIT_CONFIG_GLOBAL"] == "/dev/null"
+        if failure == "timeout":
+            raise subprocess.TimeoutExpired(args[0], gb.GIT_TIMEOUT)
+        if failure == "oserror":
+            raise OSError("cannot execute git")
+        return subprocess.CompletedProcess(args[0], 128, b"", b"broken repository")
+
+    gb._repo.cache_clear()
+    monkeypatch.setattr(gb.subprocess, "run", fail)
+    result = json.loads(vfs_dir_json(bundle, "HEAD").body)
+    assert result["entries"] == []
+    assert result["denied"]
+    assert failed_repos
+    if command != "ls-tree":
+        assert not failed_repos[0].exists()
+    gb._repo.cache_clear()

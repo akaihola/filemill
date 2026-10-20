@@ -5,7 +5,7 @@ The first columns follow the ref names with ``refs/`` dropped: ``heads`` →
 come from the bundle's text header, read here without ``git``. Below a ref the
 columns are the commit's tree, one level per column, and a blob is a file
 member; for those ``git`` unbundles the file once into a temporary bare
-repository that lives as long as its cache entry, and nothing else is written.
+repository retained by its cache entry and active reads; nothing else is written.
 A bundle over BUNDLE_MAX, a bundle with prerequisites (an incremental one,
 whose objects are elsewhere), a broken bundle and a bundle on a host without
 ``git`` are plain files. A blob over MEMBER_MAX is listed but not read.
@@ -75,13 +75,13 @@ def _refs(path: str, mtime_ns: int, size: int) -> Refs:
     return refs
 
 
-def _git(repo: Path, *args: str) -> bytes | None:
-    """Stdout of ``git -C repo args`` or None on any failure.
+def _git(repo: Path, *args: str, input: bytes | None = None) -> bytes:
+    """Stdout of ``git -C repo args``; failures reach the provider error path.
 
     The environment hides the user's git configuration and never prompts.
     """
     if GIT is None:
-        return None
+        raise RuntimeError("Git is not available")
     env = {
         "PATH": os.environ.get("PATH", ""),
         "HOME": str(repo),
@@ -90,31 +90,33 @@ def _git(repo: Path, *args: str) -> bytes | None:
         "GIT_TERMINAL_PROMPT": "0",
         "LC_ALL": "C",
     }
-    try:
-        done = subprocess.run(
-            [GIT, "-C", str(repo), *args],
-            capture_output=True,
-            env=env,
-            timeout=GIT_TIMEOUT,
-            check=False,
+    done = subprocess.run(
+        [GIT, "-C", str(repo), *args],
+        capture_output=True,
+        input=input,
+        env=env,
+        timeout=GIT_TIMEOUT,
+        check=False,
+    )
+    if done.returncode:
+        raise RuntimeError(
+            f"Git {args[0]} failed: {done.stderr.decode('utf-8', 'replace').strip()}"
         )
-    except (OSError, subprocess.SubprocessError):
-        return None
-    return done.stdout if done.returncode == 0 else None
+    return done.stdout
 
 
 @lru_cache(maxsize=8)
-def _repo(
-    path: str, mtime_ns: int, size: int
-) -> tempfile.TemporaryDirectory[str] | None:
+def _repo(path: str, mtime_ns: int, size: int) -> tempfile.TemporaryDirectory[str]:
     """Unbundle *path* once into a temporary bare repository; stat facts key
-    the cache, and an evicted entry's directory goes with it."""
+    the cache. Active reads also retain the owner until their last Git call."""
     tmp = tempfile.TemporaryDirectory(prefix="filemill-bundle-")
     repo = Path(tmp.name)
-    if _git(repo, "init", "-q", "--bare") is None:
-        return None
-    if _git(repo, "bundle", "unbundle", path) is None:
-        return None
+    try:
+        _git(repo, "init", "-q", "--bare")
+        _git(repo, "bundle", "unbundle", path)
+    except Exception:
+        tmp.cleanup()
+        raise
     return tmp
 
 
@@ -126,9 +128,8 @@ class _Bundle:
     size: int
 
     @property
-    def repo(self) -> Path | None:
-        tmp = _repo(str(self.path), self.mtime_ns, self.size)
-        return None if tmp is None else Path(tmp.name)
+    def repo(self) -> tempfile.TemporaryDirectory[str]:
+        return _repo(str(self.path), self.mtime_ns, self.size)
 
 
 def _bundle_of(path: Path) -> _Bundle | None:
@@ -196,10 +197,8 @@ class GitBundleProvider:
     def _tree_level(
         self, bundle: _Bundle, sha: str, vpath: str, tree: str
     ) -> list[VFSEntry]:
-        repo = bundle.repo
-        listed = _git(repo, "ls-tree", "-z", f"{sha}:{tree}") if repo else None
-        if listed is None:
-            return []
+        owner = bundle.repo
+        listed = _git(Path(owner.name), "ls-tree", "-z", f"{sha}:{tree}")
         children: list[tuple[str, bool]] = []
         for item in listed.decode("utf-8", "replace").split("\0"):
             facts, _, name = item.partition("\t")
@@ -222,21 +221,23 @@ class GitBundleProvider:
         sha, tree = below
         if not tree or clean_member_path(tree) != tree:
             return None
-        repo = bundle.repo
-        if repo is None:
+        owner = bundle.repo
+        repo = Path(owner.name)
+        facts = _git(
+            repo,
+            "cat-file",
+            "--batch-check=%(objecttype) %(objectsize)",
+            "-z",
+            input=f"{sha}:{tree}\0".encode(),
+        ).split()
+        if len(facts) != 2 or facts[0] != b"blob":
             return None
-        facts = _git(repo, "cat-file", "-t", f"{sha}:{tree}")
-        if facts is None or facts.strip() != b"blob":
-            return None
-        size_out = _git(repo, "cat-file", "-s", f"{sha}:{tree}")
-        if size_out is None:
-            return None
-        size = int(size_out)
+        size = int(facts[1])
         name = tree.rsplit("/", 1)[-1]
         if size > MEMBER_MAX:
             return VFSMember(name=name, size=size, data=None)
         data = _git(repo, "cat-file", "blob", f"{sha}:{tree}")
-        return None if data is None else VFSMember(name=name, size=size, data=data)
+        return VFSMember(name=name, size=size, data=data)
 
 
 REGISTRY.register(GitBundleProvider())

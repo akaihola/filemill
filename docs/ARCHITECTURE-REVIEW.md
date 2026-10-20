@@ -13,8 +13,8 @@ work and acceptance separately.
   cleanups and audits.
 - **Status.** Open: the finding still applies. Changed: part was fixed, or the
   evidence, scope or priority changed. Resolved: the cited defect was removed;
-  these findings are under "Resolved since the earlier reviews". A13 is
-  resolved; A14 remains open. Resolution does not mark a task accepted.
+  these findings are under "Resolved since the earlier reviews". A13 and A14 are
+  resolved. Resolution does not mark a task accepted.
 - **Evidence.** Links are repository-relative. Source line numbers refer to
   the checked commit, not to the earlier reviews. A structural risk is labelled
   as such; a passing existing test is not proof that a missing case works.
@@ -154,7 +154,7 @@ reviewable changes with focused regressions.
 | A11 | P3 | Changed | Clean-environment command audit remains unverified | M / low |
 | A12 | P3 | Changed | Smaller defects, dead code and audits | S each / low |
 | A13 | P2 | Resolved | JSON refresh reads the current source | S / low |
-| A14 | P2 | Open | Bundle-cache eviction removes an active repository | S / medium |
+| A14 | P2 | Resolved | Active bundle reads retain repository ownership | S / medium |
 
 ### A4. Saves can truncate or overwrite newer content
 
@@ -236,8 +236,9 @@ expect truncated keys; passing them does not prove unique identity.
 
 The new providers repeat the error ambiguity: [server/src/filemill/providers/archive.py, lines 115–147][archive]
 turns corrupt or unreadable indexes into `{}`, while [server/src/filemill/providers/gitbundle.py, lines
-78–118 and 196–202][gitbundle] turns command failure, timeout or failed
-unbundling into an empty tree. A corrupt ZIP probe returned `[]`.
+78–118 and 196–202][gitbundle] previously turned command failure, timeout or failed
+unbundling into an empty tree. A14 now propagates these Git errors. A corrupt
+ZIP probe returned `[]`.
 [server/src/filemill/api.py][api], lines 209–218, further treats any provider
 failure as "not browsable", although lines 233–236 can already report a
 provider exception as `denied`.
@@ -380,25 +381,18 @@ this final audit, or repeat already completed roadmap and ADR rewrites.
 
 ### A14. Bundle eviction removes an active repository
 
-**Status: open, P2; new.** [server/src/filemill/providers/gitbundle.py][gitbundle],
-lines 106–131, caches eight `TemporaryDirectory` owners but returns only a
-`Path` to callers. Tree and blob operations retain that path at lines 196–239,
-not the owner. Evicting the entry can therefore remove the repository during
-another request. Listing handlers run in a thread pool
-([server/src/filemill/app.py][app], lines 44–58).
+**Status: resolved, P2, 2026-10-21.** Tree and blob reads retain the
+`TemporaryDirectory` owner through their last Git call in
+[server/src/filemill/providers/gitbundle.py][gitbundle]. The eight-entry cache
+releases only its own reference on eviction. Cleanup waits for the final
+active reader. Git failures and timeouts propagate through the existing
+provider error path; a listing reports `denied`. Other A7 work remains open.
 
-A small real-bundle probe retained the first repository path, populated eight
-other cache entries, then tried its tree read. The first read listed the
-fixture; after eviction the directory was gone and `_git` returned `None`.
-This deterministically demonstrates the lifetime defect; this pass did not
-run a concurrent HTTP stress test. In the UI, the failure can look like an
-empty tree through A7’s error handling.
-
-**Acceptance.** Hold the temporary repository owner through the last Git
-operation of each request. Force eviction between acquisition and use in a
-regression; the read must finish correctly, and cleanup must happen after the
-last owner releases it. Keep the bounded cache and standard-library lifetime
-management. No generic lease framework is needed.
+[The bundle provider regressions][bundle-tests] force eviction before a tree
+read and between blob metadata and content. A two-reader test checks that
+cleanup waits for both readers. Tests also check command failures and the
+unchanged deadline and Git configuration isolation. [ADR 0073] records the
+lifetime rule.
 
 ## Resolved since the earlier reviews
 
@@ -494,8 +488,8 @@ regression requirements, not new implementation steps.
    scoped ownership and installed upgrades. Preserve the server’s accepted
    offline-copy policy. Coordinate routing/cache classification with
    [the route-collision task][121]; its transport choice remains a decision.
-3. **Repair bounded repository lifetime (A14).** Retain a repository owner
-   through each Git read. This does not depend on a general preview redesign.
+3. **Keep bounded repository lifetime (A14, resolved).** Each Git read retains
+   its repository owner. Keep the eviction and concurrent-read regressions.
    A13's JSON refresh invalidation is resolved by [the JSON refresh repair][134].
 4. **Make identities lossless (A6), then fix SQLite (A7).** Establish the
    address/label contract before changing SQLite keys. Provider error reporting
@@ -536,6 +530,8 @@ one new P2 finding; no new P1 finding was established in this pass.
 
 ### A14 draft
 
+- **Status:** Resolved on 2026-10-21. The requirements below retain the
+  original draft.
 - **Title:** Keep bundle repositories alive through active reads.
 - **Why:** The eight-entry cache owns temporary repositories, while requests
   keep only paths. Eviction can turn a live read into an empty tree or missing
@@ -631,3 +627,4 @@ one new P2 finding; no new P1 finding was established in this pass.
 [ADR 0080]: adr/0080-json-past-a-fold-depth-limit-is-source.md
 [ADR 0089]: adr/0089-an-offline-server-shows-older-copies-with-an-indicator.md
 [ports-decision]: adr/0041-core-adapters-three-ports.md#refresh-invalidation-2026-10-21
+[bundle-tests]: ../server/tests/test_gitbundle_provider.py
