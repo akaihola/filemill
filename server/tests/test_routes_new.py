@@ -1,4 +1,4 @@
-"""Tests for issue #23's /w/ static server and the root/directory resource route."""
+"""Tests for root-relative static serving and the root/directory resource route."""
 
 from starlette.testclient import TestClient
 
@@ -10,80 +10,78 @@ def _client(root):
     return TestClient(app_module.app, raise_server_exceptions=False)
 
 
-# ── #23 GET /w/ – static webserver ───────────────────────────────────────────
+# ── GET / – static webserver ───────────────────────────────────────────
 
 
-def test_web_static_serves_file_via_root_mount(tmp_path, monkeypatch):
-    """/w/{ROOT.name}/{path} returns 200 and the file content."""
+def test_resource_serves_file_at_root(tmp_path, monkeypatch):
+    """/{path} returns 200 and the file content."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     (tmp_path / "hello.txt").write_text("hello world")
-    resp = _client(tmp_path).get(f"/w/{tmp_path.name}/hello.txt")
+    resp = _client(tmp_path).get("/hello.txt")
     assert resp.status_code == 200
     assert resp.text == "hello world"
 
 
-def test_web_static_serves_file_via_symlink_mount(tmp_path, monkeypatch):
-    """/w/{symlink-name}/{path} resolves through a direct symlink child of ROOT."""
+def test_resource_serves_file_via_symlink_bookmark(tmp_path, monkeypatch):
+    """/{symlink-name}/{path} resolves through a direct symlink child of ROOT."""
     workspace = tmp_path / "workspace"
     workspace.mkdir()
-    (workspace / "guide.txt").write_text("symlink mount")
+    (workspace / "guide.txt").write_text("symlink bookmark")
     root = tmp_path / "menu"
     root.mkdir()
     (root / "coleaders").symlink_to(workspace, target_is_directory=True)
     monkeypatch.setattr(app_module, "ROOT", root)
 
-    resp = _client(root).get("/w/coleaders/guide.txt")
+    resp = _client(root).get("/coleaders/guide.txt")
     assert resp.status_code == 200
-    assert resp.text == "symlink mount"
+    assert resp.text == "symlink bookmark"
 
 
-def test_web_static_404_for_missing_file(tmp_path, monkeypatch):
-    """/w/{mount}/{path} returns 404 when the file does not exist."""
+def test_resource_404_for_missing_file(tmp_path, monkeypatch):
+    """/{path} returns 404 when the file does not exist."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
-    assert (
-        _client(tmp_path).get(f"/w/{tmp_path.name}/no_such_file.txt").status_code == 404
-    )
+    assert _client(tmp_path).get("/no_such_file.txt").status_code == 404
 
 
-def test_web_static_404_for_unknown_mount(tmp_path, monkeypatch):
-    """Unknown mount names under /w/ are rejected."""
+def test_resource_404_for_missing_directory(tmp_path, monkeypatch):
+    """A missing directory returns 404."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     (tmp_path / "hello.txt").write_text("hello world")
-    assert _client(tmp_path).get("/w/unknown/hello.txt").status_code == 404
+    assert _client(tmp_path).get("/unknown/hello.txt").status_code == 404
 
 
-def test_web_static_correct_content_type_html(tmp_path, monkeypatch):
-    """/w/{mount}/file.html serves with Content-Type: text/html."""
+def test_resource_correct_content_type_html(tmp_path, monkeypatch):
+    """/file.html serves with Content-Type: text/html."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     (tmp_path / "page.html").write_text("<h1>Hi</h1>")
-    resp = _client(tmp_path).get(f"/w/{tmp_path.name}/page.html")
+    resp = _client(tmp_path).get("/page.html")
     assert resp.status_code == 200
     assert "text/html" in resp.headers.get("content-type", "")
 
 
-def test_web_static_traversal_denied(tmp_path, monkeypatch):
-    """/w/{mount}/../etc/passwd is blocked (path escapes ROOT)."""
+def test_resource_traversal_denied(tmp_path, monkeypatch):
+    """/../etc/passwd is blocked (path escapes ROOT)."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
-    assert _client(tmp_path).get(f"/w/{tmp_path.name}/../etc/passwd").status_code == 404
+    assert _client(tmp_path).get("/../etc/passwd").status_code == 404
 
 
-# ── #35 no CORS on /w/ ───────────────────────────────────────────────────────
+# ── No CORS on resource paths ───────────────────────────────────────────────────────
 
 
-def test_web_static_sends_no_cors_header(tmp_path, monkeypatch):
-    """/w/{mount}/{path} GET serves the file without Access-Control-Allow-Origin."""
+def test_resource_sends_no_cors_header(tmp_path, monkeypatch):
+    """/{path} GET serves the file without Access-Control-Allow-Origin."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     (tmp_path / "photo.png").write_bytes(b"\x89PNG\r\n\x1a\n")
-    resp = _client(tmp_path).get(f"/w/{tmp_path.name}/photo.png")
+    resp = _client(tmp_path).get("/photo.png")
     assert resp.status_code == 200
     assert "access-control-allow-origin" not in resp.headers
 
 
-def test_web_static_options_is_not_a_cors_preflight(tmp_path, monkeypatch):
-    """/w/ OPTIONS gets no CORS headers, so another origin cannot read files."""
+def test_resource_options_is_not_a_cors_preflight(tmp_path, monkeypatch):
+    """Resource OPTIONS gets no CORS headers, so another origin cannot read files."""
     monkeypatch.setattr(app_module, "ROOT", tmp_path)
     (tmp_path / "photo.png").write_bytes(b"\x89PNG\r\n\x1a\n")
-    resp = _client(tmp_path).options(f"/w/{tmp_path.name}/photo.png")
+    resp = _client(tmp_path).options("/photo.png")
     assert "access-control-allow-origin" not in resp.headers
     assert "access-control-allow-methods" not in resp.headers
 

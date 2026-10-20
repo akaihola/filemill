@@ -14,7 +14,7 @@ and implementation links. This document covers the Python edition.
 - **Rich previews** – Markdown (with plugins), DOCX, PPTX, PDF, images, plain text, and source code highlighted in the browser; Pygments ("friendly" theme) colours archive members
 - **Markdown extras** – wikilinks (`[[PageName]]`), plain-URL links, relative-link normalisation
 - **Virtual filesystem** – a SQLite database opens as table → row columns; JSON and JSONL files open through the shared browser adapter; a tar (`.tar`, `.tar.gz`, `.tar.bz2`, `.tar.xz`, `.tar.zst`) or zip archive opens as columns of its members, and a member previews as the file it is; a Git `.bundle` opens as columns of its refs (`heads/main`, `tags/v1`, `HEAD`) and then its trees, when `git` is installed
-- **Static web server** – `/w/<mount>/<path>` serves a file under a named mount with the correct Content-Type. The root directory is mounted as `/w/<ROOT.name>/...`. Each direct symlink child of ROOT is mounted under its own name
+- **Static web server** – root-relative file URLs serve bytes with the correct Content-Type. Direct symlink children of ROOT act as bookmarks. `/w/` and `/n/` are ordinary file paths ([ADR 0088](../docs/adr/0088-remove-named-mount-and-alternate-shell-routes.md)).
 - **Finder URLs** – the URL path is the file path relative to the root, for example `/docs/readme.md`. A deep link opens any location. `/sample.db/users/1` opens one database row
 - **Dotfiles** – add `?hidden=show` to the URL to show them
 - **Keyboard navigation** – `↑↓` move in a column; `→`/`Enter` open; `←` goes back; `Home`/`End`/`PgUp`/`PgDn` scroll
@@ -22,7 +22,7 @@ and implementation links. This document covers the Python edition.
 - **`.desktop` files** – show as a link card
 - **Symlink bookmarks** – a direct symlink child of the root opens as a bookmark, and its target subtree is browsable
 - **Open Folder…** – the served page can browse a folder on your machine through the File System Access API. PreviewRich renders local previews in the browser.
-- **PWA** – installable, with a manifest, service worker and icons. The [worker](src/filemill/static/sw.js) bypasses `/api/` and sends navigations to the network, but caches other same-origin GETs, such as images and `/w/` files that a page embeds. A5 remains open; cold offline recovery is not reliable. See the [architecture review](../docs/ARCHITECTURE-REVIEW.md).
+- **PWA** – installable, with a manifest, service worker and icons. The [worker](src/filemill/static/sw.js) bypasses `/api/` and sends navigations to the network, but caches other same-origin GETs, such as images and other files that a page embeds. A5 remains open; cold offline recovery is not reliable. See the [architecture review](../docs/ARCHITECTURE-REVIEW.md).
 
 ## Installation
 
@@ -128,7 +128,7 @@ browser setup.
 The [root README](../README.md) describes the shared ports, renderer choices
 and the single frontend under `src/filemill/ui/`. The
 [contributor guide](CONTRIBUTING.md#source-layout) maps the Python modules.
-[`app.py`](src/filemill/app.py) serves the shell at `/n/` and root-relative
+[`app.py`](src/filemill/app.py) serves the shell at root-relative
 render/highlight URLs; bare file URLs serve bytes, and directory indexes take
 precedence over the shell. Symlink containment and mutation authorization were
 fixed in [103](../docs/tasks/103-close-the-directory-index-path-escape-and-authorize-save-and-delete-a1.md).

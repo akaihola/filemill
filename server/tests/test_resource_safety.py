@@ -297,7 +297,7 @@ def test_root_prefix_sibling_is_denied_for_every_view_and_layout(
     assert "EVIL-CANARY" not in resp.text
 
 
-@pytest.mark.parametrize("route", ["resource", "raw", "index", "mount"])
+@pytest.mark.parametrize("route", ["resource", "raw", "index"])
 @pytest.mark.parametrize("location", ["nested", "bookmark", "root"])
 @pytest.mark.parametrize("destination", ["inside", "outside"])
 def test_index_symlink_matrix(escape_tree, route, location, destination):
@@ -317,7 +317,6 @@ def test_index_symlink_matrix(escape_tree, route, location, destination):
         "resource": "/" + explicit,
         "raw": "/api/raw?" + urlencode({"p": explicit}),
         "index": "/" + relative,
-        "mount": f"/w/{root.name}/" + explicit,
     }[route]
     response = _client().get(url)
     # A direct-root symlink is an intentional bookmark, including a file.

@@ -23,7 +23,7 @@ ports declared in [`ui/core/ports.js`](ui/core/ports.js):
 | reStructuredText | Browser Pyodide + docutils, pinned CDN download controlled by the switch | Python docutils for served files and archive members |
 | PowerPoint | Browser extracts slide text locally, without a download or consent switch | Same slide-text extraction, including archive members |
 | source highlighting | Shared browser `core/syntax.js` | Same browser highlighter; Python Pygments colours archive members through `/api/preview` |
-| router | `#r=root&p=a/b.md` | Root-relative file path, for example `/a/b.md`; `/n/` also serves the shell |
+| router | `#r=root&p=a/b.md` | Root-relative file path, for example `/a/b.md` |
 
 The renderer choices are implemented in
 [`app-fsa.js`](ui/adapters/app-fsa.js),

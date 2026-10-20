@@ -252,7 +252,7 @@ def test_preview_of_a_missing_file_is_404(client, tmp_root: Path):
 
 
 def test_ui_root_serves_the_shell(client, tmp_root: Path):
-    html = client.get("/n/").text
+    html = client.get("/").text
     scripts = re.findall(r'<script src="([^"]+)" type="module">', html)
     assert len(scripts) == 1
     importmap = re.search(r'<script type="importmap">(.*?)</script>', html)
@@ -268,45 +268,40 @@ def test_ui_root_serves_the_shell(client, tmp_root: Path):
 def test_shell_carries_no_chrome_markup(client, tmp_root: Path):
     """core/shell.js builds the page, so this template and filemill's
     index.html have nothing to drift apart on."""
-    html = client.get("/n/").text
+    html = client.get("/").text
     for marker in ('id="strip"', 'id="crumbs"', 'id="settings"'):
         assert marker not in html
 
 
 def test_shell_configures_the_adapters(client, tmp_root: Path):
-    html = client.get("/n/").text
+    html = client.get("/").text
     assert 'data-api="/api"' in html
-    assert f'data-base="{app_module.UI_BASE}"' in html
+    assert 'data-base="/"' in html
     assert f'data-root="{tmp_root.name}"' in html
 
 
 def test_ui_path_mirrors_the_file_path(client, tmp_root: Path):
     """The URL under the base is the path relative to ROOT, nothing else."""
-    assert client.get("/n/readme.md").status_code == 200
-    assert client.get("/n/subdir").status_code == 200
+    assert client.get("/readme.md").status_code == 200
+    assert client.get("/subdir").status_code == 200
 
 
 @pytest.mark.parametrize("view", ["render", "highlight"])
 def test_ui_path_preserves_requested_view(client, view):
-    response = client.get("/n/readme.md", params={"filemill": view})
+    response = client.get("/readme.md", params={"filemill": view})
     assert response.status_code == 200
     assert f'data-filemill="{view}"' in response.text
 
 
 @pytest.mark.parametrize("query", [{}, {"filemill": "raw"}])
-def test_ui_path_never_tells_the_shell_it_is_raw(client, query):
-    """The shell always renders, so `raw` there is `render`.
-
-    The client's Source/Rendered toggle trusts data-filemill. Told "raw", it
-    labelled a rendered section "Rendered" and clicking it changed nothing.
-    """
-    response = client.get("/n/readme.md", params=query)
+def test_ui_path_raw_serves_bytes(client, tmp_root, query):
+    response = client.get("/readme.md", params=query)
     assert response.status_code == 200
-    assert 'data-filemill="render"' in response.text
+    assert response.text == (tmp_root / "readme.md").read_text()
 
 
 def test_ui_path_that_does_not_exist_is_404(client, tmp_root: Path):
-    assert client.get("/n/nope.md").status_code == 404
+    assert client.get("/nope.md").status_code == 404
 
 
 def test_missing_favicon_is_404(client):
@@ -317,7 +312,7 @@ def test_missing_favicon_is_404(client):
 
 def test_ui_path_cannot_escape_root(client, tmp_root: Path):
     (tmp_root.parent / "outside.txt").write_text("secret")
-    assert client.get("/n/../outside.txt").status_code == 404
+    assert client.get("/../outside.txt").status_code == 404
 
 
 def test_ui_assets_are_served(client, tmp_root: Path):
@@ -494,13 +489,13 @@ def test_split_vfs_refuses_a_path_that_is_not_virtual(tmp_root: Path):
 
 
 def test_a_url_can_name_a_row_inside_a_database(db_client, db_root: Path):
-    """/n/sample.db/users/1 is one URL but two things — a file and a key in it."""
-    assert db_client.get("/n/sample.db/users/1").status_code == 200
-    assert db_client.get("/n/sample.db").status_code == 200
+    """/sample.db/users/1 is one URL but two things — a file and a key in it."""
+    assert db_client.get("/sample.db/users/1").status_code == 200
+    assert db_client.get("/sample.db").status_code == 200
 
 
 def test_a_url_into_a_non_virtual_file_is_404(client, tmp_root: Path):
-    assert client.get("/n/image.png/nope").status_code == 404
+    assert client.get("/image.png/nope").status_code == 404
 
 
 # ── archives through the new API ─────────────────────────────────────────────
@@ -600,8 +595,8 @@ def test_an_oversized_member_says_so_instead_of_rendering(
 
 
 def test_a_url_can_name_a_member_inside_an_archive(archive_client, archive_root: Path):
-    assert archive_client.get("/n/demo.tar.zst/docs/readme.md").status_code == 200
-    assert archive_client.get("/n/demo.tar.zst").status_code == 200
+    assert archive_client.get("/demo.tar.zst/docs/readme.md").status_code == 200
+    assert archive_client.get("/demo.tar.zst").status_code == 200
     assert archive_client.get("/demo.tar.zst/docs/readme.md?f").status_code == 200
 
 
@@ -812,7 +807,7 @@ def test_a_bundle_folder_ref_or_missing_member_is_404(bundle_client, bundle_root
 
 def test_a_url_can_name_a_file_inside_a_bundle(bundle_client, bundle_root: Path):
     assert (
-        bundle_client.get("/n/demo.bundle/heads/main/docs/readme.md").status_code == 200
+        bundle_client.get("/demo.bundle/heads/main/docs/readme.md").status_code == 200
     )
     assert (
         bundle_client.get("/demo.bundle/heads/main/docs/readme.md?f").status_code == 200

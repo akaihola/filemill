@@ -151,21 +151,6 @@ def test_resource_route_is_404(client, rel, query):
     _assert_not_found(client.get(f"/{rel}{query}"))
 
 
-@pytest.mark.parametrize("rel", HIDDEN_ROUTES)
-def test_ui_base_is_404(client, rel):
-    _assert_not_found(client.get(f"/n/{rel}?hidden=show"))
-
-
-@pytest.mark.parametrize("rel", HIDDEN_ROUTES)
-def test_web_mount_is_404(client, public_tree, rel):
-    _assert_not_found(client.get(f"/w/{public_tree.name}/{rel}"))
-
-
-@pytest.mark.parametrize("mount", [".bookmark/secret.txt", "cfg/x.txt"])
-def test_hidden_mount_is_404(client, mount):
-    _assert_not_found(client.get(f"/w/{mount}"))
-
-
 @pytest.mark.parametrize("route", ["raw", "preview"])
 @pytest.mark.parametrize("rel", HIDDEN_ROUTES)
 def test_api_file_routes_are_404(client, route, rel):
@@ -207,7 +192,7 @@ def test_search_drops_hidden_matches(client, monkeypatch):
         "/api/dir?p=bundle.zip&v=.env",
         "/bundle.zip/.env",
         "/bundle.zip?filemill=render&vpath=.env",
-        "/n/bundle.zip?vpath=.env",
+        "/bundle.zip?vpath=.env",
     ],
 )
 def test_hidden_archive_member_is_404(client, url):
@@ -256,7 +241,6 @@ def test_shell_ignores_hidden_show(client):
         "/README.md",
         "/a/visible.txt",
         "/a/visible.txt?filemill=render",
-        "/n/a/visible.txt",
         "/api/raw?p=a/visible.txt",
         "/api/dir?p=a",
         "/api/raw?p=bundle.zip&v=ok.txt",
@@ -266,8 +250,8 @@ def test_visible_paths_are_served(client, url):
     assert client.get(url).status_code == 200
 
 
-def test_web_mount_serves_visible_file(client, public_tree):
-    response = client.get(f"/w/{public_tree.name}/a/visible.txt")
+def test_resource_serves_visible_file(client, public_tree):
+    response = client.get("/a/visible.txt")
     assert response.text == "visible"
 
 
@@ -325,7 +309,7 @@ def test_bookmark_named_like_the_root_cannot_open_a_hidden_folder(
     monkeypatch.setattr(app_module.app.state, "root", root)
     monkeypatch.setattr(app_module.app.state, "public", True)
     client = TestClient(app_module.app, raise_server_exceptions=False)
-    for url in ("/site/id_rsa", "/w/site/id_rsa", "/api/dir?p=site"):
+    for url in ("/site/id_rsa", "/api/dir?p=site"):
         response = client.get(url)
         assert response.status_code == 404
         assert "id_rsa" not in response.text and "SSH-CANARY" not in response.text

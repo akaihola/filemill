@@ -30,13 +30,19 @@ status.
   `static/build-index.py` concatenates the ES module graph into the committed
   `static/index.html`. The server edition starts at `cli.py` → Uvicorn →
   Starlette in `app.py`, which serves the same `ui/` with an import map and
-  answers `/api/*`, `/w/` mounts and root-relative resource URLs. A Linux
+  answers `/api/*` and root-relative resource URLs. A Linux
   WebKitGTK shell (`native/webview/` → `ui/entry-native.js`, issue [30])
   supplies the three ports natively and passes the main UI scenario
   ([ADR 0079], 2026-10-17).
 - **One URL per file.** `urls.py` parses `?filemill=raw|render|highlight`
   and `?layout=full-columns|compressed-columns` ([ADR 0067]). `raw`, the
   default, serves the bytes; every other view serves the shared shell.
+- **Root paths only.** [129] removed the `/w/` named mounts and `/n/`
+  alternate shell on 2026-10-20 ([ADR 0088]). Both names now identify real
+  files, folders or direct-root symlink bookmarks through `resource()`.
+  The resource route keeps containment and public-mode checks. Explicit API,
+  UI-asset and PWA routes still win their registered patterns; collision
+  separation remains [121].
 - **Three ports.** `ui/core/ports.js` declares `FS`, `PREVIEW` and `ROUTER`,
   including `FS.node`, `FS.blob`, optional `FS.write`, `FS.remove` and
   `ROUTER.write(state, replace)`. Each edition supplies adapters.
@@ -227,8 +233,8 @@ Effort: S is up to a day, M one to three days.
 ### A1. The directory index escapes the root check
 
 Resolved 2026-10-19 ([103], [ADR 0081]). The final index file is resolved with
-the request zones before serving. The resource/raw/index/mount symlink matrix
-covers in-root files, nested escapes and direct-root bookmarks. Other derived
+the request zones before serving. The resource/raw/index symlink
+matrix (mount routes removed by [129]) covers in-root files, nested escapes and direct-root bookmarks. Other derived
 file responses were audited; see the ADR. The evidence below describes the
 earlier code.
 
@@ -328,7 +334,7 @@ In `static/sw.js`, every same-origin GET outside `/api/` is answered from the
 cache first, navigations included. `server/src/filemill/static/sw.js` sends
 navigations to the network, with an inline recovery page when that fails, and
 answers every other same-origin GET from the cache first (corrected
-2026-10-19, [109]). So root-relative files and `/w/` bytes that a page embeds
+2026-10-19, [109]). So root-relative file bytes that a page embeds
 are cached, including `no-store` responses (server `:90`, static `:70`). A cached
 response wins over the fresh one, so the first read after a save can be stale.
 `cached || networkFetch || new Response(...)` (server `:96`, static `:76`) tests
@@ -621,3 +627,4 @@ A12 items can land at any time, each with a focused test.
 [ADR 0085]: adr/0085-markdown-heading-fragments-scroll-the-preview.md
 [ADR 0086]: adr/0086-new-fold-moves-cancel-older-glides.md
 [ADR 0087]: adr/0087-a-public-instance-never-lists-or-serves-hidden-paths.md
+[ADR 0088]: adr/0088-remove-named-mount-and-alternate-shell-routes.md

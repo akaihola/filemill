@@ -301,10 +301,9 @@ def test_reserved_routes_are_not_shadowed_by_the_catch_all(client, url):
 
 
 def test_named_route_wins_over_a_directory_of_the_same_name(site, client):
-    """A directory in ROOT called "api" is unreachable by its own name.
+    """The registered /api/dir endpoint wins even when ROOT contains api.
 
-    That is the one cost of putting files at the top level. It is asserted here
-    so the behaviour is a decision on the record rather than a surprise.
+    Other paths under api use resource routing. See ADR 0088 and issue 121.
     """
     (site / "api").mkdir()
     (site / "api" / "note.txt").write_text("shadowed")
@@ -344,3 +343,61 @@ def test_markdown_image_src_is_left_relative_and_now_resolves(site, client):
     resolved = client.get("/photo.png")
     assert resolved.status_code == 200
     assert "image/png" in resolved.headers["content-type"]
+
+
+@pytest.mark.parametrize("prefix", ["w", "n"])
+def test_former_alias_prefix_is_a_real_directory(client, site, prefix):
+    folder = site / prefix
+    folder.mkdir()
+    (folder / "note.txt").write_text("real prefix file")
+    listing = client.get(f"/{prefix}/", follow_redirects=False)
+    assert listing.status_code == 200
+    assert 'data-base="/"' in listing.text
+    (folder / "index.html").write_text("prefix index")
+    for suffix in ("", "/"):
+        response = client.get(f"/{prefix}{suffix}", follow_redirects=False)
+        assert response.status_code == 200
+        assert response.text == "prefix index"
+        assert response.history == []
+    response = client.get(f"/{prefix}?f", follow_redirects=False)
+    assert response.status_code == 200
+    assert 'data-base="/"' in response.text
+    response = client.get(f"/{prefix}/note.txt", follow_redirects=False)
+    assert response.status_code == 200
+    assert response.text == "real prefix file"
+    response = client.get(f"/{prefix}/note.txt?f", follow_redirects=False)
+    assert response.status_code == 200
+    assert 'data-base="/"' in response.text
+
+
+@pytest.mark.parametrize("prefix", ["w", "n"])
+def test_former_alias_without_real_path_is_404(client, site, prefix):
+    for path in (
+        f"/{prefix}/",
+        f"/{prefix}/docs/readme.md",
+        f"/{prefix}/{site.name}/docs/readme.md",
+    ):
+        response = client.get(path, follow_redirects=False)
+        assert response.status_code == 404
+        assert "location" not in response.headers
+
+
+@pytest.mark.parametrize("prefix", ["w", "n"])
+def test_former_alias_name_can_be_a_file(client, site, prefix):
+    (site / prefix).write_text("prefix bytes")
+    response = client.get(f"/{prefix}", follow_redirects=False)
+    assert response.status_code == 200
+    assert response.text == "prefix bytes"
+
+
+@pytest.mark.parametrize("prefix", ["w", "n"])
+def test_former_alias_can_be_a_direct_root_bookmark(client, site, prefix):
+    outside = site.parent / "bookmark-target"
+    outside.mkdir()
+    (outside / "note.txt").write_text("bookmark bytes")
+    (site / prefix).symlink_to(outside, target_is_directory=True)
+    assert client.get(f"/{prefix}/note.txt").text == "bookmark bytes"
+    secret = site.parent / "secret.txt"
+    secret.write_text("secret")
+    (outside / "escape.txt").symlink_to(secret)
+    assert client.get(f"/{prefix}/escape.txt").status_code == 404

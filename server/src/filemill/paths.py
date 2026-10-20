@@ -1,4 +1,4 @@
-"""Path resolution and the symlink mount map.
+"""Path resolution and direct-root symlink bookmark zones.
 
 Every filesystem path that arrives in a URL goes through ``resolve_safe`` before
 anything is read. The functions here take the root explicitly: the app owns the
@@ -125,43 +125,3 @@ def resolve_safe(
         return None
     except Exception:
         return None
-
-
-def mount_targets(root: Path, zones: dict[str, Path] | None = None) -> dict[str, Path]:
-    """Return named mounts exposed under ``/w/<mount>/...``.
-
-    The root directory itself is always mounted under ``root.name``. Each direct
-    symlink child of *root* is also mounted under the symlink name.
-    """
-    return zones or symlink_zones(root)
-
-
-def resolve_web_mount(
-    path: str,
-    root: Path,
-    zones: dict[str, Path] | None = None,
-    *,
-    public: bool = False,
-) -> Path | None:
-    """Resolve a ``/w/`` path using named mounts.
-
-    The first path segment names either the root mount (``root.name``) or one of
-    root's direct symlink children. The remainder is resolved relative to that
-    mount target and still validated through ``resolve_safe()``. With *public*,
-    a hidden mount or remainder resolves to None.
-    """
-    stripped = path.lstrip("/")
-    if not stripped:
-        return None
-
-    mount_name, _, remainder = stripped.partition("/")
-    if public and hidden(remainder):
-        return None
-    zones = zones or symlink_zones(root)
-    mounts = public_zones(root, zones) if public else mount_targets(root, zones)
-    target_root = mounts.get(mount_name)
-    if target_root is None:
-        return None
-
-    candidate = target_root / remainder if remainder else target_root
-    return resolve_safe(str(candidate), root, zones, public=public)

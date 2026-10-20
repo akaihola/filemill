@@ -290,9 +290,9 @@ that both sides share by value.
 
 Status 2026-10-19: Partly done. Steps 3, 6 and conditional step 7 are complete;
 steps 1, 2, 4 and 5 retain work. Markdown/DOCX use vendored browser modules;
-RST and archive consumers still use the preview API. `/w/` is a same-origin
-mount without CORS. Do not restore the removed upload renderer or the browser
-live reload over `/sse/reload` (`cb453a00`). `filemill --live` is Uvicorn's
+RST and archive consumers still use the preview API. [129] removed `/w/`
+and `/n/` aliases on 2026-10-20; file addresses are root-relative. Do not
+restore the removed upload renderer or the browser live reload over `/sse/reload` (`cb453a00`). `filemill --live` is Uvicorn's
 reload and stays.
 
 The original budgets remain and fail. [102] measured 2,491 production Python
@@ -334,7 +334,7 @@ static edition. Two render paths for one document drift apart.
    `preview-upload.js`, `/sse/reload` and live reload,
    `preview-upload.js`, `/sse/reload` and live reload,
    `styles.py`
-   and `/raw?path=`. Decide `/w/` and its CORS middleware with its consumer.
+   and `/raw?path=`. The `/w/` route and its mount helpers were removed in [129].
 5. Reduce `app.py` to routing. Move `_resolve_safe` and the symlink map to
    `paths.py` and the PWA routes to `pwa.py`. Compute the symlink zone map
    once per request. Default `--bind` to `127.0.0.1`.
@@ -441,3 +441,5 @@ port.
 - A renderer lives in `ui/`, not in Python, unless the browser cannot do it.
 - No `# noqa` and no skipped test without a link to an issue.
 - A red suite blocks every merge. No exceptions.
+
+[129]: tasks/129-remove-the-obsolete-w-and-n-url-routes.md

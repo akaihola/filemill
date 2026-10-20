@@ -96,9 +96,8 @@
      onNavigate(cb)  → void                            back/forward pressed
      Set to null to run with no URL syncing at all.
 
-   RouterPath.base is the trailing-slash base URL used by the path router. It
-   comes from the <html> element's data-base attribute, or "/", and is used to
-   strip/add the server mount prefix. It is not part of router state.
+   RouterPath.base is "/", the root URL used by the server path router.
+   It is not part of router state.
    ═══════════════════════════════════════════════════════════════════════════ */
 export let FS = null, PREVIEW = null, ROUTER = null;
 

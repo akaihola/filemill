@@ -22,7 +22,13 @@ the root; task [32] deleted `rendering.py`.
 CORS. The inspected dashboard, menu and systemd units did not load a
 `/w/` URL from another origin.
 
-## Decision
+## Later decision, 2026-10-20
+
+The decision below was implemented. It is historical, not pending work.
+[129](129-remove-the-obsolete-w-and-n-url-routes.md) replaces it with removal
+of both aliases. See [ADR 0088](../adr/0088-remove-named-mount-and-alternate-shell-routes.md).
+
+## Original decision
 
 Keep `/w/` as the one same-origin static mount. Delete the CORS middleware,
 its headers and its tests; there is no consumer to make an opt-in option for.

@@ -35,7 +35,7 @@ import tarfile
 import time
 import zipfile
 from pathlib import Path
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 
 import pytest
 
@@ -357,17 +357,10 @@ class Harness:
         )
 
     def open(self, path: str = "") -> None:
-        self._pg.goto(f"{self.base}/n/{path}")
-        self._pg.wait_for_function("typeof path !== 'undefined' && path.length >= 1")
-        names = [unquote(part) for part in urlsplit(path).path.split("/") if part]
-        self._pg.wait_for_function(
-            """names => names.every((name, i) => sel[i] === name)
-              && path.every(node => node.kids !== null && colCache.has(node))
-              && !document.querySelector('.spinner')
-              && document.querySelector('.col .row')
-              && document.fonts.status === 'loaded'""",
-            arg=names,
-        )
+        separator = "&" if "?" in path else "?"
+        query = parse_qs(urlsplit(path).query, keep_blank_values=True)
+        view = "" if {"filemill", "f"} & query.keys() else separator + "filemill=render"
+        self.open_resource(path + view)
 
 
 @pytest.fixture(scope="module")
@@ -1034,11 +1027,11 @@ def test_metadata_rides_along_with_the_listing(page):
 def test_the_url_path_mirrors_the_file_path(page):
     page.open()
     page.click('.col[data-i="0"] .row:has-text("notes")')
-    page.wait_for_function("location.pathname.endsWith('/n/notes')")
-    assert page.url.endswith("/n/notes")
+    page.wait_for_function("location.pathname.endsWith('/notes')")
+    assert page.url.endswith("/notes")
     page.click('.col[data-i="1"] .row:has-text("plain.txt")')
-    page.wait_for_function("location.pathname.endsWith('/n/notes/plain.txt')")
-    assert page.url.endswith("/n/notes/plain.txt?filemill=render")
+    page.wait_for_function("location.pathname.endsWith('/notes/plain.txt')")
+    assert page.url.endswith("/notes/plain.txt?filemill=render")
 
 
 def test_a_deep_link_restores_the_whole_column_chain(page):
@@ -2134,7 +2127,7 @@ def test_the_url_names_a_row_inside_a_database(page):
     page.wait_for_selector('.col[data-i="1"] .row', timeout=15000)
     page.click('.col[data-i="1"] .row:has-text("users")')
     page.wait_for_function("location.pathname.endsWith('/sample.db/users')")
-    assert page.url.endswith("/n/sample.db/users")
+    assert page.url.endswith("/sample.db/users")
 
 
 def test_an_archive_opens_as_columns_and_a_member_previews(page):
@@ -2150,7 +2143,7 @@ def test_an_archive_opens_as_columns_and_a_member_previews(page):
         "document.querySelector('#preview').innerText.includes('hello from the archive')",
         timeout=15000,
     )
-    assert "/n/bundle.tar.zst/inside/hello.txt" in page.url
+    assert "/bundle.tar.zst/inside/hello.txt" in page.url
 
 
 @pytest.mark.skipif(shutil.which("git") is None, reason="needs git")
@@ -2168,7 +2161,7 @@ def test_a_git_bundle_opens_as_refs_then_files_and_a_file_previews(page):
         "document.querySelector('#preview').innerText.includes('hello from the git bundle')",
         timeout=15000,
     )
-    assert "/n/repo.bundle/heads/main/notes.txt" in page.url
+    assert "/repo.bundle/heads/main/notes.txt" in page.url
 
 
 def test_a_json_member_opens_as_columns_of_its_keys_and_previews_foldable(page):
@@ -2193,7 +2186,7 @@ def test_a_json_member_opens_as_columns_of_its_keys_and_previews_foldable(page):
         "document.querySelector('#preview .pv-json-value')?.textContent === 'a'",
         timeout=15000,
     )
-    assert "/n/bundle.zip/data.json/tags/0" in page.url
+    assert "/bundle.zip/data.json/tags/0" in page.url
 
 
 def test_a_deep_link_into_a_json_member_reloads(page):
@@ -2217,7 +2210,7 @@ def test_a_jsonl_member_opens_as_a_column_of_rows(page):
         "id": 2,
         "title": "Second",
     }
-    assert "/n/bundle.zip/rows.jsonl/Second" in page.url
+    assert "/bundle.zip/rows.jsonl/Second" in page.url
 
 
 @pytest.mark.parametrize(
@@ -2364,7 +2357,7 @@ def test_a_markdown_member_renders_like_the_same_file_on_disk(page):
         timeout=15000,
     )
     assert "first part" not in page.inner_text("#preview .pv-rich")
-    assert "/n/bundle.zip/readme.md/Outro" in page.url
+    assert "/bundle.zip/readme.md/Outro" in page.url
 
 
 def test_a_docx_member_renders_like_the_same_file_on_disk(page):
@@ -3511,7 +3504,7 @@ def test_context_menu_delete_during_navigation(page, ui_root):
     assert page.get_by_role("menuitem", name="Delete", exact=True).is_disabled()
     page.keyboard.press("Escape")
     page.locator('.col[data-i="0"] .row[aria-label="code"]').click()
-    page.wait_for_url("**/n/code")
+    page.wait_for_url("**/code")
     before = page.url
     page.evaluate("window.finishDelete()")
     assert page.url == before
@@ -3955,7 +3948,7 @@ def test_mutations_from_two_browser_origins(browser, ui_root, tmp_path, proxy):
         else:
             origin = backend
         page = context.new_page()
-        page.goto(origin + "/n/notes/plain.txt")
+        page.goto(origin + "/notes/plain.txt?filemill=render")
         page.wait_for_function("typeof path !== 'undefined' && path.length >= 1")
         token = page.locator("html").get_attribute("data-mutation-token")
         attacker = context.new_page()
@@ -4074,3 +4067,20 @@ def test_missing_section_loads_the_whole_document(page, section):
     assert response.status == 200
     expect(page.locator("#pv-content")).to_contain_text("intro")
     expect(page.locator("#pv-content")).to_contain_text("steps")
+
+
+@pytest.mark.parametrize("prefix", ["w", "n"])
+def test_real_former_alias_folder_navigates_from_root(page, ui_root, prefix):
+    folder = ui_root / prefix
+    folder.mkdir()
+    (folder / "note.txt").write_text("real prefix preview")
+    page.open()
+    page.click(f'.col[data-i="0"] .row[aria-label="{prefix}"]')
+    page.wait_for_function("name => location.pathname === '/' + name", arg=prefix)
+    page.click('.col[data-i="1"] .row[aria-label="note.txt"]')
+    page.wait_for_function(
+        "name => location.pathname === '/' + name + '/note.txt'", arg=prefix
+    )
+    expect(page.locator("#pv-content")).to_contain_text("real prefix preview")
+    page.open_resource(f"{prefix}/note.txt?f")
+    expect(page.locator("#pv-content")).to_contain_text("real prefix preview")

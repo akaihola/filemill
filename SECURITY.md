@@ -26,17 +26,14 @@ reach the server. See
 [ADR 0087](docs/adr/0087-a-public-instance-never-lists-or-serves-hidden-paths.md)
 for the rule and what it does not hide.
 
-## Named mounts under `/w/`
+## Root-relative file URLs
 
-`/w/<root-name>/...` serves the raw bytes of a file under the root directory,
-and `/w/<symlink-name>/...` does the same for each symlink that sits directly in
-the root. Every path still passes the root check above. The route stays for
-existing links; the web interface no longer makes them, because a Markdown `~/`
-link now resolves against the root at `/`. The server sends no CORS headers, so
-browser scripts on another origin cannot read the responses. This does not
-prevent requests from reaching the server or authorize writes. If you need
-cross-origin reads, put a reverse proxy that adds the headers in front of a
-bind you trust.
+Files use their own paths below `/`, including direct-root symlink bookmarks.
+`/w/` and `/n/` are ordinary resource paths, not aliases. Every resource passes
+containment and public-mode checks. See
+[ADR 0088](docs/adr/0088-remove-named-mount-and-alternate-shell-routes.md).
+The server sends no CORS headers. This prevents browser scripts on another
+origin from reading responses, but does not authorize writes or prevent requests.
 
 ## Save and delete authorization
 
@@ -66,7 +63,7 @@ and a folder's `index.html` at the folder's URL. These pages are what lets a
 built site or an HTML report in the root work as a website. They come from the
 same origin as Filemill, and Filemill does not sandbox them. A script in such a
 page can do anything the web interface can: read every file through `/api/*`,
-`/w/` and root URLs, fetch the shell for its token, and save or delete files.
+root URLs, fetch the shell for its token, and save or delete files.
 Only serve a root whose HTML you trust, as you would for any static web server.
 The Raw link of an HTML member of an archive opens it the same way, from
 `/api/raw`.

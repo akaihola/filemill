@@ -80,3 +80,9 @@ are not checked.
 
 [ADR 0081]: 0081-authorize-server-mutations.md
 [128]: ../tasks/128-never-list-or-serve-hidden-files-on-a-public-instance.md
+
+## Later routing change, 2026-10-20
+
+[ADR 0088](0088-remove-named-mount-and-alternate-shell-routes.md) removes the
+`/w/` and `/n/` aliases described above. The public rule now applies to these
+names through normal resource routing. Direct-root bookmark checks remain.

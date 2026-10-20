@@ -18,7 +18,7 @@ src/filemill/
 ├── cli.py          # Typer CLI entry point
 ├── env.py          # FILEMILL_* variables, PYKOFINDER_* fallback
 ├── mutations.py    # Origin, Host and token checks for save and delete
-├── paths.py        # resolve_safe() and the named-mount map
+├── paths.py        # resolve_safe() and symlink bookmark zones
 ├── preview.py      # Server RST, media and source preview dispatcher
 ├── pwa.py          # /manifest.json, /sw.js and /icons/ handlers
 ├── urls.py         # View state and canonical URLs
@@ -67,7 +67,7 @@ descends virtually. An entry without one joins its name to the path. The server
 puts the `vpath` on the entries it returns, so `ui/core/` never learns that
 virtual nodes exist.
 
-`/n/sample.db/users/1` is one URL that names two things. `api.split_vfs()`
+`/sample.db/users/1` is one URL that names two things. `api.split_vfs()`
 separates them and validates a deep link. The joined form exists only in the
 address bar.
 
@@ -81,9 +81,8 @@ adapters from the wheel. The server's module graph, including `preview-rich.js`
 and its vendored dependencies, ships inside the package. There is no packaging
 copy of the shared UI to refresh.
 
-The shared UI is mounted at `UI_BASE = "/n/"`, and the resource route serves
-it too. `index()` hands `/` to `resource()`. A directory, `/` included,
-without an index returns `_ui_shell(state, "/")`. The URL path is the file path relative to
+The resource route serves the shared UI. `index()` hands `/` to `resource()`. A directory, `/` included,
+without an index returns `_ui_shell(state)`. The URL path is the file path relative to
 ROOT, with no prefix. A bare file path returns its own bytes, because `raw` is
 the default view and that branch returns before the shell one.
 `filemill=render` or `highlight` puts the shell around a file.
@@ -97,10 +96,10 @@ the default view and that branch returns before the shell one.
   validates the final directory index. Mutation routes check Origin, Host and
   a per-process token before path resolution or body consumption. See
   [SECURITY.md](../SECURITY.md). A4 and A5 remain open.
-- Static `/w/` URLs use named mounts. The root directory is `/w/<ROOT.name>/...`.
-  Each direct symlink child of ROOT is `/w/<symlink-name>/...`.
+- `/w/` and `/n/` are ordinary resource paths, with no alias or redirect.
+  See [ADR 0088](../docs/adr/0088-remove-named-mount-and-alternate-shell-routes.md).
 - There is no JavaScript build step.
-- Every path in the `/api/*` and `/n/` routes is **relative to ROOT**.
+- Every filesystem path in the `/api/*` and resource routes is **relative to ROOT**.
   `api.rel_to_abs` refuses an absolute path, because `ROOT / "/etc/passwd"` is
   `/etc/passwd`. `resolve_safe()` then checks containment.
 - Browser renderer dependencies for Markdown and DOCX are served locally.
@@ -108,13 +107,13 @@ the default view and that branch returns before the shell one.
 - A keyboard handler that changes columns or the preview must update the
   browser URL. The URL and the visible Finder state must agree.
 - `src/filemill/static/` holds the PWA assets `/manifest.json`, `/sw.js` and
-  `/icons/*`. `_reorder_routes()` puts them, `/ui/`, `/n/` and `/api/*` before
+  `/icons/*`. `_reorder_routes()` puts them, `/ui/` and `/api/*` before
   the resource catch-all route, `/{path:path}`. Without that, the catch-all
   swallows every `.js` and `.css` the shared UI asks for, and the page is blank.
 - The UI shell registers the [service worker](src/filemill/static/sw.js).
   It bypasses non-GET and `/api/*` requests and sends navigations to the
   network, with a recovery page when the server does not answer. It caches
-  other same-origin GETs, such as images and `/w/` files that a page embeds.
+  other same-origin GETs, such as images and other files that a page embeds.
   Cache isolation and offline misses remain A5 work.
 
 ---

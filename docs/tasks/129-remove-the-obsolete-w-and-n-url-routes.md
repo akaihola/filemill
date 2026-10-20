@@ -18,3 +18,18 @@ Approved: stop supporting the /w/ named mounts and /n/ alternate shell. Backward
 ## Acceptance
 
 Both former prefixes work as real paths. No special alias handler or compatibility redirect remains. Resource, virtual-file, PWA and affected browser tests pass; the static bundle and architecture description match the new behavior.
+
+## Implementation, 2026-10-20
+
+- Added route regressions first: six failed and two passed before removal.
+- Deleted `web_static`, `ui_view`, `UI_BASE`, `mount_targets` and
+  `resolve_web_mount`. The server router now always uses `/`.
+- Migrated API, resource, PWA, public-mode and browser fixtures to real paths.
+  Kept containment and direct-root bookmark checks. Added browser navigation
+  and fresh-load coverage for real `w` and `n` folders.
+- Recorded ADR 0088, the task 35 replacement date and the collision boundary
+  with [121]. Updated current guidance and rebuilt the static bundle.
+
+Validation so far: 519 resource/API/PWA/public-mode checks passed; both new
+browser cases passed; the model checks and all seven pre-commit hooks passed.
+Full browser and static-edition suites are in progress.

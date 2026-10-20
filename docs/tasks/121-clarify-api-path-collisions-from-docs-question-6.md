@@ -28,3 +28,10 @@ The design covers plain navigation, raw downloads, embedded resources, app asset
 - [Fetch request headers](https://fetch.spec.whatwg.org/#headers-class).
 - [HTTP Vary](https://www.rfc-editor.org/rfc/rfc9110.html#name-vary).
 - [HTML origins](https://html.spec.whatwg.org/multipage/browsers.html#origin) and [CORS](https://fetch.spec.whatwg.org/#cors-protocol).
+
+## Collision boundary after [129], 2026-10-20
+
+[ADR 0088](../adr/0088-remove-named-mount-and-alternate-shell-routes.md)
+records the current collision matrix. Real `w` and `n` files, directories and
+bookmarks now use normal resource routing. API endpoints, UI assets and PWA
+paths retain their existing precedence pending this issue's design decision.

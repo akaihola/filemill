@@ -1501,7 +1501,7 @@ def test_renderer_uses_model_state(browser_root, playwright):
         browser = playwright.chromium.launch(headless=True)
         try:
             page = browser.new_page()
-            page.goto(f"{base}/n/my-knowledge/AGENTS.md")
+            page.goto(f"{base}/my-knowledge/AGENTS.md?f")
             page.wait_for_function("typeof path !== 'undefined' && path.length === 2")
             assert page.evaluate("""async () => {
                 const model = await import('/ui/core/model/state.js');

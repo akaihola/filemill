@@ -3,9 +3,8 @@
 
        server/src/filemill/app.py
 
-   The path *is* the file path relative to the browsed root, after BASE ("/",
-   or "/n/"): no ?path=, nothing in the address bar that is not the file you
-   are looking at. Query parameters stay free for representation and layout
+   The path *is* the file path relative to the browsed root, under "/".
+   The address bar names the file; there is no ?path= parameter. Query parameters stay free for representation and layout
    state, because they say how to show the file, not which one. write() sets
    `filemill` from the router state's view; every other parameter, such as
    `layout`, is preserved verbatim through every navigation.
@@ -15,10 +14,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { path } from "../core/model/state.js";
 
-const BASE = (document.documentElement.dataset.base || "/").replace(
-  /\/*$/,
-  "/",
-);
+const BASE = "/";
 
 export const RouterPath = {
   base: BASE,

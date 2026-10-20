@@ -93,18 +93,6 @@ def index(request):
     return resource(request)
 
 
-# ── Named mounts ─────────────────────────────────────────────────────────────
-
-
-@rt("/w/{path:path}")
-def web_static(request, path: str):
-    """Serve a named-mount ``/w/<mount>/...`` file with the correct Content-Type."""
-    p = paths.resolve_web_mount(path, _root(), _zones(request), public=app.state.public)
-    if p is None or not p.is_file():
-        return HTMLResponse("Not found", status_code=404)
-    return FileResponse(str(p))
-
-
 # ── The shared Miller-columns UI ─────────────────────────────────────────────
 #
 # ui/ is the repository's shared frontend itself: the repo-root ../../../ui is
@@ -116,10 +104,7 @@ def web_static(request, path: str):
 # adapters ui/entry-server.js names point it at this server.
 #
 # The resource route below serves the shell at each file's own path, with base
-# "/", so the URL path *is* the file path relative to ROOT. UI_BASE, /n/, still
-# serves the shell too.
-
-UI_BASE = "/n/"
+# "/", so the URL path *is* the file path relative to ROOT.
 _UI_DIR: Path = Path(__file__).parent / "ui"
 
 # The shell loads one module, ui/entry-server.js, which imports the core and
@@ -197,7 +182,7 @@ _VENDOR_MAP_JS = (
 )
 
 
-def _ui_shell(state, base: str, hidden: bool = False):
+def _ui_shell(state, hidden: bool = False):
     """The app shell for the shared UI. Deliberately almost empty.
 
     The chrome is built by ui/core/shell.js so that this page and filemill's
@@ -205,9 +190,8 @@ def _ui_shell(state, base: str, hidden: bool = False):
 
     The view and layout reach the client as data attributes on ``<html>``, beside
     the theme and density the shell already reads from there, and so do the two
-    adapter settings: the API prefix for ui/adapters/http.js and *base*, the URL
-    prefix ui/adapters/router-path.js strips — ``/n/`` for the migration mount,
-    ``/`` for the resource route, where the path already is the file path.
+    adapter settings: the API prefix for ui/adapters/http.js and the root URL
+    base for ui/adapters/router-path.js.
     """
     # The shell always renders, so a raw request here is a rendered one. The
     # client's view toggle trusts this attribute; "raw" would mislabel it.
@@ -220,7 +204,7 @@ def _ui_shell(state, base: str, hidden: bool = False):
         "data-absolute": _root().resolve().as_posix(),
         "data-api": "/api",
         "data-mutation-token": app.state.mutation_token,
-        "data-base": base,
+        "data-base": "/",
         "data-filemill": state.view,
         "data-layout": state.layout,
     }
@@ -244,27 +228,6 @@ def _ui_shell(state, base: str, hidden: bool = False):
 </head><body><script src="{_UI_ASSETS[f"/ui/{_UI_ENTRY}"]}" type="module"></script></body></html>''',
         headers={"Cache-Control": "no-store"},
     )
-
-
-@rt(UI_BASE)
-@rt(UI_BASE + "{path:path}")
-def ui_view(request, path: str = ""):
-    """Serve the shell for any path under the UI base.
-
-    The path is validated but not otherwise used: the client walks down to it
-    from the root, so a request for a file that has gone is a 404 here and a
-    "the folder it was in" fallback there. Both are better than a blank page.
-
-    Validation goes through ``split_vfs`` because ``/n/sample.db/users/42`` is a
-    real file plus a key inside it — the joined form exists only in the URL.
-    """
-    zones = _zones(request)
-    state = urls.parse_state(request.query_params)
-    if _hidden(path, state.vpath) or (
-        path and api.split_vfs(path, _root(), lambda p: _resolve(p, zones)) is None
-    ):
-        return HTMLResponse("Not found", status_code=404)
-    return _ui_shell(state, UI_BASE)
 
 
 # ── JSON/fragment API behind the shared UI ───────────────────────────────────
@@ -415,12 +378,8 @@ def api_delete(request, p: str = ""):
 
 # ── The root-relative resource route ─────────────────────────────────────────
 #
-# Every route above this line is addressed by a prefix that names a *mechanism*:
-# /w/ is a static mount, /api/ is JSON, /n/ is the shared UI. Those names are
-# reserved and they win, so a directory in ROOT
-# actually called "api" is not reachable under its own name. That is the one
-# cost of putting files at the top level, and it is why the reserved set is
-# written down here rather than discovered by a user hitting it.
+# Explicit API, UI-asset and PWA routes take priority over resource paths.
+# Only their registered patterns win; other paths use the resource route.
 #
 # Everything else is addressed by the file's own path relative to ROOT. The
 # resource and its representation are different things: /docs/readme.md names
@@ -505,7 +464,7 @@ def resource(request, path: str = ""):
             if not app.state.public:
                 return HTMLResponse("Not found", status_code=404)
         # A directory has no bytes, so every view value opens the shell on it.
-        return _ui_shell(state, "/", request.query_params.get("hidden") == "show")
+        return _ui_shell(state, request.query_params.get("hidden") == "show")
 
     if vpath:
         # A node inside a virtual filesystem has no bytes of its own, so `raw`
@@ -522,7 +481,7 @@ def resource(request, path: str = ""):
 
     # Every other view is the shell. The client reads data-filemill and
     # data-layout from <html> and renders the document itself.
-    return _ui_shell(state, "/", request.query_params.get("hidden") == "show")
+    return _ui_shell(state, request.query_params.get("hidden") == "show")
 
 
 # ── PWA static files ─────────────────────────────────────────────────────────
@@ -540,7 +499,7 @@ rt("/icons/{name}")(pwa.icon)
 # whole contract and is stated in one place rather than left to registration
 # order. Four bands, most specific first:
 #
-#   1. the named prefixes below            /w/, /api/, /n/, PWA files
+#   1. the named prefixes below            /api/, /ui/, PWA files
 #   2. every other explicitly named route  /, …
 #   3. /{path:path}                        the file's own path under ROOT
 #   4. any static fallback
@@ -551,15 +510,12 @@ rt("/icons/{name}")(pwa.icon)
 def _reorder_routes() -> None:
     routes = app.router.routes
     _prefixes = {
-        "/w/{path:path}",
         "/manifest.json",
         "/sw.js",
         "/icons/{name}",
         # Without these, the catch-all eats every /ui/**.js and .css the shell
         # asks for and the new UI is a blank page.
         "/ui/{path:path}",
-        UI_BASE,
-        UI_BASE + "{path:path}",
         "/api/dir",
         "/api/raw",
         "/api/save",
