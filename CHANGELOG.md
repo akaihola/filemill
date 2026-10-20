@@ -58,6 +58,8 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   a Markdown wikilink stays text. Links in `.docx`, reStructuredText and
   `.desktop` previews keep their targets only for `http:`, `https:`, `mailto:`
   or a scheme-less address ([ADR 0082]).
+- An HTML member of an archive previews in a sandboxed iframe, as an HTML file
+  on disk does. Its scripts had run with Filemill's origin.
 
 ## [0.1.0] - 2026-09-15
 
