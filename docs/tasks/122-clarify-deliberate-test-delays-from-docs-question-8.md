@@ -16,3 +16,12 @@ Clarify the no-fixed-waits rule to prohibit time-based guesses of readiness whil
 ## Acceptance
 
 The policy distinguishes test input from synchronization and does not excuse arbitrary readiness sleeps. Docs and browser-wait guard tests pass; no test delay or assertion is weakened.
+
+## Implementation plan (2026-10-21)
+
+1. Add a failing documentation check for the test-input and synchronization
+   distinction, the guard scope and the Phase 7 guidance link.
+2. Clarify Phase 7 and the condition-based waiting guidance. Retain all browser
+   delays and assertions. Update the architecture review and test-guide links.
+3. Run the documentation and browser-wait guard tests. Review the diff, merge
+   onto main and complete the tracker entry pending acceptance.
