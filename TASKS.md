@@ -23,10 +23,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [132] Re-check the architecture review against current main
-  <!-- hai:{"id":"simple-2a087add-53a0-4c65-9b64-6b413aae4b4f","labels":["steward","review"],"createdAt":"2026-10-20T17:18:18.462Z","updatedAt":"2026-10-20T17:48:00.669Z"} -->
-
 ## In Progress
+
+- [~] [132] Re-check the architecture review against current main
+      <!-- hai:{"id":"simple-2a087add-53a0-4c65-9b64-6b413aae4b4f","labels":["steward","review"],"createdAt":"2026-10-20T17:18:18.462Z","updatedAt":"2026-10-20T17:48:33.380Z"} -->
 
 - [~] [122] Clarify deliberate test delays from docs question 8
       <!-- hai:{"id":"simple-e47a58f3-193e-4296-83a9-cfa00f27371b","labels":["steward"],"createdAt":"2026-10-20T07:12:44.920Z","updatedAt":"2026-10-20T13:22:03.268Z"} -->
