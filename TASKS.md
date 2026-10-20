@@ -27,11 +27,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [135] Keep bundle repositories alive through active reads (architecture review
-  A14)
-  <!-- hai:{"id":"simple-ad2e83e1-1884-4c57-afb0-fc279fdbafd6","labels":["steward"],"createdAt":"2026-10-20T19:38:05.190Z","updatedAt":"2026-10-20T22:11:27.010Z"} -->
-
 ## In Progress
+
+- [~] [135] Keep bundle repositories alive through active reads (architecture review
+  A14)
+      <!-- hai:{"id":"simple-ad2e83e1-1884-4c57-afb0-fc279fdbafd6","labels":["steward"],"createdAt":"2026-10-20T19:38:05.190Z","updatedAt":"2026-10-20T22:11:45.185Z"} -->
 
 - [~] [133] Protect saves from truncation and stale overwrites (architecture review
   A4)
