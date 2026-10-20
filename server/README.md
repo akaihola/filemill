@@ -22,7 +22,7 @@ and implementation links. This document covers the Python edition.
 - **`.desktop` files** – show as a link card
 - **Symlink bookmarks** – a direct symlink child of the root opens as a bookmark, and its target subtree is browsable
 - **Open Folder…** – the served page can browse a folder on your machine through the File System Access API. PreviewRich renders local previews in the browser.
-- **PWA** – installable, with a manifest, service worker and icons. The [worker](src/filemill/static/sw.js) bypasses `/api/` and sends navigations to the network, but caches other same-origin GETs, such as images and other files that a page embeds. A5 remains open; cold offline recovery is not reliable. See the [architecture review](../docs/ARCHITECTURE-REVIEW.md).
+- **PWA** – installable, with a manifest, service worker and icons. The [worker](src/filemill/static/sw.js) asks the server first for every read but a content-hashed UI module, so an online read is never an older copy, and keeps what it read as offline copies. While the server is offline, folders and files read earlier stay readable, read-only, and an indicator in the top bar says so. See [Installed PWA](#installed-pwa).
 
 ## Installation
 
@@ -76,11 +76,27 @@ uv run filemill [ROOT]
 ```
 
 The default listener is `127.0.0.1:8000`, so only this machine can reach it.
-The PWA cannot start a native process. The
-[recovery page](src/filemill/static/sw.js) offers a start command and retry
-button, but A5 means an uncached offline navigation may not reach it.
-Use `--bind` only when you want to
+The PWA cannot start a native process. Use `--bind` only when you want to
 expose the server beyond loopback.
+
+When the server stops, the open page keeps what it shows, and a
+**Server offline** indicator appears in the top bar within 30 seconds, or at
+the next read. Click or tap it, or focus it and press Enter or Space, to see
+what that means, the start command and **Retry now**. Filemill also retries
+every 5 seconds. When the server answers again, the indicator says
+**Server back online**, and folders and files read while it was offline are
+read again. A restarted server has a new mutation token; the page fetches it,
+so saving works without a reload. After a restart the page did not notice, a
+save shows **Change refused**; Retry now fetches the new token.
+
+After one visit under the installed worker, opening the app while the server
+is stopped shows the copies of the folders and files read before, with the
+indicator. Copies are read-only, and saves and deletes fail with
+"Server offline". A folder never read says "Not available offline". An
+address the worker has no shell for, such as a file's own URL, or a first
+visit without a worker, gets the [recovery page](src/filemill/static/sw.js)
+with the start command and a retry button. The worker keeps up to 200 reads of at most 2 MiB each; see
+[ADR 0089](../docs/adr/0089-an-offline-server-shows-older-copies-with-an-indicator.md).
 
 ## Development
 

@@ -1,101 +1,219 @@
-/* filemill service worker
+/* filemill service worker — the server edition (ADR 0089).
  *
- * Strategy:
- *   - /api/ and /sse/ → network-only; never cached.
- *   - Navigations → network-only. When the server does not answer, an
- *     inline recovery page with a retry button.
- *   - Every other same-origin GET → stale-while-revalidate: the cached copy
- *     answers at once, and the network refreshes it. The app shell (/), the
- *     manifest and the icons are precached.
+ * Network first, for everything it handles: whatever the server answers is
+ * what the page gets, so an online read is never an older copy. A complete
+ * answer is also kept as an offline copy. Only when the server cannot be
+ * reached (no answer, or a proxy in front of it saying 502, 503 or 504) does
+ * the worker answer from those copies, marked X-Filemill-Offline: copy so the
+ * page can say that the server is offline (ui/adapters/server-status.js).
+ * With no copy it answers a valid 503 marked X-Filemill-Offline: miss: the
+ * recovery page for a navigation, plain text for anything else.
+ *
+ * The copies, in caches named filemill-server-*-v2:
+ *   shell   the app shell, per address that answered with it. An address the
+ *           client writes (?filemill=render or highlight) gets the shell of
+ *           another address when its own was never loaded.
+ *   assets  /ui/, the manifest and the icons, one copy per path, so the
+ *           shell's versioned module URLs find the newest copy. A module URL
+ *           carries its content hash (?v=), so the copy of that exact URL
+ *           answers at once: it cannot be older than the server's.
+ *   reads   listings, file bytes and previews: READS_MAX entries of at most
+ *           COPY_MAX bytes each, the least recently stored dropped first.
+ * Never handled: requests other than GET, other origins, /api/search, /sse/,
+ * Range requests, and requests the page made with cache: "no-store".
+ * Activation deletes older Filemill caches, filemill-v1 included, and keeps
+ * every other cache on the origin.
  */
 
-const CACHE = "filemill-v1";
+const VERSION = "v2";
+const SHELL = `filemill-server-shell-${VERSION}`;
+const ASSETS = `filemill-server-assets-${VERSION}`;
+const READS = `filemill-server-reads-${VERSION}`;
+const CURRENT = [SHELL, ASSETS, READS];
+/* The caches this worker owns: its own, and the one every older build used. */
+const ours = (name) =>
+  name === "filemill-v1" || name.startsWith("filemill-server-");
 
-const PRECACHE = [
-  "/",
-  "/manifest.json",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
-  "/icons/icon.svg",
-];
+const SHELL_MAX = 50;
+const READS_MAX = 200;
+const COPY_MAX = 2 * 1024 * 1024;
+
+const OFFLINE = "X-Filemill-Offline";
+/* The URL an asset copy was read from; its key is the path alone. */
+const SOURCE = "X-Filemill-Source";
+/* What a proxy answers when the Filemill server behind it does not. */
+const UNAVAILABLE = [502, 503, 504];
 
 /* Paths whose responses must never be served from cache. */
 const NETWORK_ONLY_PREFIXES = [
-  "/api/",
+  "/api/search",
   "/sse/",
 ];
+const ASSET_PREFIXES = ["/ui/", "/icons/", "/manifest.json"];
 
 const RECOVERY_HTML = `<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Filemill server unavailable</title>
 <style>body{font:16px system-ui,sans-serif;max-width:36rem;margin:20vh auto;padding:1rem;color:#222}button{font:inherit;padding:.6rem 1rem}</style>
 <h1>Filemill server unavailable</h1>
-<p>Start Filemill locally with <code>uv run filemill</code>, then retry. The installed app can connect to the service but cannot start it.</p>
+<p>Filemill cannot reach its server, and this address has no copy saved for offline use.</p>
+<p>Start Filemill on the machine that serves it, for example with <code>uv run filemill [ROOT]</code>, then retry. The installed app can connect to the server but cannot start it.</p>
 <button onclick="location.reload()">Retry connection</button>`;
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE))
-      .then(() => self.skipWaiting()),
-  );
-});
+self.addEventListener("install", () => self.skipWaiting());
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) =>
+      .then((names) =>
         Promise.all(
-          keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)),
-        ),
+          names
+            .filter((name) => ours(name) && !CURRENT.includes(name))
+            .map((name) => caches.delete(name)),
+        )
       )
       .then(() => self.clients.claim()),
   );
 });
 
 self.addEventListener("fetch", (event) => {
+  const request = event.request;
   /* Cache Storage only supports GET requests. */
   if (event.request.method !== "GET") return;
 
-  const url = new URL(event.request.url);
+  const url = new URL(request.url);
 
   /* Only handle same-origin requests. */
   if (url.origin !== location.origin) return;
 
-  const path = url.pathname;
-
-  /* Dynamic endpoints – always hit the network. */
-  if (NETWORK_ONLY_PREFIXES.some((p) => path.startsWith(p))) {
+  /* Dynamic endpoints, partial reads and probes – always the network. */
+  if (
+    NETWORK_ONLY_PREFIXES.some((p) => url.pathname.startsWith(p)) ||
+    request.headers.has("Range") || request.cache === "no-store"
+  ) {
     return; /* browser default: network */
   }
 
   if (event.request.mode === "navigate") {
-    event.respondWith(
-      fetch(event.request).catch(
-        () => new Response(RECOVERY_HTML, {
-          status: 503,
-          headers: { "Content-Type": "text/html; charset=utf-8" },
-        }),
-      ),
-    );
+    event.respondWith(navigate(event, url));
     return;
   }
 
-  /* App shell + icons: stale-while-revalidate. */
   event.respondWith(
-    caches.open(CACHE).then(async (cache) => {
-      const cached = await cache.match(event.request);
-      const networkFetch = fetch(event.request)
-        .then((response) => {
-          if (response.ok) cache.put(event.request, response.clone());
-          return response;
-        })
-        .catch(() => null);
-
-      /* Return cached immediately, refresh in background. */
-      return cached || networkFetch || new Response("Offline", { status: 503 });
-    }),
+    ASSET_PREFIXES.some((p) => url.pathname.startsWith(p))
+      ? asset(event, url)
+      : read(event, READS, request.url, READS_MAX),
   );
 });
+
+async function asset(event, url) {
+  const key = url.origin + url.pathname;
+  if (url.searchParams.has("v")) {
+    const copy = await (await caches.open(ASSETS)).match(key);
+    if (copy?.headers.get(SOURCE) === url.href) return copy;
+  }
+  return read(event, ASSETS, key, Infinity);
+}
+
+/* The server's answer, or undefined when the server could not give one. */
+async function network(request) {
+  try {
+    const response = await fetch(request);
+    return UNAVAILABLE.includes(response.status) ? undefined : response;
+  } catch {
+    return undefined;
+  }
+}
+
+async function navigate(event, url) {
+  const response = await network(event.request);
+  if (response) {
+    if (response.headers.has("X-Filemill-Shell") && keepable(response)) {
+      event.waitUntil(keep(SHELL, url.href, response.clone(), SHELL_MAX));
+    }
+    return response;
+  }
+  const copy = await shellFor(url);
+  return copy
+    ? marked(copy, "copy")
+    : missing(RECOVERY_HTML, "text/html; charset=utf-8");
+}
+
+/* The shell differs between addresses only by the view, layout and hidden
+   switches in the query, so a view address can borrow another one's: one
+   with the same query, or else one without layout or hidden switches, so
+   that a borrowed shell never shows dotfiles nobody asked for. A bare
+   address may name file bytes or a user's index.html; it gets only its own. */
+async function shellFor(url) {
+  const cache = await caches.open(SHELL);
+  const own = await cache.match(url.href);
+  if (own) return own;
+  if (!["render", "highlight"].includes(url.searchParams.get("filemill"))) {
+    return undefined;
+  }
+  const keys = (await cache.keys()).map((k) => new URL(k.url));
+  const plain = (k) =>
+    !k.searchParams.has("hidden") && !k.searchParams.has("layout");
+  const key = keys.findLast((k) => k.search === url.search) ||
+    keys.findLast(plain);
+  return key && cache.match(key.href);
+}
+
+async function read(event, name, key, max) {
+  const response = await network(event.request);
+  if (response) {
+    if (keepable(response)) {
+      const copy = name === ASSETS
+        ? sourced(response.clone(), event.request.url)
+        : response.clone();
+      event.waitUntil(keep(name, key, copy, max));
+    }
+    return response;
+  }
+  const copy = await (await caches.open(name)).match(key);
+  return copy
+    ? marked(copy, "copy")
+    : missing("Filemill server unavailable", "text/plain; charset=utf-8");
+}
+
+const keepable = (response) =>
+  response.status === 200 && response.type === "basic" &&
+  Number(response.headers.get("Content-Length") ?? Infinity) <= COPY_MAX;
+
+/* Store a copy as the newest entry; past `max` entries, drop the oldest.
+   One write at a time, so two trims never both drop the same oldest slots. */
+let writing = Promise.resolve();
+function keep(name, key, response, max) {
+  writing = writing.then(async () => {
+    const cache = await caches.open(name);
+    await cache.delete(key);
+    await cache.put(key, response);
+    const keys = await cache.keys();
+    if (keys.length > max) {
+      await Promise.all(
+        keys.slice(0, keys.length - max).map((k) => cache.delete(k)),
+      );
+    }
+  }).catch(() => {});
+  return writing;
+}
+
+const marked = (response, kind) => withHeader(response, OFFLINE, kind);
+const sourced = (response, url) => withHeader(response, SOURCE, url);
+
+function withHeader(response, name, value) {
+  const headers = new Headers(response.headers);
+  headers.set(name, value);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+const missing = (body, type) =>
+  new Response(body, {
+    status: 503,
+    headers: { "Content-Type": type, [OFFLINE]: "miss" },
+  });

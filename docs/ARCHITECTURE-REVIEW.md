@@ -127,7 +127,10 @@ status.
   2026-10-19).
 - **Persistence.** Files are the only durable data. The browser keeps recent
   folder handles in IndexedDB, settings in localStorage, navigation in history
-  and application assets in Cache Storage.
+  and application assets in Cache Storage. The server edition's worker also
+  keeps offline copies of shells, listings and file reads there. It answers
+  with them only while the server cannot be reached, with an indicator saying
+  so ([117], [ADR 0089], 2026-10-20).
 
 ### What is healthy
 
@@ -221,7 +224,7 @@ Keep these.
 | A2  | P1 | Resolved 2026-10-19: inert previews [104]                  | M / medium    | with A3    |
 | A3  | P1 | Resolved 2026-10-19: mutation policy [103]                 | M / medium    | —          |
 | A4  | P1 | Saves are neither atomic nor conflict-checked             | M / medium    | A1, A3     |
-| A5  | P1 | Service workers cache file bytes and break offline misses | M / medium    | —          |
+| A5  | P1 | Partly resolved 2026-10-20: server worker [117]; static worker open | M / medium    | —          |
 | A6  | P2 | Virtual-path round trip is unverified                     | S / low       | —          |
 | A7  | P2 | SQLite labels double as identities; errors look empty     | M / medium    | A6         |
 | A8  | P2 | Preview routing and representation disagree across modes  | M / medium    | A2         |
@@ -332,6 +335,9 @@ permission behaviour of the replacement is defined and tested.
 
 ### A5. Service workers cache file bytes and break offline misses
 
+The server worker's part is resolved; see below. This paragraph describes both
+workers before [117].
+
 In `static/sw.js`, every same-origin GET outside `/api/` is answered from the
 cache first, navigations included. `server/src/filemill/static/sw.js` sends
 navigations to the network, with an inline recovery page when that fails, and
@@ -345,10 +351,34 @@ cache name except `filemill-v1`, including other applications' caches on the
 same origin. Root precaching can capture a user's `index.html`. [ADR 0063]
 promises a recovery page that uncached navigation cannot reach.
 
-**Acceptance.** Viewing a file adds no document bytes to Cache Storage.
-Unrelated caches survive activation. A cold offline navigation gets a valid
-recovery response. An upgrade purges legacy `filemill-v1` entries without
-clearing remembered folder handles.
+**Acceptance.** Corrected 2026-10-20 by the user's decision in [117]: a
+worker may keep document bytes, but only to show them while the server cannot
+be reached, and only with a visible offline indicator. An online read never
+returns an older copy. Unrelated caches survive activation. A cold offline
+navigation gets a valid recovery response, and an offline read miss gets a
+valid response too. An upgrade purges legacy `filemill-v1` entries without
+clearing remembered folder handles. The earlier acceptance, "viewing a file
+adds no document bytes to Cache Storage", no longer applies.
+
+Partly resolved 2026-10-20 ([117], [ADR 0089]). The server worker is
+network-first for every request it handles but exact content-hashed UI
+module URLs, and keeps complete answers as offline copies: shells marked
+`X-Filemill-Shell`, UI assets by path, and up to 200 reads of at most 2 MiB.
+It answers from a copy, marked `X-Filemill-Offline`, only when the server does
+not answer or a proxy answers 502–504, and otherwise a valid 503 or the
+recovery page. It precaches nothing
+and deletes only `filemill-v1` and older `filemill-server-*` caches.
+`ui/adapters/server-status.js` turns those answers into the top-bar
+indicator, probes past the worker for recovery and a fresh mutation token,
+and remounts the served root when reads were answered offline. Copies are
+read-only through the FS port's `stale` flag. Browser tests stop and restart a
+server under an installed worker.
+
+Remaining: `static/sw.js` still answers every same-origin GET, navigations
+included, from its cache first. Its offline miss still resolves to `null`; its
+activation still deletes every other cache on the origin, which on a shared
+Pages origin includes other sites' caches. A5 closes when the static worker
+meets the acceptance above.
 
 ### A6. Virtual-path round trip is unverified
 
@@ -576,11 +606,13 @@ updates. Security steps can start at once. Never weaken a gate to pass it.
    the same directory and replace. Carry a revision from read to save; reject
    stale writes. For FSA, recheck before writing and abort on failure. Document
    effects on hard links and ownership. Update [28].
-4. **Restrict the service workers to application assets** (A5). Network-only for
-   documents, raw files and mounts. Precache a known shell route. Await the
-   network failure before choosing a recovery response. Version the cache name
-   and delete only this app's old caches. Test an installed upgrade. Update
-   [ADR 0063].
+4. **Make the service workers network-first** (A5). Corrected 2026-10-20
+   by [117]: offline copies of documents are allowed, shown only while the
+   server cannot be reached and only with an indicator. Await the network
+   failure before choosing a copy or a recovery response. Version the cache
+   names and delete only this app's old caches. Test an installed upgrade.
+   Done for the server worker in [117] ([ADR 0089]; [ADR 0063] updated);
+   the static worker remains.
 5. **Pin the virtual-path round trip** (A6). The whole directory is listed and
    scrolled with evicting virtualisation ([ADR 0068]). Use one
    entry-construction path; keep state changes in the navigator.
@@ -636,3 +668,4 @@ A12 items can land at any time, each with a focused test.
 [ADR 0086]: adr/0086-new-fold-moves-cancel-older-glides.md
 [ADR 0087]: adr/0087-a-public-instance-never-lists-or-serves-hidden-paths.md
 [ADR 0088]: adr/0088-remove-named-mount-and-alternate-shell-routes.md
+[ADR 0089]: adr/0089-an-offline-server-shows-older-copies-with-an-indicator.md

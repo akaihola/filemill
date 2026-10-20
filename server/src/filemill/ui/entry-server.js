@@ -24,6 +24,7 @@ import "./adapters/vfs-json.js";
 import "./core/search.js";
 import "./core/mount.js";
 
+import "./adapters/server-status.js";
 import "./adapters/http.js";
 import "./adapters/preview-local.js";
 import "./adapters/preview-rich.js";

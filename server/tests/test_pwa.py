@@ -80,9 +80,10 @@ def test_sw_ignores_non_get_requests(client):
     assert 'event.request.method !== "GET"' in body
 
 
-def test_sw_keeps_api_requests_network_only(client):
+def test_sw_keeps_search_network_only(client):
+    """Listings and file reads keep offline copies (ADR 0089); search does not."""
     body = client.get("/sw.js").text
-    assert '"/api/"' in body
+    assert '"/api/search"' in body
 
 
 def test_sw_recovers_failed_navigation_with_retry_page(client):
@@ -91,6 +92,12 @@ def test_sw_recovers_failed_navigation_with_retry_page(client):
     assert "Filemill server unavailable" in body
     assert "uv run filemill" in body
     assert "Retry connection" in body
+
+
+def test_shell_marks_itself_for_the_worker(client):
+    """The worker keeps a page for offline use only when it is the shell."""
+    assert client.get("/?filemill=render").headers.get("x-filemill-shell") == "1"
+    assert "x-filemill-shell" not in client.get("/readme.md").headers
 
 
 def test_sw_keeps_navigation_fallback_out_of_api_branch(client):

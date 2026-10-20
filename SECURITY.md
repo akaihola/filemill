@@ -53,8 +53,28 @@ No wildcard origins are accepted and no CORS access is granted. See
 The token authorizes browser requests, not users, and does not protect against
 same-origin scripts; see [HTML files at the server root](#html-files-at-the-server-root).
 Use authenticated access control before exposing the server to untrusted
-clients. Tokens change on process restart; a stale cached shell fails
-authorization until refreshed. Service worker caching remains open under A5.
+clients. Tokens change on process restart. When the server answers again
+after being offline, an open page fetches the shell and takes the new token
+from it. After a restart the page did not notice, a save gets 403 and the page
+shows "Change refused" with a Retry now button that fetches the token.
+
+## Offline copies in the browser
+
+The server edition's service worker keeps copies of what the browser read:
+the shell, the UI files, folder listings, file bytes up to 2 MiB and server
+previews, at most 200 of the last three. It shows them only when the server
+cannot be reached, with a "Server offline" indicator, and never in place of a
+server answer. See
+[ADR 0089](docs/adr/0089-an-offline-server-shows-older-copies-with-an-indicator.md).
+
+These copies stay in the browser profile's Cache Storage after the page
+closes, including for files deleted or changed since, until a newer read
+replaces them or the limit drops them. Anyone who can read that browser
+profile can read them. A public instance's visitors keep copies of the visible
+files they opened. To remove them, clear the site's data in the browser
+settings. The worker does not keep search results, requests for parts of a
+file, or user HTML pages opened at their own URLs. Files that such a page
+embeds are kept like other reads.
 
 ## HTML files at the server root
 

@@ -263,6 +263,79 @@ body {
   color: var(--ink);
 }
 
+/* Shown only by the server build, while its server does not answer or has
+   just answered again (adapters/server-status.js, ADR 0089). The label never
+   shrinks; the details wrap inside the viewport instead of being clipped. */
+#server-status {
+  flex: none;
+  margin-right: 6px;
+}
+#server-status[hidden],
+#server-status-details[hidden],
+#server-status-help[hidden] {
+  display: none;
+}
+#server-status-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  white-space: nowrap;
+  color: var(--ink);
+  cursor: pointer;
+  background: color-mix(in srgb, #e8a33d 24%, transparent);
+  border: 1px solid color-mix(in srgb, #e8a33d 65%, transparent);
+  border-radius: 11px;
+}
+#server-status .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #d97706;
+}
+#server-status[data-state="recovered"] #server-status-toggle {
+  background: color-mix(in srgb, #2e9e5b 20%, transparent);
+  border-color: color-mix(in srgb, #2e9e5b 60%, transparent);
+}
+#server-status[data-state="recovered"] .dot {
+  background: #2e9e5b;
+}
+#server-status-details {
+  position: fixed;
+  top: 40px;
+  right: 8px;
+  z-index: 45;
+  box-sizing: border-box;
+  width: min(25rem, calc(100vw - 16px));
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 4px 14px 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 9px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+}
+#server-status-details p {
+  margin: 8px 0;
+}
+#server-status-retry {
+  font: inherit;
+  margin-top: 2px;
+  padding: 5px 12px;
+  color: #fff;
+  background: var(--accent);
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+#server-status-retry:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* ── Toolbar buttons ───────────────────────────────────────────────────── */
 .tb {
   font: inherit;

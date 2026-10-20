@@ -19,10 +19,20 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `--public` and `FILEMILL_PUBLIC` start a public instance, which never lists
   or serves a path with a component that starts with `.`, `?hidden=show`
   included.
+- A "Server offline" indicator in the server edition's top bar. It expands by
+  click, tap, Enter or Space into the explanation, the start command and a
+  Retry now button. While the server is away, folders and files read before
+  stay readable from offline copies, read-only, also when the installed app
+  starts. Recovery reads them again and takes the restarted server's new
+  mutation token ([ADR 0089]).
 
 ### Changed
 
 - Large directories scroll in one virtualized column instead of paging.
+- The server edition's service worker asks the server first for every read
+  but a content-hashed UI module.
+  Its copies answer only when the server does not, marked as offline copies.
+  It no longer precaches `/`, which could be a user's `index.html`.
 
 ### Removed
 
@@ -54,6 +64,9 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   siblings inside the archive instead of unrelated files at the server root.
 - JSON keys and CSV labels ending in `.md` or `.markdown` remain data values
   and records instead of advertising document heading columns.
+- A file read again after a save no longer shows the server worker's older
+  copy. An offline miss gets a valid 503 instead of a network error, and the
+  server worker's activation keeps other applications' caches on the origin.
 
 ### Security
 
@@ -78,3 +91,4 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 [ADR 0050]: docs/adr/0050-history-pushes-on-entering-a-column-rewrites-otherwise.md
 [ADR 0072]: docs/adr/0072-archives-browse-by-their-members.md
 [ADR 0082]: docs/adr/0082-previews-link-only-to-safe-protocols.md
+[ADR 0089]: docs/adr/0089-an-offline-server-shows-older-copies-with-an-indicator.md

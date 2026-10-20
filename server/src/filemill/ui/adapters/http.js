@@ -8,8 +8,13 @@
    File System Access API there is no per-file syscall — loadMeta is already
    satisfied by the listing. That is what makes server-side sorting by size or
    date affordable, where the local build would need a getFile() sweep.
+
+   Every request goes through serverFetch (server-status.js), which tells the
+   offline indicator what each answer says about the server. A node read from
+   an offline copy is marked `stale`; core keeps it read-only.
    ═══════════════════════════════════════════════════════════════════════════ */
 import { classifyFile } from "../core/file-kind.js";
+import { offlineCopy, serverFetch, ServerOffline } from "./server-status.js";
 
 export const API = document.documentElement.dataset.api || "/api";
 
@@ -70,11 +75,12 @@ export const HTTP = {
     if (node.loading) return node.loading;
     node.loading = (async () => {
       try {
-        const r = await fetch(q(node.rel, node.vpath), {
+        const r = await serverFetch(q(node.rel, node.vpath), {
           headers: { Accept: "application/json" },
         });
         if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
         const j = await r.json();
+        node.stale = offlineCopy(r) || undefined;
         node.denied = j.denied || undefined;
         node.kids = (j.entries || []).map((e) =>
           e.vpath !== undefined
@@ -103,7 +109,9 @@ export const HTTP = {
             )
         );
       } catch (err) {
-        node.denied = String(err.message || err);
+        node.denied = err instanceof ServerOffline
+          ? "Not available offline"
+          : String(err.message || err);
         node.kids = [];
       }
       node.loading = null;
@@ -123,7 +131,10 @@ export const HTTP = {
      disk, so this is the read that opens it. */
   async blob(node) {
     const v = node.vpath ? `&v=${encodeURIComponent(node.vpath)}` : "";
-    const r = await fetch(`${API}/raw?p=${encodeURIComponent(node.rel)}${v}`);
+    const r = await serverFetch(
+      `${API}/raw?p=${encodeURIComponent(node.rel)}${v}`,
+    );
+    node.stale = offlineCopy(r) || undefined;
     return r.ok ? await r.blob() : null;
   },
 
@@ -139,27 +150,33 @@ export const HTTP = {
   /* Optional — see ports.js. POST the whole new content; the reply carries the
      fresh {size, mod}, so the pane's sub-line stays truthful after a save. */
   async write(node, text) {
-    const r = await fetch(`${API}/save?p=${encodeURIComponent(node.rel)}`, {
-      method: "POST",
-      headers: {
-        "X-Filemill-Token": document.documentElement.dataset.mutationToken ||
-          "",
+    const r = await serverFetch(
+      `${API}/save?p=${encodeURIComponent(node.rel)}`,
+      {
+        method: "POST",
+        headers: {
+          "X-Filemill-Token": document.documentElement.dataset.mutationToken ||
+            "",
+        },
+        body: text,
       },
-      body: text,
-    });
+    );
     if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
     node.meta = await r.json();
   },
 
   async remove(node) {
     if (node.vpath) throw new Error("Virtual entries cannot be deleted");
-    const r = await fetch(`${API}/delete?p=${encodeURIComponent(node.rel)}`, {
-      method: "DELETE",
-      headers: {
-        "X-Filemill-Token": document.documentElement.dataset.mutationToken ||
-          "",
+    const r = await serverFetch(
+      `${API}/delete?p=${encodeURIComponent(node.rel)}`,
+      {
+        method: "DELETE",
+        headers: {
+          "X-Filemill-Token": document.documentElement.dataset.mutationToken ||
+            "",
+        },
       },
-    });
+    );
     if (!r.ok) {
       let message = `${r.status} ${r.statusText}`;
       try {

@@ -26,6 +26,7 @@ import io
 import itertools
 import json
 import random
+import re
 import shutil
 import socket
 import sqlite3
@@ -35,6 +36,7 @@ import tarfile
 import time
 import zipfile
 from pathlib import Path
+from textwrap import dedent
 from urllib.parse import parse_qs, unquote, urlsplit
 
 import pytest
@@ -256,9 +258,12 @@ def ui_root(shared_root: Path, tmp_path: Path) -> Path:
 
 
 @contextlib.contextmanager
-def _serve(root: Path, log_dir: Path, origins: str = ""):
-    """Run the real app in a subprocess — TestClient cannot serve a browser."""
-    port = _free_port()
+def _serve(root: Path, log_dir: Path, origins: str = "", port: int = 0):
+    """Run the real app in a subprocess — TestClient cannot serve a browser.
+
+    Pass the *port* of an earlier server to restart it at the same origin.
+    """
+    port = port or _free_port()
     # Keep stderr: when this does not come up, its traceback is the only thing
     # that says why, and discarding it turns every cause into "did not start".
     log = log_dir / "stderr.log"
@@ -380,6 +385,22 @@ def browser(request):
 @pytest.fixture()
 def page(server: str, browser):
     context = browser.new_context(viewport={"width": 1500, "height": 900})
+    try:
+        yield Harness(context.new_page(), server)
+    finally:
+        context.close()
+
+
+@pytest.fixture()
+def routed_page(server: str, browser):
+    """A page without the service worker, for tests that route GET requests.
+
+    Playwright does not route a request that a service worker answers, and the
+    worker answers every same-origin GET but search (ADR 0089).
+    """
+    context = browser.new_context(
+        viewport={"width": 1500, "height": 900}, service_workers="block"
+    )
     try:
         yield Harness(context.new_page(), server)
     finally:
@@ -2255,7 +2276,10 @@ def test_a_jsonl_member_opens_as_a_column_of_rows(page):
         ("bad.jsonl", 0, "Not valid JSONL: line 1"),
     ],
 )
-def test_declined_json_member_recovers_after_refresh(page, ui_root, name, size, error):
+def test_declined_json_member_recovers_after_refresh(
+    routed_page, ui_root, name, size, error
+):
+    page = routed_page
     content = json.dumps({"padding": "x" * size}) + "\n" if size else "not json\n"
     archive = ui_root / "declined.zip"
     with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -4118,3 +4142,441 @@ def test_real_former_alias_folder_navigates_from_root(page, ui_root, prefix):
     expect(page.locator("#pv-content")).to_contain_text("real prefix preview")
     page.open_resource(f"{prefix}/note.txt?f")
     expect(page.locator("#pv-content")).to_contain_text("real prefix preview")
+
+
+# ── The server goes away ([117], ADR 0089) ───────────────────────────────────
+#
+# These tests stop a private server and start it again on the same port, so
+# the service worker the first process installed is still in charge of the
+# origin when the second one answers. The browser's connectivity flag is no
+# guide: headless Chromium in a sandbox reports navigator.onLine === false while
+# the loopback server answers. Only Filemill's own requests can tell.
+
+STATUS = "#server-status"
+STATUS_LABEL = "#server-status-label"
+STATUS_TOGGLE = "#server-status-toggle"
+STATUS_DETAILS = "#server-status-details"
+STATUS_RETRY = "#server-status-retry"
+NOT_OFFLINE = re.compile("not available offline", re.IGNORECASE)
+
+
+def _installed(page, path: str = "notes/plain.txt") -> None:
+    """Open *path* twice, the second time under the worker: an installed app."""
+    page.open(path)
+    page.wait_for_function("navigator.serviceWorker.controller !== null")
+    page.open(path)
+    page.wait_for_function("navigator.serviceWorker.controller !== null")
+
+
+def _copies(page, *urls: str) -> None:
+    """Wait until the worker holds an offline copy of each URL."""
+    page.wait_for_function(
+        "async urls => (await Promise.all(urls.map(u => caches.match(u))))"
+        ".every(Boolean)",
+        arg=list(urls),
+    )
+
+
+def _fits(page, selector: str) -> bool:
+    """Nothing in *selector* is clipped, ellipsised or outside the viewport."""
+    return page.locator(selector).evaluate(
+        dedent("""\
+            e => {
+                const r = e.getBoundingClientRect();
+                const inside = r.left >= 0 && r.top >= 0 &&
+                    r.right <= innerWidth && r.bottom <= innerHeight;
+                const clipped = [e, ...e.querySelectorAll('*')]
+                    .filter(x => getComputedStyle(x).display !== 'inline')
+                    .some(x => x.scrollWidth > x.clientWidth + 1 ||
+                               x.scrollHeight > x.clientHeight + 1 ||
+                               getComputedStyle(x).textOverflow === 'ellipsis' &&
+                               x.scrollWidth > x.clientWidth);
+                return inside && !clipped;
+            }""")
+    )
+
+
+def _save_through_the_adapter(page, text: str) -> None:
+    page.evaluate(
+        dedent("""\
+            async text => {
+                const { HTTP } = await import('/ui/adapters/http.js');
+                await HTTP.write({rel: 'notes/plain.txt'}, text);
+            }"""),
+        text,
+    )
+
+
+def test_server_loss_keeps_the_view_and_explains_it(browser, ui_root, tmp_path):
+    """Reproduction: an installed, populated view whose server stops.
+
+    Before [117] the view stayed and nothing said that the server had gone; a
+    folder opened afterwards said only "Failed to fetch".
+    """
+    port = _free_port()
+    context = browser.new_context(viewport={"width": 1500, "height": 900})
+    try:
+        with _serve(ui_root, tmp_path, port=port) as base:
+            page = Harness(context.new_page(), base)
+            _installed(page)
+            expect(page.locator(STATUS)).to_be_hidden()
+        # Returning to the page asks the server; no read of the user's is needed.
+        page.evaluate("document.dispatchEvent(new Event('visibilitychange'))")
+        expect(page.locator(STATUS_LABEL)).to_have_text("Server offline")
+        expect(page.locator("#pv-content")).to_contain_text("hello")
+        assert _fits(page, STATUS)
+        page.click('.col[data-i="0"] .row[aria-label="code"]')
+        expect(page.locator('.col[data-i="1"] .col-note')).to_contain_text(NOT_OFFLINE)
+        expect(
+            page.locator('.col[data-i="0"] .row[aria-label="notes"]')
+        ).to_be_visible()
+
+        toggle = page.locator(STATUS_TOGGLE)
+        details = page.locator(STATUS_DETAILS)
+        expect(toggle).to_have_attribute("aria-expanded", "false")
+        expect(details).to_be_hidden()
+        toggle.click()
+        expect(toggle).to_have_attribute("aria-expanded", "true")
+        expect(details).to_contain_text("uv run filemill")
+        expect(details).to_contain_text("cannot start it")
+        expect(page.locator(STATUS_RETRY)).to_be_visible()
+        assert _fits(page, STATUS_DETAILS)
+        # The finder's keys must not swallow the indicator's.
+        toggle.focus()
+        page.keyboard.press("Enter")
+        expect(details).to_be_hidden()
+        page.keyboard.press(" ")
+        expect(details).to_be_visible()
+        page.keyboard.press("Escape")
+        expect(details).to_be_hidden()
+        assert page.evaluate("document.activeElement.id") == "server-status-toggle"
+
+        with _serve(ui_root, tmp_path, port=port):
+            toggle.click()
+            page.click(STATUS_RETRY)
+            expect(page.locator(STATUS_LABEL)).to_have_text("Server back online")
+            # The folder that was not available offline is read again.
+            expect(
+                page.locator('.col[data-i="1"] .row[aria-label="sample.py"]')
+            ).to_be_visible()
+            page.click('.col[data-i="0"] .row[aria-label="notes"]')
+            page.click('.col[data-i="1"] .row[aria-label="plain.txt"]')
+            expect(page.locator("#pv-content")).to_contain_text("hello")
+            expect(page.locator(STATUS)).to_be_hidden(timeout=15_000)
+            # The restarted process has a new mutation token; recovery fetched it.
+            _save_through_the_adapter(page, "after restart")
+            assert (ui_root / "notes/plain.txt").read_text() == "after restart"
+        # Failed loads are logged while offline; nothing may throw.
+        assert [e for e in page.errors if "Failed to load resource" not in e] == []
+    finally:
+        context.close()
+
+
+def test_offline_details_open_by_touch_and_fit_a_phone(browser, ui_root, tmp_path):
+    port = _free_port()
+    context = browser.new_context(
+        viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True
+    )
+    try:
+        with _serve(ui_root, tmp_path, port=port) as base:
+            page = Harness(context.new_page(), base)
+            _installed(page)
+        page.evaluate("document.dispatchEvent(new Event('visibilitychange'))")
+        expect(page.locator(STATUS_LABEL)).to_have_text("Server offline")
+        assert _fits(page, STATUS)
+        page.tap(STATUS_TOGGLE)
+        expect(page.locator(STATUS_DETAILS)).to_be_visible()
+        expect(page.locator(STATUS_DETAILS)).to_contain_text("uv run filemill")
+        assert _fits(page, STATUS_DETAILS)
+        page.tap(STATUS_TOGGLE)
+        expect(page.locator(STATUS_DETAILS)).to_be_hidden()
+    finally:
+        context.close()
+
+
+def test_warm_startup_offline_reuses_marked_copies(browser, ui_root, tmp_path):
+    port = _free_port()
+    context = browser.new_context(viewport={"width": 1500, "height": 900})
+    try:
+        with _serve(ui_root, tmp_path, port=port) as base:
+            page = Harness(context.new_page(), base)
+            _installed(page)
+            _copies(page, page.url, "/api/dir?p=notes", "/api/raw?p=notes%2Fplain.txt")
+            expect(page.locator("#pv-edit")).to_be_visible()
+        # The installed app starts while its server is stopped.
+        page.reload()
+        expect(page.locator(STATUS_LABEL)).to_have_text("Server offline")
+        expect(page.locator("#pv-content")).to_contain_text("hello")
+        expect(
+            page.locator('.col[data-i="1"] .row[aria-label="short.txt"]')
+        ).to_be_visible()
+        # An offline copy is read-only: it may be older than the file.
+        expect(page.locator("#pv-edit")).to_be_hidden()
+        assert (
+            page.evaluate(
+                dedent("""\
+                    async () => {
+                        const r = await fetch('/api/raw?p=notes%2Fplain.txt');
+                        return r.headers.get('X-Filemill-Offline');
+                    }""")
+            )
+            == "copy"
+        )
+        page.click('.col[data-i="0"] .row[aria-label="code"]')
+        expect(page.locator('.col[data-i="1"] .col-note')).to_contain_text(NOT_OFFLINE)
+        page.click('.col[data-i="0"] .row[aria-label="notes"]')
+        page.click('.col[data-i="1"] .row[aria-label="plain.txt"]')
+        (ui_root / "notes/plain.txt").write_text("changed while offline")
+        with _serve(ui_root, tmp_path, port=port):
+            # Nobody presses Retry: the page keeps asking.
+            expect(page.locator("#pv-content")).to_contain_text(
+                "changed while offline", timeout=20_000
+            )
+            expect(page.locator(STATUS)).to_be_hidden(timeout=15_000)
+            expect(page.locator("#pv-edit")).to_be_visible()
+            page.click('.col[data-i="0"] .row[aria-label="code"]')
+            expect(
+                page.locator('.col[data-i="1"] .row[aria-label="sample.py"]')
+            ).to_be_visible()
+    finally:
+        context.close()
+
+
+def test_uncached_destinations_get_valid_offline_answers(browser, ui_root, tmp_path):
+    port = _free_port()
+    context = browser.new_context(viewport={"width": 1500, "height": 900})
+    try:
+        with _serve(ui_root, tmp_path, port=port) as base:
+            page = Harness(context.new_page(), base)
+            _installed(page)
+        miss = page.evaluate(
+            dedent("""\
+                async () => {
+                    const r = await fetch('/api/dir?p=never-read');
+                    return [r.status, r.headers.get('X-Filemill-Offline')];
+                }""")
+        )
+        assert miss == [503, "miss"]
+        # A bare file URL serves bytes, which the worker never keeps for a page.
+        response = page.goto(base + "/code/sample.py")
+        assert response.status == 503
+        expect(page.locator("body")).to_contain_text("Filemill server unavailable")
+        expect(page.locator("body")).to_contain_text("uv run filemill")
+        expect(page.get_by_role("button", name="Retry connection")).to_be_visible()
+        # A view URL never opened before still gets the shell and the copies.
+        page.goto(base + "/code/sample.py?filemill=highlight")
+        expect(page.locator(STATUS_LABEL)).to_have_text("Server offline")
+        expect(page.locator('.col[data-i="0"] .row[aria-label="code"]')).to_be_visible()
+        expect(page.locator('.col[data-i="1"] .col-note')).to_contain_text(NOT_OFFLINE)
+    finally:
+        context.close()
+
+
+def test_online_reads_never_answer_with_an_older_copy(page, ui_root):
+    _installed(page)
+    read = "async () => (await fetch('/notes/plain.txt')).text()"
+    assert page.evaluate(read) == "hello"
+    _copies(page, "/notes/plain.txt")
+    (ui_root / "notes/plain.txt").write_text("newer")
+    assert page.evaluate(read) == "newer"
+
+
+def test_worker_activation_removes_only_obsolete_filemill_caches(page):
+    # A page of the same origin that does not register the worker.
+    page.goto(page.base + "/manifest.json")
+    page.evaluate(
+        dedent("""\
+            async () => {
+                await (await caches.open('filemill-v1')).put('/legacy', new Response('old'));
+                await (await caches.open('another-app')).put('/keep', new Response('mine'));
+                await new Promise((resolve, reject) => {
+                    const open = indexedDB.open('filemill', 1);
+                    open.onupgradeneeded = e => e.target.result.createObjectStore('kv');
+                    open.onsuccess = e => {
+                        const tx = e.target.result.transaction('kv', 'readwrite');
+                        tx.objectStore('kv').put('remembered', 'roots');
+                        tx.oncomplete = resolve;
+                        tx.onerror = () => reject(tx.error);
+                    };
+                    open.onerror = () => reject(open.error);
+                });
+            }""")
+    )
+    page.open()
+    page.wait_for_function("navigator.serviceWorker.controller !== null")
+    names = page.evaluate("caches.keys()")
+    assert "another-app" in names
+    assert "filemill-v1" not in names
+    assert (
+        page.evaluate(
+            dedent("""\
+                async () => {
+                    const keep = await (await caches.open('another-app')).match('/keep');
+                    return keep && keep.text();
+                }""")
+        )
+        == "mine"
+    )
+    assert (
+        page.evaluate(
+            dedent("""\
+                () => new Promise((resolve, reject) => {
+                    const open = indexedDB.open('filemill', 1);
+                    open.onsuccess = e => {
+                        const get = e.target.result.transaction('kv').objectStore('kv').get('roots');
+                        get.onsuccess = () => resolve(get.result);
+                        get.onerror = () => reject(get.error);
+                    };
+                })""")
+        )
+        == "remembered"
+    )
+
+
+def test_failed_changes_while_offline_stay_unsaved(browser, ui_root, tmp_path):
+    port = _free_port()
+    context = browser.new_context(viewport={"width": 1500, "height": 900})
+    try:
+        with _serve(ui_root, tmp_path, port=port) as base:
+            page = Harness(context.new_page(), base)
+            _installed(page)
+            page.click("#pv-edit")
+            page.fill("#pv-editor", "draft")
+        page.click("#pv-save")
+        expect(page.locator("#pv-edit-err")).to_contain_text("Server offline")
+        assert page.input_value("#pv-editor") == "draft"
+        expect(page.locator("#pv-editor")).to_be_editable()
+        expect(page.locator(STATUS_LABEL)).to_have_text("Server offline")
+        page.once("dialog", lambda d: d.accept())
+        page.click("#pv-delete")
+        expect(page.locator("#st-refresh")).to_contain_text("Delete failed")
+        assert (ui_root / "notes/plain.txt").read_text() == "hello"
+
+        with _serve(ui_root, tmp_path, port=port):
+            page.click(STATUS_TOGGLE)
+            page.click(STATUS_RETRY)
+            expect(page.locator(STATUS_LABEL)).to_have_text("Server back online")
+            # Nothing was read offline, so the draft is not refreshed away.
+            assert page.input_value("#pv-editor") == "draft"
+            page.click("#pv-save")
+            page.wait_for_function(
+                "document.querySelector('#pv-content')?.innerText.trim() === 'draft'"
+            )
+            assert (ui_root / "notes/plain.txt").read_text() == "draft"
+    finally:
+        context.close()
+
+
+def test_a_refused_change_is_not_reported_as_offline(browser, ui_root, tmp_path):
+    port = _free_port()
+    context = browser.new_context(
+        viewport={"width": 1500, "height": 900}, service_workers="block"
+    )
+    try:
+        with _serve(ui_root, tmp_path, port=port) as base:
+            page = Harness(context.new_page(), base)
+            page.open("notes/plain.txt")
+            page.click("#pv-edit")
+            page.fill("#pv-editor", "draft")
+        # A restart the page did not see: the old token no longer authorizes.
+        with _serve(ui_root, tmp_path, port=port):
+            page.click("#pv-save")
+            expect(page.locator("#pv-edit-err")).to_contain_text("403")
+            expect(page.locator(STATUS_LABEL)).to_have_text("Change refused")
+            page.click(STATUS_TOGGLE)
+            expect(page.locator(STATUS_DETAILS)).to_contain_text("restarted")
+            assert _fits(page, STATUS_DETAILS)
+            page.click(STATUS_RETRY)
+            expect(page.locator(STATUS)).to_be_hidden(timeout=15_000)
+            page.click("#pv-save")
+            page.wait_for_function(
+                "document.querySelector('#pv-content')?.innerText.trim() === 'draft'"
+            )
+            assert (ui_root / "notes/plain.txt").read_text() == "draft"
+    finally:
+        context.close()
+
+
+def test_reconnecting_shows_while_the_server_is_asked(browser, ui_root, tmp_path):
+    context = browser.new_context(
+        viewport={"width": 1500, "height": 900}, service_workers="block"
+    )
+    try:
+        with _serve(ui_root, tmp_path) as base:
+            page = Harness(context.new_page(), base)
+            page.open("notes/plain.txt")
+        page.evaluate("document.dispatchEvent(new Event('visibilitychange'))")
+        expect(page.locator(STATUS_LABEL)).to_have_text("Server offline")
+        held = []
+        page.route(re.compile(r"/\?filemill=render$"), lambda r: held.append(r))
+        page.click(STATUS_TOGGLE)
+        page.click(STATUS_RETRY)
+        expect(page.locator(STATUS_LABEL)).to_have_text("Reconnecting…")
+        assert held
+        held[0].abort()
+        expect(page.locator(STATUS_LABEL)).to_have_text("Server offline")
+    finally:
+        context.close()
+
+
+def test_an_offline_copy_of_a_document_is_read_only(browser, ui_root, tmp_path):
+    """A Markdown file browsed by its headings is read through a copy of its node."""
+    port = _free_port()
+    context = browser.new_context(viewport={"width": 1500, "height": 900})
+    try:
+        with _serve(ui_root, tmp_path, port=port) as base:
+            page = Harness(context.new_page(), base)
+            _installed(page, "README.md")
+            _copies(page, page.url, "/api/raw?p=README.md")
+            expect(page.locator("#pv-edit")).to_be_visible()
+        page.reload()
+        expect(page.locator(STATUS_LABEL)).to_have_text("Server offline")
+        expect(page.locator("#pv-content")).to_contain_text("line one")
+        expect(page.locator("#pv-edit")).to_be_hidden()
+        assert (
+            page.evaluate("path[0].kids.find(n => n.name === 'README.md').stale")
+            is True
+        )
+    finally:
+        context.close()
+
+
+def test_a_refusal_after_offline_reads_still_rereads_them(browser, ui_root, tmp_path):
+    port = _free_port()
+    context = browser.new_context(
+        viewport={"width": 1500, "height": 900}, service_workers="block"
+    )
+    try:
+        with _serve(ui_root, tmp_path, port=port) as base:
+            page = Harness(context.new_page(), base)
+            page.open("notes/plain.txt")
+        held = []
+        page.route(re.compile(r"/\?filemill=render$"), lambda r: held.append(r))
+        page.click('.col[data-i="0"] .row[aria-label="code"]')
+        expect(page.locator('.col[data-i="1"] .col-note')).to_contain_text(NOT_OFFLINE)
+        with _serve(ui_root, tmp_path, port=port):
+            # The restarted server refuses the old token before any probe lands.
+            page.evaluate(
+                dedent("""\
+                    async () => {
+                        const { HTTP } = await import('/ui/adapters/http.js');
+                        try { await HTTP.write({rel: 'notes/plain.txt'}, 'x'); }
+                        catch (_) { /* refused */ }
+                    }""")
+            )
+            expect(page.locator(STATUS_LABEL)).to_have_text("Change refused")
+            page.click(STATUS_TOGGLE)
+            page.click(STATUS_RETRY)
+            deadline = time.monotonic() + 15
+            while not held and time.monotonic() < deadline:
+                page.evaluate("0")  # deliver the held probe's route event
+            assert held
+            for route in held:
+                route.continue_()
+            page.unroute(re.compile(r"/\?filemill=render$"))
+            expect(
+                page.locator('.col[data-i="1"] .row[aria-label="sample.py"]')
+            ).to_be_visible()
+            assert (ui_root / "notes/plain.txt").read_text() == "hello"
+    finally:
+        context.close()
