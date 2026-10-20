@@ -16,3 +16,28 @@ Record a behavior or port decision in the same change, not merely on the same da
 ## Acceptance
 
 The three current documents no longer allow a behavior change to land before its required explanation. Server docs tests pass; no behavior changes.
+
+## Result, 2026-10-20
+
+- [ARCHITECTURE-REVIEW](../ARCHITECTURE-REVIEW.md#rules-for-changes) now
+  requires an ADR in the same change for a decision that changes a port or a
+  behaviour. Before, its rule named behaviour only, so the port scope came
+  from ROADMAP alone.
+- [ROADMAP](../ROADMAP.md#how-we-keep-it-this-way) no longer says "the same
+  day". Its rule says "in the same change" and links to the review's rules for
+  changes.
+- [CONTRIBUTING](../../CONTRIBUTING.md#commits) is unchanged. It still requires
+  the documentation in the same commit as the change.
+- Historical dates and measurements are unchanged. The only other "same day"
+  text, in `docs/testing/remaining-red-tests.md`, records history, not policy.
+
+## Validation
+
+- Red: `test_decision_records_arrive_with_the_change` failed on the review's
+  behaviour-only rule before the wording change.
+- Green: all 23 tests in `server/tests/test_docs.py` and all 11 in
+  `server/tests/test_suppression_links.py` pass. In the sandbox, the
+  portability guard fails on an unreadable `.claude/loop.md`; it passes
+  outside the sandbox.
+- Ruff check and Ruff format pass for the changed test file. No code or
+  behaviour changes.

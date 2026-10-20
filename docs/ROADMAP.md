@@ -435,7 +435,8 @@ port.
 ## How we keep it this way
 
 - Every change updates the documents in the same commit.
-- Every decision that changes a port or a behaviour gets an ADR the same day.
+- Every decision that changes a port or a behaviour gets an ADR in the same
+  change, as the architecture review's [rules for changes] require.
 - Documents and comments use Simplified Technical English.
 - Delete what you replace, in the same change.
 - A renderer lives in `ui/`, not in Python, unless the browser cannot do it.
@@ -455,3 +456,4 @@ port.
 [Git bundle browser test]: ../server/tests/test_browser_new_ui.py
 [Git bundle provider tests]: ../server/tests/test_gitbundle_provider.py
 [129]: tasks/129-remove-the-obsolete-w-and-n-url-routes.md
+[rules for changes]: ARCHITECTURE-REVIEW.md#rules-for-changes

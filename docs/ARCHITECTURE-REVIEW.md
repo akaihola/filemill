@@ -211,7 +211,8 @@ Keep these.
 
 ### Rules for changes
 
-- A decision that changes behaviour gets an ADR in the same change.
+- A decision that changes a port or a behaviour gets an ADR in the same
+  change. A later ADR is too late ([126], 2026-10-20).
 - Code that a change retires is deleted in the same change.
 - Keep the shared UI and the concatenating builder. Do not add a framework,
   bundler, ORM or general `ViewSpec` without a failing, measured case.
@@ -686,6 +687,7 @@ A12 items can land at any time, each with a focused test.
 [ADR 0048]: adr/0048-a-refused-clipboard-selects-the-path-instead.md
 
 [119]: tasks/119-document-the-menu-copy-exception-from-docs-question-4.md
+[126]: tasks/126-align-decision-timing-rules-from-docs-question-12.md
 [conditional test skips]: tasks/123-clarify-conditional-test-skips-from-docs-question-9.md
 [roadmap skip policy]: ROADMAP.md#how-we-keep-it-this-way
 

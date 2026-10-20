@@ -213,3 +213,19 @@ def test_dependency_policy_distinguishes_constraints_from_lock_selections():
     ):
         assert concept in policy, f"Dependency policy must explain {concept}"
     assert "each pin explained" not in policy
+
+
+def test_decision_records_arrive_with_the_change():
+    """[126]: no current rule lets a change land before its explanation."""
+    review = (ROOT / "docs/ARCHITECTURE-REVIEW.md").read_text()
+    rules = review.split("### Rules for changes", 1)[1].split("\n## ", 1)[0]
+    rules = " ".join(rules.split())
+    assert (
+        "A decision that changes a port or a behaviour gets an ADR in the same"
+        " change." in rules
+    )
+    roadmap = (ROOT / "docs/ROADMAP.md").read_text()
+    assert "the same day" not in roadmap
+    assert "[rules for changes]: ARCHITECTURE-REVIEW.md#rules-for-changes" in roadmap
+    contributing = (ROOT / "CONTRIBUTING.md").read_text()
+    assert "Update the documentation in the same commit as the change." in contributing
