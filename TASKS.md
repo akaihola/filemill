@@ -47,10 +47,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [115] Propose plain answers to the docs check's twelve remaining questions
-      <!-- hai:{"id":"simple-e25533eb-a765-42e3-8e41-b1e7e16d1b0e","labels":["steward","review"],"createdAt":"2026-10-19T17:58:46.533Z","updatedAt":"2026-10-20T07:04:06.563Z"} -->
-
 ## Completed / Accepted
+
+- [ ] [115] Propose plain answers to the docs check's twelve remaining questions
+      <!-- hai:{"id":"simple-e25533eb-a765-42e3-8e41-b1e7e16d1b0e","labels":["steward","review"],"createdAt":"2026-10-19T17:58:46.533Z","updatedAt":"2026-10-20T07:16:46.096Z"} -->
 
 - [x] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
