@@ -2,6 +2,8 @@
 members = ["server"]
 
 [dependency-groups]
+# Mirrors the server development tools in the shared workspace (587752b4).
+# See server/pyproject.toml for constraint evidence and unverified minimums.
 dev = [
     "filemill",
     "pytest>=8",

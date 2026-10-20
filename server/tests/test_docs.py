@@ -200,3 +200,16 @@ def test_readme_says_a_public_instance_must_use_public_mode():
     options = {cells[0].strip(): cells for cells in rows}
     assert options["`--public`"][2].strip() == "`FILEMILL_PUBLIC`"
     assert "A public instance must use `--public`" in readme
+
+
+def test_dependency_policy_distinguishes_constraints_from_lock_selections():
+    goals = (ROOT / "docs/GOALS.md").read_text()
+    policy = next(p for p in goals.split("\n\n") if "**Few dependencies" in p)
+    for concept in (
+        "minimum supported versions",
+        "deliberate bounded versions",
+        "exact lockfile selections",
+        "unverified",
+    ):
+        assert concept in policy, f"Dependency policy must explain {concept}"
+    assert "each pin explained" not in policy

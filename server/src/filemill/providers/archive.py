@@ -46,7 +46,7 @@ TAR_SUFFIXES = (
 ZSTD_SUFFIXES = (".tar.zst", ".tzst")
 
 # Zstandard: the standard library from Python 3.14 (PEP 784), the `zstandard`
-# package before that. pyproject.toml pins the package for older interpreters.
+# package before that. pyproject.toml requires the package on older interpreters.
 if sys.version_info >= (3, 14):
     from compression import zstd as _zstd
 else:  # pragma: no cover - exercised on CI's 3.12 only

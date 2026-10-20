@@ -9,6 +9,8 @@ dependencies = [
     "pygments",
     "docutils",
     "typer",
+    # providers/archive.py uses compression.zstd on Python 3.14+, otherwise
+    # this package (b91a3d8c). The reason for the 0.23 floor is unverified.
     "zstandard>=0.23 ; python_full_version < '3.14'",
 ]
 
@@ -16,6 +18,9 @@ dependencies = [
 filemill = "filemill.cli:entry_point"
 
 [build-system]
+# Unchanged since 26d515b9: permits 0.6.x from 0.6.6 and excludes 0.7+.
+# The compatibility reasons for both endpoints are unverified; this is not
+# evidence of testing at the minimum or of a known failure with 0.7.
 requires = ["uv_build>=0.6.6,<0.7"]
 build-backend = "uv_build"
 
@@ -40,6 +45,11 @@ wheel-exclude = [
 ]
 
 [dependency-groups]
+# Floors, not exact pins. pytest/httpx/pytest-cov appear in eec53713 and were
+# inherited in e01a40b4. Ruff/mypy were added in 3b9ca9d1, PyYAML in 2a9944c3,
+# pytest-asyncio in 587752b4. Those changes do not establish why the minimums are
+# required. Their compatibility rationale and minimum-version testing are
+# unverified. uv.lock selects the versions used by the development environment.
 dev = [
     "pytest>=8",
     "python-pptx",

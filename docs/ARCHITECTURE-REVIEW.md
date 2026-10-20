@@ -476,6 +476,11 @@ Truncated text is never editable as if complete. Related: [49], [60].
 
 ### A11. Current documents contradict the code
 
+- Clarified 2026-10-20 ([dependency constraints]): GOALS distinguishes declared
+  floors, bounded versions and exact lockfile selections. Dependency comments
+  retain the browser-match and mypy reasons and mark unverified compatibility
+  rationales explicitly. No version ranges or lock selections changed.
+
 - Clarified 2026-10-20 ([conditional test skips]): the [roadmap skip policy]
   permits reasoned platform and optional-tool prerequisite skips. Broken or
   unfinished supported behavior still needs an issue link. CI must supply
@@ -683,3 +688,5 @@ A12 items can land at any time, each with a focused test.
 [119]: tasks/119-document-the-menu-copy-exception-from-docs-question-4.md
 [conditional test skips]: tasks/123-clarify-conditional-test-skips-from-docs-question-9.md
 [roadmap skip policy]: ROADMAP.md#how-we-keep-it-this-way
+
+[dependency constraints]: tasks/124-explain-dependency-constraints-from-docs-question-10.md

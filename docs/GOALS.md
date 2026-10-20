@@ -73,7 +73,14 @@ documents show them. We keep them.
 - **The URL path is the file path** in the server edition. See
   `server/src/filemill/urls.py`.
 - **Decisions are recorded with their measurements.** See `docs/adr/`.
-- **Few dependencies, each pin explained.** See `server/pyproject.toml`.
+- **Few dependencies, constraints explained.** Distinguish minimum supported versions
+  (`>=` floors), deliberate bounded versions (upper limits or `~=` ranges), and
+  exact lockfile selections. A floor declares support; it does not prove that
+  the minimum was tested. Record evidence for restrictions and mark inherited
+  compatibility reasons as unverified when evidence is missing. Unconstrained
+  dependencies need no blanket pinning. See the [server dependency comments]
+  for reasons and gaps. The [workspace lockfile] records exact selections for
+  reproducible development; it does not explain or replace declared ranges.
 - **The served root is a boundary.** No request escapes it. The app asks for
   write permission only when the user saves or deletes. See `resolve_safe` in
   `server/src/filemill/paths.py` and `ui/adapters/fsa.js`.
@@ -118,3 +125,6 @@ These are choices, not omissions. Do not add them without a recorded decision.
 
 - `docs/ARCHITECTURE-REVIEW.md` says how far the code is from these goals.
 - `docs/ROADMAP.md` says in what order we close the gap.
+
+[server dependency comments]: ../server/pyproject.toml
+[workspace lockfile]: ../uv.lock
