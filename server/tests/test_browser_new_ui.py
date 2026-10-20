@@ -1810,6 +1810,40 @@ def test_open_local_folder_is_offered(page):
     assert page.evaluate("typeof window.showDirectoryPicker === 'function'")
 
 
+@pytest.mark.parametrize("local", [False, True], ids=["served", "open-folder"])
+def test_server_hides_download_consent_and_renders_with_it_off(page, ui_root, local):
+    (ui_root / "letter.docx").write_bytes(_minimal_docx("Dear reader"))
+    page.add_init_script("localStorage.setItem('filemill.rich', 'off')")
+    page.open()
+    if local:
+        page.evaluate(
+            """async bytes => {
+              window.showDirectoryPicker = async () => ({
+                kind: 'directory', name: 'local-folder', async *entries() {
+                  for (const [name, source] of [
+                    ['README.md', '# Readme'],
+                    ['letter.docx', new Uint8Array(bytes)],
+                  ]) yield [name, {kind: 'file', name,
+                    getFile: async () => new File([source], name)}];
+                }
+              });
+            }""",
+            list(_minimal_docx("Dear reader")),
+        )
+        page.click("#open")
+        page.wait_for_function("path[0]?.name === 'local-folder' && path[0]?.kids")
+
+    page.click("#gear")
+    for selector in ("#s-rich", "#s-rich-hr", "#s-previews"):
+        assert page.locator(selector).evaluate("el => el.hidden")
+    page.click("#gear")
+    _click_local(page, "README.md", "#preview .pv-rich h1")
+    assert page.inner_text("#preview .pv-rich h1") == "Readme"
+    _click_local(page, "letter.docx", "#preview .pv-rich p")
+    assert page.inner_text("#preview .pv-rich p") == "Dear reader"
+    assert page.evaluate("localStorage.getItem('filemill.rich')") == "off"
+
+
 def test_a_local_folder_replaces_the_served_tree(page):
     page.open()
     page.evaluate(FAKE_HANDLE)

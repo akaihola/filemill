@@ -37,21 +37,24 @@ import { choose } from "../core/nav.js";
 import { FS } from "../core/ports.js";
 import { markdownHref } from "../core/markdown-links.js";
 import { render } from "../core/render.js";
-import { renderNode } from "../core/renderers.js";
+import { RENDERERS, renderNode } from "../core/renderers.js";
 import { safeURL } from "../core/model/safe-url.js";
 import { path, splitName, state, visibleKids } from "../core/model/state.js";
 
-const offerRichToggle = (get, set) => {
+export const initRichSettings = () => {
+  if (!RENDERERS.some(({ kind }) => NEEDS[kind] && !vendored(NEEDS[kind]))) {
+    return;
+  }
   document.getElementById("s-previews").hidden = false;
   document.getElementById("s-rich").hidden = false;
   document.getElementById("s-rich-hr").hidden = false;
   const button = document.getElementById("s-rich");
   button.onclick = () => {
-    set(!get());
-    button.setAttribute("aria-checked", String(get()));
+    setRich(!richEnabled());
+    button.setAttribute("aria-checked", String(richEnabled()));
     render(true);
   };
-  button.setAttribute("aria-checked", String(get()));
+  button.setAttribute("aria-checked", String(richEnabled()));
 };
 
 const CDN = {
@@ -112,8 +115,6 @@ function load(name) {
   loaded.set(name, p);
   return p;
 }
-
-offerRichToggle(richEnabled, setRich);
 
 const NOTE =
   `<p class="pv-note">Offline — showing the source. Rich rendering ` +

@@ -7773,17 +7773,20 @@ const withHighlighting = (provider) => ({
    differently next week, and a supply chain that can change under you.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const offerRichToggle = (get, set) => {
+const initRichSettings = () => {
+  if (!RENDERERS.some(({ kind }) => NEEDS[kind] && !vendored(NEEDS[kind]))) {
+    return;
+  }
   document.getElementById("s-previews").hidden = false;
   document.getElementById("s-rich").hidden = false;
   document.getElementById("s-rich-hr").hidden = false;
   const button = document.getElementById("s-rich");
   button.onclick = () => {
-    set(!get());
-    button.setAttribute("aria-checked", String(get()));
+    setRich(!richEnabled());
+    button.setAttribute("aria-checked", String(richEnabled()));
     render(true);
   };
-  button.setAttribute("aria-checked", String(get()));
+  button.setAttribute("aria-checked", String(richEnabled()));
 };
 
 const CDN = {
@@ -7844,8 +7847,6 @@ function load(name) {
   loaded.set(name, p);
   return p;
 }
-
-offerRichToggle(richEnabled, setRich);
 
 const NOTE =
   `<p class="pv-note">Offline — showing the source. Rich rendering ` +
@@ -8453,6 +8454,7 @@ initSettings();
 /* The renderer table, core first: this edition draws every rich kind in the
    browser, from a CDN. */
 addRenderers([...CORE_RENDERERS, ...RICH_RENDERERS]);
+initRichSettings();
 
 /* Adapters define themselves; the app entry is what chooses. Selecting here
    rather than at the bottom of each adapter file means a page may load more

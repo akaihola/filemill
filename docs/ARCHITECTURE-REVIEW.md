@@ -443,6 +443,12 @@ Truncated text is never editable as if complete. Related: [49], [60].
 
 ### A11. Current documents contradict the code
 
+- Corrected 2026-10-20 ([118], ADR 0036): renderer registration now precedes
+  download-consent UI initialization. The server hides the unused switch in
+  served and Open Folder modes. Vendored Markdown/DOCX rendering ignores a
+  stored `off` value as before. Static and native retain CDN consent. This
+  does not change RST routing (A8) or document resource requests.
+
 - Corrected 2026-10-19 ([105]): `README.md` now records the
   [edition/renderer matrix](../README.md) and links to renderer selection,
   extraction and server implementations. Browser-owned RST routing remains A8.

@@ -10,7 +10,7 @@ import { setDeepLinkActions, startRouting } from "../core/deeplink.js";
 import { useFilesystem, usePreview, useRouter } from "../core/ports.js";
 import { colCache, render, setActions } from "../core/render.js";
 import { addRenderers, CORE_RENDERERS } from "../core/renderers.js";
-import { RICH_RENDERERS } from "./preview-rich.js";
+import { initRichSettings, RICH_RENDERERS } from "./preview-rich.js";
 import { mountRoot } from "../core/mount.js";
 import {
   choose,
@@ -37,6 +37,7 @@ setDeepLinkActions({ render, colCache });
 initLayout(render);
 initSettings();
 addRenderers([...CORE_RENDERERS, ...RICH_RENDERERS]);
+initRichSettings();
 useFilesystem(withDocuments(withCsv(withVirtual(NativeFS))));
 usePreview(
   withDocumentPreview(withCsvPreview(withVirtualPreview(NativePreview))),

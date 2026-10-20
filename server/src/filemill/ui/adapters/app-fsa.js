@@ -11,7 +11,11 @@ import { initLayout } from "../core/layout.js";
 import { initSort, setSortActions } from "../core/sort.js";
 import { sortKids } from "../core/model/sort.js";
 import { FSA } from "./fsa.js";
-import { PreviewRich, RICH_RENDERERS } from "./preview-rich.js";
+import {
+  initRichSettings,
+  PreviewRich,
+  RICH_RENDERERS,
+} from "./preview-rich.js";
 import { withHighlighting } from "./preview-local.js";
 import { RouterHash } from "./router-hash.js";
 import { recallRoots, recallView, rememberRoot } from "./storage.js";
@@ -74,6 +78,7 @@ initSettings();
 /* The renderer table, core first: this edition draws every rich kind in the
    browser, from a CDN. */
 addRenderers([...CORE_RENDERERS, ...RICH_RENDERERS]);
+initRichSettings();
 
 /* Adapters define themselves; the app entry is what chooses. Selecting here
    rather than at the bottom of each adapter file means a page may load more

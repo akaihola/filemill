@@ -129,6 +129,10 @@ A directory URL with an `index.html` in it, `/` included, serves that page.
 Add any query, such as `/?f`, to open the shared UI there instead.
 
 The edition/renderer table above applies to served files and Open Folder.
+The server hides the rich-preview download switch in both modes because its
+active renderers need no third-party downloads. A stored switch value of `off`
+still permits its vendored Markdown and DOCX previews. Static and native
+editions keep the switch for their CDN renderer downloads.
 JSON and JSONL navigation runs in the shared browser adapters. Python providers
 browse SQLite, tar/zip archives and Git bundles, the last through `git`.
 Archive member bytes reach the browser renderers for Markdown, DOCX and PPTX;

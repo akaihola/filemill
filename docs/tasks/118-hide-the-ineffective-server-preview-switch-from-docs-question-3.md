@@ -26,3 +26,24 @@ Server tests cover both modes and retained rendering, and static consent tests s
 - Keep the renderer and consent checks unchanged. Update ADR 0036, the current
   server guidance and the architecture review. Rebuild the static bundle.
 - Run the server regressions, static consent checks, and repository gates.
+
+## Implementation and validation, 2026-10-20
+
+The consent UI now initializes after renderer registration in all three entry
+adapters. It appears when a registered rich renderer needs a CDN module.
+Server rendering and the stored consent value are unchanged. ADR 0036, README
+server guidance and the architecture review describe this scope.
+
+- Red: both new browser cases failed because `s-rich` was not hidden.
+- Green: both cases pass through served files and the Open Folder button,
+  including Markdown and DOCX rendering with stored consent off.
+- Server renderer-registration and no-CDN browser checks pass (4 checks with
+  the new cases). The final new-case rerun passes both checks.
+- Static development consent/RST checks: 5 passed. Bundle consent and loaded
+  renderer checks: 3 passed. Bundle RST checks: 3 passed on isolated rerun.
+  The first bundle RST run counted two cleanup calls instead of one; the
+  unchanged test passed on rerun. No assertion was weakened.
+- Documentation checks: 21 passed. Model checks and the complete pre-commit
+  gate pass, including formatters, linters, mypy and bundle freshness.
+- Native entry initialization retains CDN consent. The native GUI suite and
+  full server suite were not run.

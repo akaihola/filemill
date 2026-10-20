@@ -17,7 +17,11 @@ import { sortKids } from "../core/model/sort.js";
 import { FSA } from "./fsa.js";
 import { API, HTTP } from "./http.js";
 import { PreviewLocal, withHighlighting } from "./preview-local.js";
-import { PreviewRich, RICH_RENDERERS } from "./preview-rich.js";
+import {
+  initRichSettings,
+  PreviewRich,
+  RICH_RENDERERS,
+} from "./preview-rich.js";
 import { RouterPath } from "./router-path.js";
 import { rememberRoot } from "./storage.js";
 import { withCsv, withCsvPreview } from "./vfs-csv.js";
@@ -81,6 +85,7 @@ addRenderers([
     ["md", "markdown", "docx", "pptx", "offline"].includes(e.kind)
   ),
 ]);
+initRichSettings();
 
 const ROOT_NAME = document.documentElement.dataset.root || "/";
 
