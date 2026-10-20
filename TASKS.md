@@ -16,9 +16,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [117] Show an expandable server-offline indicator with cached content
-  <!-- hai:{"id":"simple-2815036e-03d8-491d-a901-3794c92f18de","labels":["steward"],"createdAt":"2026-10-20T07:12:40.437Z","updatedAt":"2026-10-20T08:12:04.346Z"} -->
-
 - [118] Hide the ineffective server preview switch from docs question 3
   <!-- hai:{"id":"simple-1161fe2f-92b3-4ea4-99a6-9b511726259b","labels":["steward"],"createdAt":"2026-10-20T07:12:41.306Z","updatedAt":"2026-10-20T08:15:16.856Z"} -->
 
@@ -49,6 +46,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-c28a4f20-6a8c-44e7-a484-b78ac1731e99","labels":["steward"],"createdAt":"2026-10-20T07:12:49.393Z","updatedAt":"2026-10-20T08:15:34.952Z"} -->
 
 ## Scheduled
+
+- [117] Show an expandable server-offline indicator with cached content
+  <!-- hai:{"id":"simple-2815036e-03d8-491d-a901-3794c92f18de","labels":["steward"],"createdAt":"2026-10-20T07:12:40.437Z","updatedAt":"2026-10-20T10:04:39.514Z"} -->
 
 ## In Progress
 
