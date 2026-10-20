@@ -28,7 +28,7 @@ the whole mechanism. There is no framework under it.
 | router     | `router-hash.js` — `#r=root&p=a/b.md`            | `router-path.js` — `/a/b.md`                                                                       |
 | boot       | `app-fsa.js` — picker + welcome screen           | `app-http.js` — root comes from the server                                                         |
 | extra      | `preview-rich.js` — renderers fetched from a CDN | `preview-rich.js` — local bytes, browser renderer                                                  |
-|            | `storage.js` — remembered roots in IndexedDB     |                                                                                                    |
+|            | `storage.js` — remembered roots in IndexedDB     | `server-status.js` — the offline indicator; `serverFetch` for `http.js` (ADR 0089)                 |
 
 ## The ports
 

@@ -30,7 +30,8 @@ export async function editableText(node) {
   ) return null;
   try {
     const blob = await FS.blob(node);
-    if (!blob || blob.size > TEXT_MAX) return null;
+    /* A stale copy may be older than the file; saving it could undo changes. */
+    if (!blob || node.stale || blob.size > TEXT_MAX) return null;
     const text = new TextDecoder("utf-8", { fatal: true }).decode(
       await blob.arrayBuffer(),
     );

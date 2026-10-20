@@ -226,7 +226,9 @@ def _ui_shell(state, hidden: bool = False):
 <script type="importmap">{_UI_IMPORTS}</script>
 <script>{_VENDOR_MAP_JS}</script><script>{pwa.SW_REGISTER_JS}</script><title>{title}</title>
 </head><body><script src="{_UI_ASSETS[f"/ui/{_UI_ENTRY}"]}" type="module"></script></body></html>''',
-        headers={"Cache-Control": "no-store"},
+        # The service worker keeps an offline copy of a page only when this
+        # header says it is the shell (static/sw.js, ADR 0089).
+        headers={"Cache-Control": "no-store", "X-Filemill-Shell": "1"},
     )
 
 

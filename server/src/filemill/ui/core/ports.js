@@ -18,6 +18,8 @@
                   unreadable directory; [Node…] for loaded children; undefined
                   for a file or leaf
        denied     string when loading failed; shown instead of directory rows
+       stale      true when the adapter's last read of this node returned an
+                  older copy instead of the source; core keeps it read-only
        meta       {size, mod, type} for known file metadata, {virtual: true}
                   for virtual entries, or {error: string} when metadata failed;
                   absent until loadMeta runs

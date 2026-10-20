@@ -24,6 +24,11 @@ import {
 } from "./preview-rich.js";
 import { RouterPath } from "./router-path.js";
 import { rememberRoot } from "./storage.js";
+import {
+  initServerStatus,
+  serverFetch,
+  serverOffline,
+} from "./server-status.js";
 import { withCsv, withCsvPreview } from "./vfs-csv.js";
 import { withDocumentPreview, withDocuments } from "./vfs-doc.js";
 import {
@@ -62,6 +67,14 @@ document.body.insertAdjacentHTML(
   `<div id="welcome"><h1 id="w-title">Filemill server unavailable</h1><p id="w-msg"></p><button class="btn" id="w-pick">Retry connection</button><div id="w-recent" hidden></div></div>`,
 );
 const welcome = document.getElementById("welcome");
+
+/* When the server answers again after reads were answered offline, read the
+   location again: every node from those reads is replaced, and the URL, which
+   kept the location an offline walk could not reach, is walked once more. A
+   local folder on screen has nothing of the server's to refresh. */
+initServerStatus((refresh) => {
+  if (refresh && document.getElementById("local-badge").hidden) mountServer();
+});
 
 /* The load-time work sort.js, layout.js and settings.js did as classic scripts,
    in the order they used to load. */
@@ -105,7 +118,7 @@ const PreviewHTTP = {
     /* A member of an archive is addressed by the file plus its vpath; the
        server reads inside the archive and renders it as the file it is. */
     const vpath = n.vpath ? `&v=${encodeURIComponent(n.vpath)}` : "";
-    const response = await fetch(
+    const response = await serverFetch(
       `${API}/preview?p=${encodeURIComponent(n.rel)}${lines}${vpath}`,
     );
     return response.ok ? response.text() : PreviewLocal.render(n);
@@ -182,7 +195,7 @@ async function mountServer() {
   await mountRoot(node, ROOT_NAME);
 
   if (node.denied) {
-    showServerUnavailable();
+    showServerUnavailable(node.denied);
     return;
   }
 
@@ -191,13 +204,22 @@ async function mountServer() {
   startRouting();
 }
 
-function showServerUnavailable() {
+/* An unreachable server and a root it cannot open need different help. */
+function showServerUnavailable(denied) {
   welcome.hidden = false;
-  document.getElementById("w-title").textContent =
-    "Filemill server unavailable";
-  document.getElementById("w-msg").innerHTML =
-    "Start Filemill locally with <code>uv run filemill</code>, then retry. " +
-    "The installed app can connect to the service but cannot start it.";
+  const offline = serverOffline();
+  document.getElementById("w-title").textContent = offline
+    ? "Filemill server unavailable"
+    : "Filemill cannot open its folder";
+  const message = document.getElementById("w-msg");
+  if (offline) {
+    message.innerHTML =
+      "Start Filemill on the machine that serves it, for example with " +
+      "<code>uv run filemill [ROOT]</code>, then retry. The installed app " +
+      "can connect to the server but cannot start it.";
+  } else {
+    message.textContent = `The server answered: ${denied}`;
+  }
   const button = document.getElementById("w-pick");
   button.hidden = false;
   button.textContent = "Retry connection";

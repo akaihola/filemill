@@ -22,3 +22,27 @@ Approved: older content may stay visible while the server is unavailable, provid
 ## Acceptance
 
 Older content is visibly identified while the server is offline; details and instructions are accessible without truncated status text. Recovery refreshes availability and affected content. Tests cover stop/restart, cached/uncached views and unrelated-cache preservation. A5 closes only when its remaining defects are fixed.
+
+## Implementation, 2026-10-20
+
+[ADR 0089](../adr/0089-an-offline-server-shows-older-copies-with-an-indicator.md)
+records the decision and the cache policy.
+
+- The server worker, [server/src/filemill/static/sw.js](../../server/src/filemill/static/sw.js),
+  is network-first. It keeps shells marked `X-Filemill-Shell`, UI assets by
+  path and up to 200 reads of at most 2 MiB. It answers from a copy, marked
+  `X-Filemill-Offline: copy`, only when the server does not answer or a proxy
+  answers 502–504. Otherwise it gives a valid 503 marked `miss`, the recovery
+  page for a navigation. Activation deletes only `filemill-v1` and older
+  `filemill-server-*` caches.
+- [ui/adapters/server-status.js](../../ui/adapters/server-status.js) owns the
+  top-bar indicator: offline, reconnecting, refused and recovered. Its probe
+  fetches the shell with `cache: "no-store"` and takes the new mutation token.
+  [ui/adapters/http.js](../../ui/adapters/http.js) sends every request
+  through `serverFetch` and marks nodes read from copies `stale`.
+- [ui/adapters/app-http.js](../../ui/adapters/app-http.js) remounts the served
+  root on recovery when reads were answered offline. Its welcome screen tells
+  an unreachable server apart from a root the server cannot open.
+- [ui/editor/editor.js](../../ui/editor/editor.js) does not open a stale node,
+  so an offline copy cannot be saved over newer bytes.
+- The static edition's worker is unchanged. A5 stays open for it.
