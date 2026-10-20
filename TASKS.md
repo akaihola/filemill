@@ -4,6 +4,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Unverified proposals
 
+- [116] Sandbox the Raw view of HTML files inside archives with a
+  Content-Security-Policy header
+  <!-- hai:{"id":"simple-2569b382-eaf4-4d64-8db1-ecd76cccca46","labels":["steward"],"createdAt":"2026-10-20T02:10:36.825Z","updatedAt":"2026-10-20T02:10:36.825Z"} -->
+
 ## Ordered backlog
 
 - [115] Propose plain answers to the docs check's twelve remaining questions
@@ -689,7 +693,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 [77]: docs/tasks/77-md-tight-bullet-list-line-spacing.md
 
-<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115 -->
+<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116 -->
 
 [78]: docs/tasks/78-wide-document-scrolls-instead-of-expanding-the-preview.md
 
@@ -766,6 +770,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 [114]: docs/tasks/114-sandbox-html-previews-of-archive-members-as-security-md-promises.md
 
 [115]: docs/tasks/115-propose-plain-answers-to-the-docs-check-s-twelve-remaining-questions.md
+
+[116]: docs/tasks/116-sandbox-the-raw-view-of-html-files-inside-archives-with-a-content-secu.md
 
 ## Rules
 
