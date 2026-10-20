@@ -267,7 +267,7 @@ for (const value of [false, 0, null, "", "first\nsecond"]) {
   for (const selection of [undefined, "object"]) {
     setState({ sel: ["data.json", selection] });
     assert.equal(previewNode(), parent);
-    assert.equal(locationState("highlight", null).location.view, undefined);
+    assert.equal(locationState("highlight", null).location.view, "highlight");
   }
 }
 const emptyKey = { name: "", dir: false, json: true, value: "empty key" };

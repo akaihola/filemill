@@ -27,9 +27,28 @@ Both former prefixes work as real paths. No special alias handler or compatibili
 - Migrated API, resource, PWA, public-mode and browser fixtures to real paths.
   Kept containment and direct-root bookmark checks. Added browser navigation
   and fresh-load coverage for real `w` and `n` folders.
+- Browser validation exposed two remaining alias assumptions: the local-folder
+  test expected `/n`, and a whole JSON column dropped its render query. Fixed
+  the assertion and added a failing model check before preserving that query.
 - Recorded ADR 0088, the task 35 replacement date and the collision boundary
   with [121]. Updated current guidance and rebuilt the static bundle.
 
-Validation so far: 519 resource/API/PWA/public-mode checks passed; both new
-browser cases passed; the model checks and all seven pre-commit hooks passed.
-Full browser and static-edition suites are in progress.
+## Validation
+
+- Red route checks: six failed and two passed before removal.
+- Resource, API, containment, PWA and public-mode checks: 519 passed.
+- Non-browser server suite: 815 passed, one subprocess timeout after its inner
+  check passed. That check passed on retry (1 passed).
+- Server browser suites: 306 passed, three failed. The local-folder assertion
+  and JSON whole-file URL were corrected. Their focused checks passed
+  (1 local-folder case and 3 scalar cases). The Firefox missing-fragment check
+  passed unchanged on retry (1 passed). Both new real-prefix browser cases passed.
+- Static suites: 159 passed and one failed in each mode. Bundle render cost
+  exceeded its 100 ms budget (111.8 ms); development refresh timed out. Both
+  passed unchanged on sequential retries (1 passed each).
+- After the model change: static URL checks passed in both modes (8 each),
+  as did JSON/JSONL UI checks (2 each).
+- Model checks and all seven pre-commit hooks passed, including type checks,
+  formatters, linters, suppression links and the rebuilt static bundle check.
+
+No thresholds or timeouts were relaxed. The worktree and branch are retained.

@@ -3994,9 +3994,9 @@ function currentPath() {
 function locationState(viewMode, previousKey) {
   const key = path.map((p) => p.name).join("/");
   const node = previewNode();
-  /* A file, a doc or a section has a representation to name; a JSON
-     container previewed as a folder keeps the bare URL it always had. */
-  const view = previewable(node)
+  /* A whole JSON file still needs the shell when opened as a column.
+     Its bare URL serves bytes; virtual containers already address a member. */
+  const view = previewable(node) || (node?.json && !node.meta?.virtual)
     ? (viewMode === "highlight" ? "highlight" : "render")
     : undefined;
   return {

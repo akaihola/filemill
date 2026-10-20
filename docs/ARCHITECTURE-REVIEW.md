@@ -40,6 +40,8 @@ status.
 - **Root paths only.** [129] removed the `/w/` named mounts and `/n/`
   alternate shell on 2026-10-20 ([ADR 0088]). Both names now identify real
   files, folders or direct-root symlink bookmarks through `resource()`.
+  A whole JSON file opened as a column keeps its render query in the deep-link
+  model, so reloading it returns the shell. Virtual containers keep member paths.
   The resource route keeps containment and public-mode checks. Explicit API,
   UI-asset and PWA routes still win their registered patterns; collision
   separation remains [121].

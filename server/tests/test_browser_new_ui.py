@@ -1966,7 +1966,7 @@ def test_local_mode_stops_writing_the_url(page):
         "sel[0] === 'local.md' && document.querySelector('#preview .pv-rich')"
     )
     assert page.url == before
-    assert page.url.rstrip("/").endswith("/n")
+    assert page.url == page.base + "/"
 
 
 def test_leaving_local_mode_restores_the_served_tree(page):
