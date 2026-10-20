@@ -170,7 +170,7 @@ Local validation with Python 3.12 also passed:
 - All seven pre-commit hooks, direct static-test Ruff checks and the shared
   model checks passed. No tests were skipped and no assertions were weakened.
 
-[94] is complete and awaits user acceptance. The earlier CI access and
+[94] was accepted by the user on 2026-10-20. The earlier CI access and
 history-rewrite blockers are resolved. The same green main run closes [93]'s
 delivery requirement.
 

@@ -18,7 +18,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Completed / Accepted
 
-- [ ] [94] Move the CI workflows to action versions that run on Node.js 24
+- [x] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
 
       <!-- hai:{"id":"simple-28def403-6427-4ff6-aea8-3643a19d1a61","labels":["steward"],"createdAt":"2026-10-16T16:48:54.367Z","updatedAt":"2026-10-17T08:00:57.885Z"} -->
