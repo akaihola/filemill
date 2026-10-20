@@ -16,3 +16,24 @@ Steward issue, 2026-10-20 10:40, from part Q2 of the steward's decision 30, "The
 - Tests: in public mode a listing with `?hidden=show` shows no hidden entries, and direct requests for `.git/config`, `.claude/settings.json` and a nested `a/.b/c` answer 404 on each file route. Private mode is unchanged.
 - The focused tests and the full suite pass.
 - No pushes, deploys or service restarts. The nixos-config issue turns the option on for `filemill-public`.
+
+## Plan
+
+- `--public` and `FILEMILL_PUBLIC` set `app.state.public`. `env.py` gains a
+  flag reader: any value except empty, `0`, `false`, `no` or `off` turns the
+  mode on, so a typo fails closed. `--live` passes the mode to the reloaded
+  app through the variable.
+- `paths.py` holds the rule. `hidden(rel)` rejects a request path, unquoted
+  the way `resolve_safe` unquotes it, with any component starting with `.`.
+  `public_zones` drops bookmarks with a hidden name or a hidden component in
+  their target path. `visible(path, zones)` requires the resolved path to lie
+  in a zone and under no hidden name in any zone that holds it.
+  `resolve_safe` and `resolve_web_mount` take `public=`.
+- `app.py` checks `p`, `v`, `?vpath=` and the resource, `/n/` and `/w/` paths,
+  and resolves through the public rule. A public listing keeps only entries it
+  would serve, archive members included; search drops matches it would not
+  serve; the shell ignores `?hidden=show`.
+- Answers stay one 404, as for paths outside the root. Save and delete check
+  authorization first, as ADR 0081 requires.
+- ADR 0087 records the rule. `server/README.md`, `SECURITY.md`, `CHANGELOG.md`
+  and `docs/ARCHITECTURE-REVIEW.md` describe it.
