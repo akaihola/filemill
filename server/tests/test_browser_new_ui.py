@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import itertools
 import json
 import random
 import shutil
@@ -370,11 +371,13 @@ class Harness:
 
 
 @pytest.fixture(scope="module")
-def browser():
-    """One Chromium for the module; each test gets a fresh context in it."""
+def browser(request):
+    """One browser per engine; each test gets a fresh context in it."""
     sync_playwright = pytest.importorskip("playwright.sync_api").sync_playwright
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = getattr(p, getattr(request, "param", "chromium")).launch(
+            headless=True
+        )
         try:
             yield browser
         finally:
@@ -1461,8 +1464,9 @@ def test_fullscreen_releases_a_latched_preview_wheel(page):
             throw new Error('Fullscreen unavailable');
         };
         const pre = document.querySelector('#preview .pv-markdown pre');
+        // Past AXIS_SLOP ([110]), so the first wheel fixes the gesture's axis.
         const wheel = () => new WheelEvent('wheel', {
-            deltaX: 1, bubbles: true, cancelable: true,
+            deltaX: 10, bubbles: true, cancelable: true,
         });
         const first = wheel();
         pre.dispatchEvent(first);
@@ -1476,6 +1480,126 @@ def test_fullscreen_releases_a_latched_preview_wheel(page):
     assert result["claimed"]
     assert not result["retained"]
     assert result["after"] == result["before"]
+
+
+def _swipe(page, selector: str, deltas) -> list[float]:
+    """One touchpad gesture over selector; returns the ms between its wheels.
+
+    A gap past SETTLE_MS (180 ms) ends the gesture early, so the assertions
+    after a swipe report the gaps.
+    """
+    box = page.locator(selector).bounding_box()
+    page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+    page.evaluate("""() => {
+        if (!window.__wheels) addEventListener('wheel',
+            e => __wheels.push(e.timeStamp), {capture: true, passive: true});
+        window.__wheels = [];
+    }""")
+    for dx, dy in deltas:
+        page.mouse.wheel(dx, dy)
+    stamps = page.evaluate("__wheels")
+    assert len(stamps) == len(deltas)
+    return [b - a for a, b in itertools.pairwise(stamps)]
+
+
+def test_a_vertical_swipe_over_the_preview_ignores_sideways_drift(page):
+    """[110] A gesture keeps the axis it started on.
+
+    Fingers scrolling a document up and down drift sideways now and then;
+    that drift must not turn the dial. Neither may a fresh downward swipe at
+    the end of the document, which the browser alone would hand to the
+    finder because the document cannot scroll further down.
+    """
+    page.open("code/long.py")
+    body = page.locator("#preview .pv-body")
+    page.wait_for_selector("#preview .pv-text .hl-kw", timeout=15000)
+    page.evaluate("dialTo(0)")
+    assert _dial_settled(page) == 0
+    assert body.evaluate("e => e.scrollHeight > e.clientHeight + 200")
+
+    gaps = _swipe(page, "#preview .pv-body", [(0, 40), (6, 3), (4, 30), (0, 40)])
+    page.wait_for_function("document.querySelector('#preview .pv-body').scrollTop > 0")
+    assert _dial_settled(page) == 0, gaps
+
+    body.evaluate("e => { e.scrollTop = e.scrollHeight; }")
+    _dial_settled(page)
+    gaps = _swipe(page, "#preview .pv-body", [(3, 40), (0, 40), (5, 2)])
+    assert _dial_settled(page) == 0, gaps
+
+
+def test_a_sideways_swipe_over_the_preview_ignores_vertical_drift(page, ui_root):
+    """[110] The dial takes the whole sideways gesture; the document stays put.
+
+    Each wheel here moves the dial and lays the preview out again, so the
+    document is light: re-wrapping long.py on a busy machine would hold the
+    next wheel past SETTLE_MS and split the swipe.
+    """
+    paragraphs = "".join(f"Paragraph {n}.\n\n" for n in range(1, 121))
+    (ui_root / "tall.md").write_text("# Tall\n\n" + paragraphs)
+    page.open("tall.md")
+    body = page.locator("#preview .pv-body")
+    page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
+    page.evaluate("dialTo(0)")
+    assert _dial_settled(page) == 0
+    assert body.evaluate("e => e.scrollHeight > e.clientHeight + 200")
+
+    gaps = _swipe(
+        page, "#preview .pv-body", [(40, 0), (30, 4), (3, 6), (0, 20), (20, 0)]
+    )
+    assert abs(_dial_settled(page) - 93) <= 1, gaps
+    assert body.evaluate("e => e.scrollTop") == 0, gaps
+
+
+def test_a_swipe_takes_its_axis_after_a_few_pixels(page):
+    """[110] A noisy start does not hand a vertical swipe to the dial.
+
+    The first events of a swipe are small; one that happens to lean sideways
+    must not fix the axis for the whole gesture.
+    """
+    page.open("code/long.py")
+    page.wait_for_selector("#preview .pv-text .hl-kw", timeout=15000)
+    page.evaluate("dialTo(0)")
+    assert _dial_settled(page) == 0
+
+    gaps = _swipe(page, "#preview .pv-body", [(1, 0), (2, 1), (0, 40), (0, 40)])
+    page.wait_for_function("document.querySelector('#preview .pv-body').scrollTop > 0")
+    assert _dial_settled(page) == 0, gaps
+
+
+def test_a_pinch_over_the_preview_is_left_to_the_browser(page):
+    """[110] Ctrl+wheel zooms; neither the dial nor the axis lock takes it."""
+    page.open("wide.md")
+    page.wait_for_selector("#preview .pv-markdown pre")
+    page.evaluate("dialTo(0)")
+    assert _dial_settled(page) == 0
+    result = page.evaluate("""() => {
+        const pre = document.querySelector('#preview .pv-markdown pre');
+        const pinch = new WheelEvent('wheel', {
+            deltaX: 20, deltaY: 3, ctrlKey: true, bubbles: true, cancelable: true,
+        });
+        pre.dispatchEvent(pinch);
+        return {prevented: pinch.defaultPrevented, dial: dial()};
+    }""")
+    assert result == {"prevented": False, "dial": 0}
+
+
+def test_a_vertical_swipe_over_a_column_ignores_sideways_drift(page):
+    """[110] The finder holds the lock, so a column list keeps its axis too."""
+    page.open("big.jsonl/line 2")
+    column = '.col[data-i="1"] .col-body'
+    body = page.locator(column)
+    page.evaluate("dialTo(0)")
+    assert _dial_settled(page) == 0
+    assert body.evaluate("e => e.scrollHeight > e.clientHeight + 200")
+
+    gaps = _swipe(page, column, [(0, 40), (6, 3), (4, 30), (0, 40)])
+    page.wait_for_function(f"document.querySelector('{column}').scrollTop > 0")
+    assert _dial_settled(page) == 0, gaps
+
+    body.evaluate("e => { e.scrollTop = e.scrollHeight; }")
+    _dial_settled(page)
+    gaps = _swipe(page, column, [(3, 40), (0, 40), (5, 2)])
+    assert _dial_settled(page) == 0, gaps
 
 
 def test_arrow_right_from_a_widened_stop_steps_back_to_natural(page):
@@ -2276,6 +2400,25 @@ def test_a_deep_link_into_an_archive_previews_the_member(page):
         timeout=15000,
     )
     assert page.evaluate("path.map(p => p.vpath)")[-1] == "inside"
+
+
+def test_an_html_member_previews_in_a_sandbox(page, ui_root):
+    """Issue 114: an .html member previews through the server, whose iframe
+    had no `sandbox`, so the member's script ran with filemill's origin and
+    reached the app around it. It gets the sandbox a file on disk gets."""
+    with zipfile.ZipFile(ui_root / "site.zip", "w") as zf:
+        zf.writestr(
+            "page.html",
+            "<script>parent.document.documentElement.dataset.pwned = 'yes'</script>"
+            "<p>member page</p>",
+        )
+    page.open("site.zip/page.html")
+    # The script comes first, so once the paragraph is there it has had its turn.
+    expect(page.frame_locator("#preview iframe").locator("p")).to_have_text(
+        "member page", timeout=15000
+    )
+    assert page.evaluate("document.documentElement.dataset.pwned") is None
+    assert page.get_attribute("#preview iframe", "sandbox") == ""
 
 
 def test_a_row_shows_no_invented_size_or_date(page):
@@ -3858,3 +4001,76 @@ def test_mutations_from_two_browser_origins(browser, ui_root, tmp_path, proxy):
             await HTTP.remove({rel: 'notes/plain.txt'});
         }""")
         assert not (ui_root / "notes/plain.txt").exists()
+
+
+@pytest.mark.parametrize("extension", ["md", "rst"])
+def test_document_section_url_loads_fresh(page, ui_root, extension):
+    text = (
+        "# Guide\n\nintro\n\n## Work\n\nwork body\n\n### Child\n\nchild body\n\n## Other\n\nother body\n"
+        if extension == "md"
+        else "Guide\n=====\n\nintro\n\nWork\n----\n\nwork body\n\nChild\n~~~~~\n\nchild body\n\nOther\n-----\n\nother body\n"
+    )
+    (ui_root / f"sections.{extension}").write_text(text)
+    page.open_resource(f"sections.{extension}/Work/Child?f=&filemill=render")
+    content = page.locator("#pv-content")
+    expect(content).to_contain_text("child body")
+    expect(content).not_to_contain_text("work body")
+    expect(content).not_to_contain_text("other body")
+
+
+@pytest.mark.parametrize("browser", ["chromium", "firefox"], indirect=True)
+@pytest.mark.parametrize(
+    ("fragment", "title", "occurrence"),
+    [
+        ("work", "Work", 0),
+        ("q1-scope", "Q1: scope", 0),
+        ("q1%3A-scope", "Q1: scope", 0),
+        ("q1-scope-1", "Q1: scope", 1),
+        ("caf%C3%A9--tea", "Café & tea!", 0),
+        ("missing", None, 0),
+        ("%ZZ", None, 0),
+    ],
+)
+def test_markdown_heading_fragment_loads_fresh(
+    page, ui_root, fragment, title, occurrence
+):
+    (ui_root / "fragments.md").write_text(
+        "# Guide\n\n"
+        + "intro paragraph\n\n" * 100
+        + "## Work\n\nwork body\n\n"
+        + "middle paragraph\n\n" * 100
+        + "## Q1: scope\n\nscope body\n\n"
+        + "middle paragraph\n\n" * 100
+        + "## Q1: scope\n\nsecond scope body\n\n"
+        + "middle paragraph\n\n" * 100
+        + "## Café & `tea`!\n\ntea body\n\n"
+        + "end paragraph\n\n" * 100
+    )
+    # First load, service-worker-controlled load, then a warm cache load.
+    for _ in range(3):
+        page.open_resource(f"fragments.md?f#{fragment}")
+        expect(page.locator("#pv-content")).to_contain_text("scope body")
+        if title is None:
+            assert page.locator("#preview .pv-body").evaluate("e => e.scrollTop") == 0
+        else:
+            page.wait_for_function(
+                """([title, occurrence]) => {
+                  const body = document.querySelector('#preview .pv-body');
+                  const heading = [...body.querySelectorAll('h2')].filter(h => h.textContent === title)[occurrence];
+                  const top = heading?.getBoundingClientRect().top;
+                  const rect = body.getBoundingClientRect();
+                  return body.scrollTop > 0 && top >= rect.top - 1 && top < rect.top + 60;
+                }""",
+                arg=[title, occurrence],
+            )
+        page.wait_for_function("navigator.serviceWorker.controller !== null")
+
+
+@pytest.mark.parametrize(
+    "section", ["Missing", "Guide/Missing", "Guide/Install/Missing"]
+)
+def test_missing_section_loads_the_whole_document(page, section):
+    response = page.goto(f"{page.base}/guide.md/{section}?f")
+    assert response.status == 200
+    expect(page.locator("#pv-content")).to_contain_text("intro")
+    expect(page.locator("#pv-content")).to_contain_text("steps")

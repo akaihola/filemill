@@ -116,7 +116,7 @@ and the Pages deployment before completing this issue.
   root hidden. A focused mount test failed with `folded === 1`; another test
   showed a deferred glide overriding a later instant move (`dial() === 125`).
   Keep the scroll writer in layout, cancel superseded callbacks and reset the
-  dial on root mount. See [ADR 0084](../adr/0084-new-fold-moves-cancel-older-glides.md).
+  dial on root mount. See [ADR 0086].
 - The server test can capture the previous folder URL while the selected
   directory is still loading. Wait for the expected URL before recording it.
   Keep the column, selection and URL equality assertions.
@@ -175,3 +175,5 @@ history-rewrite blockers are resolved. The same green main run closes [93]'s
 delivery requirement.
 
 [93]: 93-make-main-s-ci-green-again-static-bundle-test-failing-since-06792cb.md
+
+[ADR 0086]: ../adr/0086-new-fold-moves-cancel-older-glides.md

@@ -56,6 +56,14 @@ scrolls it as before. A block that was scrolled sideways keeps its offset when
 the dial leaves the end; it scrolls back once the dial is at the end again,
 which the same gesture reaches first.
 
+Refined 2026-10-19 by [ADR 0084] ([110]): a wheel is judged by the axis
+its gesture took in its first few pixels, not by its own deltas. A mostly
+horizontal event inside a vertical swipe no longer turns the dial. While the
+dial takes a sideways gesture over the preview, short of its end, it takes
+every cancellable event of that gesture.
+
 [ADR 0021]: 0021-horizontal-scroll-fold-dial-not-translation.md
 [ADR 0075]: 0075-the-scrollbar-spans-one-stop-each-way.md
 [78]: ../tasks/78-wide-document-scrolls-instead-of-expanding-the-preview.md
+[ADR 0084]: 0084-a-wheel-gesture-keeps-the-axis-it-started-on.md
+[110]: ../tasks/110-confusing-diagonal-scroll.md

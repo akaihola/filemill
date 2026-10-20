@@ -4,17 +4,18 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Unverified proposals
 
+- [116] Sandbox the Raw view of HTML files inside archives with a
+  Content-Security-Policy header
+  <!-- hai:{"id":"simple-2569b382-eaf4-4d64-8db1-ecd76cccca46","labels":["steward"],"createdAt":"2026-10-20T02:10:36.825Z","updatedAt":"2026-10-20T02:10:36.825Z"} -->
+
 ## Ordered backlog
 
-- [112] Section links and heading fragments don't open the heading
-  <!-- hai:{"id":"simple-7c134768-10d6-422d-87d7-0354b53e8de5","labels":["steward"],"createdAt":"2026-10-19T16:06:43.116Z","updatedAt":"2026-10-19T16:07:19.902Z"} -->
+- [115] Propose plain answers to the docs check's twelve remaining questions
+  <!-- hai:{"id":"simple-e25533eb-a765-42e3-8e41-b1e7e16d1b0e","labels":["steward","review"],"createdAt":"2026-10-19T17:58:46.533Z","updatedAt":"2026-10-19T17:58:46.533Z"} -->
 
 ## Scheduled
 
 ## In Progress
-
-- [~] [110] Confusing diagonal scroll
-      <!-- hai:{"id":"simple-03b8dad8-ef8f-463e-a43d-6e54a152efdd","priority":"none","labels":[],"createdAt":"2026-10-19T15:11:32.244Z","updatedAt":"2026-10-19T16:35:23.131Z"} -->
 
 ## Completed / Accepted
 
@@ -23,13 +24,25 @@ Rules for TASKS.md usage are at the bottom of the file.
 
       <!-- hai:{"id":"simple-28def403-6427-4ff6-aea8-3643a19d1a61","labels":["steward"],"createdAt":"2026-10-16T16:48:54.367Z","updatedAt":"2026-10-17T08:00:57.885Z"} -->
 
-- [ ] [93] Make main's CI green again: static bundle test failing since 06792cb
+- [ ] [114] Sandbox HTML previews of archive members as SECURITY.md promises
+      <!-- hai:{"id":"simple-19e1170a-8c5b-4b30-935e-64b054b39407","labels":["steward","security"],"createdAt":"2026-10-19T17:58:36.228Z","updatedAt":"2026-10-20T00:11:48.739Z"} -->
+
+- [ ] [113] Fix the five tests that failed in GitHub CI after the history push
+      <!-- hai:{"id":"simple-633e3e56-0c80-48dc-940c-9c4d23e9ebb8","labels":["steward"],"createdAt":"2026-10-19T17:55:35.768Z","updatedAt":"2026-10-19T22:13:46.825Z"} -->
+
+- [x] [112] Section links and heading fragments don't open the heading
+      <!-- hai:{"id":"simple-7c134768-10d6-422d-87d7-0354b53e8de5","labels":["steward"],"createdAt":"2026-10-19T16:06:43.116Z","updatedAt":"2026-10-19T20:47:32.805Z"} -->
+
+- [x] [93] Make main's CI green again: static bundle test failing since 06792cb
     - Depends on: [96]
 
-      <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-17T07:59:20.709Z"} -->
+      <!-- hai:{"id":"simple-08939b57-cc97-400c-bce7-e77ff1e462c5","labels":["steward"],"createdAt":"2026-10-16T16:48:53.101Z","updatedAt":"2026-10-19T18:13:46.054Z"} -->
 
-- [ ] [111] Renders HTML comments in Markdown documents
-      <!-- hai:{"id":"simple-6a0e8d6a-4429-4924-bff3-b5437909a311","priority":"none","labels":[],"createdAt":"2026-10-19T15:48:38.147Z","updatedAt":"2026-10-19T16:59:40.375Z"} -->
+- [x] [110] Confusing diagonal scroll
+      <!-- hai:{"id":"simple-03b8dad8-ef8f-463e-a43d-6e54a152efdd","priority":"none","labels":[],"createdAt":"2026-10-19T15:11:32.244Z","updatedAt":"2026-10-19T18:14:16.303Z"} -->
+
+- [x] [111] Renders HTML comments in Markdown documents
+      <!-- hai:{"id":"simple-6a0e8d6a-4429-4924-bff3-b5437909a311","priority":"none","labels":[],"createdAt":"2026-10-19T15:48:38.147Z","updatedAt":"2026-10-19T18:18:03.621Z"} -->
 
 - [x] [109] Check filemill's docs and ADR statuses against the code, and fix what
   disagrees
@@ -43,8 +56,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] [108] Wait for PageDown scrolling in the static keyboard test
       <!-- hai:{"id":"simple-e9360e81-e2ed-419a-8061-7e3136ecbb92","createdAt":"2026-10-18T21:43:30.456Z","updatedAt":"2026-10-19T09:55:41.941Z"} -->
 
-- [ ] [104] Make preview content inert: wikilink text and DOCX output (A2)
-      <!-- hai:{"id":"simple-fdfa185d-6944-4b3b-acc4-f7b3b2114168","labels":["steward"],"createdAt":"2026-10-18T20:07:21.877Z","updatedAt":"2026-10-18T22:45:44.521Z"} -->
+- [x] [104] Make preview content inert: wikilink text and DOCX output (A2)
+      <!-- hai:{"id":"simple-fdfa185d-6944-4b3b-acc4-f7b3b2114168","labels":["steward"],"createdAt":"2026-10-18T20:07:21.877Z","updatedAt":"2026-10-19T19:03:24.424Z"} -->
 
 - [x] [106] Link or remove every lint suppression and the obsolete PPTX skip
   (roadmap Phase 1)
@@ -163,8 +176,8 @@ Rules for TASKS.md usage are at the bottom of the file.
   development setups which include e.g. server names and local paths.
       <!-- hai:{"id":"simple-ea7f9f2b5da73868","updatedAt":"2026-10-17T08:20:32.488Z"} -->
 
-- [ ] [96] Remove the tailnet hostname from all files and from history
-      <!-- hai:{"id":"simple-67027c02-b019-474e-a497-05db579c17c2","labels":["steward"],"createdAt":"2026-10-17T07:08:55.437Z","updatedAt":"2026-10-17T07:46:48.011Z"} -->
+- [x] [96] Remove the tailnet hostname from all files and from history
+      <!-- hai:{"id":"simple-67027c02-b019-474e-a497-05db579c17c2","labels":["steward"],"createdAt":"2026-10-17T07:08:55.437Z","updatedAt":"2026-10-19T21:04:02.635Z"} -->
 
 - [x] [90] Run the static bundle, static development and server CI suites in parallel
   <!-- hai:{"id":"simple-8b926d81-b116-4839-987a-c05a6e7930a0","createdAt":"2026-10-12T13:32:52.839Z","updatedAt":"2026-10-17T07:09:36.159Z"} -->
@@ -680,7 +693,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 [77]: docs/tasks/77-md-tight-bullet-list-line-spacing.md
 
-<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112 -->
+<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116 -->
 
 [78]: docs/tasks/78-wide-document-scrolls-instead-of-expanding-the-preview.md
 
@@ -751,6 +764,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 [111]: docs/tasks/111-renders-html-comments-in-markdown-documents.md
 
 [112]: docs/tasks/112-section-links-and-heading-fragments-don-t-open-the-heading.md
+
+[113]: docs/tasks/113-fix-the-five-tests-that-failed-in-github-ci-after-the-history-push.md
+
+[114]: docs/tasks/114-sandbox-html-previews-of-archive-members-as-security-md-promises.md
+
+[115]: docs/tasks/115-propose-plain-answers-to-the-docs-check-s-twelve-remaining-questions.md
+
+[116]: docs/tasks/116-sandbox-the-raw-view-of-html-files-inside-archives-with-a-content-secu.md
 
 ## Rules
 
@@ -827,7 +848,9 @@ Below, `<filename>@<branch>` means you must operate on the file in the specified
 3. Merge and deploy (typically by last steps of a task workflow)
 
 - Rebase the worktree feature branch on `main` and resolve any conflicts.
-- Merge the rebased branch on `main`, and remove the worktree and branch.
+- Merge the rebased branch on `main`.
+- Keep the worktree and branch after merging. Remove them only when the user
+  explicitly requests it.
 - Move the issue from `## In Progress` to `## Completed / Accepted` in `TASKS.md@main`
   with `[ ]`, pending user acceptance, and commit.
 - Do any deployment steps if defined in the general development worklow.

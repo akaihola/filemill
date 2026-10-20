@@ -1441,11 +1441,14 @@ async def test_keyboard_horizontal(page, deferred):
     ), json.dumps(st)
     await pg.keyboard.press("ArrowRight")
     await pg.wait_for_function("document.activeElement?.id === 'preview'")
-    await pg.wait_for_function("""() => {
-      const body = document.querySelector('#preview .pv-body');
-      return body?.querySelector('.pv-text')?.textContent.includes('scrollable line') &&
-        body.scrollHeight > body.clientHeight;
-    }""")
+    # ← from the preview re-rendered it (A9), and its text arrives after an
+    # asynchronous read. A scroll key pressed before then has nothing to
+    # scroll, and the wait for movement below can only time out.
+    await pg.wait_for_function(
+        """() => { const body = document.querySelector('#preview .pv-body');
+          return body?.querySelector('.pv-text')?.textContent.startsWith('leaf')
+            && body.scrollHeight > body.clientHeight; }"""
+    )
     if deferred == "scroll":
         # Model a scroll write that lands after the keyboard round trip.
         await pg.evaluate("""() => {
@@ -1506,6 +1509,27 @@ async def test_new_root_has_its_widening_range_immediately(page):
       return dial();
     }""")
     assert position < 0
+
+
+async def test_new_root_releases_previous_wheel_axis(page):
+    await mount(page)
+    await page.clock.install()
+    await page.evaluate("""async () => {
+      finder.dispatchEvent(new WheelEvent('wheel', {
+        deltaX: 3, deltaY: 40, bubbles: true, cancelable: true,
+      }));
+      await mount(__mk(0));
+    }""")
+    # A mount cancels the old settle timer. Its axis must still expire.
+    await page.clock.run_for(250)
+    position = await page.evaluate("""() => {
+      const before = dial();
+      finder.dispatchEvent(new WheelEvent('wheel', {
+        deltaX: 40, deltaY: 3, bubbles: true, cancelable: true,
+      }));
+      return {before, after: dial()};
+    }""")
+    assert position["after"] > position["before"], position
 
 
 async def test_instant_dial_move_supersedes_deferred_glide(page):
@@ -2867,6 +2891,38 @@ async def test_refresh(page):
         and st["sel"] == ["mixed", "README"]
         and coherent
     ), json.dumps(st)
+
+
+# A refresh can end on an instant dial write and a glide towards the resting
+# place it computed, the glide queued for the next frame or started but not yet
+# moved. The new root's resting place is where the dial already sits, so a
+# mount in that window issued no scroll of its own, the old glide landed, and
+# the focused root folded into a spine: test_refresh's next click then waited
+# 30 s on a hidden row (CI run 39292689552).
+GLIDES = {
+    "queued": "dialTo(0, false); dialTo(fold, true); return mount(__mk(0));",
+    "started": """dialTo(0, false);
+      return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => {
+        dialTo(fold, true); r(mount(__mk(0))); })));""",
+}
+
+
+@pytest.mark.parametrize("glide", list(GLIDES))
+async def test_mount_stops_a_glide_that_would_fold_the_root(page, glide):
+    pg = page
+    await mount(pg)
+    await pg.evaluate(
+        "body => new Function('fold', body)(Math.round(foldUnit() * range()))",
+        GLIDES[glide],
+    )
+    await pg.wait_for_function("path.length === 1 && colCache.get(path[0])")
+    await scroll_settled(pg)
+    st = await pg.evaluate(
+        "({folded, dial: dial(), cls: document.querySelector('.col[data-i=\"0\"]').className})"
+    )
+    assert st["folded"] == 0 and "spine" not in st["cls"], json.dumps(st)
+    await pg.click('.col[data-i="0"] .row:has-text("refresh")')
+    await pg.wait_for_function("path[1]?.name === 'refresh'")
 
 
 async def test_sort_options(page):

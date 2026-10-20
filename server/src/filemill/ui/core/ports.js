@@ -87,8 +87,9 @@
      in core/renderers.js — one entry per kind, shared by both editions.
 
    ── ROUTER ─ the address bar ───────────────────────────────────────────────
-     read()          → {root, path:[names…], view} | null
+     read()          → {root, path:[names…], view, fragment?} | null
                                                        the location right now
+     fragment        optional; encoded heading fragment from a path router
      write(state, replace) → void                      reflect state, no reload;
                                     use replaceState when replace is true,
                                     pushState otherwise

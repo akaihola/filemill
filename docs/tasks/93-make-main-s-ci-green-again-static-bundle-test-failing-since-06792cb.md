@@ -97,8 +97,15 @@ tests and the Pages deployment. The six served assets match the commit.
 
 The three threshold cases were rerun 20 consecutive times on this main,
 together with the four geometry cases: 140 passes, including 60 threshold
-passes. No gate or assertion was relaxed. [93] is complete and awaits user
-acceptance. [94] records the detailed local and remote validation.
+passes. No gate or assertion was relaxed. [93] is complete and accepted by the
+user. [94] records the detailed local and remote validation.
+
+## User acceptance, 2026-10-19
+
+The user explicitly accepted [93] and requested settling its thread. This
+acceptance supersedes the earlier instruction to retain In Progress status.
+The delivery status above records the blocker observed on 2026-10-17; no new
+CI or publication verification was performed as part of this acceptance.
 
 [96]: 96-remove-the-tailnet-hostname-from-all-files-and-from-history.md
 [97]: 97-fix-intermittent-preview-404-after-deleting-the-selected-file.md

@@ -60,12 +60,21 @@ status.
   Native fullscreen and its layout fallback give the preview the gesture
   immediately, before the wheel latch is checked, because the preview already
   fills the screen ([78] independent-review fix, 2026-10-11).
-  A new root resets the dial through the layout module. Deferred smooth-scroll
-  callbacks check that their glide is still current, so an old move cannot
-  override a later instant move or hide a newly mounted root ([94],
-  [ADR 0084], 2026-10-19). The reset clears the old settle timer so the first
-  layout establishes the new scrollbar range. General navigation cancellation
-  remains A9.
+  A wheel gesture keeps the axis it took in its first 6 px. Sideways drift
+  in a vertical swipe does not turn the dial. While the dial takes a sideways
+  swipe, its vertical drift does not scroll the document ([ADR 0084], [110],
+  2026-10-19).
+  A glide waiting for its frame starts only if no later dial write replaced
+  it. A layout that finds the dial already at its resting place stops a glide
+  still heading elsewhere ([ADR 0022], [113], 2026-10-20).
+  A new root resets the dial through the layout module. The reset cancels
+  the old glide and clears its settle timer, so the first layout establishes
+  the new scrollbar range at once ([94], [ADR 0086], 2026-10-19).
+  These fixes keep a mount during a refresh's glide from folding the focused
+  root. General navigation cancellation remains A9. The history reconciliation
+  on 2026-10-20 retains both fixes and assigns the reset decision [ADR 0086];
+  [ADR 0084] keeps the wheel-axis decision. The reset also clears the old
+  wheel gesture, whose axis would otherwise survive its cancelled timer.
 - **Virtual filesystems.** JSON, JSONL and CSV are browser adapters
   (`ui/adapters/vfs-json.js`, `vfs-csv.js`). Markdown and reStructuredText
   browse by their headings the same way (`vfs-doc.js`, outline in
@@ -97,6 +106,17 @@ status.
   Document sections show their heading text without a row icon. Their previews
   omit the file summary heading and divider, leaving the document's own heading
   at the top of the content ([79], 2026-10-11).
+  Section resource URLs have fresh-load HTTP and browser coverage ([112],
+  [ADR 0085], 2026-10-19). The existing `api.split_vfs` route accepts document sections;
+  heading existence stays with the browser. A missing section at any depth
+  restores the whole document in the DOM-free deep-link model.
+  Markdown previews preserve their
+  renderer IDs and add GitHub fragment aliases. The path router supplies the
+  fragment, and the DOM renderer scrolls the preview body after fonts are ready.
+  Fragment browser checks cover Chromium and Firefox with fresh and warm
+  service-worker caches. A running server must restart after UI updates so
+  its startup asset-version map matches the served files ([112] follow-up,
+  2026-10-19).
 - **Persistence.** Files are the only durable data. The browser keeps recent
   folder handles in IndexedDB, settings in localStorage, navigation in history
   and application assets in Cache Storage.
@@ -155,10 +175,11 @@ Keep these.
   frames, with the same navigation, focus and directional assertions
   ([108], 2026-10-19).
   The [94] follow-up also waits for scrollable preview content before sending
-  the key and tests delayed file reads. The server keyboard cycle waits for
-  the expected URL before recording its comparison value. Preview geometry
-  checks wait for the fold count, since the native scroll position can change
-  before the scroll event repaints the columns.
+  the key and tests delayed file reads. Preview geometry checks wait for the
+  fold count, since the native scroll position can change before the scroll
+  event repaints the columns. The server ←/→ URL check waits for the render
+  that opens each selection and reads `location.href`, because `page.url` can
+  trail in-page history writes ([113], 2026-10-20).
 - Real filesystem tests without a picker: `static/tests/test_url.py` drives the real
   FSA adapter against the origin private file system.
 - In the browser, size limits and the image extension list have one home,
@@ -226,7 +247,10 @@ Other derived-file responses are audited the same way.
 - Every entry module calls `exposeCore()` (`ui/core/debug.js`), so any script
   that runs in the page shares FS and state.
 - Resolved: the HTML preview iframe now has `sandbox=""`
-  (`ui/core/renderers.js:171`).
+  (`ui/core/renderers.js:171`). The server's iframe for an archive's HTML
+  member had none until [114] (2026-10-20), so its script ran as Filemill.
+  The PDF iframes stay unsandboxed in both renderers; the raw route serves a
+  `.pdf` member as `application/pdf`.
 
 **Acceptance.** Crafted Markdown stays inert with and without wikilinks, and
 malformed wikilinks are escaped. Links, code and footnotes still render. Unsafe
@@ -360,7 +384,8 @@ local-folder and virtual modes. Existing issues [10], [38], [41], [42], [56] and
 `renderPreview` (`ui/core/render.js:462-471`) builds a new element and calls
 `PREVIEW.revoke()` on every `render()` unless an editor is open. A resize, a
 fold or a settings change therefore reads and parses the file again, and resets
-scroll and media. [21] is marked Completed but its cache is not in the source.
+scroll and media. So does ← from the preview: a scroll key pressed before the
+new fill lands has nothing to scroll ([113], 2026-10-20). [21] is marked Completed but its cache is not in the source.
 [29]–[31] were completed without it. `navSeq` guards `choose` and refresh
 (`ui/core/nav.js:50`); `applyPath` uses a shared `applying` flag and mutates the
 path across awaits. The condition-based wait audit (2026-10-17) confirmed the
@@ -503,7 +528,7 @@ Do not reopen these without new evidence.
 | Duplicated limits and image lists (#7)                                                                | `ui/core/limits.js`                                                             |
 | No media queries (#8)                                                                                 | Portrait and landscape phone rules in `ui/core/styles.css`                      |
 | Delete fails in FSA and after success (F7)                                                            | `FSA.remove` uses `node.parent`; `deleteEntry` no longer calls `actions.render` |
-| Unsandboxed HTML preview (F2, part)                                                                   | `sandbox=""`                                                                    |
+| Unsandboxed HTML preview (F2, part)                                                                   | `sandbox=""`, for archive members too since [114]                               |
 | Images over 512 KiB rejected (F10, part)                                                              | Text-only limit                                                                 |
 | Descending name sort ignored                                                                          | `visibleKids` reverses when `desc`                                              |
 | ↑/↓ over folders stacked one entry per row; Alt+arrows swallowed ([39])                               | `state.stepping` rewrites ([ADR 0050]); `keyAction` ignores modified keys       |
@@ -562,6 +587,7 @@ A12 items can land at any time, each with a focused test.
 
 [ADR 0005]: adr/0005-node-lastsel-per-directory.md
 [ADR 0021]: adr/0021-horizontal-scroll-fold-dial-not-translation.md
+[ADR 0022]: adr/0022-the-dial-s-resting-place-never-folds-the-focused-column-nor-anything-r.md
 [ADR 0034]: adr/0034-read-only-mode-read.md
 [ADR 0050]: adr/0050-history-pushes-on-entering-a-column-rewrites-otherwise.md
 [ADR 0063]: adr/0063-installed-pwa-server-recovery.md
@@ -585,4 +611,7 @@ A12 items can land at any time, each with a focused test.
 [ADR 0082]: adr/0082-previews-link-only-to-safe-protocols.md
 
 [ADR 0083]: adr/0083-hide-markdown-comments.md
-[ADR 0084]: adr/0084-new-fold-moves-cancel-older-glides.md
+[ADR 0084]: adr/0084-a-wheel-gesture-keeps-the-axis-it-started-on.md
+
+[ADR 0085]: adr/0085-markdown-heading-fragments-scroll-the-preview.md
+[ADR 0086]: adr/0086-new-fold-moves-cancel-older-glides.md

@@ -6,6 +6,7 @@ request names a path *relative to ROOT*, and nothing may name an absolute one.
 
 import json
 import re
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -551,6 +552,21 @@ def test_an_image_member_is_served_through_raw_with_its_vpath(
     assert r.content == b"\x89PNG\r\n"
     assert r.headers["content-type"].startswith("image/png")
     assert r.headers["cache-control"] == "no-store"
+
+
+def test_an_html_member_previews_in_a_sandboxed_iframe(
+    archive_client, archive_root: Path
+):
+    """Issue 114: the member's page comes from /api/raw, filemill's own
+    origin, so without the sandbox a file on disk gets (ui/core/renderers.js)
+    its script would run as filemill. `sandbox=""` allows neither scripts nor
+    the same origin."""
+    with zipfile.ZipFile(archive_root / "site.zip", "w") as zf:
+        zf.writestr("page.html", "<script>parent.alert(1)</script>")
+    html = archive_client.get("/api/preview?p=site.zip&v=page.html").text
+    iframe = re.search(r"<iframe\b[^>]*>", html)
+    assert iframe is not None
+    assert re.search(r'\ssandbox=""[\s>]', iframe[0])
 
 
 def test_raw_without_a_vpath_still_serves_the_archive_itself(

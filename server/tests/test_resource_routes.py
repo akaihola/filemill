@@ -60,6 +60,15 @@ def test_json_nested_resource_serves_shell(client, site, extension):
     assert client.get(f"/{name}").json() == {"nested": {"leaf": "manifest leaf"}}
 
 
+@pytest.mark.parametrize("extension", ["md", "markdown", "rst"])
+@pytest.mark.parametrize("section", ["Work", "Work/Child", "Missing"])
+def test_document_section_resource_serves_shell(client, site, extension, section):
+    (site / f"guide.{extension}").write_text("# Guide\n\n## Work\n")
+    response = client.get(f"/guide.{extension}/{section}?f=&filemill=render")
+    assert response.status_code == 200
+    assert 'data-filemill="render"' in response.text
+
+
 def test_json_named_directory_does_not_create_virtual_paths(client, site):
     (site / "folder.json").mkdir()
     assert client.get("/folder.json/missing").status_code == 404
