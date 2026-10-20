@@ -439,7 +439,19 @@ port.
 - Documents and comments use Simplified Technical English.
 - Delete what you replace, in the same change.
 - A renderer lives in `ui/`, not in Python, unless the browser cannot do it.
-- No `# noqa` and no skipped test without a link to an issue.
+- Every `# noqa` needs a link to an issue. A test for supported behavior that
+  is disabled because it is broken or unfinished also needs an issue link.
+- A platform or optional-tool prerequisite skip needs an explicit reason, but
+  no defect issue. The Linux pipe-capacity regression in the [keyboard browser
+  tests] may skip on other platforms. The [Git bundle browser test] and
+  [Git bundle provider tests] may skip when Git is missing, because Git bundle
+  support is optional. These three skips describe prerequisites, not defects.
+- CI must supply required prerequisites and run all applicable checks. For
+  example, Linux CI testing Git bundle support must have Git and run these
+  checks. Do not omit dependencies to obtain a misleading pass.
 - A red suite blocks every merge. No exceptions.
 
+[keyboard browser tests]: ../server/tests/test_browser_keyboard.py
+[Git bundle browser test]: ../server/tests/test_browser_new_ui.py
+[Git bundle provider tests]: ../server/tests/test_gitbundle_provider.py
 [129]: tasks/129-remove-the-obsolete-w-and-n-url-routes.md

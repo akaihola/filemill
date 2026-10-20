@@ -476,6 +476,11 @@ Truncated text is never editable as if complete. Related: [49], [60].
 
 ### A11. Current documents contradict the code
 
+- Clarified 2026-10-20 ([conditional test skips]): the [roadmap skip policy]
+  permits reasoned platform and optional-tool prerequisite skips. Broken or
+  unfinished supported behavior still needs an issue link. CI must supply
+  required prerequisites and run applicable checks. No skip conditions changed.
+
 - Corrected 2026-10-20 ([118], ADR 0036): renderer registration now precedes
   download-consent UI initialization. The server hides the unused switch in
   served and Open Folder modes. Vendored Markdown/DOCX rendering ignores a
@@ -676,3 +681,5 @@ A12 items can land at any time, each with a focused test.
 [ADR 0048]: adr/0048-a-refused-clipboard-selects-the-path-instead.md
 
 [119]: tasks/119-document-the-menu-copy-exception-from-docs-question-4.md
+[conditional test skips]: tasks/123-clarify-conditional-test-skips-from-docs-question-9.md
+[roadmap skip policy]: ROADMAP.md#how-we-keep-it-this-way
