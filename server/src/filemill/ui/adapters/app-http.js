@@ -10,6 +10,7 @@
    at runtime and keep every other thing about the app identical. Nothing in
    core/ notices.
    ═══════════════════════════════════════════════════════════════════════════ */
+import { setContentSearch } from "../core/search.js";
 import { initSettings } from "../core/settings.js";
 import { initLayout } from "../core/layout.js";
 import { initSort, setSortActions } from "../core/sort.js";
@@ -182,6 +183,18 @@ const withServerVirtualPreview = (provider) => ({
       : provider.render(n),
 });
 
+async function searchServer(q, focused, signal) {
+  const response = await fetch(
+    `${API}/search?q=${encodeURIComponent(q)}&p=${encodeURIComponent(focused)}`,
+    { signal, headers: { Accept: "application/json" } },
+  );
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || `${response.status} ${response.statusText}`);
+  }
+  return data;
+}
+
 async function mountServer() {
   useFilesystem(withDocuments(withCsv(withVirtual(HTTP))));
   usePreview(
@@ -196,6 +209,7 @@ async function mountServer() {
     ),
   );
   useRouter(RouterPath);
+  setContentSearch(searchServer);
 
   /* Read the link *before* the first render. render() syncs the URL, and the
      state it syncs from is the bare root — so rendering first would rewrite
@@ -248,6 +262,7 @@ function showServerUnavailable(denied) {
    itself uses the same browser renderers as the served tree, so
    switching sides costs no fidelity; only the URL goes quiet. */
 export async function mount(handle) {
+  setContentSearch(null);
   useFilesystem(withDocuments(withCsv(withVirtual(FSA))));
   usePreview(
     withDocumentPreview(

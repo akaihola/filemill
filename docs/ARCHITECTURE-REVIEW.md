@@ -403,9 +403,13 @@ this final audit, or repeat already completed roadmap and ADR rewrites.
   state path without using it. Remove dead imports and comments that restate
   code as the affected modules change. Do not replace a few error strings with
   a templating framework. Preserve comments about measured browser behavior.
-- **Open: dependency direction.** [ui/core/search.js][search], lines 25–39,
-  builds an HTTP API URL in core. Classification and VTT parsing remain in both
-  languages; [server/src/filemill/vfs.py][vfs], line 15, and
+- **Resolved: search dependency direction, 2026-10-21 ([120], [ADR 0091]).**
+  The server adapter supplies the search provider and owns the API URL. Local
+  mounts remove the provider, hide and disable search, cancel pending work and
+  invalidate old result actions. Return mounts restore served-tree search.
+  Browser-owned content search remains [130].
+- **Open: cross-language differences.** Classification and VTT parsing remain
+  in both languages; [server/src/filemill/vfs.py][vfs], line 15, and
   [ui/core/limits.js][limits] disagree on image extensions. Compare behavior
   before introducing cross-language generation.
 - **Open: provider discovery.** Registration order is still an import side
@@ -743,3 +747,6 @@ one new P2 finding; no new P1 finding was established in this pass.
 [ADR 0090]: adr/0090-revision-checked-file-replacement.md
 
 [145]: tasks/145-add-three-missing-browser-regressions-focused-search-scope-http-entry-.md
+[ADR 0091]: adr/0091-server-search-stops-at-local-folder-mounts.md
+[120]: tasks/120-disable-server-search-in-local-folders-from-docs-question-5.md
+[130]: tasks/130-give-served-and-browser-owned-folders-the-same-content-search.md

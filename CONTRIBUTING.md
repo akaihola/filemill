@@ -62,6 +62,13 @@ delays can supply slow test input.
 terminal input. Use the [manual folder checklist]; do not collect it as an
 automated browser test.
 
+The [search mount regression] uses a controlled clock and delayed responses.
+It checks local-folder search cancellation and restoration after return:
+
+```bash
+timeout 1800 uv run --project server pytest server/tests/test_browser_new_ui.py -k local_mode_cancels
+```
+
 ## Quality gate
 
 Install the local hook and run the gate from the repository root:
@@ -126,3 +133,5 @@ in human documentation and inline links in agent instructions.
 [server/pyproject.toml]: server/pyproject.toml
 [CI]: .github/workflows/publish.yml
 [tracker rules]: TASKS.md#rules
+
+[search mount regression]: server/tests/test_browser_new_ui.py

@@ -69,6 +69,9 @@ download switch, including in Open Folder mode. Search needs `rg`; browsing
 Git bundles needs `git`. The [server recovery guide] explains offline copies,
 read-only browsing during an outage and reconnecting after a restart.
 
+Content search covers the served tree and is disabled in Open Folder mode.
+See the [search behavior] for the return to served-tree search.
+
 ## Using Filemill
 
 The [usage guide] covers navigation, settings and their defaults, preview
@@ -140,3 +143,5 @@ MIT; see [LICENSE].
 [Documentation review]: docs/reviews/2026-10-22-docs-review.md
 [Tracker]: TASKS.md
 [LICENSE]: LICENSE
+
+[search behavior]: docs/USAGE.md#content-search
