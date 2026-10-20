@@ -150,6 +150,10 @@ See [`server/CONTRIBUTING.md`](server/CONTRIBUTING.md).
 In JSON, JSONL, and SQLite hierarchies, select a scalar key to preview its value.
 String values preserve line breaks. Objects and arrays keep their foldable previews.
 JSON documents up to 8 MiB support previews and nested navigation in both editions.
+Refresh a JSON column to read the current file, including an archive member.
+Nested columns read the source again too. The preview and selection follow the
+new values. A removed key closes its path; invalid JSON shows a parse error
+with the current source. See [the JSON refresh decision].
 Larger JSON documents show the size limit. Ordinary text previews keep the 512 KiB limit.
 
 Markdown and reStructuredText files open as columns of their headings. Select the
@@ -226,3 +230,4 @@ requirements and build commands.
 and its binary size.
 
 [the clipboard decision]: docs/adr/0048-a-refused-clipboard-selects-the-path-instead.md
+[the JSON refresh decision]: docs/adr/0041-core-adapters-three-ports.md#refresh-invalidation-2026-10-21

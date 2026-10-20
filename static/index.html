@@ -2543,6 +2543,10 @@ const previewTarget = () => finder.clientWidth / 3;
                   node and outline its {name, start, end, kids} line span
 
      ensureLoaded(node) → Promise   fills node.kids (idempotent, debounced)
+     invalidate(node)   → void|Promise optional; discard adapter-owned source
+                                    caches before refresh calls ensureLoaded.
+                                    Core first waits for node.loading and clears
+                                    kids, denied and metadata-sweep state.
      loadMeta(node)     → Promise   fills node.meta (or records {error}); may
                                     be a no-op when the listing has metadata
      blob(node)         → Promise<Blob|null> returns file bytes for preview, or
@@ -6157,8 +6161,8 @@ async function choose(
    until somebody asks again, and asking has to be a thing the user does.
 
    Refreshing is *not* a second way to load a directory. It empties node.kids
-   and calls the same FS.ensureLoaded every other caller uses — one loading
-   path, one debounce, one place where node.kids is written. A separate
+   and lets the adapter invalidate its caches, then calls FS.ensureLoaded —
+   one loading path, one debounce, one place where node.kids is written. A separate
    "reload" call would be two writers on one field, and the interleaving that
    loses is the one you never reproduce.
 
@@ -6207,6 +6211,8 @@ async function refreshColumn(i) {
     /* Nothing renders between here and the read landing. The column cache still
        holds the previous DOM, so the screen keeps showing the old listing
        instead of flashing back to "Reading…" and losing its scroll position. */
+    await FS.invalidate?.(node);
+    if (seq !== navSeq) return;
     await FS.ensureLoaded(node);
     if (seq !== navSeq) return;
 
@@ -6221,6 +6227,10 @@ async function refreshColumn(i) {
     const complete = await applyPath(names, keepFocus);
     if (seq !== navSeq) return;
 
+    if (node.denied) {
+      saySt("st-refresh", `⟳ ${node.denied}`, false);
+      return;
+    }
     if (complete) {
       saySt(
         "st-refresh",
@@ -6797,6 +6807,36 @@ function jsonlParse(text) {
 
 const withVirtual = (fs) => ({
   ...fs,
+  async invalidate(node) {
+    const root = node.jsonRoot;
+    if (!root?.json) return fs.invalidate?.(node);
+    if (root.loading) await root.loading;
+    await fs.invalidate?.(root);
+    delete root.value;
+    delete root.jsonError;
+    delete root.jsonTooLarge;
+    root.denied = undefined;
+    root.dir = true;
+    root.kids = null;
+    if (node === root) return;
+
+    /* A nested column belongs to the source document too. Re-read that
+       source, then resolve the old column's structural path in its new value.
+       applyPath will replace the old nodes and close any removed path. */
+    await this.ensureLoaded(root);
+    let value = root.value;
+    for (const key of node.jsonPath) {
+      value = value !== null && typeof value === "object" &&
+          Object.hasOwn(value, key)
+        ? value[key]
+        : undefined;
+    }
+    node.value = value ?? null;
+    node.dir = value !== null && typeof value === "object";
+    node.kids = node.dir ? null : undefined;
+    node.jsonError = root.jsonError;
+    node.denied = root.denied;
+  },
   async ensureLoaded(node) {
     if (!node.jsonl && !node.json) {
       await fs.ensureLoaded(node);
@@ -6860,6 +6900,7 @@ const withVirtual = (fs) => ({
           }
         } catch (err) {
           node.jsonError = String(err.message || err);
+          node.denied = node.jsonError;
           node.dir = false;
           node.kids = undefined;
         }
@@ -6900,6 +6941,11 @@ const withVirtualPreview = (provider) => ({
     }
     if (n.jsonTooLarge || (n.jsonl && n.jsonError)) {
       throw new Error(n.jsonError);
+    }
+    if (n.json && n.jsonError) {
+      return `<p class="pv-err">${esc(n.jsonError)}</p>${
+        await provider.render(n) ?? ""
+      }`;
     }
     if (!n.json || n.value === undefined) return provider.render(n);
     if (jsonTooDeep(n.value)) return provider.render({ ...n, dir: false });
@@ -7560,6 +7606,11 @@ const FSA = {
       node.loading = null;
     })();
     return node.loading;
+  },
+
+  invalidate(node) {
+    node.file = null;
+    node.meta = undefined;
   },
 
   /* File metadata is a separate round-trip per file — fetched on preview, or

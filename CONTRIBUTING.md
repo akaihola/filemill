@@ -56,6 +56,10 @@ uv run --project server pytest static/tests --dev
 Run the Markdown viewport check with `uv run --project server pytest
 static/tests/test_rich.py -k markdown_viewport`. Add `--dev` to test the shared source.
 
+JSON refresh regressions are in [the static JSON tests] and [the served UI tests].
+Run the static tests in both modes. The served tests also rewrite ZIP members.
+Each test checks the preview and selection after the JSON column's own refresh.
+
 Copy checks cover successful rotation, native text copying and the manual-copy
 dialog after refusal. Run them in both static modes with `-k copy`. The narrow
 dialog checks use touch input and keep long paths and error messages intact.
@@ -100,3 +104,6 @@ Write Markdown in ASD-STE100 Simplified Technical English. Use short sentences,
 common words, the active voice, and one instruction per step. Define a technical
 term before you use it. Use a relative link when the target is in this
 repository.
+
+[the static JSON tests]: static/tests/test_json_collapse.py
+[the served UI tests]: server/tests/test_browser_new_ui.py

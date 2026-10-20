@@ -109,8 +109,8 @@ export async function choose(
    until somebody asks again, and asking has to be a thing the user does.
 
    Refreshing is *not* a second way to load a directory. It empties node.kids
-   and calls the same FS.ensureLoaded every other caller uses — one loading
-   path, one debounce, one place where node.kids is written. A separate
+   and lets the adapter invalidate its caches, then calls FS.ensureLoaded —
+   one loading path, one debounce, one place where node.kids is written. A separate
    "reload" call would be two writers on one field, and the interleaving that
    loses is the one you never reproduce.
 
@@ -159,6 +159,8 @@ export async function refreshColumn(i) {
     /* Nothing renders between here and the read landing. The column cache still
        holds the previous DOM, so the screen keeps showing the old listing
        instead of flashing back to "Reading…" and losing its scroll position. */
+    await FS.invalidate?.(node);
+    if (seq !== navSeq) return;
     await FS.ensureLoaded(node);
     if (seq !== navSeq) return;
 
@@ -173,6 +175,10 @@ export async function refreshColumn(i) {
     const complete = await applyPath(names, keepFocus);
     if (seq !== navSeq) return;
 
+    if (node.denied) {
+      saySt("st-refresh", `⟳ ${node.denied}`, false);
+      return;
+    }
     if (complete) {
       saySt(
         "st-refresh",

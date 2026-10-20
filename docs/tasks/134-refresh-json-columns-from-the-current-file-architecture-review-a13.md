@@ -25,3 +25,62 @@ Give the virtual JSON adapter ownership of invalidation: on refresh, read the ba
   Do not implement the broader A9 ownership changes.
 - Update the port decision and A13. Run each affected suite separately with
   the required memory guard, then merge and complete the canonical tracker.
+
+## Implementation, 2026-10-21
+
+The FS port has an optional `invalidate(node)` hook. The JSON adapter owns
+parsed-source invalidation. The backing file adapter clears cached file bytes
+and metadata. A nested column reads its source root again and resolves its
+structural path from the new value. Core retains its existing navigation
+sequence and selection walk. Parse errors use the common `denied` field and
+appear beside the current source in the preview.
+
+[The port decision] and [the refresh decision] describe the contract.
+[A13] is resolved. A9's wider navigation and preview ownership work remains
+outside this repair.
+
+Before the fix, all six static regressions failed for root and nested edits,
+removed keys and parse failures. The served regressions also reproduced stale
+values for real files and changed ZIP members.
+
+## Validation, 2026-10-21
+
+- JSON tests: 17 passed in bundle mode and 17 in development mode.
+- Final stronger JSON regressions plus the existing folder-refresh test:
+  7 passed in each static mode.
+- Final served refresh checks: 19 passed. These include all 12 combinations
+  of real file or ZIP member, root or nested column, and edit, removed key
+  or parse failure.
+- The broader served UI, documentation and browser-wait run finished with
+  293 passes and 3 failures. Two failures exposed missing HTTP metadata after
+  invalidation. The HTTP port now preserves unknown metadata as a valid state;
+  all affected cases pass in the final 19-check run.
+- The remaining failure was the existing Back/Forward history test. It also
+  failed in the first focused run. It passed alone on both the unchanged
+  starting source and the final implementation. No history code or assertions
+  changed. The intermittent failure remains part of the validation record.
+- Model checks, Ruff, Deno formatting and lint, mypy, and bundle consistency
+  passed. All seven pre-commit hooks passed. The first gate flagged a
+  concurrent validation-note edit; the rerun passed with the tree unchanged.
+
+Final focused commands:
+
+```bash
+uv run --project server pytest -q static/tests/test_json_collapse.py static/tests/test_ui.py -k 'current_file or refresh' --bundle
+uv run --project server pytest -q static/tests/test_json_collapse.py static/tests/test_ui.py -k 'current_file or refresh' --dev
+uv run --project server pytest -q server/tests/test_browser_new_ui.py -k refresh
+uvx pre-commit run --all-files
+```
+
+Each test run used the requested memory guard, with one suite at a time.
+Starts had at least 2 GiB available; no run hit the 1 GiB stop threshold or
+512 MiB swap-growth limit. Final bundle/development refresh runs had minimum
+available memory of 2584/2706 MiB and no swap growth. The final served refresh
+run had at least 2446 MiB available and 2 MiB maximum swap growth.
+
+No remote push or deployment was performed. Shared main contained 75
+unpublished commits before the implementation merge.
+
+[The port decision]: ../adr/0041-core-adapters-three-ports.md#refresh-invalidation-2026-10-21
+[the refresh decision]: ../adr/0051-refresh-empties-node-kids-and-re-enters-ensureloaded.md#adapter-caches-2026-10-21
+[A13]: ../ARCHITECTURE-REVIEW.md#a13-json-column-refresh-keeps-the-old-parsed-value

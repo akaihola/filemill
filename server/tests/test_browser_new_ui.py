@@ -4580,3 +4580,55 @@ def test_a_refusal_after_offline_reads_still_rereads_them(browser, ui_root, tmp_
             assert (ui_root / "notes/plain.txt").read_text() == "hello"
     finally:
         context.close()
+
+
+@pytest.mark.parametrize("member", [False, True])
+@pytest.mark.parametrize("nested", [False, True])
+@pytest.mark.parametrize("change", ["edit", "remove", "invalid"])
+def test_json_column_refresh_current_source(page, ui_root, member, nested, change):
+    page.set_default_timeout(3000)
+    target = ui_root / ("refresh.zip" if member else "refresh.json")
+
+    def write(text):
+        if member:
+            with zipfile.ZipFile(target, "w") as archive:
+                archive.writestr("data.json", text)
+        else:
+            target.write_text(text)
+
+    write('{"nested":{"leaf":"before"}}')
+    names = [target.name] + (["data.json"] if member else [])
+    page.open()
+    page.wait_for_function("typeof applyPath === 'function'")
+    page.evaluate("names => applyPath(names)", names + ["nested", "leaf"])
+    page.wait_for_function(
+        "document.querySelector('.pv-json-value')?.textContent === 'before'"
+    )
+    write(
+        {
+            "edit": '{"nested":{"leaf":"after","added":true}}',
+            "remove": '{"nested":{"added":true}}',
+            "invalid": '{"broken":}',
+        }[change]
+    )
+    page.evaluate("i => refreshColumn(i)", len(names) + nested)
+    if change == "edit":
+        page.wait_for_function(
+            "document.querySelector('.pv-json-value')?.textContent === 'after'"
+        )
+        assert page.evaluate("sel.slice()") == names + ["nested", "leaf"]
+    elif change == "remove":
+        page.wait_for_function(
+            "document.querySelector('#st-refresh').textContent.includes('leaf is gone')"
+        )
+        page.wait_for_function(
+            "document.querySelector('#preview .pv-json')?.textContent.includes('added')"
+        )
+        assert page.evaluate("sel.slice()") == names + ["nested"]
+        assert "before" not in page.inner_text("#preview")
+    else:
+        page.wait_for_selector("#preview .pv-err")
+        assert page.evaluate("sel.slice()") == names
+        assert page.evaluate("path.length") == len(names)
+        assert "before" not in page.inner_text("#preview")
+        assert "no change" not in page.inner_text("#st-refresh")

@@ -119,6 +119,11 @@ export const HTTP = {
     return node.loading;
   },
 
+  invalidate(node) {
+    /* Unknown metadata is not a failed metadata read. Keep member identity. */
+    node.meta = node.meta?.virtual ? { virtual: true } : {};
+  },
+
   /* The listing already carried it — or there is none to carry, for a node
      that is not a file. Either way there is nothing to fetch. */
   async loadMeta(node) {

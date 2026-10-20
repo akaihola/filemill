@@ -13,8 +13,8 @@ work and acceptance separately.
   cleanups and audits.
 - **Status.** Open: the finding still applies. Changed: part was fixed, or the
   evidence, scope or priority changed. Resolved: the cited defect was removed;
-  these findings are under "Resolved since the earlier reviews". A13 and A14
-  are new findings, both open. Resolution does not mark a task accepted.
+  these findings are under "Resolved since the earlier reviews". A13 is
+  resolved; A14 remains open. Resolution does not mark a task accepted.
 - **Evidence.** Links are repository-relative. Source line numbers refer to
   the checked commit, not to the earlier reviews. A structural risk is labelled
   as such; a passing existing test is not proof that a missing case works.
@@ -66,8 +66,8 @@ work and acceptance separately.
   declares FS, PREVIEW and ROUTER. Optional capabilities include writes,
   deletion, raw URLs and a stale-read flag. Nodes also carry adapter-specific
   parsing and metadata state. Browser JSON, CSV and document wrappers compose
-  around each filesystem. The interface hides byte access well, but it does
-  not yet hide refresh invalidation or preview lifetime (A9, A13).
+  around each filesystem. The interface hides byte access and gives JSON
+  refresh invalidation to the adapter. Preview lifetime remains A9.
 - **Model and DOM.** [ui/core/model/][model] owns selection, sorting, folding,
   deep links, headings, safe URLs and Markdown task changes without browser
   APIs. The surrounding core remains a DOM-coupled singleton. Columns retain
@@ -153,7 +153,7 @@ reviewable changes with focused regressions.
 | A10 | P2 | Changed | Limits still do not bound acquired work | M / medium |
 | A11 | P3 | Changed | Clean-environment command audit remains unverified | M / low |
 | A12 | P3 | Changed | Smaller defects, dead code and audits | S each / low |
-| A13 | P2 | Open | JSON-column refresh reuses the old parsed value | S / low |
+| A13 | P2 | Resolved | JSON refresh reads the current source | S / low |
 | A14 | P2 | Open | Bundle-cache eviction removes an active repository | S / medium |
 
 ### A4. Saves can truncate or overwrite newer content
@@ -378,23 +378,6 @@ this final audit, or repeat already completed roadmap and ADR rewrites.
   list/tree semantics ([ui/core/render.js][render], lines 300–354). An assistive
   technology audit remains outstanding.
 
-### A13. JSON-column refresh keeps the old parsed value
-
-**Status: open, P2; new.** Added JSON browsing (`8ef10c6a`) stores parsed
-`value` on the node. [ui/core/nav.js][nav], lines 149–162, invalidates `kids`,
-`denied` and metadata-sweep state. [ui/adapters/vfs-json.js][json], lines
-214–219, then rebuilds children from the retained value without reading bytes.
-The isolated probe read `{"answer":1}`, changed the source to `{"answer":2}`,
-applied the refresh invalidation and still displayed 1 after only one byte
-read. Refreshing the containing real folder creates new nodes and can recover;
-refreshing the JSON column itself cannot.
-
-**Acceptance.** A JSON column’s own refresh re-reads its source and rebuilds
-children, preview and selection from it. Test an external edit, removed key,
-invalid JSON and a changed archive member. Keep parser caches inside their
-adapter; core must not acquire a list of format-specific fields to clear.
-Coordinate with A9, but this repair need not wait for preview reuse.
-
 ### A14. Bundle eviction removes an active repository
 
 **Status: open, P2; new.** [server/src/filemill/providers/gitbundle.py][gitbundle],
@@ -421,6 +404,22 @@ management. No generic lease framework is needed.
 
 Do not reopen these without new evidence. Resolved portions of changed
 findings are separated from their remaining acceptance above.
+
+### A13. JSON-column refresh keeps the old parsed value
+
+**Status: resolved, former P2; 2026-10-21.** Refresh now awaits the FS
+adapter's optional `invalidate(node)` hook before `ensureLoaded`. The JSON
+adapter clears its parsed value, file bytes, metadata and parse errors. A
+nested column resolves its path from the current source. The core does not
+need parser-specific fields. [The port decision][ports-decision] defines the
+contract.
+
+The existing selection walk closes removed paths and renders the new preview.
+Parse failures show an error and current source text, without old values.
+Browser regressions cover edits, removed keys and invalid JSON in root and
+nested columns, plus real files and changed ZIP members in served mode.
+The static bundle and development modules use the same adapter. This does
+not resolve A9's broader navigation and preview ownership work.
 
 ### A1. The directory index escapes the root check
 
@@ -495,10 +494,9 @@ regression requirements, not new implementation steps.
    scoped ownership and installed upgrades. Preserve the server’s accepted
    offline-copy policy. Coordinate routing/cache classification with
    [the route-collision task][121]; its transport choice remains a decision.
-3. **Repair bounded lifetime and refresh bugs (A13, A14).** These are two
-   independent small changes. Hide parsed-value invalidation in the JSON
-   adapter and retain a repository owner through each Git read. They do not
-   depend on a general preview redesign.
+3. **Repair bounded repository lifetime (A14).** Retain a repository owner
+   through each Git read. This does not depend on a general preview redesign.
+   A13's JSON refresh invalidation is resolved by [the JSON refresh repair][134].
 4. **Make identities lossless (A6), then fix SQLite (A7).** Establish the
    address/label contract before changing SQLite keys. Provider error reporting
    can proceed independently through the existing `denied` field.
@@ -522,6 +520,8 @@ one new P2 finding; no new P1 finding was established in this pass.
 
 ### A13 draft
 
+- **Status:** Resolved by [the JSON refresh repair][134] on 2026-10-21.
+  The requirements below retain the original draft.
 - **Title:** Refresh JSON columns from current source bytes.
 - **Why:** The JSON column’s refresh rebuilds from a retained parsed value,
   so an external edit remains invisible while the UI reports no change.
@@ -550,6 +550,7 @@ one new P2 finding; no new P1 finding was established in this pass.
   command deadlines, and update [ADR 0073] with the lifetime rule.
 
 [132]: tasks/132-re-check-the-architecture-review-against-current-main.md
+[134]: tasks/134-refresh-json-columns-from-the-current-file-architecture-review-a13.md
 [21]: tasks/21-cache-preview-element.md
 [28]: tasks/28-editor-features.md
 [41]: tasks/41-rst-rendering-regression.md
@@ -629,3 +630,4 @@ one new P2 finding; no new P1 finding was established in this pass.
 [ADR 0078]: adr/0078-delete-waits-for-active-preview-reads.md
 [ADR 0080]: adr/0080-json-past-a-fold-depth-limit-is-source.md
 [ADR 0089]: adr/0089-an-offline-server-shows-older-copies-with-an-indicator.md
+[ports-decision]: adr/0041-core-adapters-three-ports.md#refresh-invalidation-2026-10-21

@@ -59,6 +59,10 @@
                   node and outline its {name, start, end, kids} line span
 
      ensureLoaded(node) → Promise   fills node.kids (idempotent, debounced)
+     invalidate(node)   → void|Promise optional; discard adapter-owned source
+                                    caches before refresh calls ensureLoaded.
+                                    Core first waits for node.loading and clears
+                                    kids, denied and metadata-sweep state.
      loadMeta(node)     → Promise   fills node.meta (or records {error}); may
                                     be a no-op when the listing has metadata
      blob(node)         → Promise<Blob|null> returns file bytes for preview, or

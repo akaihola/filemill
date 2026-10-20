@@ -181,6 +181,36 @@ function jsonlParse(text) {
 
 export const withVirtual = (fs) => ({
   ...fs,
+  async invalidate(node) {
+    const root = node.jsonRoot;
+    if (!root?.json) return fs.invalidate?.(node);
+    if (root.loading) await root.loading;
+    await fs.invalidate?.(root);
+    delete root.value;
+    delete root.jsonError;
+    delete root.jsonTooLarge;
+    root.denied = undefined;
+    root.dir = true;
+    root.kids = null;
+    if (node === root) return;
+
+    /* A nested column belongs to the source document too. Re-read that
+       source, then resolve the old column's structural path in its new value.
+       applyPath will replace the old nodes and close any removed path. */
+    await this.ensureLoaded(root);
+    let value = root.value;
+    for (const key of node.jsonPath) {
+      value = value !== null && typeof value === "object" &&
+          Object.hasOwn(value, key)
+        ? value[key]
+        : undefined;
+    }
+    node.value = value ?? null;
+    node.dir = value !== null && typeof value === "object";
+    node.kids = node.dir ? null : undefined;
+    node.jsonError = root.jsonError;
+    node.denied = root.denied;
+  },
   async ensureLoaded(node) {
     if (!node.jsonl && !node.json) {
       await fs.ensureLoaded(node);
@@ -244,6 +274,7 @@ export const withVirtual = (fs) => ({
           }
         } catch (err) {
           node.jsonError = String(err.message || err);
+          node.denied = node.jsonError;
           node.dir = false;
           node.kids = undefined;
         }
@@ -284,6 +315,11 @@ export const withVirtualPreview = (provider) => ({
     }
     if (n.jsonTooLarge || (n.jsonl && n.jsonError)) {
       throw new Error(n.jsonError);
+    }
+    if (n.json && n.jsonError) {
+      return `<p class="pv-err">${esc(n.jsonError)}</p>${
+        await provider.render(n) ?? ""
+      }`;
     }
     if (!n.json || n.value === undefined) return provider.render(n);
     if (jsonTooDeep(n.value)) return provider.render({ ...n, dir: false });

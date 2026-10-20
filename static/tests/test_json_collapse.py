@@ -217,3 +217,52 @@ def test_json_array_paths_and_root_fold(bundle, playwright, extension):
         assert not page.locator("#preview details").nth(2).evaluate("el => el.open")
     finally:
         browser.close()
+
+
+@pytest.mark.parametrize("column", [1, 2])
+@pytest.mark.parametrize("change", ["edit", "remove", "invalid"])
+def test_json_column_refresh_reads_current_file(bundle, playwright, column, change):
+    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
+    try:
+        page = browser.new_page()
+        page.set_default_timeout(3000)
+        page.goto(bundle.as_uri())
+        page.wait_for_function("typeof mount === 'function'")
+        page.evaluate("""async () => {
+            window.jsonSource = '{"nested":{"leaf":"before"},"keep":1}';
+            await mount({kind: 'directory', name: 'root', async *entries() {
+                yield ['data.json', {kind: 'file', name: 'data.json',
+                    async getFile() {return new File([jsonSource], 'data.json');}}];
+            }});
+            await applyPath(['data.json', 'nested', 'leaf'], 2);
+        }""")
+        page.wait_for_function(
+            "document.querySelector('.pv-json-value')?.textContent === 'before'"
+        )
+        source = {
+            "edit": '{"nested":{"leaf":"after","added":true},"keep":1}',
+            "remove": '{"nested":{"added":true},"keep":1}',
+            "invalid": '{"broken":}',
+        }[change]
+        page.evaluate("text => window.jsonSource = text", source)
+        page.evaluate("column => refreshColumn(column)", column)
+        if change == "edit":
+            page.wait_for_function(
+                "document.querySelector('.pv-json-value')?.textContent === 'after'"
+            )
+            assert page.evaluate("sel.slice(0, 3)") == ["data.json", "nested", "leaf"]
+        elif change == "remove":
+            page.wait_for_function(
+                "document.querySelector('#preview .pv-json')?.textContent.includes('added')"
+            )
+            assert page.evaluate("sel.slice(0, 3)") == ["data.json", "nested"]
+            assert "leaf is gone" in page.inner_text("#st-refresh")
+            assert "before" not in page.inner_text("#preview")
+        else:
+            page.wait_for_selector("#preview .pv-err")
+            assert page.evaluate("path.length") == 1
+            assert page.evaluate("sel.slice(0, 3)") == ["data.json"]
+            assert "before" not in page.inner_text("#preview")
+            assert "no change" not in page.inner_text("#st-refresh")
+    finally:
+        browser.close()

@@ -37,6 +37,12 @@ the whole mechanism. There is no framework under it.
 yet" and puts a spinner in the column. Nothing else is required. That is why a
 SQLite table or a JSON document can be a directory for the UI.
 
+Refresh awaits the optional `invalidate(node)` FS hook before `ensureLoaded`.
+The adapter owns its source caches. The [JSON adapter] clears the parsed source
+and reads the current file or archive member, including for a nested column. The
+selection walk closes removed paths. The preview shows current values or a parse
+error with current source text. See [the refresh port decision].
+
 Directory adapters own entry order. The contract is directories first, then
 case-insensitive names, with the adapter's tie-breaker. An adapter sets
 `ordered` when its loaded children follow that order; shared sorting preserves
@@ -108,3 +114,6 @@ language is read through `FS.blob` and highlighted here. `hlFences` colours the
 after `fillPreview` puts them in the pane. The server keeps what it renders
 better: reStructuredText. A virtual path is never diverted, because only the
 server can read one.
+
+[JSON adapter]: vfs-json.js
+[the refresh port decision]: ../../../../../docs/adr/0041-core-adapters-three-ports.md#refresh-invalidation-2026-10-21

@@ -17,3 +17,13 @@ One loading path, one debounce, one writer of `node.kids`. A separate reload cal
 ## Consequences
 
 The static edition follows this decision. The measurement above records the basis for maintaining and evaluating it.
+
+## Adapter caches, 2026-10-21
+
+Clearing children does not invalidate a virtual parser's source. Refresh now
+also awaits the optional FS `invalidate(node)` hook before `ensureLoaded`.
+[The port decision] defines this hook. JSON refresh reads the current source,
+including archive members and nested columns. Selection and preview use the
+existing path walk and render.
+
+[The port decision]: 0041-core-adapters-three-ports.md#refresh-invalidation-2026-10-21
