@@ -21,13 +21,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 
   <!-- hai:{"id":"simple-d1776999-2a2c-4870-936a-9620915aee07","labels":["steward"],"createdAt":"2026-10-20T08:12:02.201Z","updatedAt":"2026-10-20T08:12:29.949Z"} -->
 
-- [126] Align decision timing rules from docs question 12
-  <!-- hai:{"id":"simple-c51c3fbe-451d-4e29-8e42-9474e4e8d838","labels":["steward"],"createdAt":"2026-10-20T07:12:48.486Z","updatedAt":"2026-10-20T08:15:32.831Z"} -->
-
 - [127] Correct icon generator claims from docs question 13
   <!-- hai:{"id":"simple-c28a4f20-6a8c-44e7-a484-b78ac1731e99","labels":["steward"],"createdAt":"2026-10-20T07:12:49.393Z","updatedAt":"2026-10-20T08:15:34.952Z"} -->
 
 ## Scheduled
+
+- [126] Align decision timing rules from docs question 12
+  <!-- hai:{"id":"simple-c51c3fbe-451d-4e29-8e42-9474e4e8d838","labels":["steward"],"createdAt":"2026-10-20T07:12:48.486Z","updatedAt":"2026-10-20T14:01:16.274Z"} -->
 
 ## In Progress
 
