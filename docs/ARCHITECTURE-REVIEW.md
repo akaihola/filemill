@@ -189,6 +189,11 @@ Keep these.
   JSON documents use a separate 8 MiB limit, with a metadata check before
   fetching and a blob check before parsing ([ADR 0071], 2026-10-07).
 - The server binds to `127.0.0.1` by default (`cli.py:21`).
+- A public instance (`--public` or `FILEMILL_PUBLIC`) never lists or serves a
+  path with a component that starts with `.`, nor follows a symlink into one
+  ([128], [ADR 0087], 2026-10-20). `paths.py` holds the rule beside
+  `resolve_safe`, which takes `public=`; `app.py` checks each request path
+  before resolution and filters listings and search results.
 
 ### Rules for changes
 
@@ -615,3 +620,4 @@ A12 items can land at any time, each with a focused test.
 
 [ADR 0085]: adr/0085-markdown-heading-fragments-scroll-the-preview.md
 [ADR 0086]: adr/0086-new-fold-moves-cancel-older-glides.md
+[ADR 0087]: adr/0087-a-public-instance-never-lists-or-serves-hidden-paths.md

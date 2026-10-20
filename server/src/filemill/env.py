@@ -23,3 +23,11 @@ def env(name: str, default: str = "") -> str:
     return os.environ.get(f"FILEMILL_{name}") or os.environ.get(
         f"{LEGACY_PREFIX}_{name}", default
     )
+
+
+def env_flag(name: str) -> bool:
+    """True unless ``env(name)`` is empty, ``0``, ``false``, ``no`` or ``off``.
+
+    Anything else turns the flag on, so a misspelt value fails closed.
+    """
+    return env(name).strip().lower() not in {"", "0", "false", "no", "off"}

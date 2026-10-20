@@ -16,6 +16,9 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   their members in the server edition, and a member previews as the file it is.
 - Git `.bundle` files open as columns of their refs and trees in the server
   edition when `git` is installed, and a blob previews as the file it is.
+- `--public` and `FILEMILL_PUBLIC` start a public instance, which never lists
+  or serves a path with a component that starts with `.`, `?hidden=show`
+  included.
 
 ### Changed
 

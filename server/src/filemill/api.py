@@ -32,6 +32,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
 from typing import cast
 
@@ -143,7 +144,7 @@ def rel_to_abs(rel: str, root: Path) -> Path | None:
     return root / rel if rel else root
 
 
-def dir_json(target: Path) -> JSONResponse:
+def dir_json(target: Path, keep: Callable[[Path], bool] | None = None) -> JSONResponse:
     """List a directory in the shape the UI's HTTP adapter expects.
 
     Sizes and mtimes ride along with the listing. The File System Access API
@@ -151,10 +152,14 @@ def dir_json(target: Path) -> JSONResponse:
     fetches them on preview or for a size or time sort — here they are free, so
     the preview pane is
     populated before its provider has said anything.
+
+    *keep*, when given, decides which children are listed at all.
     """
     entries, denied = [], None
     try:
         for child in target.iterdir():
+            if keep is not None and not keep(child):
+                continue
             try:
                 is_dir = child.is_dir()
                 e = {
@@ -213,11 +218,14 @@ def _opens_as_folder(path: Path) -> bool:
         return False
 
 
-def vfs_dir_json(target: Path, vpath: str) -> JSONResponse:
+def vfs_dir_json(
+    target: Path, vpath: str, keep: Callable[[str], bool] | None = None
+) -> JSONResponse:
     """List one level inside a virtual filesystem.
 
     The entries carry their own `vpath`, which is how the client knows to keep
     the real path and descend virtually instead of joining a name onto it.
+    *keep*, when given, decides by `vpath` which entries are listed at all.
     """
     provider = REGISTRY.get(target)
     if provider is None:
@@ -239,6 +247,7 @@ def vfs_dir_json(target: Path, vpath: str) -> JSONResponse:
             **({"record": e.record} if e.record is not None else {}),
         }
         for e in listed
+        if keep is None or keep(e.vpath)
     ]
     return JSONResponse({"entries": entries, "denied": None})
 

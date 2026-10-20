@@ -42,6 +42,7 @@ uv run filemill [OPTIONS] [ROOT]
 | `--port`        | `8000`    | –                   | TCP port to listen on            |
 | `--bind` / `-b` | `127.0.0.1` | `FILEMILL_BIND` | Network interface to bind to |
 | `--live`        | off       | – | Enable auto-reload (development) |
+| `--public`      | off       | `FILEMILL_PUBLIC` | Never list or serve hidden files |
 
 [`cli.py`](src/filemill/cli.py) resolves the positional root, defaulting to
 the working directory, and passes `--port`, `--bind` and `--live` to Uvicorn.
@@ -51,6 +52,19 @@ CLI reload. For direct ASGI loading, [`app.py`](src/filemill/app.py) reads
 root through that variable. [`env.py`](src/filemill/env.py) provides legacy
 `PYKOFINDER_*` fallbacks; the CLI bind default uses that lookup, while an explicit
 `--bind` takes precedence.
+
+### Public instances
+
+A public instance must use `--public`, or set `FILEMILL_PUBLIC=1`. Any value
+but empty, `0`, `false`, `no` or `off` turns the mode on, and either switch is
+enough. A public instance answers 404 for any path with a component that starts
+with `.`, whatever the query string says, `?hidden=show` included, and does not
+follow a symlink into such a path. Listings and search results leave those
+entries out. [`cli.py`](src/filemill/cli.py) passes the mode to `--live`
+reloads through the variable, and [`app.py`](src/filemill/app.py) reads it for
+direct ASGI loading.
+[ADR 0087](../docs/adr/0087-a-public-instance-never-lists-or-serves-hidden-paths.md)
+gives the rule and what it does not hide.
 
 ## Installed PWA
 

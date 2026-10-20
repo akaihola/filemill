@@ -19,7 +19,7 @@ from starlette.responses import (
 from starlette.routing import Route
 
 from filemill import api, mutations, paths, pwa, urls
-from filemill.env import env
+from filemill.env import env, env_flag
 from filemill.preview import render_preview
 
 # Unused since the HTMX finder and its "View as web page" button were removed.
@@ -31,6 +31,9 @@ ROOT: Path = Path(env("ROOT", str(Path.home())))
 
 app = Starlette()
 app.state.root = None
+# A public instance never lists or serves a hidden path (ADR 0087). cli.py sets
+# this from --public; direct ASGI loading and --live read FILEMILL_PUBLIC.
+app.state.public = env_flag("PUBLIC")
 app.state.mutation_token = secrets.token_urlsafe(32)
 
 
@@ -61,8 +64,17 @@ def rt(path: str, methods: list[str] | None = None):
 
 
 def _resolve(path_str: str, zones=None) -> Path | None:
-    """``paths.resolve_safe`` bound to the configured ROOT."""
-    return paths.resolve_safe(path_str, _root(), zones)
+    """``paths.resolve_safe`` bound to the configured ROOT and mode."""
+    return paths.resolve_safe(path_str, _root(), zones, public=app.state.public)
+
+
+def _hidden(*rels: str) -> bool:
+    """True on a public instance when a request path names a hidden component.
+
+    Checked before resolution, because a hidden name can lead to a visible
+    path, and answering would confirm that the hidden name exists.
+    """
+    return app.state.public and any(paths.hidden(rel) for rel in rels)
 
 
 def _zones(request):
@@ -87,7 +99,7 @@ def index(request):
 @rt("/w/{path:path}")
 def web_static(request, path: str):
     """Serve a named-mount ``/w/<mount>/...`` file with the correct Content-Type."""
-    p = paths.resolve_web_mount(path, _root(), _zones(request))
+    p = paths.resolve_web_mount(path, _root(), _zones(request), public=app.state.public)
     if p is None or not p.is_file():
         return HTMLResponse("Not found", status_code=404)
     return FileResponse(str(p))
@@ -214,7 +226,7 @@ def _ui_shell(state, base: str, hidden: bool = False):
     }
     if _COMMIT:
         attrs["data-commit"] = _COMMIT
-    if hidden:
+    if hidden and not app.state.public:
         attrs["data-hidden"] = "show"
     attr_text = " ".join(
         f'{key}="{escape(str(value), quote=True)}"' for key, value in attrs.items()
@@ -247,20 +259,43 @@ def ui_view(request, path: str = ""):
     real file plus a key inside it — the joined form exists only in the URL.
     """
     zones = _zones(request)
-    if path and api.split_vfs(path, _root(), lambda p: _resolve(p, zones)) is None:
+    state = urls.parse_state(request.query_params)
+    if _hidden(path, state.vpath) or (
+        path and api.split_vfs(path, _root(), lambda p: _resolve(p, zones)) is None
+    ):
         return HTMLResponse("Not found", status_code=404)
-    return _ui_shell(urls.parse_state(request.query_params), UI_BASE)
+    return _ui_shell(state, UI_BASE)
 
 
 # ── JSON/fragment API behind the shared UI ───────────────────────────────────
 
 
-def _api_target(p: str, zones=None) -> Path | None:
-    """Root-relative request path → a safe absolute path, or None."""
+def _api_target(p: str, zones=None, v: str = "") -> Path | None:
+    """Root-relative request path → a safe absolute path, or None.
+
+    *v*, a virtual path inside the file, only takes part in the hidden check.
+    """
+    if _hidden(p, v):
+        return None
     candidate = api.rel_to_abs(p, _root())
     if candidate is None:
         return None
     return _resolve(str(candidate), zones)
+
+
+def _listed(zones):
+    """A public listing keeps only the entries the instance would serve."""
+    zones = paths.public_zones(_root(), zones)
+
+    def keep(child: Path) -> bool:
+        try:
+            return not child.name.startswith(".") and paths.visible(
+                child.resolve(), zones
+            )
+        except (OSError, RuntimeError):
+            return False
+
+    return keep
 
 
 @rt("/api/dir")
@@ -271,24 +306,36 @@ def api_dir(request, p: str = "", v: str = ""):
     apart is what lets a `.db` be a directory of tables to the UI while staying
     one file to ``paths.resolve_safe``.
     """
-    target = _api_target(p, _zones(request))
+    zones = _zones(request)
+    target = _api_target(p, zones, v)
     if target is None:
         return JSONResponse({"entries": [], "denied": "Not found"}, status_code=404)
+    public = app.state.public
     if target.is_file():
-        return api.vfs_dir_json(target, v)
+        return api.vfs_dir_json(
+            target,
+            v,
+            keep=(lambda vpath: not paths.dotted(vpath.split("/"))) if public else None,
+        )
     if not target.is_dir():
         return JSONResponse({"entries": [], "denied": "Not found"}, status_code=404)
-    return api.dir_json(target)
+    return api.dir_json(target, keep=_listed(zones) if public else None)
 
 
 @rt("/api/search")
 def api_search(request, q: str = "", p: str = ""):
     """Search file contents below ROOT with the bounded ripgrep operation."""
     try:
-        focused = _api_target(p, _zones(request))
+        zones = _zones(request)
+        focused = _api_target(p, zones)
         if focused is None or not focused.is_dir():
             return JSONResponse({"error": "Not found"}, status_code=404)
-        return JSONResponse({"matches": api.search_root(_root(), q, p)})
+        matches = api.search_root(_root(), q, p)
+        if app.state.public:
+            # ripgrep skips hidden files by default; a user's ripgrep config
+            # could change that, so drop what the instance would not serve.
+            matches = [m for m in matches if _api_target(m["path"], zones)]
+        return JSONResponse({"matches": matches})
     except api.SearchError as exc:
         status = 400 if "query" in str(exc).lower() else 503
         return JSONResponse({"error": str(exc)}, status_code=status)
@@ -297,7 +344,7 @@ def api_search(request, q: str = "", p: str = ""):
 @rt("/api/raw")
 def api_raw(request, p: str = "", v: str = ""):
     """Serve a file's bytes — or, with ``v``, one member's bytes from inside it."""
-    target = _api_target(p, _zones(request))
+    target = _api_target(p, _zones(request), v)
     if target is None:
         return HTMLResponse("Not found", status_code=404)
     if v:
@@ -318,7 +365,7 @@ def api_preview(request, p: str = "", lines: str = "", v: str = ""):
     With ``v``, the file is an archive and the member at that virtual path is
     what renders, as the file it is.
     """
-    target = _api_target(p, _zones(request))
+    target = _api_target(p, _zones(request), v)
     if target is None or not target.is_file():
         return HTMLResponse("Not found", status_code=404)
     if v:
@@ -355,7 +402,11 @@ def api_delete(request, p: str = ""):
     if not mutations.authorized(request):
         return JSONResponse({"error": "Forbidden"}, status_code=403)
     candidate = api.rel_to_abs(p, _root())
-    if candidate is None or _resolve(str(candidate), _zones(request)) is None:
+    if (
+        _hidden(p)
+        or candidate is None
+        or _resolve(str(candidate), _zones(request)) is None
+    ):
         return JSONResponse({"error": "Not found"}, status_code=404)
     if candidate.resolve() == _root().resolve():
         return JSONResponse({"error": "Not found"}, status_code=404)
@@ -388,6 +439,8 @@ def _resource_target(rel: str, zones=None) -> tuple[Path, str, str] | None:
     Returns None when nothing safe is addressed. Every path still goes through
     ``paths.resolve_safe``, and the query never takes part in that decision.
     """
+    if _hidden(rel):
+        return None
     zones = zones or paths.symlink_zones(_root())
     split = api.split_vfs(rel, _root(), lambda p: _resolve(p, zones))
     if split is None:
@@ -419,7 +472,7 @@ def resource(request, path: str = ""):
     """
     state = urls.parse_state(request.query_params)
     found = _resource_target(path, _zones(request))
-    if found is None:
+    if found is None or _hidden(state.vpath):
         # One 404 for "outside ROOT", "denied", and "missing" alike, so a probe
         # cannot learn from the status code whether an outside file exists.
         return HTMLResponse("Not found", status_code=404)
@@ -441,12 +494,16 @@ def resource(request, path: str = ""):
         # A bare directory URL is a web address first: if the directory holds an
         # index.html, that file is the answer, served as-is. Any query at all is
         # a request for Filemill, so it falls through to the listing.
+        #
+        # A public instance treats an index it would not serve as absent, so
+        # the answer says nothing about a hidden target (ADR 0087).
         index_file = target / "index.html"
-        if not request.query_params and index_file.is_file():
+        if not request.query_params and (app.state.public or index_file.is_file()):
             resolved_index = _resolve(str(index_file), _zones(request))
-            if resolved_index is None:
+            if resolved_index is not None and resolved_index.is_file():
+                return FileResponse(str(resolved_index), media_type="text/html")
+            if not app.state.public:
                 return HTMLResponse("Not found", status_code=404)
-            return FileResponse(str(resolved_index), media_type="text/html")
         # A directory has no bytes, so every view value opens the shell on it.
         return _ui_shell(state, "/", request.query_params.get("hidden") == "show")
 

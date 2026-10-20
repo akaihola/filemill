@@ -15,6 +15,17 @@ who can reach an exposed server can read files within the root and its direct
 bookmark symlink targets, subject to the server process permissions. A network
 client can also fetch the UI token and authorize writes.
 
+## Public instances
+
+Start a server that publishes its root without a login with `--public` or
+`FILEMILL_PUBLIC=1`. It then answers 404 for every path with a component that
+starts with `.`, such as `.git/`, on every route that reads files, and does not
+follow a symlink into one. Listings and search leave such entries out, and
+`?hidden=show` changes nothing. Visible files remain readable by anyone who can
+reach the server. See
+[ADR 0087](docs/adr/0087-a-public-instance-never-lists-or-serves-hidden-paths.md)
+for the rule and what it does not hide.
+
 ## Named mounts under `/w/`
 
 `/w/<root-name>/...` serves the raw bytes of a file under the root directory,

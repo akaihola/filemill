@@ -105,8 +105,8 @@ def recorder(escape_tree, monkeypatch):
     calls: list[tuple[str, Path | None]] = []
     original = paths_module.resolve_safe
 
-    def spy(path_str: str, root: Path, zones=None):
-        result = original(path_str, root, zones)
+    def spy(path_str: str, root: Path, zones=None, **kwargs):
+        result = original(path_str, root, zones, **kwargs)
         calls.append((path_str, result))
         return result
 

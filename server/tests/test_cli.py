@@ -15,8 +15,12 @@ runner = CliRunner()
 @pytest.fixture(autouse=True)
 def restore_server_state(monkeypatch):
     monkeypatch.setattr(app_module.app.state, "root", None)
-    for name in ("FILEMILL_ROOT", "FILEMILL_BIND", "FILEMILL_LIVE"):
-        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr(app_module.app.state, "public", False)
+    for name in ("FILEMILL_ROOT", "FILEMILL_BIND", "FILEMILL_LIVE", "FILEMILL_PUBLIC"):
+        # setenv records the original state, so teardown also removes what
+        # --live writes; delenv of an absent name records nothing.
+        monkeypatch.setenv(name, "")
+        monkeypatch.delenv(name)
 
 
 def test_entry_point_calls_cli(monkeypatch):
@@ -116,3 +120,39 @@ def test_bind_option_passed_to_uvicorn_live(tmp_path, monkeypatch):
     _, kwargs = mock_run.call_args
     assert kwargs.get("host") == "0.0.0.0"
     assert kwargs.get("reload") is True
+
+
+# ── [128] public mode ─────────────────────────────────────────────────────────
+
+
+def test_public_mode_is_off_by_default(tmp_path, monkeypatch):
+    monkeypatch.setattr(uvicorn, "run", MagicMock())
+    assert runner.invoke(cli, [str(tmp_path)]).exit_code == 0
+    assert app_module.app.state.public is False
+
+
+def test_public_option_turns_public_mode_on(tmp_path, monkeypatch):
+    monkeypatch.setattr(uvicorn, "run", MagicMock())
+    assert "--public" in runner.invoke(cli, ["--help"]).output
+    assert runner.invoke(cli, [str(tmp_path), "--public"]).exit_code == 0
+    assert app_module.app.state.public is True
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [("1", True), ("yes", True), ("ture", True), ("0", False), ("off", False)],
+)
+def test_public_env_var_turns_public_mode_on(tmp_path, monkeypatch, value, expected):
+    """A value that is not plainly off turns the mode on, so a typo fails closed."""
+    monkeypatch.setattr(uvicorn, "run", MagicMock())
+    monkeypatch.setenv("FILEMILL_PUBLIC", value)
+    assert runner.invoke(cli, [str(tmp_path)]).exit_code == 0
+    assert app_module.app.state.public is expected
+
+
+def test_public_option_reaches_the_reloaded_app(tmp_path, monkeypatch):
+    """--live imports a fresh app, which reads the mode from FILEMILL_PUBLIC."""
+    monkeypatch.setattr(uvicorn, "run", MagicMock())
+    result = runner.invoke(cli, [str(tmp_path), "--live", "--public"])
+    assert result.exit_code == 0
+    assert os.environ.get("FILEMILL_PUBLIC") == "1"

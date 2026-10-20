@@ -189,3 +189,14 @@ def test_cli_documentation_distinguishes_arguments_from_asgi_environment():
     options = {cells[0].strip(): cells for cells in rows}
     assert options["`ROOT`"][2].strip() == "–"
     assert options["`--live`"][2].strip() == "–"
+
+
+def test_readme_says_a_public_instance_must_use_public_mode():
+    """[128]: the option, its variable and the requirement stay documented."""
+    readme = (ROOT / "server/README.md").read_text()
+    rows = [
+        line.split("|")[1:-1] for line in readme.splitlines() if line.startswith("|")
+    ]
+    options = {cells[0].strip(): cells for cells in rows}
+    assert options["`--public`"][2].strip() == "`FILEMILL_PUBLIC`"
+    assert "A public instance must use `--public`" in readme
