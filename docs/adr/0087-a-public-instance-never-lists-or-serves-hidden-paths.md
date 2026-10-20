@@ -60,6 +60,13 @@ A public instance cannot serve `/.well-known/`, a site's `.htaccess`, or a
 bookmark into a folder such as `~/.config`. A reverse proxy has to answer
 `/.well-known/` itself.
 
+The rule errs towards refusing. Under a root below a hidden folder, a bookmark
+into the root has a hidden component in its target path, so `/w/<bookmark>/`
+answers 404 even where the resource route serves the same file through the
+root. A member whose
+name starts with `%2e` or with whitespace before a dot is listed, but a request
+for it is refused.
+
 An archive or Git bundle is still downloadable whole, members included, so
 hiding its hidden members is consistency, not protection. The same holds for a
 JSON key or Markdown heading that starts with `.`: the virtual path is refused,
