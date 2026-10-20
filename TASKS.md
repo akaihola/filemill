@@ -13,15 +13,15 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [114] Sandbox HTML previews of archive members as SECURITY.md promises
-      <!-- hai:{"id":"simple-19e1170a-8c5b-4b30-935e-64b054b39407","labels":["steward","security"],"createdAt":"2026-10-19T17:58:36.228Z","updatedAt":"2026-10-19T23:55:21.005Z"} -->
-
 - [~] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
 
       <!-- hai:{"id":"simple-28def403-6427-4ff6-aea8-3643a19d1a61","labels":["steward"],"createdAt":"2026-10-16T16:48:54.367Z","updatedAt":"2026-10-17T08:00:57.885Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [114] Sandbox HTML previews of archive members as SECURITY.md promises
+      <!-- hai:{"id":"simple-19e1170a-8c5b-4b30-935e-64b054b39407","labels":["steward","security"],"createdAt":"2026-10-19T17:58:36.228Z","updatedAt":"2026-10-20T00:11:48.739Z"} -->
 
 - [ ] [113] Fix the five tests that failed in GitHub CI after the history push
       <!-- hai:{"id":"simple-633e3e56-0c80-48dc-940c-9c4d23e9ebb8","labels":["steward"],"createdAt":"2026-10-19T17:55:35.768Z","updatedAt":"2026-10-19T22:13:46.825Z"} -->
