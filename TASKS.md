@@ -31,9 +31,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [124] Explain dependency constraints from docs question 10
-      <!-- hai:{"id":"simple-d36f5057-cc6b-4c43-aaf5-45532393af26","labels":["steward"],"createdAt":"2026-10-20T07:12:46.777Z","updatedAt":"2026-10-20T13:52:51.089Z"} -->
-
 - [~] [122] Clarify deliberate test delays from docs question 8
       <!-- hai:{"id":"simple-e47a58f3-193e-4296-83a9-cfa00f27371b","labels":["steward"],"createdAt":"2026-10-20T07:12:44.920Z","updatedAt":"2026-10-20T13:22:03.268Z"} -->
 
@@ -41,6 +38,9 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-20T13:03:29.269Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [124] Explain dependency constraints from docs question 10
+      <!-- hai:{"id":"simple-d36f5057-cc6b-4c43-aaf5-45532393af26","labels":["steward"],"createdAt":"2026-10-20T07:12:46.777Z","updatedAt":"2026-10-20T13:56:53.066Z"} -->
 
 - [ ] [123] Clarify conditional test skips from docs question 9
       <!-- hai:{"id":"simple-c33756b3-3ea8-4a89-9352-60eaf73faf0e","labels":["steward"],"createdAt":"2026-10-20T07:12:45.801Z","updatedAt":"2026-10-20T13:42:21.575Z"} -->
