@@ -16,9 +16,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [129] Remove the obsolete /w/ and /n/ URL routes
-  <!-- hai:{"id":"simple-0ee9510c-1d58-4841-a0ec-bad006c0fd85","labels":["steward"],"createdAt":"2026-10-20T08:11:59.096Z","updatedAt":"2026-10-20T08:11:59.096Z"} -->
-
 - [117] Show an expandable server-offline indicator with cached content
   <!-- hai:{"id":"simple-2815036e-03d8-491d-a901-3794c92f18de","labels":["steward"],"createdAt":"2026-10-20T07:12:40.437Z","updatedAt":"2026-10-20T08:12:04.346Z"} -->
 
@@ -52,6 +49,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-c28a4f20-6a8c-44e7-a484-b78ac1731e99","labels":["steward"],"createdAt":"2026-10-20T07:12:49.393Z","updatedAt":"2026-10-20T08:15:34.952Z"} -->
 
 ## Scheduled
+
+- [129] Remove the obsolete /w/ and /n/ URL routes
+  <!-- hai:{"id":"simple-0ee9510c-1d58-4841-a0ec-bad006c0fd85","labels":["steward"],"createdAt":"2026-10-20T08:11:59.096Z","updatedAt":"2026-10-20T09:42:02.100Z"} -->
 
 ## In Progress
 
