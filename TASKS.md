@@ -21,10 +21,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
   <!-- hai:{"id":"simple-d1776999-2a2c-4870-936a-9620915aee07","labels":["steward"],"createdAt":"2026-10-20T08:12:02.201Z","updatedAt":"2026-10-20T08:12:29.949Z"} -->
 
-- [131] Close the gaps found in five older review items
-  <!-- hai:{"id":"simple-c79b828d-b1d0-4776-82e2-0e9bdf1d6bed","labels":["steward"],"createdAt":"2026-10-20T14:12:31.533Z","updatedAt":"2026-10-20T14:12:31.533Z"} -->
-
 ## Scheduled
+
+- [131] Close the gaps found in five older review items
+  <!-- hai:{"id":"simple-c79b828d-b1d0-4776-82e2-0e9bdf1d6bed","labels":["steward"],"createdAt":"2026-10-20T14:12:31.533Z","updatedAt":"2026-10-20T14:55:57.274Z"} -->
 
 ## In Progress
 
