@@ -28,9 +28,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [127] Correct icon generator claims from docs question 13
-      <!-- hai:{"id":"simple-c28a4f20-6a8c-44e7-a484-b78ac1731e99","labels":["steward"],"createdAt":"2026-10-20T07:12:49.393Z","updatedAt":"2026-10-20T14:25:33.566Z"} -->
-
 - [~] [122] Clarify deliberate test delays from docs question 8
       <!-- hai:{"id":"simple-e47a58f3-193e-4296-83a9-cfa00f27371b","labels":["steward"],"createdAt":"2026-10-20T07:12:44.920Z","updatedAt":"2026-10-20T13:22:03.268Z"} -->
 
@@ -38,6 +35,9 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-20T13:03:29.269Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [127] Correct icon generator claims from docs question 13
+      <!-- hai:{"id":"simple-c28a4f20-6a8c-44e7-a484-b78ac1731e99","labels":["steward"],"createdAt":"2026-10-20T07:12:49.393Z","updatedAt":"2026-10-20T14:27:21.750Z"} -->
 
 - [ ] [126] Align decision timing rules from docs question 12
       <!-- hai:{"id":"simple-c51c3fbe-451d-4e29-8e42-9474e4e8d838","labels":["steward"],"createdAt":"2026-10-20T07:12:48.486Z","updatedAt":"2026-10-20T14:05:05.245Z"} -->
