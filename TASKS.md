@@ -29,10 +29,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [136] Security scan of filemill: served roots, mutations, previews, caches and
-  history
-      <!-- hai:{"id":"simple-2987e143-caeb-4d71-9d71-d4ad75a184de","labels":["steward","security"],"createdAt":"2026-10-20T19:38:07.298Z","updatedAt":"2026-10-20T22:24:18.774Z"} -->
-
 - [~] [133] Protect saves from truncation and stale overwrites (architecture review
   A4)
       <!-- hai:{"id":"simple-7fc0721d-e6cf-4c12-91b0-2758fd68f09c","labels":["steward"],"createdAt":"2026-10-20T19:37:48.890Z","updatedAt":"2026-10-20T20:27:03.412Z"} -->
@@ -41,6 +37,10 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-20T13:03:29.269Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [136] Security scan of filemill: served roots, mutations, previews, caches and
+  history
+      <!-- hai:{"id":"simple-2987e143-caeb-4d71-9d71-d4ad75a184de","labels":["steward","security"],"createdAt":"2026-10-20T19:38:07.298Z","updatedAt":"2026-10-20T23:06:40.487Z"} -->
 
 - [ ] [122] Clarify deliberate test delays from docs question 8
       <!-- hai:{"id":"simple-e47a58f3-193e-4296-83a9-cfa00f27371b","labels":["steward"],"createdAt":"2026-10-20T07:12:44.920Z","updatedAt":"2026-10-20T23:04:33.137Z"} -->
