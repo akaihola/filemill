@@ -29,10 +29,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [135] Keep bundle repositories alive through active reads (architecture review
-  A14)
-      <!-- hai:{"id":"simple-ad2e83e1-1884-4c57-afb0-fc279fdbafd6","labels":["steward"],"createdAt":"2026-10-20T19:38:05.190Z","updatedAt":"2026-10-20T22:11:45.185Z"} -->
-
 - [~] [133] Protect saves from truncation and stale overwrites (architecture review
   A4)
       <!-- hai:{"id":"simple-7fc0721d-e6cf-4c12-91b0-2758fd68f09c","labels":["steward"],"createdAt":"2026-10-20T19:37:48.890Z","updatedAt":"2026-10-20T20:27:03.412Z"} -->
@@ -44,6 +40,10 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-20T13:03:29.269Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [135] Keep bundle repositories alive through active reads (architecture review
+  A14)
+      <!-- hai:{"id":"simple-ad2e83e1-1884-4c57-afb0-fc279fdbafd6","labels":["steward"],"createdAt":"2026-10-20T19:38:05.190Z","updatedAt":"2026-10-20T22:16:10.385Z"} -->
 
 - [ ] [134] Refresh JSON columns from the current file (architecture review A13)
       <!-- hai:{"id":"simple-fc2b70cd-7598-47b9-8b82-4004d374afcd","labels":["steward"],"createdAt":"2026-10-20T19:38:03.173Z","updatedAt":"2026-10-20T22:05:23.091Z"} -->
