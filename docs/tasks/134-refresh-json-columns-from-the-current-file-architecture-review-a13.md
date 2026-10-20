@@ -13,3 +13,15 @@ Give the virtual JSON adapter ownership of invalidation: on refresh, read the ba
 - Static and development modes and served mode agree.
 - The relevant port decision and documentation describe the new behaviour; the review's A13 entry says it is resolved.
 - The suites you touched pass, under the same memory rule as filemill's other steward issues: wait up to 10 minutes for 2 GiB `MemAvailable`, start at 1.5 GiB or more, stop below 1 GiB or on 512 MiB of swap growth, one suite at a time.
+
+## Implementation plan
+
+- Add browser regressions for edits, removed keys and invalid input. Exercise
+  the root JSON column and a nested column in both static builds. Test a real
+  file and a ZIP member in served mode.
+- Add an optional FS invalidation hook. The JSON adapter clears its parsed
+  source and byte metadata, then resolves a nested column from the new source.
+- Keep the existing navigation sequence, selection walk and preview rendering.
+  Do not implement the broader A9 ownership changes.
+- Update the port decision and A13. Run each affected suite separately with
+  the required memory guard, then merge and complete the canonical tracker.
