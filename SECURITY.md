@@ -57,11 +57,13 @@ same origin as Filemill, and Filemill does not sandbox them. A script in such a
 page can do anything the web interface can: read every file through `/api/*`,
 `/w/` and root URLs, fetch the shell for its token, and save or delete files.
 Only serve a root whose HTML you trust, as you would for any static web server.
+The Raw link of an HTML member of an archive opens it the same way, from
+`/api/raw`.
 
-The preview pane is a different boundary. It shows an HTML file in an iframe
-with `sandbox=""`, so the file's scripts do not run there. Markdown,
-reStructuredText, `.docx` and `.desktop` previews are inserted into the page as
-inert markup. Markup in their text stays text. In reStructuredText, `.docx` and
+The preview pane is a different boundary. It shows an HTML file, or an HTML
+member of an archive, in an iframe with `sandbox=""`, so the page's scripts do
+not run there. Markdown, reStructuredText, `.docx` and `.desktop` previews are
+inserted into the page as inert markup. Markup in their text stays text. In reStructuredText, `.docx` and
 `.desktop` previews a link keeps its target only for `http:`, `https:`,
 `mailto:` or a scheme-less address, and a `.desktop` URL with any other
 protocol is shown and not linked. Markdown links keep markdown-it's validation,

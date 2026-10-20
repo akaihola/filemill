@@ -235,8 +235,11 @@ def _preview_pdf(path: Path, preview_url: str | None = None) -> str:
 
 
 def _preview_html(path: Path, preview_url: str | None = None) -> str:
+    """The page in an iframe with ``sandbox=""``, as the browser shows a file
+    on disk (ui/core/renderers.js). Its source is on filemill's own origin, so
+    without the sandbox its scripts would run as filemill."""
     src = preview_url or f"/api/raw?p={urlquote(path.name)}"
-    return f'<div class="preview-html"><iframe src="{src}"></iframe></div>'
+    return f'<div class="preview-html"><iframe sandbox="" src="{src}"></iframe></div>'
 
 
 def _preview_image(path: Path, preview_url: str | None = None) -> str:

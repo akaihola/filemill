@@ -233,7 +233,10 @@ Other derived-file responses are audited the same way.
 - Every entry module calls `exposeCore()` (`ui/core/debug.js`), so any script
   that runs in the page shares FS and state.
 - Resolved: the HTML preview iframe now has `sandbox=""`
-  (`ui/core/renderers.js:171`).
+  (`ui/core/renderers.js:171`). The server's iframe for an archive's HTML
+  member had none until [114] (2026-10-20), so its script ran as Filemill.
+  The PDF iframes stay unsandboxed in both renderers; the raw route serves a
+  `.pdf` member as `application/pdf`.
 
 **Acceptance.** Crafted Markdown stays inert with and without wikilinks, and
 malformed wikilinks are escaped. Links, code and footnotes still render. Unsafe
@@ -511,7 +514,7 @@ Do not reopen these without new evidence.
 | Duplicated limits and image lists (#7)                                                                | `ui/core/limits.js`                                                             |
 | No media queries (#8)                                                                                 | Portrait and landscape phone rules in `ui/core/styles.css`                      |
 | Delete fails in FSA and after success (F7)                                                            | `FSA.remove` uses `node.parent`; `deleteEntry` no longer calls `actions.render` |
-| Unsandboxed HTML preview (F2, part)                                                                   | `sandbox=""`                                                                    |
+| Unsandboxed HTML preview (F2, part)                                                                   | `sandbox=""`, for archive members too since [114]                               |
 | Images over 512 KiB rejected (F10, part)                                                              | Text-only limit                                                                 |
 | Descending name sort ignored                                                                          | `visibleKids` reverses when `desc`                                              |
 | ↑/↓ over folders stacked one entry per row; Alt+arrows swallowed ([39])                               | `state.stepping` rewrites ([ADR 0050]); `keyAction` ignores modified keys       |

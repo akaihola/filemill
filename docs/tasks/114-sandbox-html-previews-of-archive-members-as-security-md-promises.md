@@ -28,3 +28,47 @@ run script in the preview with filemill's origin.
   unavailable, when `MemAvailable` falls below 1 GiB or swap grows by more than
   512 MiB.
 - The new test fails before the fix and passes after; the server suite passes.
+
+## Implementation, 2026-10-20
+
+- Only the server edition renders archive members. The static edition and
+  the browser's local-folder mount have no archive provider, so both new tests
+  are server tests:
+  `test_an_html_member_previews_in_a_sandboxed_iframe` in
+  [test_api.py](../../server/tests/test_api.py) and
+  `test_an_html_member_previews_in_a_sandbox` in
+  [test_browser_new_ui.py](../../server/tests/test_browser_new_ui.py). The
+  browser test's member page writes to the app page through `parent`. Before
+  the fix the write landed (`dataset.pwned == 'yes'`), so the member's script
+  ran with Filemill's origin.
+- `_preview_html` in [preview.py](../../server/src/filemill/preview.py) now
+  gives its iframe `sandbox=""`, the sandbox
+  [renderers.js](../../ui/core/renderers.js) gives an HTML file on disk.
+- The only other server-built preview iframe is `_preview_pdf`'s. It stays as
+  it is, like the browser's PDF iframe for a file on disk. The raw route
+  serves a `.pdf` member as `application/pdf`: a member named `evil.pdf`
+  holding `<script>` came back with that type, so it is not parsed as a page.
+- [SECURITY.md](../../SECURITY.md) now names archive members in the preview
+  boundary. It also says that a member's Raw link opens it from `/api/raw` as
+  a same-origin page, as the server serves an HTML file at the root. A
+  `Content-Security-Policy: sandbox` header on that response would close it;
+  that is a separate decision, not part of this issue.
+
+## Validation, 2026-10-20
+
+Each test command waited for `MemAvailable` of at least 2 GiB; none had to
+wait or stop. Swap grew by at most 54 MiB.
+
+- Before the fix: both new tests failed. The API test found
+  `<iframe src="/api/raw?p=site.zip&amp;v=page.html">`, and the browser test
+  read `'yes'` from the app page.
+- After the fix: both pass, with the rest of
+  [test_preview.py](../../server/tests/test_preview.py) and every test whose
+  name mentions `html` (58 passed).
+- Server suite: 973 passed, 1 failed in 9 min 55 s. The failure was
+  `test_documentation_uses_portable_development_examples`, which could not
+  read the sandbox-masked `.claude/loop.md`. Re-run outside the sandbox,
+  `test_docs.py` and `test_suppression_links.py` passed (31 tests).
+- `ruff check server`, `ruff format --check server/src server/tests` and
+  `mypy server/src` are clean. No file under `ui/` changed, so the Deno and
+  `build-index.py --check` gates do not apply.

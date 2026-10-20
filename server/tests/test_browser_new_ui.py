@@ -2402,6 +2402,25 @@ def test_a_deep_link_into_an_archive_previews_the_member(page):
     assert page.evaluate("path.map(p => p.vpath)")[-1] == "inside"
 
 
+def test_an_html_member_previews_in_a_sandbox(page, ui_root):
+    """Issue 114: an .html member previews through the server, whose iframe
+    had no `sandbox`, so the member's script ran with filemill's origin and
+    reached the app around it. It gets the sandbox a file on disk gets."""
+    with zipfile.ZipFile(ui_root / "site.zip", "w") as zf:
+        zf.writestr(
+            "page.html",
+            "<script>parent.document.documentElement.dataset.pwned = 'yes'</script>"
+            "<p>member page</p>",
+        )
+    page.open("site.zip/page.html")
+    # The script comes first, so once the paragraph is there it has had its turn.
+    expect(page.frame_locator("#preview iframe").locator("p")).to_have_text(
+        "member page", timeout=15000
+    )
+    assert page.evaluate("document.documentElement.dataset.pwned") is None
+    assert page.get_attribute("#preview iframe", "sandbox") == ""
+
+
 def test_a_row_shows_no_invented_size_or_date(page):
     """A row inside a database is not a file. Zeroed metadata would print
     "0 B · modified 1 Jan 1970", which is worse than nothing."""
