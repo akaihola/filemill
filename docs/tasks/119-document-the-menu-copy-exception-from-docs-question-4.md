@@ -1,18 +1,22 @@
-# Document the menu-copy exception from docs question 4
+# Offer manual copying in a pop-up when clipboard access fails
 
-Source: [109](109-check-filemill-s-docs-and-adr-statuses-against-the-code-and-fix-what-d.md#questions), question 4.
-Proposed by [115](115-propose-plain-answers-to-the-docs-check-s-twelve-remaining-questions.md); awaits review. Label: `steward`.
+Source: [109](109-check-filemill-s-docs-and-adr-statuses-against-the-code-and-fix-what-d.md?f), question 4.
+User review, 2026-10-20. Label: `steward`.
 
-## Recommendation
+## Decision
 
-Keep the tested clipboard behavior and date ADR 0048's menu exception.
+Approved replacement for the earlier menu exception: close the row menu after clipboard refusal and show a pop-up containing the exact text that could not be copied. Put the refusal explanation and manual-copy instructions in that pop-up; the footer currently truncates the explanation even on a wide laptop screen.
 
 ## Work
 
-1. Explain that a refused menu copy reports failure and keeps the menu open without selecting text.
-2. Retain manual text selection for refused keyboard and status-path copies, including the exact refused value.
-3. Cite commit 45a78db0 and the menu-refusal and keyboard-refusal tests in static/tests/test_ui.py; preserve the original ADR reasoning.
+1. Start with a failing browser test for each menu command, including a row that is not selected: the menu closes and the pop-up contains exactly the intended name, relative path or absolute path.
+
+2. Make the text selectable and usable with native copy commands; copying selected text must not reopen the failure flow. Preserve long paths in full, using a scrollable or wrapping text field instead of truncating the copy value.
+
+3. Show the full refusal reason and simple manual-copy instructions in the pop-up. Provide a label, keyboard focus, dismissal by Escape and focus return. Test desktop and narrow/touch layouts, including a long refusal explanation.
+
+4. Use the same failure presentation for keyboard/status-path copy where applicable, while preserving successful copying and ordinary selected-text copying. Update [ADR 0048](../adr/0048-a-refused-clipboard-selects-the-path-instead.md?f) in the same change.
 
 ## Acceptance
 
-The ADR describes the tested distinction and no clipboard behavior changes. Server docs tests and the existing focused copy checks pass.
+A refused menu copy closes the menu and exposes the complete intended value for manual copying, without another clipboard permission requirement. The explanation is readable in the pop-up; the footer is not its only source. Successful copy rotation and native text copying still pass their checks.

@@ -1,7 +1,7 @@
 # Hide the ineffective server preview switch from docs question 3
 
-Source: [109](109-check-filemill-s-docs-and-adr-statuses-against-the-code-and-fix-what-d.md#questions), question 3.
-Proposed by [115](115-propose-plain-answers-to-the-docs-check-s-twelve-remaining-questions.md); awaits review. Label: `steward`.
+Source: [109](109-check-filemill-s-docs-and-adr-statuses-against-the-code-and-fix-what-d.md?f#questions), question 3.
+Proposed by [115](115-propose-plain-answers-to-the-docs-check-s-twelve-remaining-questions.md?f); approved by the user on 2026-10-20 (question 3). Label: `steward`.
 
 ## Recommendation
 
@@ -11,7 +11,7 @@ Hide the rich-preview download switch in the server edition while its active ren
 
 1. Start with a failing browser test for the switch being absent in the served tree and Open Folder mode.
 2. Keep server Markdown and DOCX previews working with the stored switch off. Preserve static and native download consent; base visibility on the edition's actual renderer use without changing rendering behavior.
-3. Update ADR 0036 and relevant current guidance in the same change.
+3. Update [ADR 0036](../../docs/adr/0036-but-behind-a-remembered-switch-defaulting-on.md?f) and relevant current guidance in the same change.
 
 ## Acceptance
 

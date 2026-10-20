@@ -4,44 +4,52 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Unverified proposals
 
-- [127] Correct icon generator claims from docs question 13
-  <!-- hai:{"id":"simple-c28a4f20-6a8c-44e7-a484-b78ac1731e99","labels":["steward"],"createdAt":"2026-10-20T07:12:49.393Z","updatedAt":"2026-10-20T07:12:49.393Z"} -->
-
-- [126] Align decision timing rules from docs question 12
-  <!-- hai:{"id":"simple-c51c3fbe-451d-4e29-8e42-9474e4e8d838","labels":["steward"],"createdAt":"2026-10-20T07:12:48.486Z","updatedAt":"2026-10-20T07:12:48.486Z"} -->
-
 - [125] Clarify network consent scope from docs question 11
-  <!-- hai:{"id":"simple-76bc63bc-236d-4bb7-8eaf-45ad44c96212","labels":["steward"],"createdAt":"2026-10-20T07:12:47.626Z","updatedAt":"2026-10-20T07:12:47.626Z"} -->
+  <!-- hai:{"id":"simple-76bc63bc-236d-4bb7-8eaf-45ad44c96212","labels":["steward"],"createdAt":"2026-10-20T07:12:47.626Z","updatedAt":"2026-10-20T08:15:29.716Z"} -->
 
-- [124] Explain dependency constraints from docs question 10
-  <!-- hai:{"id":"simple-d36f5057-cc6b-4c43-aaf5-45532393af26","labels":["steward"],"createdAt":"2026-10-20T07:12:46.777Z","updatedAt":"2026-10-20T07:12:46.777Z"} -->
-
-- [123] Clarify conditional test skips from docs question 9
-  <!-- hai:{"id":"simple-c33756b3-3ea8-4a89-9352-60eaf73faf0e","labels":["steward"],"createdAt":"2026-10-20T07:12:45.801Z","updatedAt":"2026-10-20T07:12:45.801Z"} -->
-
-- [122] Clarify deliberate test delays from docs question 8
-  <!-- hai:{"id":"simple-e47a58f3-193e-4296-83a9-cfa00f27371b","labels":["steward"],"createdAt":"2026-10-20T07:12:44.920Z","updatedAt":"2026-10-20T07:12:44.920Z"} -->
-
-- [121] Clarify API path collisions from docs question 6
-  <!-- hai:{"id":"simple-4495517f-2546-4750-93e8-47dac424ae2a","labels":["steward"],"createdAt":"2026-10-20T07:12:44.051Z","updatedAt":"2026-10-20T07:12:44.051Z"} -->
-
-- [120] Disable server search in local folders from docs question 5
-  <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-20T07:12:43.204Z"} -->
-
-- [119] Document the menu-copy exception from docs question 4
-  <!-- hai:{"id":"simple-ee263a83-cc2f-41ec-9040-d4a5c0a8e93b","labels":["steward"],"createdAt":"2026-10-20T07:12:42.185Z","updatedAt":"2026-10-20T07:12:42.185Z"} -->
-
-- [118] Hide the ineffective server preview switch from docs question 3
-  <!-- hai:{"id":"simple-1161fe2f-92b3-4ea4-99a6-9b511726259b","labels":["steward"],"createdAt":"2026-10-20T07:12:41.306Z","updatedAt":"2026-10-20T07:12:41.306Z"} -->
-
-- [117] Clarify cache and recovery claims from docs question 2
-  <!-- hai:{"id":"simple-2815036e-03d8-491d-a901-3794c92f18de","labels":["steward"],"createdAt":"2026-10-20T07:12:40.437Z","updatedAt":"2026-10-20T07:12:40.437Z"} -->
+- [121] Separate internal requests from real file and folder paths
+  <!-- hai:{"id":"simple-4495517f-2546-4750-93e8-47dac424ae2a","labels":["steward"],"createdAt":"2026-10-20T07:12:44.051Z","updatedAt":"2026-10-20T08:12:08.283Z"} -->
 
 - [116] Sandbox the Raw view of HTML files inside archives with a
   Content-Security-Policy header
   <!-- hai:{"id":"simple-2569b382-eaf4-4d64-8db1-ecd76cccca46","labels":["steward"],"createdAt":"2026-10-20T02:10:36.825Z","updatedAt":"2026-10-20T02:10:36.825Z"} -->
 
 ## Ordered backlog
+
+- [129] Remove the obsolete /w/ and /n/ URL routes
+  <!-- hai:{"id":"simple-0ee9510c-1d58-4841-a0ec-bad006c0fd85","labels":["steward"],"createdAt":"2026-10-20T08:11:59.096Z","updatedAt":"2026-10-20T08:11:59.096Z"} -->
+
+- [117] Show an expandable server-offline indicator with cached content
+  <!-- hai:{"id":"simple-2815036e-03d8-491d-a901-3794c92f18de","labels":["steward"],"createdAt":"2026-10-20T07:12:40.437Z","updatedAt":"2026-10-20T08:12:04.346Z"} -->
+
+- [118] Hide the ineffective server preview switch from docs question 3
+  <!-- hai:{"id":"simple-1161fe2f-92b3-4ea4-99a6-9b511726259b","labels":["steward"],"createdAt":"2026-10-20T07:12:41.306Z","updatedAt":"2026-10-20T08:15:16.856Z"} -->
+
+- [119] Offer manual copying in a pop-up when clipboard access fails
+  <!-- hai:{"id":"simple-ee263a83-cc2f-41ec-9040-d4a5c0a8e93b","labels":["steward"],"createdAt":"2026-10-20T07:12:42.185Z","updatedAt":"2026-10-20T08:12:06.284Z"} -->
+
+- [120] Disable server search in local folders from docs question 5
+  <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-20T08:15:20.466Z"} -->
+
+- [130] Give served and browser-owned folders the same content search
+    - Depends on: [120]
+
+  <!-- hai:{"id":"simple-d1776999-2a2c-4870-936a-9620915aee07","labels":["steward"],"createdAt":"2026-10-20T08:12:02.201Z","updatedAt":"2026-10-20T08:12:29.949Z"} -->
+
+- [122] Clarify deliberate test delays from docs question 8
+  <!-- hai:{"id":"simple-e47a58f3-193e-4296-83a9-cfa00f27371b","labels":["steward"],"createdAt":"2026-10-20T07:12:44.920Z","updatedAt":"2026-10-20T08:15:23.001Z"} -->
+
+- [123] Clarify conditional test skips from docs question 9
+  <!-- hai:{"id":"simple-c33756b3-3ea8-4a89-9352-60eaf73faf0e","labels":["steward"],"createdAt":"2026-10-20T07:12:45.801Z","updatedAt":"2026-10-20T08:15:26.600Z"} -->
+
+- [124] Explain dependency constraints from docs question 10
+  <!-- hai:{"id":"simple-d36f5057-cc6b-4c43-aaf5-45532393af26","labels":["steward"],"createdAt":"2026-10-20T07:12:46.777Z","updatedAt":"2026-10-20T08:15:28.174Z"} -->
+
+- [126] Align decision timing rules from docs question 12
+  <!-- hai:{"id":"simple-c51c3fbe-451d-4e29-8e42-9474e4e8d838","labels":["steward"],"createdAt":"2026-10-20T07:12:48.486Z","updatedAt":"2026-10-20T08:15:32.831Z"} -->
+
+- [127] Correct icon generator claims from docs question 13
+  <!-- hai:{"id":"simple-c28a4f20-6a8c-44e7-a484-b78ac1731e99","labels":["steward"],"createdAt":"2026-10-20T07:12:49.393Z","updatedAt":"2026-10-20T08:15:34.952Z"} -->
 
 ## Scheduled
 
@@ -82,7 +90,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [x] [109] Check filemill's docs and ADR statuses against the code, and fix what
   disagrees
-      <!-- hai:{"id":"simple-b148aec7-49a8-44df-88c0-13a18617b1d3","labels":["steward"],"createdAt":"2026-10-19T08:08:26.389Z","updatedAt":"2026-10-20T07:15:21.094Z"} -->
+      <!-- hai:{"id":"simple-b148aec7-49a8-44df-88c0-13a18617b1d3","labels":["steward"],"createdAt":"2026-10-19T08:08:26.389Z","updatedAt":"2026-10-20T08:17:54.276Z"} -->
 
 - [x] [107] Date superseded roadmap and ADR claims (roadmap Phase 0)
     - Depends on: [105]
@@ -729,7 +737,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 [77]: docs/tasks/77-md-tight-bullet-list-line-spacing.md
 
-<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128 -->
+<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130 -->
 
 [78]: docs/tasks/78-wide-document-scrolls-instead-of-expanding-the-preview.md
 
@@ -832,6 +840,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 [127]: docs/tasks/127-correct-icon-generator-claims-from-docs-question-13.md
 
 [128]: docs/tasks/128-never-list-or-serve-hidden-files-on-a-public-instance.md
+
+[129]: docs/tasks/129-remove-the-obsolete-w-and-n-url-routes.md
+
+[130]: docs/tasks/130-give-served-and-browser-owned-folders-the-same-content-search.md
 
 ## Rules
 

@@ -1,18 +1,24 @@
-# Clarify cache and recovery claims from docs question 2
+# Show an expandable server-offline indicator with cached content
 
-Source: [109](109-check-filemill-s-docs-and-adr-statuses-against-the-code-and-fix-what-d.md#questions), question 2.
-Proposed by [115](115-propose-plain-answers-to-the-docs-check-s-twelve-remaining-questions.md); awaits review. Label: `steward`.
+Source: [109](109-check-filemill-s-docs-and-adr-statuses-against-the-code-and-fix-what-d.md?f), question 2.
+User review, 2026-10-20. Label: `steward`.
 
-## Recommendation
+## Decision
 
-Change the documentation, keeping A5 open. Distinguish uncached API reads from cached embedded resources, and distinguish the worker's navigation recovery page from the shell's failed-mount retry.
+Approved: older content may stay visible while the server is unavailable, provided a clear on-screen indicator says that the server is offline. Tapping or clicking it expands details and recovery instructions. This replaces the earlier docs-only recommendation; removing /w/ is tracked in [129](129-remove-the-obsolete-w-and-n-url-routes.md?f).
 
 ## Work
 
-1. Correct A5 and server/README.md: /api/raw reads are network-only; same-origin embedded resources outside /api/ can return cached bytes. Keep the cache-isolation and non-navigation offline-miss findings open.
-2. Explain that a controlling server worker supplies recovery for failed non-API navigations without a previously cached destination; a first visit without a worker cannot do so. Retain the separate shell mount-retry path recorded in ADR 0063.
-3. Clarify SECURITY.md's stale-token wording using ADR 0081: an open or stored shell can retain an old token after restart, but normal navigation does not use the worker's cache.
+1. First reproduce server loss with a populated view and an installed app. Add failing browser tests for a persistent, readable offline indicator that expands by click, touch and keyboard to show the explanation and retry/start instructions.
+
+2. Determine availability from network requests to the Filemill server, not only the browser's internet-connectivity flag. Distinguish unavailable server, reconnecting, permission failures and successful recovery.
+
+3. Allow previously obtained content to remain visible or be reused offline with the indicator. Online reads must not silently present an older cached version as current. Failed mutations must not appear successful; this does not add offline writes or an edit queue.
+
+4. Define the minimum cache policy needed for the offline read behavior. Preserve unrelated caches, remove obsolete Filemill entries safely and return a valid response when no cached content exists. Cover warm startup and a genuinely uncached destination without promising recovery on a first visit without a worker.
+
+5. In the implementation change, update the A5 acceptance/remediation text in [docs/ARCHITECTURE-REVIEW.md](../ARCHITECTURE-REVIEW.md?f), [ADR 0063](../adr/0063-installed-pwa-server-recovery.md?f), [server/README.md](../../server/README.md?f) and [SECURITY.md](../../SECURITY.md?f). The user's offline-read decision supersedes the old blanket prohibition on cached document bytes; other A5 defects remain.
 
 ## Acceptance
 
-The text distinguishes all three read paths and both retry paths without claiming A5 is fixed. Cite sw.js, HTTP.blob and the PWA/token tests; run the server docs, PWA and mutation-policy tests. If behavioral proof is missing, report the gap rather than describing a source check as an end-to-end test.
+Older content is visibly identified while the server is offline; details and instructions are accessible without truncated status text. Recovery refreshes availability and affected content. Tests cover stop/restart, cached/uncached views and unrelated-cache preservation. A5 closes only when its remaining defects are fixed.

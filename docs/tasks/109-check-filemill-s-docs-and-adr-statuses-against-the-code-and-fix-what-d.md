@@ -278,10 +278,11 @@ that link to their explanation.
 ## Proposed answers, 2026-10-19
 
 Prepared for [115]; checked against `cbcd8baf` on 2026-10-20. The heading
-date follows the request. These are recommendations for review, not approved
-decisions or implemented fixes. The original questions above remain historical.
-Question 1 belongs to [114]. Each proposed change below has its own `steward`
-issue in Unverified proposals; question 7 needs no change.
+date follows the request. These are the initial proposals, preserved for context;
+the [user review below](#user-review-2026-10-20) now takes precedence.
+The original questions above remain historical. Question 1 belongs to [114].
+The first pass drafted [117]–[127] and recommended no change for question 7;
+the later review changes several scopes and adds [129]/[130].
 
 ### Question 2 — Cache scope and offline recovery
 
@@ -295,13 +296,13 @@ Describe old mutation tokens as an open-page or stored-shell problem after a
 restart, not proof that ordinary navigation serves a cached shell.
 Draft: [117].
 
-**Evidence.** `HTTP.blob` in `ui/adapters/http.js` reads `/api/raw`, and
-`server/src/filemill/static/sw.js` bypasses API requests but caches other
+**Evidence.** `HTTP.blob` in [ui/adapters/http.js](../../ui/adapters/http.js?f) reads `/api/raw`, and
+[server/src/filemill/static/sw.js](../../server/src/filemill/static/sw.js?f) bypasses API requests but caches other
 same-origin non-navigation GETs; `87bc1f5d` added the navigation recovery branch
-and the source checks in `server/tests/test_pwa.py`, as ADR 0063 now records.
-`showServerUnavailable` in `ui/adapters/app-http.js` retries the mount, while
-ADR 0081 and `test_token_changes_invalidate_existing_shells` in
-`server/tests/test_mutation_policy.py` establish the separate restart-token
+and the source checks in [server/tests/test_pwa.py](../../server/tests/test_pwa.py?f), as [ADR 0063](../../docs/adr/0063-installed-pwa-server-recovery.md?f) now records.
+`showServerUnavailable` in [ui/adapters/app-http.js](../../ui/adapters/app-http.js?f) retries the mount, while
+[ADR 0081](../../docs/adr/0081-authorize-server-mutations.md?f) and `test_token_changes_invalidate_existing_shells` in
+[server/tests/test_mutation_policy.py](../../server/tests/test_mutation_policy.py?f) establish the separate restart-token
 problem; the unresolved cache-isolation and non-navigation offline-miss defects
 still justify A5.
 
@@ -318,10 +319,11 @@ switch where it controls downloads in the static and native editions.
 Draft: [118].
 
 **Evidence.** `59672dd6` introduced the vendored-module bypass now described
-by ADRs 0035/0036 and checked by
-`static/tests/test_rich.py::test_vendored_renderers` with the switch off.
-`offerRichToggle` in `ui/adapters/preview-rich.js` still exposes the switch
-unconditionally, although `ui/adapters/app-http.js` uses vendored Markdown
+by [ADR 0035](../adr/0035-rich-renderers-lazy-loaded-from-a-cdn-not-bundled.md?f)
+and [ADR 0036](../adr/0036-but-behind-a-remembered-switch-defaulting-on.md?f), checked by
+[static/tests/test_rich.py](../../static/tests/test_rich.py?f)::`test_vendored_renderers` with the switch off.
+`offerRichToggle` in [ui/adapters/preview-rich.js](../../ui/adapters/preview-rich.js?f) still exposes the switch
+unconditionally, although [ui/adapters/app-http.js](../../ui/adapters/app-http.js?f) uses vendored Markdown
 and DOCX, built-in PPTX extraction and server RST.
 
 **For Antti:** Should the server show a preview-download switch that changes
@@ -330,13 +332,13 @@ nothing — hide it there.
 ### Question 4 — Clipboard refusal from a row menu
 
 **Recommendation — change the text.** Record the intentional menu exception
-in ADR 0048: a refused menu copy keeps the menu open and reports the failure,
+in [ADR 0048](../../docs/adr/0048-a-refused-clipboard-selects-the-path-instead.md?f): a refused menu copy keeps the menu open and reports the failure,
 without selecting text. Retain text selection for refused keyboard and status
 path copies. Draft: [119].
 
 **Evidence.** `45a78db0` introduced the explicit-menu distinction in
-`ui/core/nav.js::copyPath`, after ADR 0048 was written.
-`static/tests/test_ui.py::test_copy_menu_refusal_keeps_menu` requires an open
+[ui/core/nav.js](../../ui/core/nav.js?f)::`copyPath`, after [ADR 0048](../../docs/adr/0048-a-refused-clipboard-selects-the-path-instead.md?f) was written.
+[static/tests/test_ui.py](../../static/tests/test_ui.py?f)::`test_copy_menu_refusal_keeps_menu` requires an open
 menu and no text selection, while `test_copy_refusal_fallback` checks selection
 of the refused value for keyboard copying.
 
@@ -354,9 +356,9 @@ separate work. Draft: [120].
 
 **Evidence.** `6ed49a2c` added server-only search, and
 `test_content_search_opens_a_matching_file` in
-`server/tests/test_browser_new_ui.py` checks served files.
-`ui/core/search.js` checks `data-root` only at module load and always calls
-`/api/search`, whereas `ui/adapters/app-http.js::mount` changes the filesystem
+[server/tests/test_browser_new_ui.py](../../server/tests/test_browser_new_ui.py?f) checks served files.
+[ui/core/search.js](../../ui/core/search.js?f) checks `data-root` only at module load and always calls
+`/api/search`, whereas [ui/adapters/app-http.js](../../ui/adapters/app-http.js?f)::`mount` changes the filesystem
 and sets the router to null without removing that attribute or disabling
 search, so results concern the wrong tree and their activation expects a
 router that no longer exists.
@@ -373,9 +375,9 @@ the endpoint and a non-conflicting file. Other wildcard routes retain their
 own collision rules. Draft: [121].
 
 **Evidence.** The resource-route change `5eadcfdb` introduced the broad
-comment, but the routes and `_reorder_routes` in `server/src/filemill/app.py`
+comment, but the routes and `_reorder_routes` in [server/src/filemill/app.py](../../server/src/filemill/app.py?f)
 give exact API endpoints priority before the resource catch-all.
-`server/tests/test_resource_routes.py::test_named_route_wins_over_a_directory_of_the_same_name`
+[server/tests/test_resource_routes.py](../../server/tests/test_resource_routes.py?f)::`test_named_route_wins_over_a_directory_of_the_same_name`
 creates `api/note.txt` but requests only `/api/dir`, so its assertion does not
 establish its docstring's claim that the whole directory is unreachable.
 
@@ -391,11 +393,11 @@ resource URLs. Removing it would break existing links and test entry points
 without helping this documentation task.
 
 **Evidence.** `5eadcfdb` added root-relative resource URLs while retaining
-`UI_BASE = "/n/"`, and `ui/adapters/router-path.js` explicitly handles both
-bases, consistent with ADR 0043's path-based server navigation.
-`server/tests/test_pwa.py` checks the `/n/` shell, and
-`server/tests/test_browser_new_ui.py` opens and navigates through it, while
-`server/tests/test_resource_routes.py` covers root-relative representations.
+`UI_BASE = "/n/"`, and [ui/adapters/router-path.js](../../ui/adapters/router-path.js?f) explicitly handles both
+bases, consistent with [ADR 0043](../../docs/adr/0043-hash-urls-in-the-static-build-path-urls-on-the-server.md?f)'s path-based server navigation.
+[server/tests/test_pwa.py](../../server/tests/test_pwa.py?f) checks the `/n/` shell, and
+[server/tests/test_browser_new_ui.py](../../server/tests/test_browser_new_ui.py?f) opens and navigates through it, while
+[server/tests/test_resource_routes.py](../../server/tests/test_resource_routes.py?f) covers root-relative representations.
 
 **For Antti:** Should we remove an older browsing address that still works
 and may be bookmarked — keep it.
@@ -409,10 +411,10 @@ or that elapsed time alone proves a race occurred. Draft: [122].
 
 **Evidence.** `7ddeab00` added the 0.2-second delay inside the intercepted
 response in `test_declined_json_member_recovers_after_refresh` in
-`server/tests/test_browser_new_ui.py`; the assertions wait for the node's
+[server/tests/test_browser_new_ui.py](../../server/tests/test_browser_new_ui.py?f); the assertions wait for the node's
 loading/error state and the resulting UI.
-`server/tests/test_browser_waits.py`, introduced in `ffc5dbf4`, rejects
-`wait_for_timeout`, not all sleeps, so ROADMAP Phase 7's blanket wording is
+[server/tests/test_browser_waits.py](../../server/tests/test_browser_waits.py?f), introduced in `ffc5dbf4`, rejects
+`wait_for_timeout`, not all sleeps, so [ROADMAP](../../docs/ROADMAP.md?f) Phase 7's blanket wording is
 broader than the guard or the test's purpose.
 
 **For Antti:** May a test deliberately make a file load slowly to check how
@@ -429,7 +431,7 @@ Draft: [123].
 **Evidence.** `9fa13dbe` added a Linux pipe-capacity regression whose
 `skipif` excludes other platforms, while `68325e9d` added the two Git
 prerequisite skips in the bundle browser and provider suites.
-ADR 0073 and `server/src/filemill/providers/gitbundle.py` make Git an optional
+[ADR 0073](../../docs/adr/0073-git-bundles-browse-by-refs-and-trees.md?f) and [server/src/filemill/providers/gitbundle.py](../../server/src/filemill/providers/gitbundle.py?f) make Git an optional
 capability, and `test_without_git_a_bundle_is_a_plain_file` describes its
 fallback, so these conditions do not mean a known defect is being hidden.
 
@@ -447,12 +449,12 @@ library; mark inherited minimums as unverified where history gives no reason
 instead of inventing compatibility claims or pinning everything.
 Draft: [124].
 
-**Evidence.** `server/pyproject.toml` mixes unconstrained runtime dependencies,
-development minimums and a Playwright release restriction, while `uv.lock`
-records exact versions; `server/tests/test_docs.py` checks the Playwright
+**Evidence.** [server/pyproject.toml](../../server/pyproject.toml?f) mixes unconstrained runtime dependencies,
+development minimums and a Playwright release restriction, while [uv.lock](../../uv.lock?f)
+records exact versions; [server/tests/test_docs.py](../../server/tests/test_docs.py?f) checks the Playwright
 guidance, not compatibility at every declared minimum.
 History identifies the Playwright browser match (`875b032b`), archive
-compatibility (`b91a3d8c`, ADR 0072) and the later mypy comment (`f26da085`),
+compatibility (`b91a3d8c`, [ADR 0072](../../docs/adr/0072-archives-browse-by-their-members.md?f)) and the later mypy comment (`f26da085`),
 but inherited bounds from `26d515b9` and `eec53713` do not by themselves prove
 that each lower limit was tested.
 
@@ -470,13 +472,13 @@ processing claim, and state that external resources contact their hosts.
 A general resource-permission system would need a separate product decision.
 Draft: [125].
 
-**Evidence.** GOALS introduced the broad claim in `d08f3b84`, but [109]'s
-`f488ccab` corrected its privacy paragraph, README and ADR 0036 to distinguish
+**Evidence.** [GOALS](../../docs/GOALS.md?f) introduced the broad claim in `d08f3b84`, but [109]'s
+`f488ccab` corrected its privacy paragraph, [README](../../README.md?f) and [ADR 0036](../../docs/adr/0036-but-behind-a-remembered-switch-defaulting-on.md?f) to distinguish
 renderer downloads from document resource requests.
-`ui/adapters/preview-rich.js` gates renderer loading, allows safe image
+[ui/adapters/preview-rich.js](../../ui/adapters/preview-rich.js?f) gates renderer loading, allows safe image
 sources and inserts rendered document HTML, while the consent tests in
-`static/tests/test_rich.py` check renderer requests rather than a general
-network block; ADR 0082's safe-URL rule also permits HTTP(S) resources.
+[static/tests/test_rich.py](../../static/tests/test_rich.py?f) check renderer requests rather than a general
+network block; [ADR 0082](../../docs/adr/0082-previews-link-only-to-safe-protocols.md?f)'s safe-URL rule also permits HTTP(S) resources.
 
 **For Antti:** Does turning off preview downloads also stop documents from
 loading pictures from the internet — no, make that limit clear in the promise.
@@ -484,13 +486,13 @@ loading pictures from the internet — no, make that limit clear in the promise.
 ### Question 12 — When to record a decision
 
 **Recommendation — change the text.** Use “in the same change” for decisions
-that change a port or behavior, and make ROADMAP link to that rule. Preserve
+that change a port or behavior, and make [ROADMAP](../../docs/ROADMAP.md?f) link to that rule. Preserve
 the stronger contribution guidance to commit the explanation with the change.
 Draft: [126].
 
-**Evidence.** ROADMAP's “same day” rule came from `88f87563`, whereas the
+**Evidence.** [ROADMAP](../../docs/ROADMAP.md?f)'s “same day” rule came from `88f87563`, whereas the
 consolidated architecture review `d5b0a55e` requires an ADR “in the same
-change,” and CONTRIBUTING requires documentation in the same commit.
+change,” and [CONTRIBUTING](../../CONTRIBUTING.md?f) requires documentation in the same commit.
 Recent behavior fixes such as `9d90ed3f` include code, tests and ADR updates
 together, demonstrating the reviewable unit that the stricter wording describes.
 
@@ -505,11 +507,11 @@ state that its generator is not in this repository. Keep the assets and
 licence, and regenerate the static bundle if its copied comments change.
 Do not invent a replacement build tool. Draft: [127].
 
-**Evidence.** `git blame` traces the generator claim in `ui/core/icons.js`
+**Evidence.** `git blame` traces the generator claim in [ui/core/icons.js](../../ui/core/icons.js?f)
 to the UI import `69be0ef6`, but `git log --all --full-history` for
 `build-seti-map.py` at any depth finds no tracked script.
-`ui/vendor/seti-map.js` repeats the claim and records the Seti UI and VS Code
-sources, while the existing browser icon checks and `static/build-index.py`
+[ui/vendor/seti-map.js](../../ui/vendor/seti-map.js?f) repeats the claim and records the Seti UI and VS Code
+sources, while the existing browser icon checks and [static/build-index.py](../../static/build-index.py?f)
 use the committed assets without that generator.
 
 **For Antti:** Should we build a missing tool just because an old comment
@@ -531,16 +533,139 @@ names it — no, correct the comment to describe the icon data we actually keep.
   questions, and the original audit preserved byte for byte.
 - No behavior changes; browser suites were not rerun. No push.
 
-[114]: 114-sandbox-html-previews-of-archive-members-as-security-md-promises.md
-[115]: 115-propose-plain-answers-to-the-docs-check-s-twelve-remaining-questions.md
-[117]: 117-clarify-cache-and-recovery-claims-from-docs-question-2.md
-[118]: 118-hide-the-ineffective-server-preview-switch-from-docs-question-3.md
-[119]: 119-document-the-menu-copy-exception-from-docs-question-4.md
-[120]: 120-disable-server-search-in-local-folders-from-docs-question-5.md
-[121]: 121-clarify-api-path-collisions-from-docs-question-6.md
-[122]: 122-clarify-deliberate-test-delays-from-docs-question-8.md
-[123]: 123-clarify-conditional-test-skips-from-docs-question-9.md
-[124]: 124-explain-dependency-constraints-from-docs-question-10.md
-[125]: 125-clarify-network-consent-scope-from-docs-question-11.md
-[126]: 126-align-decision-timing-rules-from-docs-question-12.md
-[127]: 127-correct-icon-generator-claims-from-docs-question-13.md
+[114]: 114-sandbox-html-previews-of-archive-members-as-security-md-promises.md?f
+[115]: 115-propose-plain-answers-to-the-docs-check-s-twelve-remaining-questions.md?f
+[117]: 117-clarify-cache-and-recovery-claims-from-docs-question-2.md?f
+[118]: 118-hide-the-ineffective-server-preview-switch-from-docs-question-3.md?f
+[119]: 119-document-the-menu-copy-exception-from-docs-question-4.md?f
+[120]: 120-disable-server-search-in-local-folders-from-docs-question-5.md?f
+[121]: 121-clarify-api-path-collisions-from-docs-question-6.md?f
+[122]: 122-clarify-deliberate-test-delays-from-docs-question-8.md?f
+[123]: 123-clarify-conditional-test-skips-from-docs-question-9.md?f
+[124]: 124-explain-dependency-constraints-from-docs-question-10.md?f
+[125]: 125-clarify-network-consent-scope-from-docs-question-11.md?f
+[126]: 126-align-decision-timing-rules-from-docs-question-12.md?f
+[127]: 127-correct-icon-generator-claims-from-docs-question-13.md?f
+
+## User review, 2026-10-20
+
+These decisions supersede the initial proposals above. Approved work is in
+Ordered backlog; approval of a plan does not mark its implementation complete.
+The design choice for question 6 and the policy choice for question 11 remain
+open. Links to repository files use relative `?f` destinations so they open in
+Filemill without depending on a private host or checkout.
+
+- **Q2 — revised.** Stop supporting `/w/`; removal is part of [129].
+  Older content may remain visible when the server is offline, with a clear
+  on-screen indicator. Tapping or clicking it opens details and instructions.
+  [117] now tracks that behavior, including reliable server-availability
+  detection and recovery. This user decision replaces A5's blanket ban on
+  cached document bytes; the implementation must update the architecture
+  review while retaining its unrelated cache-isolation and offline-miss fixes.
+- **Q3 — approved.** Hide the ineffective switch in the server edition and
+  keep it where it controls renderer downloads. [118] is ready.
+- **Q4 — replaced.** On clipboard refusal, close the menu and show a pop-up
+  containing the complete text for manual selection and copying. Put the full
+  error and instructions there; the footer truncates the refusal even on a
+  wide laptop screen. [119] now specifies this change.
+- **Q5 — approved, with a follow-up.** Apply the wrong-tree search fix in
+  [120]. Identical search controls, results and behavior for served and
+  browser-owned folders are the desired outcome, now tracked in [130],
+  which depends on [120]. Hiding local search is temporary.
+- **Q6 — goal clarified, design proposed below.** Internal requests must not
+  hide real file or folder paths. [121] now evaluates request separation
+  rather than merely correcting the collision comment.
+- **Q7 — replaced.** Remove `/n/`; compatibility with old links is not
+  required. [129] covers this alongside `/w/`, and must leave real folders
+  with those names accessible.
+- **Q8 — approved.** Clarify deliberate slow input versus guessed readiness
+  waits in [122].
+- **Q9 — approved.** Allow explained platform/tool prerequisites; require
+  issue links for disabled unfinished or broken work in [123].
+- **Q10 — approved.** Explain dependency constraints without invented
+  compatibility claims or version changes in [124].
+- **Q11 — context requested.** The network-consent wording change in [125]
+  is not approved. The switch is explained below.
+- **Q12 — approved.** Record a behavior decision in the same change, as
+  specified in [126].
+- **Q13 — approved.** Correct the missing-generator comments in [127].
+
+### Q6: separating API traffic from ordinary file requests
+
+Yes, either an explicit request header or a separate origin can distinguish
+the requests. The proposed first option is a header such as
+`Filemill-Request: api` on application fetches: an ordinary request for
+`/api/dir` then refers to a real file, while a marked request invokes the
+directory API. The server must make that choice before internal path matching.
+The header selects routing; existing mutation authorization still applies.
+The [Fetch headers API](https://fetch.spec.whatwg.org/#headers-class) supports
+custom headers, and responses selected by a header need appropriate
+[HTTP cache variation](https://www.rfc-editor.org/rfc/rfc9110.html#name-vary).
+
+This is a proposed design, not a complete solution yet. Archive previews and
+Raw links currently load `/api/raw` directly; script, style, font, icon,
+manifest and worker requests also cannot simply inherit the fetch header.
+[121] must cover these, including `/ui/` and PWA asset collisions. An explicit
+resource-query contract is one option for requests whose loaders do not set
+custom headers. A generic JSON Accept header or a “not a page navigation”
+test cannot reliably distinguish API calls from requests for ordinary files.
+
+A separate application/API host or port provides another namespace, but
+introduces [a different origin](https://html.spec.whatwg.org/multipage/browsers.html#origin) and
+[cross-origin request rules](https://fetch.spec.whatwg.org/#cors-protocol),
+plus deployment and worker-scope work. Moving only the API would still leave
+application-asset collisions on the file origin. The recommendation is to
+evaluate explicit request discrimination first and select the full contract
+with collision tests in [121], rather than introducing another listening
+port before it is needed.
+
+### Q11: what the preview-download switch actually does
+
+The settings item is called **Rich previews**. It controls downloading extra
+software to render Markdown, reStructuredText and Word documents in the static
+edition; the native edition uses the same provider. It is on by default and
+remembers the choice in browser storage. For example, reStructuredText loads
+Python/docutils through Pyodide, measured at about 6 MB transferred and 13 MB
+unpacked. The motivation was to keep the portable app small and let a user
+avoid these optional downloads.
+
+With the switch off, Markdown and reStructuredText use their source-text
+previews. A Word document may have no useful fallback because its bytes are
+binary. Turning the switch back on enables rich rendering again. Built-in
+previews such as images, PDF and PowerPoint slide text do not depend on these
+downloads.
+
+This is a download of rendering software, not an upload of the selected
+document to a conversion service. The server edition supplies the Markdown
+and Word modules itself and renders reStructuredText on the server, so its
+switch currently has no effect; Q3 hides it. The native provider uses the
+switch, but native on-demand downloads have not been verified.
+
+The switch is also **not an “all internet access off” control**: the app itself
+may load over the network, and pictures or other resources referenced by a
+document can contact external hosts. It does not unload previously downloaded
+code or erase browser caches. Because it defaults on, it is a remembered
+opt-out, not a first-use permission prompt. The user has not yet chosen whether
+to keep that boundary or change the privacy policy.
+
+Sources: [README.md](../../README.md?f),
+[ADR 0035](../adr/0035-rich-renderers-lazy-loaded-from-a-cdn-not-bundled.md?f),
+[ADR 0036](../adr/0036-but-behind-a-remembered-switch-defaulting-on.md?f),
+[ADR 0002](../adr/0002-rst-in-browser.md?f),
+[ADR 0082](../adr/0082-previews-link-only-to-safe-protocols.md?f),
+[ui/adapters/preview-rich.js](../../ui/adapters/preview-rich.js?f),
+[ui/core/shell.js](../../ui/core/shell.js?f), and
+[native/README.md](../../native/README.md?f).
+
+### Validation of the review update
+
+This update changes task descriptions and tracker state only. The approved
+feature changes remain work to implement; question 6's design and question 11's
+policy remain Unverified proposals. Existing completed-work acceptance boxes
+are unchanged.
+
+Validation: the 20 server docs tests and all seven pre-commit hooks passed.
+Local document links and tracker dependency order were checked. No push.
+
+[129]: 129-remove-the-obsolete-w-and-n-url-routes.md?f
+[130]: 130-give-served-and-browser-owned-folders-the-same-content-search.md?f
