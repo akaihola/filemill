@@ -23,11 +23,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [136] Security scan of filemill: served roots, mutations, previews, caches and
-  history
-  <!-- hai:{"id":"simple-2987e143-caeb-4d71-9d71-d4ad75a184de","labels":["steward","security"],"createdAt":"2026-10-20T19:38:07.298Z","updatedAt":"2026-10-20T22:23:49.586Z"} -->
-
 ## In Progress
+
+- [~] [136] Security scan of filemill: served roots, mutations, previews, caches and
+  history
+      <!-- hai:{"id":"simple-2987e143-caeb-4d71-9d71-d4ad75a184de","labels":["steward","security"],"createdAt":"2026-10-20T19:38:07.298Z","updatedAt":"2026-10-20T22:24:18.774Z"} -->
 
 - [~] [133] Protect saves from truncation and stale overwrites (architecture review
   A4)
