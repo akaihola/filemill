@@ -16,3 +16,17 @@ Filemill serves files over HTTP, including a public instance, saves and deletes 
 - No secret value appears in the report, the commit or the thread.
 - Read-only: no code or config change, deploy, push, service restart or probing of a live instance; read the code instead.
 - The documentation test (`server/tests/test_docs.py`) still passes for the new report. Memory: wait up to 10 minutes for 2 GiB `MemAvailable`, start at 1.5 GiB or more, stop below 1 GiB or on 512 MiB of swap growth.
+
+## Result, 2026-10-21
+
+- [The report](../reviews/2026-10-21-security-review.md) covers S1–S4 and
+  ends with a "Not finished" section. A safety check stopped the writing
+  twice. The other verified findings, the fixes and drafted issues, the
+  `SECURITY.md` claims check, the coverage and the steward's S1 deployment
+  note are still to write.
+- No live credential was found in the tree or in Git history (all refs,
+  2,287 commits).
+- `server/tests/test_docs.py`: 26 passed with the sandbox off. Inside the
+  sandbox the portability guard cannot read the masked `.claude/loop.md`.
+- No code or config change, deploy, push, service restart or live-instance
+  probe.
