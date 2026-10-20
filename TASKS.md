@@ -21,13 +21,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 
   <!-- hai:{"id":"simple-d1776999-2a2c-4870-936a-9620915aee07","labels":["steward"],"createdAt":"2026-10-20T08:12:02.201Z","updatedAt":"2026-10-20T08:12:29.949Z"} -->
 
-- [127] Correct icon generator claims from docs question 13
-  <!-- hai:{"id":"simple-c28a4f20-6a8c-44e7-a484-b78ac1731e99","labels":["steward"],"createdAt":"2026-10-20T07:12:49.393Z","updatedAt":"2026-10-20T08:15:34.952Z"} -->
-
 - [131] Close the gaps found in five older review items
   <!-- hai:{"id":"simple-c79b828d-b1d0-4776-82e2-0e9bdf1d6bed","labels":["steward"],"createdAt":"2026-10-20T14:12:31.533Z","updatedAt":"2026-10-20T14:12:31.533Z"} -->
 
 ## Scheduled
+
+- [127] Correct icon generator claims from docs question 13
+  <!-- hai:{"id":"simple-c28a4f20-6a8c-44e7-a484-b78ac1731e99","labels":["steward"],"createdAt":"2026-10-20T07:12:49.393Z","updatedAt":"2026-10-20T14:25:13.033Z"} -->
 
 ## In Progress
 
