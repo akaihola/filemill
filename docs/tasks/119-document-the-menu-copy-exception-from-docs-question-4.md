@@ -20,3 +20,12 @@ Approved replacement for the earlier menu exception: close the row menu after cl
 ## Acceptance
 
 A refused menu copy closes the menu and exposes the complete intended value for manual copying, without another clipboard permission requirement. The explanation is readable in the pop-up; the footer is not its only source. Successful copy rotation and native text copying still pass their checks.
+
+## Implementation plan
+
+- Add browser regressions for all three menu commands on an unselected row.
+- Use one native modal dialog in the shared UI for all copy refusals. Show the
+  full error and exact value in a labelled, selected, read-only text field.
+- Close the menu before copying. Restore the original focus after dismissal.
+- Check narrow layouts, long values, keyboard copying and successful rotation.
+- Update ADR 0048, the architecture review and the generated static bundle.
