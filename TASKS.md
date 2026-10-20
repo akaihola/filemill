@@ -23,11 +23,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [137] Fix the intermittent Back failure in
-  test_back_retraces_the_folders_that_were_opened
-  <!-- hai:{"id":"simple-67d7be8a-d50f-4a7e-a079-ca6a43ab338b","labels":["steward"],"createdAt":"2026-10-20T22:52:05.894Z","updatedAt":"2026-10-20T23:18:12.918Z"} -->
-
 ## In Progress
+
+- [~] [137] Fix the intermittent Back failure in
+  test_back_retraces_the_folders_that_were_opened
+      <!-- hai:{"id":"simple-67d7be8a-d50f-4a7e-a079-ca6a43ab338b","labels":["steward"],"createdAt":"2026-10-20T22:52:05.894Z","updatedAt":"2026-10-20T23:18:33.632Z"} -->
 
 - [~] [133] Protect saves from truncation and stale overwrites (architecture review
   A4)
