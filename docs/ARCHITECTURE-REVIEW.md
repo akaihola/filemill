@@ -1,707 +1,631 @@
 # Architecture review and remediation plan
 
-Checked against commit `1cb03863` on 2026-09-25; before [96]'s history rewrite
-it was `6ca2580`. This document replaces the
-reviews of 2026-09-05 and 2026-09-19. It keeps only the findings that the
-current code still shows, merges the findings the two reviews shared, and gives
-one remediation order. `docs/GOALS.md` states the target. `TASKS.md` records
-status.
+Checked against main commit `76c6142429641ea4c004645a4d3a70f6321a8d1a`
+on 2026-10-20 for [the architecture re-check][132]. This replaces the
+2026-09-25 snapshot at `1cb03863` and reconciles the fixes recorded since
+then. [docs/GOALS.md][goals] states the target; [TASKS.md][tracker] records
+work and acceptance separately.
 
 ## How to read this review
 
-- **Severity.** P1: fix before relying on the build for ordinary writable use or
-  wider exposure. P2: the next correctness and reliability work. P3: cleanups
-  and audits.
-- **Evidence.** Paths are relative to `server/src/filemill/` unless they start
-  with `static/`, `docs/`, `.github/`, `server/` or `native/`, which are
-  repository paths; `static/` means the repository's top-level `static/`. `ui/` is the symlinked shared frontend. Line numbers are
-  for the commit above.
-- **Verification.** This consolidation re-read the cited code. It did not rerun
-  the browser reproductions of 2026-09-19. A finding that was a structural risk
-  there stays a risk here.
-- **Issues.** `[N]` is issue N in `TASKS.md`, described in `docs/tasks/N-*.md`.
-- **Numbering.** A1–A12 replace the numbers 1–16 of 2026-09-05 and F1–F13 of
-  2026-09-19. Completed task descriptions that cite the old numbers are history.
+- **Severity.** P1: fix before relying on the build for ordinary writable use
+  or wider exposure. P2: the next correctness and reliability work. P3:
+  cleanups and audits.
+- **Status.** Open: the finding still applies. Changed: part was fixed, or the
+  evidence, scope or priority changed. Resolved: the cited defect was removed;
+  these findings are under "Resolved since the earlier reviews". A13 and A14
+  are new findings, both open. Resolution does not mark a task accepted.
+- **Evidence.** Links are repository-relative. Source line numbers refer to
+  the checked commit, not to the earlier reviews. A structural risk is labelled
+  as such; a passing existing test is not proof that a missing case works.
+- **Scope.** Re-read the cited code and the changes since `1cb03863` in the
+  server, shared UI, static edition and native shell. Checked the added archive,
+  bundle, document-outline, JSON, fold-dial, preview-safety and offline paths.
+  Applied honey principles: remove dead code and speculative interfaces; prefer
+  existing mechanisms and the standard library. No installed `codebase-design`
+  skill was found. Here, a **deep module** means a small interface that hides
+  substantial implementation detail, including resource lifetime and refresh.
+- **Verification.** Documentation tests passed all 26 checks before and after
+  the rewrite. The full pre-commit gate passed. A targeted server run passed
+  488 tests covering resource containment, mutation policy,
+  public mode, archive/bundle providers, previews and URLs. Model checks passed.
+  Small isolated probes confirmed the failures noted below. The JSON probe used
+  the actual adapter with DOM-only imports stubbed; the bundle-eviction probe
+  used real temporary Git repositories. This pass did not rerun browser or
+  native UI suites, deployment, load benchmarks or every advertised command.
+- **Numbering.** A1–A12 retain their identities from the consolidated review.
+  Old task descriptions and their earlier acceptance criteria remain history.
 
 ## Architecture as it is
 
-- **Two editions, one frontend.** The static edition starts at
-  `static/index-dev.html` → `ui/entry-static.js` → `ui/adapters/app-fsa.js`.
-  `static/build-index.py` concatenates the ES module graph into the committed
-  `static/index.html`. The server edition starts at `cli.py` → Uvicorn →
-  Starlette in `app.py`, which serves the same `ui/` with an import map and
-  answers `/api/*` and root-relative resource URLs. A Linux
-  WebKitGTK shell (`native/webview/` → `ui/entry-native.js`, issue [30])
-  supplies the three ports natively and passes the main UI scenario
-  ([ADR 0079], 2026-10-17).
-- **One URL per file.** `urls.py` parses `?filemill=raw|render|highlight`
-  and `?layout=full-columns|compressed-columns` ([ADR 0067]). `raw`, the
-  default, serves the bytes; every other view serves the shared shell.
-- **Root paths only.** [129] removed the `/w/` named mounts and `/n/`
-  alternate shell on 2026-10-20 ([ADR 0088]). Both names now identify real
-  files, folders or direct-root symlink bookmarks through `resource()`.
-  A whole JSON file opened as a column keeps its render query in the deep-link
-  model, so reloading it returns the shell. Virtual containers keep member paths.
-  The resource route keeps containment and public-mode checks. Explicit API,
-  UI-asset and PWA routes still win their registered patterns; collision
-  separation remains [121].
-- **Three ports.** `ui/core/ports.js` declares `FS`, `PREVIEW` and `ROUTER`,
-  including `FS.node`, `FS.blob`, optional `FS.write`, `FS.remove` and
-  `ROUTER.write(state, replace)`. Each edition supplies adapters.
-- **A DOM-free model.** `ui/core/model/` holds state, selection, sort, folding,
-  keyboard mapping, deep links, JSON folds, Markdown task toggles and the
-  previews' safe-URL rule ([ADR 0082]), tested by `ui/core/model/test.mjs`. The
-  rest of `ui/core/` is a DOM-coupled singleton.
-- **One fold dial with stops.** Horizontal scroll is a dial, not a translation
-  ([ADR 0021]). The scrollbar spans one stop each way and is re-based once a
-  scroll settles, so a fling lands on the next stop; left of natural the
-  leftmost columns widen to fill the finder ([ADR 0075], [81], 2026-10-11).
-  `ui/core/model/folding.js` holds the arithmetic; `ui/core/layout.js` owns
-  the scroll range and is the only writer of the dial. Resizing remaps widened
-  positions when the available stops change, preserving the visible column count
-  where possible and clamping partial positions to the new range. The rail span
-  uses the adjusted base so fractional stops remain native scroll endpoints
-  ([81] review fixes, 2026-10-11). A sideways wheel over
-  the preview turns the dial until its end, where the preview is as wide as
-  the screen allows; only then do the preview's own scrollers, a wide code
-  block among them, take the gesture ([ADR 0076], [78], 2026-10-11).
-  Native fullscreen and its layout fallback give the preview the gesture
-  immediately, before the wheel latch is checked, because the preview already
-  fills the screen ([78] independent-review fix, 2026-10-11).
-  A wheel gesture keeps the axis it took in its first 6 px. Sideways drift
-  in a vertical swipe does not turn the dial. While the dial takes a sideways
-  swipe, its vertical drift does not scroll the document ([ADR 0084], [110],
-  2026-10-19).
-  A glide waiting for its frame starts only if no later dial write replaced
-  it. A layout that finds the dial already at its resting place stops a glide
-  still heading elsewhere ([ADR 0022], [113], 2026-10-20).
-  A new root resets the dial through the layout module. The reset cancels
-  the old glide and clears its settle timer, so the first layout establishes
-  the new scrollbar range at once ([94], [ADR 0086], 2026-10-19).
-  These fixes keep a mount during a refresh's glide from folding the focused
-  root. General navigation cancellation remains A9. The history reconciliation
-  on 2026-10-20 retains both fixes and assigns the reset decision [ADR 0086];
-  [ADR 0084] keeps the wheel-axis decision. The reset also clears the old
-  wheel gesture, whose axis would otherwise survive its cancelled timer.
-- **Virtual filesystems.** JSON, JSONL and CSV are browser adapters
-  (`ui/adapters/vfs-json.js`, `vfs-csv.js`). Markdown and reStructuredText
-  browse by their headings the same way (`vfs-doc.js`, outline in
-  `ui/core/model/headings.js`, [ADR 0070]). SQLite, archives
-  (tar, compressed tar and zip, [ADR 0072]) and Git bundles (through `git`,
-  [ADR 0073]) are server providers registered in `vfs.py`. The WebVTT provider
-  registered there lists no entries; the browser renders transcripts. An archive member
-  or a bundle blob has bytes of its own, so `vfs.py` has a second protocol,
-  `VFSMemberProvider`, and `/api/preview` and `/api/raw` take the member's
-  virtual path as `v`. `HTTP.blob` sends it too, so a JSON or JSONL member
-  browses in the browser like the same file on disk ([84], 2026-10-11).
-  Declined JSON/JSONL entries become leaves, cached rows lose their chevrons,
-  and the navigator closes any loading column opened before the decline. Size
-  and JSONL read/parse failures stay visible in the preview ([84] review
-  follow-up, 2026-10-11).
-  A member that the server renders (an image) reuses the browser's own
-  markup, `img.pv-img`, so one stylesheet scales both ([85], 2026-10-11).
-  A Markdown, `.docx` or `.pptx` member renders in the browser like the same
-  file on disk, and a Markdown member opens by its headings ([86],
-  2026-10-11); a reStructuredText member stays with the server renderer.
-  Markdown links resolve from the member's directory, including in section
-  previews. Filename-like JSON keys and CSV labels remain data values and
-  records, without document heading columns ([86] review fixes, 2026-10-11).
-  Left-arrow navigation reselects a document or parent section through the
-  shared navigator, restoring its full preview and URL while removing deeper
-  section selections ([80], 2026-10-11). Automatic README/index selection
-  applies only to ordinary folders, so headings with those names do not replace
-  the selected document or parent section ([80] review correction, 2026-10-11).
-  Document sections show their heading text without a row icon. Their previews
-  omit the file summary heading and divider, leaving the document's own heading
-  at the top of the content ([79], 2026-10-11).
-  Section resource URLs have fresh-load HTTP and browser coverage ([112],
-  [ADR 0085], 2026-10-19). The existing `api.split_vfs` route accepts document sections;
-  heading existence stays with the browser. A missing section at any depth
-  restores the whole document in the DOM-free deep-link model.
-  Markdown previews preserve their
-  renderer IDs and add GitHub fragment aliases. The path router supplies the
-  fragment, and the DOM renderer scrolls the preview body after fonts are ready.
-  Fragment browser checks cover Chromium and Firefox with fresh and warm
-  service-worker caches. A running server must restart after UI updates so
-  its startup asset-version map matches the served files ([112] follow-up,
-  2026-10-19).
-- **Persistence.** Files are the only durable data. The browser keeps recent
-  folder handles in IndexedDB, settings in localStorage, navigation in history
-  and application assets in Cache Storage. The server edition's worker also
-  keeps offline copies of shells, listings and file reads there. It answers
-  with them only while the server cannot be reached, with an indicator saying
-  so ([117], [ADR 0089], 2026-10-20).
+- **One UI, three hosts.** [ui/][ui] is a symlink to the server package’s shared
+  frontend. The static development page loads ES modules; the concatenating
+  [static/build-index.py][builder] produces [static/index.html][bundle].
+  [server/src/filemill/cli.py][cli] starts Uvicorn and Starlette in
+  [server/src/filemill/app.py][app]. The Linux WebKitGTK prototype embeds the
+  same UI and implements filesystem and history calls in
+  [native/webview/main.c][native-host], lines 17–188. It is not cross-platform
+  feature parity: the native FS has writes but no remove operation
+  ([ui/adapters/native.js][native-adapter], lines 14–54).
+- **Root-relative resources.** [server/src/filemill/urls.py][urls], lines
+  31–105, accepts Raw, Rendered and Source, two column layouts, and the `?f`
+  shortcut. [server/src/filemill/app.py][app], lines 393–486, resolves a real
+  file and an optional virtual remainder. Bare files return bytes; other views
+  return the shell. A bare directory may serve its own index. Named mounts and
+  the alternate shell are gone (`03359503`, [the route removal][129]); `w` and
+  `n` now name real resources. Explicit API, UI and PWA routes still shadow
+  matching resources. [The route-collision task][121] owns that open design.
+- **Read and write boundaries.** [server/src/filemill/paths.py][paths], lines
+  19–127, resolves the root and direct-root symlink bookmarks. Public mode
+  rejects dotted request components and resolved hidden targets, and filters
+  listings and search. [server/src/filemill/mutations.py][mutations], lines
+  33–53, checks Origin, Host, configured origins and a per-process token.
+  Save and delete authorize before reading a body or changing files. Bare HTML
+  remains trusted same-origin content under [SECURITY.md][security].
+- **Three ports, mutable nodes.** [ui/core/ports.js][ports], lines 10–99,
+  declares FS, PREVIEW and ROUTER. Optional capabilities include writes,
+  deletion, raw URLs and a stale-read flag. Nodes also carry adapter-specific
+  parsing and metadata state. Browser JSON, CSV and document wrappers compose
+  around each filesystem. The interface hides byte access well, but it does
+  not yet hide refresh invalidation or preview lifetime (A9, A13).
+- **Model and DOM.** [ui/core/model/][model] owns selection, sorting, folding,
+  deep links, headings, safe URLs and Markdown task changes without browser
+  APIs. The surrounding core remains a DOM-coupled singleton. Columns retain
+  DOM and evict off-screen rows; previews are still rebuilt (A9).
+- **One fold dial.** [ui/core/model/folding.js][folding], lines 76–133, owns
+  stops, windows and widened widths. [ui/core/layout.js][layout], lines
+  97–303 and 396–527, owns scroll writes, settling, wheel-axis locking and
+  fullscreen handoff. A remount clears old glides and gesture state. Keep
+  these measured fixes and their model boundary; a new layout framework is
+  not justified by this review.
+- **Virtual containers.** JSON/JSONL, CSV and document headings are browser
+  adapters. Large JSONL files keep byte spans; JSON documents have an 8 MiB
+  parse limit. Markdown and RST sections carry line spans. Server SQLite,
+  archive and Git bundle providers register in [server/src/filemill/vfs.py][vfs],
+  lines 89–145. `VFSMemberProvider` adds byte reads for archive and bundle
+  members. API calls keep real path `p` and member path `v` separate, but
+  selection and browser history still use display names (A6, A7).
+- **Rendering.** [ui/adapters/app-http.js][app-http], lines 97–187, composes
+  browser Markdown, DOCX and PPTX rendering with server RST and member
+  rendering. Markdown/DOCX dependencies are vendored in the server edition;
+  static and native retain the download-consent setting. Source and Raw are
+  shared browser capabilities, with remaining routing gaps in A8. The native
+  preview still delegates directly to PreviewRich. See the
+  [README edition matrix][readme] and [the native qualification][native-readme].
+- **Persistence and offline reads.** Files are durable data. IndexedDB stores
+  browser folder handles; localStorage stores settings; history stores
+  navigation. The server worker keeps shells, assets and bounded offline read
+  copies, serves live responses first except exact versioned asset hits, and
+  marks offline responses. [ui/adapters/server-status.js][server-status],
+  lines 80–161, probes for recovery and renews the mutation token; the HTTP
+  adapter records stale reads and the editor refuses them. This is the policy
+  in [ADR 0089], not a ban on cached document bytes. The static worker still
+  uses the earlier policy (A5).
 
 ### What is healthy
 
-Keep these.
+Keep these boundaries and checks.
 
-- The three ports and the shared frontend. There is one copy of `ui/`.
-- Decisions are recorded with their measurements in `docs/adr/`.
-- The [older review repairs] (2026-10-20) keep archive imports at module
-  scope, selecting standard-library Zstandard on Python 3.14+ and the package
-  on older Python. Both backends have round-trip tests. Direct mypy has
-  Docutils/Pygments stubs. UI tuning values have names and reasons; ADR 0036
-  retains its consent decisions in fewer than 40 lines. These repairs leave
-  the open findings below unchanged.
-- Clipboard refusals use one native modal dialog in the shared browser UI.
-  It preserves the exact copy value and full error for manual copying, including
-  menu targets that are not selected ([119], [ADR 0048], 2026-10-20).
-- The quality gate runs. CI runs `deno fmt --check`, `deno lint`, the model
-  tests, `build-index.py --check`, both static suites (bundle and `--dev`) and
-  the server suite with coverage (`.github/workflows/publish.yml`), each with
-  `--durations=20`. [CONTRIBUTING.md](../CONTRIBUTING.md#tests) describes the
-  lint job, the three parallel browser suites and the publish gate ([90],
-  2026-10-14). A new run cancels only
-  older runs of the same workflow and ref, so pull requests cannot cancel main;
-  only main publishes. The actions use Node.js 24, including the nested Pages
-  artifact uploader; setup-uv retains cache pruning explicitly ([94],
-  2026-10-17). [Main run 39318918168](https://github.com/akaihola/filemill/actions/runs/39318918168)
-  passed lint, 157 bundle tests, 157 development tests, 939 server tests and
-  Pages deployment without Node.js 20 annotations ([93]/[94], 2026-10-19).
-  All six served assets match commit `7da2e69`.
-  The preview threshold browser regression waits for
-  the expected fold count before measuring geometry, since navigation state can
-  precede a deferred scroll write even with CSS scrolling set to `auto`
-  ([93], 2026-10-17). Issue [106] adds the `noqa` issue-link guard that
-  CONTRIBUTING.md describes to the pre-commit gate (2026-10-19). Its six
-  suppression sites now use equivalent unsuppressed code. Provider
-  imports still register in the same order. The disabled Python/LibreOffice
-  PPTX tests and unused helper are removed; browser PPTX checks remain.
-  The baseline and
-  dispositions are in `docs/testing/remaining-red-tests.md`. Browser checks in
-  the static pytest suite and server tests wait for observable state, including
-  scroll/dial stability and completed storage writes, rather than fixed sleeps.
-  A source guard prevents fixed browser waits from returning (2026-10-17).
-  The keyboard browser suite writes server logs to a temporary file. An unread
-  subprocess pipe could fill under concurrent load and block directory responses.
-  A small-pipe regression covers that failure. The mobile tap helper sends
-  actual touch input. The landscape regression checks paired press/release row targets:
-  native scroll-into-view can turn the fold dial and move a mouse-click target
-  between press and release. Existing geometry checks remain unchanged; the
-  shared UI is unchanged ([98], 2026-10-17).
-- Static browser checks run as separate pytest tests under `static/tests/`;
-  the README's [Tests](../README.md#tests) section lists the commands and
-  fixtures ([25], 2026-10-17). The fixed-wait guard scans the moved tests recursively. Copy tests install
-  and pause their clock in one operation, so setup cannot pause in the past.
-  The fold-animation test waits for its navigation setup to finish before
-  measuring the animation, including with slow directory responses.
-  Touch checks also wait for the dial to settle before pressing a row. The
-  Back/Forward regression creates one preview history entry explicitly, so a
-  slower intermediate folder read cannot add an extra setup entry
-  ([99], 2026-10-17).
-  The horizontal keyboard test waits for preview scroll movement after each
-  scroll key. It covers normal writes and writes deferred across animation
-  frames, with the same navigation, focus and directional assertions
-  ([108], 2026-10-19).
-  The [94] follow-up also waits for scrollable preview content before sending
-  the key and tests delayed file reads. Preview geometry checks wait for the
-  fold count, since the native scroll position can change before the scroll
-  event repaints the columns. The server ←/→ URL check waits for the render
-  that opens each selection and reads `location.href`, because `page.url` can
-  trail in-page history writes ([113], 2026-10-20).
-- Real filesystem tests without a picker: `static/tests/test_url.py` drives the real
-  FSA adapter against the origin private file system.
-- In the browser, size limits and the image extension list have one home,
-  `ui/core/limits.js`. The server keeps its own: `IMAGE_EXTENSIONS` in
-  `vfs.py`, without `avif`, `bmp` and `ico`, and the 512 KiB
-  `SYNTAX_SIZE_LIMIT` in `preview.py` (A12, corrected 2026-10-19 by [109]).
-  JSON documents use a separate 8 MiB limit, with a metadata check before
-  fetching and a blob check before parsing ([ADR 0071], 2026-10-07).
-- The server binds to `127.0.0.1` by default (`cli.py:21`).
-- A public instance (`--public` or `FILEMILL_PUBLIC`) never lists or serves a
-  path with a component that starts with `.`, nor follows a symlink into one
-  ([128], [ADR 0087], 2026-10-20). `paths.py` holds the rule beside
-  `resolve_safe`, which takes `public=`; `app.py` checks each request path
-  before resolution and filters listings and search results.
+- The shared UI, DOM-free model and small ports avoid separate applications.
+  Archive parsing uses the standard library; Git object handling uses Git.
+- The preview safety fix escapes wikilink text and sanitizes converter output.
+  HTML preview frames, including archive members, are sandboxed. A1–A3 are
+  resolved; bare HTML serving keeps its documented trust boundary.
+- [The CI workflow][ci] runs pre-commit, model checks, bundle consistency,
+  separate static bundle/development suites and the server suite with branch
+  coverage. Only main publishes; cancellation is scoped to workflow and ref.
+  [CONTRIBUTING.md][contributing] describes the same gate. These are configured
+  gates; the local results above do not claim a fresh full CI run.
+- Tests now wait for observable browser state. Static checks live in
+  [static/tests/][static-tests]. [The remaining-test record][remaining-tests]
+  separates historical failures from current work. Keep the tests that guard
+  log-pipe backpressure, touch input, scroll settlement and worker recovery.
+- [The older-review repairs][131] fixed conditional Zstandard imports, typing
+  stubs and unexplained tuning constants (`f7e917a5`). Clipboard refusal now
+  offers manual copying with the full value and error (`fef28359`). Neither
+  repair requires a general framework or a new service layer.
 
 ### Rules for changes
 
 - A decision that changes a port or a behaviour gets an ADR in the same
-  change. A later ADR is too late ([126], 2026-10-20).
+  change. A later ADR is too late ([the decision-timing task][126]).
 - Code that a change retires is deleted in the same change.
 - Keep the shared UI and the concatenating builder. Do not add a framework,
-  bundler, ORM or general `ViewSpec` without a failing, measured case.
-- Keep native work ([29] → [30] → [31], [ADR 0066]) behind a stable browser
-  preview lifecycle (A9). Status 2026-10-19: [29]–[31] are complete with A9
-  still open; A9 below records the native cost.
+  bundler, ORM, general `ViewSpec` or cache manager without a failing,
+  measured case. Make existing modules deeper by hiding their invariants.
+- Native qualification is already complete for the Linux prototype. Fix A9
+  before expanding its preview workload; do not describe native work as still
+  waiting to start. Keep changes within the issue being implemented.
 
 ## Findings
 
-| ID  | P  | Finding                                                   | Effort / risk | Depends on |
-| --- | -- | --------------------------------------------------------- | ------------- | ---------- |
-| A1  | P1 | Resolved 2026-10-19: index containment [103]               | S / low       | —          |
-| A2  | P1 | Resolved 2026-10-19: inert previews [104]                  | M / medium    | with A3    |
-| A3  | P1 | Resolved 2026-10-19: mutation policy [103]                 | M / medium    | —          |
-| A4  | P1 | Saves are neither atomic nor conflict-checked             | M / medium    | A1, A3     |
-| A5  | P1 | Partly resolved 2026-10-20: server worker [117]; static worker open | M / medium    | —          |
-| A6  | P2 | Virtual-path round trip is unverified                     | S / low       | —          |
-| A7  | P2 | SQLite labels double as identities; errors look empty     | M / medium    | A6         |
-| A8  | P2 | Preview routing and representation disagree across modes  | M / medium    | A2         |
-| A9  | P2 | The preview is rebuilt on every render                    | M / medium    | A8         |
-| A10 | P2 | Limits bound the result, not the work                     | M / medium    | A4, A6, A8 |
-| A11 | P2 | Current documents contradict the code                     | M / low       | each fix   |
-| A12 | P3 | Smaller defects and audits                                | S each / low  | —          |
+Effort: S is up to a day; M is one to three days. Split broad work into
+reviewable changes with focused regressions.
 
-Effort: S is up to a day, M one to three days.
+| ID | P | Status | Remaining finding | Effort / risk |
+| --- | --- | --- | --- | --- |
+| A4 | P1 | Open | Saves can truncate or overwrite newer content | M / medium |
+| A5 | P1 | Changed | Static worker freshness, misses and cache ownership | M / medium |
+| A6 | P2 | Changed | Virtual identity is still a display name | M / medium |
+| A7 | P2 | Changed | SQLite keys collide; provider failures look empty | M / medium |
+| A8 | P2 | Changed | Preview source and representation are conflated | M / medium |
+| A9 | P2 | Changed | Preview reuse and async ownership remain missing | M / medium |
+| A10 | P2 | Changed | Limits still do not bound acquired work | M / medium |
+| A11 | P3 | Changed | Clean-environment command audit remains unverified | M / low |
+| A12 | P3 | Changed | Smaller defects, dead code and audits | S each / low |
+| A13 | P2 | Open | JSON-column refresh reuses the old parsed value | S / low |
+| A14 | P2 | Open | Bundle-cache eviction removes an active repository | S / medium |
 
-### A1. The directory index escapes the root check
+### A4. Saves can truncate or overwrite newer content
 
-Resolved 2026-10-19 ([103], [ADR 0081]). The final index file is resolved with
-the request zones before serving. The resource/raw/index symlink
-matrix (mount routes removed by [129]) covers in-root files, nested escapes and direct-root bookmarks. Other derived
-file responses were audited; see the ADR. The evidence below describes the
-earlier code.
+**Status: open, P1.** [server/src/filemill/api.py][api], lines 358–375,
+checks the size and text, then calls `target.write_bytes(data)`. Failure after
+truncation can lose the old file. No revision travels from read to save.
+[server/src/filemill/app.py][app], lines 354–361, buffers the entire request
+before the size check and calls blocking save code on the event loop.
+[ui/adapters/fsa.js][fsa], lines 70–81, has no external-change check or
+explicit abort after a failed write. Native already requests consistent,
+durable replacement ([native/webview/main.c][native-host], lines 151–170),
+but its write port also has no expected revision.
 
-`app.py:405-407` (`resource`) validates the requested directory, then sends
-`target / "index.html"` through `FileResponse` without resolving it. On
-2026-09-19 a nested `sub/index.html` symlink to a file outside the root returned
-404 at `/sub/index.html` but 200 with the outside bytes at `/sub/`.
+**Acceptance.** A failed server write leaves the old bytes intact. Stale writes
+fail with a conflict while retaining the draft. Specify symlink, hard-link,
+ownership and permission behavior for replacement. Recheck browser-owned files
+before writing and abort failed streams. Preserve [the editor task][28]’s
+explicit navigation-discard policy. Authorization from A3 remains in place.
 
-**Acceptance.** An escaping nested index returns the same denial as its explicit
-URL. In-root indexes and deliberate direct-root bookmark symlinks keep working.
-Other derived-file responses are audited the same way.
+### A5. The static service worker retains the old policy
 
-### A2. Preview content can execute as Filemill
+**Status: changed, P1.** The server portion is resolved by [the offline-read
+work][117], commits `aa963e3a` and `54b639bb`. Its worker uses network-first
+reads, valid offline misses, scoped cache cleanup and marked copies
+([server/src/filemill/static/sw.js][server-sw], lines 65–199). The editor
+rejects stale reads ([ui/editor/editor.js][editor], lines 26–43).
 
-- The wikilink rule in `ui/adapters/preview-rich.js:187-202` turns a whole
-  markdown-it text token into `html_inline` and escapes only the link target and
-  label. Other text in that token becomes raw HTML, despite `html: false`. On
-  2026-09-19 an image event handler beside `[[note]]` ran in the app page.
-- `docxHTML` (`preview-rich.js:341`) inserts converter HTML without a sanitizer.
-  This is an audit target, not a reproduced exploit.
-- Every entry module calls `exposeCore()` (`ui/core/debug.js`), so any script
-  that runs in the page shares FS and state.
-- Resolved: the HTML preview iframe now has `sandbox=""`
-  (`ui/core/renderers.js:171`). The server's iframe for an archive's HTML
-  member had none until [114] (2026-10-20), so its script ran as Filemill.
-  The PDF iframes stay unsandboxed in both renderers; the raw route serves a
-  `.pdf` member as `application/pdf`.
+[static/sw.js][static-sw], lines 10–44 and 64–76, still shares the name
+`filemill-v1`, deletes every other cache on its origin and answers from a
+cached response immediately. Its `cached || networkFetch || fallback` tests a
+promise: when an uncached fetch fails, the promise resolves to `null`, not to
+the fallback Response. The cache name and activation cleanup also affect
+other applications on a shared origin. These are source-confirmed defects;
+this pass did not rerun an installed-worker reproduction.
 
-**Acceptance.** Crafted Markdown stays inert with and without wikilinks, and
-malformed wikilinks are escaped. Links, code and footnotes still render. Unsafe
-URLs in DOCX output and `.desktop` links do not execute. Bare-HTML web serving
-at the server root keeps working and its trust boundary is documented in
-`SECURITY.md`.
+**Acceptance.** Online reads use current content; offline copies have an
+indicator. Cold offline misses return a valid response. Each static app scope
+owns its cache and cleanup. Test two applications sharing an origin and an
+installed upgrade from the legacy worker without losing folder handles.
+Coordinate transport changes with [the route-collision task][121].
 
-Resolved 2026-10-19 ([104], [ADR 0082]):
+### A6. Virtual identity is still a display name
 
-- A wikilink is now markdown-it link tokens, and the text beside it stays an
-  escaped text token. Malformed wikilinks stay text.
-- Preview link targets pass one safe-protocol rule, `ui/core/model/safe-url.js`
-  with a copy in `preview.py`: `http:`, `https:`, `mailto:` or scheme-less.
-  `.docx` output keeps only mammoth's tags and attributes. Browser-rendered
-  reStructuredText and `.docx` lose event handlers and unsafe `href` and `src`
-  values. Server-rendered reStructuredText loses unsafe `href` and `src`
-  values. Both `.desktop` renderers show an unsafe URL as text.
-- Markdown comment rules hide inline and block comments without enabling raw
-  HTML ([111], [ADR 0083], 2026-10-19). Code, Source and Raw retain comment
-  text. Source line numbers still identify task checkboxes.
-- The same audit found that docutils writes `javascript:` link targets as
-  given. Both reStructuredText renderers now apply the rule.
-- `SECURITY.md` names the bare-HTML trust boundary, and
-  `server/tests/test_resource_routes.py` keeps that serving working.
-- Tests: `static/tests/test_rich.py` (crafted Markdown with and without a
-  wikilink, `.docx`, `.desktop` and browser reStructuredText links),
-  `server/tests/test_preview.py` (server reStructuredText and `.desktop`) and
-  `ui/core/model/test.mjs` (the rule's edge cases).
-- Unchanged: `exposeCore()` still shares FS and state with any script in the
-  app page. A bare HTML page at the root already has the same origin, so it
-  gains nothing from it.
+**Status: changed, P2.** This is now a demonstrated identity problem, not only
+an unverified round trip. [ui/core/model/deeplink.js][model-links], lines
+10–14 and 36–70, serializes names, drops empty names and finds children by
+name. [ui/core/model/state.js][state], lines 54–55 and 98–100, also selects
+by name. A probe walking an empty key produced no selection.
 
-### A3. Save and delete accept unrelated origins
+Archive and Git bundle listings truncate `name` but retain distinct `vpath`
+values ([server/src/filemill/providers/archive.py][archive], lines 157–176;
+[server/src/filemill/providers/gitbundle.py][gitbundle], lines 155–161).
+Two archive filenames with the same first 65 characters produced one distinct
+display name and two distinct virtual paths. The UI selects the first matching
+name, so the second identity cannot be restored correctly. Truncation can also
+remove the extension used to choose a renderer.
 
-Resolved 2026-10-19 ([103], [ADR 0081]). Both routes check Origin, Host and a
-per-process mutation token before path resolution or body consumption. The HTTP
-adapter sends the shell token. Two-origin browser tests cover local and
-configured reverse-proxy writes. Same-origin hostile HTML remains trusted
-content and A2 remains open; [104] resolved A2 later on 2026-10-19. The
-following evidence describes the earlier code.
+[ui/adapters/router-path.js][router-path], lines 22–39, encodes segments, but
+server resource splitting and path resolution decode and split again
+([server/src/filemill/api.py][api], lines 255–290;
+[server/src/filemill/paths.py][paths], line 106). Percent signs, embedded
+slashes, Unicode and empty keys need end-to-end reload checks; this pass did
+not establish the full matrix. Document headings already disambiguate repeated
+labels ([ui/core/model/headings.js][headings], lines 135–143).
 
-`POST /api/save` and `DELETE /api/delete` (`app.py:306-323`) have no Origin,
-Host or token check. On 2026-09-19 a `text/plain` POST with an unrelated Origin
-overwrote a file and returned 200. Sending no CORS headers stops reads, not
-writes. Any `.html` served same-origin from the root can also call these
-endpoints. `SECURITY.md` and `CHANGELOG.md` describe the CORS removal as if it
-restricted access.
+**Acceptance.** Separate identity and presentation without inventing a general
+node framework. Long names and colliding labels stay independently selectable.
+Empty keys and keys containing `%`, `/` and Unicode survive selection, history,
+copy and fresh reload. Keep the resolved whole-listing/row-eviction behavior.
 
-**Acceptance.** An unrelated-origin POST cannot change a fixture file. A delete
-without valid authorization fails. The shipped UI still saves and deletes
-through configured local and reverse-proxy origins. Checks run before the body
-is read. UI and server change together; `SECURITY.md` names the policy.
+### A7. SQLite keys collide; provider errors look empty
 
-### A4. Saves are neither atomic nor conflict-checked
+**Status: changed, P2.** SQLite remains open. In
+[server/src/filemill/providers/sqlite.py][sqlite], lines 44–53, all listing
+exceptions become `[]`. Lines 137–150 select `rowid` and use a truncated key
+as both label and path. Lines 184–235 query schema and uniqueness per row.
+A populated WITHOUT ROWID fixture returned no rows. Tests currently even
+expect truncated keys; passing them does not prove unique identity.
 
-`api.py:303-320` (`save_file`) calls `target.write_bytes(data)`. A failed write
-leaves a truncated file. Reads and writes carry no revision, so a second tab or
-an external editor is overwritten silently. `api_save` buffers the whole body
-before the size check and runs blocking I/O on the event loop. FSA writes have
-no external-change check and no abort on failure. Navigation deliberately
-discards unsaved edits ([28]); that is not in scope.
+The new providers repeat the error ambiguity: [server/src/filemill/providers/archive.py, lines 115–147][archive]
+turns corrupt or unreadable indexes into `{}`, while [server/src/filemill/providers/gitbundle.py, lines
+78–118 and 196–202][gitbundle] turns command failure, timeout or failed
+unbundling into an empty tree. A corrupt ZIP probe returned `[]`.
+[server/src/filemill/api.py][api], lines 209–218, further treats any provider
+failure as "not browsable", although lines 233–236 can already report a
+provider exception as `denied`.
 
-**Acceptance.** A simulated write failure leaves the old bytes intact. A stale
-save is rejected with a conflict and the draft stays visible. Symlink and
-permission behaviour of the replacement is defined and tested.
+**Acceptance.** With A6’s identity contract, keep SQLite keys lossless and read
+schema facts once per listing. Read WITHOUT ROWID tables or report unsupported.
+Distinguish empty, unsupported, corrupt and inaccessible containers. Propagate
+errors through the existing API error field; do not add a general result-type
+framework. Keep SQLite connections read-only. Address partial listings in A10.
 
-### A5. Service workers cache file bytes and break offline misses
+### A8. Preview source and representation are conflated
 
-The server worker's part is resolved; see below. This paragraph describes both
-workers before [117].
+**Status: changed, P2.** Shared Source/Rendered/Raw behavior for browser files
+landed in `d1e98b46`; the text-only size gate is also resolved. Remaining cases:
 
-In `static/sw.js`, every same-origin GET outside `/api/` is answered from the
-cache first, navigations included. `server/src/filemill/static/sw.js` sends
-navigations to the network, with an inline recovery page when that fails, and
-answers every other same-origin GET from the cache first (corrected
-2026-10-19, [109]). So root-relative file bytes that a page embeds
-are cached, including `no-store` responses (server `:90`, static `:70`). A cached
-response wins over the fresh one, so the first read after a save can be stale.
-`cached || networkFetch || new Response(...)` (server `:96`, static `:76`) tests
-the promise, so an offline miss resolves to `null`. Activation deletes every
-cache name except `filemill-v1`, including other applications' caches on the
-same origin. Root precaching can capture a user's `index.html`. [ADR 0063]
-promises a recovery page that uncached navigation cannot reach.
+- **Browser-owned RST.** [ui/adapters/app-http.js][app-http], lines 112–150
+  and 240–249, uses the same RST override for served and local-folder nodes.
+  A local handle has no `rel`, so it requests `/api/preview?p=undefined`.
+  The registered browser renderer list at lines 97–101 also excludes RST.
+- **Member Source mode.** The wrapper at lines 163–172 sends highlighted
+  server members to `/api/preview`; [server/src/filemill/app.py][app], lines
+  333–338, and [server/src/filemill/api.py][api], lines 331–355, call
+  `render_preview`, not `render_source`. An RST member still renders RST;
+  an HTML member still gets an iframe. The request carries no representation.
+- **Native Source mode.** [ui/adapters/app-native.js][app-native], lines
+  40–45, omits `withHighlighting`; [ui/adapters/native.js][native-adapter],
+  lines 55–57, delegates directly to PreviewRich.
 
-**Acceptance.** Corrected 2026-10-20 by the user's decision in [117]: a
-worker may keep document bytes, but only to show them while the server cannot
-be reached, and only with a visible offline indicator. An online read never
-returns an older copy. Unrelated caches survive activation. A cold offline
-navigation gets a valid recovery response, and an offline read miss gets a
-valid response too. An upgrade purges legacy `filemill-v1` entries without
-clearing remembered folder handles. The earlier acceptance, "viewing a file
-adds no document bytes to Cache Storage", no longer applies.
+**Acceptance.** Choose a renderer from source capability and representation,
+not wrapper order or the presence of a virtual path alone. Local-folder RST
+makes no server preview request. Source, Rendered and Raw work for supported
+file/member kinds across hosts. Reuse the renderer table and raw capability;
+a general `ViewSpec` is not justified. [The RST task][41] keeps its scope.
 
-Partly resolved 2026-10-20 ([117], [ADR 0089]). The server worker is
-network-first for every request it handles but exact content-hashed UI
-module URLs, and keeps complete answers as offline copies: shells marked
-`X-Filemill-Shell`, UI assets by path, and up to 200 reads of at most 2 MiB.
-It answers from a copy, marked `X-Filemill-Offline`, only when the server does
-not answer or a proxy answers 502–504, and otherwise a valid 503 or the
-recovery page. It precaches nothing
-and deletes only `filemill-v1` and older `filemill-server-*` caches.
-`ui/adapters/server-status.js` turns those answers into the top-bar
-indicator, probes past the worker for recovery and a fresh mutation token,
-and remounts the served root when reads were answered offline. Copies are
-read-only through the FS port's `stale` flag. Browser tests stop and restart a
-server under an installed worker.
+### A9. Preview reuse and async ownership remain missing
 
-Remaining: `static/sw.js` still answers every same-origin GET, navigations
-included, from its cache first. Its offline miss still resolves to `null`; its
-activation still deletes every other cache on the origin, which on a shared
-Pages origin includes other sites' caches. A5 closes when the static worker
-meets the acceptance above.
+**Status: changed, P2.** [ui/core/render.js][render], lines 476–517, creates a
+new preview and revokes URLs on every render unless an editor is active.
+Lines 684–730 read metadata and render again. Resize calls render from
+[ui/core/layout.js][layout], lines 521–525. This resets scroll/media and repeats
+provider work. The native qualification recorded 1.4–2.8 s wrapping a 400 KB
+single-line source versus 10–17 ms in Chromium; those are historical figures,
+not new measurements. [The preview-cache task][21] is under Completed /
+Accepted but its requested reuse is absent.
 
-### A6. Virtual-path round trip is unverified
+`navSeq` guards choose and refresh ([ui/core/nav.js][nav], lines 57–103 and
+132–174). `applyPath` has a separate boolean guard ([ui/core/deeplink.js][links],
+lines 24–68), and `walkPath` mutates global state across awaits without a
+shared generation. An older walk can append after a new choice or root mount.
+The new offline-recovery remount is another caller
+([ui/adapters/app-http.js][app-http], lines 71–79 and 175–206).
 
-Paging and unevicted rows are resolved ([ADR 0068]). One part of the earlier
-listing finding was not verified by that change: paths with `%`, `/` in virtual
-keys, Unicode and empty keys must round-trip through a deep link.
+Deletion now blocks new fills and waits for active reads before removal
+([ui/core/render.js][render], lines 106–145; `84214e2f`). Fold-glide resets
+are fixed too. Neither fix supplies general preview or navigation ownership.
 
-**Acceptance.** Each of those paths reloads and restores its selection.
-Related: [7], [22], [39], [45], [61].
+**Acceptance.** Reuse the preview per node, revision, representation and relevant
+settings. Resize/fold cause no new provider read. Save, refresh and mode changes
+invalidate it. One generation covers choose, path walks, refresh, recovery and
+remount. Each preview owns its object URLs. Delayed results cannot replace
+current selection or write state through a newly installed filesystem port.
 
-### A7. SQLite labels double as identities; errors look empty
+### A10. Limits still do not bound acquired work
 
-`providers/sqlite.py` builds names with `_truncate` (`:118`, `:148`), and
-`_row_key` truncates keys, so two rows whose keys share a long prefix get the
-same name and path. `SELECT rowid` (`:139`) fails on WITHOUT ROWID tables, and
-`list_entries` catches every exception and returns `[]` (`:51`), so the table
-looks empty. `_row_key` runs schema queries once per row.
+**Status: changed, P2.** Existing limits are useful, but several checks happen
+after expensive work. The earlier blanket claim that archives and bundles
+bound all work was too strong.
 
-**Acceptance.** Long colliding keys stay separately selectable and reloadable.
-WITHOUT ROWID tables are readable or report "unsupported". Corrupt databases
-show an error. Schema facts are read once per listing. Connections stay
-read-only. No ORM. Related: [34], [61].
+- **Search and saves.** [server/src/filemill/api.py][api], lines 70–127,
+  captures all ripgrep output before taking 100 matches. A timeout exists;
+  client abort does not cancel the child. Request buffering remains in A4.
+- **File reads.** [server/src/filemill/preview.py][preview], lines 74–77 and
+  201–205, reads whole files before validating or slicing. Rich previews fetch
+  the blob before their text gate ([ui/adapters/preview-rich.js][rich], lines
+  461–465 and 497–509). Native reads and base64-encodes the whole file on the
+  host callback ([native/webview/main.c][native-host], lines 141–150).
+- **Archives and bundles.** [server/src/filemill/providers/archive.py, lines 95–140 and 199–211][archive]
+  limits accepted distinct index entries, not every scanned tar record or
+  decompressed byte. ZIP loads its central directory before the loop limit.
+  Directory listing invokes this work through `_opens_as_folder` even before
+  an archive is opened. Bundle input and blob size limits and per-call timeouts
+  do not cap unbundling disk expansion or captured tree output
+  ([server/src/filemill/providers/gitbundle.py, lines 94–118 and 196–213][gitbundle]).
+- **Browser work.** PPTX decompression and DOCX conversion have no expanded-byte
+  limit ([ui/adapters/preview-rich.js][rich], lines 378–457). Large JSONL
+  indexing bounds eager parsing, but still makes one span and node per row
+  ([ui/adapters/vfs-json.js][json], lines 85–134 and 260–264). Metadata sweeps
+  start all reads with `Promise.all` ([ui/core/sort.js][sort], lines 62–83).
 
-### A8. Preview routing and representation disagree across modes
+**Acceptance.** Enforce byte, record, expansion and deadline limits where work
+is acquired, and report partial results. Reap subprocesses on budget, timeout
+or cancellation. Keep truncated text non-editable. Measure before adding pools
+or broader caches. Preserve the existing JSON byte and fold-depth guards.
 
-- `withRichPreview` (`ui/adapters/app-http.js:124-137`) sends every non-virtual
-  RST node to `PreviewHTTP`. The server's local-folder mount (`:191-196`) uses
-  the same wrapper, so a browser-owned RST file requests
-  `/api/preview?p=undefined`. See [41].
-- Resolved 2026-10-11 ([89], [ADR 0077]): view state no longer requires a
-  router. Both editions use `withHighlighting` from
-  `ui/adapters/preview-local.js`, so Markdown and WebVTT switch between
-  rendered content and source in static and local-folder modes too. Raw uses
-  optional `FS.rawURL` for served files and `FS.blob` for browser-owned files;
-  core owns and revokes the latter's object URL.
-- Resolved: `PreviewLocal` now applies `TEXT_MAX` only to text
-  (`ui/adapters/preview-local.js:38-41`).
+### A11. The command audit remains unverified
 
-**Acceptance.** Local-folder RST makes no `/api/preview` request.
-Source/Rendered/Raw behave the same, and as documented, in static, served,
-local-folder and virtual modes. Existing issues [10], [38], [41], [42], [56] and
-[63] keep their own scopes.
+**Status: changed, P3 (previously P2).** The named documentation contradictions
+have been corrected; their resolving commits are recorded below. This finding
+no longer asserts that the current README advertises the retired renderer.
+The remaining acceptance is a clean-environment run of every advertised
+command. The 26 documentation tests check selected claims and portability;
+they do not establish that full audit.
 
-### A9. The preview is rebuilt on every render
+**Acceptance.** Keep documents current with each fix. Separately smoke-test
+advertised commands under their documented prerequisites and distinguish
+historical measurements from current instructions. Do not block A4–A10 on
+this final audit, or repeat already completed roadmap and ADR rewrites.
 
-`renderPreview` (`ui/core/render.js:462-471`) builds a new element and calls
-`PREVIEW.revoke()` on every `render()` unless an editor is open. A resize, a
-fold or a settings change therefore reads and parses the file again, and resets
-scroll and media. So does ← from the preview: a scroll key pressed before the
-new fill lands has nothing to scroll ([113], 2026-10-20). [21] is marked Completed but its cache is not in the source.
-[29]–[31] were completed without it. `navSeq` guards `choose` and refresh
-(`ui/core/nav.js:50`); `applyPath` uses a shared `applying` flag and mutates the
-path across awaits. The condition-based wait audit (2026-10-17) confirmed the
-race: a click on a different folder during a root refresh can leave the old
-child appended to the new chain. The existing static check awaits the refresh
-before clicking and now describes that scenario accurately; overlapping
-navigation remains part of this finding.
+### A12. Smaller defects, dead code and audits
 
-Deletion now marks the target path as pending, blocks new preview fills under
-that path, and waits for active fills before `FS.remove` ([97], [ADR 0078],
-2026-10-17). This prevents preview and editability reads from reaching files
-after removal. It includes previews of children of a deleted folder. General
-preview reuse and overlapping navigation remain open.
+**Status: changed, P3.** Each remaining item is independent.
 
-In the native shell on 2026-10-17, one `render()`
-with a 400 KB single-line JSON source selected made a new preview element and
-read the file twice. WebKit then spent 1.4–2.8 s wrapping that line at each
-new width, against 10–17 ms in Chromium. A resize pays this twice ([30]).
+- **Open: folder persistence.** [ui/adapters/storage.js][storage], lines
+  45–67, returns before the IndexedDB transaction completes and performs
+  read-modify-write across awaits. Concurrent tabs can lose recent-root updates.
+- **Changed: unused interfaces.** The bad integer query failure is resolved,
+  but [server/src/filemill/app.py][app], lines 53–54, retains an unused integer
+  conversion branch. [server/src/filemill/vfs.py][vfs], lines 134–136, has no
+  production caller for `is_vfs_file`. [server/src/filemill/preview.py][preview],
+  lines 82–100 and 129–153, retains an unused state argument and a source helper
+  called by tests but no route. Re-check callers before deleting them.
+- **Open: repeated and verbose glue.** Preview-error HTML is hand-built in
+  seven server sites. [ui/adapters/vfs-json.js][json], line 22, imports render
+  without using it; [ui/adapters/router-path.js][router-path], line 15, imports
+  state path without using it. Remove dead imports and comments that restate
+  code as the affected modules change. Do not replace a few error strings with
+  a templating framework. Preserve comments about measured browser behavior.
+- **Open: dependency direction.** [ui/core/search.js][search], lines 25–39,
+  builds an HTTP API URL in core. Classification and VTT parsing remain in both
+  languages; [server/src/filemill/vfs.py][vfs], line 15, and
+  [ui/core/limits.js][limits] disagree on image extensions. Compare behavior
+  before introducing cross-language generation.
+- **Open: provider discovery.** Registration order is still an import side
+  effect ([server/src/filemill/vfs.py][vfs], lines 123–145). Missing Git silently
+  leaves bundles plain; missing ripgrep reports per request. Expose useful
+  capability failures without building a plugin system.
+- **Open: accessibility.** Rows are clickable divs with labels, without full
+  list/tree semantics ([ui/core/render.js][render], lines 300–354). An assistive
+  technology audit remains outstanding.
 
-**Acceptance.** Resize and fold cause no new provider call. Save, refresh and
-mode change invalidate the preview. A delayed old navigation or preview cannot
-replace the current selection. Related: [39], [40], [64].
+### A13. JSON-column refresh keeps the old parsed value
 
-### A10. Limits bound the result, not the work
+**Status: open, P2; new.** Added JSON browsing (`8ef10c6a`) stores parsed
+`value` on the node. [ui/core/nav.js][nav], lines 149–162, invalidates `kids`,
+`denied` and metadata-sweep state. [ui/adapters/vfs-json.js][json], lines
+214–219, then rebuilds children from the retained value without reading bytes.
+The isolated probe read `{"answer":1}`, changed the source to `{"answer":2}`,
+applied the refresh invalidation and still displayed 1 after only one byte
+read. Refreshing the containing real folder creates new nodes and can recover;
+refreshing the JSON column itself cannot.
 
-- Search (`api.py:40-95`) runs ripgrep with
-  `subprocess.run(capture_output=True)` and stops parsing at 100 matches only
-  after the process ends. The client abort does not stop the subprocess.
-- `preview.py:read_text` and the RST path read whole files. PPTX and DOCX have
-  no archive expansion limit. FSA metadata sweeps use unbounded `Promise.all`.
-  Tar and zip browsing ([ADR 0072]) is bounded: `MAX_MEMBERS` on the index and
-  `MEMBER_MAX` on a member read. Git bundle browsing ([ADR 0073]) is bounded:
-  `BUNDLE_MAX` on the file, `MEMBER_MAX` on a blob, a timeout per `git` call.
-  JSON folding is bounded by `JSON_FOLD_DEPTH` rather than the engine's stack
-  ([ADR 0080], 2026-10-17).
+**Acceptance.** A JSON column’s own refresh re-reads its source and rebuilds
+children, preview and selection from it. Test an external edit, removed key,
+invalid JSON and a changed archive member. Keep parser caches inside their
+adapter; core must not acquire a list of format-specific fields to clear.
+Coordinate with A9, but this repair need not wait for preview reuse.
 
-No load benchmark exists; measure before adding pools or caches.
+### A14. Bundle eviction removes an active repository
 
-**Acceptance.** Byte, match and archive limits cap the work, and results say
-when they are partial. Child processes are reaped on timeout or cancel.
-Truncated text is never editable as if complete. Related: [49], [60].
+**Status: open, P2; new.** [server/src/filemill/providers/gitbundle.py][gitbundle],
+lines 106–131, caches eight `TemporaryDirectory` owners but returns only a
+`Path` to callers. Tree and blob operations retain that path at lines 196–239,
+not the owner. Evicting the entry can therefore remove the repository during
+another request. Listing handlers run in a thread pool
+([server/src/filemill/app.py][app], lines 44–58).
 
-### A11. Current documents contradict the code
+A small real-bundle probe retained the first repository path, populated eight
+other cache entries, then tried its tree read. The first read listed the
+fixture; after eviction the directory was gone and `_git` returned `None`.
+This deterministically demonstrates the lifetime defect; this pass did not
+run a concurrent HTTP stress test. In the UI, the failure can look like an
+empty tree through A7’s error handling.
 
-- Corrected 2026-10-20 ([icon map provenance]): the icon comments describe
-  the committed map and its recorded Seti UI and VS Code sources. No icon-map
-  generator is tracked. The map, font and licensing are unchanged.
-
-- Clarified 2026-10-20 ([dependency constraints]): GOALS distinguishes declared
-  floors, bounded versions and exact lockfile selections. Dependency comments
-  retain the browser-match and mypy reasons and mark unverified compatibility
-  rationales explicitly. No version ranges or lock selections changed.
-
-- Clarified 2026-10-20 ([conditional test skips]): the [roadmap skip policy]
-  permits reasoned platform and optional-tool prerequisite skips. Broken or
-  unfinished supported behavior still needs an issue link. CI must supply
-  required prerequisites and run applicable checks. No skip conditions changed.
-
-- Corrected 2026-10-20 ([118], ADR 0036): renderer registration now precedes
-  download-consent UI initialization. The server hides the unused switch in
-  served and Open Folder modes. Vendored Markdown/DOCX rendering ignores a
-  stored `off` value as before. Static and native retain CDN consent. This
-  does not change RST routing (A8) or document resource requests.
-
-- Corrected 2026-10-19 ([105]): `README.md` now records the
-  [edition/renderer matrix](../README.md) and links to renderer selection,
-  extraction and server implementations. Browser-owned RST routing remains A8.
-- Corrected 2026-10-19 ([105]): `server/CONTRIBUTING.md` links the shared facts,
-  removes current instructions for the retired upload pipeline, and describes
-  CI's branch coverage measurement without claiming a 100% threshold. Its old
-  local-folder measurements remain explicitly historical.
-- Corrected 2026-10-19 ([105]): `static/AGENTS.md` documents FSA writes/deletes,
-  permission requests, renderer downloads and document resource requests.
-  Corrected 2026-10-19 ([107]): ADRs 0001, 0005 and 0034 now date the
-  superseded upload-render route, lastSel storage and read-only application
-  contract, with replacing code/task references and original evidence intact.
-- Corrected 2026-10-19 ([107]): `docs/ROADMAP.md` is a dated
-  [status index](ROADMAP.md#status-index-2026-10-19) for all ten phases, and
-  [107] records dated corrections for task 2 and the completed editor-cursor
-  item. GOALS acknowledges the Linux prototype without changing the native
-  goal.
-- Corrected 2026-10-19 ([109]): a pass over `README.md`, `SECURITY.md`, GOALS,
-  the roadmap, this review, `docs/testing/`, the ADRs and the docstrings of the
-  modules they describe fixed the statements the code contradicts. ADRs that
-  later code or ADRs replaced now say so. The issue lists the open questions.
-- Corrected 2026-10-19 ([105]): `server/README.md` distinguishes CLI root,
-  bind and live options from direct ASGI environment lookup, citing `cli.py`,
-  `app.py` and `env.py`. Service-starting examples were verified against code
-  without starting or restarting a service.
-- The CORS and write-authority descriptions in `SECURITY.md` and `CHANGELOG.md`
-  were corrected with [103] on 2026-10-19. Caching remediation remains A5.
-- Status correction 2026-10-19 ([107]): the default-bind item is already
-  under Completed / Accepted, unchecked. `cli.py` defaults to `127.0.0.1`.
-  No acceptance or other issue state changes are part of these corrections.
-
-The [105] documentation corrections leave A2, A4 and A5 open; A1/A3
-are resolved by [103]. No renderer or security behavior changed. [104]
-resolved A2 later on 2026-10-19.
-
-Remaining after [109], 2026-10-19: A4/A5 and A6–A10 remain open, including
-browser-owned RST routing and preview reuse. The
-[roadmap status index](ROADMAP.md#status-index-2026-10-19) records the open
-roadmap work, policy decisions and CI proof. These documentation patches
-resolve no security behavior.
-
-**Acceptance.** Each fix corrects its documents. A final pass checks every
-advertised command in a clean environment. [107] dates the three named
-superseded ADRs; it does not establish that final command audit.
-
-Resolved 2026-10-11 ([82]): the Playwright run commands in `README.md`,
-`server/CONTRIBUTING.md`, `static/AGENTS.md`, `static/FSA-TEST-CHECKLIST.md`
-and the static scripts no longer name a version; they use the locked server
-project. `ui/adapters/README.md` lists the renderers
-`app-http.js` registers. `server/tests/test_docs.py` keeps both true. The
-2026-10-11 independent-review follow-up also checks prose version declarations
-against the pin, preserves recorded-failure exemptions, and verifies that the
-server test command runs from `server/`.
-
-Documentation portability pass, 2026-10-17: development instructions use
-portable fixture roots and conditional browser setup. Historical task examples
-use generic hosts and paths while retaining dates, measurements and commit
-citations. `server/tests/test_docs.py` checks for known private setup references.
-This documentation change does not alter application behavior or the remediation
-order above.
-
-### A12. Smaller defects and audits
-
-- Resolved 2026-09-26: `rt` in `app.py:46` called `int()` on query values, so
-  `page=bad` was a 500. `30cbef21` ([ADR 0068]) removed the only `int`
-  parameter, `page`; `page=bad` is now ignored. The `int()` branch stays,
-  unused.
-- `kvPut` (`ui/adapters/storage.js:45-46`) is not awaited to transaction
-  completion, and `rememberRoot` read-modify-writes across awaits. Multi-tab
-  updates can be lost.
-- `vfs.is_vfs_file` (`vfs.py:105`) has no caller in `server/src`. Providers
-  register as an import side effect (`vfs.py:111-116`), and the order matters.
-  Resolved, 2026-10-07: browser-owned JSON paths use the same safe real-file
-  resolution and client validation as JSONL paths ([ADR 0071]).
-- `<div class="preview-error">` is built by hand in seven places across the
-  server.
-- The server shells out: ripgrep for search, `git` for bundles. Neither
-  absence is reported at start-up. `providers/gitbundle.py` looks `git` up
-  once at import and, without it, leaves bundles plain files; search fails per
-  request.
-- Core knows the server: `ui/core/search.js:35` builds `/api/search` URLs. VTT
-  parsing and file classification exist in both Python and JavaScript.
-- Rows are clickable `div`s without full list semantics. No assistive technology
-  audit has been done.
+**Acceptance.** Hold the temporary repository owner through the last Git
+operation of each request. Force eviction between acquisition and use in a
+regression; the read must finish correctly, and cleanup must happen after the
+last owner releases it. Keep the bounded cache and standard-library lifetime
+management. No generic lease framework is needed.
 
 ## Resolved since the earlier reviews
 
-Do not reopen these without new evidence.
+Do not reopen these without new evidence. Resolved portions of changed
+findings are separated from their remaining acceptance above.
 
-| Earlier finding                                                                                       | State now                                                                       |
-| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Red test suites, false-green static scripts, no lint gate (2026-09-05 #1, #13, #14; F4)               | CI and pre-commit run real gates; see [remaining red tests]                     |
-| Half-deleted HTMX finder (#2)                                                                         | Routes, handlers, `columns.py` and HTMX tests removed                           |
-| JSON key order (#3)                                                                                   | `node.ordered` is honoured by `visibleKids`                                     |
-| No module system (#4)                                                                                 | ES modules with an import map; the builder concatenates them                    |
-| Duplicated limits and image lists (#7)                                                                | `ui/core/limits.js`                                                             |
-| No media queries (#8)                                                                                 | Portrait and landscape phone rules in `ui/core/styles.css`                      |
-| Delete fails in FSA and after success (F7)                                                            | `FSA.remove` uses `node.parent`; `deleteEntry` no longer calls `actions.render` |
-| Unsandboxed HTML preview (F2, part)                                                                   | `sandbox=""`, for archive members too since [114]                               |
-| Images over 512 KiB rejected (F10, part)                                                              | Text-only limit                                                                 |
-| Descending name sort ignored                                                                          | `visibleKids` reverses when `desc`                                              |
-| ↑/↓ over folders stacked one entry per row; Alt+arrows swallowed ([39])                               | `state.stepping` rewrites ([ADR 0050]); `keyAction` ignores modified keys       |
-| `0.0.0.0` bind and `/w/` CORS `*` (#12)                                                               | Loopback default; no CORS headers                                               |
-| Missing `LICENSE`, `SECURITY.md`, `CHANGELOG.md`, `CONTRIBUTING.md`; history files in `server/` (#15) | Present; history files removed                                                  |
-| `static/hotreload.py`, `forgetRoots` (#16)                                                            | Removed                                                                         |
-| Listing paged at 500 entries; virtual rows never evicted (A6, part)                                   | Whole listing, one scrollbar, rows evicted on scroll ([ADR 0068])               |
-| Status strip items shrank and wrapped into its clipped height ([88])                                  | Only hints wrap into hidden rows, dropping from the end. Path, active messages and fold count stay visible; long text ellipsises ([ADR 0074], review correction 2026-10-11) |
+### A1. The directory index escapes the root check
+
+**Status: resolved, former P1.** `e02a6ef4`, [the containment and mutation
+repair][103], validates the final index against request zones. Current evidence:
+[server/src/filemill/app.py][app], lines 461–467, and the index symlink matrix
+in [server/tests/test_resource_safety.py][safety-tests], lines 303 onward.
+In-root indexes and direct-root bookmark targets still work. [The mount-route
+removal][129] removed obsolete route cases without removing containment.
+
+### A2. Preview content can execute as Filemill
+
+**Status: resolved, former P1.** `7a7c41f0`, [the inert-preview repair][104],
+replaced wikilink HTML injection with escaped tokens and sanitized converter
+output. See [ui/adapters/preview-rich.js][rich], lines 245–278, 342–374 and
+452–457; [ui/core/model/safe-url.js][safe-url], lines 7–11; and
+[server/src/filemill/preview.py][preview], lines 39–52 and 201–219.
+`c081ffb4`, [the archive iframe repair][114], added the missing sandbox to
+server-rendered HTML members, now at preview lines 237–242. Browser HTML has
+its sandbox at [ui/core/renderers.js][renderers], lines 174–180.
+
+PDF frames remain unsandboxed and use PDF media types. That is a remaining
+audit surface, not evidence that the fixed Markdown/HTML exploit is open.
+All entry points still expose debug core state; same-origin scripts retain
+its authority. [SECURITY.md][security] explicitly retains bare-HTML trust.
+
+### A3. Mutations accept unrelated-origin requests
+
+**Status: resolved, former P1.** `e02a6ef4`, [the mutation-policy repair][103].
+[server/src/filemill/mutations.py][mutations], lines 33–53, validates Origin,
+Host and token, including configured proxy origins and duplicate-header
+rejection. [server/src/filemill/app.py][app], lines 354–378, applies it before
+save/delete. [server/tests/test_mutation_policy.py][mutation-tests] covers
+refusal before body reads and authorized local/proxy operations. This is
+browser request authorization, not user authentication or safe file replacement.
+
+### Resolved portions and retained earlier repairs
+
+| Earlier finding | Status and resolving evidence |
+| --- | --- |
+| A5, server worker and offline misses | Resolved by `aa963e3a`, `54b639bb`, [the offline-read task][117] and [ADR 0089]; static worker remains A5. |
+| A6, paged listings and retained off-screen rows | Resolved by `30cbef21` and `140a7045`; [ADR 0068]. |
+| A8, browser view toggles and Raw capability | Resolved by `d1e98b46`; [ADR 0077]. Remaining host/member cases are A8. |
+| A9, deletion racing active preview reads | Resolved by `84214e2f`; [ADR 0078]. General async ownership remains A9. |
+| A10, excessive JSON fold recursion | Resolved by `75da49f0`; [ADR 0080]. This is not a general byte/work bound. |
+| A11, edition and renderer claims | Resolved by `06b3f773`, [the edition-documentation repair][105]. |
+| A11, roadmap and superseded ADR claims | Resolved by `9e048d1a`, [the roadmap correction][107], and `f488ccab`, [the documentation audit][109]. |
+| A11, Playwright command drift | Resolved by `b279fdcf` and `db58f5ee`; guarded by [server/tests/test_docs.py][docs-tests]. |
+| A11, consent, skip, dependency and icon claims | Resolved by `85506592`, `111f17be`, `a72c8a6c` and `08080982`; no renderer-route or dependency-version fix is implied. |
+| A12, bad integer page query | Resolved by `30cbef21`, which removed the page parameter; the unused conversion branch remains. |
+| A12, browser JSON path allowance | Resolved by `8ef10c6a`; [ADR 0071]. Real-file containment and virtual identity are separate. |
+| Red suites, false-green scripts and missing lint gate | Resolved in the earlier gate repairs (`86651fa6`, `8b0fff25`); current configuration is [the CI workflow][ci]. See [the test record][remaining-tests]. |
+| Half-deleted HTMX finder and missing module boundary | Resolved by `a6535049`, `686cd25d` and `f6d4b081`; retired routes/helpers remain absent. [ui/][ui] is ES modules and the builder follows their imports. |
+| JSON key order and descending sort | Resolved by `e1928730` and `b3fc7f53`; [ui/core/model/state.js][state], lines 41–51, honors provider order and reverses descending groups. |
+| Duplicated browser limits, missing mobile rules | Resolved by `3d71a45c` and `d2135ad1`; [ui/core/limits.js][limits] and [ui/core/styles.css][styles]. Python/browser differences remain A12. |
+| FSA deletion and deletion-success status | Resolved by `df47ce42` and `8f95812b`; [ui/adapters/fsa.js][fsa], lines 84–92, and [ui/core/render.js][render], lines 134–152. |
+| Large images rejected by the text limit | Resolved by `a275ab89`; [ui/adapters/preview-local.js][preview-local], lines 35–41. |
+| Folder history and modified arrows | Resolved by `3bd91e00` and `a33cb269`; [ADR 0050]. |
+| Wildcard bind and permissive CORS | Resolved by `499222cf` and `6c294f4a`; [server/src/filemill/cli.py][cli] defaults to loopback and current routes add no CORS headers. Mutation authority is A3. |
+| Missing project/legal documents and retired hot-reload/storage helpers | Resolved by `916ad489`, `7dd91c3e` and `6f26dd02`; current root documents are present and retired helpers remain absent. |
+| Wrapped/clipped status items | Resolved by `7232c17e` and `ae76decc`; [ADR 0074]. |
 
 ## Remediation order
 
-Each step is one reviewable change with its own regression tests and document
-updates. Security steps can start at once. Never weaken a gate to pass it.
+Keep P1 work first. The resolved containment and preview-injection repairs are
+regression requirements, not new implementation steps.
 
-1. **Close the path escape and authorize mutations** (A1, A3). Resolved
-   2026-10-19 in [103], [ADR 0081]. Validate the
-   final index file with the request's zones. Add an Origin/Host check and a
-   per-instance mutation token, validated before the body is read, with
-   configured origins for reverse proxies. Tests: symlink matrix over resource,
-   raw, index and mount routes; two-origin browser requests.
-2. **Make preview content inert** (A2). Done 2026-10-19 ([104], [ADR 0082]).
-   Rewrite wikilinks as link tokens or escape all untouched text. Sanitize
-   DOCX output and URL-bearing fields with an explicit safe-protocol list. Do
-   not add a security framework.
-3. **Make saves atomic and conflict-checked** (A4). Write to a temporary file in
-   the same directory and replace. Carry a revision from read to save; reject
-   stale writes. For FSA, recheck before writing and abort on failure. Document
-   effects on hard links and ownership. Update [28].
-4. **Make the service workers network-first** (A5). Corrected 2026-10-20
-   by [117]: offline copies of documents are allowed, shown only while the
-   server cannot be reached and only with an indicator. Await the network
-   failure before choosing a copy or a recovery response. Version the cache
-   names and delete only this app's old caches. Test an installed upgrade.
-   Done for the server worker in [117] ([ADR 0089]; [ADR 0063] updated);
-   the static worker remains.
-5. **Pin the virtual-path round trip** (A6). The whole directory is listed and
-   scrolled with evicting virtualisation ([ADR 0068]). Use one
-   entry-construction path; keep state changes in the navigator.
-6. **Separate SQLite identity from display text** (A7). Use step 5's address
-   contract. Keep truncation presentational; support or reject WITHOUT ROWID
-   explicitly; distinguish empty, inaccessible and corrupt.
-7. **Unify preview capability and representation** (A8). Give the registry an
-   explicit source and representation contract; browser-owned RST uses the
-   browser renderer; Raw becomes an adapter capability.
-8. **Restore preview identity and one owner for async navigation** (A9). Reuse
-   the preview element per node, revision, representation and settings. Share
-   one generation check across `choose`, `applyPath`, refresh and remount; each
-   preview owns and revokes its object URLs. Restore [21]'s acceptance criteria.
-9. **Bound work where it is acquired** (A10). Stream ripgrep with a byte and
-   match budget and kill it on budget, deadline or cancel. Bound body, file and
-   archive reads. Measure before adding concurrency limits.
-10. **Close the documentation loop** (A11). Most corrections ship with steps
-    1–9. The last pass fixes the rest, dates superseded ADRs, turns
-    `docs/ROADMAP.md` into a status index, and smoke-tests every advertised
-    command.
+1. **Protect saves (A4).** Add atomic server replacement and revisions across
+   supported write ports. Enforce request-size limits while reading. Retain
+   drafts on conflict. This no longer waits for A1/A3: both are resolved.
+2. **Repair the static worker (A5).** Fix freshness, valid offline fallback,
+   scoped ownership and installed upgrades. Preserve the server’s accepted
+   offline-copy policy. Coordinate routing/cache classification with
+   [the route-collision task][121]; its transport choice remains a decision.
+3. **Repair bounded lifetime and refresh bugs (A13, A14).** These are two
+   independent small changes. Hide parsed-value invalidation in the JSON
+   adapter and retain a repository owner through each Git read. They do not
+   depend on a general preview redesign.
+4. **Make identities lossless (A6), then fix SQLite (A7).** Establish the
+   address/label contract before changing SQLite keys. Provider error reporting
+   can proceed independently through the existing `denied` field.
+5. **Separate source from representation (A8).** Pin local RST, native Source
+   and member Source behavior with regressions. Reuse existing capabilities.
+6. **Give async navigation and previews one owner (A9).** Establish the
+   generation and lifetime rules, then retain previews with an explicit
+   invalidation key. A8 supplies representation identity; A13 supplies fresh
+   parsed contents. Cover recovery/remount as well as normal navigation.
+7. **Bound acquisition (A10).** Search, archives/bundles, rich documents and
+   native reads can be separate changes. Urgent measured resource failures need
+   not wait for A8/A9. Report partial results and preserve complete-file editing.
+8. **Finish the audit (A11, A12).** Correct documents with each change; run the
+   clean-environment command audit last. Small dead-code, persistence and
+   accessibility repairs can land independently with focused checks.
 
-A12 items can land at any time, each with a focused test.
+## Draft issues
 
-[ADR 0005]: adr/0005-node-lastsel-per-directory.md
-[ADR 0021]: adr/0021-horizontal-scroll-fold-dial-not-translation.md
-[ADR 0022]: adr/0022-the-dial-s-resting-place-never-folds-the-focused-column-nor-anything-r.md
-[ADR 0034]: adr/0034-read-only-mode-read.md
+These are drafts for the steward, not newly filed tasks. Each corresponds to
+one new P2 finding; no new P1 finding was established in this pass.
+
+### A13 draft
+
+- **Title:** Refresh JSON columns from current source bytes.
+- **Why:** The JSON column’s refresh rebuilds from a retained parsed value,
+  so an external edit remains invisible while the UI reports no change.
+- **What to change:** Give the virtual adapter ownership of invalidation and
+  re-read the backing file/member before rebuilding its children. Coordinate
+  navigation/preview invalidation with A9; do not teach core every parser field.
+- **Acceptance:** Failing regressions first for an open JSON column after an
+  external edit, removed key, parse failure and changed archive member. The
+  column’s own refresh reads again, updates preview and selection, and reports
+  errors instead of retaining stale values. Static/development and served
+  modes agree. Update the relevant port decision and documentation with the fix.
+
+### A14 draft
+
+- **Title:** Keep bundle repositories alive through active reads.
+- **Why:** The eight-entry cache owns temporary repositories, while requests
+  keep only paths. Eviction can turn a live read into an empty tree or missing
+  member.
+- **What to change:** Retain the cached temporary-directory owner until all Git
+  calls for that request finish. Keep cleanup tied to ownership and the existing
+  bounded cache. Surface genuine command failure through A7’s error path.
+- **Acceptance:** Failing regressions first that evict the acquired entry before
+  a tree read and between a blob’s metadata/content calls. Both reads finish
+  with correct data; the directory disappears only after its final owner is
+  released. Include a concurrent-request case, preserve read-only behavior and
+  command deadlines, and update [ADR 0073] with the lifetime rule.
+
+[132]: tasks/132-re-check-the-architecture-review-against-current-main.md
+[21]: tasks/21-cache-preview-element.md
+[28]: tasks/28-editor-features.md
+[41]: tasks/41-rst-rendering-regression.md
+[103]: tasks/103-close-the-directory-index-path-escape-and-authorize-save-and-delete-a1.md
+[104]: tasks/104-make-preview-content-inert-wikilink-text-and-docx-output-a2.md
+[105]: tasks/105-correct-the-current-edition-and-renderer-documentation-roadmap-phase-0.md
+[107]: tasks/107-date-superseded-roadmap-and-adr-claims-roadmap-phase-0.md
+[109]: tasks/109-check-filemill-s-docs-and-adr-statuses-against-the-code-and-fix-what-d.md
+[114]: tasks/114-sandbox-html-previews-of-archive-members-as-security-md-promises.md
+[117]: tasks/117-clarify-cache-and-recovery-claims-from-docs-question-2.md
+[121]: tasks/121-clarify-api-path-collisions-from-docs-question-6.md
+[126]: tasks/126-align-decision-timing-rules-from-docs-question-12.md
+[129]: tasks/129-remove-the-obsolete-w-and-n-url-routes.md
+[131]: tasks/131-close-the-gaps-found-in-five-older-review-items.md
+[goals]: GOALS.md
+[tracker]: ../TASKS.md
+[readme]: ../README.md
+[security]: ../SECURITY.md
+[contributing]: ../CONTRIBUTING.md
+[remaining-tests]: testing/remaining-red-tests.md
+[ui]: ../ui/
+[model]: ../ui/core/model/
+[builder]: ../static/build-index.py
+[bundle]: ../static/index.html
+[static-tests]: ../static/tests/
+[cli]: ../server/src/filemill/cli.py
+[app]: ../server/src/filemill/app.py
+[api]: ../server/src/filemill/api.py
+[paths]: ../server/src/filemill/paths.py
+[mutations]: ../server/src/filemill/mutations.py
+[urls]: ../server/src/filemill/urls.py
+[vfs]: ../server/src/filemill/vfs.py
+[preview]: ../server/src/filemill/preview.py
+[archive]: ../server/src/filemill/providers/archive.py
+[gitbundle]: ../server/src/filemill/providers/gitbundle.py
+[sqlite]: ../server/src/filemill/providers/sqlite.py
+[native-host]: ../native/webview/main.c
+[native-readme]: ../native/README.md
+[native-adapter]: ../ui/adapters/native.js
+[app-native]: ../ui/adapters/app-native.js
+[app-http]: ../ui/adapters/app-http.js
+[fsa]: ../ui/adapters/fsa.js
+[json]: ../ui/adapters/vfs-json.js
+[router-path]: ../ui/adapters/router-path.js
+[server-status]: ../ui/adapters/server-status.js
+[storage]: ../ui/adapters/storage.js
+[rich]: ../ui/adapters/preview-rich.js
+[preview-local]: ../ui/adapters/preview-local.js
+[ports]: ../ui/core/ports.js
+[folding]: ../ui/core/model/folding.js
+[headings]: ../ui/core/model/headings.js
+[model-links]: ../ui/core/model/deeplink.js
+[state]: ../ui/core/model/state.js
+[safe-url]: ../ui/core/model/safe-url.js
+[layout]: ../ui/core/layout.js
+[links]: ../ui/core/deeplink.js
+[nav]: ../ui/core/nav.js
+[render]: ../ui/core/render.js
+[renderers]: ../ui/core/renderers.js
+[search]: ../ui/core/search.js
+[sort]: ../ui/core/sort.js
+[limits]: ../ui/core/limits.js
+[styles]: ../ui/core/styles.css
+[editor]: ../ui/editor/editor.js
+[server-sw]: ../server/src/filemill/static/sw.js
+[static-sw]: ../static/sw.js
+[ci]: ../.github/workflows/publish.yml
+[safety-tests]: ../server/tests/test_resource_safety.py
+[mutation-tests]: ../server/tests/test_mutation_policy.py
+[docs-tests]: ../server/tests/test_docs.py
 [ADR 0050]: adr/0050-history-pushes-on-entering-a-column-rewrites-otherwise.md
-[ADR 0063]: adr/0063-installed-pwa-server-recovery.md
-[ADR 0066]: adr/0066-native-toolkits.md
-[ADR 0067]: adr/0067-drop-no-columns-layout.md
 [ADR 0068]: adr/0068-scroll-whole-directory-listings.md
-[ADR 0070]: adr/0070-documents-browse-by-headings.md
 [ADR 0071]: adr/0071-bounded-json-documents.md
-[ADR 0072]: adr/0072-archives-browse-by-their-members.md
 [ADR 0073]: adr/0073-git-bundles-browse-by-refs-and-trees.md
 [ADR 0074]: adr/0074-status-strip-drops-whole-hints.md
-[ADR 0075]: adr/0075-the-scrollbar-spans-one-stop-each-way.md
-[ADR 0076]: adr/0076-a-sideways-wheel-over-the-preview-turns-the-dial-first.md
 [ADR 0077]: adr/0077-preview-views-and-raw-links-work-without-routing.md
 [ADR 0078]: adr/0078-delete-waits-for-active-preview-reads.md
-[ADR 0079]: adr/0079-native-shell.md
 [ADR 0080]: adr/0080-json-past-a-fold-depth-limit-is-source.md
-[remaining red tests]: testing/remaining-red-tests.md
-
-[ADR 0081]: adr/0081-authorize-server-mutations.md
-[ADR 0082]: adr/0082-previews-link-only-to-safe-protocols.md
-
-[ADR 0083]: adr/0083-hide-markdown-comments.md
-[ADR 0084]: adr/0084-a-wheel-gesture-keeps-the-axis-it-started-on.md
-
-[ADR 0085]: adr/0085-markdown-heading-fragments-scroll-the-preview.md
-[ADR 0086]: adr/0086-new-fold-moves-cancel-older-glides.md
-[ADR 0087]: adr/0087-a-public-instance-never-lists-or-serves-hidden-paths.md
-[ADR 0088]: adr/0088-remove-named-mount-and-alternate-shell-routes.md
 [ADR 0089]: adr/0089-an-offline-server-shows-older-copies-with-an-indicator.md
-
-[ADR 0048]: adr/0048-a-refused-clipboard-selects-the-path-instead.md
-
-[119]: tasks/119-document-the-menu-copy-exception-from-docs-question-4.md
-[126]: tasks/126-align-decision-timing-rules-from-docs-question-12.md
-[conditional test skips]: tasks/123-clarify-conditional-test-skips-from-docs-question-9.md
-[roadmap skip policy]: ROADMAP.md#how-we-keep-it-this-way
-
-[dependency constraints]: tasks/124-explain-dependency-constraints-from-docs-question-10.md
-[icon map provenance]: tasks/127-correct-icon-generator-claims-from-docs-question-13.md
-
-[older review repairs]: tasks/131-close-the-gaps-found-in-five-older-review-items.md
