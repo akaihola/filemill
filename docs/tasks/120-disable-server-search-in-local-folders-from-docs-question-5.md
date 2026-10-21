@@ -91,6 +91,31 @@ implementation commit is `93c24b4d`.
   In Progress, with no merge, completion, acceptance, restart or deployment.
   No full bundle retry was made to obtain a passing result.
 
+## Evening check, 2026-10-21
+
+Rebased onto local main `d52d7dbb`. Its four new commits change only the
+tracker and task descriptions. Runtime and test sources are unchanged from
+the daytime base. The static bundle consistency check passed without
+regeneration. The tested branch head was `14b54a89`.
+
+- **Branch isolation:** requested 11 separate bundle invocations of `test_rst`.
+  The first four passed. Invocation five failed in 10.11 seconds at line 314
+  of [the rich-preview tests]: `window.__pyStats.destroyed` was 2, not 1.
+  Stopped at that failure under the steward's explicit stop rule. Did not run
+  the remaining isolated checks or start the full bundle suite.
+- **Fresh main comparison:** on clean main `d52d7dbb`, the same isolated
+  bundle test failed on the first invocation in 8.90 seconds. It observed
+  the same `2 == 1` release-count failure. This confirms that the failure
+  also occurs without this change; its cause is not established.
+- **Memory:** neither comparison hit a memory limit. The branch comparison
+  started with 2.82 GiB available; its fifth invocation started with 2.68 GiB.
+  The main comparison started with 2.76 GiB. Runs were sequential and guarded.
+- **Follow-up:** [the static-suite reliability investigation][144] owns the
+  release-count cause and the wide-folder wait. No RST code or assertion was
+  changed here.
+- **Status:** stopped as requested. Leave this issue In Progress. No merge,
+  completion, acceptance, restart or deployment.
+
 [109]: 109-check-filemill-s-docs-and-adr-statuses-against-the-code-and-fix-what-d.md#questions
 [115]: 115-propose-plain-answers-to-the-docs-check-s-twelve-remaining-questions.md
 [130]: 130-give-served-and-browser-owned-folders-the-same-content-search.md
@@ -100,3 +125,4 @@ implementation commit is `93c24b4d`.
 [139]: 139-stop-rst-previews-and-search-results-from-injecting-live-markup-securi.md
 [the rich-preview tests]: ../../static/tests/test_rich.py
 [ADR 0090]: ../adr/0090-revision-checked-file-replacement.md
+[144]: 144-make-the-full-static-suites-pass-reliably-the-wide-folder-wait-and-tes.md
