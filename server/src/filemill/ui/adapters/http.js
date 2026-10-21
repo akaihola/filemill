@@ -191,3 +191,8 @@ export const HTTP = {
     }
   },
 };
+
+if (!document.documentElement.dataset.mutationToken) {
+  delete HTTP.write;
+  delete HTTP.remove;
+}

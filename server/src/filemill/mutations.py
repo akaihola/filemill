@@ -30,7 +30,29 @@ def _origin(value: str) -> tuple[str, str, int] | None:
         return None
 
 
+def host_allowed(request) -> bool:
+    """Allow loopback or an exact configured origin's host and effective port.
+
+    Try each configured scheme because TLS may terminate at a reverse proxy.
+    Forwarded headers and the peer address never grant a host permission.
+    """
+    if len(request.headers.getlist("host")) != 1:
+        return False
+    host = request.headers["host"]
+    parsed = _origin(f"{request.scope['scheme']}://{host}")
+    if parsed is None:
+        return False
+    if parsed[1] in {"127.0.0.1", "localhost", "::1"}:
+        return True
+    return any(
+        origin is not None and _origin(f"{origin[0]}://{host}") == origin
+        for origin in (_origin(value) for value in env("ORIGINS").split())
+    )
+
+
 def authorized(request) -> bool:
+    if request.app.state.public:
+        return False
     # Reject ambiguous duplicate headers instead of depending on proxy ordering.
     if any(
         len(request.headers.getlist(name)) != 1

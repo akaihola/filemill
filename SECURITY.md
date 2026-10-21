@@ -13,7 +13,7 @@ mount settings first.
 Filemill has no user authentication, encryption, or tenant isolation. A user
 who can reach an exposed server can read files within the root and its direct
 bookmark symlink targets, subject to the server process permissions. A network
-client can also fetch the UI token and authorize writes.
+client can also fetch the UI token and authorize writes on a private instance.
 
 ## Public instances
 
@@ -22,7 +22,9 @@ Start a server that publishes its root without a login with `--public` or
 starts with `.`, such as `.git/`, on every route that reads files, and does not
 follow a symlink into one. Listings and search leave such entries out, and
 `?hidden=show` changes nothing. Visible files remain readable by anyone who can
-reach the server. See
+reach the server. Public instances are read-only: save and delete always
+return 403, the shell contains no mutation token, and the served-folder UI
+offers no edit, save or delete actions. See
 [ADR 0087](docs/adr/0087-a-public-instance-never-lists-or-serves-hidden-paths.md)
 for the rule and what it does not hide.
 
@@ -37,14 +39,18 @@ origin from reading responses, but does not authorize writes or prevent requests
 
 ## Save and delete authorization
 
-Both endpoints require a matching Origin and Host plus the per-process
-X-Filemill-Token header before resolving paths or reading a body. Missing,
+On private instances, both endpoints require a matching Origin and Host plus
+the per-process X-Filemill-Token header before resolving paths or reading a body. Missing,
 opaque, unrelated or unauthorized origins and missing or incorrect tokens
 receive 403. The Filemill shell supplies the token to the shipped HTTP adapter;
 raw HTML files do not receive it automatically.
 
-Loopback origins work by default. For reverse proxies or a LAN bind, configure
-exact space-separated public origins with FILEMILL_ORIGINS, for example
+Every route checks Host before dispatch, including reads, UI assets and PWA
+files. Missing, duplicate, malformed and foreign Hosts receive 403, even
+from a loopback peer. Loopback names (`localhost`, `127.0.0.1`, `[::1]`)
+work by default. For reverse proxies or a LAN bind, **before upgrading**,
+set exact space-separated public origins with
+`FILEMILL_ORIGINS`, for example
 `https://files.example https://files.example:8443`. Preserve the public Host
 header at the proxy. Explicit HTTPS origins work over HTTP backend connections.
 No wildcard origins are accepted and no CORS access is granted. See
@@ -83,7 +89,8 @@ and a folder's `index.html` at the folder's URL. These pages are what lets a
 built site or an HTML report in the root work as a website. They come from the
 same origin as Filemill, and Filemill does not sandbox them. A script in such a
 page can do anything the web interface can: read every file through `/api/*`,
-root URLs, fetch the shell for its token, and save or delete files.
+root URLs and, on a private instance, fetch the shell for its token and save
+or delete files. Public mode refuses writes even from same-origin scripts.
 Only serve a root whose HTML you trust, as you would for any static web server.
 The Raw link of an HTML member of an archive opens it the same way, from
 `/api/raw`.

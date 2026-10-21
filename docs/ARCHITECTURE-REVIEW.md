@@ -58,8 +58,11 @@ work and acceptance separately.
 - **Read and write boundaries.** [server/src/filemill/paths.py][paths], lines
   19–127, resolves the root and direct-root symlink bookmarks. Public mode
   rejects dotted request components and resolved hidden targets, and filters
-  listings and search. [server/src/filemill/mutations.py][mutations], lines
-  33–53, checks Origin, Host, configured origins and a per-process token.
+  listings and search. [server/src/filemill/mutations.py][mutations] checks
+  Origin, Host, configured origins and a per-process token.
+  Shared middleware checks Host before every route, using loopback names and
+  exact `FILEMILL_ORIGINS` authorities. Public instances omit the token and
+  HTTP write/remove capabilities and refuse all mutations with 403.
   Save and delete authorize before reading a body or changing files. Bare HTML
   remains trusted same-origin content under [SECURITY.md][security].
 - **Three ports, mutable nodes.** [ui/core/ports.js][ports], lines 10–99,

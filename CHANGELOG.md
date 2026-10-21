@@ -28,6 +28,14 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Public instances are read-only: save and delete always return 403, shells
+  omit the mutation token, and the served-folder UI offers no write actions.
+- Every route now rejects unapproved Host headers, including reads and assets.
+  **Before upgrading a reverse-proxy or LAN deployment**, set
+  `FILEMILL_ORIGINS` to its exact space-separated browser origins, for example
+  `https://files.example https://files.example:8443`, and preserve the public
+  Host at the proxy. Loopback names remain allowed by default.
+
 - Large directories scroll in one virtualized column instead of paging.
 - The server edition's service worker asks the server first for every read
   but a content-hashed UI module.

@@ -115,7 +115,9 @@ def recorder(escape_tree, monkeypatch):
 
 
 def _client():
-    return TestClient(app_module.app, raise_server_exceptions=False)
+    return TestClient(
+        app_module.app, base_url="http://localhost", raise_server_exceptions=False
+    )
 
 
 def _query(view: str, layout: str) -> str:

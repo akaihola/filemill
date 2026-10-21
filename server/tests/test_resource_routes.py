@@ -44,7 +44,9 @@ def site(tmp_path, monkeypatch):
 
 @pytest.fixture()
 def client(site):
-    return TestClient(app_module.app, raise_server_exceptions=False)
+    return TestClient(
+        app_module.app, base_url="http://localhost", raise_server_exceptions=False
+    )
 
 
 # ── The bare path serves the file ────────────────────────────────────────────

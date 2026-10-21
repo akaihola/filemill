@@ -73,8 +73,8 @@ JSON key or Markdown heading that starts with `.`: the virtual path is refused,
 but the file's bytes are served.
 
 The mode does not hide visible paths. Listings still carry each entry's absolute
-path in `abs`, the shell carries the root's in `data-absolute`, and a visible
-folder that holds hidden files can still be deleted by an authorized client.
+path in `abs`, the shell carries the root's in `data-absolute`, and visible files remain readable. Public instances also refuse all saves
+and deletes; see [ADR 0081].
 Bundled assets under `/ui/` and `/icons/` are the application's own files and
 are not checked.
 

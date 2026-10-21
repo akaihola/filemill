@@ -258,7 +258,9 @@ def ui_root(shared_root: Path, tmp_path: Path) -> Path:
 
 
 @contextlib.contextmanager
-def _serve(root: Path, log_dir: Path, origins: str = "", port: int = 0):
+def _serve(
+    root: Path, log_dir: Path, origins: str = "", port: int = 0, public: bool = False
+):
     """Run the real app in a subprocess — TestClient cannot serve a browser.
 
     Pass the *port* of an earlier server to restart it at the same origin.
@@ -283,6 +285,8 @@ def _serve(root: Path, log_dir: Path, origins: str = "", port: int = 0):
             env={
                 "FILEMILL_ROOT": str(root),
                 "FILEMILL_ORIGINS": origins,
+                "FILEMILL_PUBLIC": "1" if public else "",
+                "SHELL": "/bin/bash",
                 "PATH": f"{rg_dir}:{git_dir}:/usr/bin:/bin",
             },
             stdout=subprocess.DEVNULL,
@@ -4722,3 +4726,23 @@ def test_json_column_refresh_current_source(page, ui_root, member, nested, chang
         assert page.evaluate("path.length") == len(names)
         assert "before" not in page.inner_text("#preview")
         assert "no change" not in page.inner_text("#st-refresh")
+
+
+def test_public_ui_has_no_mutation_actions(ui_root, tmp_path, browser):
+    with _serve(ui_root, tmp_path, public=True) as base:
+        context = browser.new_context(service_workers="block")
+        try:
+            page = Harness(context.new_page(), base)
+            page.open_resource("notes/plain.txt?f")
+            expect(page.locator("#preview .pv-text")).to_contain_text("hello")
+            expect(page.locator("#pv-edit")).to_be_hidden()
+            expect(page.locator("#pv-delete")).to_be_hidden()
+            assert (
+                page.evaluate("document.documentElement.dataset.mutationToken") is None
+            )
+            page.locator('.row[aria-label="plain.txt"]').click(button="right")
+            expect(
+                page.get_by_role("menuitem", name="Delete", exact=True)
+            ).to_be_hidden()
+        finally:
+            context.close()

@@ -94,7 +94,9 @@ def public_tree(tmp_path, monkeypatch):
 
 @pytest.fixture()
 def client(public_tree):
-    return TestClient(app_module.app, raise_server_exceptions=False)
+    return TestClient(
+        app_module.app, base_url="http://localhost", raise_server_exceptions=False
+    )
 
 
 def _names(client, p, **params):
@@ -207,24 +209,27 @@ def test_index_symlink_into_hidden_path_is_absent(client, public_tree):
     missing = client.get("/site/")
     assert (present.status_code, missing.status_code) == (200, 200)
     assert "INDEX-CANARY" not in present.text
-    assert "data-mutation-token" in present.text
+    assert "data-mutation-token" not in present.text
+    assert app_module.app.state.mutation_token not in present.text
 
 
-@pytest.mark.parametrize("rel", HIDDEN_FILES)
-def test_mutations_on_hidden_paths_are_404(public_tree, rel):
+@pytest.mark.parametrize("rel", (*HIDDEN_FILES, "README.md", "a", "missing"))
+def test_public_mutations_are_forbidden(public_tree, rel):
     headers = {
         "origin": "http://localhost",
         "x-filemill-token": app_module.app.state.mutation_token,
     }
     target = public_tree / rel
-    before = target.read_text()
+    before = target.read_bytes() if target.is_file() else None
     with TestClient(app_module.app, base_url="http://localhost") as client:
         save = client.post(
             "/api/save", params={"p": rel}, content="changed", headers=headers
         )
         delete = client.delete("/api/delete", params={"p": rel}, headers=headers)
-    assert (save.status_code, delete.status_code) == (404, 404)
-    assert target.read_text() == before
+    assert (save.status_code, delete.status_code) == (403, 403)
+    if before is not None:
+        assert target.read_bytes() == before
+    assert (public_tree / "a" / "visible.txt").read_text() == "visible"
 
 
 def test_shell_ignores_hidden_show(client):
@@ -308,7 +313,9 @@ def test_bookmark_named_like_the_root_cannot_open_a_hidden_folder(
     (root / "site").symlink_to(ssh, target_is_directory=True)
     monkeypatch.setattr(app_module.app.state, "root", root)
     monkeypatch.setattr(app_module.app.state, "public", True)
-    client = TestClient(app_module.app, raise_server_exceptions=False)
+    client = TestClient(
+        app_module.app, base_url="http://localhost", raise_server_exceptions=False
+    )
     for url in ("/site/id_rsa", "/api/dir?p=site"):
         response = client.get(url)
         assert response.status_code == 404
@@ -325,7 +332,9 @@ def test_root_under_a_hidden_folder_is_served_beside_an_ancestor_bookmark(
     (root / "home").symlink_to(tmp_path / "home", target_is_directory=True)
     monkeypatch.setattr(app_module.app.state, "root", root)
     monkeypatch.setattr(app_module.app.state, "public", True)
-    client = TestClient(app_module.app, raise_server_exceptions=False)
+    client = TestClient(
+        app_module.app, base_url="http://localhost", raise_server_exceptions=False
+    )
     assert client.get("/f.txt").text == "f"
     assert "f.txt" in _names(client, "")
     assert client.get("/home/.srv/root/f.txt").status_code == 404
@@ -360,3 +369,28 @@ def test_direct_asgi_app_reads_public_mode_from_env(monkeypatch, value, expected
         check=True,
     ).stdout.strip()
     assert out == expected
+
+
+async def test_public_save_refused_before_body(public_tree):
+    from starlette.requests import Request
+
+    async def receive():
+        pytest.fail("public save consumed request bytes")
+
+    request = Request(
+        {
+            "type": "http",
+            "app": app_module.app,
+            "method": "POST",
+            "scheme": "http",
+            "path": "/api/save",
+            "query_string": b"",
+            "headers": [
+                (b"host", b"localhost"),
+                (b"origin", b"http://localhost"),
+                (b"x-filemill-token", app_module.app.state.mutation_token.encode()),
+            ],
+        },
+        receive,
+    )
+    assert (await app_module.api_save(request, p="README.md")).status_code == 403

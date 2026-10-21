@@ -7,7 +7,9 @@ import filemill.app as app_module
 
 def _client(root):
     """Return a TestClient with ROOT pointing at *root*."""
-    return TestClient(app_module.app, raise_server_exceptions=False)
+    return TestClient(
+        app_module.app, base_url="http://localhost", raise_server_exceptions=False
+    )
 
 
 # ── GET / – static webserver ───────────────────────────────────────────

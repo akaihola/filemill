@@ -25,7 +25,7 @@ def main(
     public: bool = typer.Option(
         False,
         "--public",
-        help="Never list or serve hidden files; FILEMILL_PUBLIC=1 does the same",
+        help="Read-only; never list or serve hidden files; FILEMILL_PUBLIC=1 does the same",
     ),
 ) -> None:
     """Start the Filemill web server."""

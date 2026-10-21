@@ -37,7 +37,7 @@ def client(tmp_root: Path):
 
     from filemill.app import app
 
-    return TestClient(app, raise_server_exceptions=False)
+    return TestClient(app, base_url="http://localhost", raise_server_exceptions=False)
 
 
 @pytest.fixture()
@@ -62,7 +62,7 @@ def db_client(db_root: Path):
 
     from filemill.app import app
 
-    return TestClient(app, raise_server_exceptions=False)
+    return TestClient(app, base_url="http://localhost", raise_server_exceptions=False)
 
 
 @pytest.fixture()
@@ -155,7 +155,7 @@ def bundle_client(bundle_root: Path):
 
     from filemill.app import app
 
-    return TestClient(app, raise_server_exceptions=False)
+    return TestClient(app, base_url="http://localhost", raise_server_exceptions=False)
 
 
 @pytest.fixture()
@@ -164,7 +164,7 @@ def archive_client(archive_root: Path):
 
     from filemill.app import app
 
-    return TestClient(app, raise_server_exceptions=False)
+    return TestClient(app, base_url="http://localhost", raise_server_exceptions=False)
 
 
 def pytest_addoption(parser):

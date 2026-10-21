@@ -10,6 +10,7 @@ from urllib.parse import urlencode
 
 from starlette.applications import Starlette
 from starlette.concurrency import run_in_threadpool
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import (
     FileResponse,
     HTMLResponse,
@@ -35,6 +36,15 @@ app.state.root = None
 # this from --public; direct ASGI loading and --live read FILEMILL_PUBLIC.
 app.state.public = env_flag("PUBLIC")
 app.state.mutation_token = secrets.token_urlsafe(32)
+
+
+async def check_host(request, call_next):
+    if not mutations.host_allowed(request):
+        return JSONResponse({"error": "Forbidden"}, status_code=403)
+    return await call_next(request)
+
+
+app.add_middleware(BaseHTTPMiddleware, dispatch=check_host)
 
 
 def rt(path: str, methods: list[str] | None = None):
@@ -203,11 +213,12 @@ def _ui_shell(state, hidden: bool = False):
         "data-root": _root().name or "/",
         "data-absolute": _root().resolve().as_posix(),
         "data-api": "/api",
-        "data-mutation-token": app.state.mutation_token,
         "data-base": "/",
         "data-filemill": state.view,
         "data-layout": state.layout,
     }
+    if not app.state.public:
+        attrs["data-mutation-token"] = app.state.mutation_token
     if _COMMIT:
         attrs["data-commit"] = _COMMIT
     if hidden and not app.state.public:

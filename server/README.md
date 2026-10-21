@@ -42,7 +42,7 @@ uv run filemill [OPTIONS] [ROOT]
 | `--port`        | `8000`    | –                   | TCP port to listen on            |
 | `--bind` / `-b` | `127.0.0.1` | `FILEMILL_BIND` | Network interface to bind to |
 | `--live`        | off       | – | Enable auto-reload (development) |
-| `--public`      | off       | `FILEMILL_PUBLIC` | Never list or serve hidden files |
+| `--public`      | off       | `FILEMILL_PUBLIC` | Read-only; never list or serve hidden files |
 
 [`cli.py`](src/filemill/cli.py) resolves the positional root, defaulting to
 the working directory, and passes `--port`, `--bind` and `--live` to Uvicorn.
@@ -55,9 +55,17 @@ root through that variable. [`env.py`](src/filemill/env.py) provides legacy
 
 ### Public instances
 
+Before upgrading a reverse-proxy or LAN instance, set `FILEMILL_ORIGINS` to
+its exact space-separated browser origins, for example
+`https://files.example https://files.example:8443`. Preserve the public Host
+at the proxy. Every route refuses other Host names with 403; loopback names
+remain allowed by default. HTTPS origins work over HTTP backend connections.
+
 A public instance must use `--public`, or set `FILEMILL_PUBLIC=1`. Any value
 but empty, `0`, `false`, `no` or `off` turns the mode on, and either switch is
-enough. A public instance answers 404 for any path with a component that starts
+enough. Public instances refuse all saves and deletes with 403, omit the
+mutation token and offer no write actions for the served root.
+A public instance answers 404 for any path with a component that starts
 with `.`, whatever the query string says, `?hidden=show` included, and does not
 follow a symlink into such a path. Listings and search results leave those
 entries out. [`cli.py`](src/filemill/cli.py) passes the mode to `--live`

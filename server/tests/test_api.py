@@ -619,12 +619,12 @@ def test_a_url_can_name_a_member_inside_an_archive(archive_client, archive_root:
 
 @pytest.fixture()
 def mutation_client(client, monkeypatch):
-    monkeypatch.setenv("FILEMILL_ORIGINS", "http://testserver")
+    monkeypatch.setenv("FILEMILL_ORIGINS", "http://localhost")
     from filemill.app import app
 
     client.headers.update(
         {
-            "Origin": "http://testserver",
+            "Origin": "http://localhost",
             "X-Filemill-Token": app.state.mutation_token,
         }
     )
