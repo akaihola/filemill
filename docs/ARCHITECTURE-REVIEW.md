@@ -554,6 +554,12 @@ intact. The [task record][133] retains the earlier failure and interceptor repai
 | Missing project/legal documents and retired hot-reload/storage helpers | Resolved by `916ad489`, `7dd91c3e` and `6f26dd02`; current root documents are present and retired helpers remain absent. |
 | Wrapped/clipped status items | Resolved by `7232c17e` and `ae76decc`; [ADR 0074]. |
 
+**Historical baseline boundary, 2026-10-21.** The resolved gate repairs above
+do not establish the identity or outcome of the older report of eleven browser
+failures. [The baseline recovery][43] traced its September 5 origin and ten
+candidate tests, but found neither tested revision nor the full failure list.
+It records a retirement choice for Antti, with acceptance still pending.
+
 ## Remediation order
 
 Keep P1 work first. The resolved containment and preview-injection repairs are
@@ -625,6 +631,7 @@ one new P2 finding; no new P1 finding was established in this pass.
 [140]: tasks/140-reuse-the-preview-element-across-resizes-and-folding.md
 [28]: tasks/28-editor-features.md
 [41]: tasks/41-rst-rendering-regression.md
+[43]: tasks/43-server-browser-baseline-failures.md#recovery-findings-2026-10-21
 [103]: tasks/103-close-the-directory-index-path-escape-and-authorize-save-and-delete-a1.md
 [104]: tasks/104-make-preview-content-inert-wikilink-text-and-docx-output-a2.md
 [105]: tasks/105-correct-the-current-edition-and-renderer-documentation-roadmap-phase-0.md
