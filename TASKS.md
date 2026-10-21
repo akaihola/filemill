@@ -21,9 +21,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
   <!-- hai:{"id":"simple-d1776999-2a2c-4870-936a-9620915aee07","labels":["steward"],"createdAt":"2026-10-20T08:12:02.201Z","updatedAt":"2026-10-20T08:12:29.949Z"} -->
 
-- [140] Reuse the preview element across resizes and folding
-  <!-- hai:{"id":"simple-e05f5d48-cda2-4c6e-971b-79425d2fa5ad","labels":["steward"],"createdAt":"2026-10-21T11:20:37.089Z","updatedAt":"2026-10-21T11:20:37.089Z"} -->
-
 - [141] Finish browser fixture isolation and qualify independent test roots
   <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T11:20:40.877Z"} -->
 
@@ -35,6 +32,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-5d0a1fa0-5647-4a21-a6c8-f0050c6de2c7","labels":["steward","review"],"createdAt":"2026-10-21T11:20:51.060Z","updatedAt":"2026-10-21T11:20:51.060Z"} -->
 
 ## Scheduled
+
+- [140] Reuse the preview element across resizes and folding
+  <!-- hai:{"id":"simple-e05f5d48-cda2-4c6e-971b-79425d2fa5ad","labels":["steward"],"createdAt":"2026-10-21T11:20:37.089Z","updatedAt":"2026-10-21T12:42:52.177Z"} -->
 
 ## In Progress
 
