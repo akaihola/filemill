@@ -41,23 +41,23 @@ Rules for TASKS.md usage are at the bottom of the file.
   test_rst's release count
       <!-- hai:{"id":"simple-0eccd583-2747-4244-95a8-321980b45c28","labels":["steward"],"createdAt":"2026-10-21T14:15:31.702Z","updatedAt":"2026-10-21T18:38:54.893Z"} -->
 
-- [ ] [145] Add three missing browser regressions: focused search scope, HTTP entry
+- [x] [145] Add three missing browser regressions: focused search scope, HTTP entry
   order, duplicate CSV rows
-      <!-- hai:{"id":"simple-de8a2439-b587-4816-9dea-f158c5a0bf70","labels":["steward"],"createdAt":"2026-10-21T14:15:34.877Z","updatedAt":"2026-10-21T17:46:18.580Z"} -->
+      <!-- hai:{"id":"simple-de8a2439-b587-4816-9dea-f158c5a0bf70","labels":["steward"],"createdAt":"2026-10-21T14:15:34.877Z","updatedAt":"2026-10-21T19:49:47.063Z"} -->
 
-- [ ] [143] Check whether the demo instances show up in the development dashboard
-      <!-- hai:{"id":"simple-5d0a1fa0-5647-4a21-a6c8-f0050c6de2c7","labels":["steward","review"],"createdAt":"2026-10-21T11:20:51.060Z","updatedAt":"2026-10-21T16:18:26.577Z"} -->
+- [x] [143] Check whether the demo instances show up in the development dashboard
+      <!-- hai:{"id":"simple-5d0a1fa0-5647-4a21-a6c8-f0050c6de2c7","labels":["steward","review"],"createdAt":"2026-10-21T11:20:51.060Z","updatedAt":"2026-10-21T19:49:51.651Z"} -->
 
-- [ ] [142] Recover the revision and failing tests of the old server browser
+- [x] [142] Recover the revision and failing tests of the old server browser
   baseline
-      <!-- hai:{"id":"simple-7e0cfc0d-56d3-479e-ac6b-e6ce359a174b","labels":["steward","review"],"createdAt":"2026-10-21T11:20:46.465Z","updatedAt":"2026-10-21T15:46:32.873Z"} -->
+      <!-- hai:{"id":"simple-7e0cfc0d-56d3-479e-ac6b-e6ce359a174b","labels":["steward","review"],"createdAt":"2026-10-21T11:20:46.465Z","updatedAt":"2026-10-21T19:49:57.067Z"} -->
 
-- [ ] [140] Reuse the preview element across resizes and folding
-      <!-- hai:{"id":"simple-e05f5d48-cda2-4c6e-971b-79425d2fa5ad","labels":["steward"],"createdAt":"2026-10-21T11:20:37.089Z","updatedAt":"2026-10-21T14:59:54.840Z"} -->
+- [x] [140] Reuse the preview element across resizes and folding
+      <!-- hai:{"id":"simple-e05f5d48-cda2-4c6e-971b-79425d2fa5ad","labels":["steward"],"createdAt":"2026-10-21T11:20:37.089Z","updatedAt":"2026-10-21T19:50:03.033Z"} -->
 
-- [ ] [133] Protect saves from truncation and stale overwrites (architecture review
+- [x] [133] Protect saves from truncation and stale overwrites (architecture review
   A4)
-      <!-- hai:{"id":"simple-7fc0721d-e6cf-4c12-91b0-2758fd68f09c","labels":["steward"],"createdAt":"2026-10-20T19:37:48.890Z","updatedAt":"2026-10-21T11:52:45.781Z"} -->
+      <!-- hai:{"id":"simple-7fc0721d-e6cf-4c12-91b0-2758fd68f09c","labels":["steward"],"createdAt":"2026-10-20T19:37:48.890Z","updatedAt":"2026-10-21T19:50:08.919Z"} -->
 
 - [ ] [138] Make public instances read-only and check Host on every route (security
   review S1, S3)
@@ -133,8 +133,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [114] Sandbox HTML previews of archive members as SECURITY.md promises
       <!-- hai:{"id":"simple-19e1170a-8c5b-4b30-935e-64b054b39407","labels":["steward","security"],"createdAt":"2026-10-19T17:58:36.228Z","updatedAt":"2026-10-20T00:11:48.739Z"} -->
 
-- [ ] [113] Fix the five tests that failed in GitHub CI after the history push
-      <!-- hai:{"id":"simple-633e3e56-0c80-48dc-940c-9c4d23e9ebb8","labels":["steward"],"createdAt":"2026-10-19T17:55:35.768Z","updatedAt":"2026-10-19T22:13:46.825Z"} -->
+- [x] [113] Fix the five tests that failed in GitHub CI after the history push
+      <!-- hai:{"id":"simple-633e3e56-0c80-48dc-940c-9c4d23e9ebb8","labels":["steward"],"createdAt":"2026-10-19T17:55:35.768Z","updatedAt":"2026-10-21T19:50:20.604Z"} -->
 
 - [x] [112] Section links and heading fragments don't open the heading
       <!-- hai:{"id":"simple-7c134768-10d6-422d-87d7-0354b53e8de5","labels":["steward"],"createdAt":"2026-10-19T16:06:43.116Z","updatedAt":"2026-10-19T20:47:32.805Z"} -->
@@ -244,9 +244,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   `SECURITY.md`.
       <!-- hai:{"id":"simple-d0a68dc82549f87f","updatedAt":"2026-10-17T08:24:53.222Z"} -->
 
-- [ ] [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
+- [x] [*] Delete `providers/json_provider.py`, `providers/csv_provider.py` and their
   registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
-      <!-- hai:{"id":"simple-8cc5cb10b6db5cb0","updatedAt":"2026-10-17T08:24:52.790Z"} -->
+      <!-- hai:{"id":"simple-8cc5cb10b6db5cb0","updatedAt":"2026-10-21T19:50:30.028Z"} -->
 
 - [x] [41] Fix plain-text reStructuredText previews in Source and Rendered modes.
       <!-- hai:{"updatedAt":"2026-10-21T14:12:57.477Z"} -->
@@ -278,9 +278,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   3rd party libraries if that helps.
       <!-- hai:{"id":"simple-0f26b9b92836a26f","updatedAt":"2026-10-17T08:24:49.361Z"} -->
 
-- [ ] [*] From documentation, docstrings and comments, remove references to specific
+- [x] [*] From documentation, docstrings and comments, remove references to specific
   development setups which include e.g. server names and local paths.
-      <!-- hai:{"id":"simple-ea7f9f2b5da73868","updatedAt":"2026-10-17T08:20:32.488Z"} -->
+      <!-- hai:{"id":"simple-ea7f9f2b5da73868","updatedAt":"2026-10-21T19:50:34.172Z"} -->
 
 - [x] [96] Remove the tailnet hostname from all files and from history
       <!-- hai:{"id":"simple-67027c02-b019-474e-a497-05db579c17c2","labels":["steward"],"createdAt":"2026-10-17T07:08:55.437Z","updatedAt":"2026-10-19T21:04:02.635Z"} -->
@@ -374,8 +374,9 @@ Rules for TASKS.md usage are at the bottom of the file.
       Virtualize directory contents efficiently.
       <!-- hai:{"updatedAt":"2026-10-21T14:13:12.754Z"} -->
 
-- [ ] [*] Per recommendation from task dd6897a9-b54e-4ad4-b9b5-b2372292f4b1, remove
+- [x] [*] Per recommendation from task dd6897a9-b54e-4ad4-b9b5-b2372292f4b1, remove
       ?no-columns, wants_columns, and url_for_state. Keep documentation up-to-date.
+      <!-- hai:{"id":"simple-fbf40aa94751de5e","updatedAt":"2026-10-21T19:50:38.266Z"} -->
 
 - [x] [68] Fix server test fixture discovery from the repository root and document the
       working pytest command.
@@ -386,8 +387,10 @@ Rules for TASKS.md usage are at the bottom of the file.
       in the correct section so they reflect the implementation?
       <!-- hai:{"id":"simple-25a6f43e328c61c9","updatedAt":"2026-10-21T05:17:01.969Z"} -->
 
-- [ ] [*] Fix the extra mount prefix in rendered `~/...` Markdown links.
+- [x] [*] Fix the extra mount prefix in rendered `~/...` Markdown links.
     - Depends on: [42]
+
+      <!-- hai:{"id":"simple-5424d9c1649ac2ea","updatedAt":"2026-10-21T19:50:43.386Z"} -->
 
 - [ ] [*] Check the two architecture reviews (`docs/2026-09-05-ARCHITECTURE-REVIEW.md`
       and `docs/2026-09-19-architecture-review-and-remediation-plan.md`). Remove
@@ -484,9 +487,11 @@ Rules for TASKS.md usage are at the bottom of the file.
       rendered file in the UI preview pane instead.
       <!-- hai:{"id":"simple-31175d0fe86ffbc4","updatedAt":"2026-10-21T14:13:37.387Z"} -->
 
-- [ ] [29] Make `ui/core/` a model package with no DOM: nodes, selection, folding
+- [x] [29] Make `ui/core/` a model package with no DOM: nodes, selection, folding
       arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
     - Depends on: [21]
+
+      <!-- hai:{"updatedAt":"2026-10-21T19:50:49.551Z"} -->
 
 - [x] [*] Delete `_document_page` — document representations, including
       `layout=no-columns`, now return the shared client shell.
@@ -608,9 +613,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] [48] Keep ancestor folding unchanged during Up/Down navigation.
       <!-- hai:{"updatedAt":"2026-10-21T14:13:51.025Z"} -->
 
-- [ ] [*] Add a PWA manifest and service worker to the static bundle so
+- [x] [*] Add a PWA manifest and service worker to the static bundle so
       `static/index.html` installs as a standalone window. The server edition already
       serves `/manifest.json`.
+      <!-- hai:{"id":"simple-ed3e53b5b075f345","updatedAt":"2026-10-21T19:50:54.195Z"} -->
 
 - [ ] [49] Fix content search errors and restrict search to the focused directory tree.
 
@@ -631,17 +637,19 @@ Rules for TASKS.md usage are at the bottom of the file.
       Quote identifiers with `"` and replace `"` inside them with `""`, or check
       `sqlite_master`.
 
-- [ ] [53] Let Markdown paragraphs wrap to the preview width instead of preserving
+- [x] [53] Let Markdown paragraphs wrap to the preview width instead of preserving
       linefeeds.
+      <!-- hai:{"updatedAt":"2026-10-21T19:50:59.076Z"} -->
 
 - [x] [*] Typing a right arrow when the rightmost column before the preview is focused
       should focus the preview and let the user scroll it up/down using the arrow and
       PgUp/PgDn keys.
       <!-- hai:{"id":"simple-ed61b251d476c9b7","updatedAt":"2026-10-21T14:13:58.157Z"} -->
 
-- [ ] [*] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
+- [x] [*] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
       `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in
       `server/src/filemill/styles.py`.
+      <!-- hai:{"id":"simple-d9099b5f33858c5e","updatedAt":"2026-10-21T19:51:03.482Z"} -->
 
 - [x] [54] Keep all Markdown previews within the portrait screen width.
       <!-- hai:{"updatedAt":"2026-10-21T14:13:59.668Z"} -->
@@ -649,9 +657,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] [55] Fix the favicon 404 and `renderPage is not a function` error.
       <!-- hai:{"updatedAt":"2026-10-21T14:14:02.073Z"} -->
 
-- [ ] [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into
+- [x] [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into
       `withVirtual`, and `withJsonlPreview` and `withJsonPreview` into
       `withVirtualPreview`.
+      <!-- hai:{"id":"simple-f0abe28f8ba0a6df","updatedAt":"2026-10-21T19:51:08.377Z"} -->
 
 - [ ] [20] Create `ui/core/limits.js` with one `TEXT_MAX` and one image extension list.
       Create one `mountRoot()` and one `currentPath()`. Delete the copies and
@@ -701,8 +710,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] [59] Fix the missing-timestamp error for YouTube WebVTT files.
       <!-- hai:{"updatedAt":"2026-10-21T14:14:09.267Z"} -->
 
-- [ ] [*] In an installed PWA, there is no way to get back from raw file view to the
+- [x] [*] In an installed PWA, there is no way to get back from raw file view to the
       file manager view.
+      <!-- hai:{"id":"simple-2fc7af9cb8de6116","updatedAt":"2026-10-21T19:51:12.294Z"} -->
 
 - [x] [60] Fix content searches failing with `Search timed out`.
       <!-- hai:{"updatedAt":"2026-10-21T14:14:10.988Z"} -->
@@ -713,11 +723,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] [66] Evaluate hybrid Python/Jinja highlighting and report supported alternatives.
       <!-- hai:{"updatedAt":"2026-10-21T05:17:40.274Z"} -->
 
-- [ ] [62] Prevent further left swipes from exposing a margin beside a fullscreen
+- [x] [62] Prevent further left swipes from exposing a margin beside a fullscreen
       portrait preview.
+      <!-- hai:{"updatedAt":"2026-10-21T19:51:16.172Z"} -->
 
-- [ ] [*] Add `deno fmt` and `deno lint` for `ui/` (one pinned binary, no Node project).
+- [x] [*] Add `deno fmt` and `deno lint` for `ui/` (one pinned binary, no Node project).
       Format `ui/` one time and commit the result as its own commit.
+      <!-- hai:{"id":"simple-52ea810a3c949145","updatedAt":"2026-10-21T19:51:20.356Z"} -->
 
 - [x] [*] Add `ruff` and `mypy` to the `dev` group in `server/pyproject.toml`. Add
       `[tool.ruff]` with `line-length = 88`. Fix all findings. Run `ruff format`.
@@ -729,8 +741,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [12] Make `static/test-ui.py` run to its end, then fix the three checks that fail:
       the `.pv-content` timeout and the two "edit starts at the top" checks.
 
-- [ ] [*] In `ui/core/state.js`, replace `node.jsonl ? kids : sortKids(kids)` with a
+- [x] [*] In `ui/core/state.js`, replace `node.jsonl ? kids : sortKids(kids)` with a
       `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
+      <!-- hai:{"id":"simple-0b3c8f5e45edb60a","updatedAt":"2026-10-21T19:51:25.039Z"} -->
 
 - [x] [28] Grow the editor behind the `FS.write` port: undo, find, a line gutter and a
       "modified" mark. Each addition is one file in `ui/editor/`.
@@ -779,8 +792,9 @@ Rules for TASKS.md usage are at the bottom of the file.
       editions fill it from the same core list plus their own adapters.
       <!-- hai:{"updatedAt":"2026-10-21T14:14:21.483Z"} -->
 
-- [ ] [36] Decide how the installed PWA gets a running server: a systemd or launchd
+- [x] [36] Decide how the installed PWA gets a running server: a systemd or launchd
       unit, a launcher, a desktop shell, or only a better "server not running" page.
+      <!-- hai:{"updatedAt":"2026-10-21T19:51:32.874Z"} -->
 
 - [x] [*] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT.
       Use the current year and "Antti Kaihola" as the copyright holder.
