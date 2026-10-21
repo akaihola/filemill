@@ -23,10 +23,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [147] Allow only known elements and attributes in reStructuredText previews
-  <!-- hai:{"id":"simple-88cfaa62-ec67-4090-a023-c53f20d3b2e4","labels":["steward","security"],"createdAt":"2026-10-21T20:34:29.661Z","updatedAt":"2026-10-21T21:32:19.631Z"} -->
-
 ## In Progress
+
+- [~] [147] Allow only known elements and attributes in reStructuredText previews
+      <!-- hai:{"id":"simple-88cfaa62-ec67-4090-a023-c53f20d3b2e4","labels":["steward","security"],"createdAt":"2026-10-21T20:34:29.661Z","updatedAt":"2026-10-21T21:32:38.419Z"} -->
 
 - [~] [141] Finish browser fixture isolation and qualify independent test roots
       <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T15:01:55.354Z"} -->
