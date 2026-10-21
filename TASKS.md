@@ -38,14 +38,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [133] Protect saves from truncation and stale overwrites (architecture review
-  A4)
-      <!-- hai:{"id":"simple-7fc0721d-e6cf-4c12-91b0-2758fd68f09c","labels":["steward"],"createdAt":"2026-10-20T19:37:48.890Z","updatedAt":"2026-10-20T20:27:03.412Z"} -->
-
 - [~] [120] Disable server search in local folders from docs question 5
       <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-20T13:03:29.269Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [133] Protect saves from truncation and stale overwrites (architecture review
+  A4)
+      <!-- hai:{"id":"simple-7fc0721d-e6cf-4c12-91b0-2758fd68f09c","labels":["steward"],"createdAt":"2026-10-20T19:37:48.890Z","updatedAt":"2026-10-21T11:52:45.781Z"} -->
 
 - [ ] [138] Make public instances read-only and check Host on every route (security
   review S1, S3)
