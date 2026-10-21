@@ -46,16 +46,16 @@ Rules for TASKS.md usage are at the bottom of the file.
 
       <!-- hai:{"id":"simple-28e033e1-3498-4fc4-bb30-8ccfad7e134a","labels":["steward"],"createdAt":"2026-10-20T23:39:32.779Z","updatedAt":"2026-10-21T08:12:34.496Z"} -->
 
-- [ ] [137] Fix the intermittent Back failure in
+- [x] [137] Fix the intermittent Back failure in
   test_back_retraces_the_folders_that_were_opened
-      <!-- hai:{"id":"simple-67d7be8a-d50f-4a7e-a079-ca6a43ab338b","labels":["steward"],"createdAt":"2026-10-20T22:52:05.894Z","updatedAt":"2026-10-21T03:41:16.655Z"} -->
+      <!-- hai:{"id":"simple-67d7be8a-d50f-4a7e-a079-ca6a43ab338b","labels":["steward"],"createdAt":"2026-10-20T22:52:05.894Z","updatedAt":"2026-10-21T11:12:41.181Z"} -->
 
 - [ ] [136] Security scan of filemill: served roots, mutations, previews, caches and
   history
       <!-- hai:{"id":"simple-2987e143-caeb-4d71-9d71-d4ad75a184de","labels":["steward","security"],"createdAt":"2026-10-20T19:38:07.298Z","updatedAt":"2026-10-20T23:06:40.487Z"} -->
 
-- [ ] [122] Clarify deliberate test delays from docs question 8
-      <!-- hai:{"id":"simple-e47a58f3-193e-4296-83a9-cfa00f27371b","labels":["steward"],"createdAt":"2026-10-20T07:12:44.920Z","updatedAt":"2026-10-20T23:04:33.137Z"} -->
+- [x] [122] Clarify deliberate test delays from docs question 8
+      <!-- hai:{"id":"simple-e47a58f3-193e-4296-83a9-cfa00f27371b","labels":["steward"],"createdAt":"2026-10-20T07:12:44.920Z","updatedAt":"2026-10-21T11:12:45.066Z"} -->
 
 - [x] [135] Keep bundle repositories alive through active reads (architecture review
   A14)
