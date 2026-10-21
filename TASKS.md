@@ -21,9 +21,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
   <!-- hai:{"id":"simple-d1776999-2a2c-4870-936a-9620915aee07","labels":["steward"],"createdAt":"2026-10-20T08:12:02.201Z","updatedAt":"2026-10-20T08:12:29.949Z"} -->
 
-- [141] Finish browser fixture isolation and qualify independent test roots
-  <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T11:20:40.877Z"} -->
-
 - [142] Recover the revision and failing tests of the old server browser
   baseline
   <!-- hai:{"id":"simple-7e0cfc0d-56d3-479e-ac6b-e6ce359a174b","labels":["steward","review"],"createdAt":"2026-10-21T11:20:46.465Z","updatedAt":"2026-10-21T11:20:46.465Z"} -->
@@ -40,6 +37,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-de8a2439-b587-4816-9dea-f158c5a0bf70","labels":["steward"],"createdAt":"2026-10-21T14:15:34.877Z","updatedAt":"2026-10-21T14:15:34.877Z"} -->
 
 ## Scheduled
+
+- [141] Finish browser fixture isolation and qualify independent test roots
+  <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T15:01:38.199Z"} -->
 
 ## In Progress
 
