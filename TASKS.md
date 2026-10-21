@@ -27,11 +27,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [144] Make the full static suites pass reliably: the wide-folder wait and
-  test_rst's release count
-  <!-- hai:{"id":"simple-0eccd583-2747-4244-95a8-321980b45c28","labels":["steward"],"createdAt":"2026-10-21T14:15:31.702Z","updatedAt":"2026-10-21T16:44:30.496Z"} -->
-
 ## In Progress
+
+- [~] [144] Make the full static suites pass reliably: the wide-folder wait and
+  test_rst's release count
+      <!-- hai:{"id":"simple-0eccd583-2747-4244-95a8-321980b45c28","labels":["steward"],"createdAt":"2026-10-21T14:15:31.702Z","updatedAt":"2026-10-21T16:44:49.489Z"} -->
 
 - [~] [141] Finish browser fixture isolation and qualify independent test roots
       <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T15:01:55.354Z"} -->
