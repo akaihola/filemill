@@ -1,10 +1,10 @@
 # Native WebView shell
 
 A Linux host that runs the shared DOM renderer in WebKitGTK and supplies the
-`FS`, `PREVIEW` and `ROUTER` ports natively. It passes the main
-`static/tests/test_ui.py` scenario through its own ports, with one known
-intermittent failure described under [Checks](#checks). [ADR 0079] records the
-choice over Tauri and the binary size.
+`FS`, `PREVIEW` and `ROUTER` ports natively. [ADR 0079] records its qualification
+through the shared UI scenario, the choice over Tauri and the measured binary
+size. These results describe that revision; they are not a fresh qualification
+of every later shared UI change.
 
 ## Build and run
 
@@ -22,7 +22,7 @@ executable embeds the shared UI, font and icon map. It needs no checkout or
 Filemill server at run time, but it still needs its system libraries. A Nix-built binary needs its Nix store
 runtime closure on the destination machine.
 
-The measured build used GCC 16.2.0, WebKitGTK 2.54.0, GTK 3.24.52 and glibc
+The 2026-10-17 qualification build used GCC 16.2.0, WebKitGTK 2.54.0, GTK 3.24.52 and glibc
 2.44: a 444,520-byte stripped executable with a 334,651-byte embedded UI.
 
 ## Port mapping
@@ -74,15 +74,18 @@ and retried. Predicates are tested for JavaScript truthiness without being
 awaited. Automation sessions use an ephemeral web context, so no setting
 survives from one launch to the next.
 
-One run in five fails while waiting for the fold dial to settle after a
-resize. The 400 KB single-line `deep.json` preview is then selected, and WebKit
-spends seconds wrapping it at each width; see finding A9 in
-`docs/ARCHITECTURE-REVIEW.md`.
+The 2026-10-17 qualification recorded one failure in five runs while waiting
+for the fold dial after resizing a 400 KB single-line JSON preview. Shared
+preview reuse has since landed in [the preview renderer]; layout changes keep
+the preview DOM and pending fill. This documentation review did not remeasure
+WebKit wrapping or the native failure rate. Broader async ownership remains
+in the [architecture review].
 
 `--native` changes the UI sections that use the shared `browser` fixture.
 Tests that create their own browser keep their browser adapters, including
 IndexedDB and FSA-specific checks.
 
 [ADR 0079]: ../docs/adr/0079-native-shell.md
-
 [ADR 0090]: ../docs/adr/0090-revision-checked-file-replacement.md
+[the preview renderer]: ../ui/core/render.js
+[architecture review]: ../docs/ARCHITECTURE-REVIEW.md#a9-broader-preview-and-navigation-async-ownership

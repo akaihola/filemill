@@ -2,14 +2,14 @@
 
 ## Project context
 
-Filemill is a column-view file browser and previewer in the style of macOS
-Finder. The server edition serves it as a Starlette web application. Click a
-column entry to open a directory. Files preview inline: Markdown, DOCX, PPTX,
-PDF, images, plain text, and code with syntax highlighting. PPTX shows extracted
-slide text. See the [root edition/renderer table](../README.md) for current
-capabilities, network behavior and implementation links.
+The [root edition/renderer table] describes
+capabilities. The [shared contributor guide] owns setup,
+model boundaries, quality gates, commit style and writing rules. This guide
+covers server modules and browser prerequisites.
 
 ### Source layout
+
+Selected modules and tests; this is not a complete file inventory.
 
 ```
 src/filemill/
@@ -17,7 +17,7 @@ src/filemill/
 ├── api.py          # /api/* request handlers behind the shared UI
 ├── cli.py          # Typer CLI entry point
 ├── env.py          # FILEMILL_* variables, PYKOFINDER_* fallback
-├── mutations.py    # Origin, Host and token checks for save and delete
+├── mutations.py    # All-route Host checks; Origin and token mutation checks
 ├── paths.py        # resolve_safe() and symlink bookmark zones
 ├── preview.py      # Server RST, media and source preview dispatcher
 ├── pwa.py          # /manifest.json, /sw.js and /icons/ handlers
@@ -55,28 +55,29 @@ tests/
 
 ### The shared UI
 
-The [root README](../README.md) is the current edition/renderer reference.
-The frontend lives in `src/filemill/ui/`, with the repository's `../ui/`
+The [root README] is the current edition/renderer reference.
+The frontend lives in [server/src/filemill/ui/], with the repository's [server/src/filemill/ui/]
 symlink pointing to it. The static builder concatenates that same module graph;
-the server serves it through [`app.py`](src/filemill/app.py).
+the server serves it through [server/src/filemill/app.py].
 
 Virtual filesystems use the same adapter. A `.db` file lists as a directory
 when its provider yields entries. Its children carry a **`vpath`**: a path
 inside the file. An entry with a `vpath` keeps its parent's real path and
 descends virtually. An entry without one joins its name to the path. The server
-puts the `vpath` on the entries it returns, so `ui/core/` never learns that
-virtual nodes exist.
+puts `vpath` on returned entries. Core still checks it to suppress deletion
+of members and constructs HTTP search URLs. The architecture review's A6/A12
+findings track these remaining identity and dependency boundaries.
 
 `/sample.db/users/1` is one URL that names two things. `api.split_vfs()`
 separates them and validates a deep link. The joined form exists only in the
 address bar.
 
-[`app-http.js`](../ui/adapters/app-http.js) selects browser rendering for
+[server/src/filemill/ui/adapters/app-http.js] selects browser rendering for
 Markdown, DOCX and PPTX. Local-folder bytes stay in the browser rather than
 being uploaded to a render endpoint. RST local-folder routing remains an A8
 limit, documented in the root README.
 
-[`pyproject.toml`](pyproject.toml) excludes static/native entry points and
+[server/pyproject.toml] excludes static/native entry points and
 adapters from the wheel. The server's module graph, including `preview-rich.js`
 and its vendored dependencies, ships inside the package. There is no packaging
 copy of the shared UI to refresh.
@@ -91,14 +92,17 @@ the default view and that branch returns before the shell one.
 
 ### Key invariants
 
-- [`paths.py`](src/filemill/paths.py) checks paths against the root and allowed
-  direct-child symlink bookmark zones. [`app.py`](src/filemill/app.py) also
+- [server/src/filemill/paths.py] checks paths against the root and allowed
+  direct-child symlink bookmark zones. [server/src/filemill/app.py] also
   validates the final directory index. Mutation routes check Origin, Host and
   a per-process token before path resolution or body consumption. See
-  [SECURITY.md](../SECURITY.md). A4 and A5 remain open.
+  [SECURITY.md]. Revision-checked atomic saves resolve A4;
+  [the replacement decision]
+  records their limits. A5 now concerns the static worker.
 - `/w/` and `/n/` are ordinary resource paths, with no alias or redirect.
-  See [ADR 0088](../docs/adr/0088-remove-named-mount-and-alternate-shell-routes.md).
-- There is no JavaScript build step.
+  See [ADR 0088].
+- Shared modules run without a development build. Rebuild the committed static
+  bundle when those modules change.
 - Every filesystem path in the `/api/*` and resource routes is **relative to ROOT**.
   `api.rel_to_abs` refuses an absolute path, because `ROOT / "/etc/passwd"` is
   `/etc/passwd`. `resolve_safe()` then checks containment.
@@ -106,58 +110,45 @@ the default view and that branch returns before the shell one.
   Document references can still request external resources; see the root README.
 - A keyboard handler that changes columns or the preview must update the
   browser URL. The URL and the visible Finder state must agree.
-- `src/filemill/static/` holds the PWA assets `/manifest.json`, `/sw.js` and
+- [server/src/filemill/static/] holds the PWA assets `/manifest.json`, `/sw.js` and
   `/icons/*`. `_reorder_routes()` puts them, `/ui/` and `/api/*` before
   the resource catch-all route, `/{path:path}`. Without that, the catch-all
   swallows every `.js` and `.css` the shared UI asks for, and the page is blank.
-- The UI shell registers the [service worker](src/filemill/static/sw.js).
+- The UI shell registers the [service worker].
   It asks the network first for every GET it handles, except an exact
   content-hashed `/ui/` module URL, and keeps complete answers as offline
   copies: shell pages marked `X-Filemill-Shell`, UI assets, listings, file
   bytes and previews. Only when the server does not answer does
   it reply with a copy marked `X-Filemill-Offline`, or a valid 503 without one.
   Non-GET, `/api/search`, Range and `cache: "no-store"` requests bypass it.
-  [`server-status.js`](../ui/adapters/server-status.js) turns those answers
+  [server/src/filemill/ui/adapters/server-status.js] turns those answers
   into the offline indicator. See
-  [ADR 0089](../docs/adr/0089-an-offline-server-shows-older-copies-with-an-indicator.md).
+  [ADR 0089].
 
 ---
 
-## Development rules
-
-- **TDD (red-green)** – write a failing test first, then make it pass. Do not
-  write production code without a failing test.
-- **Coverage** – every new or changed behaviour has a test.
-  [CI](../.github/workflows/publish.yml) measures branch coverage with
-  `--cov=src/filemill --cov-branch --cov-report=term-missing`; it sets no
-  coverage percentage threshold. Unit and integration tests use pytest.
-- **Documentation stays current** – update `README.md` and the root `TASKS.md`
-  in the same change.
-- **Simplify** – look for a simpler form on every pass. Less code is better
-  code.
-- **Frequent conventional commits** – commit at every logical checkpoint with
-  a conventional-commit prefix: `feat:`, `fix:`, `test:`, `docs:`,
-  `refactor:`, `chore:`, `style:`, `perf:`.
-
 ## Running tests
+
+Run the following from [server/]. For static, model and gate commands use the
+[shared contributor guide].
 
 ```bash
 uv sync
-timeout 1800 uv run pytest     # everything, browser tests included
+timeout 1800 uv run pytest     # server tests, browser tests included
 
 # Only the real-browser tests. Install matching browsers first. The two files
-# together took 246 s on a 4-core host, so budget minutes.
+# need Chromium and Firefox. Budget minutes; old timing results are historical.
 timeout 1800 uv run pytest tests/test_browser_keyboard.py tests/test_browser_new_ui.py
 ```
 
-pytest takes its configuration and shared fixtures from `../pytest.ini` and
-`../conftest.py`. Keep `[tool.pytest.ini_options]` out of `pyproject.toml`: it
-would become the rootdir and hide those fixtures. `tests/test_pytest_config.py`
+pytest takes its configuration and shared fixtures from [pytest.ini] and
+[conftest.py]. Keep `[tool.pytest.ini_options]` out of [server/pyproject.toml]: it
+would become the rootdir and hide those fixtures. [server/tests/test_pytest_config.py]
 checks this.
 
 > **Important:** wrap `uv run pytest` in a shell-level timeout when a script or
 > an agent tool calls it. A hung browser test can block without end. Use 1800
-> seconds, not 120: the browser tests alone take about 9 minutes.
+> seconds for full suites; historical browser runs took several minutes.
 
 ### Do Not Pass `--with playwright==…`
 
@@ -176,8 +167,11 @@ BrowserType.launch: Executable doesn't exist at
 
 Each Playwright release requires a matching browser revision.
 `--with "playwright==X"` overrides the pin, so run the suites with `uv run pytest`
-from `server/` instead.
-Install the locked release's Chromium with `uv run playwright install chromium`.
+from [server/] instead.
+Install the locked release's browsers with
+`uv run playwright install --with-deps chromium firefox`. Chromium runs the
+main suites; the heading-fragment check also parametrizes Firefox. The
+`--with-deps` option can require administrator access for system packages.
 If your environment provides a managed browser bundle, set
 `PLAYWRIGHT_BROWSERS_PATH` to its directory. Verify that its revision matches
 Playwright before running tests. For a bundle such as Nix, select the matching
@@ -187,9 +181,9 @@ another browser to work around a mismatch with a managed bundle.
 ### No proxy for the browser tests
 
 The browser tests hand no proxy to Chromium (`_ui_page` in
-`tests/test_browser_keyboard.py`). The shared UI serves every asset itself, so
+[server/tests/test_browser_keyboard.py]). The shared UI serves every asset itself, so
 the tests need no network, and `test_nothing_is_fetched_from_a_cdn` in
-`tests/test_browser_new_ui.py` keeps it that way. Measured on a host with no
+[server/tests/test_browser_new_ui.py] keeps it that way. Measured on a host with no
 proxy credentials given to Chromium: 34 passed in 95 s.
 
 ### Historical local-folder measurements
@@ -231,9 +225,9 @@ in it. First 300 bytes: '<div class="preview-error">no heading here</div>'
 ```
 
 Current served and local-folder preview tests are in
-[`test_browser_new_ui.py`](tests/test_browser_new_ui.py), including
+[server/tests/test_browser_new_ui.py], including
 `test_nothing_is_fetched_from_a_cdn`. Renderer selection is implemented in
-[`app-http.js`](../ui/adapters/app-http.js).
+[server/src/filemill/ui/adapters/app-http.js].
 
 ### Wait for an Element, Never for a Duration
 
@@ -264,11 +258,33 @@ are correct. Slow input is allowed; arbitrary readiness sleeps are not.
 
 ## Submitting changes
 
-1. Move the issue in the root `TASKS.md` as its Rules section says.
-2. Follow the TDD cycle above.
-3. Update `README.md`, `CONTRIBUTING.md` and the root `TASKS.md`.
-4. Mark the issue completed before you commit.
+Follow the [root tracker rules] and the [shared contributor guide]. Validate and commit the
+implementation, rebase and merge, then move the issue to Completed / Accepted
+with `[ ]`. Completion is not user acceptance. Update affected documentation
+with the implementation.
 
 [the served UI tests]: tests/test_browser_new_ui.py
 [browser-wait guard]: tests/test_browser_waits.py
 [outline history regression]: tests/test_browser_new_ui.py
+[root edition/renderer table]: ../README.md#choose-an-edition
+[shared contributor guide]: ../CONTRIBUTING.md
+[root README]: ../README.md
+[server/src/filemill/app.py]: src/filemill/app.py
+[server/src/filemill/ui/adapters/app-http.js]: ../ui/adapters/app-http.js
+[server/pyproject.toml]: pyproject.toml
+[server/src/filemill/paths.py]: src/filemill/paths.py
+[SECURITY.md]: ../SECURITY.md
+[the replacement decision]: ../docs/adr/0090-revision-checked-file-replacement.md
+[ADR 0088]: ../docs/adr/0088-remove-named-mount-and-alternate-shell-routes.md
+[service worker]: src/filemill/static/sw.js
+[server/src/filemill/ui/adapters/server-status.js]: ../ui/adapters/server-status.js
+[ADR 0089]: ../docs/adr/0089-an-offline-server-shows-older-copies-with-an-indicator.md
+[server/tests/test_browser_new_ui.py]: tests/test_browser_new_ui.py
+[root tracker rules]: ../TASKS.md#rules
+[server/src/filemill/ui/]: src/filemill/ui/
+[server/src/filemill/static/]: src/filemill/static/
+[server/]: ./
+[pytest.ini]: ../pytest.ini
+[conftest.py]: ../conftest.py
+[server/tests/test_pytest_config.py]: tests/test_pytest_config.py
+[server/tests/test_browser_keyboard.py]: tests/test_browser_keyboard.py

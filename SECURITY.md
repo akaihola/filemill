@@ -6,9 +6,9 @@ Filemill is a local file browser. The person who starts the server must trust
 its users and the files in the root directory.
 
 The server binds to `127.0.0.1` by default. It checks each path against the
-root, symlinks included, before it reads or serves a file. Do not expose
-Filemill to an untrusted network without access control. Review the bind and
-mount settings first.
+root and its direct-root bookmark symlink targets before it reads or serves a
+file. Do not expose Filemill to an untrusted network without access control. Review the bind and
+bookmark targets and allowed origins first.
 
 Filemill has no user authentication, encryption, or tenant isolation. A user
 who can reach an exposed server can read files within the root and its direct
@@ -24,8 +24,9 @@ follow a symlink into one. Listings and search leave such entries out, and
 `?hidden=show` changes nothing. Visible files remain readable by anyone who can
 reach the server. Public instances are read-only: save and delete always
 return 403, the shell contains no mutation token, and the served-folder UI
-offers no edit, save or delete actions. See
-[ADR 0087](docs/adr/0087-a-public-instance-never-lists-or-serves-hidden-paths.md)
+offers no edit, save or delete actions for the served root. Open Folder uses
+the browser's separately granted permissions and can still write local files. See
+[ADR 0087]
 for the rule and what it does not hide.
 
 ## Root-relative file URLs
@@ -33,7 +34,7 @@ for the rule and what it does not hide.
 Files use their own paths below `/`, including direct-root symlink bookmarks.
 `/w/` and `/n/` are ordinary resource paths, not aliases. Every resource passes
 containment and public-mode checks. See
-[ADR 0088](docs/adr/0088-remove-named-mount-and-alternate-shell-routes.md).
+[ADR 0088].
 The server sends no CORS headers. This prevents browser scripts on another
 origin from reading responses, but does not authorize writes or prevent requests.
 
@@ -54,10 +55,10 @@ set exact space-separated public origins with
 `https://files.example https://files.example:8443`. Preserve the public Host
 header at the proxy. Explicit HTTPS origins work over HTTP backend connections.
 No wildcard origins are accepted and no CORS access is granted. See
-[ADR 0081](docs/adr/0081-authorize-server-mutations.md) for the complete policy.
+[ADR 0081] for the complete policy.
 
 The token authorizes browser requests, not users, and does not protect against
-same-origin scripts; see [HTML files at the server root](#html-files-at-the-server-root).
+same-origin scripts; see [HTML files at the server root].
 Use authenticated access control before exposing the server to untrusted
 clients. Tokens change on process restart. When the server answers again
 after being offline, an open page fetches the shell and takes the new token
@@ -68,10 +69,13 @@ shows "Change refused" with a Retry now button that fetches the token.
 
 The server edition's service worker keeps copies of what the browser read:
 the shell, the UI files, folder listings, file bytes up to 2 MiB and server
-previews, at most 200 of the last three. It shows them only when the server
-cannot be reached, with a "Server offline" indicator, and never in place of a
-server answer. See
-[ADR 0089](docs/adr/0089-an-offline-server-shows-older-copies-with-an-indicator.md).
+previews, at most 200 of the last three, plus at most 50 shell addresses.
+Only complete successful responses with a known size of at most 2 MiB qualify.
+Reads use the network first, except an exact content-hashed UI asset hit.
+Copies can answer when a fetch fails or returns 502, 503 or 504. The page
+marks offline reads with a "Server offline" indicator. Other HTTP responses,
+including 403 and 404, are returned directly. See
+[ADR 0089].
 
 These copies stay in the browser profile's Cache Storage after the page
 closes, including for files deleted or changed since, until a newer read
@@ -111,7 +115,7 @@ a `.desktop` URL with any other protocol is shown and not linked. Markdown
 links keep markdown-it's validation, and `markdownHref` also rejects
 `javascript:`, `vbscript:`, `file:` and `data:` targets. Search results show a
 file's name and matching line as text. See
-[ADR 0082](docs/adr/0082-previews-link-only-to-safe-protocols.md).
+[ADR 0082].
 
 ## Save replacement and conflicts
 
@@ -131,9 +135,15 @@ See [the replacement decision] for the complete policy and power-loss limits.
 
 ## Report a vulnerability
 
-Report security issues through [GitHub private vulnerability
-reporting](https://github.com/akaihola/filemill/security/advisories/new). Do not
+Report security issues through [GitHub private vulnerability reporting]. Do not
 put passwords, tokens, private files, or other secrets in the report. Give the
 affected version or commit, the steps to reproduce, and the impact.
 
 [the replacement decision]: docs/adr/0090-revision-checked-file-replacement.md
+[ADR 0087]: docs/adr/0087-a-public-instance-never-lists-or-serves-hidden-paths.md
+[ADR 0088]: docs/adr/0088-remove-named-mount-and-alternate-shell-routes.md
+[ADR 0081]: docs/adr/0081-authorize-server-mutations.md
+[HTML files at the server root]: #html-files-at-the-server-root
+[ADR 0089]: docs/adr/0089-an-offline-server-shows-older-copies-with-an-indicator.md
+[ADR 0082]: docs/adr/0082-previews-link-only-to-safe-protocols.md
+[GitHub private vulnerability reporting]: https://github.com/akaihola/filemill/security/advisories/new

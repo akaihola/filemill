@@ -5,7 +5,7 @@ local web application in Python. Click a column entry to open a directory.
 Previews show inline. PPTX previews extract slide text; they do not reproduce
 slide layout.
 
-The [repository README](../README.md) has the current edition/renderer table
+The [repository README] has the current edition/renderer table
 and implementation links. This document covers the Python edition.
 
 ## Features
@@ -14,17 +14,20 @@ and implementation links. This document covers the Python edition.
 - **Rich previews** – Markdown (with plugins), DOCX, PPTX, PDF, images, plain text, and source code highlighted in the browser; Pygments ("friendly" theme) colours archive members
 - **Markdown extras** – wikilinks (`[[PageName]]`), plain-URL links, relative-link normalisation
 - **Virtual filesystem** – a SQLite database opens as table → row columns; JSON and JSONL files open through the shared browser adapter; a tar (`.tar`, `.tar.gz`, `.tar.bz2`, `.tar.xz`, `.tar.zst`) or zip archive opens as columns of its members, and a member previews as the file it is; a Git `.bundle` opens as columns of its refs (`heads/main`, `tags/v1`, `HEAD`) and then its trees, when `git` is installed
-- **Static web server** – root-relative file URLs serve bytes with the correct Content-Type. Direct symlink children of ROOT act as bookmarks. `/w/` and `/n/` are ordinary file paths ([ADR 0088](../docs/adr/0088-remove-named-mount-and-alternate-shell-routes.md)).
+- **Static web server** – root-relative file URLs serve bytes with the correct Content-Type. Direct symlink children of ROOT act as bookmarks. `/w/` and `/n/` are ordinary file paths ([ADR 0088]).
 - **Finder URLs** – the URL path is the file path relative to the root, for example `/docs/readme.md`. A deep link opens any location. `/sample.db/users/1` opens one database row
-- **Dotfiles** – add `?hidden=show` to the URL to show them
+- **Dotfiles** – on a private instance, add `?hidden=show` to show them; public mode refuses hidden paths
 - **Keyboard navigation** – `↑↓` move in a column; `→`/`Enter` open; `←` goes back; `Home`/`End`/`PgUp`/`PgDn` scroll
-- **Live reload** – the `--live` CLI flag enables Uvicorn reload, as implemented in [cli.py](src/filemill/cli.py)
+- **Live reload** – the `--live` CLI flag enables Uvicorn reload, as implemented in [server/src/filemill/cli.py]
 - **`.desktop` files** – show as a link card
 - **Symlink bookmarks** – a direct symlink child of the root opens as a bookmark, and its target subtree is browsable
 - **Open Folder…** – the served page can browse a folder on your machine through the File System Access API. PreviewRich renders local previews in the browser.
-- **PWA** – installable, with a manifest, service worker and icons. The [worker](src/filemill/static/sw.js) asks the server first for every read but a content-hashed UI module, so an online read is never an older copy, and keeps what it read as offline copies. While the server is offline, folders and files read earlier stay readable, read-only, and an indicator in the top bar says so. See [Installed PWA](#installed-pwa).
+- **PWA** – installable, with a manifest, service worker and icons. The [worker] asks the server first for every read but a content-hashed UI module, so an online read is never an older copy, and keeps what it read as offline copies. While the server is offline, folders and files read earlier stay readable, read-only, and an indicator in the top bar says so. See [Installed PWA].
 
 ## Installation
+
+Run these commands from [server/] in a checkout. Python 3.12 or newer and
+`uv` are required. Content search needs `rg`; Git bundle browsing needs `git`.
 
 ```bash
 uv sync
@@ -44,35 +47,31 @@ uv run filemill [OPTIONS] [ROOT]
 | `--live`        | off       | – | Enable auto-reload (development) |
 | `--public`      | off       | `FILEMILL_PUBLIC` | Read-only; never list or serve hidden files |
 
-[`cli.py`](src/filemill/cli.py) resolves the positional root, defaulting to
+[server/src/filemill/cli.py] resolves the positional root, defaulting to
 the working directory, and passes `--port`, `--bind` and `--live` to Uvicorn.
 `FILEMILL_ROOT` does not select the CLI root; `FILEMILL_LIVE` does not enable
-CLI reload. For direct ASGI loading, [`app.py`](src/filemill/app.py) reads
+CLI reload. For direct ASGI loading, [server/src/filemill/app.py] reads
 `FILEMILL_ROOT`, defaulting to the home directory. CLI reload passes its resolved
-root through that variable. [`env.py`](src/filemill/env.py) provides legacy
-`PYKOFINDER_*` fallbacks; the CLI bind default uses that lookup, while an explicit
-`--bind` takes precedence.
+root through that variable. [server/src/filemill/env.py] provides legacy
+`PYKOFINDER_*` fallbacks when the corresponding `FILEMILL_*` value is unset or
+empty. The CLI bind default uses that lookup; an explicit `--bind` takes
+precedence. `FILEMILL_LIVE` is written by `--live` but has no reader in the
+application. It is not a standalone reload setting.
+
+`FILEMILL_ORIGINS` defaults to empty, allowing loopback hosts only. Configure
+exact space-separated origins for a LAN address or reverse proxy; see the
+[authorization policy].
+`window.FILEMILL_CDN` is a browser module map supplied by the shell, not a
+server environment variable.
 
 ### Public instances
 
-Before upgrading a reverse-proxy or LAN instance, set `FILEMILL_ORIGINS` to
-its exact space-separated browser origins, for example
-`https://files.example https://files.example:8443`. Preserve the public Host
-at the proxy. Every route refuses other Host names with 403; loopback names
-remain allowed by default. HTTPS origins work over HTTP backend connections.
-
 A public instance must use `--public`, or set `FILEMILL_PUBLIC=1`. Any value
 but empty, `0`, `false`, `no` or `off` turns the mode on, and either switch is
-enough. Public instances refuse all saves and deletes with 403, omit the
-mutation token and offer no write actions for the served root.
-A public instance answers 404 for any path with a component that starts
-with `.`, whatever the query string says, `?hidden=show` included, and does not
-follow a symlink into such a path. Listings and search results leave those
-entries out. [`cli.py`](src/filemill/cli.py) passes the mode to `--live`
-reloads through the variable, and [`app.py`](src/filemill/app.py) reads it for
-direct ASGI loading.
-[ADR 0087](../docs/adr/0087-a-public-instance-never-lists-or-serves-hidden-paths.md)
-gives the rule and what it does not hide.
+enough. Values are stripped and compared without case. Public roots are
+read-only and exclude hidden paths. The [security policy]
+owns the full rule, bookmark boundaries, Host configuration and limits.
+The mode passes through `--live` reloads and direct ASGI loading.
 
 ## Installed PWA
 
@@ -102,17 +101,17 @@ is stopped shows the copies of the folders and files read before, with the
 indicator. Copies are read-only, and saves and deletes fail with
 "Server offline". A folder never read says "Not available offline". An
 address the worker has no shell for, such as a file's own URL, or a first
-visit without a worker, gets the [recovery page](src/filemill/static/sw.js)
+visit without a worker, gets the [recovery page]
 with the start command and a retry button. The worker keeps up to 200 reads of at most 2 MiB each; see
-[ADR 0089](../docs/adr/0089-an-offline-server-shows-older-copies-with-an-indicator.md).
+[ADR 0089].
 
 ## Development
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for the development rules.
+Read [server/CONTRIBUTING.md] for the development rules.
 
 ### Manual browser test instances
 
-Run these commands from `server/`. Create disposable fixture roots with
+Run these commands from [server/]. Create disposable fixture roots with
 `mktemp`, then start each server command in a separate terminal. Set
 `FIXTURES` to the printed directory in each terminal. The ports below are
 examples; choose unused ports on your machine.
@@ -144,20 +143,39 @@ The automated suites create their own temporary roots and choose free ports.
 Select a desktop, portrait or landscape viewport in the browser. Stop each
 server with Ctrl-C, then remove the disposable fixture directory.
 
-[CONTRIBUTING.md](CONTRIBUTING.md#running-tests) has the test commands and the
+[server/CONTRIBUTING.md] has the test commands and the
 browser setup.
 
 ## Architecture
 
-The [root README](../README.md) describes the shared ports, renderer choices
-and the single frontend under `src/filemill/ui/`. The
-[contributor guide](CONTRIBUTING.md#source-layout) maps the Python modules.
-[`app.py`](src/filemill/app.py) serves the shell at root-relative
+The [root README] describes the shared ports, renderer choices
+and the single frontend under [server/src/filemill/ui/]. The
+[contributor guide] maps the Python modules.
+[server/src/filemill/app.py] serves the shell at root-relative
 render/highlight URLs; bare file URLs serve bytes, and directory indexes take
 precedence over the shell. Symlink containment and mutation authorization were
-fixed in [103](../docs/tasks/103-close-the-directory-index-path-escape-and-authorize-save-and-delete-a1.md).
-See [SECURITY.md](../SECURITY.md) for write authority and remaining trust limits.
+fixed in [103].
+See [SECURITY.md] for write authority and remaining trust limits.
 
 ## License
 
 MIT
+
+[repository README]: ../README.md
+[ADR 0088]: ../docs/adr/0088-remove-named-mount-and-alternate-shell-routes.md
+[server/src/filemill/cli.py]: src/filemill/cli.py
+[worker]: src/filemill/static/sw.js
+[Installed PWA]: #installed-pwa
+[server/src/filemill/app.py]: src/filemill/app.py
+[server/src/filemill/env.py]: src/filemill/env.py
+[authorization policy]: ../SECURITY.md#save-and-delete-authorization
+[security policy]: ../SECURITY.md
+[recovery page]: src/filemill/static/sw.js
+[ADR 0089]: ../docs/adr/0089-an-offline-server-shows-older-copies-with-an-indicator.md
+[server/CONTRIBUTING.md]: CONTRIBUTING.md
+[root README]: ../README.md
+[contributor guide]: CONTRIBUTING.md#source-layout
+[103]: ../docs/tasks/103-close-the-directory-index-path-escape-and-authorize-save-and-delete-a1.md
+[SECURITY.md]: ../SECURITY.md
+[server/]: ./
+[server/src/filemill/ui/]: src/filemill/ui/

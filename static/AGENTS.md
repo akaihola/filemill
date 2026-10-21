@@ -56,19 +56,17 @@ context reset.
 │   │   ├── trail.js        ← the SVG elbows between columns
 │   │   ├── typeahead.js    ← prefix → substring → fuzzy, <mark>, idle buffer
 │   │   ├── search.js       ← file-content search
-│   │   ├── jsonl.js        ← JSON and JSONL as a virtual directory
 │   │   ├── nav.js          ← choose(), crumbs, copy path, refresh, all keys
 │   │   ├── deeplink.js     ← path ⇄ column chain; push-vs-replace policy
 │   │   └── settings.js     ← ⚙ popover toggles
 │   ├── adapters/           ← everything source-specific
 │   │   ├── fsa.js          ← FS: File System Access API      (static)
 │   │   ├── http.js         ← FS: GET /api/dir                (server)
+│   │   ├── vfs-json.js     ← FS: JSON and JSONL as virtual directories
 │   │   ├── vfs-csv.js      ← FS: CSV as a virtual directory
 │   │   ├── vfs-doc.js      ← FS: Markdown/reStructuredText headings as columns
 │   │   ├── preview-local.js  ← PREVIEW: coloured text, image, PDF, .desktop
 │   │   ├── preview-rich.js   ← PREVIEW: markdown-it/mammoth/docutils, on demand
-│   │   ├── preview-http.js   ← PREVIEW: GET /api/preview — the Python renderers
-│   │   ├── preview-rich.js ← PREVIEW: rich local bytes in the browser
 │   │   ├── router-hash.js  ← ROUTER: #r=root&p=a/b.md        (static)
 │   │   ├── router-path.js  ← ROUTER: /a/b.md                 (server)
 │   │   ├── storage.js      ← IndexedDB: remembered folders
@@ -90,11 +88,11 @@ context reset.
     └── test-e2e.py             ← headed suite, real folder + real picker
 ```
 
-**Edit `../ui/`, never `index.html`.** The UI is shared with `server/` in the
+**Edit [server/src/filemill/ui/](../server/src/filemill/ui/), never `index.html`.** The UI is shared with [server/](../server/) in the
 same repository. A change here is a change there. That is the reason the two
 live together.
 
-`../ui/` is a **symlink** to `../server/src/filemill/ui/`. A wheel cannot
+[server/src/filemill/ui/](../server/src/filemill/ui/) is a **symlink** to [server/src/filemill/ui/](../server/src/filemill/ui/). A wheel cannot
 reach outside its package, so the shared frontend is inside the server package
 and the repository root points at it. There is one copy, so no sync script is
 needed. A checkout needs symlink support. Windows needs developer mode for
@@ -109,22 +107,23 @@ python3 -m http.server 8000 -d ..    # serve the repo root, not static/
 #   http://localhost:8000/static/index.html      ← the bundle
 ```
 
-`build-index.py` inlines the stylesheet, the icon map and the module graph.
-It walks the imports from `../ui/entry-static.js` in the order the browser
+[static/build-index.py](build-index.py) inlines the stylesheet, the icon map and the module graph.
+It walks the imports from [server/src/filemill/ui/entry-static.js](../server/src/filemill/ui/entry-static.js) in the order the browser
 evaluates them, removes the `import` lines and the `export` keywords, and
 writes the result as one `<script type="module">`. It replaces the
 `@font-face` URL with a base64 data URI. It refuses imports it cannot inline:
 non-relative specifiers, renames, default and namespace forms.
 
 `./build-index.py --check` exits non-zero when the committed bundle does not
-match `../ui/`. CI runs it, because a generated and committed file goes stale
+match [server/src/filemill/ui/](../server/src/filemill/ui/). CI runs it, because a generated and committed file goes stale
 without a check.
 
 ---
 
 ## Publishing
 
-`.github/workflows/publish.yml` tests every push and deploys `index.html`, with
+The [publishing workflow](../.github/workflows/publish.yml) tests main pushes
+and pull requests and deploys `index.html`, with
 the PWA manifest, service worker and icons, to GitHub Pages from `main`.
 
 Pages is the right target for a technical reason. `showDirectoryPicker()`
@@ -190,15 +189,15 @@ uv run --project server pytest static/tests --dev
 uv run --project server python static/test-e2e.py
 ```
 
-`tests/test_rich.py` covers renderer downloads and consent. It needs no external
+[static/tests/test_rich.py](tests/test_rich.py) covers renderer downloads and consent. It needs no external
 network itself. The test aborts `esm.sh` requests to force the offline path.
 The loaded path runs against stub modules served from the same loopback port
-through `window.FILEMILL_CDN`. `tests/test_ui.py` and `tests/test_url.py` switch rich
+through `window.FILEMILL_CDN`. [static/tests/test_ui.py](tests/test_ui.py) and [static/tests/test_url.py](tests/test_url.py) switch rich
 previews off, because a failed CDN import logs console errors that hide their
 own assertions.
 
-`tests/test_url.py` is separate because it needs a real origin. `history.pushState`
-throws on the opaque origin of a `file://` page, which is the case `tests/test_ui.py`
+[static/tests/test_url.py](tests/test_url.py) is separate because it needs a real origin. `history.pushState`
+throws on the opaque origin of a `file://` page, which is the case [static/tests/test_ui.py](tests/test_ui.py)
 covers. `navigator.storage.getDirectory()` throws there too, with
 `SecurityError: … unsafe for access within a Web application`. The test serves
 the repo on a loopback port and drives the same fake handle for the links.
@@ -206,20 +205,20 @@ the repo on a loopback port and drives the same fake handle for the links.
 **The origin private file system (OPFS) is how this repo tests real files
 headlessly.** OPFS gives a real `FileSystemDirectoryHandle` with no folder
 dialog: the same `entries()`, `getFile()` and browser-side plumbing as a picked
-folder. `tests/test_url.py` builds 3 000 real files in it (250 at a time; one at a
+folder. [static/tests/test_url.py](tests/test_url.py) builds 3 000 real files in it (250 at a time; one at a
 time takes 25 s) and runs `FSA` against them. That is the only place where the
 cost of a size sort is visible, because the fake handle answers `getFile()`
 from memory. Measured there at 3 000 files: `entries()` 363–1 117 ms, the
 sweep 851–1 707 ms (284–569 µs per file), the comparison 18–90 ms. Read the
 ratio, not the milliseconds. The sweep lands at 1.5–2.9× the listing in the
 same run, and the check asserts that ratio, not a wall-clock ceiling. OPFS is
-not the user's own disk. That is `test-e2e.py`'s job.
+not the user's own disk. That is [static/test-e2e.py](test-e2e.py)'s job.
 
 Run the suites with `uv run --project server` so the lock chooses the
 Playwright release. [`server/CONTRIBUTING.md`](../server/CONTRIBUTING.md#running-tests)
 covers browser setup.
 
-`tests/test_ui.py` fakes the handle API, which is all the app touches:
+[static/tests/test_ui.py](tests/test_ui.py) fakes the handle API, which is all the app touches:
 
 ```js
 const D = (name, kids) => ({kind:'directory', name,
@@ -246,8 +245,9 @@ before a single check ran, so two storage checks read an empty list from a
 database that held a record. The trailing `"fake handle ready";` is
 load-bearing.
 
-`test-e2e.py` is the only suite that changes a directory, and it changes one
-it made itself. `fixture()` builds a folder under the system temp directory.
+The manual [static/test-e2e.py](test-e2e.py) changes only a directory it made itself.
+Automated FSA tests also write browser-owned OPFS fixtures, and native tests
+write temporary fixture roots. `fixture()` in the manual check builds a folder under the system temp directory.
 `owned()` refuses any path outside it, so no check can edit a folder you
 picked. The suite deletes the folder in a `finally`.
 
@@ -348,7 +348,7 @@ write 0.01 ms, a whole no-match keystroke 2.3–3.3 ms.
 
 ## Visual spec
 
-All of it is CSS custom properties at the top of `../ui/core/styles.css`.
+All of it is CSS custom properties at the top of [server/src/filemill/ui/core/styles.css](../server/src/filemill/ui/core/styles.css).
 Change the tokens, not the rules. `data-theme="light|dark"` and
 `data-density="compact|comfortable"` on `<html>` switch whole palettes and
 metrics. Both come from the ⚙ popover.

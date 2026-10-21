@@ -1,125 +1,79 @@
-# Adapters — how one UI serves every edition
+# Adapters for the shared UI
 
-`../core/model/` owns nodes and column state, selection, sorting, folding
-arithmetic, keyboard actions and deep links. It has no browser dependencies.
-`../core/dom-renderer.js` holds element handles and measurements. The adjacent
-render, layout and navigation modules apply model decisions to the DOM. Adapters
-keep source-specific loading and browser URL transport. Everything
-source-specific is here, behind the three ports declared in
-[`../core/ports.js`](../core/ports.js).
+The [edition reference] owns the capability and renderer comparison. The
+[shared UI instructions] explain the single packaged source, development page
+and generated bundle. This guide covers adapter wiring.
 
-Every edition loads these files from here, through one entry module each:
-`../entry-static.js`, `../entry-server.js` and `../entry-native.js`. Each entry
-names the adapters of its edition and the app module that wires them. `static/`
-inlines the import graph into its single-file bundle. `server/` serves the
-modules from its package, which is where this directory is. The repository
-root's `ui/` is a symlink to it. No edition has its own version to drift.
+## Entry points and ports
 
-The table below covers the two browser editions. The native shell's adapters are
-`native.js` and `app-native.js`; see the repository's `native/README.md`.
+The three [entry modules] load static, server or native adapters. The
+[DOM-free model] owns selection, sorting, folding, keys and deep links. Adjacent
+browser modules render the model. [The port contract] defines FS, PREVIEW and
+ROUTER, common node fields and optional capabilities.
 
-Pick a different set of adapters and the same UI browses something else. That is
-the whole mechanism. There is no framework under it.
+| Host   | Filesystem                                | Preview composition | Router                                 |
+| ------ | ----------------------------------------- | ------------------- | -------------------------------------- |
+| Static | [browser filesystem]                      | [static boot]       | [hash router]                          |
+| Server | [HTTP filesystem], or FSA for Open Folder | [server boot]       | [path router], or none for Open Folder |
+| Native | [native adapter]                          | [native boot]       | Native in-memory history               |
 
-|            | **static** (one HTML file)                       | **server** (Python)                                                                                |
-| ---------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| filesystem | `fsa.js` — File System Access API                | `http.js` — `GET /api/dir`                                                                         |
-| preview    | `preview-local.js` — the core renderer table     | `preview-local.js` + `preview-rich.js`; `PreviewHTTP` in `app-http.js` for RST and archive members |
-| router     | `router-hash.js` — `#r=root&p=a/b.md`            | `router-path.js` — `/a/b.md`                                                                       |
-| boot       | `app-fsa.js` — picker + welcome screen           | `app-http.js` — root comes from the server                                                         |
-| extra      | `preview-rich.js` — renderers fetched from a CDN | `preview-rich.js` — local bytes, browser renderer                                                  |
-|            | `storage.js` — remembered roots in IndexedDB     | `server-status.js` — the offline indicator; `serverFetch` for `http.js` (ADR 0089)                 |
+Nodes begin with `name`, `dir` and `kids`. `kids === null` means unread.
+Adapters add metadata and virtual-source fields. The contract is not yet
+exhaustive: core still checks `vpath` and builds HTTP search requests. The
+[architecture review] records those boundary gaps.
 
-## The ports
+Refresh awaits an active load, clears common listing state, then calls the
+optional FS `invalidate(node)` before `ensureLoaded`. [JSON adapter] owns
+parsed-source invalidation, including nested JSON and changed archive members.
+[The refresh decision] records this contract.
 
-**`FS`** — `node(name, …)`, `ensureLoaded(node)`, `loadMeta(node)`,
-`blob(node)`. A node is `{ name, dir, kids }`. `kids === null` means "not read
-yet" and puts a spinner in the column. Nothing else is required. That is why a
-SQLite table or a JSON document can be a directory for the UI.
+Editable Blobs carry their revision. `write(node, text, expected)` rejects
+conflicts, and the editor retains the draft's revision.
+[The replacement decision] defines the HTTP, FSA and native guarantees and
+limits.
 
-Refresh awaits the optional `invalidate(node)` FS hook before `ensureLoaded`.
-The adapter owns its source caches. The [JSON adapter] clears the parsed source
-and reads the current file or archive member, including for a nested column. The
-selection walk closes removed paths. The preview shows current values or a parse
-error with current source text. See [the refresh port decision].
+## Rendering
 
-Editable Blobs carry the revision of their bytes. `write(node, text, expected)`
-requires that revision and rejects conflicts. The editor keeps its draft and its
-original revision after an error. The HTTP, browser-owned and native ports
-implement this contract. Document wrappers pass it through. See [ADR 0090].
+[The renderer registry] holds `{kind, render, fallback}` entries. App modules
+register core renderers and their host-specific additions. PREVIEW returns body
+markup; core owns the toolbar, retained preview DOM and generation guard.
 
-Directory adapters own entry order. The contract is directories first, then
-case-insensitive names, with the adapter's tie-breaker. An adapter sets
-`ordered` when its loaded children follow that order; shared sorting preserves
-that order for the default name view. Selecting size or modified still applies
-the shared metadata sort. The HTTP adapter applies name order on the server, and
-the File System Access adapter applies equivalent browser collation while
-loading.
+`app-http.js` adds Markdown, `.docx`, `.pptx` and the `offline` fallback from
+[rich-preview adapter]. Served RST and supported server-member previews use its
+`PreviewHTTP` wrapper. The server shell maps Markdown/DOCX modules to vendored
+assets; PPTX extracts slide text without a download. See the [edition reference]
+for download consent, fidelity and fallback behavior.
 
-**`PREVIEW`** — `render(node) → Promise<string|null>`, plus an optional
-`revoke()`. It returns the HTML for the preview _body_ only. The pane's header,
-hero and size/modified list belong to core, and so does the staleness guard. A
-provider can take as long as it needs.
+Open Folder reads browser-owned bytes. It disables URL sync because server paths
+cannot name those files. Its RST route remains broken: the shared RST override
+asks the server for a node without a server-relative path. Member Source
+requests also lack a representation parameter, so RST and HTML can still render.
+Native Source lacks the browser editions' highlighting wrapper. These are [A8],
+not feature-parity guarantees.
 
-## The renderer registry
+[The highlighting wrapper] selects browser source mode for supported ordinary
+files. The server virtual wrapper can instead use the Python preview endpoint.
+Fenced code uses the shared syntax highlighter. Keep renderer choice and source
+capability distinct as A8 is repaired.
 
-[`../core/renderers.js`](../core/renderers.js) is one table of
-`{kind, render, fallback}` entries. `kind` is the `preview` string from
-[`../core/file-kind.js`](../core/file-kind.js). `render(node, blob)` returns the
-HTML string for the preview body, or throws. `fallback` names the kind to render
-instead when it throws. `renderNode(node, blob)` finds the first entry for the
-node's kind and follows the chain.
-
-`CORE_RENDERERS` holds what the browser draws from the bytes alone: images, PDF,
-HTML, `.desktop`, WebVTT and coloured text. Each app module registers that list
-first and then its own adapters' entries. `app-fsa.js` adds every entry of
-`preview-rich.js`. `app-http.js` adds Markdown, `.docx`, `.pptx` and the
-`offline` fallback from it; only reStructuredText stays with the Python
-renderer. A new kind is one entry and one test in `static/tests/test_ui.py`.
-
-**`ROUTER`** — `read()`, `write(state, replace)`, `onNavigate(cb)`, or `null`
-for no URL sync. Core owns the mapping between a path and the column chain
-([`../core/model/deeplink.js`](../core/model/deeplink.js)). Both editions share
-it. Only the transport differs.
-
-## Why the renderers are not ported
-
-`PreviewHTTP` in `app-http.js` is the reason `preview.py`, `vfs.py` and
-`providers/` have no JavaScript port. docutils, Pygments and the virtual
-filesystems keep running where they run, and their HTML lands in the same pane.
-Markdown and `.docx` are the exception: both editions render them with
-`preview-rich.js`, the server edition from the pinned modules in `ui/vendor/`
-(its shell sets `FILEMILL_CDN` to those paths), so `rendering.py` and mammoth
-are gone from the server.
-
-When the _server_ edition opens a local folder, the server cannot read it.
-PreviewRich renders the bytes in the browser. Local-folder mode is therefore not
-a downgrade. Only the address bar goes quiet, because a URL path names a file
-under the server's root, and a granted folder is not under it.
-
-## Rich rendering in the static build
-
-`preview-rich.js` is a _different provider_, not a bigger `preview-local.js`. It
-imports markdown-it, mammoth, or Pyodide with docutils for reStructuredText from
-a CDN the first time a file needs one. A bundle with them would be eight times
-bigger, or sixty times with the Python runtime. A remembered switch controls it,
-because the app's promise is that your folder does not leave the browser, and
-this is the one download a preview starts. A failed download falls back to the
-core text renderer through the `offline` entry, so offline costs fidelity, not
-the pane.
-
-## Syntax highlighting is neither of those
-
-Both editions colour source files and fenced code the same way, in
-`core/syntax.js`: no download, no switch, no Python. Every provider reaches it.
-`preview-local.js` colours the text it escapes. `app-http.js` wraps its provider
-in `withHighlighting`, so under `?filemill=highlight` a file with a known
-language is read through `FS.blob` and highlighted here. `hlFences` colours the
-`<pre><code class="language-x">` blocks that every Markdown renderer emits,
-after `fillPreview` puts them in the pane. The server keeps what it renders
-better: reStructuredText. A virtual path is never diverted, because only the
-server can read one.
-
+[edition reference]: ../../../../../README.md#choose-an-edition
+[shared UI instructions]: ../../../../../README.md#working-on-the-shared-ui
+[entry modules]: ../
+[DOM-free model]: ../core/model/
+[The port contract]: ../core/ports.js
+[browser filesystem]: fsa.js
+[static boot]: app-fsa.js
+[hash router]: router-hash.js
+[HTTP filesystem]: http.js
+[server boot]: app-http.js
+[path router]: router-path.js
+[native adapter]: native.js
+[native boot]: app-native.js
+[architecture review]: ../../../../../docs/ARCHITECTURE-REVIEW.md
 [JSON adapter]: vfs-json.js
-[the refresh port decision]: ../../../../../docs/adr/0041-core-adapters-three-ports.md#refresh-invalidation-2026-10-21
-[ADR 0090]: ../../../../../docs/adr/0090-revision-checked-file-replacement.md
+[The refresh decision]: ../../../../../docs/adr/0041-core-adapters-three-ports.md#refresh-invalidation-2026-10-21
+[The replacement decision]: ../../../../../docs/adr/0090-revision-checked-file-replacement.md
+[The renderer registry]: ../core/renderers.js
+[rich-preview adapter]: preview-rich.js
+[A8]: ../../../../../docs/ARCHITECTURE-REVIEW.md#a8-preview-source-and-representation-are-conflated
+[The highlighting wrapper]: preview-local.js
