@@ -28,10 +28,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [146] Check filemill's README, contributor docs, goals and roadmap against
-  current main
-      <!-- hai:{"id":"simple-a4858f85-f357-497a-a1d3-f32ee93767e7","labels":["steward","review"],"createdAt":"2026-10-21T19:48:01.758Z","updatedAt":"2026-10-21T20:53:48.834Z"} -->
-
 - [~] [141] Finish browser fixture isolation and qualify independent test roots
       <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T15:01:55.354Z"} -->
 
@@ -39,6 +35,10 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-20T13:03:29.269Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [146] Check filemill's README, contributor docs, goals and roadmap against
+  current main
+      <!-- hai:{"id":"simple-a4858f85-f357-497a-a1d3-f32ee93767e7","labels":["steward","review"],"createdAt":"2026-10-21T19:48:01.758Z","updatedAt":"2026-10-21T21:14:20.860Z"} -->
 
 - [ ] [144] Make the full static suites pass reliably: the wide-folder wait and
   test_rst's release count
