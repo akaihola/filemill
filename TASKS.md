@@ -25,12 +25,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [139] Stop RST previews and search results from injecting live markup
-  (security review S2, S4)
-    - Depends on: [137]
-
-      <!-- hai:{"id":"simple-28e033e1-3498-4fc4-bb30-8ccfad7e134a","labels":["steward"],"createdAt":"2026-10-20T23:39:32.779Z","updatedAt":"2026-10-21T06:00:10.852Z"} -->
-
 - [~] [138] Make public instances read-only and check Host on every route (security
   review S1, S3)
     - Depends on: [137]
@@ -45,6 +39,12 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-20T13:03:29.269Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [139] Stop RST previews and search results from injecting live markup
+  (security review S2, S4)
+    - Depends on: [137]
+
+      <!-- hai:{"id":"simple-28e033e1-3498-4fc4-bb30-8ccfad7e134a","labels":["steward"],"createdAt":"2026-10-20T23:39:32.779Z","updatedAt":"2026-10-21T08:12:34.496Z"} -->
 
 - [ ] [137] Fix the intermittent Back failure in
   test_back_retraces_the_folders_that_were_opened
