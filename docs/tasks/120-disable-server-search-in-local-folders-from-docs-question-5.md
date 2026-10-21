@@ -35,7 +35,37 @@ responses, a late response after return, and a retained result button. It
 checks abort state, request counts, cleared UI and successful result navigation
 after return. The first run failed because search remained visible in local mode.
 
+## Gate follow-up, 2026-10-21
+
+Rebased the implementation onto main `58d9d833`, including [137]. Resolved
+the documentation conflicts without restoring the old architecture review.
+The generated static bundle is current. All pre-commit checks and the shared
+model checks passed. The rebased implementation commit is `cc32728e`.
+
+- **Memory interruptions:** two full server attempts stopped when system swap
+  grew by more than 512 MiB. Neither completed. The final attempt passed the
+  earlier animation failure point and reported no test failure before the
+  memory guard stopped it. No test processes remained after shutdown.
+- **Server failure:** a separate attempt reported 134 passed and one failed
+  in 375.30 seconds. The failure was
+  `test_arrow_navigation_keeps_fold_animation_running` in [the keyboard tests].
+  Its `before > during > after` assertion observed `during == after == 203`.
+  The test failed in one of the two full attempts that reached it; it passed
+  in the other. No assertion or implementation was changed for this failure.
+- **Unchanged-main comparison:** on `58d9d833`, the same test passed in all
+  20 separate isolated invocations. It also passed with the preceding keyboard
+  workload and coverage enabled. That comparison was then stopped with 64
+  tests passed in 767.28 seconds. The failure was not reproduced on main;
+  these results do not establish it as a baseline defect.
+- **Incomplete gate:** no full server attempt completed. The two full static
+  suites were not rerun in this follow-up because the sequential gate did not
+  get past the server suite. Earlier partial runs do not count as full passes.
+- **Status:** leave this issue In Progress. Do not merge, mark it complete,
+  restart a service or deploy until the full gate passes.
+
 [109]: 109-check-filemill-s-docs-and-adr-statuses-against-the-code-and-fix-what-d.md#questions
 [115]: 115-propose-plain-answers-to-the-docs-check-s-twelve-remaining-questions.md
 [130]: 130-give-served-and-browser-owned-folders-the-same-content-search.md
 [ADR 0091]: ../adr/0091-server-search-stops-at-local-folder-mounts.md
+[137]: 137-fix-the-intermittent-back-failure-in-test-back-retraces-the-folders-th.md
+[the keyboard tests]: ../../server/tests/test_browser_keyboard.py
