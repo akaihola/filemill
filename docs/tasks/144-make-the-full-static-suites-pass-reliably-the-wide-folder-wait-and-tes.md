@@ -131,9 +131,54 @@ runs; within-test ordering, asynchronous layout and host-load effects remain
 possible. Existing waits, clipping checks and release-count assertions are
 retained. [Fixture isolation] implementation remains separate work.
 
-Final model, documentation/wait and pre-commit checks are pending at this
-checkpoint. The issue remains In Progress until they finish and integration
-completes.
+Final validation passed after rebasing on main: all 28 documentation/wait
+checks, the model checks, explicit Ruff and format checks for [the rich-preview
+tests], and all seven pre-commit checks. These cover Python lint/format/types,
+UI lint/format, suppression links and generated-bundle consistency. The diff
+has no whitespace errors.
+
+The rebase preserved main's intervening tracker, documentation and served
+browser-regression changes. The shared UI, static edition and pytest
+configuration are identical to the qualified files. The architecture review
+records the new lifetime regression alongside the existing preview repair.
+
+## Memory guard evidence
+
+Host readings are MiB. Admission waits at most 600 seconds for 2,048 MiB;
+the fallback requires 1,536 MiB. Each command has a 1,800-second runtime limit.
+The monitor stops the command and its children below 1,024 MiB available or
+above 512 MiB swap growth. All commands ran sequentially. No command required
+the fallback or a memory stop.
+
+Command keys:
+
+- **D:** `uv run --project server pytest static/tests --dev -q`
+- **R:** `uv run --project server pytest static/tests/test_rich.py --dev -q -k test_rst_failure_releases_one_scope_during_layout`
+- **B:** `uv run --project server pytest static/tests --bundle -q`
+- **M:** `node ui/core/model/test.mjs`
+- **W:** `uv run --project server pytest -q server/tests/test_docs.py server/tests/test_browser_waits.py`
+- **P:** `uvx pre-commit run --all-files`
+
+The R historical red exit is the expected failing regression probe. Elapsed
+time covers the guarded command, separately from its admission wait. Command
+outputs are retained in [the run logs]; this table contains memory and status
+metadata only. [The machine-readable readings] also retain peak swap growth.
+
+| Command and run | Outcome | Wait s | Available in / out | Swap start / growth | Elapsed s | Exit |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| D: baseline-dev | started at once | 0.0 | 3255 / 3212 | 2451 / -46 | 586.2 | 0 |
+| R: rst-historical-red | started at once | 0.0 | 3309 / 3171 | 2405 / +0 | 4.0 | 1 |
+| R: rst-current-green | started at once | 0.0 | 3156 / 2990 | 2404 / +0 | 5.1 | 0 |
+| B: baseline-bundle | started at once | 0.0 | 2889 / 2555 | 2403 / +120 | 984.1 | 0 |
+| D: final-dev-1 | started at once | 0.0 | 2722 / 2629 | 2516 / -188 | 1255.2 | 0 |
+| D: final-dev-2 | started at once | 0.0 | 2628 / 2975 | 2328 / +8 | 850.7 | 0 |
+| D: final-dev-3 | started at once | 0.0 | 2988 / 2755 | 2330 / -49 | 799.1 | 0 |
+| B: final-bundle-1 | started at once | 0.0 | 2755 / 3117 | 2281 / -73 | 688.6 | 0 |
+| B: final-bundle-2 | started at once | 0.0 | 3110 / 2721 | 2202 / -29 | 701.6 | 0 |
+| B: final-bundle-3 | started at once | 0.0 | 2725 / 3207 | 2173 / +117 | 680.6 | 0 |
+| M: models | started at once | 0.0 | 3268 / 3274 | 2277 / +0 | 1.0 | 0 |
+| W: docs-waits | started at once | 0.0 | 3274 / 3274 | 2277 / +0 | 3.0 | 0 |
+| P: precommit | started at once | 0.0 | 3275 / 3179 | 2277 / +0 | 17.0 | 0 |
 
 [fixture isolation]: 141-finish-browser-fixture-isolation-and-qualify-independent-test-roots.md
 [the rich-preview tests]: ../../static/tests/test_rich.py
@@ -143,3 +188,5 @@ completes.
 [the waiting guidance]: ../../server/CONTRIBUTING.md#wait-for-an-element-never-for-a-duration
 [the static bootstrap]: ../../ui/adapters/app-fsa.js
 [the layout handler]: ../../ui/core/layout.js
+[the run logs]: http://hopeli/tmp/filemill-hai144-20261021/?f
+[the machine-readable readings]: http://hopeli/tmp/filemill-hai144-20261021/hai144-memory.jsonl?f
