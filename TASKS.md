@@ -199,8 +199,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
       <!-- hai:{"updatedAt":"2026-10-17T16:24:16.554Z"} -->
 
-- [ ] [98] Investigate mobile landscape wide-folder navigation timeout
-      <!-- hai:{"id":"simple-eae59ddd-5222-4dbd-972d-d23258c6db71","createdAt":"2026-10-17T07:56:11.253Z","updatedAt":"2026-10-17T12:26:34.042Z"} -->
+- [x] [98] Investigate mobile landscape wide-folder navigation timeout
+      <!-- hai:{"id":"simple-eae59ddd-5222-4dbd-972d-d23258c6db71","createdAt":"2026-10-17T07:56:11.253Z","updatedAt":"2026-10-21T14:12:50.766Z"} -->
 
 - [ ] [97] Fix intermittent preview 404 after deleting the selected file
       <!-- hai:{"id":"simple-5b65e45b-f3ef-448e-85b3-ca938f67c989","createdAt":"2026-10-17T07:51:46.441Z","updatedAt":"2026-10-17T11:53:09.416Z"} -->
@@ -214,8 +214,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 
       <!-- hai:{"id":"simple-fe5c93cd-f67b-45d1-8352-57667238abe6","labels":["steward"],"createdAt":"2026-10-16T16:48:55.733Z","updatedAt":"2026-10-17T08:26:07.748Z"} -->
 
-- [ ] [*] `.py` files are not highlighted at all.
-      <!-- hai:{"id":"simple-5a544fc442d3d2ca","updatedAt":"2026-10-17T08:24:56.244Z"} -->
+- [x] [*] `.py` files are not highlighted at all.
+      <!-- hai:{"id":"simple-5a544fc442d3d2ca","updatedAt":"2026-10-21T14:12:54.678Z"} -->
 
 - [x] [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
   `static/FSA-TEST-CHECKLIST.md`.
@@ -236,29 +236,29 @@ Rules for TASKS.md usage are at the bottom of the file.
   registration in `vfs.py`. JSON is a browser virtual filesystem. CSV comes in phase 8.
       <!-- hai:{"id":"simple-8cc5cb10b6db5cb0","updatedAt":"2026-10-17T08:24:52.790Z"} -->
 
-- [ ] [41] Fix plain-text reStructuredText previews in Source and Rendered modes.
-      <!-- hai:{"updatedAt":"2026-10-17T08:24:52.333Z"} -->
+- [x] [41] Fix plain-text reStructuredText previews in Source and Rendered modes.
+      <!-- hai:{"updatedAt":"2026-10-21T14:12:57.477Z"} -->
 
-- [ ] [64] Keep subfolder and folded parent widths stable during Up/Down navigation.
-      <!-- hai:{"updatedAt":"2026-10-17T08:24:51.913Z"} -->
+- [x] [64] Keep subfolder and folded parent widths stable during Up/Down navigation.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:00.460Z"} -->
 
-- [ ] [*] Add the `Delete` key as a shortcut to delete the current file or directory.
-      <!-- hai:{"id":"simple-733e4b4bae09fdf7","updatedAt":"2026-10-17T08:24:51.066Z"} -->
+- [x] [*] Add the `Delete` key as a shortcut to delete the current file or directory.
+      <!-- hai:{"id":"simple-733e4b4bae09fdf7","updatedAt":"2026-10-21T14:13:03.475Z"} -->
 
-- [ ] [*] When returning focus back to the containing folder from the preview pane using the
+- [x] [*] When returning focus back to the containing folder from the preview pane using the
   left arrow key, always keep all ancestor folder columns in the same expanded/collapsed
   state as they are. Currently expanded ancestor folders are collapsed if I hit the left
   arrow key.
-      <!-- hai:{"id":"simple-e604b54e598da82b","updatedAt":"2026-10-17T08:24:50.643Z"} -->
+      <!-- hai:{"id":"simple-e604b54e598da82b","updatedAt":"2026-10-21T14:13:05.486Z"} -->
 
-- [ ] [*] Treat `.py.j2` as Python.
-      <!-- hai:{"id":"simple-2ff9c56170d9a118","updatedAt":"2026-10-17T08:24:50.199Z"} -->
+- [x] [*] Treat `.py.j2` as Python.
+      <!-- hai:{"id":"simple-2ff9c56170d9a118","updatedAt":"2026-10-21T14:13:06.879Z"} -->
 
-- [ ] [*] When all folder columns are collapsed, exiting the preview pane using the arrow
+- [x] [*] When all folder columns are collapsed, exiting the preview pane using the arrow
   left key doesn't currently expand the parent folder column (rightmost folder column
   just before the preview pane). Make sure left arrow always expands the parent folder
   column.
-      <!-- hai:{"id":"simple-ab72d7c18c51fff6","updatedAt":"2026-10-17T08:24:49.775Z"} -->
+      <!-- hai:{"id":"simple-ab72d7c18c51fff6","updatedAt":"2026-10-21T14:13:09.171Z"} -->
 
 - [ ] [*] `.jsonl` files larger than 512 KB aren't previewed or made navigable in a contents
   column. Instead, the message `⚠ Too large to browse (over 512 KB)` appears in the
@@ -350,14 +350,17 @@ Rules for TASKS.md usage are at the bottom of the file.
       next column. Only one touch should do it.
       <!-- hai:{"id":"simple-63ca4fc48e67d49a","updatedAt":"2026-10-07T15:03:32.602Z"} -->
 
-- [ ] [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
+- [x] [65] [*] Bug: PNG and JPEG preview doesn't work reliably. Sometimes the text
       `No inline preview for this file type.` is displayed instead of the image.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:11.059Z"} -->
 
-- [ ] [*] For hierarchical nested view of JSON, don't use the folder icon. Use the JSON
+- [x] [*] For hierarchical nested view of JSON, don't use the folder icon. Use the JSON
       icon for the whole file, and `{}` and `[]` icons for objects and arrays.
+      <!-- hai:{"id":"simple-d79a2589a64cd338","updatedAt":"2026-10-21T14:13:11.967Z"} -->
 
-- [ ] [67] Use the vertical scrollbar to browse large directories instead of pagination.
+- [x] [67] Use the vertical scrollbar to browse large directories instead of pagination.
       Virtualize directory contents efficiently.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:12.754Z"} -->
 
 - [ ] [*] Per recommendation from task dd6897a9-b54e-4ad4-b9b5-b2372292f4b1, remove
       ?no-columns, wants_columns, and url_for_state. Keep documentation up-to-date.
@@ -379,21 +382,25 @@ Rules for TASKS.md usage are at the bottom of the file.
       everything that isn't valid any more. De-duplicate and refine. Write into a new
       file and remove the old ones. Use GPT-6-Astra Medium.
 
-- [ ] [*] Implement highlighting of reStructuredText (not actually properly implemented
+- [x] [*] Implement highlighting of reStructuredText (not actually properly implemented
       by [50]). Ensure unintended highlighting doesn't happen between aposthrophes in
       words. Ensure special roles are highlighted similar to how Pygments does.
+      <!-- hai:{"id":"simple-69b9d05bc6cbd5cf","updatedAt":"2026-10-21T14:13:14.152Z"} -->
 
-- [ ] [42] Render `~/...` Markdown links relative to the root mount, with `?f`, instead
+- [x] [42] Render `~/...` Markdown links relative to the root mount, with `?f`, instead
       of deprecated `/w/...` paths.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:15.476Z"} -->
 
 - [ ] [37] Make the installed PWA show its server-not-running recovery page when opened
       while the server is stopped.
 
-- [ ] [69] Show copied paths in the status bar. Repeat `Ctrl+C` within 5 seconds, with
+- [x] [69] Show copied paths in the status bar. Repeat `Ctrl+C` within 5 seconds, with
       no intervening interaction, to cycle relative path, full path and item name.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:17.677Z"} -->
 
-- [ ] [70] In preview focus, ArrowRight folds the leftmost expanded folder column, then
+- [x] [70] In preview focus, ArrowRight folds the leftmost expanded folder column, then
       enters fullscreen once columns are hidden. ArrowLeft exits fullscreen.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:19.272Z"} -->
 
 - [x] [31] Evaluate AppKit, GTK and WinUI against the WebView prototype. Record the
       comparison in an ADR. Do not start a native toolkit before the ADR exists.
@@ -401,56 +408,69 @@ Rules for TASKS.md usage are at the bottom of the file.
 
       <!-- hai:{"updatedAt":"2026-10-21T05:17:06.677Z"} -->
 
-- [ ] [71] Let reStructuredText paragraphs fill the available preview width, as Markdown
+- [x] [71] Let reStructuredText paragraphs fill the available preview width, as Markdown
       paragraphs do.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:20.207Z"} -->
 
-- [ ] [*] The `Delete` button in the preview pane gives the red error
+- [x] [*] The `Delete` button in the preview pane gives the red error
       `Delete failed: actions.render is not a function` on the bottom status line (after
       confirming deletion).
+      <!-- hai:{"id":"simple-fef3685dc982ab7b","updatedAt":"2026-10-21T14:13:20.970Z"} -->
 
-- [ ] [72] Make the browser Back button exit mobile fullscreen preview like Exit
+- [x] [72] Make the browser Back button exit mobile fullscreen preview like Exit
       fullscreen, without leaving an empty preview.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:22.851Z"} -->
 
-- [ ] [*] There's no way to access the file context menu on desktop browsers. On touch
+- [x] [*] There's no way to access the file context menu on desktop browsers. On touch
       devices, a long touch does show it. Also, the context menu is transparent and very
       hard to read. And the `Delete` item is missing from the menu.
+      <!-- hai:{"id":"simple-ecb8969c9a740d42","updatedAt":"2026-10-21T14:13:25.528Z"} -->
 
-- [ ] [*] On a portrait mobile phone, Markdown preview is wider than the screen.
+- [x] [*] On a portrait mobile phone, Markdown preview is wider than the screen.
       Contents overflow horizontally both at the left and right edges.
+      <!-- hai:{"id":"simple-9738df645fc3082f","updatedAt":"2026-10-21T14:13:26.952Z"} -->
 
 - [ ] [*] Fix all remaining red tests (listed in project memory), including the one-line
       cause of the newest root-column regression.
 
-- [ ] [73] Fix Markdown source highlighting for headings, URLs and links without
+- [x] [73] Fix Markdown source highlighting for headings, URLs and links without
       treating word apostrophes as delimiters. Make links clickable.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:27.871Z"} -->
 
-- [ ] [74] Remember collapsed JSON paths and apply the same collapse pattern to similar
+- [x] [74] Remember collapsed JSON paths and apply the same collapse pattern to similar
       objects at the same depth.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:28.783Z"} -->
 
-- [ ] [*] In hierarchical navigation of `.json`, `.jsonl`, and SQLite `.db` files, when
+- [x] [*] In hierarchical navigation of `.json`, `.jsonl`, and SQLite `.db` files, when
       the key of a scalar value is highlighted, show its value in the preview pane
       instead of rendering the parent JSON structure. If the value is a string and has
       `\n` characters, display it with line breaks.
+      <!-- hai:{"id":"simple-0ba6747d436ce10a","updatedAt":"2026-10-21T14:13:30.086Z"} -->
 
-- [ ] [*] Bug: The `Fullscreen` button causes a full screen view of the file to briefly
+- [x] [*] Bug: The `Fullscreen` button causes a full screen view of the file to briefly
       flash, and then immediately returns to the main Filemill UI.
+      <!-- hai:{"id":"simple-d66cbaa914926ffd","updatedAt":"2026-10-21T14:13:32.168Z"} -->
 
-- [ ] [*] When navigating to the parent directory using the left arrow key, make sure
+- [x] [*] When navigating to the parent directory using the left arrow key, make sure
       the highlighted file or directory is scrolled into view.
+      <!-- hai:{"id":"simple-5fca1830a0ffbefd","updatedAt":"2026-10-21T14:13:33.951Z"} -->
 
 - [ ] [75] Use stable folder widths in em units and let previews fill the remaining
       space. Tune automatic folding and column/preview ratios for desktop and
       portrait/landscape phones.
 
-- [ ] [*] Bug: Arrow Right into the preview pane works inconasistently. Sometimes it
+- [x] [*] Bug: Arrow Right into the preview pane works inconasistently. Sometimes it
       focuses the preview pane without changing the layout. Sometimes it hides the
       folder columns and stretches the preview pane to full width.
+      <!-- hai:{"id":"simple-d7d4c2e34d1abfcf","updatedAt":"2026-10-21T14:13:35.273Z"} -->
 
-- [ ] [76] Keep the focused folder column's width stable during Up/Down navigation,
+- [x] [76] Keep the focused folder column's width stable during Up/Down navigation,
       without partial folding, dimmed text or overlaid folder names.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:36.082Z"} -->
 
-- [ ] [*] Feature: Clicking on a content search result now opens the raw file. Open the
+- [x] [*] Feature: Clicking on a content search result now opens the raw file. Open the
       rendered file in the UI preview pane instead.
+      <!-- hai:{"id":"simple-31175d0fe86ffbc4","updatedAt":"2026-10-21T14:13:37.387Z"} -->
 
 - [ ] [29] Make `ui/core/` a model package with no DOM: nodes, selection, folding
       arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
@@ -460,9 +480,10 @@ Rules for TASKS.md usage are at the bottom of the file.
       `layout=no-columns`, now return the shared client shell.
       <!-- hai:{"id":"simple-8b040fc456862500","updatedAt":"2026-10-21T05:17:10.450Z"} -->
 
-- [ ] [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
+- [x] [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
       `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
       `TASKS.md`.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:39.450Z"} -->
 
 - [x] [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`,
       `applyWidths`, `panFocus` and `slideTail`. Each function is under 25 lines.
@@ -472,9 +493,10 @@ Rules for TASKS.md usage are at the bottom of the file.
       decision in `docs/adr/`. Each file has context, decision, measurement,
       consequences.
 
-- [ ] [10] Toggling `Source` / `Rendered` reloads the whole page and causes an
+- [x] [10] Toggling `Source` / `Rendered` reloads the whole page and causes an
       uncomfortable blink and a delay. Just the preview pane should be reloaded, and the
       URL and history updated.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:42.057Z"} -->
 
 - [x] [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=`
       URLs for images, PDF and HTML. Done when `grep -r raw?path server/src` prints
@@ -483,12 +505,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 
       <!-- hai:{"id":"simple-6e2f3140d42e50d0","updatedAt":"2026-10-21T05:17:19.758Z"} -->
 
-- [ ] [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100
+- [x] [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100
       k-entry directory still builds 100 k DOM nodes. Do this only if such folders show
       up.
+      <!-- hai:{"id":"simple-239d177742cf7f08","updatedAt":"2026-10-21T14:13:43.093Z"} -->
 
-- [ ] [6] Centralize file-kind classification across filesystem producers and
+- [x] [6] Centralize file-kind classification across filesystem producers and
       preview/edit consumers. Add one test table per language that both sides share.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:43.867Z"} -->
 
 - [ ] [44] Document demo instances matching each browser test setup.
 
@@ -508,9 +532,11 @@ Rules for TASKS.md usage are at the bottom of the file.
       Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.
     - Depends on: [25]
 
-- [ ] [*] Add a preview for `.mp4` files with a `<video controls>` element, as one
+- [x] [*] Add a preview for `.mp4` files with a `<video controls>` element, as one
       registry entry plus one test.
     - Depends on: [26]
+
+      <!-- hai:{"id":"simple-0add5f8e086d4935","updatedAt":"2026-10-21T14:13:45.094Z"} -->
 
 - [ ] [*] Implement CSV as a browser virtual filesystem in `ui/adapters/vfs-csv.js`,
       like JSONL: one entry per row, a key/value preview per row. No Python. Closes
@@ -531,24 +557,28 @@ Rules for TASKS.md usage are at the bottom of the file.
       python-pptx.
     - Depends on: [24]
 
-- [ ] [*] On mobile, long-pressing a file or directory should open a menu of actions to
+- [x] [*] On mobile, long-pressing a file or directory should open a menu of actions to
       copy its base name, relative path or absolute path.
+      <!-- hai:{"id":"simple-8db4dd9add33b575","updatedAt":"2026-10-21T14:13:46.970Z"} -->
 
 - [ ] [*] Delete `server/src/filemill/styles.py`. The shell links `/ui/core/styles.css`,
       and no other server route emits HTML. Delete the tests that pin `APP_CSS`.
     - Depends on: [33], [34]
 
-- [ ] [*] Delete `/api/render` in `app.py`, `render_upload` in `api.py` and
+- [x] [*] Delete `/api/render` in `app.py`, `render_upload` in `api.py` and
       `ui/adapters/preview-upload.js`. Local folders in the server edition use
       PreviewRich.
     - Depends on: [32], [34]
+
+      <!-- hai:{"id":"simple-3aedf96e37dbfa74","updatedAt":"2026-10-21T14:13:49.158Z"} -->
 
 - [ ] [*] Each row of a JSONL file must be presented exactly like a hierarchical nested
       view of a JSON file.
 
 - [ ] [45] Show JSON children beside a foldable preview of the selected value.
 
-- [ ] [46] Fix ancestor columns unfolding during down-arrow navigation.
+- [x] [46] Fix ancestor columns unfolding during down-arrow navigation.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:50.284Z"} -->
 
 - [ ] [*] Keyboard navigation using arrows still doesn't animate
       folding/unfolding/resizing of columns. Do systematic debugging to identify the
@@ -560,7 +590,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [47] Fold folder columns on preview entry and restore the containing column on
       exit.
 
-- [ ] [48] Keep ancestor folding unchanged during Up/Down navigation.
+- [x] [48] Keep ancestor folding unchanged during Up/Down navigation.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:51.025Z"} -->
 
 - [ ] [*] Add a PWA manifest and service worker to the static bundle so
       `static/index.html` installs as a standalone window. The server edition already
@@ -571,12 +602,15 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [*] The `Fullscreen` button in the preview pane doesn't do anything. No errors
       seen on the JavaScript console either.
 
-- [ ] [50] Fix missing reStructuredText rendering and highlighting after the initial
+- [x] [50] Fix missing reStructuredText rendering and highlighting after the initial
       implementation.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:52.154Z"} -->
 
-- [ ] [51] Return raw file bytes for URLs without query parameters.
+- [x] [51] Return raw file bytes for URLs without query parameters.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:53.368Z"} -->
 
-- [ ] [52] Return focus to the parent column when leaving the preview with ArrowLeft.
+- [x] [52] Return focus to the parent column when leaving the preview with ArrowLeft.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:55.780Z"} -->
 
 - [ ] [*] Remove every `# noqa: S608` in `server/src/filemill/providers/sqlite.py`.
       Quote identifiers with `"` and replace `"` inside them with `""`, or check
@@ -585,17 +619,20 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [53] Let Markdown paragraphs wrap to the preview width instead of preserving
       linefeeds.
 
-- [ ] [*] Typing a right arrow when the rightmost column before the preview is focused
+- [x] [*] Typing a right arrow when the rightmost column before the preview is focused
       should focus the preview and let the user scroll it up/down using the arrow and
       PgUp/PgDn keys.
+      <!-- hai:{"id":"simple-ed61b251d476c9b7","updatedAt":"2026-10-21T14:13:58.157Z"} -->
 
 - [ ] [*] Delete `static/hotreload.py`, `forgetRoots` in `ui/adapters/storage.js`, and
       `PYGMENTS_FORMATTER` and the second `FRIENDLY_CSS` in
       `server/src/filemill/styles.py`.
 
-- [ ] [54] Keep all Markdown previews within the portrait screen width.
+- [x] [54] Keep all Markdown previews within the portrait screen width.
+      <!-- hai:{"updatedAt":"2026-10-21T14:13:59.668Z"} -->
 
-- [ ] [55] Fix the favicon 404 and `renderPage is not a function` error.
+- [x] [55] Fix the favicon 404 and `renderPage is not a function` error.
+      <!-- hai:{"updatedAt":"2026-10-21T14:14:02.073Z"} -->
 
 - [ ] [*] In `ui/adapters/vfs-json.js`, merge `withJsonl` and `withJson` into
       `withVirtual`, and `withJsonlPreview` and `withJsonPreview` into
@@ -605,8 +642,9 @@ Rules for TASKS.md usage are at the bottom of the file.
       Create one `mountRoot()` and one `currentPath()`. Delete the copies and
       `pathParts`.
 
-- [ ] [22] Replace `cursor[i]`, `sel[i]` and `node.lastSel` with one selection model:
+- [x] [22] Replace `cursor[i]`, `sel[i]` and `node.lastSel` with one selection model:
       `sel[i]` is the selected name. Derive the row index when needed.
+      <!-- hai:{"updatedAt":"2026-10-21T14:14:03.562Z"} -->
 
 - [ ] [*] Add root `CONTRIBUTING.md` (setup, tests, commit style, STE rule),
       `SECURITY.md` (threat model, how to report) and `CHANGELOG.md` (Keep a Changelog
@@ -637,17 +675,21 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [ ] [*] Feature: ability to delete a file or a directory from the file manager.
 
-- [ ] [*] Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight`
+- [x] [*] Feature: Syntax highlight Markdown and HTML files in the `?filemill=highlight`
       view.
+      <!-- hai:{"id":"simple-5e3b16344b7db1cd","updatedAt":"2026-10-21T14:14:05.094Z"} -->
 
-- [ ] [58] Preserve preview mode in file URLs so Back from Raw restores the finder.
+- [x] [58] Preserve preview mode in file URLs so Back from Raw restores the finder.
+      <!-- hai:{"updatedAt":"2026-10-21T14:14:06.795Z"} -->
 
-- [ ] [59] Fix the missing-timestamp error for YouTube WebVTT files.
+- [x] [59] Fix the missing-timestamp error for YouTube WebVTT files.
+      <!-- hai:{"updatedAt":"2026-10-21T14:14:09.267Z"} -->
 
 - [ ] [*] In an installed PWA, there is no way to get back from raw file view to the
       file manager view.
 
-- [ ] [60] Fix content searches failing with `Search timed out`.
+- [x] [60] Fix content searches failing with `Search timed out`.
+      <!-- hai:{"updatedAt":"2026-10-21T14:14:10.988Z"} -->
 
 - [ ] [61] Choose unique CSV row keys and keep duplicate values independently
       selectable.
@@ -664,7 +706,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [*] Add `ruff` and `mypy` to the `dev` group in `server/pyproject.toml`. Add
       `[tool.ruff]` with `line-length = 88`. Fix all findings. Run `ruff format`.
 
-- [ ] [63] Add Raw, Source / Rendered and Fullscreen controls to the preview toolbar.
+- [x] [63] Add Raw, Source / Rendered and Fullscreen controls to the preview toolbar.
+      <!-- hai:{"updatedAt":"2026-10-21T14:14:12.360Z"} -->
 
 - [ ] [12] Make `static/test-ui.py` run to its end, then fix the three checks that fail:
       the `.pv-content` timeout and the two "edit starts at the top" checks.
@@ -672,13 +715,16 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [*] In `ui/core/state.js`, replace `node.jsonl ? kids : sortKids(kids)` with a
       `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
 
-- [ ] [28] Grow the editor behind the `FS.write` port: undo, find, a line gutter and a
+- [x] [28] Grow the editor behind the `FS.write` port: undo, find, a line gutter and a
       "modified" mark. Each addition is one file in `ui/editor/`.
+      <!-- hai:{"updatedAt":"2026-10-21T14:14:13.966Z"} -->
 
-- [ ] [27] Try reStructuredText rendering in the browser with Pyodide or a WASM tool,
+- [x] [27] Try reStructuredText rendering in the browser with Pyodide or a WASM tool,
       behind the rich renderer consent switch. Record size and first-load time in an
       ADR.
     - Depends on: [26]
+
+      <!-- hai:{"updatedAt":"2026-10-21T14:14:16.708Z"} -->
 
 - [ ] [*] Render `.pptx` in the browser: unzip the file and show the slide text, as one
       registry entry. Then delete `_preview_pptx`, `python-pptx` and `/api/preview`.
@@ -696,20 +742,23 @@ Rules for TASKS.md usage are at the bottom of the file.
       them, or make CORS opt-in and document it in `SECURITY.md`.
     - Depends on: [32]
 
-- [ ] [32] Render Markdown and `.docx` in the browser in the server edition too. Serve
+- [x] [32] Render Markdown and `.docx` in the browser in the server edition too. Serve
       the pinned renderer modules from `ui/vendor/`. Then delete `rendering.py` and its
       deps.
+      <!-- hai:{"updatedAt":"2026-10-21T14:14:17.991Z"} -->
 
-- [ ] [34] Make the SQLite provider return JSON only. The client renders tables and rows
+- [x] [34] Make the SQLite provider return JSON only. The client renders tables and rows
       with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close
       [9].
+      <!-- hai:{"updatedAt":"2026-10-21T14:14:19.600Z"} -->
 
 - [x] [9] Close the conditional `ViewSpec` proposal: [34] removed the six-argument
       interface.
       <!-- hai:{"updatedAt":"2026-10-21T05:17:46.482Z"} -->
 
-- [ ] [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both
+- [x] [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both
       editions fill it from the same core list plus their own adapters.
+      <!-- hai:{"updatedAt":"2026-10-21T14:14:21.483Z"} -->
 
 - [ ] [36] Decide how the installed PWA gets a running server: a systemd or launchd
       unit, a launcher, a desktop shell, or only a better "server not running" page.
