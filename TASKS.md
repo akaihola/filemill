@@ -33,9 +33,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [143] Check whether the demo instances show up in the development dashboard
-      <!-- hai:{"id":"simple-5d0a1fa0-5647-4a21-a6c8-f0050c6de2c7","labels":["steward","review"],"createdAt":"2026-10-21T11:20:51.060Z","updatedAt":"2026-10-21T16:11:06.356Z"} -->
-
 - [~] [141] Finish browser fixture isolation and qualify independent test roots
       <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T15:01:55.354Z"} -->
 
@@ -43,6 +40,9 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-20T13:03:29.269Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [143] Check whether the demo instances show up in the development dashboard
+      <!-- hai:{"id":"simple-5d0a1fa0-5647-4a21-a6c8-f0050c6de2c7","labels":["steward","review"],"createdAt":"2026-10-21T11:20:51.060Z","updatedAt":"2026-10-21T16:18:26.577Z"} -->
 
 - [ ] [142] Recover the revision and failing tests of the old server browser
   baseline
