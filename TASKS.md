@@ -28,9 +28,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [~] [148] Say in --bind's help that an explicit flag wins over FILEMILL_BIND
       <!-- hai:{"id":"simple-7e2f615f-1902-49fd-b0be-0cf3fe8b7ead","labels":["steward"],"createdAt":"2026-10-21T21:59:19.762Z","updatedAt":"2026-10-21T23:08:03.793Z"} -->
 
-- [~] [147] Allow only known elements and attributes in reStructuredText previews
-      <!-- hai:{"id":"simple-88cfaa62-ec67-4090-a023-c53f20d3b2e4","labels":["steward","security"],"createdAt":"2026-10-21T20:34:29.661Z","updatedAt":"2026-10-21T21:32:38.419Z"} -->
-
 - [~] [141] Finish browser fixture isolation and qualify independent test roots
       <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T15:01:55.354Z"} -->
 
@@ -38,6 +35,9 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-20T13:03:29.269Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [147] Allow only known elements and attributes in reStructuredText previews
+      <!-- hai:{"id":"simple-88cfaa62-ec67-4090-a023-c53f20d3b2e4","labels":["steward","security"],"createdAt":"2026-10-21T20:34:29.661Z","updatedAt":"2026-10-21T23:11:22.493Z"} -->
 
 - [ ] [146] Check filemill's README, contributor docs, goals and roadmap against
   current main
