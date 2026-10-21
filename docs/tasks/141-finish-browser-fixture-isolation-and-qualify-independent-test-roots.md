@@ -50,8 +50,9 @@ configuration checks passed: 11 tests in 3.07 seconds. All 783 existing assertio
 ASTs in the migrated modules match after normalizing string whitespace changed
 by dedenting lifecycle blocks; the keyboard module retains its 113 assertions.
 
-The qualification run is pending. Completion and implementation commit IDs
-will be recorded after validation.
+The repair is commit `2d77abdd` (`test: centralize browser lifetimes and declare
+parallel runner`). The task plan is `461950e5`; the canonical start move is
+`66572076`. The parallel qualification run is pending.
 
 [the root fixtures]: ../../conftest.py
 [the contribution guide]: ../../CONTRIBUTING.md
