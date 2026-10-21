@@ -1772,7 +1772,7 @@ def test_document_history_waits_for_outline(routed_page, has_outline):
         else:
             held.append(route)
 
-    page.route("**/api/raw?p=notes%2Fdeep%2Fleaf.md", hold_outline)
+    page.route("**/api/raw?p=notes%2Fdeep%2Fleaf.md&snapshot=1", hold_outline)
     page.click('.col[data-i="2"] .row:has-text("leaf.md")')
     page.wait_for_function("path[3]?.name === 'leaf.md' && !!path[3].loading")
     assert held  # The outline read started and the loading column is on screen.
