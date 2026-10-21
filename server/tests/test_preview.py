@@ -1,4 +1,5 @@
 import html as html_lib
+from html.parser import HTMLParser
 
 import pytest
 
@@ -51,6 +52,89 @@ def test_rst_links_keep_only_safe_urls(tmp_path):
     assert ">run</a>" in html and ">page</a>" in html, html
     assert 'href="https://example.com/"' in html, html
     assert 'href="mailto:' in html and 'href="sib.rst"' in html, html
+
+
+class _Attributes(HTMLParser):
+    """Every attribute name in a fragment, as a browser's parser finds them."""
+
+    def __init__(self):
+        super().__init__()
+        self.names: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        self.names += [name for name, _ in attrs]
+
+
+def _attribute_names(html: str) -> list[str]:
+    parser = _Attributes()
+    parser.feed(html)
+    return parser.names
+
+
+def _live(names: list[str]) -> list[str]:
+    return [n for n in names if n.startswith("on") or n in ("data", "xlink:href")]
+
+
+@pytest.fixture()
+def outside(tmp_path):
+    """A served root and, beside it, files the root does not contain (S2)."""
+    root, outside = tmp_path / "root", tmp_path / "outside"
+    root.mkdir()
+    outside.mkdir()
+    (outside / "secret.png").write_bytes(b"\x89PNG secret pixels")
+    (outside / "evil.svg").write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" onload="window.__xss=1">'
+        '<circle r="5"/></svg>'
+    )
+    return outside
+
+
+@pytest.mark.parametrize(
+    "target",
+    ["{outside}/secret.png", "file://{outside}/secret.png", "{outside}/evil.svg"],
+)
+def test_rst_never_inlines_an_image_file(tmp_path, outside, target):
+    """docutils embeds an image for ``:loading: embed`` whatever
+    file_insertion_enabled says, from any path the server can read (S2)."""
+    f = tmp_path / "root" / "note.rst"
+    f.write_text(f".. image:: {target.format(outside=outside)}\n   :loading: embed\n")
+    html = render_preview(f)
+    assert "data:" not in html and "c2VjcmV0" not in html, html
+    assert "<svg" not in html and "onload" not in html, html
+    assert "preview-error" not in html and "<img" in html, html
+
+
+def test_rst_images_inside_the_root_stay_links(tmp_path, outside):
+    root = tmp_path / "root"
+    (root / "pics").mkdir()
+    (root / "pics" / "cat.png").write_bytes(b"\x89PNG cat")
+    f = root / "note.rst"
+    f.write_text(
+        '.. image:: pics/cat.png\n   :alt: A "cat" & dog\n\n'
+        ".. image:: pics/cat.png\n   :loading: embed\n\n"
+        ".. image:: pics/cat.png\n   :loading: lazy\n"
+    )
+    html = render_preview(f)
+    assert '<img alt="A &quot;cat&quot; &amp; dog" src="pics/cat.png" />' in html
+    assert html.count('src="pics/cat.png"') == 3 and "data:" not in html, html
+    assert 'loading="lazy"' in html, html
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        # docutils writes a video's address and alternative text into its
+        # fallback link unescaped.
+        '.. image:: x"onmouseover="window.__xss=1"x=".mp4\n',
+        ".. image:: clip.mp4\n   :alt: <img src=x onerror=window.__xss=2>\n",
+        ".. image:: {outside}/evil.svg\n   :loading: embed\n",
+    ],
+)
+def test_rst_preview_keeps_no_event_handler(tmp_path, outside, source):
+    f = tmp_path / "root" / "note.rst"
+    f.write_text(source.format(outside=outside))
+    html = render_preview(f)
+    assert _live(_attribute_names(html)) == [], html
 
 
 def test_source_rst_is_syntax_highlighted(tmp_path):

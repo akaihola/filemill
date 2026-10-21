@@ -753,6 +753,23 @@ async def test_rst_links_keep_only_safe_urls(page, base, requests):
     ], html
 
 
+async def test_rst_output_keeps_no_live_attribute(page, base, requests):
+    pg = page
+    # ── an SVG or object keeps no handler, xlink:href or data (S2) ───
+    await boot(pg, base, rich=True, stubs=True)
+    await pg.evaluate(
+        """window.__pyHTML = '<p>picture</p><svg onload="window.__xss=7">'
+          + '<a xlink:href="javascript:window.__xss=8"><text>x</text></a>'
+          + '</svg><object data="javascript:window.__xss=9"></object>'"""
+    )
+    html = await preview(pg, "doc.rst", ready=".pv-rich svg")
+    assert await pg.evaluate(
+        """[...document.querySelectorAll('#pv-content *')]
+          .flatMap((el) => [...el.attributes].map((a) => a.name))
+          .filter((n) => n.startsWith('on') || n === 'data' || n === 'xlink:href')"""
+    ) == [], html
+
+
 async def test_consent_retry(page, base, requests):
     pg = page
     # ── turning it back on retries ───────────────────────────────────

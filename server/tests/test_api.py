@@ -564,6 +564,20 @@ def test_an_html_member_previews_in_a_sandboxed_iframe(
     assert re.search(r'\ssandbox=""[\s>]', iframe[0])
 
 
+def test_an_rst_member_never_inlines_an_image_file(archive_root: Path, archive_client):
+    """A member reaches the same docutils renderer as a file on disk (S2)."""
+    (archive_root / "evil.svg").write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" onload="window.__xss=1"/>'
+    )
+    with zipfile.ZipFile(archive_root / "rst.zip", "w") as zf:
+        zf.writestr(
+            "note.rst", f".. image:: {archive_root / 'evil.svg'}\n   :loading: embed\n"
+        )
+    html = archive_client.get("/api/preview?p=rst.zip&v=note.rst").text
+    assert "preview-rst" in html and "<img" in html, html
+    assert "<svg" not in html and "onload" not in html, html
+
+
 def test_raw_without_a_vpath_still_serves_the_archive_itself(
     archive_client, archive_root: Path
 ):

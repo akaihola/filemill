@@ -18,6 +18,7 @@ import { FSA } from "./fsa.js";
 import { API, HTTP } from "./http.js";
 import { PreviewLocal, withHighlighting } from "./preview-local.js";
 import {
+  inert,
   initRichSettings,
   PreviewRich,
   RICH_RENDERERS,
@@ -123,7 +124,9 @@ const PreviewHTTP = {
     const response = await serverFetch(
       `${API}/preview?p=${encodeURIComponent(n.rel)}${lines}${vpath}`,
     );
-    return response.ok ? response.text() : PreviewLocal.render(n);
+    /* The server's HTML lands in this page like the browser's own converter
+       output, so it gets the same inert() step (S2). */
+    return response.ok ? inert(await response.text()) : PreviewLocal.render(n);
   },
 };
 

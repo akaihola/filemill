@@ -2,10 +2,13 @@ import configparser
 import html as html_lib
 import re
 from contextlib import suppress
+from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import quote as urlquote
 
+from docutils import nodes
 from docutils.core import publish_parts
+from docutils.writers import html5_polyglot
 from pygments import highlight as pyg_highlight
 from pygments.formatters import HtmlFormatter as PygHtmlFormatter
 from pygments.lexers import (
@@ -30,26 +33,78 @@ MAX_LINE_LENGTH = 10_000
 SAFE_PROTOCOLS = ("http:", "https:", "mailto:")
 _SCHEME_LIKE = re.compile(r"[^/?#]*:")
 
-# docutils escapes and double-quotes every attribute value, and with raw input
-# off nothing else writes markup into its output, so a quoted href or src there
-# is always one of its own.
-_URL_ATTR = re.compile(r' (href|src)="([^"]*)"')
-
 
 def safe_url(url: str) -> bool:
     """Whether *url* may be a link target in a preview."""
     return url.lower().startswith(SAFE_PROTOCOLS) or not _SCHEME_LIKE.match(url)
 
 
-def _safe_links(html: str) -> str:
-    """Drop each link target, or picture source, that is not a safe URL."""
+def _live(name: str, value: str) -> bool:
+    """Whether an attribute could run script or load something unchecked."""
+    return (
+        name.startswith("on")
+        or name in ("data", "xlink:href")
+        or (name == "href" and not safe_url(value))
+        or (
+            name == "src"
+            and not safe_url(value)
+            and not value.lower().startswith("data:image/")
+        )
+    )
 
-    def keep(m: re.Match[str]) -> str:
-        url = html_lib.unescape(m[2])
-        ok = safe_url(url) or (m[1] == "src" and url.lower().startswith("data:image/"))
-        return m[0] if ok else ""
 
-    return _URL_ATTR.sub(keep, html)
+class _Inert(HTMLParser):
+    """Write converter HTML again without its live attributes (A2, S2).
+
+    docutils writes a link target as the document gives it, and a video's
+    address and alternative text unescaped, so its output is parsed as a
+    browser would and every tag written anew. inert() in
+    ui/adapters/preview-rich.js is the browser's copy, which also runs on this
+    output; this one covers /api/preview opened on its own. Comments go.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.out: list[str] = []
+
+    def _tag(self, tag: str, attrs: list[tuple[str, str | None]], end: str) -> None:
+        kept = "".join(
+            f' {name}="{html_lib.escape(value or "")}"'
+            for name, value in attrs
+            if not _live(name, value or "")
+        )
+        self.out.append(f"<{tag}{kept}{end}")
+
+    def handle_starttag(self, tag, attrs):
+        self._tag(tag, attrs, ">")
+
+    def handle_startendtag(self, tag, attrs):
+        self._tag(tag, attrs, " />")
+
+    def handle_endtag(self, tag):
+        self.out.append(f"</{tag}>")
+
+    def handle_data(self, data):
+        self.out.append(html_lib.escape(data, quote=False))
+
+
+def _inert(html: str) -> str:
+    parser = _Inert()
+    parser.feed(html)
+    parser.close()
+    return "".join(parser.out)
+
+
+class _LinkedImages(html5_polyglot.HTMLTranslator):
+    """docutils reads and inlines an image for ``:loading: embed`` whatever
+    ``file_insertion_enabled`` says, from any path the server can read, and an
+    SVG as live markup (S2). Every image stays a link instead, which the
+    browser fetches through the root check like any other URL."""
+
+    def visit_image(self, node: nodes.image) -> None:
+        if node.get("loading", self.image_loading) == "embed":
+            node["loading"] = "link"
+        super().visit_image(node)
 
 
 def valid_text(data: bytes, reject_wide: bool = True) -> str | None:
@@ -203,9 +258,11 @@ def _preview_rst(path: Path, lines: tuple[int, int] | None = None) -> str:
         source = path.read_text(encoding="utf-8")
         if lines is not None:
             source = "\n".join(source.split("\n")[lines[0] : lines[1]])
+        writer = html5_polyglot.Writer()
+        writer.translator_class = _LinkedImages
         parts = publish_parts(
             source,
-            writer_name="html5",
+            writer=writer,
             settings_overrides={
                 "raw_enabled": False,
                 "file_insertion_enabled": False,
@@ -216,7 +273,7 @@ def _preview_rst(path: Path, lines: tuple[int, int] | None = None) -> str:
         title = (
             f"<h1>{html_lib.escape(parts['title'])}</h1>" if parts.get("title") else ""
         )
-        body = title + _safe_links(parts["body"])
+        body = title + _inert(parts["body"])
         return f'<div class="preview-rst">{body}</div>'
     except Exception as e:
         return (

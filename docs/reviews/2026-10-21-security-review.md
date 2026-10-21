@@ -123,6 +123,8 @@ whatever `file_insertion_enabled` says.
   path. A `docutils.conf` in the process directory can also turn `raw` and
   `include` back on, but anyone who can write it can already serve an
   `index.html` (see [Considered and not reported](#considered-and-not-reported)).
+- **Status, 2026-10-21.** Fixed by [the live-markup repair][139], which also
+  covers docutils' unescaped video markup.
 
 ### S3. Read routes accept any Host, so DNS rebinding reads the root
 
@@ -165,6 +167,7 @@ not escape `"`, and its output lands in a double-quoted attribute.
 - **Limits.** An injected `onclick` is overwritten at line 57, and autofocus
   does not fire while the search bar has focus. Hover, focus and pointer
   handlers do. The context and second path span are text and are safe.
+- **Status, 2026-10-21.** Fixed by [the live-markup repair][139].
 
 ## Not finished
 
@@ -183,6 +186,7 @@ The verifier results for all of these are in the HAI-136 session's
 transcript.
 
 [136]: ../tasks/136-security-scan-of-filemill-served-roots-mutations-previews-caches-and-h.md
+[139]: ../tasks/139-stop-rst-previews-and-search-results-from-injecting-live-markup-securi.md
 [116-task]: ../tasks/116-sandbox-the-raw-view-of-html-files-inside-archives-with-a-content-secu.md
 [121]: ../tasks/121-clarify-api-path-collisions-from-docs-question-6.md
 [125]: ../tasks/125-clarify-network-consent-scope-from-docs-question-11.md

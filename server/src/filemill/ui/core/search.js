@@ -3,18 +3,13 @@ import { focusCol } from "./model/state.js";
 import { currentPath } from "./model/deeplink.js";
 import { applyPath } from "./deeplink.js";
 import { ROUTER } from "./ports.js";
+import { esc } from "./icons.js";
 
 const searchForm = document.getElementById("search-form");
 const searchInput = document.getElementById("search-bar");
 const searchResults = document.getElementById("search-results");
 let searchTimer;
 let searchController;
-
-const searchEsc = (value) => {
-  const el = document.createElement("span");
-  el.textContent = value;
-  return el.innerHTML;
-};
 
 function showSearch(message, results = false) {
   searchResults.hidden = !message;
@@ -43,10 +38,10 @@ async function runSearch() {
     showSearch(
       data.matches.map((m) =>
         `<button type="button" class="search-result" data-path="${
-          searchEsc(m.path)
+          esc(m.path)
         }">` +
-        `<span class="search-path">${searchEsc(m.path)}:${m.line}</span>` +
-        `<span class="search-context">${searchEsc(m.context)}</span></button>`
+        `<span class="search-path">${esc(m.path)}:${m.line}</span>` +
+        `<span class="search-context">${esc(m.context)}</span></button>`
       ).join(""),
       true,
     );
@@ -64,7 +59,7 @@ async function runSearch() {
     });
   } catch (err) {
     if (err.name !== "AbortError") {
-      showSearch(`Search error: ${searchEsc(err.message)}`);
+      showSearch(`Search error: ${esc(err.message)}`);
     }
   }
 }

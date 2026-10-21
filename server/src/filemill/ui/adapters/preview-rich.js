@@ -342,12 +342,14 @@ async function rst(text) {
 /* ── Converter output ────────────────────────────────────────────────────── */
 /* docutils and mammoth escape a document's text but write a link's target as
    the document gives it, javascript: included, and their HTML lands in this
-   page (A2). So an event handler never stays, a link keeps its target only
-   when core/model/safe-url.js allows it, and a picture may also be inline
-   image data. A .docx can carry a style map naming any element, so its output
-   may also keep only the tags and attributes mammoth itself writes; any other
-   element is replaced by its contents. DOMParser builds an inert document:
-   nothing in it loads or runs while it is checked. */
+   page (A2). So an event handler, an SVG's xlink:href and an object's data
+   never stay, a link keeps its target only when core/model/safe-url.js allows
+   it, and a picture may also be inline image data. adapters/app-http.js runs
+   the server's previews through it too: its reStructuredText is the same
+   docutils output (S2). A .docx can carry a style map naming any element, so
+   its output may also keep only the tags and attributes mammoth itself
+   writes; any other element is replaced by its contents. DOMParser builds an
+   inert document: nothing in it loads or runs while it is checked. */
 const DOCX = {
   tags: new Set(
     ("a br dd div dl dt em h1 h2 h3 h4 h5 h6 img li ol p pre s strong sub sup " +
@@ -356,7 +358,7 @@ const DOCX = {
   attrs: new Set(["alt", "colspan", "href", "id", "rowspan", "src"]),
 };
 
-function inert(html, allow) {
+export function inert(html, allow) {
   const doc = new DOMParser().parseFromString(html, "text/html");
   for (const el of doc.body.querySelectorAll("*")) {
     if (allow && !allow.tags.has(el.localName)) {
@@ -366,6 +368,7 @@ function inert(html, allow) {
     for (const { name, value } of [...el.attributes]) {
       if (
         (allow && !allow.attrs.has(name)) || name.startsWith("on") ||
+        name === "data" || name === "xlink:href" ||
         (name === "href" && !safeURL(value)) ||
         (name === "src" && !safeURL(value) && !/^data:image\//i.test(value))
       ) el.removeAttribute(name);

@@ -43,4 +43,29 @@ markdown-it's validation and `markdownHref`, which already reject
 at the server root is a page of its own, outside this rule; `SECURITY.md`
 names that trust boundary.
 
+## Embedded images and server output, 2026-10-21
+
+[The security review][review] found that docutils inlines an image for
+`:loading: embed` whatever `file_insertion_enabled` says. It read any path the
+server could read and inlined an SVG with its event handlers (S2). Its video
+markup also writes the address and alternative text unescaped, so the server's
+filter of quoted `href` and `src` attributes missed handlers. [Issue 139][139]
+amends the decision:
+
+- The server's docutils translator treats `:loading: embed` as `link`. An
+  image is always a link, which the browser fetches through the root check.
+  `lazy` is kept.
+- The server parses docutils' output with the standard library's
+  `HTMLParser` and writes each tag again. Event-handler attributes, `data` and
+  `xlink:href` are removed, and `href` and `src` must pass the rule. Comments
+  are dropped. This covers `/api/preview` opened on its own.
+- The browser's converter check also removes `data` and `xlink:href`, and it
+  runs on every preview the server renders, members of archives and bundles
+  included.
+
+Consequence: a reStructuredText document that embedded an image now shows it
+as a linked image, or a broken one when the path is outside the root.
+
 [104]: ../tasks/104-make-preview-content-inert-wikilink-text-and-docx-output-a2.md
+[139]: ../tasks/139-stop-rst-previews-and-search-results-from-injecting-live-markup-securi.md
+[review]: ../reviews/2026-10-21-security-review.md

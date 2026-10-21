@@ -91,12 +91,19 @@ The Raw link of an HTML member of an archive opens it the same way, from
 The preview pane is a different boundary. It shows an HTML file, or an HTML
 member of an archive, in an iframe with `sandbox=""`, so the page's scripts do
 not run there. Markdown, reStructuredText, `.docx` and `.desktop` previews are
-inserted into the page as inert markup. Markup in their text stays text. In reStructuredText, `.docx` and
-`.desktop` previews a link keeps its target only for `http:`, `https:`,
-`mailto:` or a scheme-less address, and a `.desktop` URL with any other
-protocol is shown and not linked. Markdown links keep markdown-it's validation,
-and `markdownHref` also rejects `javascript:`, `vbscript:`, `file:` and `data:`
-targets. See [ADR 0082](docs/adr/0082-previews-link-only-to-safe-protocols.md).
+inserted into the page as inert markup. Markup in their text stays text.
+Event-handler attributes, `xlink:href` and `data` attributes are removed. The
+server removes them from its reStructuredText output, and the browser checks
+every preview the server renders again before inserting it. A
+reStructuredText image stays a link, `:loading: embed` included: the server
+never reads or inlines the image file, and the browser fetches it through the
+root check. In reStructuredText, `.docx` and `.desktop` previews a link keeps
+its target only for `http:`, `https:`, `mailto:` or a scheme-less address, and
+a `.desktop` URL with any other protocol is shown and not linked. Markdown
+links keep markdown-it's validation, and `markdownHref` also rejects
+`javascript:`, `vbscript:`, `file:` and `data:` targets. Search results show a
+file's name and matching line as text. See
+[ADR 0082](docs/adr/0082-previews-link-only-to-safe-protocols.md).
 
 ## Report a vulnerability
 

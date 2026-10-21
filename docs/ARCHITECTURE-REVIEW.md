@@ -462,6 +462,16 @@ output. See [ui/adapters/preview-rich.js][rich], lines 245–278, 342–374 and
 server-rendered HTML members, now at preview lines 237–242. Browser HTML has
 its sandbox at [ui/core/renderers.js][renderers], lines 174–180.
 
+**Correction, 2026-10-21 ([the live-markup repair][139]).** [The security
+review][security-review] found two more paths (S2, S4). docutils inlined an
+image for `:loading: embed` from any path the server could read, an SVG with
+its event handlers, and wrote a video's address and alternative text
+unescaped. The server's translator now keeps every image a link, and its RST
+output is parsed and written again without event handlers, `data` or
+`xlink:href` ([ADR 0082]). The browser runs the same `inert()` on every server
+preview. Search results escape names with the shared `esc()`; the search
+dependency direction in A12 is unchanged.
+
 PDF frames remain unsandboxed and use PDF media types. That is a remaining
 audit surface, not evidence that the fixed Markdown/HTML exploit is open.
 All entry points still expose debug core state; same-origin scripts retain
@@ -652,9 +662,12 @@ one new P2 finding; no new P1 finding was established in this pass.
 [ADR 0077]: adr/0077-preview-views-and-raw-links-work-without-routing.md
 [ADR 0078]: adr/0078-delete-waits-for-active-preview-reads.md
 [ADR 0080]: adr/0080-json-past-a-fold-depth-limit-is-source.md
+[ADR 0082]: adr/0082-previews-link-only-to-safe-protocols.md
 [ADR 0089]: adr/0089-an-offline-server-shows-older-copies-with-an-indicator.md
 [ports-decision]: adr/0041-core-adapters-three-ports.md#refresh-invalidation-2026-10-21
 [bundle-tests]: ../server/tests/test_gitbundle_provider.py
 
 [waiting guidance]: ../server/CONTRIBUTING.md#wait-for-an-element-never-for-a-duration
 [137]: tasks/137-fix-the-intermittent-back-failure-in-test-back-retraces-the-folders-th.md
+[139]: tasks/139-stop-rst-previews-and-search-results-from-injecting-live-markup-securi.md
+[security-review]: reviews/2026-10-21-security-review.md

@@ -76,6 +76,11 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   or a scheme-less address ([ADR 0082]).
 - An HTML member of an archive previews in a sandboxed iframe, as an HTML file
   on disk does. Its scripts had run with Filemill's origin.
+- A reStructuredText image with `:loading: embed` stays a link. The server had
+  read the image from any path it could read and inlined an SVG with its event
+  handlers. Server previews lose event handlers, `data` and `xlink:href`
+  attributes, and the browser checks them again ([ADR 0082]).
+- A file name with a `"` no longer adds attributes to a search result.
 
 ## [0.1.0] - 2026-09-15
 

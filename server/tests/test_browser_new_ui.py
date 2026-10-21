@@ -766,6 +766,23 @@ def test_content_search_opens_a_matching_file(page, start, activation):
     assert page.request.get(f"{page.base}{raw_action}").body() == raw.body()
 
 
+def test_a_file_name_adds_no_attribute_to_search_results(page, ui_root):
+    """A result is markup around ripgrep's path, whatever the name holds (S4)."""
+    name = 'quote" onmouseover="window.__xss=1" data-x=".txt'
+    (ui_root / "notes" / name).write_text("needle139\n")
+    page.open_resource("")
+    page.fill("#search-bar", "needle139")
+    result = page.locator(".search-result")
+    result.wait_for()
+    assert result.get_attribute("data-path") == f"notes/{name}"
+    assert result.get_attribute("onmouseover") is None
+    assert result.inner_text().startswith(f"notes/{name}:1")
+    result.hover()
+    assert page.evaluate("window.__xss ?? null") is None
+    result.click()
+    page.wait_for_function("name => sel.at(-1) === name", arg=name)
+
+
 def test_fenced_code_is_highlighted_in_the_browser(page):
     """The fence arrives as <pre><code class="language-python"> from Python and
     core/syntax.js colours it — the same classes as a source file, in both
@@ -2662,6 +2679,41 @@ def test_rst_renders_and_highlights_in_the_server_preview(page):
     page.open_resource("code/guide.rst?filemill=highlight")
     page.wait_for_selector("#preview .pv-text .hl-heading", timeout=15000)
     assert ".. code-block:: python" in page.text_content("#preview .pv-text")
+
+
+LIVE_ATTRIBUTES = """[...document.querySelectorAll('#pv-content *')]
+  .flatMap((el) => [...el.attributes].map((a) => a.name))
+  .filter((n) => n.startsWith('on') || n === 'data' || n === 'xlink:href')"""
+
+
+def test_server_previews_get_the_browsers_inert_step(routed_page):
+    """The server's HTML lands in this page as the browser's own RST and
+    .docx output does, so it passes the same inert() step (S2)."""
+    page = routed_page
+    page.route(
+        "**/api/preview?p=code%2Fguide.rst",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="text/html",
+            body=(
+                '<div class="preview-rst"><h1>Live</h1>'
+                '<img src="x" onerror="window.__xss=1">'
+                '<svg onload="window.__xss=2"><a xlink:href="javascript:'
+                'window.__xss=3"><text>x</text></a></svg>'
+                '<object data="javascript:window.__xss=4"></object>'
+                '<a href="javascript:window.__xss=5">run</a>'
+                '<a href="https://example.com/">web</a></div>'
+            ),
+        ),
+    )
+    page.open_resource("code/guide.rst?filemill=render")
+    page.wait_for_selector("#preview .preview-rst h1", timeout=15000)
+    assert page.evaluate(LIVE_ATTRIBUTES) == []
+    assert page.evaluate(
+        "[...document.querySelectorAll('#pv-content a')]"
+        ".map((a) => a.getAttribute('href'))"
+    ) == [None, None, "https://example.com/"]
+    assert page.evaluate("window.__xss ?? null") is None
 
 
 def test_rst_source_and_rendered_modes_switch_without_losing_the_preview(page):
