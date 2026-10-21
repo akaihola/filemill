@@ -3583,3 +3583,30 @@ async def test_preview_reuses_document_when_delayed_outline_declines(page):
     await pg.wait_for_selector("#pv-edit", state="visible")
     assert await pg.evaluate("__previewRenders") == 1
     assert await pg.evaluate("document.getElementById('preview') === __documentPane")
+
+
+async def test_preview_reuses_pending_provider_that_populates_revision(page):
+    pg = page
+    await mount(pg)
+    await pg.click('.col[data-i="0"] .row:has-text("mixed")')
+    await pg.wait_for_selector("#pv-edit", state="visible")
+    await pg.evaluate("""() => {
+      window.__providerStarts = 0;
+      const render = PREVIEW.render.bind(PREVIEW);
+      PREVIEW.render = async n => {
+        __providerStarts++;
+        n.revision = 'read-revision';
+        await new Promise(r => { window.__releaseProvider = r; });
+        return render(n);
+      };
+      choose(1, path[1].kids.find(n => n.name === 'short.txt'));
+      window.__providerPane = document.getElementById('preview');
+    }""")
+    await pg.wait_for_function('typeof __releaseProvider === "function"')
+    await pg.evaluate("render(true)")
+    assert await pg.evaluate("document.getElementById('preview') === __providerPane")
+    assert await pg.evaluate("__providerStarts") == 1
+    await pg.evaluate("__releaseProvider()")
+    await pg.wait_for_selector("#pv-edit", state="visible")
+    await pg.evaluate("render(true)")
+    assert await pg.evaluate("__providerStarts") == 1

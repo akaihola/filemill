@@ -500,10 +500,10 @@ export function render(keepScroll) {
 let rawObjectURL = null;
 let previewCache = null;
 
-const previewKey = (node) =>
+const previewKey = (node, revision = node?.revision) =>
   JSON.stringify([
     node?.meta,
-    node?.revision,
+    revision,
     previewView(),
     root.dataset.theme,
     localStorage.getItem("filemill.rich"),
@@ -520,7 +520,11 @@ function renderPreview() {
   const editing = editingPreview(n);
   if (editing) return editing;
   const target = n || selected;
-  const key = previewKey(target);
+  const pending = previewCache?.node === target && previewCache.pending;
+  const key = previewKey(
+    target,
+    pending ? previewCache.revision : target?.revision,
+  );
   if (
     previewCache?.node === target && previewCache.preview === n &&
     previewCache.root === path[0] &&
@@ -698,6 +702,8 @@ async function fillPreview(n) {
   const parent = path[path.length - 1];
   if (isRemoving(n, parent)) return;
   const reading = fillPreviewContent(n);
+  const token = pvToken;
+  const cache = previewCache;
   pendingPreviews.set(reading, {
     root: path[0],
     relative: entryPath(n, parent),
@@ -706,6 +712,10 @@ async function fillPreview(n) {
     await reading;
   } finally {
     pendingPreviews.delete(reading);
+    if (token === pvToken && cache === previewCache) {
+      cache.pending = false;
+      cache.key = previewKey(n);
+    }
   }
 }
 
@@ -713,11 +723,13 @@ async function fillPreviewContent(n) {
   closeEditor();
   const token = nextPvToken();
   const cache = previewCache;
-  cache.key = previewKey(n);
+  cache.pending = true;
+  cache.revision = n.revision ?? null;
+  cache.key = previewKey(n, cache.revision);
   previewFoldEvents?.abort();
   await FS.loadMeta(n);
   if (token !== pvToken) return;
-  cache.key = previewKey(n);
+  cache.key = previewKey(n, cache.revision);
   const m = n.meta || {};
   const sub = document.getElementById("pv-sub");
   if (!sub && !n.section) return;
@@ -757,7 +769,7 @@ async function fillPreviewContent(n) {
       : `${fmtSize(m.size)} · modified ${fmtDate(m.mod)}`;
   }
 
-  cache.key = previewKey(n);
+  cache.key = previewKey(n, cache.revision);
   let html = null;
   try {
     html = await PREVIEW.render(n);
@@ -767,7 +779,7 @@ async function fillPreviewContent(n) {
     }</p>`;
   }
   if (token !== pvToken) return;
-  cache.key = previewKey(n);
+  cache.key = previewKey(n, cache.revision);
   const host = document.getElementById("pv-content");
   if (!host) return;
   host.innerHTML = html ?? `<p>No inline preview for this file type.</p>`;

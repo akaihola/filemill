@@ -41,6 +41,16 @@ Steward issue, 2026-10-21 14:00 tick. Goal: agentic-leverage (filemill is tier 1
   supplies the cache distinction, without keying on the document's directory
   flag. A further failing test forced resize during the metadata read after Save; the refill now
   updates its key before that await.
+- **Pending revision correction:** a controlled provider test populated a
+  revision before its render resolved. A resize then replaced the pending pane.
+  Pending fills now hold their incoming revision and publish the completed key
+  only if their token still owns the pane. This covers HTTP providers that read
+  their revision with the bytes.
+- **Server readiness:** the full covered server run stopped after 415 passes
+  when Firefox's fresh Markdown preview was still empty at the default
+  five-second assertion timeout. The exact case passed in isolation. That
+  condition-based assertion now allows 15 seconds for the real renderer,
+  as other Markdown readiness checks do. It still requires the same content.
 - **Implementation:** retain one pane, with node/root/port identity and a key
   for metadata values, revision, representation and relevant settings. Preserve
   raw URLs and content nodes across resize and folding. Save and Cancel refill

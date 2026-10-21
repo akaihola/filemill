@@ -4195,7 +4195,7 @@ def test_markdown_heading_fragment_loads_fresh(
     # First load, service-worker-controlled load, then a warm cache load.
     for _ in range(3):
         page.open_resource(f"fragments.md?f#{fragment}")
-        expect(page.locator("#pv-content")).to_contain_text("scope body")
+        expect(page.locator("#pv-content")).to_contain_text("scope body", timeout=15000)
         if title is None:
             assert page.locator("#preview .pv-body").evaluate("e => e.scrollTop") == 0
         else:

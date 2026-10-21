@@ -25,7 +25,10 @@ filesystem, preview provider and content availability. Its key includes metadata
 representation, theme and the rich-renderer setting. A document that declines
 its outline keeps its whole-file preview; its directory flag is not a content key.
 Metadata reads update the key after they finish. Repeated layout renders
-reuse both a pending fill and its completed DOM.
+reuse both a pending fill and its completed DOM. A pending fill holds its
+incoming revision while the provider reads and populates the node's revision.
+Only the current fill publishes the completed key. Metadata and mode changes
+still invalidate pending work.
 
 A new selection, metadata change, refresh or mode change replaces or refills
 the pane. Editor Save and Cancel refill it explicitly. A selection with no
