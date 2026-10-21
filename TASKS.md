@@ -23,11 +23,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [145] Add three missing browser regressions: focused search scope, HTTP entry
-  order, duplicate CSV rows
-  <!-- hai:{"id":"simple-de8a2439-b587-4816-9dea-f158c5a0bf70","labels":["steward"],"createdAt":"2026-10-21T14:15:34.877Z","updatedAt":"2026-10-21T16:58:13.705Z"} -->
-
 ## In Progress
+
+- [~] [145] Add three missing browser regressions: focused search scope, HTTP entry
+  order, duplicate CSV rows
+      <!-- hai:{"id":"simple-de8a2439-b587-4816-9dea-f158c5a0bf70","labels":["steward"],"createdAt":"2026-10-21T14:15:34.877Z","updatedAt":"2026-10-21T16:58:35.158Z"} -->
 
 - [~] [144] Make the full static suites pass reliably: the wide-folder wait and
   test_rst's release count
