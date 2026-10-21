@@ -42,3 +42,31 @@ remain allowed. No Filemill service is restarted by this task.
 - Update the security policy, existing ADRs and architecture review together.
 - Run the full server suite and repository gates, then merge and mark complete
   pending user acceptance.
+
+## Validation progress (2026-10-21)
+
+- **Red-green security checks:** the original implementation produced 41
+  failures for public mutations, token exposure and foreign Hosts. The added
+  malformed-IPv6 Host case also failed before the guard read the scheme
+  directly from the ASGI scope. The new policy checks then passed.
+- **Browser readiness:** an initial browser batch failed the fold-state
+  assertion `focusCol === 1 && folded === 1`. An isolated export of main
+  passed that case 20 times and passed the same 16-test sequence, so the
+  failure was not established as a baseline defect. A later run found the
+  Markdown-link check continuing when only the preview's Raw link existed.
+  The [browser readiness checks] now wait for the expected Markdown link and
+  the existing observable dial-settlement condition. Their assertions remain.
+  Host validation uses direct ASGI middleware, preserving approved streams.
+- **Resource limits:** one complete-suite attempt reached its 1,800-second
+  timeout after 327 passing checks. A second attempt was stopped by the
+  memory/swap guard after 151 passing checks. Validation therefore uses
+  disjoint, sequential browser batches with the same memory limits and
+  per-batch timeouts, plus the complete non-browser suite.
+- **Rebase:** current main includes the preview-security repair. On the
+  rebased branch, all 895 non-browser tests passed with branch coverage;
+  collection contains 340 browser tests. The remaining browser batches and
+  refreshed repository gates must pass before merging.
+- **Deployment:** no deployed Filemill service has been restarted. The
+  steward must check the origins described under Upgrade preparation first.
+
+[browser readiness checks]: ../../server/tests/test_browser_keyboard.py
