@@ -498,6 +498,16 @@ export function render(keepScroll) {
 }
 
 let rawObjectURL = null;
+let previewCache = null;
+
+const previewKey = (node) =>
+  JSON.stringify([
+    node?.meta,
+    node?.revision,
+    previewView(),
+    root.dataset.theme,
+    localStorage.getItem("filemill.rich"),
+  ]);
 
 function revokeRawURL() {
   if (rawObjectURL) URL.revokeObjectURL(rawObjectURL);
@@ -509,18 +519,36 @@ function renderPreview() {
   const selected = selectedNode();
   const editing = editingPreview(n);
   if (editing) return editing;
+  const target = n || selected;
+  const key = previewKey(target);
+  if (
+    previewCache?.node === target && previewCache.preview === n &&
+    previewCache.root === path[0] &&
+    previewCache.fs === FS && previewCache.provider === PREVIEW &&
+    previewCache.key === key
+  ) return previewCache.el;
+  nextPvToken();
+  previewFoldEvents?.abort();
+  PREVIEW.revoke?.();
+  revokeRawURL();
   const pv = document.createElement("div");
+  previewCache = {
+    node: target,
+    preview: n,
+    root: path[0],
+    fs: FS,
+    provider: PREVIEW,
+    key,
+    el: pv,
+  };
   pv.id = "preview";
   pv.tabIndex = 0;
   pv.setAttribute("aria-label", "File preview");
-  PREVIEW.revoke?.();
-  revokeRawURL();
   if (!n && !selected) {
     pv.innerHTML = `<div class="pv-empty"><div class="glyph">◫</div>
                     <div>Select a file to preview</div></div>`;
     return pv;
   }
-  const target = n || selected;
   const [stem, ext] = splitName(target.name);
   pv.innerHTML = `
     <div class="col-head pv-head"><span class="name"><span>${
@@ -570,7 +598,7 @@ export async function togglePreviewFullscreen() {
     history.pushState({ ...history.state, filemillFullscreen: true }, "");
   }
   applyFullscreen(true);
-  // Resize rebuilds the preview, so fullscreen must use the stable root.
+  // Keep fullscreen attached to the root when selection replaces the pane.
   if (root.requestFullscreen) {
     try {
       await root.requestFullscreen();
@@ -684,8 +712,12 @@ async function fillPreview(n) {
 async function fillPreviewContent(n) {
   closeEditor();
   const token = nextPvToken();
+  const cache = previewCache;
+  cache.key = previewKey(n);
+  previewFoldEvents?.abort();
   await FS.loadMeta(n);
   if (token !== pvToken) return;
+  cache.key = previewKey(n);
   const m = n.meta || {};
   const sub = document.getElementById("pv-sub");
   if (!sub && !n.section) return;
@@ -725,6 +757,7 @@ async function fillPreviewContent(n) {
       : `${fmtSize(m.size)} · modified ${fmtDate(m.mod)}`;
   }
 
+  cache.key = previewKey(n);
   let html = null;
   try {
     html = await PREVIEW.render(n);
@@ -734,6 +767,7 @@ async function fillPreviewContent(n) {
     }</p>`;
   }
   if (token !== pvToken) return;
+  cache.key = previewKey(n);
   const host = document.getElementById("pv-content");
   if (!host) return;
   host.innerHTML = html ?? `<p>No inline preview for this file type.</p>`;

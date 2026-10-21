@@ -3421,3 +3421,165 @@ async def test_editor_features(page):
     await pg.wait_for_selector("#pv-editor")
     assert await pg.input_value("#pv-editor") == "saved editor text"
     assert await pg.is_hidden("#pv-modified")
+
+
+async def preview_spy(pg):
+    await pg.evaluate("""() => {
+      window.__previewRenders = 0;
+      const render = PREVIEW.render.bind(PREVIEW);
+      PREVIEW.render = n => { __previewRenders++; return render(n); };
+    }""")
+
+
+async def test_preview_reuse_and_invalidation(page):
+    pg = page
+    await mount(pg)
+    await pg.click('.col[data-i="0"] .row:has-text("mixed")')
+    await pg.wait_for_selector("#pv-edit", state="visible")
+    await preview_spy(pg)
+    await pg.click('.col[data-i="1"] .row[title="short.txt"]')
+    await pg.wait_for_selector("#pv-edit", state="visible")
+    assert await pg.evaluate("__previewRenders") == 1
+    await pg.evaluate("""() => {
+      window.__previewPane = document.getElementById('preview');
+      window.__previewContent = document.getElementById('pv-content').firstChild;
+      window.__previewRaw = document.getElementById('pv-raw').href;
+    }""")
+    await pg.set_viewport_size({"width": 950, "height": 700})
+    await scroll_settled(pg)
+    await pg.evaluate("dialTo(range(), false)")
+    await scroll_settled(pg)
+    assert await pg.evaluate("folded") > 0
+    await pg.evaluate("render(true)")
+    await scroll_settled(pg)
+    assert await pg.evaluate("__previewRenders") == 1
+    assert await pg.evaluate("""document.getElementById('preview') === __previewPane &&
+      document.getElementById('pv-content').firstChild === __previewContent &&
+      document.getElementById('pv-raw').href === __previewRaw""")
+
+    # A save refreshes the retained pane once, then the new metadata is reusable.
+    await pg.click("#pv-edit")
+    await pg.fill("#pv-editor", "saved preview")
+    await pg.click("#pv-save")
+    await pg.wait_for_function(
+        "document.querySelector('#pv-content').textContent.trim() === 'saved preview'"
+    )
+    await pg.wait_for_selector("#pv-edit", state="visible")
+    assert await pg.evaluate("__previewRenders") == 2
+    await pg.evaluate("render(true)")
+    assert await pg.evaluate("__previewRenders") == 2
+
+    # Both in-place metadata updates and replacement must invalidate.
+    for change in ("n.meta.mod++", "n.meta = {...n.meta, size: n.meta.size + 1}"):
+        before = await pg.evaluate("__previewRenders")
+        await pg.evaluate(
+            f"() => {{ const n = path[1].kids.find(n => n.name === 'short.txt'); {change}; render(true); }}"
+        )
+        await pg.wait_for_selector("#pv-edit", state="visible")
+        assert await pg.evaluate("__previewRenders") == before + 1
+        await pg.evaluate("render(true)")
+        assert await pg.evaluate("__previewRenders") == before + 1
+
+    before = await pg.evaluate("__previewRenders")
+    await pg.evaluate("choose(1, path[1].kids.find(n => n.name === 'README'))")
+    await pg.wait_for_selector("#pv-edit", state="visible")
+    assert await pg.evaluate("__previewRenders") == before + 1
+    await pg.evaluate("choose(1, path[1].kids.find(n => n.name === 'short.txt'))")
+    await pg.wait_for_selector("#pv-edit", state="visible")
+    assert await pg.evaluate("__previewRenders") == before + 2
+
+
+async def test_preview_reuses_pending_fill_and_discards_departed_result(page):
+    pg = page
+    await mount(pg)
+    await pg.click('.col[data-i="0"] .row:has-text("mixed")')
+    await pg.wait_for_selector("#pv-edit", state="visible")
+    await preview_spy(pg)
+    await pg.evaluate("""() => {
+      const load = FS.loadMeta.bind(FS);
+      FS.loadMeta = async n => {
+        if (n.name === 'short.txt') await new Promise(r => { window.__releaseMeta = r; });
+        return load(n);
+      };
+      choose(1, path[1].kids.find(n => n.name === 'short.txt'));
+      window.__pendingPane = document.getElementById('preview');
+      render(true);
+      render(true);
+    }""")
+    assert await pg.evaluate("document.getElementById('preview') === __pendingPane")
+    await pg.evaluate("__releaseMeta()")
+    await pg.wait_for_selector("#pv-edit", state="visible")
+    assert await pg.evaluate("__previewRenders") == 1
+
+    # A read finishing after selection moves to an empty folder must be ignored.
+    await pg.evaluate("""() => {
+      const render = PREVIEW.render.bind(PREVIEW);
+      PREVIEW.render = async n => {
+        await new Promise(r => { window.__releasePreview = r; });
+        return render(n);
+      };
+      choose(1, path[1].kids.find(n => n.name === 'README'));
+    }""")
+    await pg.wait_for_function('typeof __releasePreview === "function"')
+    await pg.evaluate("choose(0, path[0].kids.find(n => n.name === 'empty'))")
+    await pg.evaluate("__releasePreview()")
+    # Await the old provider's completion before checking that it did not paint.
+    await pg.wait_for_function("__previewRenders === 2")
+    await pg.evaluate("new Promise(requestAnimationFrame)")
+    assert await pg.locator("#pv-content").count() == 0
+    assert "Select a file to preview" in await pg.locator("#preview").inner_text()
+
+
+async def test_preview_reuses_pending_editor_save(page):
+    pg = page
+    await mount(pg)
+    await pg.click('.col[data-i="0"] .row:has-text("mixed")')
+    await pg.click('.col[data-i="1"] .row[title="short.txt"]')
+    await pg.wait_for_selector("#pv-edit", state="visible")
+    await preview_spy(pg)
+    await pg.click("#pv-edit")
+    await pg.fill("#pv-editor", "saved during resize")
+    await pg.evaluate("""() => {
+      const load = FS.loadMeta.bind(FS);
+      FS.loadMeta = async n => {
+        await new Promise(r => { window.__releaseSavedMeta = r; });
+        return load(n);
+      };
+      window.__savedPane = document.getElementById('preview');
+    }""")
+    await pg.click("#pv-save")
+    await pg.wait_for_function('typeof __releaseSavedMeta === "function"')
+    await pg.evaluate("render(true)")
+    assert await pg.evaluate("document.getElementById('preview') === __savedPane")
+    await pg.evaluate("__releaseSavedMeta()")
+    await pg.wait_for_selector("#pv-edit", state="visible")
+    assert await pg.locator("#pv-content").inner_text() == "saved during resize"
+    assert await pg.evaluate("__previewRenders") == 1
+
+
+async def test_preview_reuses_document_when_delayed_outline_declines(page):
+    pg = page
+    await pg.evaluate("""async () => {
+      let reads = 0;
+      await mount({kind: 'directory', name: 'delayed-document', async *entries() {
+        yield ['plain.md', {kind: 'file', name: 'plain.md', async getFile() {
+          const file = new File(['# Title only\\n\\nbody'], 'plain.md', {lastModified: 1});
+          const text = file.text.bind(file);
+          file.text = async () => {
+            if (++reads === 1) await new Promise(r => { window.__releaseOutline = r; });
+            return text();
+          };
+          return file;
+        }}];
+      }});
+    }""")
+    await preview_spy(pg)
+    await pg.click('.row[title="plain.md"]')
+    await pg.wait_for_selector("#preview .pv-text")
+    assert await pg.evaluate("__previewRenders") == 1
+    await pg.evaluate("window.__documentPane = document.getElementById('preview')")
+    await pg.evaluate("__releaseOutline()")
+    await pg.wait_for_function("!path[0].kids[0].loading && !path[0].kids[0].dir")
+    await pg.wait_for_selector("#pv-edit", state="visible")
+    assert await pg.evaluate("__previewRenders") == 1
+    assert await pg.evaluate("document.getElementById('preview') === __documentPane")

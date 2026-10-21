@@ -29,3 +29,12 @@ build it again. Roadmap phase 4, step 1.
 ## Scope
 
 `ui/core/render.js`, `static/test-ui.py`.
+
+## Correction, 2026-10-21
+
+The architecture re-check found that layout renders still rebuilt the preview.
+[The preview reuse repair] records the failing render counts, the retained-pane
+implementation and current validation evidence. This corrects the missing
+guarantee in the earlier work; it does not record user acceptance.
+
+[The preview reuse repair]: 140-reuse-the-preview-element-across-resizes-and-folding.md#evidence-2026-10-21

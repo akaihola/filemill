@@ -149,3 +149,24 @@ def test_markdown_comments_are_hidden_only_in_rendered_view(
             page.locator("#pv-raw").evaluate("async a => (await fetch(a.href)).text()")
             == source
         )
+
+
+def test_preview_mode_changes_render_once_and_survive_resize(browser_preview):
+    page, source, rendered = browser_preview
+    page.evaluate("""() => {
+      window.__renders = 0;
+      const render = PREVIEW.render.bind(PREVIEW);
+      PREVIEW.render = n => { __renders++; return render(n); };
+    }""")
+    page.locator("#pv-view").click()
+    page.wait_for_selector("#preview .pv-text")
+    assert page.locator("#preview .pv-text").text_content() == source
+    assert page.evaluate("__renders") == 1
+    page.set_viewport_size({"width": 950, "height": 700})
+    page.evaluate("render(true)")
+    assert page.evaluate("__renders") == 1
+    page.locator("#pv-view").click()
+    page.wait_for_selector(rendered)
+    assert page.evaluate("__renders") == 2
+    page.evaluate("render(true)")
+    assert page.evaluate("__renders") == 2

@@ -7,7 +7,8 @@ then. [docs/GOALS.md][goals] states the target; [TASKS.md][tracker] records
 work and acceptance separately.
 
 A4 and the architecture summary were updated on 2026-10-21 for
-[the save-safety task][133]. Other findings retain the re-check above.
+[the save-safety task][133]. A9 now records [the preview reuse repair][140].
+Other findings retain the re-check above.
 
 ## How to read this review
 
@@ -80,7 +81,8 @@ A4 and the architecture summary were updated on 2026-10-21 for
 - **Model and DOM.** [ui/core/model/][model] owns selection, sorting, folding,
   deep links, headings, safe URLs and Markdown task changes without browser
   APIs. The surrounding core remains a DOM-coupled singleton. Columns retain
-  DOM and evict off-screen rows; previews are still rebuilt (A9).
+  DOM and evict off-screen rows. The current preview also retains its DOM
+  across layout renders; broader async ownership remains A9.
 - **One fold dial.** [ui/core/model/folding.js][folding], lines 76–133, owns
   stops, windows and widened widths. [ui/core/layout.js][layout], lines
   97–303 and 396–527, owns scroll writes, settling, wheel-axis locking and
@@ -161,7 +163,7 @@ reviewable changes with focused regressions.
 | A6 | P2 | Changed | Virtual identity is still a display name | M / medium |
 | A7 | P2 | Changed | SQLite keys collide; provider failures look empty | M / medium |
 | A8 | P2 | Changed | Preview source and representation are conflated | M / medium |
-| A9 | P2 | Changed | Preview reuse and async ownership remain missing | M / medium |
+| A9 | P2 | Changed | Broader preview and navigation async ownership | M / medium |
 | A10 | P2 | Changed | Limits still do not bound acquired work | M / medium |
 | A11 | P3 | Changed | Clean-environment command audit remains unverified | M / low |
 | A12 | P3 | Changed | Smaller defects, dead code and audits | S each / low |
@@ -267,16 +269,20 @@ makes no server preview request. Source, Rendered and Raw work for supported
 file/member kinds across hosts. Reuse the renderer table and raw capability;
 a general `ViewSpec` is not justified. [The RST task][41] keeps its scope.
 
-### A9. Preview reuse and async ownership remain missing
+### A9. Broader preview and navigation async ownership
 
-**Status: changed, P2.** [ui/core/render.js][render], lines 476–517, creates a
-new preview and revokes URLs on every render unless an editor is active.
-Lines 684–730 read metadata and render again. Resize calls render from
-[ui/core/layout.js][layout], lines 521–525. This resets scroll/media and repeats
-provider work. The native qualification recorded 1.4–2.8 s wrapping a 400 KB
+**Status: changed, P2.** The [preview reuse repair][140] on 2026-10-21
+retains one preview pane in [ui/core/render.js][render]. Resize and folding
+keep the DOM, object URLs and any pending fill. Node, root, port, metadata,
+revision, content availability, representation and relevant setting changes
+invalidate it. Editor
+Save and Cancel explicitly refill it. An empty selection invalidates old fills.
+Render-count regressions cover these transitions. Broader navigation and
+concurrent provider resource ownership remain open. The native qualification
+recorded 1.4–2.8 s wrapping a 400 KB
 single-line source versus 10–17 ms in Chromium; those are historical figures,
-not new measurements. [The preview-cache task][21] is under Completed /
-Accepted but its requested reuse is absent.
+not new measurements. [The preview-cache task][21] remains pending acceptance;
+[the repair][140] supplies its missing layout reuse guarantee.
 
 `navSeq` guards choose and refresh ([ui/core/nav.js][nav], lines 57–103 and
 132–174). `applyPath` has a separate boolean guard ([ui/core/deeplink.js][links],
@@ -565,9 +571,8 @@ regression requirements, not new implementation steps.
    can proceed independently through the existing `denied` field.
 4. **Separate source from representation (A8).** Pin local RST, native Source
    and member Source behavior with regressions. Reuse existing capabilities.
-5. **Give async navigation and previews one owner (A9).** Establish the
-   generation and lifetime rules, then retain previews with an explicit
-   invalidation key. A8 supplies representation identity; A13 supplies fresh
+5. **Give async navigation and previews one owner (A9).** Keep the retained
+   preview and its invalidation key while unifying generation and lifetime rules. A8 supplies representation identity; A13 supplies fresh
    parsed contents. Cover recovery/remount as well as normal navigation.
 6. **Bound acquisition (A10).** Search, archives/bundles, rich documents and
    native reads can be separate changes. Urgent measured resource failures need
@@ -617,6 +622,7 @@ one new P2 finding; no new P1 finding was established in this pass.
 [132]: tasks/132-re-check-the-architecture-review-against-current-main.md
 [134]: tasks/134-refresh-json-columns-from-the-current-file-architecture-review-a13.md
 [21]: tasks/21-cache-preview-element.md
+[140]: tasks/140-reuse-the-preview-element-across-resizes-and-folding.md
 [28]: tasks/28-editor-features.md
 [41]: tasks/41-rst-rendering-regression.md
 [103]: tasks/103-close-the-directory-index-path-escape-and-authorize-save-and-delete-a1.md

@@ -63,6 +63,10 @@ Folder clicks add Back steps; selecting a file inside an open folder rewrites
 its step. A document's temporary loading column adds no step unless its
 outline is confirmed. See [the history decision].
 
+Resizing the window or folding columns keeps the current preview and its
+scroll position. Saving a file, refreshing its folder or changing the selection
+or preview mode updates the preview.
+
 The preview toolbar has a Fullscreen button. The preview stays in fullscreen
 when the browser resizes. Use Exit fullscreen or the browser fullscreen exit
 control to return to the file browser.

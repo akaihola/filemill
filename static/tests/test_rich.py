@@ -370,13 +370,13 @@ def test_markdown_viewport(bundle, playwright, static_origin):
         page = browser.new_page()
         page.goto(f"{static_origin}/static/{bundle.name}")
         page.evaluate(VENDOR_MAP)
-        # Every resize rebuilds #preview and refills it asynchronously. A slow
-        # renderer makes that window wide enough that a check which does not
-        # wait for the new Markdown fails every run, not one CI run in many.
+        # A slow initial fill must become one retained preview across resizes.
         page.evaluate("""() => {
+          window.__viewportRenders = 0;
           const kind = classifyFile('wide.md').preview;
           const entry = RENDERERS.find((e) => e.kind === kind);
           RENDERERS.unshift({...entry, render: async (...args) => {
+            __viewportRenders++;
             await new Promise((done) => setTimeout(done, 300));
             return entry.render(...args);
           }});
@@ -395,20 +395,18 @@ def test_markdown_viewport(bundle, playwright, static_origin):
         }""")
         page.locator('.row:has-text("wide.md")').click()
         page.wait_for_selector(".pv-markdown table")
+        page.evaluate("window.__viewportPane = document.querySelector('#preview')")
         page.keyboard.press("ArrowRight")
         for width, height in ((390, 844), (320, 568), (844, 390), (1500, 900)):
-            # The resize replaces #preview; mark the old one so the wait below
-            # cannot pass on it before the replacement arrives.
-            page.evaluate("document.querySelector('#preview').dataset.stale = '1'")
             page.set_viewport_size({"width": width, "height": height})
             for fullscreen in (False, True):
                 if fullscreen:
                     page.locator("#pv-fullscreen").click()
-                # Measure the re-rendered Markdown, not the empty pane before it.
+                # Wait for the retained pane to reach the new geometry.
                 page.wait_for_function("""() => {
                   const pv = document.querySelector('#preview');
                   const pane = pv.getBoundingClientRect();
-                  return !pv.dataset.stale &&
+                  return pv === __viewportPane &&
                     pane.left >= -1 && pane.right <= innerWidth + 1 &&
                     pv.querySelectorAll('.pv-markdown td').length === 20;
                 }""")
@@ -430,8 +428,8 @@ def test_markdown_viewport(bundle, playwright, static_origin):
                 )
                 assert "code " * 60 in page.locator(".pv-markdown pre").text_content()
                 table = page.locator(".pv-markdown table")
-                # A resize that lands late rebuilds the preview once more.
                 expect(table.locator("td")).to_have_count(20)
+                assert page.evaluate("__viewportRenders") == 1
                 assert table.evaluate("""e => {
                   e.scrollLeft = e.scrollWidth;
                   return e.scrollWidth <= e.clientWidth + e.scrollLeft + 1;
@@ -763,11 +761,14 @@ async def test_rst_output_keeps_no_live_attribute(page, base, requests):
           + '</svg><object data="javascript:window.__xss=9"></object>'"""
     )
     html = await preview(pg, "doc.rst", ready=".pv-rich svg")
-    assert await pg.evaluate(
-        """[...document.querySelectorAll('#pv-content *')]
+    assert (
+        await pg.evaluate(
+            """[...document.querySelectorAll('#pv-content *')]
           .flatMap((el) => [...el.attributes].map((a) => a.name))
           .filter((n) => n.startsWith('on') || n === 'data' || n === 'xlink:href')"""
-    ) == [], html
+        )
+        == []
+    ), html
 
 
 async def test_consent_retry(page, base, requests):

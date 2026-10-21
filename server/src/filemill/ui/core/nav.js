@@ -449,6 +449,7 @@ document.addEventListener("keydown", (e) => {
     }
     if (action === "preview-back") {
       e.preventDefault();
+      document.activeElement?.blur();
       if (folded === path.length) unfoldTo(focusCol);
       render(true);
       const parent = colCache.get(path[focusCol]);
