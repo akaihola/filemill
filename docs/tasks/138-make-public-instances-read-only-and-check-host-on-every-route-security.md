@@ -43,7 +43,7 @@ remain allowed. No Filemill service is restarted by this task.
 - Run the full server suite and repository gates, then merge and mark complete
   pending user acceptance.
 
-## Validation progress (2026-10-21)
+## Validation (2026-10-21)
 
 - **Red-green security checks:** the original implementation produced 41
   failures for public mutations, token exposure and foreign Hosts. The added
@@ -59,14 +59,20 @@ remain allowed. No Filemill service is restarted by this task.
   Host validation uses direct ASGI middleware, preserving approved streams.
 - **Resource limits:** one complete-suite attempt reached its 1,800-second
   timeout after 327 passing checks. A second attempt was stopped by the
-  memory/swap guard after 151 passing checks. Validation therefore uses
+  memory/swap guard after 151 passing checks. Final validation used
   disjoint, sequential browser batches with the same memory limits and
   per-batch timeouts, plus the complete non-browser suite.
-- **Rebase:** current main includes the preview-security repair. On the
-  rebased branch, all 895 non-browser tests passed with branch coverage;
-  collection contains 340 browser tests. The remaining browser batches and
-  refreshed repository gates must pass before merging.
+- **Server suite:** all 1,235 tests passed with branch coverage enabled:
+  895 non-browser, 66 keyboard and 274 served-UI checks. All 340 browser
+  checks were run after rebasing onto main `1674d904`, including the
+  [preview-security repair]. Combined statement/branch coverage is 93%; the
+  request-policy module has 100% coverage.
+- **Repository gates:** all pre-commit checks passed: Python lint and
+  formatting, mypy, Deno formatting and lint, suppression links and static
+  bundle consistency. Shared model checks passed with Node.
 - **Deployment:** no deployed Filemill service has been restarted. The
   steward must check the origins described under Upgrade preparation first.
 
 [browser readiness checks]: ../../server/tests/test_browser_keyboard.py
+
+[preview-security repair]: 139-stop-rst-previews-and-search-results-from-injecting-live-markup-securi.md
