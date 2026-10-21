@@ -17,3 +17,17 @@ The steward's browser evidence packet (`<steward-vault>/agents/steward/log/2026-
 
 - Your completion message lists the tests added and the checks run.
 - No push, deployment, live service, real account or credential. Memory: follow your launch prompt's memory rule, and run one heavy command (test suite, browser, build) at a time.
+
+## Implementation plan
+
+- Add served browser checks in [the shared UI suite]. Use disposable files.
+- Check focused search after keyboard and pointer navigation. Check the
+  complete result set and open a rendered result.
+- Compare name order with the real directory API. Check both directions
+  and file metadata sorting through the settings menu.
+- Select duplicate CSV rows by pointer and keyboard. Check one selected
+  row, distinct selection keys and the preview values for each row.
+- Run each check against a temporary broken variant, restore the source,
+  and record the failing assertion. Run the browser and documentation checks.
+
+[the shared UI suite]: ../../server/tests/test_browser_new_ui.py
