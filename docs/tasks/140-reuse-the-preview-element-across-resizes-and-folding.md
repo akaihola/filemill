@@ -61,12 +61,6 @@ Steward issue, 2026-10-21 14:00 tick. Goal: agentic-leverage (filemill is tier 1
   count Source/Rendered changes for Markdown and WebVTT. Existing editor and
   performance budgets remain intact.
 
-[UI regressions]: ../../static/tests/test_ui.py
-[model checks]: ../../static/tests/test_model.py
-[Mode checks]: ../../static/tests/test_preview_views.py
-[Markdown viewport check]: ../../static/tests/test_rich.py
-[lifetime decision]: ../adr/0020-pvtoken-guards-preview-fills.md
-
 ## Validation, 2026-10-21
 
 - **Static development:** all 184 checks passed on the final code.
@@ -83,10 +77,10 @@ Run one heavy command at a time. Admit at 2,048 MiB available. Wait at most
 1,024 MiB available or above 512 MiB swap growth. Each run has a 30-minute
 execution timeout. Runtime excludes the separate admission wait.
 
-The first full development attempt was interrupted to fix the focus failures.
-A later development rerun was stopped by the memory guard after 22 passing
-checks. Its replacement waited 15 seconds for admission and then passed all
-184 checks. Neither interrupted run is counted as a passing suite.
+The first full development attempt was interrupted to apply repairs.
+A later development rerun was stopped by the memory guard. Its replacement
+waited 15 seconds for admission and completed with exit code 0. Neither
+interrupted run is counted as completed validation.
 
 All memory readings below are MiB. Negative swap growth means swap use fell.
 The command column records the exact guarded command, including sequential
@@ -118,3 +112,9 @@ format/build/check groups. It contains no command output.
 | static-dev-final-5: `uv run --project server pytest static/tests --dev -q -x` | started at once | 15.0 | 3278 / 2887 | 2418 / -99 | 606.3 | 0 |
 | static-bundle-final-2: `uv run --project server pytest static/tests --bundle -q -x` | started at once | 0.0 | 2889 / 3290 | 2319 / -110 | 559.1 | 0 |
 | final-gate: `bash -c 'node ui/core/model/test.mjs && uvx pre-commit run --all-files'` | started at once | 0.0 | 3325 / 3261 | 2208 / +0 | 4.0 | 0 |
+
+[UI regressions]: ../../static/tests/test_ui.py
+[model checks]: ../../static/tests/test_model.py
+[Mode checks]: ../../static/tests/test_preview_views.py
+[Markdown viewport check]: ../../static/tests/test_rich.py
+[lifetime decision]: ../adr/0020-pvtoken-guards-preview-fills.md
