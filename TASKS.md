@@ -21,12 +21,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
   <!-- hai:{"id":"simple-d1776999-2a2c-4870-936a-9620915aee07","labels":["steward"],"createdAt":"2026-10-20T08:12:02.201Z","updatedAt":"2026-10-20T08:12:29.949Z"} -->
 
-- [138] Make public instances read-only and check Host on every route (security
-  review S1, S3)
-    - Depends on: [137]
-
-  <!-- hai:{"id":"simple-14481238-0336-4adf-a3ce-bc5aeadaf3a2","labels":["steward"],"createdAt":"2026-10-20T23:39:29.669Z","updatedAt":"2026-10-20T23:39:29.669Z"} -->
-
 - [139] Stop RST previews and search results from injecting live markup
   (security review S2, S4)
     - Depends on: [137]
@@ -34,6 +28,12 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-28e033e1-3498-4fc4-bb30-8ccfad7e134a","labels":["steward"],"createdAt":"2026-10-20T23:39:32.779Z","updatedAt":"2026-10-20T23:39:32.779Z"} -->
 
 ## Scheduled
+
+- [138] Make public instances read-only and check Host on every route (security
+  review S1, S3)
+    - Depends on: [137]
+
+  <!-- hai:{"id":"simple-14481238-0336-4adf-a3ce-bc5aeadaf3a2","labels":["steward"],"createdAt":"2026-10-20T23:39:29.669Z","updatedAt":"2026-10-21T03:46:31.644Z"} -->
 
 ## In Progress
 
