@@ -63,9 +63,40 @@ model checks passed. The rebased implementation commit is `cc32728e`.
 - **Status:** leave this issue In Progress. Do not merge, mark it complete,
   restart a service or deploy until the full gate passes.
 
+## Daytime gate, 2026-10-21
+
+Rebased onto main `4d4f9900`. The merge resolution keeps [the escaping fix][139]
+and search cancellation together. The search decision is now [ADR 0091];
+main uses [ADR 0090] for save safety. Regenerated the static bundle. The tested
+implementation commit is `93c24b4d`.
+
+- **Repository checks:** all pre-commit hooks, shared model checks and 27
+  documentation checks passed.
+- **Full server suite:** 1,252 passed, three warnings, in 1,067.61 seconds.
+  Branch-aware coverage is 93%. The local-search transition regressions and
+  the earlier animation failure point passed.
+- **Static bundle:** 80 passed and one failed in 335.77 seconds. The failure
+  is `test_rst` in [the rich-preview tests], line 314. It expected one Python
+  global-scope release after a failed RST conversion, but
+  `window.__pyStats.destroyed` was 2. Stop-on-first-failure ended this suite.
+- **Unchanged-main comparison:** the same bundle test passed in all 11
+  separate isolated invocations on clean main `4d4f9900`. The failure was
+  not reproduced there. These checks do not establish a baseline defect.
+- **Full static development suite:** 177 passed in 615.30 seconds, including
+  `test_rst`. No test assertion or RST implementation was changed.
+- **Memory:** no suite hit a memory limit in this attempt. The server started
+  with 2.98 GiB available, the bundle with 3.15 GiB, and development with
+  3.12 GiB. Suites ran one at a time under the requested memory guard.
+- **Status:** the bundle failure keeps the gate red. Leave this issue
+  In Progress, with no merge, completion, acceptance, restart or deployment.
+  No full bundle retry was made to obtain a passing result.
+
 [109]: 109-check-filemill-s-docs-and-adr-statuses-against-the-code-and-fix-what-d.md#questions
 [115]: 115-propose-plain-answers-to-the-docs-check-s-twelve-remaining-questions.md
 [130]: 130-give-served-and-browser-owned-folders-the-same-content-search.md
 [ADR 0091]: ../adr/0091-server-search-stops-at-local-folder-mounts.md
 [137]: 137-fix-the-intermittent-back-failure-in-test-back-retraces-the-folders-th.md
 [the keyboard tests]: ../../server/tests/test_browser_keyboard.py
+[139]: 139-stop-rst-previews-and-search-results-from-injecting-live-markup-securi.md
+[the rich-preview tests]: ../../static/tests/test_rich.py
+[ADR 0090]: ../adr/0090-revision-checked-file-replacement.md
