@@ -472,11 +472,10 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
     with _ui_page(live_server) as page:
         page.evaluate("""() => {
           const ensureLoaded = FS.ensureLoaded.bind(FS);
+          const docsReady = new Promise(resolve => { window.__finishDocsRead = resolve; });
           FS.ensureLoaded = async node => {
             if (node.name === 'docs' && node.kids === null) {
-              for (let i = 0; i < 12; i++) {
-                await new Promise(requestAnimationFrame);
-              }
+              await docsReady;
             }
             return ensureLoaded(node);
           };
@@ -491,13 +490,14 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
         assert page.evaluate("focusCol") == 1
         assert page.evaluate("sel[1]") == "docs"
 
-        # A selection's URL is written by the render that opens it. A folder or
-        # a Markdown file opens once its listing or headings are read, or after
-        # the 50 ms grace, so each URL below is read after that render. They
-        # are read from the page: page.url follows the browser's navigation
-        # events, which can trail what the page has already done.
+        # A provisional column opens after the grace boundary, but its URL
+        # waits for the listing. Release the controlled read and wait for it
+        # before recording the URL. Read it from the page: page.url follows
+        # browser navigation events, which can trail the page's own state.
         open_docs = "focusCol === 1 && sel[1] === 'docs' && path[2]?.name === 'docs'"
         page.wait_for_function(open_docs)
+        page.evaluate("__finishDocsRead()")
+        page.wait_for_function("path[2]?.kids && !path[2].loading")
         folder_url = page.evaluate("location.href")
         page.keyboard.press("ArrowLeft")
         page.keyboard.press("ArrowRight")

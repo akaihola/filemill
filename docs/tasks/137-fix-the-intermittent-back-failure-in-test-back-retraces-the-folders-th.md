@@ -172,6 +172,33 @@ This narrow repair does not require the general A9 ownership rework.
 - **Isolated typeahead:** 20 of 20 separate development-mode pytest
   invocations passed, without retries or diagnostic plugins.
 - **Repository gate:** all pre-commit checks and shared model checks passed.
+- **Isolated Back after the remount fix:** another 20 of 20 separate pytest
+  invocations passed.
+
+### Full-suite investigation
+
+The first full server attempt was stopped by the memory monitor. Its wrapper
+initially signalled Bash's group while `timeout` had created a separate test
+group; the remaining test group was explicitly stopped and checked gone.
+Subsequent validation uses `timeout --foreground`, so the monitor signals the
+test group too. The interrupted attempt had no reported test failures and
+does not count as a completed suite.
+
+The next server attempt exposed a readiness race in the parent-column
+left/right-cycle test. Its old frame-count delay could leave `docs` loading
+when the test captured `folder_url`. The history correction intentionally
+defers that URL until the listing lands. A controlled listing gate reproduced
+the assertion deterministically: captured `/my-knowledge`, actual
+`/my-knowledge/docs` (one failed in 13.02 seconds). The test now releases the
+gate and waits for loaded children before capturing the URL; all URL and
+column-preservation assertions remain. The original frame-count delay is
+removed. This is synchronization with the history behavior fixed by this
+issue, rather than a change to navigation expectations.
+
+That full attempt was interrupted for diagnosis; pytest's interrupted
+teardown raised a `tmp_path` stash error before printing its stored failure.
+The controlled isolated failure above supplies the usable traceback. Neither
+interrupted full attempt is counted as passing validation.
 
 [The model]: ../../server/src/filemill/ui/core/model/deeplink.js
 [Navigation]: ../../server/src/filemill/ui/core/nav.js
