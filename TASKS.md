@@ -21,10 +21,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
   <!-- hai:{"id":"simple-d1776999-2a2c-4870-936a-9620915aee07","labels":["steward"],"createdAt":"2026-10-20T08:12:02.201Z","updatedAt":"2026-10-20T08:12:29.949Z"} -->
 
-- [148] Say in --bind's help that an explicit flag wins over FILEMILL_BIND
-  <!-- hai:{"id":"simple-7e2f615f-1902-49fd-b0be-0cf3fe8b7ead","labels":["steward"],"createdAt":"2026-10-21T21:59:19.762Z","updatedAt":"2026-10-21T21:59:19.762Z"} -->
-
 ## Scheduled
+
+- [148] Say in --bind's help that an explicit flag wins over FILEMILL_BIND
+  <!-- hai:{"id":"simple-7e2f615f-1902-49fd-b0be-0cf3fe8b7ead","labels":["steward"],"createdAt":"2026-10-21T21:59:19.762Z","updatedAt":"2026-10-21T22:35:09.791Z"} -->
 
 ## In Progress
 
