@@ -133,9 +133,12 @@ Keep these boundaries and checks.
   gates; the local results above do not claim a fresh full CI run.
 - [The fixture isolation repair][141] centralizes direct test browser launches
   in fixtures, including the server keyboard helper and persistent storage
-  profile. A source guard rejects lifecycle calls in test bodies and helpers.
+  profile. A [source guard][browser-lifecycle-tests] rejects lifecycle calls
+  in test bodies and helpers.
   Root application-state fixtures retain monkeypatch restoration. The root
-  parallel qualification is pending; this does not establish a clean command audit.
+  parallel qualification stopped at 75% when swap growth crossed 512 MiB.
+  One failure was observed without a traceback before the stop. Qualification
+  remains open; this does not establish a clean command audit.
 - Tests use observable browser state for readiness. Delayed responses can
   supply test input, as the [waiting guidance] explains. The source guard
   rejects `wait_for_timeout`; it does not ban every sleep or prove overlap.
@@ -833,3 +836,5 @@ one new P2 finding; no new P1 finding was established in this pass.
 
 [156]: tasks/156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bound-on-.md
 [141]: tasks/141-finish-browser-fixture-isolation-and-qualify-independent-test-roots.md
+
+[browser-lifecycle-tests]: ../server/tests/test_browser_lifecycle.py
