@@ -17,8 +17,6 @@ from textwrap import dedent
 
 import pytest
 
-sync_playwright = pytest.importorskip("playwright.sync_api").sync_playwright
-
 
 def _free_port() -> int:
     sock = socket.socket()
@@ -201,29 +199,21 @@ MOBILE_LANDSCAPE = {"width": 568, "height": 320}
 
 
 @contextmanager
-def _ui_page(base_url: str, mobile: bool = False, viewport: dict | None = None):
-    """A page on the shared UI at `/`, mounted and painted.
-
-    No proxy is handed to Chromium: the shared UI fetches nothing from a CDN
-    (test_browser_new_ui.py pins that), and launching without one keeps these
-    tests honest about it.
-    """
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        if mobile:
-            context = browser.new_context(
-                viewport=viewport or MOBILE_VIEWPORT, is_mobile=True, has_touch=True
-            )
-            page = context.new_page()
-        else:
-            page = browser.new_page(viewport=viewport or {"width": 1400, "height": 900})
+def _ui_page(
+    browser, base_url: str, mobile: bool = False, viewport: dict | None = None
+):
+    """A fresh context on the shared UI, mounted and painted without a CDN proxy."""
+    with browser.new_context(
+        viewport=viewport
+        or (MOBILE_VIEWPORT if mobile else {"width": 1400, "height": 900}),
+        is_mobile=mobile,
+        has_touch=mobile,
+    ) as context:
+        page = context.new_page()
         page.goto(base_url)
         page.wait_for_function("typeof path !== 'undefined' && path.length >= 1")
         page.wait_for_function("document.querySelector('.col .row')")
-        try:
-            yield page
-        finally:
-            browser.close()
+        yield page
 
 
 def _dial_settled(page) -> None:
@@ -360,14 +350,14 @@ _TOUCHED_METRICS = """() => {
 
 
 @pytest.mark.integration
-def test_arrow_left_keeps_browser_url_in_sync(live_server: str):
+def test_arrow_left_keeps_browser_url_in_sync(live_server: str, sync_browser):
     """The URL names the selection chain, root-relative, through keyboard moves.
 
     In the shared UI ← moves *focus* out without closing anything, so it leaves
     the URL alone; re-committing a row in the parent column (↑ here) is the
     navigation that rewrites the URL back up the tree.
     """
-    with _ui_page(live_server) as page:
+    with _ui_page(sync_browser, live_server) as page:
         _ui_tap(page, 0, "my-knowledge")
         _expect_url_ending(page, "/my-knowledge")
         folder_url = page.url
@@ -387,14 +377,16 @@ def test_arrow_left_keeps_browser_url_in_sync(live_server: str):
 
 
 @pytest.mark.integration
-def test_nested_column_navigation_keeps_root_mount_in_url(live_server: str):
+def test_nested_column_navigation_keeps_root_mount_in_url(
+    live_server: str, sync_browser
+):
     """Nested navigation keeps the whole path in the URL.
 
     The mount prefix this test once asserted is gone by design: on `/` the URL
     path *is* the file path relative to the served root (router-path.js), so
     "the root mount stays in the URL" now means "no segment is ever dropped".
     """
-    with _ui_page(live_server) as page:
+    with _ui_page(sync_browser, live_server) as page:
         _ui_tap(page, 0, "my-knowledge")
         _expect_url_ending(page, "/my-knowledge")
 
@@ -412,56 +404,53 @@ def test_nested_column_navigation_keeps_root_mount_in_url(live_server: str):
 
 @pytest.mark.integration
 def test_rendered_relative_markdown_link_uses_root_relative_url(
-    live_server: str, browser_root: Path
+    live_server: str,
+    browser_root: Path,
+    sync_browser,
 ):
     """Rendered links use root-relative URLs and retain the preview mode."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page(viewport={"width": 1400, "height": 900})
-        page.goto(
-            f"{live_server}/my-knowledge/docs/topic.md?filemill=render",
-            wait_until="networkidle",
-        )
-        preview_link = page.locator(
-            '#preview a[href="/my-knowledge/docs/subdir/next.md?filemill=render"]'
-        ).first
-        preview_link.wait_for(state="visible")
-        assert preview_link.count() == 1
-        preview_link.click()
-        page.wait_for_function(
-            "document.querySelector('#preview .pv-rich h1')?.textContent === 'Next'"
-        )
+    browser = sync_browser
+    page = browser.new_page(viewport={"width": 1400, "height": 900})
+    page.goto(
+        f"{live_server}/my-knowledge/docs/topic.md?filemill=render",
+        wait_until="networkidle",
+    )
+    preview_link = page.locator(
+        '#preview a[href="/my-knowledge/docs/subdir/next.md?filemill=render"]'
+    ).first
+    preview_link.wait_for(state="visible")
+    assert preview_link.count() == 1
+    preview_link.click()
+    page.wait_for_function(
+        "document.querySelector('#preview .pv-rich h1')?.textContent === 'Next'"
+    )
 
-        _expect_url_ending(page, "/my-knowledge/docs/subdir/next.md?filemill=render")
-        assert "Next" in page.locator("#preview").inner_text()
-
-        browser.close()
+    _expect_url_ending(page, "/my-knowledge/docs/subdir/next.md?filemill=render")
+    assert "Next" in page.locator("#preview").inner_text()
 
 
 @pytest.mark.integration
 @pytest.mark.parametrize("view", ["render", "highlight"])
 def test_home_markdown_link_is_root_relative(
-    live_server: str, browser_root: Path, view: str
+    live_server: str,
+    browser_root: Path,
+    view: str,
+    sync_browser,
 ):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page(viewport={"width": 1400, "height": 900})
-        page.goto(
-            f"{live_server}/home-link.md?filemill={view}", wait_until="networkidle"
-        )
-        page.wait_for_selector(
-            '#preview a[href="/prg/docs/subdir/next.md?f"]',
-            timeout=15000,
-        )
-        assert (
-            page.locator('#preview a[href="/prg/docs/subdir/next.md?f"]').count() == 1
-        )
-        browser.close()
+    browser = sync_browser
+    page = browser.new_page(viewport={"width": 1400, "height": 900})
+    page.goto(f"{live_server}/home-link.md?filemill={view}", wait_until="networkidle")
+    page.wait_for_selector(
+        '#preview a[href="/prg/docs/subdir/next.md?f"]',
+        timeout=15000,
+    )
+    assert page.locator('#preview a[href="/prg/docs/subdir/next.md?f"]').count() == 1
 
 
 @pytest.mark.integration
 def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
     live_server: str,
+    sync_browser,
 ):
     """A ←/→ cycle around a file preview never loses the parent column.
 
@@ -469,7 +458,7 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
     sentinel deleted the column on the second preview), because ← moves focus
     without closing anything — which is exactly what this asserts.
     """
-    with _ui_page(live_server) as page:
+    with _ui_page(sync_browser, live_server) as page:
         page.evaluate("""() => {
           const ensureLoaded = FS.ensureLoaded.bind(FS);
           const docsReady = new Promise(resolve => { window.__finishDocsRead = resolve; });
@@ -549,8 +538,10 @@ def test_parent_column_survives_preview_after_arrowleft_arrowright_cycle(
     [{"width": 1400, "height": 900}, MOBILE_VIEWPORT, MOBILE_LANDSCAPE],
 )
 @pytest.mark.parametrize("selection", ["click", "keyboard"])
-def test_arrowright_preview_preserves_layout(live_server, viewport, selection):
-    with _ui_page(live_server) as page:
+def test_arrowright_preview_preserves_layout(
+    live_server, viewport, selection, sync_browser
+):
+    with _ui_page(sync_browser, live_server) as page:
         page.set_viewport_size(viewport)
         _ui_tap(page, 0, "my-knowledge")
         if selection == "click":
@@ -586,8 +577,8 @@ def test_arrowright_preview_preserves_layout(live_server, viewport, selection):
 
 
 @pytest.mark.integration
-def test_vertical_navigation_preserves_folded_ancestor(live_server: str):
-    with _ui_page(live_server) as page:
+def test_vertical_navigation_preserves_folded_ancestor(live_server: str, sync_browser):
+    with _ui_page(sync_browser, live_server) as page:
         page.keyboard.press("ArrowDown")
         page.wait_for_function("path[1]?.kids && colCache.get(path[1])?.rows.length")
         page.keyboard.press("ArrowRight")
@@ -620,12 +611,16 @@ def test_vertical_navigation_preserves_folded_ancestor(live_server: str):
 @pytest.mark.parametrize("viewport_width", [390, 568, 1400])
 @pytest.mark.parametrize("boundary_offset", [0, 1, 2])
 def test_vertical_navigation_keeps_focused_column_whole(
-    live_server: str, browser_root: Path, viewport_width: int, boundary_offset: int
+    live_server: str,
+    browser_root: Path,
+    viewport_width: int,
+    boundary_offset: int,
+    sync_browser,
 ):
     wide = browser_root / "my-knowledge" / "z-wide"
     wide.mkdir()
     (wide / ("w" * 70 + ".txt")).write_text("wide column")
-    with _ui_page(live_server) as page:
+    with _ui_page(sync_browser, live_server) as page:
         page.set_viewport_size({"width": viewport_width, "height": 900})
         page.keyboard.press("ArrowDown")
         page.wait_for_function("path.length === 2 && path[1].kids !== null")
@@ -669,8 +664,10 @@ def test_vertical_navigation_keeps_focused_column_whole(
 
 
 @pytest.mark.integration
-def test_vertical_navigation_preserves_rounded_fold_boundary(live_server: str):
-    with _ui_page(live_server) as page:
+def test_vertical_navigation_preserves_rounded_fold_boundary(
+    live_server: str, sync_browser
+):
+    with _ui_page(sync_browser, live_server) as page:
         page.keyboard.press("ArrowDown")
         page.wait_for_function("path.length === 2 && path[1].kids !== null")
         page.keyboard.press("ArrowRight")
@@ -697,8 +694,10 @@ def test_vertical_navigation_preserves_rounded_fold_boundary(live_server: str):
 
 
 @pytest.mark.integration
-def test_vertical_navigation_preserves_full_fold_with_equal_widths(live_server: str):
-    with _ui_page(live_server) as page:
+def test_vertical_navigation_preserves_full_fold_with_equal_widths(
+    live_server: str, sync_browser
+):
+    with _ui_page(sync_browser, live_server) as page:
         page.keyboard.press("ArrowDown")
         page.wait_for_function("path.length === 2 && path[1].kids !== null")
         page.keyboard.press("ArrowRight")
@@ -722,8 +721,8 @@ def test_vertical_navigation_preserves_full_fold_with_equal_widths(live_server: 
 
 
 @pytest.mark.integration
-def test_arrow_navigation_keeps_fold_animation_running(live_server: str):
-    with _ui_page(live_server, mobile=True) as page:
+def test_arrow_navigation_keeps_fold_animation_running(live_server: str, sync_browser):
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         page.keyboard.press("ArrowDown")
         # This test measures folding after navigation. Wait for the folder
         # opened by Down before Right can step into it.
@@ -750,12 +749,13 @@ def test_arrow_navigation_keeps_fold_animation_running(live_server: str):
 @pytest.mark.integration
 def test_mobile_folder_click_reveals_new_column_without_flushing_left(
     live_server: str,
+    sync_browser,
 ):
     """Navigate two levels deep so three columns plus the preview pane cannot
     fit 390 px. The dial must engage, rest at layout()'s own least-folding
     target, and keep every column — spine or not — inside the viewport.
     """
-    with _ui_page(live_server, mobile=True) as page:
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         _ui_tap(page, 0, "my-knowledge")
         _ui_tap(page, 1, "docs")
         _expect_ui_column(page, 2)
@@ -777,6 +777,7 @@ def test_mobile_folder_click_reveals_new_column_without_flushing_left(
 @pytest.mark.integration
 def test_mobile_file_click_reveals_preview_without_flushing_left(
     live_server: str,
+    sync_browser,
 ):
     """Tap a file after entering a folder: the preview pane must fill with
     text and start inside the viewport, with the dial at its minimum.
@@ -787,7 +788,7 @@ def test_mobile_file_click_reveals_preview_without_flushing_left(
     authoritative one — the same rule the htmx version of this test spelled
     out for its oversized previews.
     """
-    with _ui_page(live_server, mobile=True) as page:
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         _ui_tap(page, 0, "my-knowledge")
         _ui_tap(page, 1, "AGENTS.md")
         _expect_preview(page)
@@ -808,8 +809,9 @@ def test_mobile_file_click_reveals_preview_without_flushing_left(
 @pytest.mark.integration
 def test_mobile_long_press_menu_copies_paths_for_files_and_directories(
     live_server: str,
+    sync_browser,
 ):
-    with _ui_page(live_server, mobile=True) as page:
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         page.evaluate("""(() => {
             let value = '';
             Object.defineProperty(navigator, 'clipboard', {
@@ -853,6 +855,7 @@ def test_mobile_long_press_menu_copies_paths_for_files_and_directories(
 @pytest.mark.integration
 def test_mobile_portrait_folder_tap_never_folds_touched_or_right_columns(
     live_server: str,
+    sync_browser,
 ):
     """Tapping a folder condenses only what is left of it — phone upright.
 
@@ -862,7 +865,7 @@ def test_mobile_portrait_folder_tap_never_folds_touched_or_right_columns(
     opened. A tap is the user pointing at a column; answering it by hiding the
     column, or its result, is the bug.
     """
-    with _ui_page(live_server, mobile=True) as page:
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         _ui_tap(page, 0, "my-knowledge")
         _ui_tap(page, 1, "docs")
         _expect_ui_column(page, 2)
@@ -889,9 +892,13 @@ def test_mobile_portrait_folder_tap_never_folds_touched_or_right_columns(
 
 
 @pytest.mark.integration
-def test_mobile_landscape_folder_tap_never_folds_touched_column(live_server: str):
+def test_mobile_landscape_folder_tap_never_folds_touched_column(
+    live_server: str, sync_browser
+):
     """A quarter-width chain must overflow before the focus cap is exercised."""
-    with _ui_page(live_server, mobile=True, viewport=MOBILE_LANDSCAPE) as page:
+    with _ui_page(
+        sync_browser, live_server, mobile=True, viewport=MOBILE_LANDSCAPE
+    ) as page:
         _ui_tap(page, 0, "my-knowledge")
         _ui_tap(page, 1, "docs")
         _ui_tap(page, 2, "subdir")
@@ -924,8 +931,8 @@ def _tap_wide_chain(page, levels: int) -> None:
 
 
 @pytest.mark.integration
-def test_mobile_tap_uses_touch_input(live_server: str):
-    with _ui_page(live_server, mobile=True) as page:
+def test_mobile_tap_uses_touch_input(live_server: str, sync_browser):
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         page.evaluate("""() => {
           window.__pointerTypes = [];
           document.addEventListener('pointerdown', e =>
@@ -939,6 +946,7 @@ def test_mobile_tap_uses_touch_input(live_server: str):
 @pytest.mark.integration
 def test_mobile_portrait_wide_folder_tap_keeps_the_touched_row_on_screen(
     wide_live_server: str,
+    sync_browser,
 ):
     """Long names, phone upright: the tapped row must still be readable.
 
@@ -949,7 +957,7 @@ def test_mobile_portrait_wide_folder_tap_keeps_the_touched_row_on_screen(
     hit. Every further level cost another 44 px to the ancestor it folded, down
     to 116 px of the column at six.
     """
-    with _ui_page(wide_live_server, mobile=True) as page:
+    with _ui_page(sync_browser, wide_live_server, mobile=True) as page:
         _tap_wide_chain(page, 6)
 
         m = page.evaluate(_TOUCHED_METRICS)
@@ -975,6 +983,7 @@ def test_mobile_portrait_wide_folder_tap_keeps_the_touched_row_on_screen(
 @pytest.mark.integration
 def test_mobile_landscape_wide_folder_tap_keeps_the_touched_row_on_screen(
     wide_live_server: str,
+    sync_browser,
 ):
     """The same rule with the phone turned sideways.
 
@@ -982,7 +991,9 @@ def test_mobile_landscape_wide_folder_tap_keeps_the_touched_row_on_screen(
     touched column, so this walks the chain to its end rather than stopping at
     three — the depth is what makes the case, not the orientation.
     """
-    with _ui_page(wide_live_server, mobile=True, viewport=MOBILE_LANDSCAPE) as page:
+    with _ui_page(
+        sync_browser, wide_live_server, mobile=True, viewport=MOBILE_LANDSCAPE
+    ) as page:
         page.evaluate("""() => {
           window.__tapRows = [];
           for (const type of ['pointerdown', 'pointerup']) {
@@ -1019,7 +1030,9 @@ def test_mobile_landscape_wide_folder_tap_keeps_the_touched_row_on_screen(
 @pytest.mark.integration
 @pytest.mark.skipif(sys.platform != "linux", reason="Linux pipe capacity regression")
 def test_mobile_landscape_wide_folder_with_small_server_log_pipe(
-    wide_root: Path, monkeypatch: pytest.MonkeyPatch
+    wide_root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    sync_browser,
 ):
     """Concurrent suites can reduce new Linux pipes to two pages."""
     popen = subprocess.Popen
@@ -1032,7 +1045,9 @@ def test_mobile_landscape_wide_folder_with_small_server_log_pipe(
     monkeypatch.setattr(subprocess, "Popen", small_pipe)
     with (
         _serve(wide_root) as base_url,
-        _ui_page(base_url, mobile=True, viewport=MOBILE_LANDSCAPE) as page,
+        _ui_page(
+            sync_browser, base_url, mobile=True, viewport=MOBILE_LANDSCAPE
+        ) as page,
     ):
         _tap_wide_chain(page, len(_WIDE_NAMES))
         assert page.evaluate("path.length") == len(_WIDE_NAMES) + 1
@@ -1042,53 +1057,52 @@ def test_mobile_landscape_wide_folder_with_small_server_log_pipe(
 def test_mobile_directory_restore_runtime_scroll_position_is_stable(
     live_server: str,
     browser_root: Path,
+    sync_browser,
 ):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(
-            f"{live_server}/my-knowledge/docs",
-            wait_until="networkidle",
-        )
+    browser = sync_browser
+    context = browser.new_context(
+        viewport={"width": 390, "height": 844},
+        is_mobile=True,
+        has_touch=True,
+    )
+    page = context.new_page()
+    page.goto(
+        f"{live_server}/my-knowledge/docs",
+        wait_until="networkidle",
+    )
 
-        _expect_ui_column(page, 2)
+    _expect_ui_column(page, 2)
 
-        context.close()
-        browser.close()
+    context.close()
 
 
 @pytest.mark.integration
 def test_mobile_file_restore_runtime_scroll_position_is_stable(
     live_server: str,
     browser_root: Path,
+    sync_browser,
 ):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(
-            f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
-            wait_until="networkidle",
-        )
+    browser = sync_browser
+    context = browser.new_context(
+        viewport={"width": 390, "height": 844},
+        is_mobile=True,
+        has_touch=True,
+    )
+    page = context.new_page()
+    page.goto(
+        f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
+        wait_until="networkidle",
+    )
 
-        _expect_preview(page)
+    _expect_preview(page)
 
-        context.close()
-        browser.close()
+    context.close()
 
 
 @pytest.mark.integration
 def test_mobile_folder_tap_keeps_the_touched_column_whole_and_peeks_the_new_one(
     live_server: str,
+    sync_browser,
 ):
     """What a tap owes the reader on a phone, now that focus cannot fold.
 
@@ -1100,7 +1114,7 @@ def test_mobile_folder_tap_keeps_the_touched_column_whole_and_peeks_the_new_one(
     the new column gets instead is a left edge inside the viewport — the peek
     that says the strip scrolls, and the affordance ISSUES.md #43 asks for.
     """
-    with _ui_page(live_server, mobile=True) as page:
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         _ui_tap(page, 0, "my-knowledge")
         _expect_ui_column(page, 1)
 
@@ -1136,8 +1150,9 @@ def test_mobile_folder_tap_keeps_the_touched_column_whole_and_peeks_the_new_one(
 @pytest.mark.integration
 def test_mobile_preview_scroll_position_is_not_zero_after_navigation(
     live_server: str,
+    sync_browser,
 ):
-    with _ui_page(live_server, mobile=True) as page:
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         _ui_tap(page, 0, "my-knowledge")
         _ui_tap(page, 1, "AGENTS.md")
         _expect_preview(page)
@@ -1151,8 +1166,9 @@ def test_mobile_preview_scroll_position_is_not_zero_after_navigation(
 def test_mobile_preview_fills_remaining_space(
     live_server: str,
     viewport: dict,
+    sync_browser,
 ):
-    with _ui_page(live_server, mobile=True, viewport=viewport) as page:
+    with _ui_page(sync_browser, live_server, mobile=True, viewport=viewport) as page:
         _ui_tap(page, 0, "my-knowledge")
         _ui_tap(page, 1, "AGENTS.md")
         _expect_preview(page)
@@ -1193,9 +1209,12 @@ def test_mobile_preview_fills_remaining_space(
     [(MOBILE_VIEWPORT, "pan-y"), (MOBILE_LANDSCAPE, "auto")],
 )
 def test_mobile_fullscreen_preview_touch_handling(
-    live_server: str, viewport: dict, touch_action: str
+    live_server: str,
+    viewport: dict,
+    touch_action: str,
+    sync_browser,
 ):
-    with _ui_page(live_server, mobile=True, viewport=viewport) as page:
+    with _ui_page(sync_browser, live_server, mobile=True, viewport=viewport) as page:
         _ui_tap(page, 0, "my-knowledge")
         _ui_tap(page, 1, "AGENTS.md")
         page.click("#pv-fullscreen")
@@ -1217,40 +1236,40 @@ def test_mobile_fullscreen_preview_touch_handling(
 def test_mobile_file_restore_scroll_position_is_not_zero(
     live_server: str,
     browser_root: Path,
+    sync_browser,
 ):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(
-            f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
-            wait_until="networkidle",
-        )
+    browser = sync_browser
+    context = browser.new_context(
+        viewport={"width": 390, "height": 844},
+        is_mobile=True,
+        has_touch=True,
+    )
+    page = context.new_page()
+    page.goto(
+        f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
+        wait_until="networkidle",
+    )
 
-        _wait_for_finder_scroll(page)
-        scroll_left = page.evaluate(
-            """() => {
-                const finder = document.getElementById('finder');
-                return finder ? dial() : null;
-            }"""
-        )
+    _wait_for_finder_scroll(page)
+    scroll_left = page.evaluate(
+        """() => {
+            const finder = document.getElementById('finder');
+            return finder ? dial() : null;
+        }"""
+    )
 
-        assert scroll_left is not None
-        assert scroll_left > 0
+    assert scroll_left is not None
+    assert scroll_left > 0
 
-        context.close()
-        browser.close()
+    context.close()
 
 
 @pytest.mark.integration
 def test_mobile_navigation_runtime_scroll_regression_is_covered(
     live_server: str,
+    sync_browser,
 ):
-    with _ui_page(live_server, mobile=True) as page:
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         _ui_tap(page, 0, "my-knowledge")
         _expect_ui_column(page, 1)
 
@@ -1258,8 +1277,9 @@ def test_mobile_navigation_runtime_scroll_regression_is_covered(
 @pytest.mark.integration
 def test_mobile_preview_runtime_scroll_regression_is_covered(
     live_server: str,
+    sync_browser,
 ):
-    with _ui_page(live_server, mobile=True) as page:
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         _ui_tap(page, 0, "my-knowledge")
         _ui_tap(page, 1, "AGENTS.md")
         _expect_preview(page)
@@ -1269,53 +1289,51 @@ def test_mobile_preview_runtime_scroll_regression_is_covered(
 def test_mobile_restore_runtime_scroll_regression_is_covered(
     live_server: str,
     browser_root: Path,
+    sync_browser,
 ):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(
-            f"{live_server}/my-knowledge/docs",
-            wait_until="networkidle",
-        )
+    browser = sync_browser
+    context = browser.new_context(
+        viewport={"width": 390, "height": 844},
+        is_mobile=True,
+        has_touch=True,
+    )
+    page = context.new_page()
+    page.goto(
+        f"{live_server}/my-knowledge/docs",
+        wait_until="networkidle",
+    )
 
-        _expect_ui_column(page, 2)
+    _expect_ui_column(page, 2)
 
-        context.close()
-        browser.close()
+    context.close()
 
 
 @pytest.mark.integration
 def test_mobile_restore_preview_runtime_scroll_regression_is_covered(
     live_server: str,
     browser_root: Path,
+    sync_browser,
 ):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(
-            f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
-            wait_until="networkidle",
-        )
+    browser = sync_browser
+    context = browser.new_context(
+        viewport={"width": 390, "height": 844},
+        is_mobile=True,
+        has_touch=True,
+    )
+    page = context.new_page()
+    page.goto(
+        f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
+        wait_until="networkidle",
+    )
 
-        _expect_preview(page)
+    _expect_preview(page)
 
-        context.close()
-        browser.close()
+    context.close()
 
 
 @pytest.mark.integration
-def test_mobile_minimal_scroll_runtime_behavior_smoke(live_server: str):
-    with _ui_page(live_server, mobile=True) as page:
+def test_mobile_minimal_scroll_runtime_behavior_smoke(live_server: str, sync_browser):
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         _ui_tap(page, 0, "my-knowledge")
         _ui_tap(page, 1, "AGENTS.md")
 
@@ -1324,8 +1342,10 @@ def test_mobile_minimal_scroll_runtime_behavior_smoke(live_server: str):
 
 
 @pytest.mark.integration
-def test_mobile_column_reveal_and_preview_reveal_both_work(live_server: str):
-    with _ui_page(live_server, mobile=True) as page:
+def test_mobile_column_reveal_and_preview_reveal_both_work(
+    live_server: str, sync_browser
+):
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         _ui_tap(page, 0, "my-knowledge")
         _expect_ui_column(page, 1)
 
@@ -1334,8 +1354,8 @@ def test_mobile_column_reveal_and_preview_reveal_both_work(live_server: str):
 
 
 @pytest.mark.integration
-def test_mobile_scroll_regression_end_to_end(live_server: str):
-    with _ui_page(live_server, mobile=True) as page:
+def test_mobile_scroll_regression_end_to_end(live_server: str, sync_browser):
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         _ui_tap(page, 0, "my-knowledge")
         _ui_tap(page, 1, "AGENTS.md")
 
@@ -1344,15 +1364,15 @@ def test_mobile_scroll_regression_end_to_end(live_server: str):
 
 
 @pytest.mark.integration
-def test_mobile_scroll_regression_directory_only(live_server: str):
-    with _ui_page(live_server, mobile=True) as page:
+def test_mobile_scroll_regression_directory_only(live_server: str, sync_browser):
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         _ui_tap(page, 0, "my-knowledge")
         _expect_ui_column(page, 1)
 
 
 @pytest.mark.integration
-def test_mobile_scroll_regression_preview_only(live_server: str):
-    with _ui_page(live_server, mobile=True) as page:
+def test_mobile_scroll_regression_preview_only(live_server: str, sync_browser):
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         _ui_tap(page, 0, "my-knowledge")
         _ui_tap(page, 1, "AGENTS.md")
         _expect_preview(page)
@@ -1362,53 +1382,51 @@ def test_mobile_scroll_regression_preview_only(live_server: str):
 def test_mobile_restore_regression_directory_only(
     live_server: str,
     browser_root: Path,
+    sync_browser,
 ):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(
-            f"{live_server}/my-knowledge/docs",
-            wait_until="networkidle",
-        )
+    browser = sync_browser
+    context = browser.new_context(
+        viewport={"width": 390, "height": 844},
+        is_mobile=True,
+        has_touch=True,
+    )
+    page = context.new_page()
+    page.goto(
+        f"{live_server}/my-knowledge/docs",
+        wait_until="networkidle",
+    )
 
-        _expect_ui_column(page, 2)
+    _expect_ui_column(page, 2)
 
-        context.close()
-        browser.close()
+    context.close()
 
 
 @pytest.mark.integration
 def test_mobile_restore_regression_preview_only(
     live_server: str,
     browser_root: Path,
+    sync_browser,
 ):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(
-            f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
-            wait_until="networkidle",
-        )
+    browser = sync_browser
+    context = browser.new_context(
+        viewport={"width": 390, "height": 844},
+        is_mobile=True,
+        has_touch=True,
+    )
+    page = context.new_page()
+    page.goto(
+        f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
+        wait_until="networkidle",
+    )
 
-        _expect_preview(page)
+    _expect_preview(page)
 
-        context.close()
-        browser.close()
+    context.close()
 
 
 @pytest.mark.integration
-def test_mobile_scroll_behavior_runtime_assertions(live_server: str):
-    with _ui_page(live_server, mobile=True) as page:
+def test_mobile_scroll_behavior_runtime_assertions(live_server: str, sync_browser):
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         _ui_tap(page, 0, "my-knowledge")
         _ui_tap(page, 1, "AGENTS.md")
 
@@ -1420,30 +1438,29 @@ def test_mobile_scroll_behavior_runtime_assertions(live_server: str):
 def test_mobile_restore_behavior_preview_assertions(
     live_server: str,
     browser_root: Path,
+    sync_browser,
 ):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(
-            viewport={"width": 390, "height": 844},
-            is_mobile=True,
-            has_touch=True,
-        )
-        page = context.new_page()
-        page.goto(
-            f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
-            wait_until="networkidle",
-        )
+    browser = sync_browser
+    context = browser.new_context(
+        viewport={"width": 390, "height": 844},
+        is_mobile=True,
+        has_touch=True,
+    )
+    page = context.new_page()
+    page.goto(
+        f"{live_server}/my-knowledge/AGENTS.md?filemill=render",
+        wait_until="networkidle",
+    )
 
-        _wait_for_finder_scroll(page)
-        assert page.evaluate("() => dial()") > 0
+    _wait_for_finder_scroll(page)
+    assert page.evaluate("() => dial()") > 0
 
-        context.close()
-        browser.close()
+    context.close()
 
 
 @pytest.mark.integration
-def test_mobile_scroll_behavior_preview_assertions(live_server: str):
-    with _ui_page(live_server, mobile=True) as page:
+def test_mobile_scroll_behavior_preview_assertions(live_server: str, sync_browser):
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         _ui_tap(page, 0, "my-knowledge")
         _ui_tap(page, 1, "AGENTS.md")
 
@@ -1468,23 +1485,25 @@ def test_mobile_scroll_behavior_preview_assertions(live_server: str):
 
 
 @pytest.mark.integration
-def test_mobile_scroll_regression_user_case_is_covered(live_server: str):
-    with _ui_page(live_server, mobile=True) as page:
+def test_mobile_scroll_regression_user_case_is_covered(live_server: str, sync_browser):
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         _ui_tap(page, 0, "my-knowledge")
         _expect_ui_column(page, 1)
 
 
 @pytest.mark.integration
-def test_mobile_scroll_regression_user_case_preview_is_covered(live_server: str):
-    with _ui_page(live_server, mobile=True) as page:
+def test_mobile_scroll_regression_user_case_preview_is_covered(
+    live_server: str, sync_browser
+):
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         _ui_tap(page, 0, "my-knowledge")
         _ui_tap(page, 1, "AGENTS.md")
         _expect_preview(page)
 
 
 @pytest.mark.integration
-def test_mobile_scroll_runtime_minimal_reveal_assertion(live_server: str):
-    with _ui_page(live_server, mobile=True) as page:
+def test_mobile_scroll_runtime_minimal_reveal_assertion(live_server: str, sync_browser):
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         _ui_tap(page, 0, "my-knowledge")
         _expect_ui_column(page, 1)
 
@@ -1497,26 +1516,23 @@ def test_mobile_scroll_runtime_minimal_reveal_assertion(live_server: str):
         assert metrics["firstColVisible"], "the root column was flushed off-screen"
 
 
-def test_renderer_uses_model_state(browser_root, playwright):
+def test_renderer_uses_model_state(browser_root, sync_browser):
     with _serve(browser_root) as base:
-        browser = playwright.chromium.launch(headless=True)
-        try:
-            page = browser.new_page()
-            page.goto(f"{base}/my-knowledge/AGENTS.md?f")
-            page.wait_for_function("typeof path !== 'undefined' && path.length === 2")
-            assert page.evaluate("""async () => {
-                const model = await import('/ui/core/model/state.js');
-                const links = await import('/ui/core/model/deeplink.js');
-                return model.path === path && model.sel === sel &&
-                    links.currentPath().join('/') === 'my-knowledge/AGENTS.md';
-            }""")
-        finally:
-            browser.close()
+        browser = sync_browser
+        page = browser.new_page()
+        page.goto(f"{base}/my-knowledge/AGENTS.md?f")
+        page.wait_for_function("typeof path !== 'undefined' && path.length === 2")
+        assert page.evaluate("""async () => {
+            const model = await import('/ui/core/model/state.js');
+            const links = await import('/ui/core/model/deeplink.js');
+            return model.path === path && model.sel === sel &&
+                links.currentPath().join('/') === 'my-knowledge/AGENTS.md';
+        }""")
 
 
 @pytest.mark.integration
-def test_mobile_long_press_menu_dismissal_preserves_taps(live_server):
-    with _ui_page(live_server, mobile=True) as page:
+def test_mobile_long_press_menu_dismissal_preserves_taps(live_server, sync_browser):
+    with _ui_page(sync_browser, live_server, mobile=True) as page:
         row = page.locator('.col[data-i="0"] .row[aria-label="my-knowledge"]')
         row.dispatch_event(
             "pointerdown", {"pointerType": "touch", "clientX": 20, "clientY": 20}
@@ -1546,8 +1562,10 @@ def test_mobile_long_press_menu_dismissal_preserves_taps(live_server):
 
 @pytest.mark.integration
 @pytest.mark.parametrize("directory", [False, True])
-def test_copy_rotation_http(live_server: str, browser_root: Path, directory: bool):
-    with _ui_page(live_server) as page:
+def test_copy_rotation_http(
+    live_server: str, browser_root: Path, directory: bool, sync_browser
+):
+    with _ui_page(sync_browser, live_server) as page:
         page.evaluate("""() => {
           window.copiedPaths = [];
           Object.defineProperty(navigator, 'clipboard', {configurable: true,
@@ -1602,9 +1620,10 @@ _STATUS_ITEMS = """() => {
 def test_status_bar_items_stay_on_one_line_when_hints_do_not_fit(
     wide_live_server: str,
     viewport: dict,
+    sync_browser,
 ):
     """Active messages and fold count stay visible; excess hints drop whole."""
-    with _ui_page(wide_live_server, viewport=viewport) as page:
+    with _ui_page(sync_browser, wide_live_server, viewport=viewport) as page:
         _tap_wide_chain(page, 4)
         page.wait_for_function("folded > 0")
 

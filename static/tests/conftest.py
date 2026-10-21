@@ -126,3 +126,17 @@ async def opfs_root(page, base, request):
     finally:
         await handle.evaluate("root => root.removeEntry('bench', {recursive: true})")
         await handle.dispose()
+
+
+@pytest_asyncio.fixture
+async def storage_context(async_playwright, tmp_path):
+    # Chromium 153 aborts on FileSystemHandle restoration in an incognito
+    # profile. Use a private persistent profile to exercise IndexedDB cloning.
+    async with async_playwright.async_playwright() as p:
+        context = await p.chromium.launch_persistent_context(
+            tmp_path, viewport={"width": 1500, "height": 900}
+        )
+        try:
+            yield context
+        finally:
+            await context.close()

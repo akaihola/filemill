@@ -131,6 +131,11 @@ Keep these boundaries and checks.
   coverage. Only main publishes; cancellation is scoped to workflow and ref.
   [CONTRIBUTING.md][contributing] describes the same gate. These are configured
   gates; the local results above do not claim a fresh full CI run.
+- [The fixture isolation repair][141] centralizes direct test browser launches
+  in fixtures, including the server keyboard helper and persistent storage
+  profile. A source guard rejects lifecycle calls in test bodies and helpers.
+  Root application-state fixtures retain monkeypatch restoration. The root
+  parallel qualification is pending; this does not establish a clean command audit.
 - Tests use observable browser state for readiness. Delayed responses can
   supply test input, as the [waiting guidance] explains. The source guard
   rejects `wait_for_timeout`; it does not ban every sleep or prove overlap.
@@ -827,3 +832,4 @@ one new P2 finding; no new P1 finding was established in this pass.
 [the core initializer]: ../ui/core/boot.js
 
 [156]: tasks/156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bound-on-.md
+[141]: tasks/141-finish-browser-fixture-isolation-and-qualify-independent-test-roots.md

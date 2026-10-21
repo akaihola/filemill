@@ -431,7 +431,7 @@ async def click_row(pg, column, name):
     await pg.click(f'.col[data-i="{column}"] .row[title="{name}"]')
 
 
-def test_markdown_source_tokens(bundle, playwright):
+def test_markdown_source_tokens(bundle, sync_browser):
     source = (
         "# Heading [link](next.md)\n\nSetext\n======\n\n"
         "It's prose, and here's another apostrophe.\n"
@@ -440,36 +440,33 @@ def test_markdown_source_tokens(bundle, playwright):
         "`[code](hidden.md)`\n\n```md\n[code](hidden.md)\n```\n"
         "<img src=x onerror=alert(1)>\n"
     )
-    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
-    try:
-        page = browser.new_page()
-        page.goto(bundle.as_uri())
-        page.wait_for_function("typeof renderNode === 'function'")
-        page.evaluate(
-            """async text => {
-          const host = document.createElement('div');
-          host.id = 'markdown-test';
-          host.innerHTML = await renderNode({name: 'test.md'}, new Blob([text]), 'text');
-          document.body.append(host);
-        }""",
-            source,
-        )
-        host = page.locator("#markdown-test")
-        assert host.text_content() == source
-        assert host.locator(".hl-heading").count() == 2
-        assert host.locator(".hl-str").all_text_contents() == [
-            "`[code](hidden.md)`",
-            "```md\n[code](hidden.md)\n```\n",
-        ]
-        assert host.locator("a").evaluate_all(
-            "es => es.map(e => e.getAttribute('href'))"
-        ) == ["next.md", "https://example.org/path?q=1&x=2", "next.md"]
-        assert host.locator("img").count() == 0
-    finally:
-        browser.close()
+    browser = sync_browser
+    page = browser.new_page()
+    page.goto(bundle.as_uri())
+    page.wait_for_function("typeof renderNode === 'function'")
+    page.evaluate(
+        """async text => {
+      const host = document.createElement('div');
+      host.id = 'markdown-test';
+      host.innerHTML = await renderNode({name: 'test.md'}, new Blob([text]), 'text');
+      document.body.append(host);
+    }""",
+        source,
+    )
+    host = page.locator("#markdown-test")
+    assert host.text_content() == source
+    assert host.locator(".hl-heading").count() == 2
+    assert host.locator(".hl-str").all_text_contents() == [
+        "`[code](hidden.md)`",
+        "```md\n[code](hidden.md)\n```\n",
+    ]
+    assert host.locator("a").evaluate_all(
+        "es => es.map(e => e.getAttribute('href'))"
+    ) == ["next.md", "https://example.org/path?q=1&x=2", "next.md"]
+    assert host.locator("img").count() == 0
 
 
-def test_markdown_source_link_boundaries(bundle, playwright):
+def test_markdown_source_link_boundaries(bundle, sync_browser):
     cases = [
         (
             "paragraph code",
@@ -509,323 +506,297 @@ def test_markdown_source_link_boundaries(bundle, playwright):
         ),
         ("multiline code", "`code\n[not a link](hidden.txt)`", []),
     ]
-    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
-    try:
-        page = browser.new_page()
-        page.goto(bundle.as_uri())
-        page.wait_for_function("typeof renderNode === 'function'")
-        failures = []
-        for label, source, expected in cases:
-            actual = page.evaluate(
-                """async text => {
-              const host = document.createElement('div');
-              host.innerHTML = await renderNode(
-                {name: 'test.md', rel: 'notes/test.md'}, new Blob([text]), 'text');
-              return {text: host.textContent,
-                links: [...host.querySelectorAll('a')].map(a => a.getAttribute('href'))};
-            }""",
-                source,
-            )
-            if actual != {"text": source, "links": expected}:
-                failures.append({"case": label, "actual": actual, "expected": expected})
-        assert failures == [], json.dumps(failures, indent=2)
-    finally:
-        browser.close()
+    browser = sync_browser
+    page = browser.new_page()
+    page.goto(bundle.as_uri())
+    page.wait_for_function("typeof renderNode === 'function'")
+    failures = []
+    for label, source, expected in cases:
+        actual = page.evaluate(
+            """async text => {
+          const host = document.createElement('div');
+          host.innerHTML = await renderNode(
+            {name: 'test.md', rel: 'notes/test.md'}, new Blob([text]), 'text');
+          return {text: host.textContent,
+            links: [...host.querySelectorAll('a')].map(a => a.getAttribute('href'))};
+        }""",
+            source,
+        )
+        if actual != {"text": source, "links": expected}:
+            failures.append({"case": label, "actual": actual, "expected": expected})
+    assert failures == [], json.dumps(failures, indent=2)
 
 
-async def test_storage(bundle, async_playwright, static_origin, tmp_path):
-    playwright, profile = async_playwright, tmp_path
-    async with playwright.async_playwright() as p:
-        # Chromium 153 (Playwright 1.63) aborts the whole browser when an
-        # off-the-record context reads a stored FileSystemHandle back from
-        # IndexedDB, and launch() + new_page() is off-the-record. A persistent
-        # profile reads it back fine.
-        b = await p.chromium.launch_persistent_context(
-            profile, viewport={"width": 1500, "height": 900}
-        )
-        print("\n── Remember view state per folder ───────────────────────────")
-        # OPFS requires an HTTP origin.
-        pg = await b.new_page()
-        await pg.goto(f"{static_origin}/static/{bundle.name}")
-        await pg.evaluate(FAKE)
-        # Exercise migration with plain records, then restoration and debounced
-        # writes with real OPFS handles that survive IndexedDB cloning.
-        await pg.evaluate("__seed([{kind:'directory', name:'legacy'}])")
-        got = await pg.evaluate("recallRoots()")
-        assert got == [
-            {"handle": {"kind": "directory", "name": "legacy"}, "path": []}
-        ], str(got)
-        await pg.evaluate(
-            "__seed([{handle:{kind:'directory',name:'w'}, path:['mixed','sub']}])"
-        )
-        got = await pg.evaluate("recallRoots()")
-        assert len(got) == 1 and got[0]["path"] == ["mixed", "sub"], str(got)
+async def test_storage(bundle, storage_context, static_origin):
+    b = storage_context
+    print("\n── Remember view state per folder ───────────────────────────")
+    # OPFS requires an HTTP origin.
+    pg = await b.new_page()
+    await pg.goto(f"{static_origin}/static/{bundle.name}")
+    await pg.evaluate(FAKE)
+    # Exercise migration with plain records, then restoration and debounced
+    # writes with real OPFS handles that survive IndexedDB cloning.
+    await pg.evaluate("__seed([{kind:'directory', name:'legacy'}])")
+    got = await pg.evaluate("recallRoots()")
+    assert got == [{"handle": {"kind": "directory", "name": "legacy"}, "path": []}], (
+        str(got)
+    )
+    await pg.evaluate(
+        "__seed([{handle:{kind:'directory',name:'w'}, path:['mixed','sub']}])"
+    )
+    got = await pg.evaluate("recallRoots()")
+    assert len(got) == 1 and got[0]["path"] == ["mixed", "sub"], str(got)
 
-        await pg.evaluate("__remember([])")
-        assert await pg.evaluate("recallView(__storedRoot)") is None, (
-            "A folder last left on its own root asks for no restore"
-        )
+    await pg.evaluate("__remember([])")
+    assert await pg.evaluate("recallView(__storedRoot)") is None, (
+        "A folder last left on its own root asks for no restore"
+    )
 
-        await pg.evaluate("__remember(['mixed','sub','a.py'])")
-        await pg.evaluate("mount(__storedRoot)")
-        await pg.wait_for_function("sel[2] === 'a.py' && path.length === 3")
-        st = await pg.evaluate("__state()")
-        assert st["path"] == ["workspace", "mixed", "sub"] and st["sel"] == [
-            "mixed",
-            "sub",
-            "a.py",
-        ], json.dumps(st)
+    await pg.evaluate("__remember(['mixed','sub','a.py'])")
+    await pg.evaluate("mount(__storedRoot)")
+    await pg.wait_for_function("sel[2] === 'a.py' && path.length === 3")
+    st = await pg.evaluate("__state()")
+    assert st["path"] == ["workspace", "mixed", "sub"] and st["sel"] == [
+        "mixed",
+        "sub",
+        "a.py",
+    ], json.dumps(st)
 
-        # The case that matters: the folder is still there, the chain is not.
-        await pg.evaluate("__remember(['mixed','gone','x.py'])")
-        await pg.evaluate("mount(__storedRoot)")
-        await pg.wait_for_function("path.length === 2 && sel.length === 1")
-        st = await pg.evaluate("__state()")
-        assert st["path"] == ["workspace", "mixed"] and st["sel"] == ["mixed"], (
-            json.dumps(st)
-        )
-        assert len(st["sel"]) == 1 and st["focusCol"] == 0, json.dumps(st)
+    # The case that matters: the folder is still there, the chain is not.
+    await pg.evaluate("__remember(['mixed','gone','x.py'])")
+    await pg.evaluate("mount(__storedRoot)")
+    await pg.wait_for_function("path.length === 2 && sel.length === 1")
+    st = await pg.evaluate("__state()")
+    assert st["path"] == ["workspace", "mixed"] and st["sel"] == ["mixed"], json.dumps(
+        st
+    )
+    assert len(st["sel"]) == 1 and st["focusCol"] == 0, json.dumps(st)
 
-        await pg.evaluate("__remember(['mixed','sub'])")
-        await pg.evaluate("pendingLoc = {root:'workspace', path:['deep','alpha']}")
-        await pg.evaluate("mount(__storedRoot)")
-        await pg.wait_for_function("path[2]?.name === 'alpha'")
-        st = await pg.evaluate("__state()")
-        assert st["path"] == ["workspace", "deep", "alpha"], json.dumps(st)
+    await pg.evaluate("__remember(['mixed','sub'])")
+    await pg.evaluate("pendingLoc = {root:'workspace', path:['deep','alpha']}")
+    await pg.evaluate("mount(__storedRoot)")
+    await pg.wait_for_function("path[2]?.name === 'alpha'")
+    st = await pg.evaluate("__state()")
+    assert st["path"] == ["workspace", "deep", "alpha"], json.dumps(st)
 
-        # The write side. Walking a column is one location change per keystroke,
-        # so the saves are debounced — a write per keystroke would be the
-        # per-entry cost this app spent a rewrite deleting, in another costume.
-        await pg.evaluate("__spySaves()")
-        await pg.evaluate("mount(__storedRoot)")
-        await pg.wait_for_function("!document.querySelector('.spinner')")
-        start_saves = await pg.evaluate("__saved.length")
-        # Both clicks inside one page call, so the 150 ms gap is 150 ms of app
-        # time. Driven from here it was two Playwright round-trips wide, and on
-        # a loaded machine that exceeds the 400 ms debounce and splits the write
-        # this check exists to prove is single. It flaked twice in five runs.
-        early = await pg.evaluate("""(async () => {
-          document.querySelector('.col[data-i="0"] .row[title="mixed"]').click();
-          await new Promise(r => setTimeout(r, 150));
-          document.querySelector('.col[data-i="1"] .row[title="note.md"]').click();
-          return __saved.length;
-        })()""")
-        await pg.wait_for_function("__saved.length === 1")
-        saved = await pg.evaluate("__saved")
-        assert start_saves == 0, f"{start_saves} writes during mount"
-        assert early == 0 and len(saved) == 1, f"{early} early, {len(saved)} total"
-        assert saved == [["workspace", ["mixed", "note.md"]]], str(saved)
+    # The write side. Walking a column is one location change per keystroke,
+    # so the saves are debounced — a write per keystroke would be the
+    # per-entry cost this app spent a rewrite deleting, in another costume.
+    await pg.evaluate("__spySaves()")
+    await pg.evaluate("mount(__storedRoot)")
+    await pg.wait_for_function("!document.querySelector('.spinner')")
+    start_saves = await pg.evaluate("__saved.length")
+    # Both clicks inside one page call, so the 150 ms gap is 150 ms of app
+    # time. Driven from here it was two Playwright round-trips wide, and on
+    # a loaded machine that exceeds the 400 ms debounce and splits the write
+    # this check exists to prove is single. It flaked twice in five runs.
+    early = await pg.evaluate("""(async () => {
+      document.querySelector('.col[data-i="0"] .row[title="mixed"]').click();
+      await new Promise(r => setTimeout(r, 150));
+      document.querySelector('.col[data-i="1"] .row[title="note.md"]').click();
+      return __saved.length;
+    })()""")
+    await pg.wait_for_function("__saved.length === 1")
+    saved = await pg.evaluate("__saved")
+    assert start_saves == 0, f"{start_saves} writes during mount"
+    assert early == 0 and len(saved) == 1, f"{early} early, {len(saved)} total"
+    assert saved == [["workspace", ["mixed", "note.md"]]], str(saved)
 
-        await pg.evaluate("__restoreSaves(); __seed([])")
-        await b.close()
+    await pg.evaluate("__restoreSaves(); __seed([])")
 
 
-def test_context_menu_delete_fsa(bundle, fake_handle, playwright):
-    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
-    try:
-        page = browser.new_page(viewport={"width": 1500, "height": 900})
-        page.goto(bundle.as_uri())
-        page.evaluate("localStorage.setItem('filemill.rich','off')")
-        page.evaluate(fake_handle)
-        page.evaluate("""async () => {
-          window.localRoot = __mk(0);
-          await mount(localRoot);
-          window.removals = [];
-        }""")
-        row = page.locator('.col[data-i="0"] .row[aria-label="mixed"]')
-        row.click()
-        page.wait_for_function("path.length === 2")
-        # Native handles have no parent property. The adapter owns the parent link.
-        assert page.evaluate("!path[1].handle.parent && path[1].parent === localRoot")
-        page.evaluate("localRoot.requestPermission = async () => 'denied'")
-        row.click(button="right")
-        page.once("dialog", lambda d: d.accept())
-        page.get_by_role("menuitem", name="Delete", exact=True).click()
-        page.wait_for_function(
-            "document.querySelector('#st-refresh').textContent.includes('No permission to delete')"
-        )
-        assert page.evaluate("window.removals.length") == 0
-        page.evaluate("localRoot.requestPermission = async () => 'granted'")
-        row.click(button="right")
-        page.once("dialog", lambda d: d.accept())
-        page.get_by_role("menuitem", name="Delete", exact=True).click()
-        row.wait_for(state="detached")
-        assert page.evaluate("window.removals") == [
-            {"name": "mixed", "recursive": True}
-        ]
-        page.wait_for_function("path.length === 1")
-        page.locator('.col[data-i="0"] .row[aria-label="refresh"]').click()
-        file = page.locator('.col[data-i="1"] .row[aria-label="one.txt"]')
-        file.click()
-        page.once("dialog", lambda d: d.accept())
-        page.locator("#pv-delete").click()
-        file.wait_for(state="detached")
-        assert page.evaluate("window.removals[1]") == {
-            "name": "one.txt",
-            "recursive": False,
-        }
-        page.wait_for_function(
-            "document.querySelector('#st-refresh').textContent === 'Deleted “one.txt”'"
-        )
-        assert "bad" not in (page.locator("#st-refresh").get_attribute("class") or "")
-        assert page.evaluate("sel[1] === undefined && focusCol === 1")
-        page.keyboard.press("ArrowDown")
-        page.wait_for_function("sel[1] === 'sub'")
-        page.evaluate("""() => {
-          const remove = FS.remove;
-          FS.remove = node => new Promise(resolve => {
-            window.finishDelete = async () => { await remove(node); resolve(); };
-          });
-        }""")
-        second = page.locator('.col[data-i="1"] .row[aria-label="two.txt"]')
-        second.click(button="right")
-        page.once("dialog", lambda d: d.accept())
-        page.get_by_role("menuitem", name="Delete", exact=True).click()
-        page.wait_for_function("typeof window.finishDelete === 'function'")
-        page.evaluate("refreshColumn(0)")
-        second.click(button="right")
-        assert page.get_by_role("menuitem", name="Delete", exact=True).is_disabled()
-        page.keyboard.press("Escape")
-        page.evaluate("window.finishDelete()")
-        second.wait_for(state="detached")
-        assert page.evaluate("window.removals[2]") == {
-            "name": "two.txt",
-            "recursive": False,
-        }
-        page.evaluate("FS.remove = undefined")
-        page.locator('.col[data-i="1"] .row[aria-label="sub"]').click(button="right")
-        page.locator("#row-menu").wait_for(state="visible")
-        assert page.get_by_role("menuitem", name="Delete", exact=True).count() == 0
-    finally:
-        browser.close()
+def test_context_menu_delete_fsa(bundle, fake_handle, sync_browser):
+    browser = sync_browser
+    page = browser.new_page(viewport={"width": 1500, "height": 900})
+    page.goto(bundle.as_uri())
+    page.evaluate("localStorage.setItem('filemill.rich','off')")
+    page.evaluate(fake_handle)
+    page.evaluate("""async () => {
+      window.localRoot = __mk(0);
+      await mount(localRoot);
+      window.removals = [];
+    }""")
+    row = page.locator('.col[data-i="0"] .row[aria-label="mixed"]')
+    row.click()
+    page.wait_for_function("path.length === 2")
+    # Native handles have no parent property. The adapter owns the parent link.
+    assert page.evaluate("!path[1].handle.parent && path[1].parent === localRoot")
+    page.evaluate("localRoot.requestPermission = async () => 'denied'")
+    row.click(button="right")
+    page.once("dialog", lambda d: d.accept())
+    page.get_by_role("menuitem", name="Delete", exact=True).click()
+    page.wait_for_function(
+        "document.querySelector('#st-refresh').textContent.includes('No permission to delete')"
+    )
+    assert page.evaluate("window.removals.length") == 0
+    page.evaluate("localRoot.requestPermission = async () => 'granted'")
+    row.click(button="right")
+    page.once("dialog", lambda d: d.accept())
+    page.get_by_role("menuitem", name="Delete", exact=True).click()
+    row.wait_for(state="detached")
+    assert page.evaluate("window.removals") == [{"name": "mixed", "recursive": True}]
+    page.wait_for_function("path.length === 1")
+    page.locator('.col[data-i="0"] .row[aria-label="refresh"]').click()
+    file = page.locator('.col[data-i="1"] .row[aria-label="one.txt"]')
+    file.click()
+    page.once("dialog", lambda d: d.accept())
+    page.locator("#pv-delete").click()
+    file.wait_for(state="detached")
+    assert page.evaluate("window.removals[1]") == {
+        "name": "one.txt",
+        "recursive": False,
+    }
+    page.wait_for_function(
+        "document.querySelector('#st-refresh').textContent === 'Deleted “one.txt”'"
+    )
+    assert "bad" not in (page.locator("#st-refresh").get_attribute("class") or "")
+    assert page.evaluate("sel[1] === undefined && focusCol === 1")
+    page.keyboard.press("ArrowDown")
+    page.wait_for_function("sel[1] === 'sub'")
+    page.evaluate("""() => {
+      const remove = FS.remove;
+      FS.remove = node => new Promise(resolve => {
+        window.finishDelete = async () => { await remove(node); resolve(); };
+      });
+    }""")
+    second = page.locator('.col[data-i="1"] .row[aria-label="two.txt"]')
+    second.click(button="right")
+    page.once("dialog", lambda d: d.accept())
+    page.get_by_role("menuitem", name="Delete", exact=True).click()
+    page.wait_for_function("typeof window.finishDelete === 'function'")
+    page.evaluate("refreshColumn(0)")
+    second.click(button="right")
+    assert page.get_by_role("menuitem", name="Delete", exact=True).is_disabled()
+    page.keyboard.press("Escape")
+    page.evaluate("window.finishDelete()")
+    second.wait_for(state="detached")
+    assert page.evaluate("window.removals[2]") == {
+        "name": "two.txt",
+        "recursive": False,
+    }
+    page.evaluate("FS.remove = undefined")
+    page.locator('.col[data-i="1"] .row[aria-label="sub"]').click(button="right")
+    page.locator("#row-menu").wait_for(state="visible")
+    assert page.get_by_role("menuitem", name="Delete", exact=True).count() == 0
 
 
-def test_delete_fsa_uses_parent_directory(bundle, fake_handle, playwright):
-    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
-    try:
-        page = browser.new_page()
-        page.goto(bundle.as_uri())
-        page.evaluate(fake_handle)
-        result = page.evaluate("""async () => {
-          const handle = __mk(0);
-          const root = FSA.node(handle.name, handle);
-          await FSA.ensureLoaded(root);
-          const child = root.kids.find(n => n.name === 'mixed');
-          window.removals = [];
-          try { await FSA.remove(child); }
-          catch (error) { return error.message; }
-          return window.removals;
-        }""")
-        assert result == [{"name": "mixed", "recursive": True}]
-    finally:
-        browser.close()
+def test_delete_fsa_uses_parent_directory(bundle, fake_handle, sync_browser):
+    browser = sync_browser
+    page = browser.new_page()
+    page.goto(bundle.as_uri())
+    page.evaluate(fake_handle)
+    result = page.evaluate("""async () => {
+      const handle = __mk(0);
+      const root = FSA.node(handle.name, handle);
+      await FSA.ensureLoaded(root);
+      const child = root.kids.find(n => n.name === 'mixed');
+      window.removals = [];
+      try { await FSA.remove(child); }
+      catch (error) { return error.message; }
+      return window.removals;
+    }""")
+    assert result == [{"name": "mixed", "recursive": True}]
 
 
-def test_mobile_fullscreen_back(bundle, fake_handle, playwright, static_origin):
-    browser = playwright.chromium.launch()
-    try:
-        page = browser.new_page(
-            viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True
-        )
-        page.goto(f"{static_origin}/static/{bundle.name}")
-        page.evaluate(fake_handle)
-        page.evaluate(
-            "async () => { await mount(__mk(0)); await applyPath(['mixed', 'short.txt']); }"
-        )
-        page.wait_for_selector("#pv-content .pv-text")
-        page.evaluate("document.documentElement.requestFullscreen = undefined")
-        url = page.url
-        page.evaluate("window.savedPreview = document.querySelector('#pv-content')")
-        full = page.locator("#pv-fullscreen")
-        full.click()
-        page.wait_for_function(
-            "document.documentElement.classList.contains('pv-fullscreen')"
-        )
-        page.go_back()
-        page.wait_for_function(
-            "!document.documentElement.classList.contains('pv-fullscreen')"
-        )
-        assert page.url == url
-        assert page.evaluate("sel.at(-1)") == "short.txt"
-        assert page.evaluate("savedPreview === document.querySelector('#pv-content')")
-        assert page.locator("#bar").is_visible()
-        page.go_forward()
-        page.wait_for_function(
-            "document.documentElement.classList.contains('pv-fullscreen')"
-        )
-        full.click()
-        page.wait_for_function(
-            "!document.documentElement.classList.contains('pv-fullscreen') && !history.state?.filemillFullscreen"
-        )
-        assert page.url == url
-        page.go_forward()
-        page.wait_for_function(
-            "document.documentElement.classList.contains('pv-fullscreen')"
-        )
-        page.go_back()
-        page.wait_for_function("!history.state?.filemillFullscreen")
-        page.go_back()
-        page.wait_for_function("path.length === 1")
-        assert page.locator("#bar").is_visible()
-        page.go_forward()
-        page.wait_for_function("sel.at(-1) === 'short.txt'")
-        page.go_forward()
-        page.wait_for_function(
-            "document.documentElement.classList.contains('pv-fullscreen')"
-        )
-    finally:
-        browser.close()
+def test_mobile_fullscreen_back(bundle, fake_handle, static_origin, sync_browser):
+    browser = sync_browser
+    page = browser.new_page(
+        viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True
+    )
+    page.goto(f"{static_origin}/static/{bundle.name}")
+    page.evaluate(fake_handle)
+    page.evaluate(
+        "async () => { await mount(__mk(0)); await applyPath(['mixed', 'short.txt']); }"
+    )
+    page.wait_for_selector("#pv-content .pv-text")
+    page.evaluate("document.documentElement.requestFullscreen = undefined")
+    url = page.url
+    page.evaluate("window.savedPreview = document.querySelector('#pv-content')")
+    full = page.locator("#pv-fullscreen")
+    full.click()
+    page.wait_for_function(
+        "document.documentElement.classList.contains('pv-fullscreen')"
+    )
+    page.go_back()
+    page.wait_for_function(
+        "!document.documentElement.classList.contains('pv-fullscreen')"
+    )
+    assert page.url == url
+    assert page.evaluate("sel.at(-1)") == "short.txt"
+    assert page.evaluate("savedPreview === document.querySelector('#pv-content')")
+    assert page.locator("#bar").is_visible()
+    page.go_forward()
+    page.wait_for_function(
+        "document.documentElement.classList.contains('pv-fullscreen')"
+    )
+    full.click()
+    page.wait_for_function(
+        "!document.documentElement.classList.contains('pv-fullscreen') && !history.state?.filemillFullscreen"
+    )
+    assert page.url == url
+    page.go_forward()
+    page.wait_for_function(
+        "document.documentElement.classList.contains('pv-fullscreen')"
+    )
+    page.go_back()
+    page.wait_for_function("!history.state?.filemillFullscreen")
+    page.go_back()
+    page.wait_for_function("path.length === 1")
+    assert page.locator("#bar").is_visible()
+    page.go_forward()
+    page.wait_for_function("sel.at(-1) === 'short.txt'")
+    page.go_forward()
+    page.wait_for_function(
+        "document.documentElement.classList.contains('pv-fullscreen')"
+    )
 
 
-def test_preview_arrow_sequence(bundle, fake_handle, playwright, static_origin):
-    browser = playwright.chromium.launch()
-    try:
-        page = browser.new_page(viewport={"width": 1500, "height": 900}, has_touch=True)
-        page.goto(f"{static_origin}/static/{bundle.name}")
-        page.evaluate(fake_handle)
-        page.evaluate(
-            "async () => { await mount(__mk(0)); await applyPath(['mixed', 'short.txt']); }"
-        )
-        page.wait_for_selector("#pv-content .pv-text")
-        page.evaluate("document.documentElement.requestFullscreen = undefined")
-        page.evaluate("dialTo(0)")
-        page.wait_for_function("folded === 0")
-        page.locator("#preview").focus()
-        url = page.url
-        for count in (1, 2):
-            page.keyboard.press("ArrowRight")
-            page.wait_for_function(
-                "n => document.querySelectorAll('.col.spine').length === n",
-                arg=count,
-                timeout=3000,
-            )
-        page.keyboard.press("ArrowRight")
-        page.wait_for_function("Math.abs(dial() - range()) <= 1")
-        assert not page.evaluate(
-            "document.documentElement.classList.contains('pv-fullscreen')"
-        )
+def test_preview_arrow_sequence(bundle, fake_handle, static_origin, sync_browser):
+    browser = sync_browser
+    page = browser.new_page(viewport={"width": 1500, "height": 900}, has_touch=True)
+    page.goto(f"{static_origin}/static/{bundle.name}")
+    page.evaluate(fake_handle)
+    page.evaluate(
+        "async () => { await mount(__mk(0)); await applyPath(['mixed', 'short.txt']); }"
+    )
+    page.wait_for_selector("#pv-content .pv-text")
+    page.evaluate("document.documentElement.requestFullscreen = undefined")
+    page.evaluate("dialTo(0)")
+    page.wait_for_function("folded === 0")
+    page.locator("#preview").focus()
+    url = page.url
+    for count in (1, 2):
         page.keyboard.press("ArrowRight")
         page.wait_for_function(
-            "document.documentElement.classList.contains('pv-fullscreen') && history.state?.filemillFullscreen"
+            "n => document.querySelectorAll('.col.spine').length === n",
+            arg=count,
+            timeout=3000,
         )
-        page.keyboard.press("ArrowLeft")
-        page.wait_for_function(
-            "!document.documentElement.classList.contains('pv-fullscreen') && !history.state?.filemillFullscreen"
-        )
-        assert page.evaluate("document.activeElement.id") == "preview"
-        assert page.url == url
-        assert page.evaluate("sel.at(-1)") == "short.txt"
-        page.go_forward()
-        page.wait_for_function(
-            "document.documentElement.classList.contains('pv-fullscreen')"
-        )
-        page.keyboard.press("Escape")
-        page.wait_for_function(
-            "!document.documentElement.classList.contains('pv-fullscreen') && !history.state?.filemillFullscreen"
-        )
-        assert page.url == url
-    finally:
-        browser.close()
+    page.keyboard.press("ArrowRight")
+    page.wait_for_function("Math.abs(dial() - range()) <= 1")
+    assert not page.evaluate(
+        "document.documentElement.classList.contains('pv-fullscreen')"
+    )
+    page.keyboard.press("ArrowRight")
+    page.wait_for_function(
+        "document.documentElement.classList.contains('pv-fullscreen') && history.state?.filemillFullscreen"
+    )
+    page.keyboard.press("ArrowLeft")
+    page.wait_for_function(
+        "!document.documentElement.classList.contains('pv-fullscreen') && !history.state?.filemillFullscreen"
+    )
+    assert page.evaluate("document.activeElement.id") == "preview"
+    assert page.url == url
+    assert page.evaluate("sel.at(-1)") == "short.txt"
+    page.go_forward()
+    page.wait_for_function(
+        "document.documentElement.classList.contains('pv-fullscreen')"
+    )
+    page.keyboard.press("Escape")
+    page.wait_for_function(
+        "!document.documentElement.classList.contains('pv-fullscreen') && !history.state?.filemillFullscreen"
+    )
+    assert page.url == url
 
 
 # iOS Safari sends a tap as a hover first. If that hover makes hidden content
@@ -833,56 +804,50 @@ def test_preview_arrow_sequence(bundle, fake_handle, playwright, static_origin):
 # again. A folder opens its column unfocused, so its rows meet this on the
 # first tap. On a touch-only screen, hover must reveal nothing.
 def test_touch_tap_opens_folder_first_time(
-    bundle, fake_handle, playwright, static_origin
+    bundle,
+    fake_handle,
+    static_origin,
+    sync_browser,
 ):
-    browser = playwright.chromium.launch()
-    try:
-        page = browser.new_page(
-            viewport={"width": 1024, "height": 768}, is_mobile=True, has_touch=True
-        )
-        page.goto(f"{static_origin}/static/{bundle.name}")
-        page.evaluate("localStorage.setItem('filemill.rich','off')")
-        page.evaluate(fake_handle)
-        page.evaluate("async () => { await mount(__mk(0)); }")
-        assert page.evaluate("matchMedia('(hover: none)').matches")
-        shown = """i => [...document.querySelectorAll(`.col[data-i="${i}"] *`)]
-          .filter(e => getComputedStyle(e).visibility === 'visible').length"""
-        for depth, name in enumerate(["deep", "alpha", "beta"]):
-            sync_scroll_settled(page)
-            row = page.locator(f'.col[data-i="{depth}"] .row[aria-label="{name}"]')
-            row.wait_for()
-            before = page.evaluate(shown, depth)
-            row.hover()
-            assert page.evaluate(shown, depth) == before, (
-                f"hover on {name} reveals content"
-            )
-            sync_scroll_settled(page)
-            row.tap()
-            page.wait_for_function(
-                "n => path.length === n", arg=depth + 2, timeout=3000
-            )
-            assert page.evaluate(f"sel[{depth}]") == name
-        # A long press opens the menu and leaves the folder closed.
+    browser = sync_browser
+    page = browser.new_page(
+        viewport={"width": 1024, "height": 768}, is_mobile=True, has_touch=True
+    )
+    page.goto(f"{static_origin}/static/{bundle.name}")
+    page.evaluate("localStorage.setItem('filemill.rich','off')")
+    page.evaluate(fake_handle)
+    page.evaluate("async () => { await mount(__mk(0)); }")
+    assert page.evaluate("matchMedia('(hover: none)').matches")
+    shown = """i => [...document.querySelectorAll(`.col[data-i="${i}"] *`)]
+      .filter(e => getComputedStyle(e).visibility === 'visible').length"""
+    for depth, name in enumerate(["deep", "alpha", "beta"]):
         sync_scroll_settled(page)
-        box = page.locator('.col[data-i="3"] .row[aria-label="gamma"]').bounding_box()
-        point = [{"x": box["x"] + 20, "y": box["y"] + box["height"] / 2}]
-        cdp = page.context.new_cdp_session(page)
-        cdp.send(
-            "Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": point}
-        )
-        page.locator("#row-menu").wait_for(state="visible", timeout=3000)
-        cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
-        page.wait_for_function("document.querySelector('#row-menu')?.checkVisibility()")
-        assert page.locator("#row-menu").is_visible()
-        assert page.evaluate("path.length") == 4
-        assert page.evaluate("sel[3]") is None
-    finally:
-        browser.close()
+        row = page.locator(f'.col[data-i="{depth}"] .row[aria-label="{name}"]')
+        row.wait_for()
+        before = page.evaluate(shown, depth)
+        row.hover()
+        assert page.evaluate(shown, depth) == before, f"hover on {name} reveals content"
+        sync_scroll_settled(page)
+        row.tap()
+        page.wait_for_function("n => path.length === n", arg=depth + 2, timeout=3000)
+        assert page.evaluate(f"sel[{depth}]") == name
+    # A long press opens the menu and leaves the folder closed.
+    sync_scroll_settled(page)
+    box = page.locator('.col[data-i="3"] .row[aria-label="gamma"]').bounding_box()
+    point = [{"x": box["x"] + 20, "y": box["y"] + box["height"] / 2}]
+    cdp = page.context.new_cdp_session(page)
+    cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": point})
+    page.locator("#row-menu").wait_for(state="visible", timeout=3000)
+    cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
+    page.wait_for_function("document.querySelector('#row-menu')?.checkVisibility()")
+    assert page.locator("#row-menu").is_visible()
+    assert page.evaluate("path.length") == 4
+    assert page.evaluate("sel[3]") is None
 
 
 @pytest.fixture
-def copy_page(bundle, fake_handle, playwright, request):
-    browser = playwright.chromium.launch(args=["--allow-file-access-from-files"])
+def copy_page(bundle, fake_handle, sync_browser, request):
+    browser = sync_browser
     touch = getattr(request.node, "callspec", None)
     touch = bool(touch and touch.params.get("width") == 390)
     page = browser.new_page(viewport={"width": 1000, "height": 700}, has_touch=touch)
@@ -899,10 +864,7 @@ def copy_page(bundle, fake_handle, playwright, request):
     sync_scroll_settled(page)
     # pause_at installs the clock itself, avoiding a running interval between calls.
     page.clock.pause_at(1000000)
-    try:
-        yield page
-    finally:
-        browser.close()
+    yield page
 
 
 def test_scroll_settlement_waits_for_pending_rebase(copy_page):

@@ -88,28 +88,28 @@ async def open_at(pg, base, frag=""):
     )
 
 
-def test_fullscreen_survives_resize(bundle, playwright, static_origin):
-    with playwright.chromium.launch() as browser:
-        pg = browser.new_page()
-        pg.goto(f"{static_origin}/static/{bundle.name}")
-        pg.evaluate("localStorage.setItem('filemill.rich','off')")
-        pg.evaluate(FAKE)
-        pg.evaluate("mount(__mk())")
-        pg.click('.col[data-i="0"] .row:has-text("README.md")')
-        pg.wait_for_selector("#preview .pv-text")
-        url = pg.url
-        history_length = pg.evaluate("history.length")
-        pg.focus("#pv-fullscreen")
-        pg.keyboard.press("Enter")
-        pg.wait_for_function("document.fullscreenElement !== null")
-        pg.evaluate("window.dispatchEvent(new Event('resize'))")
-        assert pg.evaluate("document.fullscreenElement !== null")
-        assert pg.url == url
-        assert pg.evaluate("history.length") == history_length
-        assert pg.evaluate("document.activeElement.id") == "pv-fullscreen"
-        pg.keyboard.press("Enter")
-        pg.wait_for_function("document.fullscreenElement === null")
-        assert pg.get_attribute("#pv-fullscreen", "aria-pressed") == "false"
+def test_fullscreen_survives_resize(bundle, static_origin, sync_browser):
+    browser = sync_browser
+    pg = browser.new_page()
+    pg.goto(f"{static_origin}/static/{bundle.name}")
+    pg.evaluate("localStorage.setItem('filemill.rich','off')")
+    pg.evaluate(FAKE)
+    pg.evaluate("mount(__mk())")
+    pg.click('.col[data-i="0"] .row:has-text("README.md")')
+    pg.wait_for_selector("#preview .pv-text")
+    url = pg.url
+    history_length = pg.evaluate("history.length")
+    pg.focus("#pv-fullscreen")
+    pg.keyboard.press("Enter")
+    pg.wait_for_function("document.fullscreenElement !== null")
+    pg.evaluate("window.dispatchEvent(new Event('resize'))")
+    assert pg.evaluate("document.fullscreenElement !== null")
+    assert pg.url == url
+    assert pg.evaluate("history.length") == history_length
+    assert pg.evaluate("document.activeElement.id") == "pv-fullscreen"
+    pg.keyboard.press("Enter")
+    pg.wait_for_function("document.fullscreenElement === null")
+    assert pg.get_attribute("#pv-fullscreen", "aria-pressed") == "false"
 
 
 async def test_selection_url(page, base):

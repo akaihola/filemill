@@ -12,6 +12,13 @@ def playwright():
 
 
 @pytest.fixture
+def sync_browser(playwright):
+    """A fresh browser per test; closing it also closes every test context."""
+    with playwright.chromium.launch(args=["--allow-file-access-from-files"]) as browser:
+        yield browser
+
+
+@pytest.fixture
 def async_playwright():
     return pytest.importorskip("playwright.async_api")
 

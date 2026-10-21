@@ -20,25 +20,25 @@ window.FILEMILL_CDN = Object.fromEntries(
         ),
     ]
 )
-def browser_preview(request, bundle, playwright, static_origin):
+def browser_preview(request, bundle, sync_browser, static_origin):
     name, source, rendered = request.param
-    with playwright.chromium.launch() as browser:
-        page = browser.new_page()
-        page.goto(f"{static_origin}/static/{bundle.name}")
-        page.evaluate(VENDOR_MAP)
-        page.evaluate(
-            """async ([name, source]) => {
-          document.documentElement.dataset.filemill = 'render';
-          await mount({kind: 'directory', name: 'vault', async *entries() {
-            yield [name, {kind: 'file', name,
-              async getFile() { return new File([source], name); }}];
-          }});
-        }""",
-            [name, source],
-        )
-        page.locator('.col[data-i="0"] .row').click()
-        page.wait_for_selector(rendered)
-        yield page, source, rendered
+    browser = sync_browser
+    page = browser.new_page()
+    page.goto(f"{static_origin}/static/{bundle.name}")
+    page.evaluate(VENDOR_MAP)
+    page.evaluate(
+        """async ([name, source]) => {
+      document.documentElement.dataset.filemill = 'render';
+      await mount({kind: 'directory', name: 'vault', async *entries() {
+        yield [name, {kind: 'file', name,
+          async getFile() { return new File([source], name); }}];
+      }});
+    }""",
+        [name, source],
+    )
+    page.locator('.col[data-i="0"] .row').click()
+    page.wait_for_selector(rendered)
+    yield page, source, rendered
 
 
 def test_static_rendered_source_round_trip(browser_preview):
@@ -93,7 +93,10 @@ def test_static_raw_link_releases_previous_bytes(browser_preview):
 
 @pytest.mark.parametrize("extension", ["md", "markdown"])
 def test_markdown_comments_are_hidden_only_in_rendered_view(
-    bundle, playwright, static_origin, extension
+    bundle,
+    static_origin,
+    extension,
+    sync_browser,
 ):
     source = (
         "# Comments\n\n"
@@ -110,45 +113,45 @@ def test_markdown_comments_are_hidden_only_in_rendered_view(
         "<b>literal HTML</b>\n\n"
         "<!-- unfinished secret\n\nHidden to end\n"
     )
-    with playwright.chromium.launch() as browser:
-        page = browser.new_page()
-        page.goto(f"{static_origin}/static/{bundle.name}")
-        page.evaluate(VENDOR_MAP)
-        page.evaluate(
-            """async ([name, source]) => {
-              document.documentElement.dataset.filemill = 'render';
-              await mount({kind: 'directory', name: 'vault', async *entries() {
-                yield [name, {kind: 'file', name,
-                  async getFile() { return new File([source], name); }}];
-              }});
-            }""",
-            [f"comments.{extension}", source],
-        )
-        page.locator('.col[data-i="0"] .row').click()
-        content = page.locator("#preview .pv-markdown")
-        content.wait_for()
-        text = content.inner_text()
-        assert "secret" not in text
-        assert "Hidden" not in text
-        assert "Before after." in text
-        assert "Visible quote." in text
-        assert "Visible item." in text
-        assert content.locator("strong").inner_text() == "text"
-        assert content.locator("code").all_text_contents() == [
-            "<!-- inline code -->",
-            "<!-- fenced code -->\n",
-            "<!-- indented code -->\n",
-        ]
-        assert "<!-- escaped text -->" in text
-        assert "<b>literal HTML</b>" in text
-        assert content.locator("b, input").count() == 0
-        page.locator("#pv-view").click()
-        page.locator("#preview .pv-text").wait_for()
-        assert page.locator("#preview .pv-text").text_content() == source
-        assert (
-            page.locator("#pv-raw").evaluate("async a => (await fetch(a.href)).text()")
-            == source
-        )
+    browser = sync_browser
+    page = browser.new_page()
+    page.goto(f"{static_origin}/static/{bundle.name}")
+    page.evaluate(VENDOR_MAP)
+    page.evaluate(
+        """async ([name, source]) => {
+          document.documentElement.dataset.filemill = 'render';
+          await mount({kind: 'directory', name: 'vault', async *entries() {
+            yield [name, {kind: 'file', name,
+              async getFile() { return new File([source], name); }}];
+          }});
+        }""",
+        [f"comments.{extension}", source],
+    )
+    page.locator('.col[data-i="0"] .row').click()
+    content = page.locator("#preview .pv-markdown")
+    content.wait_for()
+    text = content.inner_text()
+    assert "secret" not in text
+    assert "Hidden" not in text
+    assert "Before after." in text
+    assert "Visible quote." in text
+    assert "Visible item." in text
+    assert content.locator("strong").inner_text() == "text"
+    assert content.locator("code").all_text_contents() == [
+        "<!-- inline code -->",
+        "<!-- fenced code -->\n",
+        "<!-- indented code -->\n",
+    ]
+    assert "<!-- escaped text -->" in text
+    assert "<b>literal HTML</b>" in text
+    assert content.locator("b, input").count() == 0
+    page.locator("#pv-view").click()
+    page.locator("#preview .pv-text").wait_for()
+    assert page.locator("#preview .pv-text").text_content() == source
+    assert (
+        page.locator("#pv-raw").evaluate("async a => (await fetch(a.href)).text()")
+        == source
+    )
 
 
 def test_preview_mode_changes_render_once_and_survive_resize(browser_preview):
