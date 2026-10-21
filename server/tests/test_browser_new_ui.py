@@ -770,6 +770,78 @@ def test_content_search_opens_a_matching_file(page, start, activation):
     assert page.request.get(f"{page.base}{raw_action}").body() == raw.body()
 
 
+def test_content_search_tracks_keyboard_and_pointer_focus(page, ui_root):
+    marker = "scope145needle"
+    matches = [
+        "root-match.md",
+        "scope/first.md",
+        "scope/deep/second.md",
+        "sibling/third.md",
+    ]
+    for name in matches:
+        file = ui_root / name
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_text(f"# {file.stem}\n\n**{marker}**\n")
+    page.open("scope")
+    page.keyboard.press("ArrowRight")
+    page.wait_for_function("focusCol === 1")
+
+    def search(expected):
+        page.fill("#search-bar", "")
+        with page.expect_response(lambda r: "/api/search?" in r.url):
+            page.fill("#search-bar", marker)
+        results = page.locator(".search-result")
+        expect(results).to_have_count(len(expected))
+        assert sorted(
+            results.evaluate_all("els => els.map(e => e.dataset.path)")
+        ) == sorted(expected)
+        page.fill("#search-bar", "")
+        expect(page.locator("#search-results")).to_be_hidden()
+        page.locator("#search-bar").blur()
+
+    search(matches[1:3])
+    page.keyboard.press("ArrowLeft")
+    page.wait_for_function("focusCol === 0")
+    search(matches)
+    page.locator('.col[data-i="0"] .row[title="sibling"]').click()
+    sibling_row = page.locator('.col[data-i="1"] .row[title="third.md"]')
+    expect(sibling_row).to_be_visible()
+    sibling_row.click()
+    page.wait_for_function("focusCol === 1")
+    search([matches[3]])
+    page.fill("#search-bar", marker)
+    page.locator('.search-result[data-path="sibling/third.md"]').click()
+    expect(page.locator("#preview .pv-rich h1")).to_have_text("third")
+    expect(page.locator("#preview .pv-rich strong")).to_have_text(marker)
+    assert page.url.endswith("/sibling/third.md?filemill=render")
+
+
+def test_http_entry_order_survives_name_and_metadata_sort(page, ui_root):
+    folder = ui_root / "order145"
+    folder.mkdir()
+    for name in ("Zoo", "alpha", "Beta"):
+        (folder / name).mkdir()
+    for name, size in (("10.txt", 3), ("2.txt", 1), ("Alpha.txt", 2)):
+        (folder / name).write_text("x" * size)
+    response = page.request.get(f"{page.base}/api/dir?p=order145")
+    assert response.ok
+    entries = response.json()["entries"]
+    directories = [e["name"] for e in entries if e["dir"]]
+    files = [e["name"] for e in entries if not e["dir"]]
+    assert files.index("10.txt") < files.index("2.txt")
+    page.open("order145")
+    labels = page.locator('.col[data-i="1"] .row .label')
+    expect(labels).to_have_text(directories + files)
+    page.locator("#gear").click()
+    page.locator("#s-sort-desc").click()
+    expect(labels).to_have_text(directories[::-1] + files[::-1])
+    page.locator("#s-sort-size").click()
+    by_size = sorted((e for e in entries if not e["dir"]), key=lambda e: e["size"])
+    expect(labels).to_have_text(directories + [e["name"] for e in by_size[::-1]])
+    page.locator("#s-sort-desc").click()
+    expect(labels).to_have_text(directories + [e["name"] for e in by_size])
+
+
 def test_a_file_name_adds_no_attribute_to_search_results(page, ui_root):
     """A result is markup around ripgrep's path, whatever the name holds (S4)."""
     name = 'quote" onmouseover="window.__xss=1" data-x=".txt'
@@ -2937,6 +3009,36 @@ def test_csv_without_unique_column_names_rows_individually(page):
     assert page.eval_on_selector_all(
         '.col[data-i="1"] .row', "els => els.map(e => e.title)"
     ) == ["row 1", "row 2"]
+
+
+@pytest.mark.parametrize("activation", ["pointer", "keyboard"])
+def test_duplicate_csv_rows_have_independent_selection(page, ui_root, activation):
+    records = [("A", "first"), ("A", "second"), ("A", "first"), ("B", "second")]
+    (ui_root / "duplicates145.csv").write_text(
+        "group,note\n" + "".join(f"{group},{note}\n" for group, note in records)
+    )
+    page.open("duplicates145.csv")
+    rows = page.locator('.col[data-i="1"] .row')
+    expect(rows).to_have_count(len(records))
+    if activation == "keyboard":
+        page.keyboard.press("ArrowRight")
+        page.wait_for_function("focusCol === 1")
+        page.keyboard.press("Home")
+    keys = []
+    for index, values in enumerate(records):
+        if activation == "pointer":
+            rows.nth(index).click()
+        elif index:
+            page.keyboard.press("ArrowDown")
+        selected = page.locator('.col[data-i="1"] .row.sel')
+        expect(selected).to_have_count(1)
+        expect(rows.nth(index)).to_have_class(re.compile(r"\bsel\b"))
+        key = page.evaluate("sel[1]")
+        assert key not in keys
+        keys.append(key)
+        expect(page.locator("#preview .pv-kv th")).to_have_text(["group", "note"])
+        expect(page.locator("#preview .pv-kv td")).to_have_text(list(values))
+    assert keys == [f"row {i + 1}" for i in range(len(records))]
 
 
 def test_csv_unique_dot_labels_fall_back_to_visible_row_names(page):

@@ -130,7 +130,9 @@ Keep these boundaries and checks.
 - Tests use observable browser state for readiness. Delayed responses can
   supply test input, as the [waiting guidance] explains. The source guard
   rejects `wait_for_timeout`; it does not ban every sleep or prove overlap.
-  Static checks live in
+  The [served regression checks][145] now cover focused search scope, HTTP
+  entry order and independent selection of duplicate CSV rows. These keep
+  the existing ports and model boundaries. Static checks live in
   [static/tests/][static-tests]. [The remaining-test record][remaining-tests]
   separates historical failures from current work. Keep the tests that guard
   log-pipe backpressure, touch input, scroll settlement and worker recovery.
@@ -727,3 +729,5 @@ one new P2 finding; no new P1 finding was established in this pass.
 
 [133]: tasks/133-protect-saves-from-truncation-and-stale-overwrites-architecture-review.md
 [ADR 0090]: adr/0090-revision-checked-file-replacement.md
+
+[145]: tasks/145-add-three-missing-browser-regressions-focused-search-scope-http-entry-.md
