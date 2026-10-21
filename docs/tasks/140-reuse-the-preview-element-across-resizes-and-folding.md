@@ -14,3 +14,12 @@ Steward issue, 2026-10-21 14:00 tick. Goal: agentic-leverage (filemill is tier 1
 - Resizing and folding cause no extra preview rendering; an edit or a selection change renders once.
 - The existing rendering budgets and editor invalidation checks pass, with the suites the Rules name.
 - Add a dated pointer to this issue's evidence in [21]'s task file. Memory: follow your launch prompt's memory rule, and run one heavy command (test suite, browser, build) at a time.
+
+## Plan, 2026-10-21
+
+1. Add failing provider-render counts for resize, folding and pending reads.
+2. Retain one preview pane with explicit node, metadata and view identity.
+   Invalidate pending work when selection leaves, including empty selections.
+3. Check edits, metadata changes, mode changes and selection changes.
+4. Run the model checks, pre-commit gate, both static suites and server suite
+   one at a time under the memory guard. Record results before merging.
