@@ -34,11 +34,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [142] Recover the revision and failing tests of the old server browser
-  baseline
-  <!-- hai:{"id":"simple-7e0cfc0d-56d3-479e-ac6b-e6ce359a174b","labels":["steward","review"],"createdAt":"2026-10-21T11:20:46.465Z","updatedAt":"2026-10-21T15:36:50.696Z"} -->
-
 ## In Progress
+
+- [~] [142] Recover the revision and failing tests of the old server browser
+  baseline
+      <!-- hai:{"id":"simple-7e0cfc0d-56d3-479e-ac6b-e6ce359a174b","labels":["steward","review"],"createdAt":"2026-10-21T11:20:46.465Z","updatedAt":"2026-10-21T15:37:11.451Z"} -->
 
 - [~] [141] Finish browser fixture isolation and qualify independent test roots
       <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T15:01:55.354Z"} -->
