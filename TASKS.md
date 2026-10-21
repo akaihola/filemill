@@ -33,10 +33,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [140] Reuse the preview element across resizes and folding
-  <!-- hai:{"id":"simple-e05f5d48-cda2-4c6e-971b-79425d2fa5ad","labels":["steward"],"createdAt":"2026-10-21T11:20:37.089Z","updatedAt":"2026-10-21T12:42:52.177Z"} -->
-
 ## In Progress
+
+- [~] [140] Reuse the preview element across resizes and folding
+      <!-- hai:{"id":"simple-e05f5d48-cda2-4c6e-971b-79425d2fa5ad","labels":["steward"],"createdAt":"2026-10-21T11:20:37.089Z","updatedAt":"2026-10-21T12:43:09.708Z"} -->
 
 - [~] [120] Disable server search in local folders from docs question 5
       <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-20T13:03:29.269Z"} -->
