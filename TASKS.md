@@ -37,10 +37,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [137] Fix the intermittent Back failure in
-  test_back_retraces_the_folders_that_were_opened
-      <!-- hai:{"id":"simple-67d7be8a-d50f-4a7e-a079-ca6a43ab338b","labels":["steward"],"createdAt":"2026-10-20T22:52:05.894Z","updatedAt":"2026-10-20T23:18:33.632Z"} -->
-
 - [~] [133] Protect saves from truncation and stale overwrites (architecture review
   A4)
       <!-- hai:{"id":"simple-7fc0721d-e6cf-4c12-91b0-2758fd68f09c","labels":["steward"],"createdAt":"2026-10-20T19:37:48.890Z","updatedAt":"2026-10-20T20:27:03.412Z"} -->
@@ -49,6 +45,10 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-20T13:03:29.269Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [137] Fix the intermittent Back failure in
+  test_back_retraces_the_folders_that_were_opened
+      <!-- hai:{"id":"simple-67d7be8a-d50f-4a7e-a079-ca6a43ab338b","labels":["steward"],"createdAt":"2026-10-20T22:52:05.894Z","updatedAt":"2026-10-21T03:41:16.655Z"} -->
 
 - [ ] [136] Security scan of filemill: served roots, mutations, previews, caches and
   history
