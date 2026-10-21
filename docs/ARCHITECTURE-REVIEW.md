@@ -482,6 +482,12 @@ output is parsed and written again without event handlers, `data` or
 preview. Search results escape names with the shared `esc()`; the search
 dependency direction in A12 is unchanged.
 
+**Correction, 2026-10-22 ([the known-elements repair][147]).** Removing
+attributes kept every element, so a video's alternative text or address could
+still place frames, embeds, forms, a base element or SVG animation in the
+pane. Server and browser now keep only the elements and attributes docutils
+writes, from one list in two languages ([ADR 0082]).
+
 PDF frames remain unsandboxed and use PDF media types. That is a remaining
 audit surface, not evidence that the fixed Markdown/HTML exploit is open.
 All entry points still expose debug core state; same-origin scripts retain
@@ -729,6 +735,7 @@ one new P2 finding; no new P1 finding was established in this pass.
 [waiting guidance]: ../server/CONTRIBUTING.md#wait-for-an-element-never-for-a-duration
 [137]: tasks/137-fix-the-intermittent-back-failure-in-test-back-retraces-the-folders-th.md
 [139]: tasks/139-stop-rst-previews-and-search-results-from-injecting-live-markup-securi.md
+[147]: tasks/147-allow-only-known-elements-and-attributes-in-restructuredtext-previews.md
 [security-review]: reviews/2026-10-21-security-review.md
 
 

@@ -1,5 +1,8 @@
 import html as html_lib
+import re
 from html.parser import HTMLParser
+from pathlib import Path
+from textwrap import dedent
 
 import pytest
 
@@ -54,21 +57,31 @@ def test_rst_links_keep_only_safe_urls(tmp_path):
     assert 'href="mailto:' in html and 'href="sib.rst"' in html, html
 
 
-class _Attributes(HTMLParser):
-    """Every attribute name in a fragment, as a browser's parser finds them."""
+class _Markup(HTMLParser):
+    """Every element and attribute in a fragment, as a browser's parser finds
+    them."""
 
     def __init__(self):
         super().__init__()
-        self.names: list[str] = []
+        self.elements: list[tuple[str, list[tuple[str, str | None]]]] = []
 
     def handle_starttag(self, tag, attrs):
-        self.names += [name for name, _ in attrs]
+        self.elements.append((tag, attrs))
+
+
+def _elements(html: str) -> list[tuple[str, list[tuple[str, str | None]]]]:
+    parser = _Markup()
+    parser.feed(html)
+    parser.close()
+    return parser.elements
 
 
 def _attribute_names(html: str) -> list[str]:
-    parser = _Attributes()
-    parser.feed(html)
-    return parser.names
+    return [name for _, attrs in _elements(html) for name, _ in attrs]
+
+
+def _tag_names(html: str) -> set[str]:
+    return {tag for tag, _ in _elements(html)}
 
 
 def _live(names: list[str]) -> list[str]:
@@ -135,6 +148,151 @@ def test_rst_preview_keeps_no_event_handler(tmp_path, outside, source):
     f.write_text(source.format(outside=outside))
     html = render_preview(f)
     assert _live(_attribute_names(html)) == [], html
+
+
+# Elements docutils never writes, which a document's text can still bring in.
+FOREIGN = {
+    "frame": "<iframe></iframe>",
+    "embed": "<embed>",
+    "form": "<form></form>",
+    "base": "<base>",
+    "svg-animation": "<svg><animate></animate></svg>",
+}
+FOREIGN_TAGS = {"iframe", "embed", "form", "base", "svg", "animate"}
+
+
+@pytest.mark.parametrize("field", ["alt", "address"])
+@pytest.mark.parametrize("markup", FOREIGN.values(), ids=FOREIGN.keys())
+def test_rst_preview_keeps_only_elements_docutils_writes(tmp_path, field, markup):
+    """docutils writes a video's address and alternative text into its
+    fallback link unescaped, so markup in either reaches its output."""
+    f = tmp_path / "note.rst"
+    f.write_text(
+        f".. image:: clip.mp4\n   :alt: {markup}\n"
+        if field == "alt"
+        else f".. image:: {markup}.mp4\n"
+    )
+    html = render_preview(f)
+    assert FOREIGN_TAGS.isdisjoint(_tag_names(html)), html
+    assert "<video" in html, html
+
+
+ORDINARY_RST = dedent(
+    """\
+    Title
+    =====
+
+    Section
+    -------
+
+    Some *emphasis*, **strong**, ``literal``, :sub:`2`, :sup:`3`,
+    :title-reference:`a book`, :math:`a^2 + b^2`, a
+    `link <https://example.com/>`_, a footnote [#]_ and `Section`_.
+
+    .. [#] A footnote.
+
+    - one
+    - two
+
+    3. three
+    4. four
+
+    term
+      definition
+
+    :field: value
+
+    | line one
+    | line two
+
+       A quotation.
+
+       -- Someone
+
+    +-----+-----+
+    | A   | B   |
+    +=====+=====+
+    | spans both|
+    +-----+-----+
+
+    .. list-table:: Caption
+       :header-rows: 1
+       :widths: 30 70
+
+       * - h1
+         - h2
+       * - a
+         - b
+
+    ::
+
+       literal
+
+    .. code-block:: python
+       :number-lines:
+
+       return 1
+
+    .. image:: pics/cat.png
+       :width: 50%
+       :align: center
+       :alt: cat
+
+    .. figure:: pics/cat.png
+       :figwidth: 60%
+
+       A caption.
+
+    .. image:: clip.mp4
+       :class: controls
+
+    .. note:: A note.
+
+    .. admonition:: Custom
+
+       Body.
+
+    .. sidebar:: Aside
+
+       Body.
+
+    .. contents::
+
+    .. math::
+
+       \\frac{1}{2}
+    """
+)
+
+
+def test_ordinary_rst_keeps_everything_docutils_writes(tmp_path, monkeypatch):
+    """The check drops nothing from an ordinary document: headings, lists,
+    tables, code, links, images, admonitions and math."""
+    f = tmp_path / "note.rst"
+    f.write_text(ORDINARY_RST)
+    checked = render_preview(f)
+    monkeypatch.setattr(preview_module, "_inert", lambda html: html)
+    unchecked = render_preview(f)
+    assert {"table", "pre", "img", "video", "aside", "math"} <= _tag_names(unchecked)
+    assert _elements(checked) == _elements(unchecked)
+
+
+def test_rst_allowlist_matches_the_browsers_copy():
+    """ui/adapters/preview-rich.js checks reStructuredText the browser renders
+    against the same lists."""
+    script = (
+        Path(preview_module.__file__).parent / "ui/adapters/preview-rich.js"
+    ).read_text()
+    found = re.search(
+        r"RST_HTML = \{\s*tags:(.*?)\battrs:(.*?)\n\};", script, re.DOTALL
+    )
+    assert found, "RST_HTML not found in preview-rich.js"
+
+    def words(js: str) -> set[str]:
+        return set(" ".join(re.findall(r'"([^"]*)"', js)).split())
+
+    assert words(found[1]) == preview_module.RST_TAGS
+    assert words(found[2]) == preview_module.RST_ATTRIBUTES
 
 
 def test_source_rst_is_syntax_highlighted(tmp_path):

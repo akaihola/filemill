@@ -2,7 +2,11 @@
 
 import base64
 import io
+import re
 import zipfile
+from textwrap import dedent
+
+from docutils.core import publish_parts
 
 # Serve the repository, not filemill/: the dev entry point references ../ui/,
 # which is the whole point of the shared directory.
@@ -782,7 +786,7 @@ async def test_rst_output_keeps_no_live_attribute(page, base, requests):
           + '<a xlink:href="javascript:window.__xss=8"><text>x</text></a>'
           + '</svg><object data="javascript:window.__xss=9"></object>'"""
     )
-    html = await preview(pg, "doc.rst", ready=".pv-rich svg")
+    html = await preview(pg, "doc.rst", ready=".pv-rich p")
     assert (
         await pg.evaluate(
             """[...document.querySelectorAll('#pv-content *')]
@@ -791,6 +795,133 @@ async def test_rst_output_keeps_no_live_attribute(page, base, requests):
         )
         == []
     ), html
+
+
+def _docutils(source: str) -> str:
+    """The HTML the browser's interpreter gets from docutils for *source*,
+    with the settings of RST_PY in ui/adapters/preview-rich.js."""
+    return publish_parts(
+        source,
+        writer_name="html5",
+        settings_overrides={
+            "raw_enabled": False,
+            "file_insertion_enabled": False,
+            "report_level": 5,
+            "doctitle_xform": False,
+            "initial_header_level": 1,
+            "syntax_highlight": "none",
+            "embed_stylesheet": False,
+        },
+    )["body"]
+
+
+# Elements docutils never writes, which a document's text can still bring in.
+FOREIGN = "<iframe></iframe><embed><form></form><base><svg><animate></animate></svg>"
+
+
+async def test_rst_output_keeps_only_elements_docutils_writes(page, base, requests):
+    pg = page
+    # ── a video's alternative text and address are written unescaped ─
+    await boot(pg, base, rich=True, stubs=True)
+    await pg.evaluate(
+        "html => window.__pyHTML = html",
+        _docutils(
+            f".. image:: clip.mp4\n   :alt: {FOREIGN}\n\n.. image:: {FOREIGN}.mp4\n"
+        ),
+    )
+    html = await preview(pg, "doc.rst", ready=".pv-rich video")
+    assert (
+        await pg.evaluate(
+            """[...document.querySelectorAll(
+              '#pv-content :is(iframe, embed, form, base, svg, animate)')]
+              .map((el) => el.localName)"""
+        )
+        == []
+    ), html
+    assert await pg.locator("#pv-content video").count() == 2, html
+
+
+ORDINARY_RST = dedent(
+    """\
+    Heading
+    =======
+
+    Some *emphasis*, **strong**, ``literal``, :sub:`2`, :sup:`3`,
+    :math:`a^2 + b^2`, a `link <https://example.com/>`_, a footnote [#]_
+    and `Heading`_.
+
+    .. [#] A footnote.
+
+    - one
+    - two
+
+    3. three
+
+    term
+      definition
+
+    +-----+-----+
+    | A   | B   |
+    +=====+=====+
+    | spans both|
+    +-----+-----+
+
+    .. list-table::
+       :widths: 30 70
+
+       * - a
+         - b
+
+    .. code-block:: python
+       :number-lines:
+
+       return 1
+
+    .. code-block:: python
+
+       return 2
+
+    .. image:: pics/cat.png
+       :width: 50%
+       :align: center
+
+    .. figure:: pics/cat.png
+
+       A caption.
+
+    .. note:: A note.
+
+    .. contents::
+    """
+)
+
+
+async def test_ordinary_rst_keeps_everything_docutils_writes(page, base, requests):
+    pg = page
+    # ── the check drops nothing from an ordinary document ───────────
+    await boot(pg, base, rich=True, stubs=True)
+    written = _docutils(ORDINARY_RST)
+    # rst() renames a highlighted block's classes before the check.
+    expected = re.sub(
+        r'<pre class="code (\S+) literal-block"><code>',
+        r'<pre><code class="language-\1">',
+        written,
+    )
+    shapes = await pg.evaluate(
+        """async ([written, expected]) => {
+          window.__pyHTML = written;
+          const shape = (html) => [...new DOMParser()
+            .parseFromString(html, 'text/html').body.querySelectorAll('*')]
+            .map((el) => [el.localName, ...[...el.attributes]
+              .map((a) => `${a.name}=${a.value}`).sort()].join(' '));
+          const out = await renderNode({name: 'doc.rst'}, new Blob(['x']), 'rst');
+          return {expected: shape(expected), got: shape(out).slice(1)};
+        }""",
+        [written, expected],
+    )
+    for tag in ("table", "pre", "img", "aside", "math"):
+        assert any(s.split(" ")[0] == tag for s in shapes["expected"]), tag
+    assert shapes["got"] == shapes["expected"]
 
 
 async def test_consent_retry(page, base, requests):

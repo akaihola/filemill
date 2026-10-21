@@ -66,6 +66,27 @@ amends the decision:
 Consequence: a reStructuredText document that embedded an image now shows it
 as a linked image, or a broken one when the path is outside the root.
 
+## Known elements only, 2026-10-22
+
+Removing attributes left every element in place, so a video's alternative
+text or address could still bring frames, embeds, forms, a base element or
+SVG animation into the pane. [Issue 147][147] replaces the attribute denylist
+for reStructuredText with an allowlist, as for `.docx`:
+
+- reStructuredText output keeps only the elements and attributes docutils'
+  HTML5 writer produces, 0.21 (Pyodide's) to 0.23 (the server's), with the
+  MathML it writes for math. Any other element is replaced by its contents.
+  `href` and `src` keep the rule above.
+- The server's `RST_TAGS` and `RST_ATTRIBUTES` and the browser's `RST_HTML`
+  are one list in two languages; a test keeps them equal. The browser checks
+  the server's reStructuredText against it too.
+
+Consequence: an image docutils would write as a plugin `<object>` shows only
+its alternative text. `class` and `style` stay because docutils writes them,
+so a document can still style and position its own content. That is an
+audit surface, not script.
+
 [104]: ../tasks/104-make-preview-content-inert-wikilink-text-and-docx-output-a2.md
 [139]: ../tasks/139-stop-rst-previews-and-search-results-from-injecting-live-markup-securi.md
+[147]: ../tasks/147-allow-only-known-elements-and-attributes-in-restructuredtext-previews.md
 [review]: ../reviews/2026-10-21-security-review.md

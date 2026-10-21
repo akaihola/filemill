@@ -2792,6 +2792,37 @@ def test_server_previews_get_the_browsers_inert_step(routed_page):
     assert page.evaluate("window.__xss ?? null") is None
 
 
+def test_server_rst_keeps_only_elements_docutils_writes(routed_page):
+    """docutils writes a video's alternative text unescaped. The browser checks
+    the server's reStructuredText against the elements docutils writes, as it
+    does its own."""
+    page = routed_page
+    page.route(
+        "**/api/preview?p=code%2Fguide.rst",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="text/html",
+            body=(
+                '<div class="preview-rst"><h1>Live</h1>'
+                '<video src="clip.mp4" title="clip"><a href="clip.mp4">'
+                "<iframe></iframe><embed><form></form><base>"
+                "<svg><animate></animate></svg></a></video></div>"
+            ),
+        ),
+    )
+    page.open_resource("code/guide.rst?filemill=render")
+    page.wait_for_selector("#preview .preview-rst video", timeout=15000)
+    assert (
+        page.evaluate(
+            """[...document.querySelectorAll(
+              '#pv-content :is(iframe, embed, form, base, svg, animate)')]
+              .map((el) => el.localName)"""
+        )
+        == []
+    )
+    assert page.locator("#pv-content h1").count() == 1
+
+
 def test_rst_source_and_rendered_modes_switch_without_losing_the_preview(page):
     page.open_resource("code/guide.rst?filemill=render")
     page.wait_for_selector("#preview .preview-rst h1", timeout=15000)

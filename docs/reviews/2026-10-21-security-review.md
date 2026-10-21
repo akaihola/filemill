@@ -125,6 +125,11 @@ whatever `file_insertion_enabled` says.
   `index.html` (see [Considered and not reported](#considered-and-not-reported)).
 - **Status, 2026-10-21.** Fixed by [the live-markup repair][139], which also
   covers docutils' unescaped video markup.
+- **Status, 2026-10-22.** The steward's review found that repair fixed the
+  file reading but only narrowed the script half: elements other than those
+  docutils writes still reached the pane through the video markup.
+  [The known-elements repair][147] keeps only the elements and attributes
+  docutils writes, on the server and in the browser.
 
 ### S3. Read routes accept any Host, so DNS rebinding reads the root
 
@@ -190,6 +195,7 @@ transcript.
 [136]: ../tasks/136-security-scan-of-filemill-served-roots-mutations-previews-caches-and-h.md
 [138]: ../tasks/138-make-public-instances-read-only-and-check-host-on-every-route-security.md
 [139]: ../tasks/139-stop-rst-previews-and-search-results-from-injecting-live-markup-securi.md
+[147]: ../tasks/147-allow-only-known-elements-and-attributes-in-restructuredtext-previews.md
 [116-task]: ../tasks/116-sandbox-the-raw-view-of-html-files-inside-archives-with-a-content-secu.md
 [121]: ../tasks/121-clarify-api-path-collisions-from-docs-question-6.md
 [125]: ../tasks/125-clarify-network-consent-scope-from-docs-question-11.md

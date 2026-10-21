@@ -88,6 +88,9 @@ Filemill uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   read the image from any path it could read and inlined an SVG with its event
   handlers. Server previews lose event handlers, `data` and `xlink:href`
   attributes, and the browser checks them again ([ADR 0082]).
+- reStructuredText previews keep only the elements and attributes docutils
+  writes. A video's alternative text or address had still placed frames,
+  embeds, forms, a base element or SVG animation in the pane ([ADR 0082]).
 - A file name with a `"` no longer adds attributes to a search result.
 
 ## [0.1.0] - 2026-09-15

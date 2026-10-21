@@ -22,6 +22,7 @@ import {
   initRichSettings,
   PreviewRich,
   RICH_RENDERERS,
+  RST_HTML,
 } from "./preview-rich.js";
 import { RouterPath } from "./router-path.js";
 import { rememberRoot } from "./storage.js";
@@ -125,8 +126,14 @@ const PreviewHTTP = {
       `${API}/preview?p=${encodeURIComponent(n.rel)}${lines}${vpath}`,
     );
     /* The server's HTML lands in this page like the browser's own converter
-       output, so it gets the same inert() step (S2). */
-    return response.ok ? inert(await response.text()) : PreviewLocal.render(n);
+       output, so it gets the same inert() step (S2), and its
+       reStructuredText the same list of what docutils writes. */
+    return response.ok
+      ? inert(
+        await response.text(),
+        fileKind(n) === "rst" ? RST_HTML : undefined,
+      )
+      : PreviewLocal.render(n);
   },
 };
 

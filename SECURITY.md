@@ -102,11 +102,15 @@ The Raw link of an HTML member of an archive opens it the same way, from
 The preview pane is a different boundary. It shows an HTML file, or an HTML
 member of an archive, in an iframe with `sandbox=""`, so the page's scripts do
 not run there. Markdown, reStructuredText, `.docx` and `.desktop` previews are
-inserted into the page as inert markup. Markup in their text stays text.
-reStructuredText and `.docx` output loses its event-handler, `xlink:href` and
-`data` attributes. The server removes them from its reStructuredText output,
-and the browser checks every preview the server renders again before
-inserting it. A
+inserted into the page as inert markup. Markup in Markdown, `.docx` and
+`.desktop` text stays text. docutils writes some reStructuredText fields, a
+video's address and alternative text among them, as markup. reStructuredText
+output therefore keeps only the elements and attributes docutils itself
+writes, and `.docx` output only those mammoth writes; any other element is
+replaced by its contents, and event-handler attributes never stay. The server
+checks its reStructuredText output against that list, and the browser checks
+every preview the server renders again before inserting it, its
+reStructuredText against the same list. A
 reStructuredText image stays a link, `:loading: embed` included: the server
 never reads or inlines the image file, and the browser fetches it through the
 root check. In reStructuredText, `.docx` and `.desktop` previews a link keeps

@@ -333,22 +333,26 @@ async function rst(text) {
   /* docutils writes `.. code-block:: x` as <pre class="code x literal-block">
      <code>; hlFences looks for <pre><code class="language-x">, the shape the
      Markdown renderers emit. Same colours for the same fence, either syntax. */
-  return inert(html.replace(
-    /<pre class="code (\S+) literal-block"><code>/g,
-    '<pre><code class="language-$1">',
-  ));
+  return inert(
+    html.replace(
+      /<pre class="code (\S+) literal-block"><code>/g,
+      '<pre><code class="language-$1">',
+    ),
+    RST_HTML,
+  );
 }
 
 /* ── Converter output ────────────────────────────────────────────────────── */
-/* docutils and mammoth escape a document's text but write a link's target as
-   the document gives it, javascript: included, and their HTML lands in this
-   page (A2). So an event handler, an SVG's xlink:href and an object's data
-   never stay, a link keeps its target only when core/model/safe-url.js allows
-   it, and a picture may also be inline image data. adapters/app-http.js runs
-   the server's previews through it too: its reStructuredText is the same
-   docutils output (S2). A .docx can carry a style map naming any element, so
-   its output may also keep only the tags and attributes mammoth itself
-   writes; any other element is replaced by its contents. DOMParser builds an
+/* docutils and mammoth write a link's target as the document gives it,
+   javascript: included, docutils a video's address and alternative text
+   unescaped, and their HTML lands in this page (A2). So an event handler, an
+   SVG's xlink:href and an object's data never stay, a link keeps its target
+   only when core/model/safe-url.js allows it, and a picture may also be
+   inline image data. adapters/app-http.js runs the server's previews through
+   it too. Converter output may also keep only the tags and attributes its
+   converter writes (RST_HTML, DOCX): a document's text can bring any element
+   into docutils' output (S2), and a .docx can carry a style map naming any
+   element. Any other element is replaced by its contents. DOMParser builds an
    inert document: nothing in it loads or runs while it is checked. */
 const DOCX = {
   tags: new Set(
@@ -356,6 +360,30 @@ const DOCX = {
       "table tbody td th thead tr u ul").split(" "),
   ),
   attrs: new Set(["alt", "colspan", "href", "id", "rowspan", "src"]),
+};
+
+/* What docutils' HTML5 writer produces, 0.21 to 0.23, with the MathML it
+   writes for math. An image it would write as a plugin <object> keeps only
+   its text. RST_TAGS and RST_ATTRIBUTES in server/src/filemill/preview.py are
+   the server's copy. */
+export const RST_HTML = {
+  tags: new Set(
+    ("a abbr aside b bdi blockquote br caption cite code col colgroup dd del " +
+      "details dfn div dl dt em figcaption figure h1 h2 h3 h4 h5 h6 hr i img " +
+      "ins kbd li mark nav ol p pre q s samp section small span strong sub " +
+      "summary sup table tbody td th thead tr u ul var video " +
+      "math menclose merror mfrac mi mn mo mover mpadded mphantom mroot mrow " +
+      "mspace msqrt mstyle msub msubsup msup mtable mtd mtext mtr munder " +
+      "munderover").split(" "),
+  ),
+  attrs: new Set(
+    ("alt aria-level class colspan controls data-lineno height href id lang " +
+      "loading open role rowspan src start style title width " +
+      "accent columnalign columnspacing depth dir display displaystyle form " +
+      "linethickness lspace mathsize mathvariant maxsize minsize " +
+      "movablelimits notation numalign rowspacing rspace scriptlevel " +
+      "stretchy symmetric xmlns").split(" "),
+  ),
 };
 
 export function inert(html, allow) {

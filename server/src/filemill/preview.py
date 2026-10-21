@@ -39,28 +39,165 @@ def safe_url(url: str) -> bool:
     return url.lower().startswith(SAFE_PROTOCOLS) or not _SCHEME_LIKE.match(url)
 
 
-def _live(name: str, value: str) -> bool:
-    """Whether an attribute could run script or load something unchecked."""
-    return (
-        name.startswith("on")
-        or name in ("data", "xlink:href")
-        or (name == "href" and not safe_url(value))
-        or (
-            name == "src"
-            and not safe_url(value)
-            and not value.lower().startswith("data:image/")
-        )
-    )
+# The elements and attributes docutils' HTML5 writer produces, 0.21 to 0.23,
+# with the MathML it writes for math. It writes a video's address and
+# alternative text unescaped, so anything else came from a document's text
+# (S2). An image it would write as a plugin <object> keeps only its text.
+# RST_HTML in ui/adapters/preview-rich.js is the browser's copy.
+RST_TAGS = frozenset(
+    {
+        "a",
+        "abbr",
+        "aside",
+        "b",
+        "bdi",
+        "blockquote",
+        "br",
+        "caption",
+        "cite",
+        "code",
+        "col",
+        "colgroup",
+        "dd",
+        "del",
+        "details",
+        "dfn",
+        "div",
+        "dl",
+        "dt",
+        "em",
+        "figcaption",
+        "figure",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "hr",
+        "i",
+        "img",
+        "ins",
+        "kbd",
+        "li",
+        "mark",
+        "nav",
+        "ol",
+        "p",
+        "pre",
+        "q",
+        "s",
+        "samp",
+        "section",
+        "small",
+        "span",
+        "strong",
+        "sub",
+        "summary",
+        "sup",
+        "table",
+        "tbody",
+        "td",
+        "th",
+        "thead",
+        "tr",
+        "u",
+        "ul",
+        "var",
+        "video",
+        "math",
+        "menclose",
+        "merror",
+        "mfrac",
+        "mi",
+        "mn",
+        "mo",
+        "mover",
+        "mpadded",
+        "mphantom",
+        "mroot",
+        "mrow",
+        "mspace",
+        "msqrt",
+        "mstyle",
+        "msub",
+        "msubsup",
+        "msup",
+        "mtable",
+        "mtd",
+        "mtext",
+        "mtr",
+        "munder",
+        "munderover",
+    }
+)
+RST_ATTRIBUTES = frozenset(
+    {
+        "alt",
+        "aria-level",
+        "class",
+        "colspan",
+        "controls",
+        "data-lineno",
+        "height",
+        "href",
+        "id",
+        "lang",
+        "loading",
+        "open",
+        "role",
+        "rowspan",
+        "src",
+        "start",
+        "style",
+        "title",
+        "width",
+        "accent",
+        "columnalign",
+        "columnspacing",
+        "depth",
+        "dir",
+        "display",
+        "displaystyle",
+        "form",
+        "linethickness",
+        "lspace",
+        "mathsize",
+        "mathvariant",
+        "maxsize",
+        "minsize",
+        "movablelimits",
+        "notation",
+        "numalign",
+        "rowspacing",
+        "rspace",
+        "scriptlevel",
+        "stretchy",
+        "symmetric",
+        "xmlns",
+    }
+)
+
+
+def _kept(name: str, value: str) -> bool:
+    """Whether an attribute may stay in reStructuredText output (A2, S2)."""
+    if name not in RST_ATTRIBUTES:
+        return False
+    if name == "src" and value.lower().startswith("data:image/"):
+        return True
+    return name not in ("href", "src") or safe_url(value)
 
 
 class _Inert(HTMLParser):
-    """Write converter HTML again without its live attributes (A2, S2).
+    """Write docutils' HTML again with only the elements and attributes it
+    writes itself (A2, S2).
 
     docutils writes a link target as the document gives it, and a video's
     address and alternative text unescaped, so its output is parsed as a
-    browser would and every tag written anew. inert() in
-    ui/adapters/preview-rich.js is the browser's copy, which also runs on this
-    output; this one covers /api/preview opened on its own. Comments go.
+    browser would and every tag written anew. Any other element is replaced
+    by its contents. inert() in ui/adapters/preview-rich.js is the browser's
+    copy, which also runs on this output; this one covers /api/preview opened
+    on its own. Comments go.
     """
 
     def __init__(self) -> None:
@@ -68,10 +205,12 @@ class _Inert(HTMLParser):
         self.out: list[str] = []
 
     def _tag(self, tag: str, attrs: list[tuple[str, str | None]], end: str) -> None:
+        if tag not in RST_TAGS:
+            return
         kept = "".join(
             f' {name}="{html_lib.escape(value or "")}"'
             for name, value in attrs
-            if not _live(name, value or "")
+            if _kept(name, value or "")
         )
         self.out.append(f"<{tag}{kept}{end}")
 
@@ -82,7 +221,8 @@ class _Inert(HTMLParser):
         self._tag(tag, attrs, " />")
 
     def handle_endtag(self, tag):
-        self.out.append(f"</{tag}>")
+        if tag in RST_TAGS:
+            self.out.append(f"</{tag}>")
 
     def handle_data(self, data):
         self.out.append(html_lib.escape(data, quote=False))
