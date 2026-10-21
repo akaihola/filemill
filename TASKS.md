@@ -29,13 +29,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [138] Make public instances read-only and check Host on every route (security
+## In Progress
+
+- [~] [138] Make public instances read-only and check Host on every route (security
   review S1, S3)
     - Depends on: [137]
 
-  <!-- hai:{"id":"simple-14481238-0336-4adf-a3ce-bc5aeadaf3a2","labels":["steward"],"createdAt":"2026-10-20T23:39:29.669Z","updatedAt":"2026-10-21T03:46:31.644Z"} -->
-
-## In Progress
+      <!-- hai:{"id":"simple-14481238-0336-4adf-a3ce-bc5aeadaf3a2","labels":["steward"],"createdAt":"2026-10-20T23:39:29.669Z","updatedAt":"2026-10-21T05:15:40.955Z"} -->
 
 - [~] [133] Protect saves from truncation and stale overwrites (architecture review
   A4)
