@@ -30,3 +30,17 @@ Filemill serves files over HTTP, including a public instance, saves and deletes 
   sandbox the portability guard cannot read the masked `.claude/loop.md`.
 - No code or config change, deploy, push, service restart or live-instance
   probe.
+
+## Follow-up, 2026-10-21
+
+- Rebased onto `main` at `04de3044`. Since the first merge,
+  [138](138-make-public-instances-read-only-and-check-host-on-every-route-security.md)
+  fixed S1 and S3, and
+  [139](139-stop-rst-previews-and-search-results-from-injecting-live-markup-securi.md)
+  fixed S2 and S4. The later findings were still open in the code at
+  `04de3044`.
+- A safety check stopped the writing again, so the report still ends after
+  S4. Its "Not finished" section now records the fixes above and lists what
+  remains: the later findings with fixes and drafted issues, the S1
+  deployment note, the `SECURITY.md` claims check, the coverage and the
+  candidates not reported.

@@ -171,12 +171,14 @@ not escape `"`, and its output lands in a double-quoted attribute.
 
 ## Not finished
 
-A safety check stopped the writing of this report twice, so it ends after
-S4. Still to write:
+A safety check stopped the writing of this report again during the
+steward's follow-up on 2026-10-21, so it still ends after S4. Since the
+report merged, [the read-only and Host repair][138] fixed S1 and S3, and
+[the live-markup repair][139] fixed S2 and S4; those issues hold their
+fixes. Still to write:
 
 - the findings after S4 that the review verified, of medium and low
-  severity;
-- a fix and a drafted issue for every finding, S1 to S4 included;
+  severity, each with a fix and a drafted issue;
 - the steward's deployment note for S1;
 - the [SECURITY.md][security] claims that do not hold;
 - the coverage of each area, and the candidates considered and not
@@ -186,6 +188,7 @@ The verifier results for all of these are in the HAI-136 session's
 transcript.
 
 [136]: ../tasks/136-security-scan-of-filemill-served-roots-mutations-previews-caches-and-h.md
+[138]: ../tasks/138-make-public-instances-read-only-and-check-host-on-every-route-security.md
 [139]: ../tasks/139-stop-rst-previews-and-search-results-from-injecting-live-markup-securi.md
 [116-task]: ../tasks/116-sandbox-the-raw-view-of-html-files-inside-archives-with-a-content-secu.md
 [121]: ../tasks/121-clarify-api-path-collisions-from-docs-question-6.md
