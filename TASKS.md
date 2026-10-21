@@ -26,11 +26,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [146] Check filemill's README, contributor docs, goals and roadmap against
-  current main
-  <!-- hai:{"id":"simple-a4858f85-f357-497a-a1d3-f32ee93767e7","labels":["steward","review"],"createdAt":"2026-10-21T19:48:01.758Z","updatedAt":"2026-10-21T20:53:31.350Z"} -->
-
 ## In Progress
+
+- [~] [146] Check filemill's README, contributor docs, goals and roadmap against
+  current main
+      <!-- hai:{"id":"simple-a4858f85-f357-497a-a1d3-f32ee93767e7","labels":["steward","review"],"createdAt":"2026-10-21T19:48:01.758Z","updatedAt":"2026-10-21T20:53:48.834Z"} -->
 
 - [~] [141] Finish browser fixture isolation and qualify independent test roots
       <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T15:01:55.354Z"} -->
