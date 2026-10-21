@@ -57,36 +57,36 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [122] Clarify deliberate test delays from docs question 8
       <!-- hai:{"id":"simple-e47a58f3-193e-4296-83a9-cfa00f27371b","labels":["steward"],"createdAt":"2026-10-20T07:12:44.920Z","updatedAt":"2026-10-20T23:04:33.137Z"} -->
 
-- [ ] [135] Keep bundle repositories alive through active reads (architecture review
+- [x] [135] Keep bundle repositories alive through active reads (architecture review
   A14)
-      <!-- hai:{"id":"simple-ad2e83e1-1884-4c57-afb0-fc279fdbafd6","labels":["steward"],"createdAt":"2026-10-20T19:38:05.190Z","updatedAt":"2026-10-20T22:16:10.385Z"} -->
+      <!-- hai:{"id":"simple-ad2e83e1-1884-4c57-afb0-fc279fdbafd6","labels":["steward"],"createdAt":"2026-10-20T19:38:05.190Z","updatedAt":"2026-10-21T05:16:00.868Z"} -->
 
-- [ ] [134] Refresh JSON columns from the current file (architecture review A13)
-      <!-- hai:{"id":"simple-fc2b70cd-7598-47b9-8b82-4004d374afcd","labels":["steward"],"createdAt":"2026-10-20T19:38:03.173Z","updatedAt":"2026-10-20T22:05:23.091Z"} -->
+- [x] [134] Refresh JSON columns from the current file (architecture review A13)
+      <!-- hai:{"id":"simple-fc2b70cd-7598-47b9-8b82-4004d374afcd","labels":["steward"],"createdAt":"2026-10-20T19:38:03.173Z","updatedAt":"2026-10-21T05:16:05.864Z"} -->
 
-- [ ] [132] Re-check the architecture review against current main
-      <!-- hai:{"id":"simple-2a087add-53a0-4c65-9b64-6b413aae4b4f","labels":["steward","review"],"createdAt":"2026-10-20T17:18:18.462Z","updatedAt":"2026-10-20T18:04:52.988Z"} -->
+- [x] [132] Re-check the architecture review against current main
+      <!-- hai:{"id":"simple-2a087add-53a0-4c65-9b64-6b413aae4b4f","labels":["steward","review"],"createdAt":"2026-10-20T17:18:18.462Z","updatedAt":"2026-10-21T05:16:10.851Z"} -->
 
-- [ ] [131] Close the gaps found in five older review items
-      <!-- hai:{"id":"simple-c79b828d-b1d0-4776-82e2-0e9bdf1d6bed","labels":["steward"],"createdAt":"2026-10-20T14:12:31.533Z","updatedAt":"2026-10-20T15:06:22.878Z"} -->
+- [x] [131] Close the gaps found in five older review items
+      <!-- hai:{"id":"simple-c79b828d-b1d0-4776-82e2-0e9bdf1d6bed","labels":["steward"],"createdAt":"2026-10-20T14:12:31.533Z","updatedAt":"2026-10-21T05:16:15.459Z"} -->
 
-- [ ] [127] Correct icon generator claims from docs question 13
-      <!-- hai:{"id":"simple-c28a4f20-6a8c-44e7-a484-b78ac1731e99","labels":["steward"],"createdAt":"2026-10-20T07:12:49.393Z","updatedAt":"2026-10-20T14:27:21.750Z"} -->
+- [x] [127] Correct icon generator claims from docs question 13
+      <!-- hai:{"id":"simple-c28a4f20-6a8c-44e7-a484-b78ac1731e99","labels":["steward"],"createdAt":"2026-10-20T07:12:49.393Z","updatedAt":"2026-10-21T05:16:21.478Z"} -->
 
-- [ ] [126] Align decision timing rules from docs question 12
-      <!-- hai:{"id":"simple-c51c3fbe-451d-4e29-8e42-9474e4e8d838","labels":["steward"],"createdAt":"2026-10-20T07:12:48.486Z","updatedAt":"2026-10-20T14:05:05.245Z"} -->
+- [x] [126] Align decision timing rules from docs question 12
+      <!-- hai:{"id":"simple-c51c3fbe-451d-4e29-8e42-9474e4e8d838","labels":["steward"],"createdAt":"2026-10-20T07:12:48.486Z","updatedAt":"2026-10-21T05:16:25.658Z"} -->
 
-- [ ] [124] Explain dependency constraints from docs question 10
-      <!-- hai:{"id":"simple-d36f5057-cc6b-4c43-aaf5-45532393af26","labels":["steward"],"createdAt":"2026-10-20T07:12:46.777Z","updatedAt":"2026-10-20T13:56:53.066Z"} -->
+- [x] [124] Explain dependency constraints from docs question 10
+      <!-- hai:{"id":"simple-d36f5057-cc6b-4c43-aaf5-45532393af26","labels":["steward"],"createdAt":"2026-10-20T07:12:46.777Z","updatedAt":"2026-10-21T05:16:29.850Z"} -->
 
-- [ ] [123] Clarify conditional test skips from docs question 9
-      <!-- hai:{"id":"simple-c33756b3-3ea8-4a89-9352-60eaf73faf0e","labels":["steward"],"createdAt":"2026-10-20T07:12:45.801Z","updatedAt":"2026-10-20T13:42:21.575Z"} -->
+- [x] [123] Clarify conditional test skips from docs question 9
+      <!-- hai:{"id":"simple-c33756b3-3ea8-4a89-9352-60eaf73faf0e","labels":["steward"],"createdAt":"2026-10-20T07:12:45.801Z","updatedAt":"2026-10-21T05:16:35.373Z"} -->
 
-- [ ] [119] Offer manual copying in a pop-up when clipboard access fails
-      <!-- hai:{"id":"simple-ee263a83-cc2f-41ec-9040-d4a5c0a8e93b","labels":["steward"],"createdAt":"2026-10-20T07:12:42.185Z","updatedAt":"2026-10-20T12:53:55.453Z"} -->
+- [x] [119] Offer manual copying in a pop-up when clipboard access fails
+      <!-- hai:{"id":"simple-ee263a83-cc2f-41ec-9040-d4a5c0a8e93b","labels":["steward"],"createdAt":"2026-10-20T07:12:42.185Z","updatedAt":"2026-10-21T05:16:38.972Z"} -->
 
-- [ ] [117] Show an expandable server-offline indicator with cached content
-      <!-- hai:{"id":"simple-2815036e-03d8-491d-a901-3794c92f18de","labels":["steward"],"createdAt":"2026-10-20T07:12:40.437Z","updatedAt":"2026-10-20T12:30:03.578Z"} -->
+- [x] [117] Show an expandable server-offline indicator with cached content
+      <!-- hai:{"id":"simple-2815036e-03d8-491d-a901-3794c92f18de","labels":["steward"],"createdAt":"2026-10-20T07:12:40.437Z","updatedAt":"2026-10-21T05:16:43.173Z"} -->
 
 - [ ] [118] Hide the ineffective server preview switch from docs question 3
       <!-- hai:{"id":"simple-1161fe2f-92b3-4ea4-99a6-9b511726259b","labels":["steward"],"createdAt":"2026-10-20T07:12:41.306Z","updatedAt":"2026-10-20T11:15:39.997Z"} -->
@@ -97,8 +97,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [128] Never list or serve hidden files on a public instance
       <!-- hai:{"id":"simple-9104b865-c208-4bfe-bc8c-92ac37a361d3","labels":["steward"],"createdAt":"2026-10-20T07:26:36.286Z","updatedAt":"2026-10-20T08:46:16.991Z"} -->
 
-- [ ] [115] Propose plain answers to the docs check's twelve remaining questions
-      <!-- hai:{"id":"simple-e25533eb-a765-42e3-8e41-b1e7e16d1b0e","labels":["steward","review"],"createdAt":"2026-10-19T17:58:46.533Z","updatedAt":"2026-10-20T07:16:46.096Z"} -->
+- [x] [115] Propose plain answers to the docs check's twelve remaining questions
+      <!-- hai:{"id":"simple-e25533eb-a765-42e3-8e41-b1e7e16d1b0e","labels":["steward","review"],"createdAt":"2026-10-19T17:58:46.533Z","updatedAt":"2026-10-21T05:16:48.660Z"} -->
 
 - [x] [94] Move the CI workflows to action versions that run on Node.js 24
     - Depends on: [96]
@@ -204,9 +204,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [*] `.py` files are not highlighted at all.
       <!-- hai:{"id":"simple-5a544fc442d3d2ca","updatedAt":"2026-10-17T08:24:56.244Z"} -->
 
-- [ ] [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
+- [x] [*] Keep `static/test-e2e.py` as a manual check. Describe when and how to run it in
   `static/FSA-TEST-CHECKLIST.md`.
-      <!-- hai:{"id":"simple-d27ac8852cc5e629","updatedAt":"2026-10-17T08:24:55.227Z"} -->
+      <!-- hai:{"id":"simple-d27ac8852cc5e629","updatedAt":"2026-10-21T05:16:52.764Z"} -->
 
 - [ ] [*] Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
   what it means.
@@ -349,12 +349,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [*] Per recommendation from task dd6897a9-b54e-4ad4-b9b5-b2372292f4b1, remove
       ?no-columns, wants_columns, and url_for_state. Keep documentation up-to-date.
 
-- [ ] [68] Fix server test fixture discovery from the repository root and document the
+- [x] [68] Fix server test fixture discovery from the repository root and document the
       working pytest command.
+      <!-- hai:{"updatedAt":"2026-10-21T05:16:57.569Z"} -->
 
-- [ ] [*] Do issues [38], [39], [40] and [42] each currently sit under both Scheduled
+- [x] [*] Do issues [38], [39], [40] and [42] each currently sit under both Scheduled
       and In Progress in the tracker? Should they be deduplicated and corrected to sit
       in the correct section so they reflect the implementation?
+      <!-- hai:{"id":"simple-25a6f43e328c61c9","updatedAt":"2026-10-21T05:17:01.969Z"} -->
 
 - [ ] [*] Fix the extra mount prefix in rendered `~/...` Markdown links.
     - Depends on: [42]
@@ -380,9 +382,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [70] In preview focus, ArrowRight folds the leftmost expanded folder column, then
       enters fullscreen once columns are hidden. ArrowLeft exits fullscreen.
 
-- [ ] [31] Evaluate AppKit, GTK and WinUI against the WebView prototype. Record the
+- [x] [31] Evaluate AppKit, GTK and WinUI against the WebView prototype. Record the
       comparison in an ADR. Do not start a native toolkit before the ADR exists.
     - Depends on: [30]
+
+      <!-- hai:{"updatedAt":"2026-10-21T05:17:06.677Z"} -->
 
 - [ ] [71] Let reStructuredText paragraphs fill the available preview width, as Markdown
       paragraphs do.
@@ -439,15 +443,17 @@ Rules for TASKS.md usage are at the bottom of the file.
       arithmetic, keyboard map and deep links. Keep a thin DOM renderer beside it.
     - Depends on: [21]
 
-- [ ] [*] Delete `_document_page` — document representations, including
+- [x] [*] Delete `_document_page` — document representations, including
       `layout=no-columns`, now return the shared client shell.
+      <!-- hai:{"id":"simple-8b040fc456862500","updatedAt":"2026-10-21T05:17:10.450Z"} -->
 
 - [ ] [13] Correct the stale claims that review finding 15 lists in `server/README.md`,
       `server/CONTRIBUTING.md`, `server/TASKS.md`, `docs/tasks/2-*.md` and root
       `TASKS.md`.
 
-- [ ] [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`,
+- [x] [*] Split `applyScroll` in `ui/core/layout.js` into `foldFromScroll`,
       `applyWidths`, `panFocus` and `slideTail`. Each function is under 25 lines.
+      <!-- hai:{"id":"simple-3719edde73c010f9","updatedAt":"2026-10-21T05:17:15.483Z"} -->
 
 - [ ] [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
       decision in `docs/adr/`. Each file has context, decision, measurement,
@@ -457,10 +463,12 @@ Rules for TASKS.md usage are at the bottom of the file.
       uncomfortable blink and a delay. Just the preview pane should be reloaded, and the
       URL and history updated.
 
-- [ ] [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=`
+- [x] [*] Delete the `/raw?path=` route in `app.py`. The client builds `${API}/raw?p=`
       URLs for images, PDF and HTML. Done when `grep -r raw?path server/src` prints
       nothing.
     - Depends on: [33]
+
+      <!-- hai:{"id":"simple-6e2f3140d42e50d0","updatedAt":"2026-10-21T05:17:19.758Z"} -->
 
 - [ ] [*] Virtualise column rows. `content-visibility` made layout cheap, but a 100
       k-entry directory still builds 100 k DOM nodes. Do this only if such folders show
@@ -496,9 +504,11 @@ Rules for TASKS.md usage are at the bottom of the file.
       legacy server issue #49.
     - Depends on: [26]
 
-- [ ] [*] Compute the symlink zone map one time per request in `paths.py`. Delete the
+- [x] [*] Compute the symlink zone map one time per request in `paths.py`. Delete the
       three other walks of the root that build the same map.
     - Depends on: [24]
+
+      <!-- hai:{"id":"simple-cb5dad9619411b8b","updatedAt":"2026-10-21T05:17:24.077Z"} -->
 
 - [ ] [*] Stop `server/tests/conftest.py` from changing the module global `ROOT`. Done
       when `uv run pytest -n auto` passes at the repository root.
@@ -595,18 +605,20 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [*] Delete `server/PLAN-18.md`, `PLAN-19.md`, `PLAN-20-shared-frontend.md` and
       `server/lmt/`. Move a paragraph only if it is still true and is not elsewhere.
 
-- [ ] [*] Make root `README.md` the one explanation of the two editions and their ports.
+- [x] [*] Make root `README.md` the one explanation of the two editions and their ports.
       `server/README.md` and `static/AGENTS.md` link to it and keep edition-specific
       text.
+      <!-- hai:{"id":"simple-4f48aa6ce563577e","updatedAt":"2026-10-21T05:17:29.563Z"} -->
 
 - [ ] [*] Delete `server/.pi/settings.json`, `server/mobile-narrow-preview.png`,
       `server/.claude/commands/` and `architecture-review-20260904.html`.
 
 - [ ] [56] Add a Rendered / highlighted Source toggle beside Raw and Fullscreen.
 
-- [ ] [*] Add `.pre-commit-config.yaml` with ruff, ruff-format, mypy, deno fmt, deno
+- [x] [*] Add `.pre-commit-config.yaml` with ruff, ruff-format, mypy, deno fmt, deno
       lint and `static/build-index.py --check`. Run `pre-commit run --all-files` until
       it passes.
+      <!-- hai:{"id":"simple-aae954c8c6879d22","updatedAt":"2026-10-21T05:17:35.072Z"} -->
 
 - [ ] [57] Fix portrait horizontal overflow potentially caused by the fold hint.
 
@@ -627,7 +639,8 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [61] Choose unique CSV row keys and keep duplicate values independently
       selectable.
 
-- [ ] [66] Evaluate hybrid Python/Jinja highlighting and report supported alternatives.
+- [x] [66] Evaluate hybrid Python/Jinja highlighting and report supported alternatives.
+      <!-- hai:{"updatedAt":"2026-10-21T05:17:40.274Z"} -->
 
 - [ ] [62] Prevent further left swipes from exposing a margin beside a fullscreen
       portrait preview.
@@ -678,8 +691,9 @@ Rules for TASKS.md usage are at the bottom of the file.
       with the JSON hierarchical view. Delete the HTML in `providers/sqlite.py`. Close
       [9].
 
-- [ ] [9] Close the conditional `ViewSpec` proposal: [34] removed the six-argument
+- [x] [9] Close the conditional `ViewSpec` proposal: [34] removed the six-argument
       interface.
+      <!-- hai:{"updatedAt":"2026-10-21T05:17:46.482Z"} -->
 
 - [ ] [26] Create one renderer registry, a list of `{kind, render, fallback}`. Both
       editions fill it from the same core list plus their own adapters.
@@ -687,8 +701,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [36] Decide how the installed PWA gets a running server: a systemd or launchd
       unit, a launcher, a desktop shell, or only a better "server not running" page.
 
-- [ ] [*] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT.
+- [x] [*] Add a `LICENSE` file with the MIT license text. `README.md` already says MIT.
       Use the current year and "Antti Kaihola" as the copyright holder.
+      <!-- hai:{"id":"simple-e92b763f3b4733a5","updatedAt":"2026-10-21T05:17:51.357Z"} -->
 
 - [ ] [*] Feature: Move to using `pptx-vanilla-viewer` from a CDN for previewing
       PowerPoint files. Current PPTX support was implemented in task
