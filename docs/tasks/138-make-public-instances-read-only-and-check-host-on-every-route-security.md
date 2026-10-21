@@ -24,3 +24,21 @@ It depends on [137], because a red suite blocks every merge.
 - Memory: before each command, wait up to 10 minutes for `MemAvailable` of at least 2 GiB; if it doesn't come, start the command anyway when at least 1.5 GiB is available. Stop a running command when `MemAvailable` falls below 1 GiB or swap grows by more than 512 MiB. Run one heavy command at a time, and bound any background job you start.
 - Don't restart any Filemill service; the steward does that after checking each deployed instance's host names.
 - Acceptance: the new tests pass; a public instance refuses save and delete and carries no token; every read route refuses a foreign Host; local use on loopback works unchanged; the full server suite is green, and the docs match the code.
+
+## Upgrade preparation
+
+Before upgrading each reverse-proxy or LAN instance, the steward must set
+`FILEMILL_ORIGINS` to every exact browser origin it serves, space-separated,
+for example `https://filemill.vempai.men https://files.example:8443`.
+The proxy must preserve the public Host. This setting now controls reads and
+assets as well as mutations; an omitted name receives 403. Loopback names
+remain allowed. No Filemill service is restarted by this task.
+
+## Implementation plan
+
+- Add failing public-write, token omission, UI and rebinding regressions.
+- Enforce Host once before route dispatch; retain exact mutation Origin checks.
+- Disable public mutation authorization and HTTP write/remove capabilities.
+- Update the security policy, existing ADRs and architecture review together.
+- Run the full server suite and repository gates, then merge and mark complete
+  pending user acceptance.
