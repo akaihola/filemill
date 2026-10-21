@@ -1,4 +1,5 @@
 import os
+import runpy
 from unittest.mock import MagicMock
 
 import pytest
@@ -99,6 +100,27 @@ def test_serve_has_bind_option():
     runner = CliRunner()
     result = runner.invoke(cli, ["--help"])
     assert "--bind" in result.output or "-b" in result.output
+
+
+@pytest.mark.parametrize("live", [False, True])
+def test_bind_env_default_and_explicit_flag_precedence(tmp_path, monkeypatch, live):
+    monkeypatch.setenv("FILEMILL_BIND", "192.0.2.1")
+    # The environment default is read when the CLI module loads.
+    fresh_cli = runpy.run_path(cli_module.__file__)["cli"]
+    mock_run = MagicMock()
+    monkeypatch.setattr(uvicorn, "run", mock_run)
+    args = [str(tmp_path), *(["--live"] if live else [])]
+
+    assert runner.invoke(fresh_cli, args).exit_code == 0
+    assert mock_run.call_args.kwargs["host"] == "192.0.2.1"
+    assert runner.invoke(fresh_cli, [*args, "--bind", "127.0.0.2"]).exit_code == 0
+    assert mock_run.call_args.kwargs["host"] == "127.0.0.2"
+
+    result = runner.invoke(fresh_cli, ["--help"])
+    assert result.exit_code == 0
+    help_text = " ".join(result.output.replace("│", " ").split())
+    assert "FILEMILL_BIND sets the default" in help_text
+    assert "explicit --bind wins" in help_text
 
 
 def test_bind_option_passed_to_uvicorn_normal(tmp_path, monkeypatch):

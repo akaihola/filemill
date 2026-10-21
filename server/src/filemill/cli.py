@@ -20,7 +20,7 @@ def main(
         env("BIND", "127.0.0.1"),
         "-b",
         "--bind",
-        help="Address to bind to (overridden by FILEMILL_BIND env var)",
+        help="Address to bind to (FILEMILL_BIND sets the default; explicit --bind wins)",
     ),
     public: bool = typer.Option(
         False,
