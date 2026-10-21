@@ -21,6 +21,19 @@ Rules for TASKS.md usage are at the bottom of the file.
 
   <!-- hai:{"id":"simple-d1776999-2a2c-4870-936a-9620915aee07","labels":["steward"],"createdAt":"2026-10-20T08:12:02.201Z","updatedAt":"2026-10-20T08:12:29.949Z"} -->
 
+- [140] Reuse the preview element across resizes and folding
+  <!-- hai:{"id":"simple-e05f5d48-cda2-4c6e-971b-79425d2fa5ad","labels":["steward"],"createdAt":"2026-10-21T11:20:37.089Z","updatedAt":"2026-10-21T11:20:37.089Z"} -->
+
+- [141] Finish browser fixture isolation and qualify independent test roots
+  <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T11:20:40.877Z"} -->
+
+- [142] Recover the revision and failing tests of the old server browser
+  baseline
+  <!-- hai:{"id":"simple-7e0cfc0d-56d3-479e-ac6b-e6ce359a174b","labels":["steward","review"],"createdAt":"2026-10-21T11:20:46.465Z","updatedAt":"2026-10-21T11:20:46.465Z"} -->
+
+- [143] Check whether the demo instances show up in the development dashboard
+  <!-- hai:{"id":"simple-5d0a1fa0-5647-4a21-a6c8-f0050c6de2c7","labels":["steward","review"],"createdAt":"2026-10-21T11:20:51.060Z","updatedAt":"2026-10-21T11:20:51.060Z"} -->
+
 ## Scheduled
 
 ## In Progress
@@ -789,7 +802,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 [77]: docs/tasks/77-md-tight-bullet-list-line-spacing.md
 
-<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139 -->
+<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143 -->
 
 [78]: docs/tasks/78-wide-document-scrolls-instead-of-expanding-the-preview.md
 
@@ -914,6 +927,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 [138]: docs/tasks/138-make-public-instances-read-only-and-check-host-on-every-route-security.md
 
 [139]: docs/tasks/139-stop-rst-previews-and-search-results-from-injecting-live-markup-securi.md
+
+[140]: docs/tasks/140-reuse-the-preview-element-across-resizes-and-folding.md
+
+[141]: docs/tasks/141-finish-browser-fixture-isolation-and-qualify-independent-test-roots.md
+
+[142]: docs/tasks/142-recover-the-revision-and-failing-tests-of-the-old-server-browser-basel.md
+
+[143]: docs/tasks/143-check-whether-the-demo-instances-show-up-in-the-development-dashboard.md
 
 ## Rules
 
