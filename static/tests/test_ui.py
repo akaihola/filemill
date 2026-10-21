@@ -2540,6 +2540,42 @@ async def test_settings(page):
     await pg.keyboard.press("Escape")
 
 
+async def test_remount_discards_pending_document_choice(page):
+    await mount(page)
+    await page.click('.col[data-i="0"] .row:has-text("search")')
+    await page.wait_for_function("path[1]?.name === 'search' && path[1]?.kids")
+    await page.evaluate("""() => {
+        const node = path[1].kids.find(n => n.name === 'release-notes.md');
+        window.__oldDocument = node;
+        const load = FS.ensureLoaded;
+        FS.ensureLoaded = n => n === node
+            ? new Promise(resolve => { window.__decline = () => {
+                node.dir = false;
+                node.kids = undefined;
+                resolve();
+            }; }) : load(n);
+        // Control the grace boundary, rather than racing a real-time delay.
+        const timer = window.setTimeout;
+        window.setTimeout = (callback, ms, ...args) => {
+            if (ms === 50) {
+                window.__openGrace = callback;
+                return 0;
+            }
+            return timer(callback, ms, ...args);
+        };
+        window.__pendingChoice = choose(1, node);
+        window.setTimeout = timer;
+    }""")
+    await page.evaluate("mount(__mk(0))")
+    await page.evaluate("__openGrace()")
+    # The grace continuation runs before the next browser round-trip.
+    await page.evaluate("async () => { __decline(); await __pendingChoice; }")
+    assert await page.evaluate("path.map(n => n.name)") == ["workspace"]
+    assert await page.evaluate("sel") == []
+    assert await page.evaluate("focusCol") == 0
+    assert not await page.evaluate("__oldDocument.dir")
+
+
 async def test_typeahead(page):
     pg = page
     marks = (

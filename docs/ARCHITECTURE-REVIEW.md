@@ -311,7 +311,16 @@ After a remount, the open path retained a declined `release-notes.md` node
 with `dir: false`; the helper waiting for a single root column timed out.
 Four isolated baseline runs passed and the fifth failed. The history guard
 does not supply ownership across remounts. This existing failure blocks
-integration under the red-suite rule; no broader A9 repair is included here.
+integration under the red-suite rule.
+
+**Remount correction, 2026-10-21 ([the Back race][137]).** The steward widened
+that issue to include the typeahead failure. A controlled browser regression
+reproduces a document choice whose grace period ends after a new root mounts:
+the old choice appended its node to the new path, then declined-file cleanup
+used its old column index and retained the file. `choose` now checks the
+originating parent identity after the grace await. Its existing post-read
+membership check handles remounts after the provisional column opened. This
+local correction leaves the general `walkPath`/preview ownership work open.
 
 **Acceptance.** Reuse the preview per node, revision, representation and relevant
 settings. Resize/fold cause no new provider read. Save, refresh and mode changes

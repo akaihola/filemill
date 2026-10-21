@@ -135,6 +135,44 @@ The implementation is committed, but HAI-137 remains In Progress. Fixing
 general remount ownership is outside the requested scope; the branches for
 [local-folder search], [test-delay guidance] and [save protection] remain untouched.
 
+## Widened scope (2026-10-21)
+
+The steward authorized fixing the development-mode typeahead remount failure
+on this branch. The earlier merge blocker is now part of this issue's scope.
+Reproduce the stale document choice deterministically, fix the narrow
+navigation cause, run typeahead in 20 isolated processes and rerun every
+required suite. Stop with findings and an estimate if the general A9 ownership
+rework is necessary. Do not restart services or deploy; the steward does that.
+
+## Remount cause and fix (2026-10-21)
+
+`choose(1, document)` starts a read and waits for either the read or its
+50 ms grace boundary. `mountRoot` replaces the open path while that choice is
+pending, without incrementing `navSeq`. The old choice then appends its node
+to the new root. When the document adapter declines it, `selectNode(1, node)`
+retains two path elements because column 1 belonged to the old tree. This
+explains both the declined file in the open path and its doubled URL segment.
+
+The new regression controls the read and the grace callback explicitly. It
+remounts before releasing the grace callback, then declines the document and
+awaits the old choice. On the original navigation implementation it fails
+with `['workspace', 'release-notes.md']` instead of `['workspace']` (one failed
+in 5.59 seconds). There are no elapsed-time readiness sleeps or retries.
+
+[Navigation] now captures the originating parent and checks its identity
+after the grace await, alongside the existing selection sequence check.
+The existing post-read `path.includes(node)` check already rejects remounts
+after a provisional column opens. The typeahead assertions remain unchanged.
+This narrow repair does not require the general A9 ownership rework.
+
+## Widened-scope validation (2026-10-21)
+
+- **Green:** the controlled remount regression and unchanged typeahead test
+  passed together in development mode (2 passed in 11.83 seconds).
+- **Isolated typeahead:** 20 of 20 separate development-mode pytest
+  invocations passed, without retries or diagnostic plugins.
+- **Repository gate:** all pre-commit checks and shared model checks passed.
+
 [The model]: ../../server/src/filemill/ui/core/model/deeplink.js
 [Navigation]: ../../server/src/filemill/ui/core/nav.js
 [The document adapter]: ../../server/src/filemill/ui/adapters/vfs-doc.js

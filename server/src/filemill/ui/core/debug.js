@@ -9,7 +9,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 import { applyPath } from "./deeplink.js";
 import { dial, dialTo, foldUnit, range, stripSpan } from "./layout.js";
-import { refreshColumn } from "./nav.js";
+import { choose, refreshColumn } from "./nav.js";
 import { FS, PREVIEW, ROUTER } from "./ports.js";
 import { colCache, render } from "./render.js";
 import { gear } from "./settings.js";
@@ -57,6 +57,7 @@ export function exposeCore() {
     render: () => render,
     colCache: () => colCache,
     refreshColumn: () => refreshColumn,
+    choose: () => choose,
     applyPath: () => applyPath,
     setSort: () => setSort,
     loadSort: () => loadSort,

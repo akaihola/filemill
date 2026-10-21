@@ -69,6 +69,7 @@ export async function choose(
   resetCopy();
   state.stepping = stepping;
   const seq = ++navSeq;
+  const parent = path[colIdx];
   selectNode(colIdx, node);
   if (!node.dir) return void render(keepScroll);
 
@@ -83,7 +84,8 @@ export async function choose(
       reading,
       new Promise((r) => setTimeout(r, OPEN_GRACE)),
     ]);
-    if (seq !== navSeq) return; /* selection moved on while it was read */
+    /* A remount replaces the parent without starting another choice. */
+    if (seq !== navSeq || path[colIdx] !== parent) return;
     if (!node.dir) {
       /* a virtual wrapper declined the file */
       return void render(keepScroll);
