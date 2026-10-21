@@ -136,6 +136,10 @@ Keep these boundaries and checks.
   [static/tests/][static-tests]. [The remaining-test record][remaining-tests]
   separates historical failures from current work. Keep the tests that guard
   log-pipe backpressure, touch input, scroll settlement and worker recovery.
+  [The static reliability investigation][144] adds a controlled failed-RST
+  lifetime check: layout changes must keep one pending conversion and release
+  its Python scope once. The preview reuse repair already supplies that
+  behavior; no interpreter or fixture ownership change is introduced here.
 - [The older-review repairs][131] fixed conditional Zstandard imports, typing
   stubs and unexplained tuning constants (`f7e917a5`). Clipboard refusal now
   offers manual copying with the full value and error (`fef28359`). Neither
@@ -637,6 +641,7 @@ one new P2 finding; no new P1 finding was established in this pass.
 [134]: tasks/134-refresh-json-columns-from-the-current-file-architecture-review-a13.md
 [21]: tasks/21-cache-preview-element.md
 [140]: tasks/140-reuse-the-preview-element-across-resizes-and-folding.md
+[144]: tasks/144-make-the-full-static-suites-pass-reliably-the-wide-folder-wait-and-tes.md
 [28]: tasks/28-editor-features.md
 [41]: tasks/41-rst-rendering-regression.md
 [43]: tasks/43-server-browser-baseline-failures.md#recovery-findings-2026-10-21

@@ -209,6 +209,8 @@ export async function loadPyodide() {
     globals: { set(_key, value) { src = value; } },
     toPy: (values) => ({...values, destroy() { stats.destroyed++; }}),
     runPythonAsync: async (_code, options) => {
+      stats.renders = (stats.renders || 0) + 1;
+      if (window.__pyRenderGate) await window.__pyRenderGate;
       await new Promise(resolve => setTimeout(resolve, 10));
       if (window.__pyFail === 'render') throw Error('render failed');
       if (window.__pyHTML) return window.__pyHTML;
@@ -276,6 +278,26 @@ async def preview(pg, name, timeout=4000, ready=None):
     if ready:
         await pg.wait_for_selector(ready, timeout=timeout)
     return await pg.inner_html("#pv-content")
+
+
+async def test_rst_failure_releases_one_scope_during_layout(page, base):
+    await boot(page, base, rich=True, stubs=True)
+    await page.evaluate("""() => {
+      window.__pyFail = 'render';
+      window.__pyRenderGate = new Promise(resolve => { window.__releasePython = resolve; });
+    }""")
+    await page.click('.col[data-i="0"] .row[title="doc.rst"]')
+    await page.wait_for_function("window.__pyStats?.renders === 1")
+    await page.evaluate("window.__rstPane = document.getElementById('preview')")
+    await page.set_viewport_size({"width": 950, "height": 700})
+    await page.evaluate("render(true)")
+    assert await page.evaluate("window.__pyStats.destroyed") == 0
+    await page.evaluate("window.__releasePython()")
+    await page.wait_for_selector("#pv-content .pv-note")
+    stats = await page.evaluate("window.__pyStats")
+    assert stats["renders"] == stats["destroyed"] == 1, stats
+    assert await page.evaluate("document.getElementById('preview') === __rstPane")
+    assert "Heading" in await page.inner_text("#pv-content .pv-text")
 
 
 async def test_rst(page, base):
