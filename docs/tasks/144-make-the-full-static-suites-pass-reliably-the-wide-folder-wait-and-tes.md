@@ -31,7 +31,6 @@ Two intermittent failures keep filemill's full static suites from being a reliab
 4. Run both full suites three consecutive times each, then the required lint
    and bundle checks. Record causes, reproduction counts and limitations here.
 
-[fixture isolation]: 141-finish-browser-fixture-isolation-and-qualify-independent-test-roots.md
 
 ## Controlled RST regression, 2026-10-21
 
@@ -42,22 +41,25 @@ conversion failure. It checks one conversion, one released Python scope,
 the same preview pane and readable source fallback. The existing exact
 release-count assertions remain unchanged.
 
+These renders have real callers: [the static bootstrap] renders again when
+fonts become ready, and [the layout handler] renders on resize. The explicit
+second render models the fonts-ready callback. Holding the conversion through
+both renders establishes overlap without a guessed time window.
+
 - **Red:** temporarily restoring the preview implementation immediately before
   `9b66ee7c` produced three conversions and three releases for one selection.
   The interpreter boot and package load each happened once. Each layout render
-  started another conversion; this was duplicate work, not one scope destroyed
-  twice. The historical implementation was restored only for this controlled
+  started another conversion, each releasing its own scope. The historical
+  implementation was restored only for this controlled
   development test, then replaced with the current implementation immediately.
 - **Green:** current main's preview implementation passed the same check with
   exactly one conversion and release. [The preview reuse repair] already owns
-  the production correction (`9b66ee7c`, `c8c22937`); this task adds the RST
-  lifetime regression rather than repeating that correction.
+  the production correction (`9b66ee7c`, `c8c22937`). This task adds the RST
+  lifetime regression.
 - **Limit:** this reproduces a mechanism that explains excess releases. Without
   a trace from the original daytime failure, it does not establish which
   render event caused that specific second conversion.
 
-[the rich-preview tests]: ../../static/tests/test_rich.py
-[The preview reuse repair]: 140-reuse-the-preview-element-across-resizes-and-folding.md
 
 ## Wide-folder investigation, 2026-10-21
 
@@ -69,9 +71,9 @@ not establish that layout motion has stopped; that remains a candidate if
 this failure returns.
 
 The baseline development run passed all 184 checks. The following bundle run
-adds temporary pointer-down, pointer-up and click logging with the selected
+added temporary pointer-down, pointer-up and click logging with the selected
 names, open path, focus, fold count, dial and stage scroll. This instrumentation
-changes neither input nor readiness. It is removed before final qualification.
+preserved input and readiness. It was removed before final qualification.
 
 - **Cross-test browser state:** the existing static fixture creates a fresh
   browser for each test. Origin-backed tests also receive a fresh loopback
@@ -83,9 +85,9 @@ changes neither input nor readiness. It is removed before final qualification.
   isolation] remains separate work.
 - **Remaining uncertainty:** no trace of the historical missed transition was
   retained with its pointer targets or model state. A passing current run
-  cannot establish its cause, and no assertion or timeout is loosened here.
+  cannot establish its cause or rule out all ordering and timing effects.
+  Existing assertions and timeouts are retained.
 
-[development failure log]: http://hopeli/tmp/filemill-browser-76/logs/L095-full-static-dev.log?f
 
 ## Baseline results
 
@@ -102,5 +104,42 @@ its loaded-path predicate or relaxing its clipping assertions. The original
 wide-folder cause remains unestablished. Final qualification repeats follow
 below; these baseline passes alone are not the acceptance gate.
 
+## Final qualification, 2026-10-21
+
+The final regression and production code passed three consecutive complete
+suites in each mode. All six runs were sequential.
+
+| Run | Checks | Result | Pytest runtime |
+| --- | ---: | --- | ---: |
+| Development 1 | 185 | Passed | 1,251.35 s |
+| Development 2 | 185 | Passed | 848.73 s |
+| Development 3 | 185 | Passed | 797.23 s |
+| Bundle 1 | 185 | Passed | 686.59 s |
+| Bundle 2 | 185 | Passed | 699.74 s |
+| Bundle 3 | 185 | Passed | 679.51 s |
+
+Across both baselines and these six repeats, neither original failure
+reproduced: **0/8 full-suite runs for each symptom**. The new controlled RST
+regression passed in every final run. Its historical red probe failed 1/1,
+with three conversions/releases, while the current focused green probe passed
+1/1 with one conversion/release.
+
+The RST duplication mechanism is guarded by the new test and already corrected
+by [the preview reuse repair]. The original wide-folder cause remains
+unestablished. Fresh browsers rule out cross-test JavaScript globals in these
+runs; within-test ordering, asynchronous layout and host-load effects remain
+possible. Existing waits, clipping checks and release-count assertions are
+retained. [Fixture isolation] implementation remains separate work.
+
+Final model, documentation/wait and pre-commit checks are pending at this
+checkpoint. The issue remains In Progress until they finish and integration
+completes.
+
+[fixture isolation]: 141-finish-browser-fixture-isolation-and-qualify-independent-test-roots.md
+[the rich-preview tests]: ../../static/tests/test_rich.py
+[The preview reuse repair]: 140-reuse-the-preview-element-across-resizes-and-folding.md
+[development failure log]: http://hopeli/tmp/filemill-browser-76/logs/L095-full-static-dev.log?f
 [the server-search task]: 120-disable-server-search-in-local-folders-from-docs-question-5.md
 [the waiting guidance]: ../../server/CONTRIBUTING.md#wait-for-an-element-never-for-a-duration
+[the static bootstrap]: ../../ui/adapters/app-fsa.js
+[the layout handler]: ../../ui/core/layout.js
