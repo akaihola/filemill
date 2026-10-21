@@ -31,6 +31,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [143] Check whether the demo instances show up in the development dashboard
   <!-- hai:{"id":"simple-5d0a1fa0-5647-4a21-a6c8-f0050c6de2c7","labels":["steward","review"],"createdAt":"2026-10-21T11:20:51.060Z","updatedAt":"2026-10-21T11:20:51.060Z"} -->
 
+- [144] Make the full static suites pass reliably: the wide-folder wait and
+  test_rst's release count
+  <!-- hai:{"id":"simple-0eccd583-2747-4244-95a8-321980b45c28","labels":["steward"],"createdAt":"2026-10-21T14:15:31.702Z","updatedAt":"2026-10-21T14:15:31.702Z"} -->
+
+- [145] Add three missing browser regressions: focused search scope, HTTP entry
+  order, duplicate CSV rows
+  <!-- hai:{"id":"simple-de8a2439-b587-4816-9dea-f158c5a0bf70","labels":["steward"],"createdAt":"2026-10-21T14:15:34.877Z","updatedAt":"2026-10-21T14:15:34.877Z"} -->
+
 ## Scheduled
 
 ## In Progress
@@ -851,7 +859,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 [77]: docs/tasks/77-md-tight-bullet-list-line-spacing.md
 
-<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143 -->
+<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145 -->
 
 [78]: docs/tasks/78-wide-document-scrolls-instead-of-expanding-the-preview.md
 
@@ -984,6 +992,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 [142]: docs/tasks/142-recover-the-revision-and-failing-tests-of-the-old-server-browser-basel.md
 
 [143]: docs/tasks/143-check-whether-the-demo-instances-show-up-in-the-development-dashboard.md
+
+[144]: docs/tasks/144-make-the-full-static-suites-pass-reliably-the-wide-folder-wait-and-tes.md
+
+[145]: docs/tasks/145-add-three-missing-browser-regressions-focused-search-scope-http-entry-.md
 
 ## Rules
 
