@@ -97,6 +97,43 @@ are no fixed readiness delays, weakened assertions, skips or retries.
 - **Repository gate:** all pre-commit checks passed (Python/UI lint and
   formatting, mypy, suppression links and bundle consistency). Shared model
   checks passed with the prescribed Deno 2.6.8.
+- **Static bundle:** 171 passed, 1 warning in 1,400.88 seconds.
+- **Static development:** 170 passed, 1 failed, 1 warning in 1,096.25 seconds.
+  [The typeahead test] timed out in its second `in_search()` call, while the
+  mount helper waited for `path.length === 1 && colCache.get(path[0])`.
+- **Documentation:** 27 checks passed after recording the integration blocker.
+
+## Merge blocker (2026-10-21)
+
+The development-mode failure also occurs without this fix. A read-only
+`git archive` export of main `7872f0c6` ran the unchanged typeahead test in
+five separate pytest processes: four passed and the fifth failed at a later
+call to the same mount helper. An external fixture recorded state only after
+the test finished; it changed no product behavior or test synchronization.
+
+The failing baseline state was:
+
+```json
+{
+  "path": [
+    {"name": "workspace", "dir": true, "loading": false, "kids": 13},
+    {"name": "release-notes.md", "dir": false, "doc": true, "loading": false}
+  ],
+  "sel": [null, "release-notes.md"],
+  "focusCol": 1,
+  "hash": "#r=workspace&p=release-notes.md/release-notes.md&v=render"
+}
+```
+
+The remount left a declined document in the open path. This is separate from
+the premature history write fixed here, and is evidence for the existing A9
+navigation-ownership finding in [the architecture review]. No assertion,
+skip, retry or fixed readiness delay was added to hide it.
+
+The roadmap's red-suite rule blocks merging even a pre-existing failure.
+The implementation is committed, but HAI-137 remains In Progress. Fixing
+general remount ownership is outside the requested scope; the branches for
+[local-folder search], [test-delay guidance] and [save protection] remain untouched.
 
 [The model]: ../../server/src/filemill/ui/core/model/deeplink.js
 [Navigation]: ../../server/src/filemill/ui/core/nav.js
@@ -109,3 +146,5 @@ are no fixed readiness delays, weakened assertions, skips or retries.
 [local-folder search]: 120-disable-server-search-in-local-folders-from-docs-question-5.md
 [test-delay guidance]: 122-clarify-deliberate-test-delays-from-docs-question-8.md
 [save protection]: 133-protect-saves-from-truncation-and-stale-overwrites-architecture-review.md
+[The typeahead test]: ../../static/tests/test_ui.py
+[the architecture review]: ../ARCHITECTURE-REVIEW.md#a9-preview-reuse-and-async-ownership-remain-missing

@@ -305,6 +305,14 @@ node is a loaded directory. Controlled-response browser tests cover both a
 declined document and a confirmed outline. This keeps the existing model and
 router boundary; A9's broader ownership and preview work remains open.
 
+**Remount evidence, 2026-10-21.** The [Back race record][137] also records a
+separate failure in the static typeahead test on unmodified main `7872f0c6`.
+After a remount, the open path retained a declined `release-notes.md` node
+with `dir: false`; the helper waiting for a single root column timed out.
+Four isolated baseline runs passed and the fifth failed. The history guard
+does not supply ownership across remounts. This existing failure blocks
+integration under the red-suite rule; no broader A9 repair is included here.
+
 **Acceptance.** Reuse the preview per node, revision, representation and relevant
 settings. Resize/fold cause no new provider read. Save, refresh and mode changes
 invalidate it. One generation covers choose, path walks, refresh, recovery and

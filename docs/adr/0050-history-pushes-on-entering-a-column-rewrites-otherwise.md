@@ -30,8 +30,6 @@ always rewrites, however many folders the walk opens, which is the measurement
 above. Both editions share this rule. Issue [39] restored it after ↑/↓ over
 folders had started pushing one entry per row.
 
-[39]: ../tasks/39-browser-history-navigation.md
-
 ## Loading columns (2026-10-21)
 
 Only a settled open chain supplies a history key. While any column is unread,
@@ -41,4 +39,5 @@ a confirmed outline pushes and a plain file rewrites its containing folder's
 entry. Read timing must not change the Back sequence. [The Back race]
 records the reproduction and controlled-response regression.
 
+[39]: ../tasks/39-browser-history-navigation.md
 [The Back race]: ../tasks/137-fix-the-intermittent-back-failure-in-test-back-retraces-the-folders-th.md
