@@ -310,8 +310,8 @@ separate failure in the static typeahead test on unmodified main `7872f0c6`.
 After a remount, the open path retained a declined `release-notes.md` node
 with `dir: false`; the helper waiting for a single root column timed out.
 Four isolated baseline runs passed and the fifth failed. The history guard
-does not supply ownership across remounts. This existing failure blocks
-integration under the red-suite rule.
+does not supply ownership across remounts. This existing failure blocked
+integration under the red-suite rule and prompted the correction below.
 
 **Remount correction, 2026-10-21 ([the Back race][137]).** The steward widened
 that issue to include the typeahead failure. A controlled browser regression

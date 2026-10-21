@@ -174,6 +174,17 @@ This narrow repair does not require the general A9 ownership rework.
 - **Repository gate:** all pre-commit checks and shared model checks passed.
 - **Isolated Back after the remount fix:** another 20 of 20 separate pytest
   invocations passed.
+- **Parent-column readiness:** the controlled listing test passed after
+  waiting for loaded children (1 passed in 11.98 seconds).
+- **Full server:** 1,180 passed, 7 warnings in 1,293.77 seconds, with branch
+  coverage enabled (92% total). This completed run includes the readiness fix.
+- **Full static development:** 172 passed, 1 warning in 745.84 seconds,
+  including the new remount regression and unchanged typeahead test.
+- **Full static bundle:** 172 passed, 1 warning in 757.11 seconds,
+  including the same regression and unchanged typeahead test.
+- **Documentation:** 27 checks passed after recording the final results.
+- All required suites are green. No service restart or deployment was
+  performed; the steward owns those actions.
 
 ### Full-suite investigation
 
@@ -184,8 +195,8 @@ Subsequent validation uses `timeout --foreground`, so the monitor signals the
 test group too. The interrupted attempt had no reported test failures and
 does not count as a completed suite.
 
-The next server attempt exposed a readiness race in the parent-column
-left/right-cycle test. Its old frame-count delay could leave `docs` loading
+The next server attempt exposed a readiness race in the [parent-column cycle
+test]. Its old frame-count delay could leave `docs` loading
 when the test captured `folder_url`. The history correction intentionally
 defers that URL until the listing lands. A controlled listing gate reproduced
 the assertion deterministically: captured `/my-knowledge`, actual
@@ -213,3 +224,4 @@ interrupted full attempt is counted as passing validation.
 [save protection]: 133-protect-saves-from-truncation-and-stale-overwrites-architecture-review.md
 [The typeahead test]: ../../static/tests/test_ui.py
 [the architecture review]: ../ARCHITECTURE-REVIEW.md#a9-preview-reuse-and-async-ownership-remain-missing
+[parent-column cycle test]: ../../server/tests/test_browser_keyboard.py
