@@ -23,10 +23,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [148] Say in --bind's help that an explicit flag wins over FILEMILL_BIND
-  <!-- hai:{"id":"simple-7e2f615f-1902-49fd-b0be-0cf3fe8b7ead","labels":["steward"],"createdAt":"2026-10-21T21:59:19.762Z","updatedAt":"2026-10-21T22:35:09.791Z"} -->
-
 ## In Progress
+
+- [~] [148] Say in --bind's help that an explicit flag wins over FILEMILL_BIND
+      <!-- hai:{"id":"simple-7e2f615f-1902-49fd-b0be-0cf3fe8b7ead","labels":["steward"],"createdAt":"2026-10-21T21:59:19.762Z","updatedAt":"2026-10-21T23:08:03.793Z"} -->
 
 - [~] [147] Allow only known elements and attributes in reStructuredText previews
       <!-- hai:{"id":"simple-88cfaa62-ec67-4090-a023-c53f20d3b2e4","labels":["steward","security"],"createdAt":"2026-10-21T20:34:29.661Z","updatedAt":"2026-10-21T21:32:38.419Z"} -->
