@@ -23,13 +23,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [139] Stop RST previews and search results from injecting live markup
+## In Progress
+
+- [~] [139] Stop RST previews and search results from injecting live markup
   (security review S2, S4)
     - Depends on: [137]
 
-  <!-- hai:{"id":"simple-28e033e1-3498-4fc4-bb30-8ccfad7e134a","labels":["steward"],"createdAt":"2026-10-20T23:39:32.779Z","updatedAt":"2026-10-21T05:59:47.517Z"} -->
-
-## In Progress
+      <!-- hai:{"id":"simple-28e033e1-3498-4fc4-bb30-8ccfad7e134a","labels":["steward"],"createdAt":"2026-10-20T23:39:32.779Z","updatedAt":"2026-10-21T06:00:10.852Z"} -->
 
 - [~] [138] Make public instances read-only and check Host on every route (security
   review S1, S3)
