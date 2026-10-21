@@ -367,6 +367,12 @@ The remaining acceptance is a clean-environment run of every advertised
 command. The 26 documentation tests check selected claims and portability;
 they do not establish that full audit.
 
+**Dashboard check, 2026-10-21.** [The demo discovery record][44] verifies
+three fixture links in the original dashboard source. The current dashboard
+source and installed page omit all three. Isolated HTML checks reproduce the
+gap; the record drafts a repair in the external dashboard source. This does
+not establish destination availability or complete the command audit.
+
 **Acceptance.** Keep documents current with each fix. Separately smoke-test
 advertised commands under their documented prerequisites and distinguish
 historical measurements from current instructions. Do not block A4–A10 on
@@ -632,6 +638,7 @@ one new P2 finding; no new P1 finding was established in this pass.
 [28]: tasks/28-editor-features.md
 [41]: tasks/41-rst-rendering-regression.md
 [43]: tasks/43-server-browser-baseline-failures.md#recovery-findings-2026-10-21
+[44]: tasks/44-browser-test-demo-instances.md#dashboard-verification-2026-10-21
 [103]: tasks/103-close-the-directory-index-path-escape-and-authorize-save-and-delete-a1.md
 [104]: tasks/104-make-preview-content-inert-wikilink-text-and-docx-output-a2.md
 [105]: tasks/105-correct-the-current-edition-and-renderer-documentation-roadmap-phase-0.md
