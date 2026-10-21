@@ -421,11 +421,10 @@ def test_rendered_relative_markdown_link_uses_root_relative_url(
             f"{live_server}/my-knowledge/docs/topic.md?filemill=render",
             wait_until="networkidle",
         )
-        page.wait_for_function("document.querySelector('#preview a')")
-
         preview_link = page.locator(
             '#preview a[href="/my-knowledge/docs/subdir/next.md?filemill=render"]'
         ).first
+        preview_link.wait_for(state="visible")
         assert preview_link.count() == 1
         preview_link.click()
         page.wait_for_function(
@@ -656,6 +655,7 @@ def test_vertical_navigation_keeps_focused_column_whole(
                 arg=before,
                 timeout=2000,
             )
+            _dial_settled(page)
             appearance = page.locator('.col[data-i="1"]').evaluate(
                 """el => ({
                     body: getComputedStyle(el.querySelector('.col-body')).opacity,

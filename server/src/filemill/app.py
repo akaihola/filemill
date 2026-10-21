@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 
 from starlette.applications import Starlette
 from starlette.concurrency import run_in_threadpool
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 from starlette.responses import (
     FileResponse,
     HTMLResponse,
@@ -38,13 +38,19 @@ app.state.public = env_flag("PUBLIC")
 app.state.mutation_token = secrets.token_urlsafe(32)
 
 
-async def check_host(request, call_next):
-    if not mutations.host_allowed(request):
-        return JSONResponse({"error": "Forbidden"}, status_code=403)
-    return await call_next(request)
+class HostMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and not mutations.host_allowed(Request(scope)):
+            response = JSONResponse({"error": "Forbidden"}, status_code=403)
+            await response(scope, receive, send)
+        else:
+            await self.app(scope, receive, send)
 
 
-app.add_middleware(BaseHTTPMiddleware, dispatch=check_host)
+app.add_middleware(HostMiddleware)
 
 
 def rt(path: str, methods: list[str] | None = None):
