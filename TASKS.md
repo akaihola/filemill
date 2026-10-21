@@ -21,9 +21,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
   <!-- hai:{"id":"simple-d1776999-2a2c-4870-936a-9620915aee07","labels":["steward"],"createdAt":"2026-10-20T08:12:02.201Z","updatedAt":"2026-10-20T08:12:29.949Z"} -->
 
-- [143] Check whether the demo instances show up in the development dashboard
-  <!-- hai:{"id":"simple-5d0a1fa0-5647-4a21-a6c8-f0050c6de2c7","labels":["steward","review"],"createdAt":"2026-10-21T11:20:51.060Z","updatedAt":"2026-10-21T11:20:51.060Z"} -->
-
 - [144] Make the full static suites pass reliably: the wide-folder wait and
   test_rst's release count
   <!-- hai:{"id":"simple-0eccd583-2747-4244-95a8-321980b45c28","labels":["steward"],"createdAt":"2026-10-21T14:15:31.702Z","updatedAt":"2026-10-21T14:15:31.702Z"} -->
@@ -33,6 +30,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-de8a2439-b587-4816-9dea-f158c5a0bf70","labels":["steward"],"createdAt":"2026-10-21T14:15:34.877Z","updatedAt":"2026-10-21T14:15:34.877Z"} -->
 
 ## Scheduled
+
+- [143] Check whether the demo instances show up in the development dashboard
+  <!-- hai:{"id":"simple-5d0a1fa0-5647-4a21-a6c8-f0050c6de2c7","labels":["steward","review"],"createdAt":"2026-10-21T11:20:51.060Z","updatedAt":"2026-10-21T16:10:46.540Z"} -->
 
 ## In Progress
 
