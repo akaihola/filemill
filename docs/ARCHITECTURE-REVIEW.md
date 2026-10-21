@@ -16,7 +16,7 @@ A4 and the architecture summary were updated on 2026-10-21 for
   cleanups and audits.
 - **Status.** Open: the finding still applies. Changed: part was fixed, or the
   evidence, scope or priority changed. Resolved: the cited defect was removed;
-  these findings are under "Resolved since the earlier reviews". A13 and A14 are
+  these findings are under "Resolved since the earlier reviews". A4, A13 and A14 are
   resolved. Resolution does not mark a task accepted.
 - **Evidence.** Links are repository-relative. Source line numbers refer to
   the checked commit, not to the earlier reviews. A structural risk is labelled
@@ -156,7 +156,7 @@ reviewable changes with focused regressions.
 
 | ID | P | Status | Remaining finding | Effort / risk |
 | --- | --- | --- | --- | --- |
-| A4 | P1 | Changed | Save protection implemented; baseline history test blocks the suite gate | M / medium |
+| A4 | P1 | Resolved | Revision-checked atomic saves | M / medium |
 | A5 | P1 | Changed | Static worker freshness, misses and cache ownership | M / medium |
 | A6 | P2 | Changed | Virtual identity is still a display name | M / medium |
 | A7 | P2 | Changed | SQLite keys collide; provider failures look empty | M / medium |
@@ -167,55 +167,6 @@ reviewable changes with focused regressions.
 | A12 | P3 | Changed | Smaller defects, dead code and audits | S each / low |
 | A13 | P2 | Resolved | JSON refresh reads the current source | S / low |
 | A14 | P2 | Resolved | Active bundle reads retain repository ownership | S / medium |
-
-### A4. Saves can truncate or overwrite newer content
-
-**Status: changed, P1; implementation complete, suite gate blocked.** The [save-safety task][133]
-adds revision-checked replacement across HTTP, browser-owned folders and native.
-[server/src/filemill/api.py][api] writes a same-directory temporary file, flushes
-and fsyncs it, checks the revision again, then renames it over the target.
-[server/src/filemill/app.py][app] bounds the body while receiving and runs the
-save in a worker thread. Authorization still runs before body acquisition.
-
-Editable byte snapshots carry an opaque revision through the [filesystem
-port][ports]. Editors pin it to the draft; document wrappers and task toggles
-carry it to save. Conflicts keep the editor text. [ui/adapters/fsa.js][fsa]
-checks content hashes before opening a stream and before closing it, and aborts
-failed streams. [The native host][native-host] checks stat revisions before
-its existing GLib replacement.
-
-[ADR 0090] specifies symlink, hard-link, ownership and permission behavior.
-Server saves serialize within one process. External writers can still race a
-final check and rename; neither the browser picker nor POSIX rename provides
-compare-and-swap. The decision records that limit and power-loss semantics.
-Explicit navigation-discard behavior and A3 authorization remain unchanged.
-
-**Validation, 2026-10-21.** Regressions cover partial temporary writes, failed
-fsync and rename, missing and stale revisions, concurrent saves, changes during
-flush, streamed body limits, worker-thread execution, supported link/metadata
-rules, browser external changes and stream abort, and draft retention. The
-initial regressions failed before the corresponding fixes. A later regression
-also caught a post-rename metadata lookup reporting failure after commit; the
-reply is now prepared before rename. Ordinary raw Range downloads remain intact.
-
-- **Static:** 169 checks passed in development mode and 169 in bundled mode.
-- **Native:** 19 bridge checks and both shared editor scenarios passed.
-- **Server:** 1,165 checks passed; the only remaining failure was
-  `test_back_retraces_the_folders_that_were_opened`. The same check failed on
-  unchanged main at `5034567a`. A diagnostic recorded a separate `/notes/deep`
-  history entry; the second Back landed there instead of `/notes`. An isolated
-  uninstrumented baseline rerun passed, but a later uninstrumented baseline run
-  reproduced the failure too. This is intermittent. No production navigation
-  change is included in this task. The save, mutation authorization,
-  offline-read and draft-retention checks passed.
-- **Memory:** suites started with at least 2 GiB available and ran one at a time.
-  No suite was stopped for the 1 GiB floor or 512 MiB swap-growth limit. One
-  partial server run was intentionally restarted after correcting its shell
-  environment; it had 136 passes before interruption.
-
-The full-suite gate remains blocked by the baseline history failure. Keep A4
-changed until that gate passes or its acceptance requirement is explicitly
-revised. The editor's navigation-discard policy and A3 authorization are intact.
 
 ### A5. The static service worker retains the old policy
 
@@ -528,6 +479,49 @@ save/delete. [server/tests/test_mutation_policy.py][mutation-tests] covers
 refusal before body reads and authorized local/proxy operations. This is
 browser request authorization, not user authentication or safe file replacement.
 
+### A4. Saves can truncate or overwrite newer content
+
+**Status: resolved, former P1; 2026-10-21.** The [save-safety task][133]
+adds revision-checked replacement across HTTP, browser-owned folders and native.
+[server/src/filemill/api.py][api] writes a same-directory temporary file, flushes
+and fsyncs it, checks the revision again, then renames it over the target.
+[server/src/filemill/app.py][app] bounds the body while receiving and runs the
+save in a worker thread. Authorization still runs before body acquisition.
+
+Editable byte snapshots carry an opaque revision through the [filesystem
+port][ports]. Editors pin it to the draft; document wrappers and task toggles
+carry it to save. Conflicts keep the editor text. [ui/adapters/fsa.js][fsa]
+checks content hashes before opening a stream and before closing it, and aborts
+failed streams. [The native host][native-host] checks stat revisions before
+its existing GLib replacement.
+
+[ADR 0090] specifies symlink, hard-link, ownership and permission behavior.
+Server saves serialize within one process. External writers can still race a
+final check and rename; neither the browser picker nor POSIX rename provides
+compare-and-swap. The decision records that limit and power-loss semantics.
+Explicit navigation-discard behavior and A3 authorization remain unchanged.
+
+**Validation, 2026-10-21.** Regressions cover partial temporary writes, failed
+fsync and rename, missing and stale revisions, concurrent saves, changes during
+flush, streamed body limits, worker-thread execution, supported link/metadata
+rules, browser external changes and stream abort, and draft retention. The
+initial regressions failed before the corresponding fixes. A later regression
+also caught a post-rename metadata lookup reporting failure after commit; the
+reply is now prepared before rename. Ordinary raw Range downloads remain intact.
+
+- **Server:** all 1,248 checks passed after rebasing onto main's history,
+  public-mode and preview-security repairs. The previous baseline Back failure
+  was fixed by [the history repair][137]; no suite exception is used.
+- **Static:** all 177 checks passed in development mode and all 177 in bundled mode.
+- **Native:** all 19 bridge checks and both shared editor scenarios passed after
+  rebuilding the host. Shared model checks passed.
+- **Memory:** suites started with at least 2 GiB available and ran one at a time.
+  The monitor enforced the 1 GiB floor and 512 MiB swap-growth limit; no final
+  validation suite was stopped for either limit.
+
+The editor's navigation-discard policy and current mutation authorization are
+intact. The [task record][133] retains the earlier failure and interceptor repair.
+
 ### Resolved portions and retained earlier repairs
 
 | Earlier finding | Status and resolving evidence |
@@ -559,30 +553,26 @@ browser request authorization, not user authentication or safe file replacement.
 Keep P1 work first. The resolved containment and preview-injection repairs are
 regression requirements, not new implementation steps.
 
-1. **Protect saves (A4).** The implementation and focused regressions are
-   complete. The baseline history-navigation failure still blocks the required
-   full-suite gate. Resolve that validation blocker before marking A4 resolved;
-   do not expand this save task into A9 navigation work.
-2. **Repair the static worker (A5).** Fix freshness, valid offline fallback,
+1. **Repair the static worker (A5).** Fix freshness, valid offline fallback,
    scoped ownership and installed upgrades. Preserve the server’s accepted
    offline-copy policy. Coordinate routing/cache classification with
    [the route-collision task][121]; its transport choice remains a decision.
-3. **Keep bounded repository lifetime (A14, resolved).** Each Git read retains
+2. **Keep bounded repository lifetime (A14, resolved).** Each Git read retains
    its repository owner. Keep the eviction and concurrent-read regressions.
    A13's JSON refresh invalidation is resolved by [the JSON refresh repair][134].
-4. **Make identities lossless (A6), then fix SQLite (A7).** Establish the
+3. **Make identities lossless (A6), then fix SQLite (A7).** Establish the
    address/label contract before changing SQLite keys. Provider error reporting
    can proceed independently through the existing `denied` field.
-5. **Separate source from representation (A8).** Pin local RST, native Source
+4. **Separate source from representation (A8).** Pin local RST, native Source
    and member Source behavior with regressions. Reuse existing capabilities.
-6. **Give async navigation and previews one owner (A9).** Establish the
+5. **Give async navigation and previews one owner (A9).** Establish the
    generation and lifetime rules, then retain previews with an explicit
    invalidation key. A8 supplies representation identity; A13 supplies fresh
    parsed contents. Cover recovery/remount as well as normal navigation.
-7. **Bound acquisition (A10).** Search, archives/bundles, rich documents and
+6. **Bound acquisition (A10).** Search, archives/bundles, rich documents and
    native reads can be separate changes. Urgent measured resource failures need
    not wait for A8/A9. Report partial results and preserve complete-file editing.
-8. **Finish the audit (A11, A12).** Correct documents with each change; run the
+7. **Finish the audit (A11, A12).** Correct documents with each change; run the
    clean-environment command audit last. Small dead-code, persistence and
    accessibility repairs can land independently with focused checks.
 

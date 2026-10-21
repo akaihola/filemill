@@ -80,7 +80,9 @@ body limits, worker-thread execution, symlinks, hard links, owner/group/mode
 preservation and metadata failure. Browser checks cover same-size external
 changes, stream abort and draft retention through a document wrapper. Native
 contract checks cover stale writes. [A4 validation] records the suite results
-and the unchanged-main history failure that blocks the full-suite gate.
+after rebasing onto main's history repair: the full server, static development,
+static bundle and native save/editor checks all pass. No baseline exception is
+needed.
 
 [save-safety task]: ../tasks/133-protect-saves-from-truncation-and-stale-overwrites-architecture-review.md
 [filesystem port]: ../../server/src/filemill/ui/core/ports.js

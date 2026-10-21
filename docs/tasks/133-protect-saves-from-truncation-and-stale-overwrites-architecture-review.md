@@ -18,3 +18,46 @@ Steward issue, 2026-10-20 22:30. Goal: agentic-leverage (filemill is tier 1). Es
 - No deploy, push or service restart.
 
 [28]: 28-editor-features.md
+
+## Validation after main's history repair
+
+2026-10-21: rebased onto main after [the history repair]. The first full
+server run had 1,191 passes and two failures in
+`test_document_history_waits_for_outline`. Its exact request interceptor
+missed the save port's new `snapshot=1` query parameter. Updating the
+interceptor retained the test's controlled read and all history assertions.
+Both outline cases and the Back regression then passed together (3 passed),
+and the full server suite passed all 1,193 tests. The full static development
+suite passed all 176 tests.
+
+Main subsequently merged the public-mode and preview-security repairs. The
+branch was rebased again; validation below records the resulting combined
+code. No exception to the suite requirement is used.
+
+[the history repair]: 137-fix-the-intermittent-back-failure-in-test-back-retraces-the-folders-th.md
+
+## Final validation on the combined code
+
+2026-10-21, based on main `af6cd23a`:
+
+- **Server:** 1,248 passed in 1,961.02 seconds.
+- **Static development:** 177 passed in 964.76 seconds.
+- **Static bundle:** 177 passed in 959.58 seconds.
+- **Native:** rebuilt the host; 19 bridge checks passed, followed by both shared
+  editor scenarios (2 passed, 70 deselected).
+- **Models:** shared model checks passed.
+- **Repository gate:** all seven pre-commit hooks passed. An extra blank line
+  introduced while resolving the adapter README conflict was formatted before
+  the successful rerun.
+- **Documentation:** all 27 checks passed after updating the review and ADR.
+- **Memory:** one validation suite ran at a time. Each started with at least
+  2 GiB available. The monitor enforced the 1 GiB available-memory floor and
+  512 MiB swap-growth limit; no final suite was stopped for these limits.
+
+The native build recovered from a cache's HTTP 504 responses using the public
+Nix cache. No deployment, push or service restart was performed. The [architecture
+review] and [replacement ADR] record the implementation and its remaining external
+writer race limit. Task completion awaits user acceptance.
+
+[architecture review]: ../ARCHITECTURE-REVIEW.md#a4-saves-can-truncate-or-overwrite-newer-content
+[replacement ADR]: ../adr/0090-revision-checked-file-replacement.md

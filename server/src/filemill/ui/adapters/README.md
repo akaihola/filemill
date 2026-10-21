@@ -122,5 +122,4 @@ server can read one.
 
 [JSON adapter]: vfs-json.js
 [the refresh port decision]: ../../../../../docs/adr/0041-core-adapters-three-ports.md#refresh-invalidation-2026-10-21
-
 [ADR 0090]: ../../../../../docs/adr/0090-revision-checked-file-replacement.md
