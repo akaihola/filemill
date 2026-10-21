@@ -59,6 +59,10 @@ the item and refreshes its folder. Deleting a folder also removes its contents.
 Opening a folder resets the fold dial, so its root rows stay visible even if
 the previous folder was still scrolling.
 
+Folder clicks add Back steps; selecting a file inside an open folder rewrites
+its step. A document's temporary loading column adds no step unless its
+outline is confirmed. See [the history decision].
+
 The preview toolbar has a Fullscreen button. The preview stays in fullscreen
 when the browser resizes. Use Exit fullscreen or the browser fullscreen exit
 control to return to the file browser.
@@ -236,3 +240,4 @@ and its binary size.
 [the JSON refresh decision]: docs/adr/0041-core-adapters-three-ports.md#refresh-invalidation-2026-10-21
 
 [condition-based waiting]: server/CONTRIBUTING.md#wait-for-an-element-never-for-a-duration
+[the history decision]: docs/adr/0050-history-pushes-on-entering-a-column-rewrites-otherwise.md

@@ -298,6 +298,13 @@ Deletion now blocks new fills and waits for active reads before removal
 ([ui/core/render.js][render], lines 106–145; `84214e2f`). Fold-glide resets
 are fixed too. Neither fix supplies general preview or navigation ownership.
 
+**History correction, 2026-10-21 ([the Back race][137]).** A provisional
+document column could push history before its outline read declined it,
+leaving an extra folder entry. URL synchronization now waits until every open
+node is a loaded directory. Controlled-response browser tests cover both a
+declined document and a confirmed outline. This keeps the existing model and
+router boundary; A9's broader ownership and preview work remains open.
+
 **Acceptance.** Reuse the preview per node, revision, representation and relevant
 settings. Resize/fold cause no new provider read. Save, refresh and mode changes
 invalidate it. One generation covers choose, path walks, refresh, recovery and
@@ -633,3 +640,4 @@ one new P2 finding; no new P1 finding was established in this pass.
 [bundle-tests]: ../server/tests/test_gitbundle_provider.py
 
 [waiting guidance]: ../server/CONTRIBUTING.md#wait-for-an-element-never-for-a-duration
+[137]: tasks/137-fix-the-intermittent-back-failure-in-test-back-retraces-the-folders-th.md

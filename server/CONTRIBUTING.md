@@ -252,6 +252,12 @@ The delay does not establish that the pending column opened before rejection.
 A delay alone does not prove overlap; a race test must observe the delayed
 operation starting and finishing.
 
+For history races, hold the response until the loading column is observable,
+then release it and check both the final URL and history length. A preview
+alone cannot prove that an earlier temporary column added no history entry.
+The [outline history regression] covers both a declined file and a confirmed
+outline without a fixed delay.
+
 The [browser-wait guard] scans static Python scripts and server tests for
 `wait_for_timeout`. It does not ban every sleep or prove that all other waits
 are correct. Slow input is allowed; arbitrary readiness sleeps are not.
@@ -265,3 +271,4 @@ are correct. Slow input is allowed; arbitrary readiness sleeps are not.
 
 [the served UI tests]: tests/test_browser_new_ui.py
 [browser-wait guard]: tests/test_browser_waits.py
+[outline history regression]: tests/test_browser_new_ui.py

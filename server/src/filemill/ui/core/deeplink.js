@@ -34,7 +34,10 @@ let lastKey = null;
 
 export function syncURL() {
   if (
-    applying || !ROUTER || !path.length || path[0].kids === null ||
+    applying || !ROUTER || !path.length ||
+    /* A loading column may still be declined into a plain file. Its temporary
+       chain must not push history, even after rejection but before removal. */
+    path.some((node) => node.kids === null || !node.dir) ||
     selectedNode()?.dir
   ) return;
   const result = locationState(

@@ -1737,6 +1737,44 @@ def test_back_retraces_the_folders_that_were_opened(page):
     assert page.url.endswith("/notes/short.txt?filemill=render")
 
 
+@pytest.mark.parametrize("has_outline", [False, True])
+def test_document_history_waits_for_outline(routed_page, has_outline):
+    """Only a confirmed outline column earns its own history entry."""
+    page = routed_page
+    page.open("notes/deep")
+    before = page.evaluate("history.length")
+    held = []
+
+    def hold_outline(route):
+        if held:
+            route.continue_()
+        else:
+            held.append(route)
+
+    page.route("**/api/raw?p=notes%2Fdeep%2Fleaf.md", hold_outline)
+    page.click('.col[data-i="2"] .row:has-text("leaf.md")')
+    page.wait_for_function("path[3]?.name === 'leaf.md' && !!path[3].loading")
+    assert held  # The outline read started and the loading column is on screen.
+    pending_length = page.evaluate("history.length")
+    held[0].fulfill(
+        status=200,
+        content_type="text/plain",
+        body=(
+            "# Leaf\n\n## Child\n\nText\n\n## Other\n\nMore\n"
+            if has_outline
+            else "# Leaf\n\nText\n"
+        ),
+    )
+    page.wait_for_function(
+        "sel[2] === 'leaf.md' && path.every(n => n.kids !== null && !n.loading)"
+    )
+    expect(page.locator("#preview .pv-rich h1")).to_have_text("Leaf")
+    assert page.url.endswith("/notes/deep/leaf.md?filemill=render")
+    assert pending_length == before
+    assert page.evaluate("path.length") == (4 if has_outline else 3)
+    assert page.evaluate("history.length") == before + int(has_outline)
+
+
 def test_alt_arrows_are_left_to_the_browser(page):
     """Alt+←/→ are the browser's Back and Forward; the finder must not eat them."""
     page.open()
