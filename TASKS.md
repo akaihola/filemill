@@ -186,10 +186,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   next key
       <!-- hai:{"id":"simple-52f039e0-e22b-4c63-95c2-21d6afb06983","labels":["steward"],"createdAt":"2026-10-18T02:12:12.913Z","updatedAt":"2026-10-19T09:55:41.397Z"} -->
 
-- [ ] [100] Check the 19 newest review-queue items against the acceptance policy
+- [x] [100] Check the 19 newest review-queue items against the acceptance policy
     - Depends on: [99]
 
-      <!-- hai:{"id":"simple-89e06a37-5045-45d1-be1f-dc45abf1ced6","labels":["steward"],"createdAt":"2026-10-17T17:06:24.317Z","updatedAt":"2026-10-17T18:35:36.861Z"} -->
+      <!-- hai:{"id":"simple-89e06a37-5045-45d1-be1f-dc45abf1ced6","labels":["steward"],"createdAt":"2026-10-17T17:06:24.317Z","updatedAt":"2026-10-21T17:11:50.770Z"} -->
 
 - [ ] [99] Rebase [25]'s pytest migration onto main and merge it once the full suite
   passes
@@ -217,10 +217,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
       <!-- hai:{"id":"simple-1a46227e658d855f","updatedAt":"2026-10-17T11:30:59.992Z"} -->
 
-- [ ] [95] Reconcile TASKS.md with the code: 16 In Progress and 109 legacy completions
+- [x] [95] Reconcile TASKS.md with the code: 16 In Progress and 109 legacy completions
     - Depends on: [96]
 
-      <!-- hai:{"id":"simple-fe5c93cd-f67b-45d1-8352-57667238abe6","labels":["steward"],"createdAt":"2026-10-16T16:48:55.733Z","updatedAt":"2026-10-17T08:26:07.748Z"} -->
+      <!-- hai:{"id":"simple-fe5c93cd-f67b-45d1-8352-57667238abe6","labels":["steward"],"createdAt":"2026-10-16T16:48:55.733Z","updatedAt":"2026-10-21T17:11:54.393Z"} -->
 
 - [x] [*] `.py` files are not highlighted at all.
       <!-- hai:{"id":"simple-5a544fc442d3d2ca","updatedAt":"2026-10-21T14:12:54.678Z"} -->
@@ -229,9 +229,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   `static/FSA-TEST-CHECKLIST.md`.
       <!-- hai:{"id":"simple-d27ac8852cc5e629","updatedAt":"2026-10-21T05:16:52.764Z"} -->
 
-- [ ] [*] Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
+- [x] [*] Clarify the meaning of `[~]` in this file. Review Kandev task sessions to find out
   what it means.
-      <!-- hai:{"id":"simple-78caa9fe22d090fa","updatedAt":"2026-10-17T08:24:54.740Z"} -->
+      <!-- hai:{"id":"simple-78caa9fe22d090fa","updatedAt":"2026-10-21T17:11:57.851Z"} -->
 
 - [ ] [43] Investigate the 11 server browser failures also reproduced on main.
       <!-- hai:{"updatedAt":"2026-10-17T08:24:54.209Z"} -->
@@ -524,17 +524,20 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 - [ ] [44] Document demo instances matching each browser test setup.
 
-- [ ] [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
+- [x] [*] Delete `/open-link` and `_parse_desktop_url` in `app.py`. `desktopCard` in
       `ui/adapters/preview-local.js` already handles `.desktop` files in both editions.
+      <!-- hai:{"id":"simple-dc3759a81ca7da4c","updatedAt":"2026-10-21T17:12:01.555Z"} -->
 
-- [ ] [*] Give each magic number in `ui/core/state.js`, `layout.js`, `nav.js`,
+- [x] [*] Give each magic number in `ui/core/state.js`, `layout.js`, `nav.js`,
       `render.js` a name and a one-line comment that says why the value is what it is.
+      <!-- hai:{"id":"simple-c4f050c41d8042de","updatedAt":"2026-10-21T17:12:05.776Z"} -->
 
 - [ ] [21] Cache the preview element keyed on the previewed node and its `meta`, the
       same way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
 
-- [ ] [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in
+- [x] [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in
       `styles.py` and the `watchfiles` dependency. Delete their tests.
+      <!-- hai:{"id":"simple-a784513db6a55664","updatedAt":"2026-10-21T17:12:10.158Z"} -->
 
 - [ ] [*] Run the static and server browser tests through one root `conftest.py` and one
       Playwright fixture. Delete the CDN proxy plumbing in `test_browser_keyboard.py`.
@@ -658,8 +661,9 @@ Rules for TASKS.md usage are at the bottom of the file.
       `SECURITY.md` (threat model, how to report) and `CHANGELOG.md` (Keep a Changelog
       format).
 
-- [ ] [*] Document the full port contract in `ui/core/ports.js`: `FS.node`, `FS.blob`,
+- [x] [*] Document the full port contract in `ui/core/ports.js`: `FS.node`, `FS.blob`,
       `ROUTER.write(state, replace)`, `RouterPath.base` and every node field.
+      <!-- hai:{"id":"simple-c4226038e8e9f0f4","updatedAt":"2026-10-21T17:12:13.685Z"} -->
 
 - [ ] [*] Delete `server/PLAN-18.md`, `PLAN-19.md`, `PLAN-20-shared-frontend.md` and
       `server/lmt/`. Move a paragraph only if it is still true and is not elsewhere.
@@ -711,8 +715,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [*] Add `deno fmt` and `deno lint` for `ui/` (one pinned binary, no Node project).
       Format `ui/` one time and commit the result as its own commit.
 
-- [ ] [*] Add `ruff` and `mypy` to the `dev` group in `server/pyproject.toml`. Add
+- [x] [*] Add `ruff` and `mypy` to the `dev` group in `server/pyproject.toml`. Add
       `[tool.ruff]` with `line-length = 88`. Fix all findings. Run `ruff format`.
+      <!-- hai:{"id":"simple-8ef4c9ecd63ddbd2","updatedAt":"2026-10-21T17:12:18.864Z"} -->
 
 - [x] [63] Add Raw, Source / Rendered and Fullscreen controls to the preview toolbar.
       <!-- hai:{"updatedAt":"2026-10-21T14:14:12.360Z"} -->
@@ -738,9 +743,11 @@ Rules for TASKS.md usage are at the bottom of the file.
       registry entry. Then delete `_preview_pptx`, `python-pptx` and `/api/preview`.
     - Depends on: [26]
 
-- [ ] [24] Reduce `app.py` to routing: move `_resolve_safe` and the symlink map to
+- [x] [24] Reduce `app.py` to routing: move `_resolve_safe` and the symlink map to
       `paths.py` and the PWA routes to `pwa.py`. No imports inside functions.
     - Depends on: [33], [34]
+
+      <!-- hai:{"updatedAt":"2026-10-21T17:12:25.076Z"} -->
 
 - [ ] [33] Keep the URL contract, drop the server-side representations: the server sends
       bytes for `?filemill=raw` and the shell for all else. The client renders the view.
