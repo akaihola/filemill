@@ -21,14 +21,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 
   <!-- hai:{"id":"simple-d1776999-2a2c-4870-936a-9620915aee07","labels":["steward"],"createdAt":"2026-10-20T08:12:02.201Z","updatedAt":"2026-10-20T08:12:29.949Z"} -->
 
-- [146] Check filemill's README, contributor docs, goals and roadmap against
-  current main
-  <!-- hai:{"id":"simple-a4858f85-f357-497a-a1d3-f32ee93767e7","labels":["steward","review"],"createdAt":"2026-10-21T19:48:01.758Z","updatedAt":"2026-10-21T19:48:01.758Z"} -->
-
 - [147] Allow only known elements and attributes in reStructuredText previews
   <!-- hai:{"id":"simple-88cfaa62-ec67-4090-a023-c53f20d3b2e4","labels":["steward","security"],"createdAt":"2026-10-21T20:34:29.661Z","updatedAt":"2026-10-21T20:34:29.661Z"} -->
 
 ## Scheduled
+
+- [146] Check filemill's README, contributor docs, goals and roadmap against
+  current main
+  <!-- hai:{"id":"simple-a4858f85-f357-497a-a1d3-f32ee93767e7","labels":["steward","review"],"createdAt":"2026-10-21T19:48:01.758Z","updatedAt":"2026-10-21T20:53:31.350Z"} -->
 
 ## In Progress
 
