@@ -20,3 +20,15 @@ Two intermittent failures keep filemill's full static suites from being a reliab
 
 - Your completion message lists the tests added and the checks run.
 - No push, deployment, live service, real account or credential. Memory: follow your launch prompt's memory rule, and run one heavy command (test suite, browser, build) at a time.
+
+## Investigation plan, 2026-10-21
+
+1. Run each complete static suite sequentially and record failures and memory.
+2. Trace the wide-folder selection and RST conversion lifetime. Add controlled
+   regressions before changing either implementation or test readiness.
+3. Keep [fixture isolation] outside this change. Preserve clipping and exact
+   Python-global release assertions.
+4. Run both full suites three consecutive times each, then the required lint
+   and bundle checks. Record causes, reproduction counts and limitations here.
+
+[fixture isolation]: 141-finish-browser-fixture-isolation-and-qualify-independent-test-roots.md
