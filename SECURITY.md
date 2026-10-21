@@ -92,9 +92,10 @@ The preview pane is a different boundary. It shows an HTML file, or an HTML
 member of an archive, in an iframe with `sandbox=""`, so the page's scripts do
 not run there. Markdown, reStructuredText, `.docx` and `.desktop` previews are
 inserted into the page as inert markup. Markup in their text stays text.
-Event-handler attributes, `xlink:href` and `data` attributes are removed. The
-server removes them from its reStructuredText output, and the browser checks
-every preview the server renders again before inserting it. A
+reStructuredText and `.docx` output loses its event-handler, `xlink:href` and
+`data` attributes. The server removes them from its reStructuredText output,
+and the browser checks every preview the server renders again before
+inserting it. A
 reStructuredText image stays a link, `:loading: embed` included: the server
 never reads or inlines the image file, and the browser fetches it through the
 root check. In reStructuredText, `.docx` and `.desktop` previews a link keeps
