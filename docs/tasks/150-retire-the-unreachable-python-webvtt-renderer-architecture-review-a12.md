@@ -68,6 +68,16 @@ generator or replacement abstraction was added.
   Pre-commit reported a changed file; the hook's 11 tests passed. The second
   gate invocation passed all seven hooks with exit 0.
 
+## Integration
+
+- Start move committed on main as `17bb334c`.
+- Plan committed as `5981f0e8`; implementation and checks as `7a695d21`.
+- Feature branch rebased on current main, then fast-forward merged.
+- Completion move committed as `64262643`. The tracker is in Completed /
+  Accepted with acceptance unchecked. The worktree and branch are retained.
+- No deployment command is defined for this change. No UI assets changed,
+  so a static bundle rebuild or running-server UI restart was unnecessary.
+
 ## Memory guard
 
 Each command had a 1,800-second timeout and ran alone. The guard checked host
