@@ -11,7 +11,7 @@ Move the meaningful parser fixtures to tests that exercise the registered JavaSc
 - Timestamps, voices, YouTube metadata and blank payloads, malformed input and source preservation keep coverage on the live implementation.
 - Ordinary VTT listing, raw bytes, empty virtual listing and suffix URLs keep their responses.
 - No application code calls the deleted renderer; no cross-language parser generator replaces it.
-- Update the A12 entry in `docs/ARCHITECTURE-REVIEW.md` to say what is done.
+- Update the A12 entry in [the architecture review][architecture] to say what is done.
 
 ## Ground rules
 
@@ -21,3 +21,17 @@ Move the meaningful parser fixtures to tests that exercise the registered JavaSc
 - Handoff: a short outcome; details go in this task record.
 
 Tracker: [the filemill tracker](../../TASKS.md).
+
+## Implementation plan
+
+1. Pin the live registered JavaScript renderer with the meaningful Python
+   fixtures. Pin the provider registration and HTTP responses before deletion.
+2. Remove the unreachable Python parser and renderer. Keep the empty-listing
+   provider and registration. Update A12 and the source/test map together.
+3. Run focused browser, provider and documentation checks and the quality gate,
+   one command at a time with memory monitoring. Rebase and merge to main,
+   then complete the tracker entry pending acceptance.
+
+This removes no reachable behavior or port, so no new ADR is needed.
+
+[architecture]: ../ARCHITECTURE-REVIEW.md#a12-smaller-defects-dead-code-and-audits
