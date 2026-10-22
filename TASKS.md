@@ -16,6 +16,18 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- [150] Retire the unreachable Python WebVTT renderer (architecture review A12)
+  <!-- hai:{"id":"simple-1f2dec89-e49d-4989-b7d5-d21e169fe5b2","labels":["steward"],"createdAt":"2026-10-22T04:20:53.064Z","updatedAt":"2026-10-22T04:20:53.064Z"} -->
+
+- [151] Compute SQLite row-key facts once per listing (architecture review A7)
+  <!-- hai:{"id":"simple-10532ff5-e29a-410b-b97d-db1b33363fe9","labels":["steward"],"createdAt":"2026-10-22T04:20:57.982Z","updatedAt":"2026-10-22T04:20:57.982Z"} -->
+
+- [152] Centralize the shared UI boot sequence
+  <!-- hai:{"id":"simple-d39ebd3e-9dae-427b-b506-427a6df23199","labels":["steward"],"createdAt":"2026-10-22T04:21:02.055Z","updatedAt":"2026-10-22T04:21:02.055Z"} -->
+
+- [153] Stop a deep-link walk when its root is replaced (architecture review A9)
+  <!-- hai:{"id":"simple-f96381b0-da64-4e54-9be3-93bb4f21354d","labels":["steward"],"createdAt":"2026-10-22T04:21:06.280Z","updatedAt":"2026-10-22T04:21:06.280Z"} -->
+
 ## Scheduled
 
 ## In Progress
@@ -894,7 +906,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 [77]: docs/tasks/77-md-tight-bullet-list-line-spacing.md
 
-<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149 -->
+<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153 -->
 
 [78]: docs/tasks/78-wide-document-scrolls-instead-of-expanding-the-preview.md
 
@@ -1039,6 +1051,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 [148]: docs/tasks/148-say-in-bind-s-help-that-an-explicit-flag-wins-over-filemill-bind.md
 
 [149]: docs/tasks/149-review-filemill-s-architecture-for-deep-modules-and-over-engineering-a.md
+
+[150]: docs/tasks/150-retire-the-unreachable-python-webvtt-renderer-architecture-review-a12.md
+
+[151]: docs/tasks/151-compute-sqlite-row-key-facts-once-per-listing-architecture-review-a7.md
+
+[152]: docs/tasks/152-centralize-the-shared-ui-boot-sequence.md
+
+[153]: docs/tasks/153-stop-a-deep-link-walk-when-its-root-is-replaced-architecture-review-a9.md
 
 ## Rules
 
