@@ -26,3 +26,15 @@ Approved direction: the search control, results and interaction should be identi
 ## Acceptance
 
 Equivalent fixtures produce equivalent visible results and interactions in both modes. Tests show no server search request for a browser-owned folder and no stale results after switching roots. The search control is restored in local mode once it has real local functionality.
+
+## Implementation plan
+
+- Add browser regressions for the same literal query, first matching line,
+  focused directory, empty/error states and keyboard activation in both modes.
+- Give each filesystem an optional search capability. Bind it to the mounted
+  root. Clear pending work on query and root changes. Use shared navigation
+  for result activation, including mounts without a router.
+- Bound folder traversal and byte reads. Show partial results at a limit.
+  Exercise delayed reads and transitions between local and served roots.
+- Record the behavior and limits in an ADR. Rebuild the static bundle, run
+  the quality gate and each browser edition, then merge and complete the task.
