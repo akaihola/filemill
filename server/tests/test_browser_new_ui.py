@@ -1954,6 +1954,90 @@ window.__local = () => {
 """
 
 
+@pytest.mark.parametrize("pending", ["debounce", "response", "error", "return"])
+def test_local_mode_cancels_server_search_and_restores_it(page, pending):
+    """Old results, queued input and late replies cannot cross tree mounts."""
+    page.open()
+    page.fill("#search-bar", "Leaf")
+    result = page.locator('.search-result[data-path="notes/deep/leaf.md"]')
+    expect(result).to_be_visible()
+    page.evaluate("window.oldSearchResult = document.querySelector('.search-result')")
+    page.evaluate(FAKE_HANDLE)
+    page.clock.install()
+    page.clock.pause_at(page.evaluate("Date.now()"))
+    page.evaluate("""() => {
+      const originalFetch = window.fetch;
+      window.searchCalls = [];
+      window.fetch = async (url, options) => {
+        if (!String(url).startsWith('/api/search?')) return originalFetch(url, options);
+        searchCalls.push(String(url));
+        if (!String(url).includes('q=delayed')) return originalFetch(url, options);
+        window.pendingSearchSignal = options.signal;
+        const response = await originalFetch(url, options);
+        const data = await response.json();
+        window.searchReplyReady = true;
+        await new Promise(resolve => { window.releaseSearchReply = resolve; });
+        try {
+          if (window.rejectSearchReply) throw new Error('late search failure');
+          return new Response(JSON.stringify(data), {status: 200});
+        } finally {
+          window.searchReplyReleased = true;
+        }
+      };
+    }""")
+    page.fill("#search-bar", "delayed")
+    if pending != "debounce":
+        page.clock.run_for(250)
+        page.wait_for_function("window.searchReplyReady")
+    page.evaluate("mount(__local())")
+    expect(page.locator("#local-badge")).to_be_visible()
+    expect(page.locator("#search-form")).to_be_hidden()
+    expect(page.locator("#search-bar")).to_be_disabled()
+    expect(page.locator("#search-bar")).to_have_value("")
+    expect(page.locator("#search-results")).to_be_empty()
+    expect(page.locator("#search-results")).to_be_hidden()
+    if pending != "debounce":
+        assert page.evaluate("pendingSearchSignal.aborted")
+    calls = page.evaluate("searchCalls.length")
+    # Detached result handlers and synthetic events must also be harmless.
+    page.evaluate("""() => {
+      oldSearchResult.click();
+      document.querySelector('#search-bar').value = 'local-only';
+      document.querySelector('#search-bar').dispatchEvent(new Event('input'));
+      document.querySelector('#search-form').dispatchEvent(new Event('submit', {cancelable: true}));
+    }""")
+    page.clock.run_for(300)
+    assert page.evaluate("searchCalls.length") == calls
+    assert page.evaluate("path[0].name") == "my-laptop-folder"
+
+    if pending in {"response", "error"}:
+        page.evaluate(
+            """reject => {
+          window.rejectSearchReply = reject;
+          releaseSearchReply();
+        }""",
+            pending == "error",
+        )
+        page.wait_for_function("window.searchReplyReleased")
+        expect(page.locator("#search-results")).to_be_empty()
+
+    page.click("#leave-local")
+    page.wait_for_function("path[0]?.name !== 'my-laptop-folder' && path[0]?.kids")
+    expect(page.locator("#search-form")).to_be_visible()
+    expect(page.locator("#search-bar")).to_be_enabled()
+    page.fill("#search-bar", "Leaf")
+    page.clock.run_for(250)
+    expect(result).to_be_visible()
+    if pending == "return":
+        page.evaluate("releaseSearchReply()")
+        page.wait_for_function("window.searchReplyReleased")
+        expect(result).to_be_visible()
+    result.click()
+    expect(page.locator("#preview .pv-rich h1")).to_have_text("Leaf")
+    assert page.evaluate("sel") == ["notes", "deep", "leaf.md"]
+    assert not page.errors
+
+
 def test_open_local_folder_is_offered(page):
     """The hybrid: the served page carries the FSA adapter too."""
     page.open()

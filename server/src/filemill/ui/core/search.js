@@ -1,4 +1,4 @@
-/* Server-only content search. The control stays hidden in local FSA mode. */
+/* Content search is available only while the adapter supplies a provider. */
 import { focusCol } from "./model/state.js";
 import { currentPath } from "./model/deeplink.js";
 import { applyPath } from "./deeplink.js";
@@ -10,6 +10,17 @@ const searchInput = document.getElementById("search-bar");
 const searchResults = document.getElementById("search-results");
 let searchTimer;
 let searchController;
+let searchProvider;
+
+export function setContentSearch(provider) {
+  clearTimeout(searchTimer);
+  searchController?.abort();
+  searchProvider = provider;
+  searchForm.hidden = !provider;
+  searchInput.disabled = !provider;
+  searchInput.value = "";
+  showSearch("");
+}
 
 function showSearch(message, results = false) {
   searchResults.hidden = !message;
@@ -18,22 +29,17 @@ function showSearch(message, results = false) {
 }
 
 async function runSearch() {
+  clearTimeout(searchTimer);
+  if (!searchProvider) return;
   const q = searchInput.value.trim();
   searchController?.abort();
   if (!q) return showSearch("");
-  searchController = new AbortController();
+  const controller = searchController = new AbortController();
   showSearch("Searching…");
   try {
     const focused = currentPath().slice(0, focusCol).join("/");
-    const r = await fetch(
-      `/api/search?q=${encodeURIComponent(q)}&p=${encodeURIComponent(focused)}`,
-      {
-        signal: searchController.signal,
-        headers: { Accept: "application/json" },
-      },
-    );
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error || `${r.status} ${r.statusText}`);
+    const data = await searchProvider(q, focused, controller.signal);
+    if (controller.signal.aborted) return;
     if (!data.matches.length) return showSearch("No matches");
     showSearch(
       data.matches.map((m) =>
@@ -50,6 +56,7 @@ async function runSearch() {
         if (event.key === "Enter" || event.key === " ") event.stopPropagation();
       };
       button.onclick = async () => {
+        if (controller.signal.aborted || !searchProvider || !ROUTER) return;
         const names = button.dataset.path.split("/");
         document.documentElement.dataset.filemill = "render";
         ROUTER.write({ path: names, view: "render" }, false);
@@ -58,7 +65,7 @@ async function runSearch() {
       };
     });
   } catch (err) {
-    if (err.name !== "AbortError") {
+    if (!controller.signal.aborted && err.name !== "AbortError") {
       showSearch(`Search error: ${esc(err.message)}`);
     }
   }
@@ -71,7 +78,7 @@ if (searchForm && document.documentElement.dataset.root) {
   });
   searchInput.addEventListener("input", () => {
     clearTimeout(searchTimer);
-    searchTimer = setTimeout(runSearch, 250);
+    if (searchProvider) searchTimer = setTimeout(runSearch, 250);
   });
 } else {
   searchForm?.remove();

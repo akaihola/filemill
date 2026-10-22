@@ -20,6 +20,13 @@ that step. Keyboard stepping rewrites it even when it opens folders. A
 document's temporary loading column adds no step unless its outline is
 confirmed. See the [history decision].
 
+## Content search
+
+Content search in the server edition searches the served tree. Open Folder
+hides and disables it and clears the query and results. Return to the served
+folder to search again. Browser-owned content search is separate planned work.
+See [the search lifecycle decision].
+
 ## Settings and defaults
 
 Open the gear menu to change these settings. Defaults below apply before
@@ -104,3 +111,5 @@ See the [security policy] for replacement guarantees and limits.
 [heading-fragment decision]: adr/0085-markdown-heading-fragments-scroll-the-preview.md
 [refresh contract]: adr/0041-core-adapters-three-ports.md#refresh-invalidation-2026-10-21
 [security policy]: ../SECURITY.md
+
+[the search lifecycle decision]: adr/0091-server-search-stops-at-local-folder-mounts.md
