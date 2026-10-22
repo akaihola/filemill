@@ -153,7 +153,8 @@ Keep these boundaries and checks.
   is pending; the probe cancels earlier glides before arming its held rebase.
   The fold and clipping assertions keep their original bounds. Cached-sort
   I/O checks wait for the preceding preview to finish snapshot eligibility
-  before taking their read-count baseline.
+  before taking their read-count baseline. Dialog dismissal checks resume
+  their test clock and observe focus restoration after the dialog hides.
   Loading-indicator checks hold their read until observation, and fling
   checks send preview wheel input rather than a CSS-smoothed assignment.
   Served navigation waits for document commit and the existing UI predicates,

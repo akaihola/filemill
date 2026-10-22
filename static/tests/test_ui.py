@@ -1257,8 +1257,12 @@ def test_copy_menu_refusal_dialog(copy_page, width, label, mode):
     assert page.evaluate("__clipped.length") == count
     assert dialog.is_visible()
     assert page.evaluate("sel[1]") == "note.md"
+    # Let the browser finish dismissal and native focus restoration.
+    page.clock.resume()
     page.keyboard.press("Escape")
+    dialog.wait_for(state="hidden", timeout=3000)
     assert not dialog.is_visible()
+    page.wait_for_function("document.activeElement === document.body", timeout=3000)
     assert page.evaluate("document.activeElement === document.body")
 
 

@@ -490,6 +490,28 @@ Escape. Sorting was not reached in that full run. The independent focused
 sorting results remain green; the dialog readiness failure is addressed next. The failed recording remains available alongside the
 earlier complete green qualification at `47cb64da`.
 
+## Dialog dismissal and focus
+
+The pre-merge full native qualification found a separate failure after
+39 passes: `test_copy_menu_refusal_dialog[Copy absolute path-1-1000]` saw
+`document.activeElement === document.body` false immediately after Escape.
+The dialog was already hidden. This case uses the existing Chromium-clock
+fixture even under the native command. Forty-three later cases were
+unreported. The compound qualification exited 1 after 195.4 s.
+
+[The manual-copy decision] requires focus return after dismissal. Visibility
+and browser focus restoration are separate readiness states. The test now
+resumes its clock after all timed copy assertions, dismisses the dialog, and
+waits for both hidden state and restored body focus. Both original assertions
+remain, with the case's existing 3,000 ms readiness bound. Application dialog
+behavior and the approved focus policy are unchanged.
+
+All six menu/width variants passed in bundle mode (19.90 s) and all six
+passed in development mode (15.69 s). Complete native qualification then passed all 83 cases in 575.36 s.
+The compound command, including every quality hook, explicit Python checks
+and 32 documentation/readiness/partition cases, passed in 600.2 s. Both
+readiness repairs are qualified before merging.
+
 <!-- HAI156 memory start -->
 ## Memory guard evidence
 
@@ -626,6 +648,8 @@ probes and actual failed checks retain their nonzero exits.
 | cached-sort-native-green | started at once | 0.0 | 3275/3360 | 2598/+53 | 53 | 49.1 | 0 |
 | cached-sort-qualification | started at once | 0.0 | 3455/3422 | 2658/-14 | 0 | 195.4 | 1 |
 | cached-sort-commit-gate | started at once | 0.0 | 3421/3422 | 2603/+0 | 0 | 10.1 | 0 |
+| copy-focus-green | started at once | 0.0 | 3408/3308 | 2602/-1 | 0 | 38.1 | 0 |
+| native-readiness-qa | started at once | 0.0 | 3406/3024 | 2598/+5 | 15 | 600.2 | 0 |
 
 Exact argument vectors are in [the guarded command arguments].
 Run names match that artifact and [the memory log].
@@ -650,3 +674,4 @@ Run names match that artifact and [the memory log].
 [third failed receipt]: http://hopeli/tmp/filemill-hai156/receipt-c83e31bd-failed.json?f
 [static reliability]: 144-make-the-full-static-suites-pass-reliably-the-wide-folder-wait-and-tes.md
 [the architecture-summary task]: 157-point-agents-at-a-short-summary-of-the-architecture-review-instead-of-.md
+[the manual-copy decision]: 119-document-the-menu-copy-exception-from-docs-question-4.md
