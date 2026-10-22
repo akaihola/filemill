@@ -20,14 +20,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [149] Review filemill's architecture for deep modules and over-engineering,
-  and draft the fixes
-      <!-- hai:{"id":"simple-f1c453ee-4736-4b7c-92df-fe024614710c","labels":["steward","review"],"createdAt":"2026-10-22T03:30:48.752Z","updatedAt":"2026-10-22T04:00:53.372Z"} -->
-
 - [~] [141] Finish browser fixture isolation and qualify independent test roots
       <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T15:01:55.354Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [149] Review filemill's architecture for deep modules and over-engineering,
+  and draft the fixes
+      <!-- hai:{"id":"simple-f1c453ee-4736-4b7c-92df-fe024614710c","labels":["steward","review"],"createdAt":"2026-10-22T03:30:48.752Z","updatedAt":"2026-10-22T04:15:35.094Z"} -->
 
 - [ ] [130] Give served and browser-owned folders the same content search
     - Depends on: [120]
