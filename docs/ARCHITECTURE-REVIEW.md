@@ -151,7 +151,9 @@ Keep these boundaries and checks.
   Scroll checks also observe pending dial work through the shared debug
   surface. A held-rebase regression rejects quiet geometry while that work
   is pending; the probe cancels earlier glides before arming its held rebase.
-  The fold and clipping assertions keep their original bounds.
+  The fold and clipping assertions keep their original bounds. Cached-sort
+  I/O checks wait for the preceding preview to finish snapshot eligibility
+  before taking their read-count baseline.
   Loading-indicator checks hold their read until observation, and fling
   checks send preview wheel input rather than a CSS-smoothed assignment.
   Served navigation waits for document commit and the existing UI predicates,

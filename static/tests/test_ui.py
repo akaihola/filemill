@@ -3372,6 +3372,9 @@ async def test_sort_options(page):
     ), json.dumps(st)
 
     await pg.evaluate("__slowMeta(0)")
+    # README's eligibility read follows its painted text. Finish that preview
+    # before measuring the cached sort's I/O.
+    await pg.wait_for_selector("#pv-edit", state="visible")
     gets = await pg.evaluate("__gets")
     await pg.click('.col[data-i="0"] .row:has-text("sorting")')
     await pg.wait_for_function("path[1]?.name === 'sorting' && path[1]?.metaDone")

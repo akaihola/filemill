@@ -462,6 +462,34 @@ unchanged. This integration records task evidence; the other task's files
 are retained as delivered. The final receipt uses the refreshed pre-merge
 base and preserves the earlier delivery history separately.
 
+## Cached-sort read-count window
+
+At `3a76cece`, updated server contracts (928), collection equality (1,501),
+quality, static development (193), static UI (83), static adapters (110),
+native build and native contracts (20) passed. Native UI then stopped with
+72 passed and one failure in `test_sort_options`: the cached-return assertion
+observed `1 further getFile() calls` where `again == 0` was required. Pytest
+time was 413.45 s; guarded wall time was 421.8 s. Ten native cases and the
+three later browser shards were unreported in this round.
+
+The read-count baseline waited for metadata and selected-path coherence,
+while the preceding README preview could still perform its eligibility
+snapshot read. Native instrumentation counts that read separately. The
+existing preview lifecycle paints text before completing eligibility, as
+already reproduced by the Edit regression. The test now waits for the Edit
+control to become visible before taking its cached-sort I/O baseline. The
+exact row order, five initial reads and zero subsequent reads remain; no
+operation is excluded from the counter and no timeout changes.
+
+The complete focused native sorting case passed with that readiness boundary
+(26.58 s). Browser sorting checks also passed in development (15.15 s)
+and bundle (10.93 s) modes. The full native qualification stopped earlier,
+with 39 passed and one failure in the Chromium-clock copy-dialog case:
+`document.activeElement === document.body` was false immediately after
+Escape. Sorting was not reached in that full run. The independent focused
+sorting results remain green; the dialog readiness failure is addressed next. The failed recording remains available alongside the
+earlier complete green qualification at `47cb64da`.
+
 <!-- HAI156 memory start -->
 ## Memory guard evidence
 
@@ -586,6 +614,18 @@ probes and actual failed checks retain their nonzero exits.
 | v11-collections | started at once | 0.0 | 2946/2804 | 2668/-2 | 0 | 16.0 | 0 |
 | v11-quality | started at once | 0.0 | 2810/2770 | 2661/+0 | 0 | 9.0 | 0 |
 | main-docs-integration-gate | started at once | 0.0 | 2933/2716 | 2539/-1 | 0 | 22.0 | 0 |
+| v12-server-contracts | started at once | 0.0 | 2725/2764 | 2514/-8 | 0 | 51.1 | 0 |
+| v12-collections | started at once | 0.0 | 2773/2685 | 2506/+0 | 0 | 13.0 | 0 |
+| v12-quality | started at once | 0.0 | 2773/2732 | 2506/+0 | 0 | 9.0 | 0 |
+| v12-static-dev | started at once | 0.0 | 2941/2922 | 2505/-13 | 3 | 562.9 | 0 |
+| v12-static-ui | started at once | 0.0 | 3043/3040 | 2491/+104 | 106 | 309.2 | 0 |
+| v12-static-adapters | started at once | 0.0 | 3023/3001 | 2591/+80 | 97 | 267.4 | 0 |
+| v12-native-build | started at once | 0.0 | 3073/3063 | 2660/+1 | 3 | 15.0 | 0 |
+| v12-native-contracts | started at once | 0.0 | 3100/3201 | 2659/+32 | 32 | 43.1 | 0 |
+| v12-native-ui | started at once | 0.0 | 3333/2855 | 2691/+17 | 22 | 421.8 | 1 |
+| cached-sort-native-green | started at once | 0.0 | 3275/3360 | 2598/+53 | 53 | 49.1 | 0 |
+| cached-sort-qualification | started at once | 0.0 | 3455/3422 | 2658/-14 | 0 | 195.4 | 1 |
+| cached-sort-commit-gate | started at once | 0.0 | 3421/3422 | 2603/+0 | 0 | 10.1 | 0 |
 
 Exact argument vectors are in [the guarded command arguments].
 Run names match that artifact and [the memory log].
