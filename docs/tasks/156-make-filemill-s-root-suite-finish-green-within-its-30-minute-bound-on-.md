@@ -10,6 +10,8 @@ Steward issue, 2026-10-22 10:45 refill (steward decisions D7 and D95). Goal: age
 
 Older held items fail the same way ("Fix all remaining red tests", [12]). Until one documented command finishes green on this host, no filemill item can be accepted on evidence.
 
+[144] already made the separate static development and bundle suites (185 tests each) pass three times in a row, in 11 to 21 minutes each; read its findings first and don't redo them. This issue is about the root command and the failures above.
+
 ## What to do
 
 1. On a clean checkout of `main`, run `timeout 1800 uv run pytest -p no:cacheprovider --junitxml="$TMPDIR/root.xml" --durations=40 -q -rs`. The JUnit file keeps the results if the bound stops the run. Record the wall time, every failure and the 40 slowest tests in this file.
@@ -34,6 +36,7 @@ Older held items fail the same way ("Fix all remaining red tests", [12]). Until 
 Tracker: [filemill's tracker](../../TASKS.md).
 
 [12]: 12-test-ui-runs-to-end.md
+[144]: 144-make-the-full-static-suites-pass-reliably-the-wide-folder-wait-and-tes.md
 [120]: 120-disable-server-search-in-local-folders-from-docs-question-5.md
 [130]: 130-give-served-and-browser-owned-folders-the-same-content-search.md
 [141]: 141-finish-browser-fixture-isolation-and-qualify-independent-test-roots.md
