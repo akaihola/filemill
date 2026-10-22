@@ -22,9 +22,21 @@ confirmed. See the [history decision].
 
 ## Content search
 
-Content search in the server edition searches the served tree. Open Folder
-hides and disables it and clears the query and results. Return to the served
-folder to search again. Browser-owned content search is separate planned work.
+Search file contents in the focused folder and its subfolders. Search is
+case-sensitive and treats the query as literal text. Each file shows its first
+matching line. Click a result or press Enter or Space to open it. Clear the
+query to cancel. Opening another root clears the search.
+
+Served folders, Open Folder and the static edition use the same control.
+Browser-owned files stay in the browser; local search sends no file bytes or
+search request to the server. Searches skip hidden entries, `node_modules`,
+`__pycache__` and binary files containing NUL bytes. They do not read archive
+members or virtual document sections. Ignore files do not affect search.
+
+Search stops at 100 matches, 2,000 visited entries, 32 directory levels,
+1 MiB per file or 16 MiB of total text reads. A skipped oversized file or a
+reached limit shows “Partial results”. A ten-second deadline reports an error.
+Narrow the focused folder when a search is incomplete.
 See [the search lifecycle decision].
 
 ## Settings and defaults
@@ -112,4 +124,4 @@ See the [security policy] for replacement guarantees and limits.
 [refresh contract]: adr/0041-core-adapters-three-ports.md#refresh-invalidation-2026-10-21
 [security policy]: ../SECURITY.md
 
-[the search lifecycle decision]: adr/0091-server-search-stops-at-local-folder-mounts.md
+[the search lifecycle decision]: adr/0092-shared-content-search-capability.md

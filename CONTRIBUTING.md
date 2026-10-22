@@ -63,7 +63,7 @@ terminal input. Use the [manual folder checklist]; do not collect it as an
 automated browser test.
 
 The [search mount regression] uses a controlled clock and delayed responses.
-It checks local-folder search cancellation and restoration after return:
+It checks search cancellation across local-folder mounts and restoration after return:
 
 ```bash
 timeout 1800 uv run --project server pytest server/tests/test_browser_new_ui.py -k local_mode_cancels

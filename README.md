@@ -65,11 +65,12 @@ including the `PYKOFINDER_*` compatibility names. A public instance must use
 a root: direct-root symlinks are bookmarks, and bare HTML has the app's origin.
 
 The server supplies Markdown and DOCX dependencies locally and hides the
-download switch, including in Open Folder mode. Search needs `rg`; browsing
+download switch, including in Open Folder mode. Served search needs `rg`; browsing
 Git bundles needs `git`. The [server recovery guide] explains offline copies,
 read-only browsing during an outage and reconnecting after a restart.
 
-Content search covers the served tree and is disabled in Open Folder mode.
+Content search covers the focused folder in both served and Open Folder modes.
+Browser-owned searches read granted files locally.
 See the [search behavior].
 
 ## Using Filemill

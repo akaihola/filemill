@@ -34,6 +34,7 @@ import shutil
 import subprocess
 import tempfile
 import threading
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import cast
@@ -53,6 +54,10 @@ from filemill.vfs import (
 RENDER_MAX = 8 * 1024 * 1024
 SEARCH_QUERY_MAX = 200
 SEARCH_MATCH_MAX = 100
+SEARCH_ENTRY_MAX = 2000
+SEARCH_FILE_MAX = 1024 * 1024
+SEARCH_BYTES_MAX = 16 * 1024 * 1024
+SEARCH_DEPTH_MAX = 32
 # The demo proxy allows more than the old two-second subprocess limit.
 SEARCH_TIMEOUT = 10
 
@@ -61,73 +66,104 @@ class SearchError(Exception):
     """A search could not be completed by the server."""
 
 
-def search_root(root: Path, query: str, focused: str = "") -> list[dict]:
-    """Find bounded fixed-string matches below the focused directory."""
+def search_root(root: Path, query: str, focused: str = "") -> dict:
+    """Search bounded snapshots with ripgrep, one first matching line per file."""
     query = query.strip()
     if not query:
         raise SearchError("Search query is empty")
-    if len(query) > SEARCH_QUERY_MAX:
-        raise SearchError(f"Search query is limited to {SEARCH_QUERY_MAX} characters")
+    if len(query) > SEARCH_QUERY_MAX or "\n" in query or "\r" in query:
+        raise SearchError("Search query must be one line of at most 200 characters")
+    matches: list[dict] = []
+    partial = False
+    entries = acquired = 0
+    deadline = time.monotonic() + SEARCH_TIMEOUT
+
+    def visit(folder: Path, depth: int) -> None:
+        nonlocal entries, acquired, partial
+        with os.scandir(folder) as children:
+            for child in children:
+                if time.monotonic() >= deadline:
+                    raise SearchError("Search timed out")
+                if (
+                    entries >= SEARCH_ENTRY_MAX
+                    or acquired >= SEARCH_BYTES_MAX
+                    or len(matches) >= SEARCH_MATCH_MAX
+                ):
+                    partial = True
+                    return
+                entries += 1
+                if (
+                    child.name.startswith(".")
+                    or child.name in {"node_modules", "__pycache__"}
+                    or child.is_symlink()
+                ):
+                    continue
+                target = Path(child.path)
+                if child.is_dir(follow_symlinks=False):
+                    if depth >= SEARCH_DEPTH_MAX:
+                        partial = True
+                    else:
+                        visit(target, depth + 1)
+                    continue
+                if not child.is_file(follow_symlinks=False):
+                    continue
+                size = child.stat(follow_symlinks=False).st_size
+                if size > SEARCH_FILE_MAX or acquired + size > SEARCH_BYTES_MAX:
+                    partial = True
+                    continue
+                # Bound acquisition even if a file grows after its stat.
+                limit = min(SEARCH_FILE_MAX, SEARCH_BYTES_MAX - acquired)
+                with target.open("rb") as stream:
+                    raw = stream.read(limit)
+                acquired += len(raw)
+                if len(raw) == limit and size != limit:
+                    partial = True
+                    continue
+                if b"\0" in raw:
+                    continue
+                result = subprocess.run(
+                    [
+                        "rg",
+                        "--no-config",
+                        "--json",
+                        "--fixed-strings",
+                        "--max-count",
+                        "1",
+                        "--",
+                        query,
+                    ],
+                    input=raw.decode("utf-8", errors="replace"),
+                    capture_output=True,
+                    text=True,
+                    timeout=max(0.001, deadline - time.monotonic()),
+                    check=False,
+                )
+                if result.returncode not in (0, 1):
+                    raise SearchError("Search failed")
+                for line in result.stdout.splitlines():
+                    event = json.loads(line)
+                    if event.get("type") != "match":
+                        continue
+                    data = event["data"]
+                    matches.append(
+                        {
+                            "path": target.relative_to(root).as_posix(),
+                            "line": data["line_number"],
+                            "column": data["submatches"][0]["start"] + 1,
+                            "context": data["lines"]["text"].rstrip("\r\n")[:240],
+                        }
+                    )
+                    break
+
     try:
-        result = subprocess.run(
-            [
-                "rg",
-                "--json",
-                "--fixed-strings",
-                "--line-number",
-                "--column",
-                "--max-count",
-                "1",
-                "--max-columns",
-                "240",
-                "--max-columns-preview",
-                "--glob",
-                "!.git/**",
-                "--glob",
-                "!node_modules/**",
-                "--glob",
-                "!.venv/**",
-                "--glob",
-                "!__pycache__/**",
-                "--glob",
-                "!.cache/**",
-                "--",
-                query,
-                focused or ".",
-            ],
-            cwd=root,
-            capture_output=True,
-            text=True,
-            timeout=SEARCH_TIMEOUT,
-            check=False,
-        )
+        visit(root / focused, 0)
     except FileNotFoundError as exc:
-        raise SearchError("Search is unavailable: ripgrep is not installed") from exc
+        raise SearchError("Search is unavailable: file or ripgrep not found") from exc
     except subprocess.TimeoutExpired as exc:
         raise SearchError("Search timed out") from exc
-    if result.returncode not in (0, 1):
-        raise SearchError("Search failed")
-    matches = []
-    for line in result.stdout.splitlines():
-        try:
-            event = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if event.get("type") != "match":
-            continue
-        data = event["data"]
-        path = data["path"]["text"]
-        matches.append(
-            {
-                "path": path.removeprefix("./"),
-                "line": data["line_number"],
-                "column": data["submatches"][0]["start"] + 1,
-                "context": data["lines"]["text"].rstrip("\n"),
-            }
-        )
-        if len(matches) == SEARCH_MATCH_MAX:
-            break
-    return matches
+    except OSError as exc:
+        raise SearchError(f"Search failed: {exc.strerror}") from exc
+    return {"matches": matches, **({"partial": True} if partial else {})}
 
 
 def rel_to_abs(rel: str, root: Path) -> Path | None:

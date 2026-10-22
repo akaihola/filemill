@@ -8,6 +8,7 @@ work and acceptance separately.
 
 A4 and the architecture summary were updated on 2026-10-21 for
 [the save-safety task][133]. A9 now records [the preview reuse repair][140].
+A10 and A12 now record [shared content search][130] on 2026-10-22.
 Other findings retain the re-check above.
 
 ## How to read this review
@@ -73,7 +74,7 @@ Other findings retain the re-check above.
   remains trusted same-origin content under [SECURITY.md][security].
 - **Three ports, mutable nodes.** [ui/core/ports.js][ports], lines 10–99,
   declares FS, PREVIEW and ROUTER. Optional capabilities include writes,
-  deletion, raw URLs and a stale-read flag. Editable Blobs carry a revision;
+  deletion, content search, raw URLs and a stale-read flag. Editable Blobs carry a revision;
   writes reject a different expected revision. Nodes also carry adapter-specific
   parsing and metadata state. Browser JSON, CSV and document wrappers compose
   around each filesystem. The interface hides byte access and gives JSON
@@ -337,9 +338,11 @@ current selection or write state through a newly installed filesystem port.
 after expensive work. The earlier blanket claim that archives and bundles
 bound all work was too strong.
 
-- **Search and saves.** [server/src/filemill/api.py][api], lines 70–127,
-  captures all ripgrep output before taking 100 matches. A timeout exists;
-  client abort does not cancel the child. Save bodies are now bounded while
+- **Search and saves.** [The shared-search decision][ADR 0092] now bounds
+  search traversal to 2,000 entries and 32 levels, snapshots to 1 MiB per file
+  and 16 MiB total, and results to 100 files. Ripgrep receives one bounded
+  snapshot at a time. Client abort still does not cancel an active server
+  operation; its ten-second deadline bounds it. Save bodies are bounded while
   receiving under A4.
 - **File reads.** [server/src/filemill/preview.py][preview], lines 74–77 and
   201–205, reads whole files before validating or slicing. Rich previews fetch
@@ -405,9 +408,10 @@ this final audit, or repeat already completed roadmap and ADR rewrites.
   a templating framework. Preserve comments about measured browser behavior.
 - **Resolved: search dependency direction, 2026-10-21 ([120], [ADR 0091]).**
   The server adapter supplies the search provider and owns the API URL. Local
-  mounts remove the provider, hide and disable search, cancel pending work and
-  invalidate old result actions. Return mounts restore served-tree search.
-  Browser-owned content search remains [130].
+  mounts now bind the FSA search capability under [130] and [ADR 0092].
+  Query changes and root mounts cancel pending work and invalidate old result
+  actions. Local reads remain within granted handles; activation works without
+  a router. The static edition uses the same UI and capability.
 - **Open: cross-language differences.** Classification and VTT parsing remain
   in both languages; [server/src/filemill/vfs.py][vfs], line 15, and
   [ui/core/limits.js][limits] disagree on image extensions. Compare behavior
@@ -750,3 +754,5 @@ one new P2 finding; no new P1 finding was established in this pass.
 [ADR 0091]: adr/0091-server-search-stops-at-local-folder-mounts.md
 [120]: tasks/120-disable-server-search-in-local-folders-from-docs-question-5.md
 [130]: tasks/130-give-served-and-browser-owned-folders-the-same-content-search.md
+
+[ADR 0092]: adr/0092-shared-content-search-capability.md
