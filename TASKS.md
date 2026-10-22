@@ -18,10 +18,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [153] Stop a deep-link walk when its root is replaced (architecture review A9)
-  <!-- hai:{"id":"simple-f96381b0-da64-4e54-9be3-93bb4f21354d","labels":["steward"],"createdAt":"2026-10-22T04:21:06.280Z","updatedAt":"2026-10-22T05:05:40.898Z"} -->
-
 ## In Progress
+
+- [~] [153] Stop a deep-link walk when its root is replaced (architecture review A9)
+      <!-- hai:{"id":"simple-f96381b0-da64-4e54-9be3-93bb4f21354d","labels":["steward"],"createdAt":"2026-10-22T04:21:06.280Z","updatedAt":"2026-10-22T05:06:17.675Z"} -->
 
 - [~] [141] Finish browser fixture isolation and qualify independent test roots
       <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T15:01:55.354Z"} -->
