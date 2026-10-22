@@ -52,3 +52,23 @@ Both commands started at once, with a 0-second admission wait and exit code 0.
 
 [the workspace lock]: ../../uv.lock
 [the check receipt]: 154-lock-certifi-at-2026-10-19-or-later-so-filemill-s-bundle-drops-the-emu.evidence.json
+
+
+## Merged verification
+
+Delivery commit: `105654ae81424a7a7caf3ed77fb3ba19d569693c`.
+The clean checkout at that commit passed all four recorded checks:
+version floor, certifi-only lock diff, 144 focused server tests, and the
+seven-hook quality gate. Exact commands, dependency fingerprints and results
+are in the check receipt. All acceptance checks passed; no follow-up is needed.
+
+The evidence recorder used a 650-second outer timeout for each check.
+All four record commands started at once, waited 0 seconds and exited 0.
+The recorder's exact commands are in the receipt's `resource_checks`.
+
+| Recorded check | Admission | Final | Starting swap | Swap growth | Seconds |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| version | 3037 | 3013 | 2163 | -2 | 2.0 |
+| lock-scope | 3049 | 3038 | 2155 | 0 | 1.0 |
+| focused-server | 3038 | 3051 | 2155 | 0 | 13.6 |
+| quality-gate | 3058 | 3043 | 2155 | 0 | 3.0 |
