@@ -152,6 +152,8 @@ Keep these boundaries and checks.
   is pending; the fold and clipping assertions keep their original bounds.
   Loading-indicator checks hold their read until observation, and fling
   checks send preview wheel input rather than a CSS-smoothed assignment.
+  Served navigation waits for DOM readiness and the existing UI predicates,
+  avoiding an unrelated resource load event without raising any timeout.
 - [The older-review repairs][131] fixed conditional Zstandard imports, typing
   stubs and unexplained tuning constants (`f7e917a5`). Clipboard refusal now
   offers manual copying with the full value and error (`fef28359`). Neither

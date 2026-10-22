@@ -273,6 +273,31 @@ The streamed collection comparison now matches all 1,496 root IDs: 67
 keyboard, 312 served UI, 924 server contracts and 193 static bundle cases.
 No assertion, 1,800-second bound or dependency was removed or relaxed.
 
+## Served navigation readiness
+
+The fourth merged recording passed static bundle (193), static development
+(193), native contracts (20), native UI (83), and keyboard (67). The served
+UI shard then stopped with 288 passed and one failure in
+`test_json_column_refresh_current_source[invalid-False-True]`: `Page.goto:
+Timeout 3000ms exceeded`, while waiting for the full `load` event. Guard
+wall time was 1,140.7 s. The remaining 23 served cases and later queued
+checks were not run. The fourth failed receipt retains these results.
+
+The short test timeout also applied to navigation. A controlled regression
+holds an unrelated image request while the UI is already ready. With service
+workers blocked so routing takes effect, the original harness reproduced the
+same 3,000 ms navigation failure (7.24 s pytest time). The initial probe did
+not block service workers and failed its route-observation assertion instead;
+that setup error is retained in the logs.
+
+The harness now waits for `DOMContentLoaded`, followed by the same path,
+selection, cached-column, spinner, row and loaded-font predicates. No assertion
+or timeout is relaxed. The held image remains pending when the UI assertions
+succeed. This proves excess load-event coupling; the failed full run did not
+identify which resource or scheduling delay held its load event.
+The controlled case and all 12 JSON-refresh variants then passed together:
+13 passed in 41.20 s (guard wall 43.2 s).
+
 <!-- HAI156 memory start -->
 ## Memory guard evidence
 
@@ -327,6 +352,17 @@ probes and actual failed checks retain their nonzero exits.
 | fling-green | started at once | 0.0 | 2856/2792 | 2154/-1 | 0 | 36.2 | 0 |
 | native-ui-qa2 | started at once | 0.0 | 2786/2731 | 2152/+2 | 15 | 593.4 | 0 |
 | fixture-gate | started at once | 0.0 | 2841/2570 | 2151/+1 | 2 | 44.1 | 0 |
+| v4-static-bundle | started at once | 0.0 | 3070/2926 | 2181/-37 | 90 | 990.7 | 0 |
+| v4-static-dev | started at once | 0.0 | 2937/2815 | 2144/+39 | 198 | 1211.2 | 0 |
+| v4-native-build | started at once | 0.0 | 2817/2871 | 2178/-2 | 0 | 42.0 | 0 |
+| v4-native-contracts | started at once | 0.0 | 2873/3140 | 2176/+34 | 34 | 78.2 | 0 |
+| v4-native-ui | started at once | 0.0 | 3149/3247 | 2210/+136 | 191 | 897.8 | 0 |
+| v4-keyboard | started at once | 0.0 | 3248/2849 | 2341/-123 | 0 | 581.1 | 0 |
+| v4-served-ui | started at once | 0.0 | 2849/3199 | 2214/+3 | 86 | 1140.7 | 1 |
+| navigation-red | started at once | 0.0 | 3174/3181 | 2204/+6 | 6 | 12.0 | 1 |
+| navigation-red-controlled | started at once | 0.0 | 3301/3222 | 2209/+0 | 0 | 21.1 | 1 |
+| navigation-green | started at once | 0.0 | 3221/3260 | 2209/+7 | 7 | 43.2 | 0 |
+| navigation-gate | started at once | 0.0 | 3254/3213 | 2205/+8 | 10 | 15.0 | 0 |
 
 Exact argument vectors are in [the guarded command arguments].
 Run names match that artifact and [the memory log].

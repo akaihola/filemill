@@ -354,7 +354,7 @@ class Harness:
 
     def open_resource(self, path: str) -> None:
         """Open the resource route, where the URL path is the file path."""
-        self._pg.goto(f"{self.base}/{path}")
+        self._pg.goto(f"{self.base}/{path}", wait_until="domcontentloaded")
         self._pg.wait_for_function("typeof path !== 'undefined' && path.length >= 1")
         names = [unquote(part) for part in urlsplit(path).path.split("/") if part]
         self._pg.wait_for_function(
@@ -410,6 +410,26 @@ def routed_page(server: str, browser):
         yield Harness(context.new_page(), server)
     finally:
         context.close()
+
+
+def test_open_waits_for_ui_instead_of_unrelated_load(routed_page):
+    page = routed_page
+    held = []
+    page.route("**/held-load.png", lambda route: held.append(route))
+    page.add_init_script("""document.addEventListener('DOMContentLoaded', () => {
+      const image = document.createElement('img');
+      image.src = '/held-load.png';
+      document.body.append(image);
+    });""")
+    page.set_default_timeout(3000)
+    try:
+        page.open()
+        assert held
+        assert page.evaluate("document.readyState") != "complete"
+        expect(page.locator(".col .row").first).to_be_visible()
+    finally:
+        for route in held:
+            route.abort()
 
 
 def test_tests_without_ui_root_cannot_write_the_served_tree(page):
