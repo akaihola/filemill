@@ -75,6 +75,7 @@ failure corrected above. Every subsequent acceptance check finished with exit 0.
 | C9 | started at once | 0.0 | 2661 | 2695 | 2633 | -7 | 14.0 | exit 1 |
 | C10 | started at once | 0.0 | 2698 | 2730 | 2620 | +0 | 3.0 | exit 0 |
 | C11 | started at once | 0.0 | 2727 | 2721 | 2620 | +0 | 1.0 | exit 0 |
+| C12 | started at once | 0.0 | 2526 | 2381 | 2597 | -81 | 2.0 | exit 0 |
 
 - **C1:**
 
@@ -141,6 +142,24 @@ failure corrected above. Every subsequent acceptance check finished with exit 0.
   ```bash
   node ui/core/model/test.mjs
   ```
+
+- **C12:**
+
+  ```bash
+  systemctl --user restart filemill.service filemill-public.service
+  ```
+
+## Integration
+
+- Start move committed on main as `49df682a`.
+- Implementation, tests, bundle and documentation committed as `596af7b0`
+  after rebasing on current main, then fast-forward merged.
+- Restarted both running Filemill services after the merge, as the shared UI
+  instructions require. Both were active and served the new core initializer
+  with HTTP 200. The native executable was rebuilt in the retained worktree.
+- Completion move committed as `87ce16f1`. The canonical tracker is in
+  Completed / Accepted with acceptance unchecked. The worktree and branch
+  are retained. No unrelated changes were included.
 
 [the 2026-10-22 architecture review]: ../reviews/2026-10-22-architecture-review.md#draft-issues
 [the filemill tracker]: ../../TASKS.md
