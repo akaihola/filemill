@@ -16,11 +16,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+## Scheduled
+
 - [149] Review filemill's architecture for deep modules and over-engineering,
   and draft the fixes
-  <!-- hai:{"id":"simple-f1c453ee-4736-4b7c-92df-fe024614710c","labels":["steward","review"],"createdAt":"2026-10-22T03:30:48.752Z","updatedAt":"2026-10-22T03:30:48.752Z"} -->
-
-## Scheduled
+  <!-- hai:{"id":"simple-f1c453ee-4736-4b7c-92df-fe024614710c","labels":["steward","review"],"createdAt":"2026-10-22T03:30:48.752Z","updatedAt":"2026-10-22T04:00:34.297Z"} -->
 
 ## In Progress
 
