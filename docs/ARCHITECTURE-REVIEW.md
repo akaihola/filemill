@@ -150,6 +150,8 @@ Keep these boundaries and checks.
   Scroll checks also observe pending dial work through the shared debug
   surface. A held-rebase regression rejects quiet geometry while that work
   is pending; the fold and clipping assertions keep their original bounds.
+  Loading-indicator checks hold their read until observation, and fling
+  checks send preview wheel input rather than a CSS-smoothed assignment.
 - [The older-review repairs][131] fixed conditional Zstandard imports, typing
   stubs and unexplained tuning constants (`f7e917a5`). Clipboard refusal now
   offers manual copying with the full value and error (`fef28359`). Neither

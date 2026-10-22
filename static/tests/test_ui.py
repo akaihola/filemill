@@ -933,6 +933,59 @@ def test_scroll_settlement_waits_for_pending_rebase(copy_page):
     assert page.evaluate(SCROLL_SETTLED), "The completed rebase can settle"
 
 
+PREVIEW_FLING = """() => {
+  document.getElementById('preview').dispatchEvent(new WheelEvent('wheel', {
+    deltaX: finder.scrollWidth, bubbles: true, cancelable: true,
+  }));
+}"""
+
+
+def test_preview_fling_arrives_before_settlement(copy_page):
+    page = copy_page
+    page.clock.run_for(2000)
+    page.evaluate("""async () => {
+      await applyPath(['deep', 'alpha', 'beta', 'gamma', 'leaf.txt']);
+      dialTo(2 * foldUnit() * range(), false);
+    }""")
+    page.clock.run_for(1000)
+    for count in (4, 5):
+        page.evaluate(PREVIEW_FLING)
+        page.evaluate("finder.dispatchEvent(new Event('scroll'))")
+        page.clock.fast_forward(1000)
+        assert page.evaluate("folded") == count, "A fling reaches the next stop"
+
+
+HOLD_SLOW_READ = """() => {
+  const load = FS.ensureLoaded.bind(FS);
+  FS.ensureLoaded = n => {
+    if (n.name !== 'slow' || n.kids !== null || n.loading) return load(n);
+    const reading = (async () => {
+      await new Promise(resolve => { window.__releaseSlow = resolve; });
+      n.loading = null;
+      return load(n);
+    })();
+    n.loading = reading;
+    return reading;
+  };
+}"""
+
+
+def test_loading_indicator_waits_for_read_release(copy_page):
+    page = copy_page
+    page.clock.run_for(2000)
+    page.evaluate(HOLD_SLOW_READ)
+    page.evaluate("() => { choose(0, path[0].kids.find(n => n.name === 'slow')); }")
+    page.clock.run_for(1000)
+    try:
+        assert page.locator('.col[data-i="1"] .spinner').is_visible(), (
+            "Loading stays observable until the read is released"
+        )
+    finally:
+        page.evaluate("window.__releaseSlow?.()")
+    page.clock.run_for(1000)
+    assert page.locator('.col[data-i="1"] .row').count() == 2
+
+
 def copied(page, expected, key="Control+c"):
     count = page.evaluate("__clipped.length")
     page.keyboard.press(key)
@@ -1398,11 +1451,14 @@ async def test_directory_states(page):
         await pg.wait_for_function("sel[0] !== " + json.dumps(row))
         st = await pg.evaluate("__state()")
         assert stayed and st["focusCol"] == 0 and st["sel"][0] != row, json.dumps(st)
+    await pg.evaluate(HOLD_SLOW_READ)
     await pg.click('.col[data-i="0"] .row:has-text("slow")')
-    try:  # the fake read takes 500 ms; don't race it with a fixed sleep
+    try:
         await pg.wait_for_selector('.col[data-i="1"] .spinner', timeout=2000)
     except PlaywrightTimeoutError:
         assert False, "never appeared"
+    finally:
+        await pg.evaluate("window.__releaseSlow?.()")
     await pg.wait_for_function(
         "document.querySelectorAll('.col[data-i=\"1\"] .row').length === 2"
     )
@@ -1651,13 +1707,12 @@ async def test_folding_dial(page):
         await pg.wait_for_function("focusCol === " + str(col))
     await pg.keyboard.press("ArrowRight")  # focus the leaf preview
     await scroll_settled(pg)
-    # Both moves glide: the dial is a CSS smooth scroll either way round, so
-    # wait for it to stop rather than for a clock. A flat 300 ms read the
-    # fold mid-flight and counted 4 of the 5 spines.
-    # A fling runs to the end of the scrollbar, which is one stop away
-    # (ADR 0075): first the rightmost column alone, then every column.
+    # Preview wheel input reaches the current scrollbar endpoint. Settling
+    # rebases its window before the next gesture (ADR 0075): first the
+    # rightmost column alone, then every column. A scrollLeft assignment
+    # instead starts a CSS glide, which rebasing can interrupt mid-flight.
     n = await pg.evaluate("path.length")
-    await pg.evaluate("finder.scrollLeft = finder.scrollWidth")
+    await pg.evaluate(PREVIEW_FLING)
     settled = await scroll_settled(pg)
     await pg.wait_for_function(
         "document.querySelectorAll('.col.spine').length === path.length - 1 && finder.scrollLeft < finder.scrollWidth - finder.clientWidth - 1"
@@ -1666,7 +1721,7 @@ async def test_folding_dial(page):
     assert spines == n - 1, f"{spines} spines of {n}" + (
         "" if settled else ", scroll never settled"
     )
-    await pg.evaluate("finder.scrollLeft = finder.scrollWidth")
+    await pg.evaluate(PREVIEW_FLING)
     settled = await scroll_settled(pg)
     await pg.wait_for_function(
         "document.querySelectorAll('.col.spine').length === path.length"

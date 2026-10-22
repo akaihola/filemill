@@ -120,7 +120,7 @@ remain untouched.
 
 ## Collection partition
 
-The root now collects 1,493 tests, including the new cached-render regression.
+The first repaired root collection had 1,493 tests, including the new cached-render regression.
 The four shards collect 67 keyboard, 312 served UI, 924 server contracts and
 190 static bundle tests. Comparing Counters of the complete node IDs gives an
 exact multiset match, so no ID is omitted or repeated between shards.
@@ -224,9 +224,54 @@ The unmodified documentation check then passed, along with every quality
 hook, all three changed Python files' lint/format checks and model checks.
 Deno is the documented 2.6.8 release.
 
-The current collection is 1,494: 67 keyboard, 312 served UI, 924 server
+At that qualification the collection was 1,494: 67 keyboard, 312 served UI, 924 server
 contracts and 191 static bundle cases. The streamed Counter comparison
 retains duplicate counts and matches root collection exactly.
+
+## Slow-folder indicator observation
+
+At `c83e31bd`, native build and all 20 contracts passed. The native UI command
+stopped with 46 passed and one failure in `test_directory_states`: the
+`.col[data-i="1"] .spinner` selector was absent at its unchanged 2,000 ms
+wait. The fixture completed its slow read after 500 ms, before the native
+click/observation round trips finished. The [third failed receipt] is retained;
+34 UI cases were unreported in that stopped run.
+
+A controlled browser-clock regression advances past that 500 ms window before
+observing the indicator. It failed with the old fixture (9.30 s). The test
+input now holds the port read on a promise until the spinner assertion releases
+it in `finally`. The original visibility wait and exact two-entry assertion
+remain. The clock regression and directory-state case passed together in
+development mode (2 passed, 20.10 s). The complete native UI command is now
+being qualified before the next merge. This change affects test input only.
+
+## Fling input matches the wheel handler
+
+The first complete native qualification with the spinner gate still failed
+the second-fling assertion: 57 passed, one failed, in 329.30 s. The readiness
+probe is useful but did not fully explain that failure. A focused geometry
+trace passed with dial positions 495, 990 and 1,238 (unit 247.5, range 1,250);
+it did not capture the failed ending state.
+
+The old fling input assigned `scrollLeft`, which starts a CSS smooth scroll.
+The range-rebase timer can run before that animation reaches its endpoint.
+Actual preview wheel input uses the wheel handler's instant scroll instead.
+A controlled clock probe advanced the settlement timer before the old CSS
+movement arrived and failed with two spines instead of four (3.77 s).
+
+The fling input now dispatches the preview wheel event. The clock probe and
+complete folding-dial case passed together in development mode (2 passed,
+34.23 s). Every spine-count, unfold and clipping assertion is retained.
+Keyboard and spine-unfold moves still exercise their smooth glides. No
+application folding arithmetic or timing budget changes.
+
+The complete native UI qualification then passed all 83 cases in 582.18 s
+(guard wall 593.4 s), including every originally reported native failure and
+the additional cases found here. All quality hooks, explicit Python checks,
+model checks and 28 documentation/readiness checks passed afterward.
+The streamed collection comparison now matches all 1,496 root IDs: 67
+keyboard, 312 served UI, 924 server contracts and 193 static bundle cases.
+No assertion, 1,800-second bound or dependency was removed or relaxed.
 
 <!-- HAI156 memory start -->
 ## Memory guard evidence
@@ -271,6 +316,17 @@ probes and actual failed checks retain their nonzero exits.
 | native-remainder | started at once | 0.0 | 3066/2938 | 2193/-2 | 2 | 197.6 | 0 |
 | detach-gate | started at once | 0.0 | 3271/3215 | 2422/-15 | 0 | 9.0 | 1 |
 | portable-gate | started at once | 0.0 | 2268/2532 | 2353/-48 | 0 | 92.5 | 0 |
+| v3-native-build | started at once | 0.0 | 2873/2710 | 2284/+2 | 5 | 36.0 | 0 |
+| v3-native-contracts | started at once | 0.0 | 2733/2873 | 2286/+60 | 60 | 143.7 | 0 |
+| v3-native-ui | started at once | 0.0 | 2873/2096 | 2346/-7 | 83 | 517.9 | 1 |
+| spinner-red | started at once | 0.0 | 2320/2228 | 2501/+21 | 26 | 16.1 | 1 |
+| spinner-green | started at once | 0.0 | 2294/2408 | 2554/+79 | 79 | 35.2 | 0 |
+| native-ui-qa | started at once | 0.0 | 2769/2378 | 2431/-232 | 0 | 340.9 | 1 |
+| fold-trace | started at once | 0.0 | 2314/2005 | 2181/+8 | 12 | 122.4 | 0 |
+| fling-red | started at once | 0.0 | 2742/2598 | 2174/+0 | 0 | 5.0 | 1 |
+| fling-green | started at once | 0.0 | 2856/2792 | 2154/-1 | 0 | 36.2 | 0 |
+| native-ui-qa2 | started at once | 0.0 | 2786/2731 | 2152/+2 | 15 | 593.4 | 0 |
+| fixture-gate | started at once | 0.0 | 2841/2570 | 2151/+1 | 2 | 44.1 | 0 |
 
 Exact argument vectors are in [the guarded command arguments].
 Run names match that artifact and [the memory log].
@@ -292,3 +348,4 @@ Run names match that artifact and [the memory log].
 [second failed receipt]: http://hopeli/tmp/filemill-hai156/receipt-f4210f8a-failed.json?f
 [native guide]: ../../native/README.md#checks
 [the guarded command arguments]: http://hopeli/tmp/filemill-hai156/commands.json?f
+[third failed receipt]: http://hopeli/tmp/filemill-hai156/receipt-c83e31bd-failed.json?f
