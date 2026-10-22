@@ -104,5 +104,13 @@ are MiB; elapsed time includes command setup, not just pytest's test time.
   admission 2,830.9; final 2,812.0; starting swap 2,535.2;
   swap growth 0.0; elapsed 17.98 s; exit 0.
 
+## Integration
+
+Report commit `92d4d0eb` was rebased on main (no intervening changes) and
+fast-forwarded into the canonical main checkout after validation. The report
+keeps its original evidence commit. The worktree and branch are retained.
+No runtime deployment is needed for these two documentation files. Completion
+uses the separate tracker-only move, with acceptance left unchecked.
+
 [docs/ARCHITECTURE-REVIEW.md]: ../ARCHITECTURE-REVIEW.md
 [docs/reviews/2026-10-22-architecture-review.md]: ../reviews/2026-10-22-architecture-review.md
