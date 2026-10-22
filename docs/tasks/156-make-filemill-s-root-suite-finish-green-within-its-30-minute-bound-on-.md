@@ -447,6 +447,21 @@ quality hooks, explicit Python checks and 31 documentation/readiness/partition
 checks passed. Complete static UI qualification then passed all 83 cases in 692.66 s
 (698.3 s guarded wall time), before the next merge.
 
+## Main documentation integration
+
+All 12 acceptance recordings passed at `47cb64da`, including all 1,500 root
+cases, 193 development cases, 20 native contracts and 83 native UI cases.
+The longest guarded root shard took 932.8 s; the full development command
+took 1,614.6 s. The complete green receipt and JUnit files are retained.
+
+Main advanced during that long recording with [the architecture-summary task].
+Its documentation contract adds one root case. The feature branch has now
+incorporated that main update. Final recording will include the new contract:
+1,501 root cases and 928 server-contract cases, with the other shard counts
+unchanged. This integration records task evidence; the other task's files
+are retained as delivered. The final receipt uses the refreshed pre-merge
+base and preserves the earlier delivery history separately.
+
 <!-- HAI156 memory start -->
 ## Memory guard evidence
 
@@ -558,6 +573,19 @@ probes and actual failed checks retain their nonzero exits.
 | rebase-probe-gate | started at once | 0.0 | 2854/2611 | 2249/-2 | 6 | 87.4 | 0 |
 | static-ui-probe-qa | started at once | 0.0 | 2589/2825 | 2247/+166 | 213 | 698.3 | 0 |
 | rebase-probe-docs | started at once | 0.0 | 2722/2690 | 2339/-8 | 0 | 12.0 | 0 |
+| v11-static-ui | started at once | 0.0 | 2787/2576 | 2279/-12 | 0 | 509.5 | 0 |
+| v11-native-build | started at once | 0.0 | 2571/2487 | 2267/+35 | 36 | 35.1 | 0 |
+| v11-native-contracts | started at once | 0.0 | 2467/2636 | 2301/+72 | 72 | 81.2 | 0 |
+| v11-native-ui | started at once | 0.0 | 2713/2707 | 2361/+108 | 176 | 667.8 | 0 |
+| v11-static-dev | started at once | 0.0 | 2749/2673 | 2457/-25 | 228 | 1614.6 | 0 |
+| v11-static-adapters | started at once | 0.0 | 2596/2245 | 2416/+329 | 405 | 932.8 | 0 |
+| v11-keyboard | started at once | 0.0 | 2224/2493 | 2751/-263 | 182 | 671.9 | 0 |
+| v11-served-ui-early | started at once | 0.0 | 2566/2649 | 2486/+29 | 32 | 338.8 | 0 |
+| v11-served-ui-late | started at once | 0.0 | 2737/2853 | 2514/+190 | 347 | 650.2 | 0 |
+| v11-server-contracts | started at once | 0.0 | 2861/2764 | 2697/-25 | 0 | 46.2 | 0 |
+| v11-collections | started at once | 0.0 | 2946/2804 | 2668/-2 | 0 | 16.0 | 0 |
+| v11-quality | started at once | 0.0 | 2810/2770 | 2661/+0 | 0 | 9.0 | 0 |
+| main-docs-integration-gate | started at once | 0.0 | 2933/2716 | 2539/-1 | 0 | 22.0 | 0 |
 
 Exact argument vectors are in [the guarded command arguments].
 Run names match that artifact and [the memory log].
@@ -581,3 +609,4 @@ Run names match that artifact and [the memory log].
 [the guarded command arguments]: http://hopeli/tmp/filemill-hai156/commands.json?f
 [third failed receipt]: http://hopeli/tmp/filemill-hai156/receipt-c83e31bd-failed.json?f
 [static reliability]: 144-make-the-full-static-suites-pass-reliably-the-wide-folder-wait-and-tes.md
+[the architecture-summary task]: 157-point-agents-at-a-short-summary-of-the-architecture-review-instead-of-.md
