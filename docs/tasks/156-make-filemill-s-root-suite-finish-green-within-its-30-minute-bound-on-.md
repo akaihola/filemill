@@ -512,6 +512,28 @@ The compound command, including every quality hook, explicit Python checks
 and 32 documentation/readiness/partition cases, passed in 600.2 s. Both
 readiness repairs are qualified before merging.
 
+## Real layout around controlled clock phases
+
+At `f0c0b9ee`, native build and 20 contracts passed. The native UI command
+then stopped with eight passed and one failure in the pending-rebase probe's
+final positive assertion: `The completed rebase can settle` observed false.
+Pytest time was 29.72 s; guarded wall time was 37.0 s. The negative held-timer
+assertion had passed. Seventy-four UI cases and later queued commands were
+unreported in this round.
+
+The positive phase still advanced fixed virtual time around real CSS motion.
+The shared clock fixture now waits for preview eligibility and real dial
+settlement before pausing time. After the controlled held-timer phase, the
+probe resumes its clock and uses the existing 6,000 ms settlement helper to
+observe actual browser geometry. Its original negative and positive assertions
+remain. The helper's bound and production scrolling behavior are unchanged.
+
+Eight controlled rebase, fling and dialog cases passed in bundle mode
+(35.69 s) and the same eight passed in development mode (38.98 s). Full native
+qualification then passed all 83 cases in 617.28 s. The compound command
+including all quality hooks, explicit Python checks and 32 focused cases
+passed in 642.5 s before merging.
+
 <!-- HAI156 memory start -->
 ## Memory guard evidence
 
@@ -650,6 +672,11 @@ probes and actual failed checks retain their nonzero exits.
 | cached-sort-commit-gate | started at once | 0.0 | 3421/3422 | 2603/+0 | 0 | 10.1 | 0 |
 | copy-focus-green | started at once | 0.0 | 3408/3308 | 2602/-1 | 0 | 38.1 | 0 |
 | native-readiness-qa | started at once | 0.0 | 3406/3024 | 2598/+5 | 15 | 600.2 | 0 |
+| v13-native-build | started at once | 0.0 | 3249/3132 | 2596/-6 | 0 | 14.0 | 0 |
+| v13-native-contracts | started at once | 0.0 | 3248/3058 | 2590/-8 | 0 | 52.2 | 0 |
+| v13-native-ui | started at once | 0.0 | 3046/3100 | 2582/-14 | 0 | 37.0 | 1 |
+| clock-boundary-green | started at once | 0.0 | 3112/3077 | 2563/+9 | 9 | 79.1 | 0 |
+| clock-fixture-native-qa | started at once | 0.0 | 3124/3187 | 2568/+56 | 85 | 642.5 | 0 |
 
 Exact argument vectors are in [the guarded command arguments].
 Run names match that artifact and [the memory log].

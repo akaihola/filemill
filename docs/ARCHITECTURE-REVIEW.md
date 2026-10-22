@@ -151,6 +151,8 @@ Keep these boundaries and checks.
   Scroll checks also observe pending dial work through the shared debug
   surface. A held-rebase regression rejects quiet geometry while that work
   is pending; the probe cancels earlier glides before arming its held rebase.
+  Clock fixtures finish preview reads and real layout before pausing; after
+  the held phase, real CSS motion is observed with the settlement helper.
   The fold and clipping assertions keep their original bounds. Cached-sort
   I/O checks wait for the preceding preview to finish snapshot eligibility
   before taking their read-count baseline. Dialog dismissal checks resume

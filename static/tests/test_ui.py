@@ -895,6 +895,8 @@ def copy_page(bundle, fake_handle, playwright, request):
     # The preview's late render rewrites the status path and drops a fallback
     # selection made before it; CI once read that selection empty.
     page.wait_for_selector("#preview .pv-text")
+    page.wait_for_selector("#pv-edit", state="visible")
+    sync_scroll_settled(page)
     # pause_at installs the clock itself, avoiding a running interval between calls.
     page.clock.pause_at(1000000)
     try:
@@ -930,9 +932,8 @@ def test_scroll_settlement_waits_for_pending_rebase(copy_page):
         )
     finally:
         page.evaluate("__releaseSettle()")
-    page.clock.run_for(1000)
-    page.evaluate(SCROLL_SETTLED)
-    page.clock.run_for(400)
+    page.clock.resume()
+    sync_scroll_settled(page)
     assert page.evaluate(SCROLL_SETTLED), "The completed rebase can settle"
 
 
