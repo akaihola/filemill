@@ -141,6 +141,9 @@ The tested branch head was `84de53d6`.
   guard. No command hit a memory limit. The bundle suite started with
   2.41 GiB available and the search browser checks with 2.57 GiB.
 
+Completed on 2026-10-22 after merge `00545e41`. The [tracker] entry remains
+unchecked, pending user acceptance. No restart or deployment was performed.
+
 [109]: 109-check-filemill-s-docs-and-adr-statuses-against-the-code-and-fix-what-d.md#questions
 [115]: 115-propose-plain-answers-to-the-docs-check-s-twelve-remaining-questions.md
 [130]: 130-give-served-and-browser-owned-folders-the-same-content-search.md
@@ -152,3 +155,5 @@ The tested branch head was `84de53d6`.
 [ADR 0090]: ../adr/0090-revision-checked-file-replacement.md
 [144]: 144-make-the-full-static-suites-pass-reliably-the-wide-folder-wait-and-tes.md
 [usage guide]: ../USAGE.md#content-search
+
+[tracker]: ../../TASKS.md
