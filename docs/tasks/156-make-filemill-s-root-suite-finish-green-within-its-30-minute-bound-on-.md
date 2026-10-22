@@ -534,6 +534,31 @@ qualification then passed all 83 cases in 617.28 s. The compound command
 including all quality hooks, explicit Python checks and 32 focused cases
 passed in 642.5 s before merging.
 
+## Server tap readiness
+
+At `14cb7d3b`, native build, 20 native contracts, 83 native UI cases,
+83 static UI cases, 193 development cases and 110 static adapter cases
+passed. The keyboard shard stopped with 65 passed and one failure in
+`test_status_bar_items_stay_on_one_line_when_hints_do_not_fit[viewport1]`:
+`_ui_tap` reached its unchanged 30,000 ms selection/path wait after the
+wide-chain input failed to select its target. Pytest time was 344.78 s;
+guarded wall time was 346.6 s. One keyboard case and later queued commands
+were unreported.
+
+The server keyboard dial helper still used the older geometry-only predicate.
+It now checks pending dial work as well, using the same debug surface as the
+controlled regression. After a spine is unfolded, the input helper waits for
+settlement before clicking its row. The served UI module's duplicate dial
+predicate is aligned too. All geometry, selection, status-bar and clipping
+assertions remain; the 6,000 ms settlement bound is unchanged. Browser/server
+lifecycle and parallel qualification owned by [fixture isolation] are untouched.
+
+The three status-bar viewport cases and both mobile wide-folder cases passed
+(5 in 51.76 s). Complete keyboard qualification then passed: 67 passed in 326.27s (0:05:26).
+The related served folding/navigation checks passed: 6 passed in 54.86s.
+All quality hooks and 32 focused checks passed. The compound command took
+388.7 s before merging the input-readiness repair.
+
 <!-- HAI156 memory start -->
 ## Memory guard evidence
 
@@ -677,6 +702,15 @@ probes and actual failed checks retain their nonzero exits.
 | v13-native-ui | started at once | 0.0 | 3046/3100 | 2582/-14 | 0 | 37.0 | 1 |
 | clock-boundary-green | started at once | 0.0 | 3112/3077 | 2563/+9 | 9 | 79.1 | 0 |
 | clock-fixture-native-qa | started at once | 0.0 | 3124/3187 | 2568/+56 | 85 | 642.5 | 0 |
+| v14-native-build | started at once | 0.0 | 2870/2819 | 2596/-165 | 6 | 20.0 | 0 |
+| v14-native-contracts | started at once | 0.0 | 2896/2708 | 2430/+28 | 33 | 80.3 | 0 |
+| v14-native-ui | started at once | 0.0 | 2969/3037 | 2471/+9 | 71 | 745.1 | 0 |
+| v14-static-ui | started at once | 0.0 | 3092/2490 | 2476/-62 | 0 | 429.0 | 0 |
+| v14-static-dev | started at once | 0.0 | 2738/2727 | 2414/-5 | 1 | 682.5 | 0 |
+| v14-static-adapters | started at once | 0.0 | 2732/2748 | 2409/+11 | 13 | 245.4 | 0 |
+| v14-keyboard | started at once | 0.0 | 2906/2513 | 2420/-13 | 0 | 346.6 | 1 |
+| keyboard-tap-green | started at once | 0.0 | 2495/2578 | 2404/+0 | 1 | 53.1 | 0 |
+| server-input-qa | started at once | 0.0 | 3151/3089 | 2358/+5 | 29 | 388.7 | 0 |
 
 Exact argument vectors are in [the guarded command arguments].
 Run names match that artifact and [the memory log].

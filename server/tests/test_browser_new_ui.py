@@ -1434,7 +1434,7 @@ def _dial_settled(page) -> float:
           if (value !== window.__scrollProbe.value) {
             window.__scrollProbe = {value, since: now};
           }
-          return now - window.__scrollProbe.since >= 300;
+          return dialSettled && now - window.__scrollProbe.since >= 300;
         }""",
         timeout=6000,
     )

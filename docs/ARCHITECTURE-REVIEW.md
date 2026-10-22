@@ -157,6 +157,8 @@ Keep these boundaries and checks.
   I/O checks wait for the preceding preview to finish snapshot eligibility
   before taking their read-count baseline. Dialog dismissal checks resume
   their test clock and observe focus restoration after the dialog hides.
+  Both server dial helpers also observe pending work; a spine unfold settles
+  before the next row input.
   Loading-indicator checks hold their read until observation, and fling
   checks send preview wheel input rather than a CSS-smoothed assignment.
   Served navigation waits for document commit and the existing UI predicates,

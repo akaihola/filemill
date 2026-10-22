@@ -237,7 +237,7 @@ def _dial_settled(page) -> None:
           if (value !== window.__scrollProbe.value) {
             window.__scrollProbe = {value, since: now};
           }
-          return now - window.__scrollProbe.since >= 300;
+          return dialSettled && now - window.__scrollProbe.since >= 300;
         }""",
         timeout=6000,
     )
@@ -258,6 +258,7 @@ def _ui_tap(page, col: int, name: str) -> None:
     if page.locator(sel + ".spine").count():
         activate(sel + ".spine")
         page.wait_for_selector(sel + ":not(.spine)", timeout=20000)
+        _dial_settled(page)
     activate(f'{sel} .row:has-text("{name}")')
     page.wait_for_function(
         """([i, name]) => sel[i] === name && path.every(n => n.kids !== null)
