@@ -3422,6 +3422,15 @@ async def test_cached_render_keeps_sorted_column_order(page):
       finally { Array.prototype.sort = sort; }
     }""")
     assert sorts == 0, "A cached render uses the column's sorted children"
+    await scroll_settled(page)
+    class_writes = await page.evaluate("""() => {
+      const observer = new MutationObserver(() => {});
+      document.querySelectorAll('.col').forEach(col => observer.observe(col,
+        {attributes: true, attributeFilter: ['class']}));
+      try { render(true); return observer.takeRecords().length; }
+      finally { observer.disconnect(); }
+    }""")
+    assert class_writes == 0, "A cached render preserves settled column classes"
 
 
 async def test_render_cost(page):

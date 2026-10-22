@@ -147,6 +147,9 @@ Keep these boundaries and checks.
   [The bounded-suite work][156] removes a repeated sort from cached rendering:
   the selected row is found in the cached column's ordered children. A
   regression counts sort calls and complements the unchanged timing assertions.
+  Cached renders also preserve layout-owned column classes; updating only
+  render-owned classes avoids invalidating and restoring settled geometry.
+  The same regression observes zero column-class writes on an unchanged render.
   Edit checks wait for snapshot eligibility separately from preview text.
   Scroll checks also observe pending dial work through the shared debug
   surface. A held-rebase regression rejects quiet geometry while that work

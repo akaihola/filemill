@@ -438,15 +438,11 @@ export function render(keepScroll) {
     const selectedRow = c.kids.findIndex((k) => k.name === sel[i]);
     widths.push(w);
 
-    /* `sorting` goes in the class string rather than on classList, because this
-       write replaces the whole attribute and would drop it a frame later. */
-    set(
-      c.el,
-      "className",
-      "col " +
-        (i < focusCol ? "ancestor" : i > focusCol ? "descendant" : "focus") +
-        (node.metaLoading ? " sorting" : ""),
-    );
+    // Preserve layout-owned classes so cached columns keep their geometry.
+    c.el.classList.toggle("ancestor", i < focusCol);
+    c.el.classList.toggle("descendant", i > focusCol);
+    c.el.classList.toggle("focus", i === focusCol);
+    c.el.classList.toggle("sorting", !!node.metaLoading);
     set(
       c.el.dataset,
       "depth",

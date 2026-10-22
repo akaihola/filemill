@@ -559,6 +559,33 @@ The related served folding/navigation checks passed: 6 passed in 54.86s.
 All quality hooks and 32 focused checks passed. The compound command took
 388.7 s before merging the input-readiness repair.
 
+## Preserve cached column geometry
+
+The fifteenth merged-main recording completed all twelve checks. Eleven
+passed: all six root shards (1,501 cases), development (193), native build,
+native contracts (20), exact collection coverage and the quality gate.
+Native UI finished with 82 passed and one failure: `test_render_cost`
+measured a 3,000-entry re-render at 112 ms against its unchanged 100 ms
+budget; the keystroke measurement passed at 18.7 ms. Its complete log and
+JUnit file remain in [the run directory]. No hardware exception applies.
+
+Inspection found that [the renderer] replaced each cached column's entire
+class attribute before layout. This stripped layout-owned `folding`,
+`spine` and overflow classes, invalidating settled geometry before layout
+restored it. A deterministic assertion added to [the cached-render regression][cached-render regression]
+observes column class mutations during an unchanged render: red reported
+four writes, whereas green reports zero. The renderer now toggles only its
+four owned state classes and preserves layout's classes. The original timing
+assertions and their 100 ms budgets remain unchanged. The existing no-repeat-sort
+assertion is preserved too. Both focused development cases passed in 10.20 s.
+A first native probe still used the previously built binary and correctly
+reported the old four class writes (one failed, one passed). Rebuilding with
+the guide's command made both native cases pass in 36.83 s. The quality gate
+then rejected the stale checked-in static bundle; an initial regeneration
+command used the wrong script location and exited 2 before building. The
+correct [static build script] regenerates that artifact in this commit.
+Final merged-main qualification follows below.
+
 <!-- HAI156 memory start -->
 ## Memory guard evidence
 
@@ -711,6 +738,25 @@ probes and actual failed checks retain their nonzero exits.
 | v14-keyboard | started at once | 0.0 | 2906/2513 | 2420/-13 | 0 | 346.6 | 1 |
 | keyboard-tap-green | started at once | 0.0 | 2495/2578 | 2404/+0 | 1 | 53.1 | 0 |
 | server-input-qa | started at once | 0.0 | 3151/3089 | 2358/+5 | 29 | 388.7 | 0 |
+| v15-keyboard | started at once | 0.0 | 3306/3384 | 2373/+25 | 32 | 331.6 | 0 |
+| v15-served-ui-early | started at once | 0.0 | 3404/3062 | 2397/-11 | 0 | 310.6 | 0 |
+| v15-served-ui-late | started at once | 0.0 | 3127/3062 | 2385/+21 | 21 | 389.8 | 0 |
+| v15-native-build | started at once | 0.0 | 3409/3296 | 2405/+14 | 14 | 14.0 | 0 |
+| v15-native-contracts | started at once | 0.0 | 3263/3486 | 2417/+19 | 20 | 41.1 | 0 |
+| v15-native-ui | started at once | 0.0 | 3486/2801 | 2435/+138 | 200 | 593.5 | 1 |
+| v15-static-ui | started at once | 0.0 | 2826/2760 | 2564/-81 | 74 | 432.0 | 0 |
+| v15-static-dev | started at once | 0.0 | 2877/3009 | 2482/-20 | 0 | 581.2 | 0 |
+| v15-static-adapters | started at once | 0.0 | 3100/2973 | 2462/-16 | 1 | 245.4 | 0 |
+| v15-server-contracts | started at once | 0.0 | 3113/3064 | 2446/-2 | 0 | 17.0 | 0 |
+| v15-collections | started at once | 0.0 | 3175/3110 | 2444/+0 | 0 | 8.0 | 0 |
+| v15-quality | started at once | 0.0 | 3097/3008 | 2443/+0 | 0 | 4.0 | 0 |
+| cached-classes-red | started at once | 0.0 | 3055/2896 | 2441/-1 | 0 | 5.0 | 1 |
+| cached-classes-green | started at once | 0.0 | 3001/2875 | 2440/+0 | 0 | 11.0 | 0 |
+| cached-classes-native-green | started at once | 0.0 | 3016/3155 | 2440/+2 | 2 | 46.1 | 1 |
+| cached-classes-native-built | started at once | 0.0 | 3153/3169 | 2442/+14 | 14 | 47.0 | 0 |
+| cached-classes-quality | started at once | 0.0 | 3183/3142 | 2455/+0 | 0 | 3.0 | 1 |
+| cached-classes-bundle-quality | started at once | 0.0 | 3171/3174 | 2455/+0 | 0 | 1.0 | 2 |
+| cached-classes-final-quality | started at once | 0.0 | 3165/3127 | 2455/+0 | 0 | 5.0 | 0 |
 
 Exact argument vectors are in [the guarded command arguments].
 Run names match that artifact and [the memory log].
@@ -736,3 +782,6 @@ Run names match that artifact and [the memory log].
 [static reliability]: 144-make-the-full-static-suites-pass-reliably-the-wide-folder-wait-and-tes.md
 [the architecture-summary task]: 157-point-agents-at-a-short-summary-of-the-architecture-review-instead-of-.md
 [the manual-copy decision]: 119-document-the-menu-copy-exception-from-docs-question-4.md
+[the renderer]: ../../server/src/filemill/ui/core/render.js
+[cached-render regression]: ../../static/tests/test_ui.py
+[static build script]: ../../static/build-index.py
