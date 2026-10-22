@@ -81,17 +81,17 @@ Rules for TASKS.md usage are at the bottom of the file.
   A4)
       <!-- hai:{"id":"simple-7fc0721d-e6cf-4c12-91b0-2758fd68f09c","labels":["steward"],"createdAt":"2026-10-20T19:37:48.890Z","updatedAt":"2026-10-21T19:50:08.919Z"} -->
 
-- [ ] [138] Make public instances read-only and check Host on every route (security
+- [x] [138] Make public instances read-only and check Host on every route (security
   review S1, S3)
     - Depends on: [137]
 
-      <!-- hai:{"id":"simple-14481238-0336-4adf-a3ce-bc5aeadaf3a2","labels":["steward"],"createdAt":"2026-10-20T23:39:29.669Z","updatedAt":"2026-10-21T10:39:02.981Z"} -->
+      <!-- hai:{"id":"simple-14481238-0336-4adf-a3ce-bc5aeadaf3a2","labels":["steward"],"createdAt":"2026-10-20T23:39:29.669Z","updatedAt":"2026-10-22T04:51:01.234Z"} -->
 
-- [ ] [139] Stop RST previews and search results from injecting live markup
+- [x] [139] Stop RST previews and search results from injecting live markup
   (security review S2, S4)
     - Depends on: [137]
 
-      <!-- hai:{"id":"simple-28e033e1-3498-4fc4-bb30-8ccfad7e134a","labels":["steward"],"createdAt":"2026-10-20T23:39:32.779Z","updatedAt":"2026-10-21T08:12:34.496Z"} -->
+      <!-- hai:{"id":"simple-28e033e1-3498-4fc4-bb30-8ccfad7e134a","labels":["steward"],"createdAt":"2026-10-20T23:39:32.779Z","updatedAt":"2026-10-22T04:51:02.351Z"} -->
 
 - [x] [137] Fix the intermittent Back failure in
   test_back_retraces_the_folders_that_were_opened
