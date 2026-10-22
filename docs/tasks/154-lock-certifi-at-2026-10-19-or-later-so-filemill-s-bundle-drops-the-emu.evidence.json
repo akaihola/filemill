@@ -1,0 +1,292 @@
+{
+  "items": [
+    {
+      "issue": "filemill [154]",
+      "hai_id": "simple-9b6c5e4d-58f6-4eb8-8dbc-a5f7d8cd43dc",
+      "title": "Lock certifi at 2026.10.19 or later so Filemill's bundle drops the eMudhra roots",
+      "repository": "/home/agent/.t3/worktrees/filemill/pacer-154-lock-certifi-at-2026-10-19-or-later-so-filemill-s-bundle-drops-t-e91b2e0d",
+      "source_repository": "/home/agent/prg/filemill",
+      "base_commit": "2ef5bb2794929da781f7a98ec40a337a0260ec60",
+      "delivery_commits": [
+        "105654ae81424a7a7caf3ed77fb3ba19d569693c"
+      ],
+      "checks": [
+        {
+          "id": "version",
+          "command": "uv run python -c 'import certifi; print(certifi.__version__); assert tuple(map(int, certifi.__version__.split(\".\"))) >= (2026, 10, 19)'",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-154-lock-certifi-at-2026-10-19-or-later-so-filemill-s-bundle-drops-t-e91b2e0d"
+            }
+          }
+        },
+        {
+          "id": "lock-scope",
+          "command": "uv run python - <<'PYLOCK'\nimport subprocess, tomllib\nfrom pathlib import Path\nbefore = tomllib.loads(subprocess.check_output(['git', 'show', '2ef5bb2794929da781f7a98ec40a337a0260ec60:uv.lock'], text=True))\nafter = tomllib.loads(Path('uv.lock').read_text())\ndef without_certifi(lock):\n    certifi = next(p for p in lock['package'] if p['name'] == 'certifi')\n    lock['package'].remove(certifi)\n    return certifi\nold, new = without_certifi(before), without_certifi(after)\nassert before == after, 'Non-certifi lock data changed'\nassert old != new\nassert tuple(map(int, new['version'].split('.'))) >= (2026, 10, 19)\nprint('Only certifi changed:', old['version'], '->', new['version'])\nPYLOCK",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-154-lock-certifi-at-2026-10-19-or-later-so-filemill-s-bundle-drops-t-e91b2e0d"
+            }
+          }
+        },
+        {
+          "id": "focused-server",
+          "command": "timeout 600 uv run --project server pytest -q server/tests/test_api.py server/tests/test_app.py server/tests/test_cli.py server/tests/test_docs.py server/tests/test_review_conditions.py",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-154-lock-certifi-at-2026-10-19-or-later-so-filemill-s-bundle-drops-t-e91b2e0d"
+            }
+          }
+        },
+        {
+          "id": "quality-gate",
+          "command": "timeout 600 uvx pre-commit run --all-files",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-154-lock-certifi-at-2026-10-19-or-later-so-filemill-s-bundle-drops-t-e91b2e0d"
+            }
+          }
+        }
+      ],
+      "evidence": {
+        "version": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-154-lock-certifi-at-2026-10-19-or-later-so-filemill-s-bundle-drops-t-e91b2e0d",
+          "tested_commit": "105654ae81424a7a7caf3ed77fb3ba19d569693c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-154-lock-certifi-at-2026-10-19-or-later-so-filemill-s-bundle-drops-t-e91b2e0d/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-154-lock-certifi-at-2026-10-19-or-later-so-filemill-s-bundle-drops-t-e91b2e0d",
+              "value": "105654ae81424a7a7caf3ed77fb3ba19d569693c"
+            }
+          },
+          "issue": "filemill [154]",
+          "check": "version",
+          "command": "uv run python -c 'import certifi; print(certifi.__version__); assert tuple(map(int, certifi.__version__.split(\".\"))) >= (2026, 10, 19)'",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T06:14:25.456035+00:00"
+        },
+        "lock-scope": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-154-lock-certifi-at-2026-10-19-or-later-so-filemill-s-bundle-drops-t-e91b2e0d",
+          "tested_commit": "105654ae81424a7a7caf3ed77fb3ba19d569693c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-154-lock-certifi-at-2026-10-19-or-later-so-filemill-s-bundle-drops-t-e91b2e0d/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-154-lock-certifi-at-2026-10-19-or-later-so-filemill-s-bundle-drops-t-e91b2e0d",
+              "value": "105654ae81424a7a7caf3ed77fb3ba19d569693c"
+            }
+          },
+          "issue": "filemill [154]",
+          "check": "lock-scope",
+          "command": "uv run python - <<'PYLOCK'\nimport subprocess, tomllib\nfrom pathlib import Path\nbefore = tomllib.loads(subprocess.check_output(['git', 'show', '2ef5bb2794929da781f7a98ec40a337a0260ec60:uv.lock'], text=True))\nafter = tomllib.loads(Path('uv.lock').read_text())\ndef without_certifi(lock):\n    certifi = next(p for p in lock['package'] if p['name'] == 'certifi')\n    lock['package'].remove(certifi)\n    return certifi\nold, new = without_certifi(before), without_certifi(after)\nassert before == after, 'Non-certifi lock data changed'\nassert old != new\nassert tuple(map(int, new['version'].split('.'))) >= (2026, 10, 19)\nprint('Only certifi changed:', old['version'], '->', new['version'])\nPYLOCK",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T06:14:38.368826+00:00"
+        },
+        "focused-server": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-154-lock-certifi-at-2026-10-19-or-later-so-filemill-s-bundle-drops-t-e91b2e0d",
+          "tested_commit": "105654ae81424a7a7caf3ed77fb3ba19d569693c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-154-lock-certifi-at-2026-10-19-or-later-so-filemill-s-bundle-drops-t-e91b2e0d/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-154-lock-certifi-at-2026-10-19-or-later-so-filemill-s-bundle-drops-t-e91b2e0d",
+              "value": "105654ae81424a7a7caf3ed77fb3ba19d569693c"
+            }
+          },
+          "issue": "filemill [154]",
+          "check": "focused-server",
+          "command": "timeout 600 uv run --project server pytest -q server/tests/test_api.py server/tests/test_app.py server/tests/test_cli.py server/tests/test_docs.py server/tests/test_review_conditions.py",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T06:14:52.100931+00:00"
+        },
+        "quality-gate": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-154-lock-certifi-at-2026-10-19-or-later-so-filemill-s-bundle-drops-t-e91b2e0d",
+          "tested_commit": "105654ae81424a7a7caf3ed77fb3ba19d569693c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-154-lock-certifi-at-2026-10-19-or-later-so-filemill-s-bundle-drops-t-e91b2e0d/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-154-lock-certifi-at-2026-10-19-or-later-so-filemill-s-bundle-drops-t-e91b2e0d",
+              "value": "105654ae81424a7a7caf3ed77fb3ba19d569693c"
+            }
+          },
+          "issue": "filemill [154]",
+          "check": "quality-gate",
+          "command": "timeout 600 uvx pre-commit run --all-files",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T06:14:55.214572+00:00"
+        }
+      },
+      "resource_checks": [
+        {
+          "command": [
+            "timeout",
+            "600",
+            "uv",
+            "run",
+            "--project",
+            "server",
+            "pytest",
+            "-q",
+            "server/tests/test_api.py",
+            "server/tests/test_app.py",
+            "server/tests/test_cli.py",
+            "server/tests/test_docs.py",
+            "server/tests/test_review_conditions.py"
+          ],
+          "outcome": "started at once",
+          "wait_seconds": 0.0,
+          "admission_mib": 3158,
+          "final_mib": 3065,
+          "starting_swap_mib": 2182,
+          "swap_growth_mib": -4,
+          "elapsed_seconds": 21.1,
+          "exit_code": 0
+        },
+        {
+          "command": [
+            "timeout",
+            "600",
+            "uvx",
+            "pre-commit",
+            "run",
+            "--all-files"
+          ],
+          "outcome": "started at once",
+          "wait_seconds": 0.0,
+          "admission_mib": 3154,
+          "final_mib": 3036,
+          "starting_swap_mib": 2178,
+          "swap_growth_mib": 0,
+          "elapsed_seconds": 14.5,
+          "exit_code": 0
+        },
+        {
+          "command": [
+            "timeout",
+            "650",
+            "uv",
+            "run",
+            "/home/agent/my-knowledge/agents/steward/scripts/check-evidence.py",
+            "record",
+            "/home/agent/.local/state/kandev-pacer/t3/evidence/810a2c75df56c7b4fe37b5846d555aed24c2680d87d72c23e6958eaf4a78400d.evidence.json",
+            "filemill [154]",
+            "version"
+          ],
+          "outcome": "started at once",
+          "wait_seconds": 0.0,
+          "admission_mib": 3037,
+          "final_mib": 3013,
+          "starting_swap_mib": 2163,
+          "swap_growth_mib": -2,
+          "elapsed_seconds": 2.0,
+          "exit_code": 0
+        },
+        {
+          "command": [
+            "timeout",
+            "650",
+            "uv",
+            "run",
+            "/home/agent/my-knowledge/agents/steward/scripts/check-evidence.py",
+            "record",
+            "/home/agent/.local/state/kandev-pacer/t3/evidence/810a2c75df56c7b4fe37b5846d555aed24c2680d87d72c23e6958eaf4a78400d.evidence.json",
+            "filemill [154]",
+            "lock-scope"
+          ],
+          "outcome": "started at once",
+          "wait_seconds": 0.0,
+          "admission_mib": 3049,
+          "final_mib": 3038,
+          "starting_swap_mib": 2155,
+          "swap_growth_mib": 0,
+          "elapsed_seconds": 1.0,
+          "exit_code": 0
+        },
+        {
+          "command": [
+            "timeout",
+            "650",
+            "uv",
+            "run",
+            "/home/agent/my-knowledge/agents/steward/scripts/check-evidence.py",
+            "record",
+            "/home/agent/.local/state/kandev-pacer/t3/evidence/810a2c75df56c7b4fe37b5846d555aed24c2680d87d72c23e6958eaf4a78400d.evidence.json",
+            "filemill [154]",
+            "focused-server"
+          ],
+          "outcome": "started at once",
+          "wait_seconds": 0.0,
+          "admission_mib": 3038,
+          "final_mib": 3051,
+          "starting_swap_mib": 2155,
+          "swap_growth_mib": 0,
+          "elapsed_seconds": 13.6,
+          "exit_code": 0
+        },
+        {
+          "command": [
+            "timeout",
+            "650",
+            "uv",
+            "run",
+            "/home/agent/my-knowledge/agents/steward/scripts/check-evidence.py",
+            "record",
+            "/home/agent/.local/state/kandev-pacer/t3/evidence/810a2c75df56c7b4fe37b5846d555aed24c2680d87d72c23e6958eaf4a78400d.evidence.json",
+            "filemill [154]",
+            "quality-gate"
+          ],
+          "outcome": "started at once",
+          "wait_seconds": 0.0,
+          "admission_mib": 3058,
+          "final_mib": 3043,
+          "starting_swap_mib": 2155,
+          "swap_growth_mib": 0,
+          "elapsed_seconds": 3.0,
+          "exit_code": 0
+        }
+      ]
+    }
+  ]
+}
