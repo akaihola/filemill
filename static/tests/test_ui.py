@@ -70,7 +70,7 @@ window.__mk = (nbig) => {
      to catch it out on. */
   const RACE = (name, ref) => ({kind:'directory', name,
     entries: async function*(){ const snap = ref.slice();
-                                await new Promise(r=>setTimeout(r,400));
+                                await window.__holdRace?.();
                                 for (const k of snap) yield [k.name, k]; }});
   /* Sizes and mtimes that disagree with the name order in both directions, so a
      size or date sort cannot be mistaken for the name sort it replaced. */
@@ -3091,14 +3091,27 @@ async def test_refresh(page):
     ), json.dumps(snap)
 
     # The race the pvToken/ensureLoaded reuse exists for. `racing` snapshots
-    # its entries before a 400 ms wait, so a refresh that simply re-entered
+    # its entries before the held read, so a refresh that simply re-entered
     # ensureLoaded would be handed the in-flight promise and win the *old*
     # listing — two reads, one field, and the wrong one landing last.
     await mount(pg)
+    await pg.evaluate("""() => {
+      window.__holdRace = () => new Promise(resolve => {
+        window.__releaseRace = resolve;
+      });
+    }""")
     await pg.click('.col[data-i="0"] .row:has-text("racing")')
-    await pg.wait_for_function("path[1]?.loading")
-    await pg.evaluate("__add(__race, 'charlie.txt')")
-    await pg.evaluate("refreshColumn(1)")
+    try:
+        await pg.wait_for_function(
+            "path[1]?.loading && typeof window.__releaseRace === 'function'"
+        )
+        await pg.evaluate("__add(__race, 'charlie.txt')")
+        await pg.evaluate("() => { window.__refreshRace = refreshColumn(1); }")
+    finally:
+        await pg.evaluate(
+            "() => { window.__holdRace = null; window.__releaseRace?.(); }"
+        )
+    await pg.evaluate("window.__refreshRace")
     await pg.wait_for_function("!path[1]?.loading && path[1]?.kids.length === 3")
     got = await pg.eval_on_selector_all(rows1, "e=>e.map(x=>x.title)")
     head = (await pg.inner_text('.col[data-i="1"] .count')).strip()

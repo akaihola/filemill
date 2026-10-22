@@ -293,7 +293,8 @@ NativeFS.ensureLoaded = async n => {
   if (n.loading) return n.loading;
   const pending = (async () => {
     await load(n); n.loading = pending; const kids = n.kids; n.kids = null;
-    await new Promise(r => setTimeout(r, n.rel === 'slow' ? 500 : 400));
+    if (n.rel === 'racing') await window.__holdRace?.();
+    else await new Promise(r => setTimeout(r, 500));
     n.kids = kids; n.loading = null;
   })();
   n.loading = pending; return pending;

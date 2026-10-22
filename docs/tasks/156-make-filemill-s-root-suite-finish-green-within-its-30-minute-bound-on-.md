@@ -298,6 +298,42 @@ identify which resource or scheduling delay held its load event.
 The controlled case and all 12 JSON-refresh variants then passed together:
 13 passed in 41.20 s (guard wall 43.2 s).
 
+## Refresh race observation
+
+At `a321b63c`, all four root shards passed: 67 keyboard, 313 served UI,
+924 server contracts and 193 static bundle cases. Their 1,497 collected IDs
+matched root pytest exactly, with multiplicity. The longest root shard took
+980.6 s including recording overhead. Static development also passed all
+193 cases in a 1,512.9 s guarded command. Native build, 20 native contracts,
+collection comparison and the complete quality gate passed.
+
+The final native UI command stopped with 69 passed and one failure in
+`test_refresh`: `TimeoutError: path[1]?.loading`. Thirteen later cases were
+unreported. Pytest elapsed time was 811.53 s; guarded wall time was 823.3 s.
+The racing-directory fixture exposed its in-flight read for only 400 ms,
+which native click/observation round trips can miss. This is a test-input
+lifetime failure, not a missing display or hardware capability.
+
+The racing read now snapshots entries and waits on a test-owned release
+promise in both fake and native adapters. The test observes loading, adds
+the third file, starts refresh without awaiting its intentionally blocked
+promise, and releases the old read in `finally`. It then awaits refresh
+and retains the exact three-file order, count and cleared-loading assertions.
+The second read is not artificially delayed. No production port, assertion
+or timing bound changes. The fifth failed receipt preserves the full result.
+
+The first gate implementation also failed: its readiness expression returned
+the release function, which the wait helper invoked as a predicate, releasing
+the read. A direct native probe showed the gate installed with loading true;
+the full diagnostic confirmed the same state before that wait. The predicate
+now returns a boolean type check instead. Both unsuccessful probes remain
+in the memory log; their passes are not claimed.
+
+The complete focused refresh scenario passed in native (85.90 s), development
+(17.28 s) and bundle (16.81 s) modes. All seven quality hooks, explicit Python
+lint/format checks and 28 documentation/readiness checks also passed. The
+next clean merged recording starts with the full native UI command.
+
 <!-- HAI156 memory start -->
 ## Memory guard evidence
 
@@ -363,6 +399,21 @@ probes and actual failed checks retain their nonzero exits.
 | navigation-red-controlled | started at once | 0.0 | 3301/3222 | 2209/+0 | 0 | 21.1 | 1 |
 | navigation-green | started at once | 0.0 | 3221/3260 | 2209/+7 | 7 | 43.2 | 0 |
 | navigation-gate | started at once | 0.0 | 3254/3213 | 2205/+8 | 10 | 15.0 | 0 |
+| v5-served-ui | started at once | 0.0 | 3300/3121 | 2210/+72 | 150 | 980.6 | 0 |
+| v5-server-contracts | started at once | 0.0 | 3092/3192 | 2276/+0 | 0 | 25.0 | 0 |
+| v5-collections | started at once | 0.0 | 3129/3153 | 2275/+0 | 0 | 8.0 | 0 |
+| v5-quality | started at once | 0.0 | 2950/3197 | 2273/+0 | 0 | 6.0 | 0 |
+| v5-keyboard | started at once | 0.0 | 3193/2494 | 2273/+20 | 24 | 391.2 | 0 |
+| v5-static-bundle | started at once | 0.0 | 2717/2838 | 2171/+89 | 234 | 880.5 | 0 |
+| v5-static-dev | started at once | 0.0 | 2571/2856 | 2263/-73 | 328 | 1512.9 | 0 |
+| v5-native-build | started at once | 0.1 | 2829/2977 | 2124/-8 | 0 | 42.0 | 0 |
+| v5-native-contracts | started at once | 0.0 | 3082/3117 | 2116/+1 | 1 | 46.0 | 0 |
+| v5-native-ui | started at once | 0.0 | 3163/2503 | 2116/+92 | 173 | 823.3 | 1 |
+| refresh-native-green | started at once | 0.0 | 2407/2439 | 2186/-118 | 11 | 131.5 | 1 |
+| refresh-diagnostic | started at once | 0.0 | 2200/2370 | 2061/+3 | 3 | 52.3 | 0 |
+| refresh-native-diagnostic | started at once | 0.0 | 2223/2508 | 2037/+57 | 62 | 160.8 | 1 |
+| refresh-native-gated | started at once | 0.0 | 2574/3161 | 2087/+7 | 136 | 127.6 | 0 |
+| refresh-browser-gate | started at once | 0.0 | 2770/3016 | 2064/-14 | 0 | 54.1 | 0 |
 
 Exact argument vectors are in [the guarded command arguments].
 Run names match that artifact and [the memory log].

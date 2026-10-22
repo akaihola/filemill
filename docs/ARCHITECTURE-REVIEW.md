@@ -154,6 +154,8 @@ Keep these boundaries and checks.
   checks send preview wheel input rather than a CSS-smoothed assignment.
   Served navigation waits for DOM readiness and the existing UI predicates,
   avoiding an unrelated resource load event without raising any timeout.
+  Refresh-race checks hold their stale read until the refresh has started,
+  preserving entry snapshots across browser and native round trips.
 - [The older-review repairs][131] fixed conditional Zstandard imports, typing
   stubs and unexplained tuning constants (`f7e917a5`). Clipboard refusal now
   offers manual copying with the full value and error (`fef28359`). Neither
