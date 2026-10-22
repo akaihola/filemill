@@ -422,6 +422,31 @@ complete final recording is still required. The partial green receipt and
 all duration logs are retained in the run directory. No dependency, skip,
 xfail, application assertion or timeout changes accompany this split.
 
+## Pending-rebase probe setup
+
+At `c8482152`, the 110-case static adapter shard passed in 607.6 s guarded
+wall time. The static UI shard then stopped with eight passed and one
+failure in `test_scroll_settlement_waits_for_pending_rebase`: the negative
+quiet-geometry assertion observed `True`. Pytest elapsed time was 41.90 s;
+guarded wall time was 45.1 s. Seventy-four UI cases and later queued checks
+were unreported in this round. The tenth recording retains that failure.
+
+The controlled probe dispatched a synthetic scroll without cancelling any
+earlier CSS glide or checking its pending-work precondition. Its held callback
+could therefore be stale by the negative assertion; the full failed callback
+ordering was not captured. The probe now makes an instant dial move to its
+current position, cancelling the earlier glide and scheduling a fresh rebase.
+It asserts that the release callback exists and the dial is pending before
+advancing the quiet-geometry clock. The original negative and final positive
+settlement assertions remain. No production code or timeout changes.
+
+The corrected probe and full folding-dial case passed together in bundle
+mode (2 in 36.06 s). The probe also passed in development (16.00 s) and through
+the native command's existing Chromium clock fixture (5.02 s). All seven
+quality hooks, explicit Python checks and 31 documentation/readiness/partition
+checks passed. Complete static UI qualification then passed all 83 cases in 692.66 s
+(698.3 s guarded wall time), before the next merge.
+
 <!-- HAI156 memory start -->
 ## Memory guard evidence
 
@@ -527,6 +552,12 @@ probes and actual failed checks retain their nonzero exits.
 | v9-static-bundle | started at once | 0.0 | 2086/2645 | 2806/-482 | 318 | 1772.2 | 0 |
 | v9-static-dev | started at once | 0.0 | 2640/2677 | 2317/+20 | 73 | 1246.4 | 0 |
 | static-partition-gate | started at once | 0.0 | 2093/2173 | 2376/+19 | 22 | 91.5 | 0 |
+| v10-static-adapters | started at once | 0.0 | 2075/2970 | 2390/-73 | 509 | 607.6 | 0 |
+| v10-static-ui | started at once | 0.0 | 2994/2936 | 2312/-10 | 0 | 45.1 | 1 |
+| rebase-probe-green | started at once | 0.0 | 3082/3077 | 2297/+0 | 3 | 39.0 | 0 |
+| rebase-probe-gate | started at once | 0.0 | 2854/2611 | 2249/-2 | 6 | 87.4 | 0 |
+| static-ui-probe-qa | started at once | 0.0 | 2589/2825 | 2247/+166 | 213 | 698.3 | 0 |
+| rebase-probe-docs | started at once | 0.0 | 2722/2690 | 2339/-8 | 0 | 12.0 | 0 |
 
 Exact argument vectors are in [the guarded command arguments].
 Run names match that artifact and [the memory log].

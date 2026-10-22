@@ -916,12 +916,15 @@ def test_scroll_settlement_waits_for_pending_rebase(copy_page):
         };
         return timeout(() => {}, delay);
       };
-      finder.dispatchEvent(new Event('scroll'));
+      dialTo(dial(), false);
       window.__scrollProbe = {value: null, since: 0};
     }""")
-    page.evaluate(SCROLL_SETTLED)
-    page.clock.run_for(400)
     try:
+        assert page.evaluate("typeof __releaseSettle === 'function' && !dialSettled"), (
+            "The setup holds an active rebase after cancelling any earlier glide"
+        )
+        page.evaluate(SCROLL_SETTLED)
+        page.clock.run_for(400)
         assert not page.evaluate(SCROLL_SETTLED), (
             "Quiet geometry does not settle a pending scrollbar rebase"
         )
