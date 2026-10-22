@@ -1,85 +1,33 @@
-import html as html_lib
 from pathlib import Path
 
+import pytest
+
 from filemill.providers.vtt_provider import VTTProvider
-
-VALID = """WEBVTT\n\n1\n00:00:01.000 --> 00:00:03.500 align:start\n<v Alice>Hello <c.green>world</c>\nsecond line\n\n00:00:04.000 --> 00:00:05.000\nBye\n"""
-YOUTUBE = """WEBVTT\nKind: captions\nLanguage: en\n\n00:00:00.000 --> 00:00:02.000\nHello from YouTube\n"""
-YOUTUBE_BLANK_PAYLOAD = """WEBVTT\nKind: captions\nLanguage: en\n\n00:00:00.080 --> 00:00:02.470 align:start position:0%\n \nI'm<00:00:00.480><c> going</c> to show you\n\n00:00:02.470 --> 00:00:02.480 align:start position:0%\nI'm going to show you exactly how I'm\n \n"""
+from filemill.vfs import REGISTRY
 
 
-def test_youtube_vtt_blank_payload_lines_are_preserved(tmp_path: Path):
-    path = tmp_path / "youtube-blank-payload.vtt"
-    path.write_text(YOUTUBE_BLANK_PAYLOAD, newline="")
-    html = VTTProvider().render_preview(path, "", "transcript", 1, 1000)
-    assert "Malformed WebVTT" not in html
-    assert "going to show you" in html
+@pytest.mark.parametrize("name", ["captions.vtt", "captions.VTT"])
+def test_vtt_provider_is_registered(tmp_path: Path, name: str):
+    path = tmp_path / name
+    provider = REGISTRY.get(path)
+    assert isinstance(provider, VTTProvider)
+    assert provider.list_entries(path, "") == []
+    assert provider.list_entries(path, "unused/child") == []
+    assert not provider.handles(tmp_path / "captions.txt")
 
 
-def test_youtube_vtt_header_metadata_is_ignored(tmp_path: Path):
-    path = tmp_path / "youtube.vtt"
-    path.write_text(YOUTUBE, newline="")
-    html = VTTProvider().render_preview(path, "", "transcript", 1, 1000)
-    assert "Hello from YouTube" in html
-    assert "missing a timestamp" not in html
-
-
-def test_vtt_malformed_pre_cue_block_is_rejected(tmp_path: Path):
-    path = tmp_path / "bad.vtt"
-    path.write_text(
-        "WEBVTT\n\nnot metadata\n\n00:00:00.000 --> 00:00:01.000\ntext\n", newline=""
-    )
-    assert "cue is missing a timestamp" in VTTProvider().render_preview(
-        path, "", "transcript", 1, 1000
-    )
-
-
-def test_vtt_orphan_text_after_cue_is_rejected(tmp_path: Path):
-    path = tmp_path / "bad-after-cue.vtt"
-    path.write_text(
-        "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\ntext\n\norphan\n", newline=""
-    )
-    assert "cue is missing a timestamp" in VTTProvider().render_preview(
-        path, "", "transcript", 1, 1000
-    )
-
-
-def test_vtt_transcript_has_timing_text_tags_and_voice(tmp_path: Path):
-    path = tmp_path / "captions.vtt"
-    path.write_text(VALID, newline="")
-    html = VTTProvider().render_preview(path, "", "transcript", 1, 1000)
-    assert "00:00:01.000" in html
-    assert "00:00:03.500" in html
-    assert "Alice:" in html
-    assert "Hello world" in html
-    assert "second line" in html
-    assert "<c.green>" not in html
-
-
-def test_vtt_raw_preserves_source(tmp_path: Path):
-    path = tmp_path / "captions.vtt"
-    path.write_text(VALID, newline="")
-    html = VTTProvider().render_preview(path, "", "raw", 1, 1000)
-    assert html_lib.escape(VALID) in html
-
-
-def test_vtt_empty_and_malformed_are_safe(tmp_path: Path):
-    empty = tmp_path / "empty.vtt"
-    empty.write_text("WEBVTT\n\n", newline="")
-    assert "no cues" in VTTProvider().render_preview(empty, "", "transcript", 1, 1000)
-    bad = tmp_path / "bad.vtt"
-    bad.write_text("WEBVTT\n\n00:00:00.000 --> nope\ntext\n", newline="")
-    assert "Malformed WebVTT" in VTTProvider().render_preview(
-        bad, "", "transcript", 1, 1000
-    )
-    bad_header = tmp_path / "bad-header.vtt"
-    bad_header.write_text("WEBVTTX\n", newline="")
-    assert "Malformed WebVTT" in VTTProvider().render_preview(
-        bad_header, "", "transcript", 1, 1000
-    )
-
-
-def test_vtt_provider_is_registered(tmp_path: Path):
-    from filemill.vfs import REGISTRY
-
-    assert REGISTRY.get(tmp_path / "captions.vtt") is not None
+def test_vtt_provider_http_contract(client, tmp_root):
+    source = b"WEBVTT\r\n\r\n00:00.000 --> 00:01.000\r\nHello\r\n"
+    (tmp_root / "captions.vtt").write_bytes(source)
+    entries = client.get("/api/dir?p=").json()["entries"]
+    entry = next(e for e in entries if e["name"] == "captions.vtt")
+    assert entry["dir"] is False
+    assert client.get("/captions.vtt").content == source
+    assert client.get("/captions.vtt?filemill=raw").content == source
+    for vpath in ("", "unused/child"):
+        response = client.get("/api/dir", params={"p": "captions.vtt", "v": vpath})
+        assert response.status_code == 200
+        assert response.json() == {"entries": [], "denied": None}
+    response = client.get("/captions.vtt/unused/child")
+    assert response.status_code == 200
+    assert 'data-filemill="render"' in response.text

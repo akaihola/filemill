@@ -22,6 +22,7 @@ CONTRIBUTING.md, "Do Not Pass `--with playwright==…`".
 from __future__ import annotations
 
 import contextlib
+import html
 import io
 import itertools
 import json
@@ -696,6 +697,78 @@ def test_markdown_rendered_source_toggle_preserves_navigation(page):
     page.wait_for_selector("#preview .pv-rich h1", timeout=15000)
     assert toggle.inner_text() == "Source"
     assert page.evaluate("sel")[-1] == "README.md"
+
+
+VTT_VALID = "WEBVTT\n\n1\n00:00:01.000 --> 00:00:03.500 align:start\n<v Alice>Hello <c.green>world</c>\nsecond line\n\n00:00:04.000 --> 00:00:05.000\nBye\n"
+VTT_YOUTUBE = "WEBVTT\nKind: captions\nLanguage: en\n\n00:00:00.000 --> 00:00:02.000\nHello from YouTube\n"
+VTT_YOUTUBE_BLANK_PAYLOAD = "WEBVTT\nKind: captions\nLanguage: en\n\n00:00:00.080 --> 00:00:02.470 align:start position:0%\n \nI'm<00:00:00.480><c> going</c> to show you\n\n00:00:02.470 --> 00:00:02.480 align:start position:0%\nI'm going to show you exactly how I'm\n \n"
+
+
+@pytest.mark.parametrize(
+    "source, expected",
+    [
+        (VTT_VALID, "Hello world<br>second line"),
+        (VTT_YOUTUBE, "Hello from YouTube"),
+        (VTT_YOUTUBE_BLANK_PAYLOAD, "I'm going to show you"),
+        (
+            "WEBVTT\n\nnot metadata\n\n00:00:00.000 --> 00:00:01.000\ntext\n",
+            "cue is missing a timestamp",
+        ),
+        (
+            "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\ntext\n\norphan\n",
+            "cue is missing a timestamp",
+        ),
+        ("WEBVTT\n\n", "WebVTT file has no cues."),
+        ("WEBVTT\n\n00:00:00.000 --> nope\ntext\n", "invalid cue timestamp"),
+        ("WEBVTTX\n", "missing WEBVTT header"),
+    ],
+    ids=[
+        "voice",
+        "youtube-metadata",
+        "youtube-blank-payload",
+        "pre-cue",
+        "orphan",
+        "empty",
+        "bad-timestamp",
+        "bad-header",
+    ],
+)
+def test_vtt_registered_renderer_cases(page, source, expected):
+    page.open("captions.vtt")
+    rendered = page.evaluate(
+        """async source => {
+            const {renderNode} = await import('/ui/core/renderers.js');
+            return renderNode({name: 'captions.vtt'}, new Blob([source]));
+        }""",
+        source,
+    )
+    assert expected in rendered
+    if source == VTT_VALID:
+        assert "00:00:01.000 → 00:00:03.500" in rendered
+        assert "<strong>Alice:</strong>" in rendered
+        assert "<c.green>" not in rendered
+        assert "Bye" in rendered
+
+
+def test_vtt_registered_raw_renderer_preserves_source(page):
+    page.open("captions.vtt")
+    source = VTT_VALID.replace("\n", "\r\n")
+    result = page.evaluate(
+        """async source => {
+            const {renderNode} = await import('/ui/core/renderers.js');
+            const html = await renderNode(
+                {name: 'captions.vtt', previewFormat: 'raw'}, new Blob([source]));
+            const body = document.createElement('div');
+            body.innerHTML = html;
+            return {html, text: body.textContent};
+        }""",
+        source,
+    )
+    assert (
+        result["html"]
+        == f'<pre class="preview-raw">{html.escape(source, quote=False)}</pre>'
+    )
+    assert result["text"] == VTT_VALID
 
 
 def test_vtt_transcript_and_source_views_preserve_navigation(page):

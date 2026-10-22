@@ -412,10 +412,15 @@ this final audit, or repeat already completed roadmap and ADR rewrites.
   Query changes and root mounts cancel pending work and invalidate old result
   actions. Local reads remain within granted handles; activation works without
   a router. The static edition uses the same UI and capability.
-- **Open: cross-language differences.** Classification and VTT parsing remain
+- **Open: cross-language differences.** Classification remains
   in both languages; [server/src/filemill/vfs.py][vfs], line 15, and
   [ui/core/limits.js][limits] disagree on image extensions. Compare behavior
   before introducing cross-language generation.
+- **Resolved: duplicate VTT parser, 2026-10-22 ([150]).** Removed the
+  unreachable Python parser, helpers and renderer. The registered JavaScript
+  renderer keeps the transcript fixtures, including YouTube blank payloads
+  and malformed input. The empty-listing Python provider and registration
+  remain, preserving directory API and virtual-suffix URL responses.
 - **Open: provider discovery.** Registration order is still an import side
   effect ([server/src/filemill/vfs.py][vfs], lines 123–145). Missing Git silently
   leaves bundles plain; missing ripgrep reports per request. Expose useful
@@ -756,3 +761,5 @@ one new P2 finding; no new P1 finding was established in this pass.
 [130]: tasks/130-give-served-and-browser-owned-folders-the-same-content-search.md
 
 [ADR 0092]: adr/0092-shared-content-search-capability.md
+
+[150]: tasks/150-retire-the-unreachable-python-webvtt-renderer-architecture-review-a12.md

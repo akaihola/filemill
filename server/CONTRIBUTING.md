@@ -50,8 +50,12 @@ tests/
 ├── test_suppression_links.py # Python noqa comments link to an issue
 ├── test_urls.py              # View state and canonical URLs
 ├── test_vfs.py               # VFS registry and provider protocol
-└── test_vtt_provider.py      # VTT VFS provider unit tests
+└── test_vtt_provider.py      # VTT registration and HTTP contract
 ```
+
+VTT parser and source-preservation fixtures exercise the registered JavaScript
+renderer in [the shared UI browser tests]. The Python VTT provider only keeps
+empty listings and virtual-suffix URL recognition.
 
 ### The shared UI
 
@@ -288,3 +292,5 @@ with the implementation.
 [conftest.py]: ../conftest.py
 [server/tests/test_pytest_config.py]: tests/test_pytest_config.py
 [server/tests/test_browser_keyboard.py]: tests/test_browser_keyboard.py
+
+[the shared UI browser tests]: tests/test_browser_new_ui.py
