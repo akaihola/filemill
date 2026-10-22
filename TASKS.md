@@ -24,10 +24,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [151] Compute SQLite row-key facts once per listing (architecture review A7)
-  <!-- hai:{"id":"simple-10532ff5-e29a-410b-b97d-db1b33363fe9","labels":["steward"],"createdAt":"2026-10-22T04:20:57.982Z","updatedAt":"2026-10-22T04:34:21.529Z"} -->
-
 ## In Progress
+
+- [~] [151] Compute SQLite row-key facts once per listing (architecture review A7)
+      <!-- hai:{"id":"simple-10532ff5-e29a-410b-b97d-db1b33363fe9","labels":["steward"],"createdAt":"2026-10-22T04:20:57.982Z","updatedAt":"2026-10-22T04:34:47.775Z"} -->
 
 - [~] [141] Finish browser fixture isolation and qualify independent test roots
       <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T15:01:55.354Z"} -->
