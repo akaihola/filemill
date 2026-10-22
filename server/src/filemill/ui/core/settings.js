@@ -22,8 +22,6 @@ const toggle = (id, get, set) => {
   b.setAttribute("aria-checked", String(get()));
 };
 
-/* Everything the old classic script did at load time. Called by the app
-   module once every core module has been evaluated. */
 export function initSettings() {
   gear.onclick = (e) => {
     e.stopPropagation();

@@ -6,6 +6,11 @@ and generated bundle. This guide covers adapter wiring.
 
 ## Entry points and ports
 
+After shell creation, each host calls [the core initializer] once. It wires
+sorting, navigation actions, deep links, layout and settings in a fixed order.
+Renderer registration, port selection, persistence and root acquisition stay in
+each host composition.
+
 The three [entry modules] load static, server or native adapters. The
 [DOM-free model] owns selection, sorting, folding, keys and deep links. Adjacent
 browser modules render the model. [The port contract] defines FS, PREVIEW and
@@ -83,3 +88,4 @@ capability distinct as A8 is repaired.
 [A8]: ../../../../../docs/ARCHITECTURE-REVIEW.md#a8-preview-source-and-representation-are-conflated
 [The highlighting wrapper]: preview-local.js
 [the search decision]: ../../../../../docs/adr/0092-shared-content-search-capability.md
+[the core initializer]: ../core/boot.js

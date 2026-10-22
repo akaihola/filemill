@@ -1,25 +1,13 @@
-import { initSettings } from "../core/settings.js";
-import { initLayout } from "../core/layout.js";
-import { initSort, setSortActions } from "../core/sort.js";
-import { sortKids } from "../core/model/sort.js";
-import { setSortKids } from "../core/model/state.js";
+import { initCore } from "../core/boot.js";
 import { withCsv, withCsvPreview } from "./vfs-csv.js";
 import { withDocumentPreview, withDocuments } from "./vfs-doc.js";
 import { withVirtual, withVirtualPreview } from "./vfs-json.js";
-import { setDeepLinkActions, startRouting } from "../core/deeplink.js";
+import { startRouting } from "../core/deeplink.js";
 import { useFilesystem, usePreview, useRouter } from "../core/ports.js";
-import { colCache, render, setActions } from "../core/render.js";
+import { render } from "../core/render.js";
 import { addRenderers, CORE_RENDERERS } from "../core/renderers.js";
 import { initRichSettings, RICH_RENDERERS } from "./preview-rich.js";
 import { mountRoot } from "../core/mount.js";
-import {
-  choose,
-  copyPath,
-  refreshColumn,
-  renderCrumbs,
-  saySt,
-  unfoldTo,
-} from "../core/nav.js";
 import {
   nativeCall,
   NativeFS,
@@ -29,13 +17,7 @@ import {
   NativeRouter,
 } from "./native.js";
 
-initSort();
-setSortKids(sortKids);
-setActions({ choose, copyPath, refreshColumn, renderCrumbs, saySt, unfoldTo });
-setSortActions({ render });
-setDeepLinkActions({ render, colCache });
-initLayout(render);
-initSettings();
+initCore();
 addRenderers([...CORE_RENDERERS, ...RICH_RENDERERS]);
 initRichSettings();
 useFilesystem(withDocuments(withCsv(withVirtual(NativeFS))));

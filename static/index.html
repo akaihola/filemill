@@ -6115,8 +6115,6 @@ const toggle = (id, get, set) => {
   b.setAttribute("aria-checked", String(get()));
 };
 
-/* Everything the old classic script did at load time. Called by the app
-   module once every core module has been evaluated. */
 function initSettings() {
   gear.onclick = (e) => {
     e.stopPropagation();
@@ -8869,6 +8867,24 @@ async function recallView(handle) {
   return null;
 }
 
+/* ═══ core/boot.js ═══ */
+function initCore() {
+  initSort();
+  setSortKids(sortKids);
+  setActions({
+    choose,
+    copyPath,
+    refreshColumn,
+    renderCrumbs,
+    saySt,
+    unfoldTo,
+  });
+  setSortActions({ render });
+  setDeepLinkActions({ render, colCache });
+  initLayout(render);
+  initSettings();
+}
+
 /* ═══ adapters/app-fsa.js ═══ */
 /* ═══════════════════════════════════════════════════════════════════════════
    Static build — boot, folder picker, welcome screen.
@@ -8889,15 +8905,7 @@ document.body.insertAdjacentHTML(
 );
 const welcome = document.getElementById("welcome");
 
-/* The load-time work sort.js, layout.js and settings.js did as classic scripts,
-   in the order they used to load. */
-initSort();
-setSortKids(sortKids);
-setActions({ choose, copyPath, refreshColumn, renderCrumbs, saySt, unfoldTo });
-setSortActions({ render });
-setDeepLinkActions({ render, colCache });
-initLayout(render);
-initSettings();
+initCore();
 
 /* The renderer table, core first: this edition draws every rich kind in the
    browser, from a CDN. */

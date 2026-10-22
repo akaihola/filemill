@@ -118,8 +118,13 @@ not to completing all of A5–A12.
   its bounded performance slice. Lossless identities and WITHOUT ROWID support
   remain separate A6/A7 work; this draft does not claim to fix them.
 
-- **F3 — Every host knows the core boot sequence.** High recurring maintenance
-  benefit; about 1 hour, medium risk from import/initialization order.
+- **F3 — Every host knows the core boot sequence.** Resolved on 2026-10-22 by
+  [the shared boot task]. [The core initializer] now owns the seven calls;
+  each host calls it once after shell creation. Host choices stay at the
+  composition sites. The original finding follows for context.
+
+  High recurring maintenance benefit; about 1 hour, medium risk from
+  import/initialization order.
   [ui/adapters/app-fsa.js], lines 68–76,
   [ui/adapters/app-http.js], lines 83–91, and
   [ui/adapters/app-native.js], lines 32–38, repeat the same seven calls for
@@ -360,3 +365,6 @@ combine with work in those modules when convenient.
 [server/tests/test_vfs.py]: ../../server/tests/test_vfs.py
 [server/tests/test_browser_keyboard.py]: ../../server/tests/test_browser_keyboard.py
 [conftest.py]: ../../conftest.py
+
+[the shared boot task]: ../tasks/152-centralize-the-shared-ui-boot-sequence.md
+[The core initializer]: ../../ui/core/boot.js

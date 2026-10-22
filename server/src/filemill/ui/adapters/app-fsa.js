@@ -6,10 +6,7 @@
    owns the one entry point into the tree, mount(). ../entry-static.js is what
    the page loads; this is the module it ends with.
    ═══════════════════════════════════════════════════════════════════════════ */
-import { initSettings } from "../core/settings.js";
-import { initLayout } from "../core/layout.js";
-import { initSort, setSortActions } from "../core/sort.js";
-import { sortKids } from "../core/model/sort.js";
+import { initCore } from "../core/boot.js";
 import { FSA } from "./fsa.js";
 import {
   initRichSettings,
@@ -21,11 +18,7 @@ import { RouterHash } from "./router-hash.js";
 import { recallRoots, recallView, rememberRoot } from "./storage.js";
 import { withCsv, withCsvPreview } from "./vfs-csv.js";
 import { withDocumentPreview, withDocuments } from "./vfs-doc.js";
-import {
-  applyPath,
-  setDeepLinkActions,
-  startRouting,
-} from "../core/deeplink.js";
+import { applyPath, startRouting } from "../core/deeplink.js";
 import { FOLDER_PATH } from "../core/icons.js";
 import { withVirtual, withVirtualPreview } from "./vfs-json.js";
 import {
@@ -35,24 +28,10 @@ import {
   usePreview,
   useRouter,
 } from "../core/ports.js";
-import { colCache, render, setActions } from "../core/render.js";
+import { render } from "../core/render.js";
 import { addRenderers, CORE_RENDERERS } from "../core/renderers.js";
 import { mountRoot } from "../core/mount.js";
-import {
-  choose,
-  copyPath,
-  refreshColumn,
-  renderCrumbs,
-  saySt,
-  unfoldTo,
-} from "../core/nav.js";
-import {
-  focusCol,
-  path,
-  sel,
-  setSortKids,
-  setState,
-} from "../core/model/state.js";
+import { focusCol, path, sel, setState } from "../core/model/state.js";
 import { root } from "../core/dom-renderer.js";
 
 document.getElementById("bar").insertAdjacentHTML(
@@ -65,15 +44,7 @@ document.body.insertAdjacentHTML(
 );
 const welcome = document.getElementById("welcome");
 
-/* The load-time work sort.js, layout.js and settings.js did as classic scripts,
-   in the order they used to load. */
-initSort();
-setSortKids(sortKids);
-setActions({ choose, copyPath, refreshColumn, renderCrumbs, saySt, unfoldTo });
-setSortActions({ render });
-setDeepLinkActions({ render, colCache });
-initLayout(render);
-initSettings();
+initCore();
 
 /* The renderer table, core first: this edition draws every rich kind in the
    browser, from a CDN. */

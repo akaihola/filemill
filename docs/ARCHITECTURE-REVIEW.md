@@ -43,8 +43,10 @@ Other findings retain the re-check above.
 
 ## Architecture as it is
 
-- **One UI, three hosts.** [ui/][ui] is a symlink to the server package’s shared
-  frontend. The static development page loads ES modules; the concatenating
+- **One UI, three hosts.** Each host calls [the core initializer] once after
+  shell creation; it owns the shared boot order. Renderer, port and root
+  choices stay in the host compositions. [ui/][ui] is a symlink to the server
+  package’s shared frontend. The static development page loads ES modules; the concatenating
   [static/build-index.py][builder] produces [static/index.html][bundle].
   [server/src/filemill/cli.py][cli] starts Uvicorn and Starlette in
   [server/src/filemill/app.py][app]. The Linux WebKitGTK prototype embeds the
@@ -770,3 +772,5 @@ one new P2 finding; no new P1 finding was established in this pass.
 
 [150]: tasks/150-retire-the-unreachable-python-webvtt-renderer-architecture-review-a12.md
 [151]: tasks/151-compute-sqlite-row-key-facts-once-per-listing-architecture-review-a7.md
+
+[the core initializer]: ../ui/core/boot.js

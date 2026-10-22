@@ -10,10 +10,7 @@
    at runtime and keep every other thing about the app identical. Nothing in
    core/ notices.
    ═══════════════════════════════════════════════════════════════════════════ */
-import { initSettings } from "../core/settings.js";
-import { initLayout } from "../core/layout.js";
-import { initSort, setSortActions } from "../core/sort.js";
-import { sortKids } from "../core/model/sort.js";
+import { initCore } from "../core/boot.js";
 import { FSA } from "./fsa.js";
 import { API, HTTP } from "./http.js";
 import { PreviewLocal, withHighlighting } from "./preview-local.js";
@@ -33,31 +30,13 @@ import {
 } from "./server-status.js";
 import { withCsv, withCsvPreview } from "./vfs-csv.js";
 import { withDocumentPreview, withDocuments } from "./vfs-doc.js";
-import {
-  applyPath,
-  setDeepLinkActions,
-  startRouting,
-} from "../core/deeplink.js";
+import { applyPath, startRouting } from "../core/deeplink.js";
 import { withVirtual, withVirtualPreview } from "./vfs-json.js";
 import { FS, useFilesystem, usePreview, useRouter } from "../core/ports.js";
-import { colCache, render, setActions } from "../core/render.js";
+import { render } from "../core/render.js";
 import { addRenderers, CORE_RENDERERS } from "../core/renderers.js";
 import { mountRoot } from "../core/mount.js";
-import {
-  choose,
-  copyPath,
-  refreshColumn,
-  renderCrumbs,
-  saySt,
-  unfoldTo,
-} from "../core/nav.js";
-import {
-  focusCol,
-  path,
-  sel,
-  setSortKids,
-  setState,
-} from "../core/model/state.js";
+import { focusCol, path, sel, setState } from "../core/model/state.js";
 import { fileKind } from "../core/file-kind.js";
 
 document.getElementById("bar").insertAdjacentHTML(
@@ -80,15 +59,7 @@ initServerStatus((refresh) => {
   if (refresh && document.getElementById("local-badge").hidden) mountServer();
 });
 
-/* The load-time work sort.js, layout.js and settings.js did as classic scripts,
-   in the order they used to load. */
-initSort();
-setSortKids(sortKids);
-setActions({ choose, copyPath, refreshColumn, renderCrumbs, saySt, unfoldTo });
-setSortActions({ render });
-setDeepLinkActions({ render, colCache });
-initLayout(render);
-initSettings();
+initCore();
 
 /* The renderer table, core first. Markdown, .docx and .pptx are drawn in the
    browser here too — the first two from the modules the shell serves out of
