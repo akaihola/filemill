@@ -1,4 +1,4 @@
-"""Tests for filemill.vfs – VFSEntry, VFSRegistry, VFSProvider protocol, is_vfs_file."""
+"""Tests for filemill.vfs – VFSEntry, VFSRegistry, VFSProvider protocol, REGISTRY."""
 
 from __future__ import annotations
 
@@ -166,20 +166,21 @@ def test_vfs_provider_protocol_needs_no_renderer():
     assert isinstance(ListOnly(), VFSProvider)
 
 
-# ── is_vfs_file ───────────────────────────────────────────────────────────────
+# ── REGISTRY ──────────────────────────────────────────────────────────────────
 
 
-def test_is_vfs_file_returns_true_for_db(tmp_path):
-    from filemill.vfs import is_vfs_file
+def test_registry_has_a_provider_for_db(tmp_path):
+    from filemill.providers.sqlite import SQLiteProvider
+    from filemill.vfs import REGISTRY
 
     f = tmp_path / "data.db"
     f.touch()
-    assert is_vfs_file(f) is True
+    assert isinstance(REGISTRY.get(f), SQLiteProvider)
 
 
-def test_is_vfs_file_returns_false_for_txt(tmp_path):
-    from filemill.vfs import is_vfs_file
+def test_registry_has_no_provider_for_txt(tmp_path):
+    from filemill.vfs import REGISTRY
 
     f = tmp_path / "data.txt"
     f.touch()
-    assert is_vfs_file(f) is False
+    assert REGISTRY.get(f) is None

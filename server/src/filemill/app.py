@@ -23,9 +23,6 @@ from filemill import api, mutations, paths, pwa, urls
 from filemill.env import env, env_flag
 from filemill.preview import render_preview
 
-# Unused since the HTMX finder and its "View as web page" button were removed.
-_HTML_EXTS = {".html", ".htm"}
-
 # Used when app.state.root is unset: direct ASGI loading, and cli.py --live,
 # which passes its resolved root through FILEMILL_ROOT.
 ROOT: Path = Path(env("ROOT", str(Path.home())))
@@ -59,16 +56,13 @@ def rt(path: str, methods: list[str] | None = None):
 
         async def dispatch(request):
             values = {}
-            for name, parameter in parameters.items():
+            for name in parameters:
                 if name == "request":
                     values[name] = request
                 elif name in request.path_params:
                     values[name] = request.path_params[name]
                 elif name in request.query_params:
-                    value = request.query_params[name]
-                    if parameter.annotation is int:
-                        value = int(value)
-                    values[name] = value
+                    values[name] = request.query_params[name]
             if inspect.iscoroutinefunction(endpoint):
                 return await endpoint(**values)
             return await run_in_threadpool(endpoint, **values)

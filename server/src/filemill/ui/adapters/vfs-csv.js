@@ -1,6 +1,5 @@
 import { esc } from "../core/icons.js";
 import { FS } from "../core/ports.js";
-import { render } from "../core/render.js";
 
 import { TEXT_MAX } from "../core/limits.js";
 import { classifyFile } from "../core/file-kind.js";

@@ -131,11 +131,6 @@ class VFSRegistry:
 REGISTRY = VFSRegistry()
 
 
-def is_vfs_file(path: Path) -> bool:
-    """True when path has a registered VFS provider."""
-    return REGISTRY.get(path) is not None
-
-
 # ── Provider registration (side-effects) ──────────────────────────────────────
 # These imports MUST remain at the bottom, after all names above are defined.
 # Each provider module does `REGISTRY.register(...)` at import time.

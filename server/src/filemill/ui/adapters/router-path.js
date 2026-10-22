@@ -12,8 +12,6 @@
    Needs a server that serves the app shell for any path under BASE — which is
    the same requirement as any history-API single-page app.
    ═══════════════════════════════════════════════════════════════════════════ */
-import { path } from "../core/model/state.js";
-
 const BASE = "/";
 
 export const RouterPath = {

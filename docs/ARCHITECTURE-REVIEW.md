@@ -416,18 +416,21 @@ this final audit, or repeat already completed roadmap and ADR rewrites.
 - **Open: folder persistence.** [ui/adapters/storage.js][storage], lines
   45–67, returns before the IndexedDB transaction completes and performs
   read-modify-write across awaits. Concurrent tabs can lose recent-root updates.
-- **Changed: unused interfaces.** The bad integer query failure is resolved,
-  but [server/src/filemill/app.py][app], lines 53–54, retains an unused integer
-  conversion branch. [server/src/filemill/vfs.py][vfs], lines 134–136, has no
-  production caller for `is_vfs_file`. [server/src/filemill/preview.py][preview],
-  lines 82–100 and 129–153, retains an unused state argument and a source helper
-  called by tests but no route. Re-check callers before deleting them.
-- **Open: repeated and verbose glue.** Preview-error HTML is hand-built in
-  seven server sites. [ui/adapters/vfs-json.js][json], line 22, imports render
-  without using it; [ui/adapters/router-path.js][router-path], line 15, imports
-  state path without using it. Remove dead imports and comments that restate
-  code as the affected modules change. Do not replace a few error strings with
-  a templating framework. Preserve comments about measured browser behavior.
+- **Changed: unused interfaces, 2026-10-22 ([155]).** The bad integer query
+  failure is resolved. [155] removed the unused integer conversion branch and
+  `_HTML_EXTS` from [server/src/filemill/app.py][app], and the test-only
+  `is_vfs_file` wrapper from [server/src/filemill/vfs.py][vfs]; the registry
+  tests now call `REGISTRY.get`. [server/src/filemill/preview.py][preview],
+  line 279 and lines 324–348, still retains an unused state argument and a
+  source helper called by tests but no route. Whether a route supplies source
+  belongs to A8; re-check callers before deleting them.
+- **Changed: repeated and verbose glue, 2026-10-22 ([155]).** [155] removed
+  the unused `render` imports from [ui/adapters/vfs-json.js][json] and
+  [ui/adapters/vfs-csv.js][csv], and the unused state `path` import from
+  [ui/adapters/router-path.js][router-path]. Preview-error HTML is still
+  hand-built in five server sites. Remove comments that restate code as the
+  affected modules change. Do not replace a few error strings with a
+  templating framework. Preserve comments about measured browser behavior.
 - **Resolved: search dependency direction, 2026-10-21 ([120], [ADR 0091]).**
   The server adapter supplies the search provider and owns the API URL. Local
   mounts now bind the FSA search capability under [130] and [ADR 0092].
@@ -444,7 +447,7 @@ this final audit, or repeat already completed roadmap and ADR rewrites.
   and malformed input. The empty-listing Python provider and registration
   remain, preserving directory API and virtual-suffix URL responses.
 - **Open: provider discovery.** Registration order is still an import side
-  effect ([server/src/filemill/vfs.py][vfs], lines 123–145). Missing Git silently
+  effect ([server/src/filemill/vfs.py][vfs], lines 123–140). Missing Git silently
   leaves bundles plain; missing ripgrep reports per request. Expose useful
   capability failures without building a plugin system.
 - **Open: accessibility.** Rows are clickable divs with labels, without full
@@ -594,7 +597,7 @@ intact. The [task record][133] retains the earlier failure and interceptor repai
 | A11, roadmap and superseded ADR claims | Resolved by `9e048d1a`, [the roadmap correction][107], and `f488ccab`, [the documentation audit][109]. |
 | A11, Playwright command drift | Resolved by `b279fdcf` and `db58f5ee`; guarded by [server/tests/test_docs.py][docs-tests]. |
 | A11, consent, skip, dependency and icon claims | Resolved by `85506592`, `111f17be`, `a72c8a6c` and `08080982`; no renderer-route or dependency-version fix is implied. |
-| A12, bad integer page query | Resolved by `30cbef21`, which removed the page parameter; the unused conversion branch remains. |
+| A12, bad integer page query | Resolved by `30cbef21`, which removed the page parameter; [155] removed the unused conversion branch. |
 | A12, browser JSON path allowance | Resolved by `8ef10c6a`; [ADR 0071]. Real-file containment and virtual identity are separate. |
 | Red suites, false-green scripts and missing lint gate | Resolved in the earlier gate repairs (`86651fa6`, `8b0fff25`); current configuration is [the CI workflow][ci]. See [the test record][remaining-tests]. |
 | Half-deleted HTMX finder and missing module boundary | Resolved by `a6535049`, `686cd25d` and `f6d4b081`; retired routes/helpers remain absent. [ui/][ui] is ES modules and the builder follows their imports. |
@@ -728,6 +731,7 @@ one new P2 finding; no new P1 finding was established in this pass.
 [app-fsa]: ../ui/adapters/app-fsa.js
 [fsa]: ../ui/adapters/fsa.js
 [json]: ../ui/adapters/vfs-json.js
+[csv]: ../ui/adapters/vfs-csv.js
 [router-path]: ../ui/adapters/router-path.js
 [server-status]: ../ui/adapters/server-status.js
 [storage]: ../ui/adapters/storage.js
@@ -789,5 +793,6 @@ one new P2 finding; no new P1 finding was established in this pass.
 [150]: tasks/150-retire-the-unreachable-python-webvtt-renderer-architecture-review-a12.md
 [151]: tasks/151-compute-sqlite-row-key-facts-once-per-listing-architecture-review-a7.md
 [153]: tasks/153-stop-a-deep-link-walk-when-its-root-is-replaced-architecture-review-a9.md
+[155]: tasks/155-remove-unused-adapter-edges-and-server-glue.md
 
 [the core initializer]: ../ui/core/boot.js
