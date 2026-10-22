@@ -16,9 +16,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [150] Retire the unreachable Python WebVTT renderer (architecture review A12)
-  <!-- hai:{"id":"simple-1f2dec89-e49d-4989-b7d5-d21e169fe5b2","labels":["steward"],"createdAt":"2026-10-22T04:20:53.064Z","updatedAt":"2026-10-22T04:20:53.064Z"} -->
-
 - [151] Compute SQLite row-key facts once per listing (architecture review A7)
   <!-- hai:{"id":"simple-10532ff5-e29a-410b-b97d-db1b33363fe9","labels":["steward"],"createdAt":"2026-10-22T04:20:57.982Z","updatedAt":"2026-10-22T04:20:57.982Z"} -->
 
@@ -29,6 +26,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-f96381b0-da64-4e54-9be3-93bb4f21354d","labels":["steward"],"createdAt":"2026-10-22T04:21:06.280Z","updatedAt":"2026-10-22T04:21:06.280Z"} -->
 
 ## Scheduled
+
+- [150] Retire the unreachable Python WebVTT renderer (architecture review A12)
+  <!-- hai:{"id":"simple-1f2dec89-e49d-4989-b7d5-d21e169fe5b2","labels":["steward"],"createdAt":"2026-10-22T04:20:53.064Z","updatedAt":"2026-10-22T04:26:41.864Z"} -->
 
 ## In Progress
 
