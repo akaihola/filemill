@@ -70,7 +70,7 @@ Git bundles needs `git`. The [server recovery guide] explains offline copies,
 read-only browsing during an outage and reconnecting after a restart.
 
 Content search covers the served tree and is disabled in Open Folder mode.
-See the [search behavior] for the return to served-tree search.
+See the [search behavior].
 
 ## Using Filemill
 

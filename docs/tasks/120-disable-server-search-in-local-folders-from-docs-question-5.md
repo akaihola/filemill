@@ -116,6 +116,31 @@ regeneration. The tested branch head was `14b54a89`.
 - **Status:** stopped as requested. Leave this issue In Progress. No merge,
   completion, acceptance, restart or deployment.
 
+## Final validation, 2026-10-22
+
+Rebased onto main `2091050d`, including the merged [reliability repair][144]
+and the RST preview repair at `d04ced1c`. Kept the reorganized documentation:
+the [usage guide] now records search availability and the return from local
+mode. The static bundle consistency check passed without regeneration.
+The tested branch head was `84de53d6`.
+
+- **RST isolation:** all 11 separate bundle invocations of `test_rst` passed.
+  No assertion or RST code was changed in this issue to obtain these results.
+- **Full static bundle:** 187 passed, two Docutils deprecation warnings,
+  in 628.39 seconds. This run collected the whole suite and had no
+  stop-on-first-failure option.
+- **Served-tree search:** all 11 focused browser checks passed in 52.98
+  seconds. They include delayed replies, queued input, stale result actions,
+  both local-mode transitions, result navigation and current search scope.
+- **Repository checks:** pre-commit, shared model and documentation checks
+  passed after the rebase and documentation update.
+- **Scope of this follow-up:** this completes the remaining bundle gate
+  requested by the steward. The earlier full server and development-mode
+  results remain recorded above; those full suites were not repeated here.
+- **Memory:** all checks ran sequentially under the admission and runtime
+  guard. No command hit a memory limit. The bundle suite started with
+  2.41 GiB available and the search browser checks with 2.57 GiB.
+
 [109]: 109-check-filemill-s-docs-and-adr-statuses-against-the-code-and-fix-what-d.md#questions
 [115]: 115-propose-plain-answers-to-the-docs-check-s-twelve-remaining-questions.md
 [130]: 130-give-served-and-browser-owned-folders-the-same-content-search.md
@@ -126,3 +151,4 @@ regeneration. The tested branch head was `14b54a89`.
 [the rich-preview tests]: ../../static/tests/test_rich.py
 [ADR 0090]: ../adr/0090-revision-checked-file-replacement.md
 [144]: 144-make-the-full-static-suites-pass-reliably-the-wide-folder-wait-and-tes.md
+[usage guide]: ../USAGE.md#content-search
