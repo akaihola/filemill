@@ -27,10 +27,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [150] Retire the unreachable Python WebVTT renderer (architecture review A12)
-  <!-- hai:{"id":"simple-1f2dec89-e49d-4989-b7d5-d21e169fe5b2","labels":["steward"],"createdAt":"2026-10-22T04:20:53.064Z","updatedAt":"2026-10-22T04:26:41.864Z"} -->
-
 ## In Progress
+
+- [~] [150] Retire the unreachable Python WebVTT renderer (architecture review A12)
+      <!-- hai:{"id":"simple-1f2dec89-e49d-4989-b7d5-d21e169fe5b2","labels":["steward"],"createdAt":"2026-10-22T04:20:53.064Z","updatedAt":"2026-10-22T04:27:04.962Z"} -->
 
 - [~] [141] Finish browser fixture isolation and qualify independent test roots
       <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T15:01:55.354Z"} -->
