@@ -27,3 +27,54 @@ Steward issue, 2026-10-22 22:11 refill (steward decisions D94 and D95). Goal: ag
 - Handoff: a short outcome; details go in this task record.
 
 Tracker: [the filemill tracker](../../TASKS.md).
+
+## Record
+
+2026-10-22, implemented on the task branch.
+
+### Changes
+
+- [server/tests/test_docs.py](../../server/tests/test_docs.py):
+  `test_architecture_summary_indexes_every_review_section` requires
+  [the summary](../ARCHITECTURE-SUMMARY.md) to exist, to be at most 6,144
+  bytes, and to name every `##` and `###` heading of
+  [the review](../ARCHITECTURE-REVIEW.md) after its `## Section index`
+  heading.
+- [docs/ARCHITECTURE-SUMMARY.md](../ARCHITECTURE-SUMMARY.md), 5,469 bytes:
+  principles (including the rules for changes), a module map, and 24 index
+  lines, one per review heading. Each finding line gives its ID, title,
+  status and priority, then the topics that make the section relevant.
+- [AGENTS.md](../../AGENTS.md): read the summary first, then the review's
+  sections that the issue touches, by heading. The alignment, scope and
+  status-update rules remain; status updates now include the index line.
+- [The review](../ARCHITECTURE-REVIEW.md): one added bullet under "How to
+  read this review" naming the summary. Nothing else changed.
+
+### Red-green evidence
+
+- Red before the summary existed:
+  `uv run pytest server/tests/test_docs.py -k architecture_summary -q`
+  failed with `AssertionError: docs/ARCHITECTURE-SUMMARY.md is missing`.
+- Green after adding it: the same command passed (1 passed).
+- Red again with an unindexed heading: appending
+  `### A15. Probe heading without an index line` to the review made the test
+  fail with `The summary's section index omits ['A15. Probe heading without
+  an index line']`. `git checkout -- docs/ARCHITECTURE-REVIEW.md` reverted
+  the probe before the one-line review edit.
+
+### Checks on the task branch
+
+- `uv run pytest server/tests/test_docs.py -q`, run as
+  [CONTRIBUTING.md](../../CONTRIBUTING.md) directs for documentation-only
+  work: 28 passed. Inside Claude Code's sandbox the portability guard fails
+  reading a sandbox-masked file, so it ran with the sandbox off.
+- `uv run --project server ruff format --check server/src server/tests` and
+  `uv run --project server ruff check server`: clean.
+- No guarded heavy command ran before the merge; the docs tests take
+  seconds.
+
+### Follow-up for the steward
+
+- [CONTRIBUTING.md](../../CONTRIBUTING.md) still says "Read the
+  [architecture review] before implementation". This task's file scope
+  excluded it; pointing it at the summary is a one-line change.

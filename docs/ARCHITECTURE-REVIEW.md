@@ -13,6 +13,7 @@ Other findings retain the re-check above.
 
 ## How to read this review
 
+- **Summary.** [The summary](ARCHITECTURE-SUMMARY.md) indexes every section.
 - **Severity.** P1: fix before relying on the build for ordinary writable use
   or wider exposure. P2: the next correctness and reliability work. P3:
   cleanups and audits.

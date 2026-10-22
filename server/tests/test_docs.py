@@ -231,6 +231,19 @@ def test_decision_records_arrive_with_the_change():
     assert "Update the documentation in the same commit as the change." in contributing
 
 
+def test_architecture_summary_indexes_every_review_section():
+    """[157]: agents read a short summary, then only the sections they need."""
+    summary = ROOT / "docs/ARCHITECTURE-SUMMARY.md"
+    assert summary.is_file(), "docs/ARCHITECTURE-SUMMARY.md is missing"
+    size = len(summary.read_bytes())
+    assert size <= 6144, f"The summary has {size} bytes; the limit is 6,144"
+    index = summary.read_text().split("\n## Section index\n", 1)[1]
+    review = (ROOT / "docs/ARCHITECTURE-REVIEW.md").read_text()
+    headings = re.findall(r"^#{2,3} (.+)$", review, re.MULTILINE)
+    missing = [heading for heading in headings if heading not in index]
+    assert not missing, f"The summary's section index omits {missing}"
+
+
 @pytest.mark.parametrize(
     "document", ["ui/core/icons.js", "ui/vendor/seti-map.js", "static/index.html"]
 )
