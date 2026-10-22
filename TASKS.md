@@ -18,10 +18,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [155] Remove unused adapter edges and server glue
-  <!-- hai:{"id":"simple-8ec2bde6-eccf-44b9-a4cf-9cddc9e611c3","labels":["steward"],"createdAt":"2026-10-22T06:06:59.658Z","updatedAt":"2026-10-22T06:30:46.209Z"} -->
-
 ## In Progress
+
+- [~] [155] Remove unused adapter edges and server glue
+      <!-- hai:{"id":"simple-8ec2bde6-eccf-44b9-a4cf-9cddc9e611c3","labels":["steward"],"createdAt":"2026-10-22T06:06:59.658Z","updatedAt":"2026-10-22T06:31:19.262Z"} -->
 
 - [~] [141] Finish browser fixture isolation and qualify independent test roots
       <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T15:01:55.354Z"} -->
