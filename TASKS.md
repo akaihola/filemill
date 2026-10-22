@@ -16,11 +16,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+## Scheduled
+
 - [156] Make filemill's root suite finish green within its 30-minute bound on
   hopeli
-  <!-- hai:{"id":"simple-a773efdf-57e6-4b22-b134-b3a69bd54f16","labels":["steward"],"createdAt":"2026-10-22T07:57:21.057Z","updatedAt":"2026-10-22T07:57:21.057Z"} -->
-
-## Scheduled
+  <!-- hai:{"id":"simple-a773efdf-57e6-4b22-b134-b3a69bd54f16","labels":["steward"],"createdAt":"2026-10-22T07:57:21.057Z","updatedAt":"2026-10-22T08:03:50.666Z"} -->
 
 ## In Progress
 
