@@ -61,7 +61,7 @@ nix-shell native/shell.nix --run 'uv run --project server pytest native/test_hos
 nix-shell native/shell.nix --run 'uv run --project server pytest static/tests/test_ui.py --native -q'
 ```
 
-The first command runs 19 contract checks. The second runs the UI sections
+The first command runs 20 contract checks. The second runs the UI sections
 that use the shared browser fixture in the native host. The test driver writes the
 fixture's bytes into temporary files and exercises the native port; it does
 not substitute fake handles for native reads. Where the fake handle counts
@@ -70,7 +70,8 @@ injection and fixture mutation live in test support, outside the application.
 
 The driver follows Playwright's rules for clicks and waits. A click waits for
 a stable box, and pointer events that reach another element are cancelled
-and retried. Predicates are tested for JavaScript truthiness without being
+and retried. A locator is resolved again if a repaint replaces its element
+before the click, within the original action deadline. Predicates are tested for JavaScript truthiness without being
 awaited. Automation sessions use an ephemeral web context, so no setting
 survives from one launch to the next. Shared remount checks read the native
 router state instead of a browser hash. Fixture files are materialized before

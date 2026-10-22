@@ -163,7 +163,7 @@ At `981e4d53`, keyboard (67 tests), served UI (312) and server contracts
 second fling. Recording stopped there; development, native and remaining
 checks were not run in that recording sequence. The failed receipt and JUnit
 files are preserved in [the run directory], including
-`receipt-981e4d53-failed.json`. This failed check is not unavailable evidence.
+[the first failed receipt]. This failed check is not unavailable evidence.
 
 This is the second-fling wait, distinct from [144]'s historical nested
 wide-folder selection wait. The scroll helper considered 300 ms of unchanged
@@ -191,6 +191,42 @@ setting was preserved. The complete pre-commit gate was run directly and all
 seven checks passed before the first merge, along with model checks, explicit
 static/native Python lint and formatting, 28 documentation/readiness checks
 and seven focused bundle cases. Final merged-main checks remain required.
+
+## Native row replacement during sorting
+
+At `f4210f8a`, the native UI command stopped with 70 passed and one failure
+in `test_sort_options`; ten cases were unreported. WebDriver returned
+`stale element reference` while clicking the `mixed` row after metadata
+completion rebuilt its column. This is a locator-resolution failure, not a
+hardware or display limitation. The [second failed receipt] is retained in [the run directory].
+
+A new native contract replaces the resolved row immediately before WebDriver
+clicks it. It failed with the same stale-element error (3.78 s). The driver
+now releases its old hit interceptor and resolves the locator again inside
+the original click deadline. Each visibility wait receives the remaining
+action time. No assertion or timeout is relaxed, and no pytest case is
+retried by the driver.
+
+The controlled contract and original sorting case then passed together
+(2 passed, 28.01 s). The contract also asserts exactly one received click and
+the expected navigation. The [native guide] now lists 20 contracts. The ten
+unreported UI cases and all contracts are checked before the next merge;
+the final recording must still run the complete native UI command.
+
+The ten unreported UI cases and all 20 contracts passed together: 30 passed
+in 185.58 s. This includes the original rendering and delayed-outline cases.
+The complete native UI command is still required on the next merged commit.
+
+An intermediate memory appendix placed machine-specific argument paths in
+Markdown. The portability documentation check rejected it. Exact arguments
+now live in a linked JSON artifact; measurements and run names remain here.
+The unmodified documentation check then passed, along with every quality
+hook, all three changed Python files' lint/format checks and model checks.
+Deno is the documented 2.6.8 release.
+
+The current collection is 1,494: 67 keyboard, 312 served UI, 924 server
+contracts and 191 static bundle cases. The streamed Counter comparison
+retains duplicate counts and matches root collection exactly.
 
 <!-- HAI156 memory start -->
 ## Memory guard evidence
@@ -228,58 +264,16 @@ probes and actual failed checks retain their nonzero exits.
 | rebase-build | started at once | 0.0 | 3103/3087 | 2248/-28 | 0 | 62.2 | 0 |
 | rebase-native | started at once | 0.0 | 3022/2848 | 2220/+9 | 9 | 124.5 | 0 |
 | rebase-gate | started at once | 0.0 | 3116/3109 | 2225/-2 | 0 | 58.3 | 0 |
+| v2-native-build | started at once | 0.0 | 3065/2839 | 2235/+66 | 66 | 59.2 | 0 |
+| v2-native-ui | started at once | 0.0 | 2949/3307 | 2301/-56 | 4 | 843.0 | 1 |
+| detach-red | started at once | 0.0 | 3166/3272 | 2242/-1 | 0 | 24.1 | 1 |
+| detach-green | started at once | 0.0 | 3199/3283 | 2228/-2 | 0 | 36.1 | 0 |
+| native-remainder | started at once | 0.0 | 3066/2938 | 2193/-2 | 2 | 197.6 | 0 |
+| detach-gate | started at once | 0.0 | 3271/3215 | 2422/-15 | 0 | 9.0 | 1 |
+| portable-gate | started at once | 0.0 | 2268/2532 | 2353/-48 | 0 | 92.5 | 0 |
 
-<details>
-<summary>Guarded command arguments</summary>
-
-```bash
-# baseline-root
-timeout 1800 uv run pytest -p no:cacheprovider --junitxml=/home/agent/tmp/filemill-hai156/root.xml --durations=40 -q -rs
-# browser-red
-timeout 1800 uv run pytest server/tests/test_browser_new_ui.py::test_mobile_fullscreen_history_after_preview_change static/tests/test_ui.py::test_edit_mode --tb=short -q --durations=10
-# native-build
-timeout 1800 env NIX_PATH=nixpkgs=/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source nix-shell native/shell.nix --run 'python3 native/webview/build.py'
-# native-red
-timeout 1800 env NIX_PATH=nixpkgs=/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source nix-shell native/shell.nix --run 'uv run --project server pytest static/tests/test_ui.py --native -q --tb=short -k "new_root_releases_previous_wheel_axis or remount_stops_pending_path_walk or copy_path or render_cost or preview_reuses_document_when_delayed_outline_declines" --durations=10'
-# controlled-red
-timeout 1800 uv run pytest static/tests/test_ui.py::test_edit_mode static/tests/test_ui.py::test_cached_render_keeps_sorted_column_order --tb=short -q
-# controlled-green
-timeout 1800 uv run pytest static/tests/test_ui.py::test_edit_mode static/tests/test_ui.py::test_cached_render_keeps_sorted_column_order --dev --tb=short -q
-# collections
-timeout 1800 python3 /home/agent/tmp/filemill-hai156/collections.py
-# rebuild
-timeout 1800 bash -c 'uv run python static/build-index.py && env NIX_PATH=nixpkgs=/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source nix-shell native/shell.nix --run "python3 native/webview/build.py"'
-# native-green
-timeout 1800 env NIX_PATH=nixpkgs=/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source nix-shell native/shell.nix --run 'uv run --project server pytest static/tests/test_ui.py --native -q --tb=short -k "new_root_releases_previous_wheel_axis or remount_stops_pending_path_walk or copy_path or render_cost or preview_reuses_document_when_delayed_outline_declines or cached_render_keeps_sorted_column_order or test_edit_mode" --durations=10'
-# native-label-green
-timeout 1800 env NIX_PATH=nixpkgs=/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source nix-shell native/shell.nix --run 'uv run --project server pytest static/tests/test_ui.py::test_copy_path --native -q --tb=short'
-# served-ui-order
-timeout 1800 uv run pytest server/tests/test_browser_new_ui.py -p no:cacheprovider --junitxml=/home/agent/tmp/filemill-hai156/served-ui-order.xml --durations=40 -q --tb=short -rs
-# premerge-gate
-timeout 1800 bash -c 'uvx pre-commit install && uvx pre-commit run --all-files && uv run ruff check static/tests/test_ui.py native/ui_driver.py && uv run ruff format --check static/tests/test_ui.py native/ui_driver.py && node ui/core/model/test.mjs && uv run pytest server/tests/test_docs.py server/tests/test_browser_waits.py -q && uv run pytest static/tests/test_ui.py --bundle -q --tb=short -k "new_root_releases_previous_wheel_axis or remount_stops_pending_path_walk or copy_path or render_cost or preview_reuses_document_when_delayed_outline_declines or cached_render_keeps_sorted_column_order or test_edit_mode"'
-# premerge-checks
-timeout 1800 bash -c 'uvx pre-commit run --all-files && uv run ruff check static/tests/test_ui.py native/ui_driver.py && uv run ruff format --check static/tests/test_ui.py native/ui_driver.py && node ui/core/model/test.mjs && uv run pytest server/tests/test_docs.py server/tests/test_browser_waits.py -q && uv run pytest static/tests/test_ui.py --bundle -q --tb=short -k "new_root_releases_previous_wheel_axis or remount_stops_pending_path_walk or copy_path or render_cost or preview_reuses_document_when_delayed_outline_declines or cached_render_keeps_sorted_column_order or test_edit_mode"'
-# final-keyboard
-timeout 1800 uv run /home/agent/my-knowledge/agents/steward/scripts/check-evidence.py record /home/agent/.local/state/kandev-pacer/t3/evidence/cf37bbc49779cdf75d65170f9d7ea087f5fee2c6fbe0b2f3cb540d363fb91b1f.evidence.json 'filemill [156]' keyboard
-# final-served-ui
-timeout 1800 uv run /home/agent/my-knowledge/agents/steward/scripts/check-evidence.py record /home/agent/.local/state/kandev-pacer/t3/evidence/cf37bbc49779cdf75d65170f9d7ea087f5fee2c6fbe0b2f3cb540d363fb91b1f.evidence.json 'filemill [156]' served-ui
-# final-server-contracts
-timeout 1800 uv run /home/agent/my-knowledge/agents/steward/scripts/check-evidence.py record /home/agent/.local/state/kandev-pacer/t3/evidence/cf37bbc49779cdf75d65170f9d7ea087f5fee2c6fbe0b2f3cb540d363fb91b1f.evidence.json 'filemill [156]' server-contracts
-# final-static-bundle
-timeout 1800 uv run /home/agent/my-knowledge/agents/steward/scripts/check-evidence.py record /home/agent/.local/state/kandev-pacer/t3/evidence/cf37bbc49779cdf75d65170f9d7ea087f5fee2c6fbe0b2f3cb540d363fb91b1f.evidence.json 'filemill [156]' static-bundle
-# rebase-red
-timeout 1800 uv run pytest static/tests/test_ui.py::test_scroll_settlement_waits_for_pending_rebase --dev -q --tb=short
-# rebase-green
-timeout 1800 uv run pytest static/tests/test_ui.py::test_scroll_settlement_waits_for_pending_rebase static/tests/test_ui.py::test_folding_dial --dev -q --tb=short -x
-# rebase-build
-timeout 1800 bash -c 'uv run python static/build-index.py && env NIX_PATH=nixpkgs=/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source nix-shell native/shell.nix --run "python3 native/webview/build.py"'
-# rebase-native
-timeout 1800 env NIX_PATH=nixpkgs=/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source nix-shell native/shell.nix --run 'uv run --project server pytest static/tests/test_ui.py --native -q --tb=short -x -k "test_folding_dial or scroll_settlement_waits_for_pending_rebase or new_root_releases_previous_wheel_axis"'
-# rebase-gate
-timeout 1800 bash -c 'uvx pre-commit run --all-files && uv run ruff check static/tests/test_ui.py native/ui_driver.py && uv run ruff format --check static/tests/test_ui.py native/ui_driver.py && node ui/core/model/test.mjs && uv run pytest server/tests/test_docs.py server/tests/test_browser_waits.py -q && python3 /home/agent/tmp/filemill-hai156/collections.py'
-```
-
-</details>
+Exact argument vectors are in [the guarded command arguments].
+Run names match that artifact and [the memory log].
 <!-- HAI156 memory end -->
 
 [12]: 12-test-ui-runs-to-end.md
@@ -294,3 +288,7 @@ timeout 1800 bash -c 'uvx pre-commit run --all-files && uv run ruff check static
 [The evidence receipt]: 156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bound-on-.evidence.json
 [the test commands]: ../../CONTRIBUTING.md#tests
 [filemill's tracker]: ../../TASKS.md
+[the first failed receipt]: http://hopeli/tmp/filemill-hai156/receipt-981e4d53-failed.json?f
+[second failed receipt]: http://hopeli/tmp/filemill-hai156/receipt-f4210f8a-failed.json?f
+[native guide]: ../../native/README.md#checks
+[the guarded command arguments]: http://hopeli/tmp/filemill-hai156/commands.json?f

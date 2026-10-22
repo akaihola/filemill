@@ -124,7 +124,7 @@ class Locator:
         # into view can be undone by the layout before its click lands.
         until = time.monotonic() + timeout / 1000
         while time.monotonic() < until:
-            await self.wait_for(timeout=timeout)
+            await self.wait_for(timeout=(until - time.monotonic()) * 1000)
             if not await self.evaluate(STABLE):
                 continue
             await self.evaluate(INTERCEPT)
@@ -143,6 +143,9 @@ class Locator:
                     {},
                 )
             except RuntimeError as error:
+                if "stale element reference" in str(error):
+                    await self.page.evaluate(HIT)
+                    continue
                 if not any(
                     reason in str(error)
                     for reason in ("not interactable", "click intercepted")

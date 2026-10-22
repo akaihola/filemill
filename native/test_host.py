@@ -295,6 +295,49 @@ def test_ui_driver_clicks_through_folding_columns(tmp_path):
         assert raw.evaluate("path.at(-1).name").startswith("level-4-")
 
 
+def test_ui_driver_resolves_a_row_replaced_before_click(tmp_path):
+    import asyncio
+
+    from ui_driver import NativePage
+
+    (tmp_path / "mixed").mkdir()
+    (tmp_path / "mixed" / "a.txt").write_text("a")
+    with application(tmp_path) as raw:
+        page = NativePage(raw, tmp_path)
+        call = raw.call
+        replaced = False
+
+        def replace_before_click(endpoint, data=None, method=None):
+            nonlocal replaced
+            if (
+                endpoint.startswith("/element/")
+                and endpoint.endswith("/click")
+                and not replaced
+            ):
+                replaced = True
+                raw.evaluate("""() => {
+                  const c = colCache.get(path[0]);
+                  const i = c.kids.findIndex(n => n.name === 'mixed');
+                  const old = c.rows[i], row = old.cloneNode(true);
+                  window.__rowClicks = 0;
+                  row.onclick = event => { __rowClicks++; old.onclick.call(row, event); };
+                  old.replaceWith(row);
+                  c.rows[i] = row;
+                }""")
+            return call(endpoint, data, method)
+
+        raw.call = replace_before_click
+
+        async def click():
+            await page.click('.col[data-i="0"] .row[title="mixed"]')
+            await page.wait_for_function("path[1]?.name === 'mixed' && path[1]?.kids")
+
+        asyncio.run(click())
+        assert replaced
+        assert raw.evaluate("sel[0]") == "mixed"
+        assert raw.evaluate("__rowClicks") == 1
+
+
 def test_ui_driver_counts_native_file_reads(tmp_path):
     """__gets mirrors the fake handle's getFile() count through the real port."""
     import asyncio
@@ -325,7 +368,11 @@ def test_native_stale_save_keeps_external_bytes(tmp_path):
     file = tmp_path / "text.txt"
     file.write_text("old")
     with application(tmp_path) as page:
-        page.evaluate('async () => { window.n = path[0].kids[0]; window.b = await nativeCall("read", {path:n.rel}); }')
+        page.evaluate(
+            'async () => { window.n = path[0].kids[0]; window.b = await nativeCall("read", {path:n.rel}); }'
+        )
         file.write_text("external")
-        assert page.evaluate('async () => { try { await nativeCall("write", {path:n.rel, text:"draft", revision:b.revision}); return false; } catch (e) { return String(e).includes("ESTALE"); } }')
+        assert page.evaluate(
+            'async () => { try { await nativeCall("write", {path:n.rel, text:"draft", revision:b.revision}); return false; } catch (e) { return String(e).includes("ESTALE"); } }'
+        )
     assert file.read_text() == "external"
