@@ -16,10 +16,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [155] Remove unused adapter edges and server glue
-  <!-- hai:{"id":"simple-8ec2bde6-eccf-44b9-a4cf-9cddc9e611c3","labels":["steward"],"createdAt":"2026-10-22T06:06:59.658Z","updatedAt":"2026-10-22T06:06:59.658Z"} -->
-
 ## Scheduled
+
+- [155] Remove unused adapter edges and server glue
+  <!-- hai:{"id":"simple-8ec2bde6-eccf-44b9-a4cf-9cddc9e611c3","labels":["steward"],"createdAt":"2026-10-22T06:06:59.658Z","updatedAt":"2026-10-22T06:30:46.209Z"} -->
 
 ## In Progress
 
