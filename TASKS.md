@@ -16,13 +16,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [152] Centralize the shared UI boot sequence
-  <!-- hai:{"id":"simple-d39ebd3e-9dae-427b-b506-427a6df23199","labels":["steward"],"createdAt":"2026-10-22T04:21:02.055Z","updatedAt":"2026-10-22T04:21:02.055Z"} -->
-
 - [153] Stop a deep-link walk when its root is replaced (architecture review A9)
   <!-- hai:{"id":"simple-f96381b0-da64-4e54-9be3-93bb4f21354d","labels":["steward"],"createdAt":"2026-10-22T04:21:06.280Z","updatedAt":"2026-10-22T04:21:06.280Z"} -->
 
 ## Scheduled
+
+- [152] Centralize the shared UI boot sequence
+  <!-- hai:{"id":"simple-d39ebd3e-9dae-427b-b506-427a6df23199","labels":["steward"],"createdAt":"2026-10-22T04:21:02.055Z","updatedAt":"2026-10-22T04:50:33.813Z"} -->
 
 ## In Progress
 
