@@ -103,6 +103,16 @@ not disk throughput measurements.
 - **Documentation and gate:** all 27 documentation checks passed after the
   final wording changes. The quality gate and shared model checks passed.
 
+## Merge record
+
+Implementation commit `2c81aced` was merged into local `main` as `93338839`
+on 2026-10-22. Rebase incorporated only new tracker and task documentation;
+runtime and test sources match the validated working tree. The feature branch
+is retained. No push, service restart or deployment was performed.
+
+Implementation and validation are complete. The completion move leaves the
+acceptance checkbox unchecked for steward review.
+
 ## Resource guard
 
 All runs used sequential admission and runtime monitoring. MemAvailable and
