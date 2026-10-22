@@ -1,0 +1,307 @@
+{
+  "items": [
+    {
+      "issue": "filemill [155]",
+      "hai_id": "simple-8ec2bde6-eccf-44b9-a4cf-9cddc9e611c3",
+      "title": "Remove unused adapter edges and server glue",
+      "repository": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a",
+      "source_repository": "/home/agent/prg/filemill",
+      "base_commit": "fd239374cdac29ccb3eb0094e1b9cfd9e36ce73e",
+      "delivery_commits": [
+        "7d15b617dd1f137283b2732443f5e47f04ad85f1"
+      ],
+      "checks": [
+        {
+          "id": "dead-edges-removed",
+          "command": "NO_COLOR=1 deno lint --no-config --rules-tags= --rules-include=no-unused-vars ui/adapters/vfs-json.js ui/adapters/vfs-csv.js ui/adapters/router-path.js && ! git grep -n -E '_HTML_EXTS|is_vfs_file|annotation is int' -- server/src",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a"
+            }
+          }
+        },
+        {
+          "id": "bundle-current",
+          "command": "static/build-index.py --check",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a"
+            }
+          }
+        },
+        {
+          "id": "dev-module-graph",
+          "command": "timeout 900 uv run pytest -q -p no:cacheprovider static/tests/test_ui.py --dev -k jsonl_rows",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a"
+            }
+          }
+        },
+        {
+          "id": "bundle-module-graph",
+          "command": "timeout 900 uv run pytest -q -p no:cacheprovider static/tests/test_ui.py --bundle -k jsonl_rows",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a"
+            }
+          }
+        },
+        {
+          "id": "server-module-graph",
+          "command": "timeout 900 uv run --project server pytest -q -p no:cacheprovider server/tests/test_browser_new_ui.py -k 'test_no_console_errors or test_the_url_path_mirrors_the_file_path or test_stepping_over_sibling_folders_rewrites_history or test_a_jsonl_file_opens_as_a_column_of_rows or test_a_csv_row_previews_headers_and_quoted_values'",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a"
+            }
+          }
+        },
+        {
+          "id": "dispatch-and-provider-lookup",
+          "command": "timeout 1200 uv run --project server pytest -q -p no:cacheprovider server/tests/test_vfs.py server/tests/test_routes_new.py server/tests/test_resource_routes.py server/tests/test_app.py server/tests/test_api.py server/tests/test_urls.py server/tests/test_providers_sqlite.py server/tests/test_archive_provider.py server/tests/test_gitbundle_provider.py server/tests/test_vtt_provider.py server/tests/test_public_mode.py server/tests/test_resource_safety.py server/tests/test_save_safety.py server/tests/test_mutation_policy.py server/tests/test_host_policy.py",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a"
+            }
+          }
+        },
+        {
+          "id": "lint-gate",
+          "command": "deno fmt --check ui/ && deno lint ui/ && uv run --project server ruff check server && uv run --project server ruff format --check server/src server/tests && timeout 600 uv run --project server mypy --disable-error-code import-untyped --disable-error-code attr-defined server/src",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a"
+            }
+          }
+        },
+        {
+          "id": "docs-guards",
+          "command": "timeout 600 uv run --project server pytest -q -p no:cacheprovider server/tests/test_docs.py server/tests/test_review_conditions.py",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a"
+            }
+          }
+        }
+      ],
+      "evidence": {
+        "dead-edges-removed": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a",
+          "tested_commit": "7d15b617dd1f137283b2732443f5e47f04ad85f1",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a",
+              "value": "7d15b617dd1f137283b2732443f5e47f04ad85f1"
+            }
+          },
+          "issue": "filemill [155]",
+          "check": "dead-edges-removed",
+          "command": "NO_COLOR=1 deno lint --no-config --rules-tags= --rules-include=no-unused-vars ui/adapters/vfs-json.js ui/adapters/vfs-csv.js ui/adapters/router-path.js && ! git grep -n -E '_HTML_EXTS|is_vfs_file|annotation is int' -- server/src",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T06:44:18.465364+00:00"
+        },
+        "bundle-current": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a",
+          "tested_commit": "7d15b617dd1f137283b2732443f5e47f04ad85f1",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a",
+              "value": "7d15b617dd1f137283b2732443f5e47f04ad85f1"
+            }
+          },
+          "issue": "filemill [155]",
+          "check": "bundle-current",
+          "command": "static/build-index.py --check",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T06:44:19.974682+00:00"
+        },
+        "lint-gate": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a",
+          "tested_commit": "7d15b617dd1f137283b2732443f5e47f04ad85f1",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a",
+              "value": "7d15b617dd1f137283b2732443f5e47f04ad85f1"
+            }
+          },
+          "issue": "filemill [155]",
+          "check": "lint-gate",
+          "command": "deno fmt --check ui/ && deno lint ui/ && uv run --project server ruff check server && uv run --project server ruff format --check server/src server/tests && timeout 600 uv run --project server mypy --disable-error-code import-untyped --disable-error-code attr-defined server/src",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T06:44:27.176073+00:00"
+        },
+        "docs-guards": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a",
+          "tested_commit": "7d15b617dd1f137283b2732443f5e47f04ad85f1",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a",
+              "value": "7d15b617dd1f137283b2732443f5e47f04ad85f1"
+            }
+          },
+          "issue": "filemill [155]",
+          "check": "docs-guards",
+          "command": "timeout 600 uv run --project server pytest -q -p no:cacheprovider server/tests/test_docs.py server/tests/test_review_conditions.py",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T06:44:35.255877+00:00"
+        },
+        "dev-module-graph": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a",
+          "tested_commit": "7d15b617dd1f137283b2732443f5e47f04ad85f1",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a",
+              "value": "7d15b617dd1f137283b2732443f5e47f04ad85f1"
+            }
+          },
+          "issue": "filemill [155]",
+          "check": "dev-module-graph",
+          "command": "timeout 900 uv run pytest -q -p no:cacheprovider static/tests/test_ui.py --dev -k jsonl_rows",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T06:45:16.964086+00:00"
+        },
+        "bundle-module-graph": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a",
+          "tested_commit": "7d15b617dd1f137283b2732443f5e47f04ad85f1",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a",
+              "value": "7d15b617dd1f137283b2732443f5e47f04ad85f1"
+            }
+          },
+          "issue": "filemill [155]",
+          "check": "bundle-module-graph",
+          "command": "timeout 900 uv run pytest -q -p no:cacheprovider static/tests/test_ui.py --bundle -k jsonl_rows",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T06:45:36.373420+00:00"
+        },
+        "server-module-graph": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a",
+          "tested_commit": "7d15b617dd1f137283b2732443f5e47f04ad85f1",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a",
+              "value": "7d15b617dd1f137283b2732443f5e47f04ad85f1"
+            }
+          },
+          "issue": "filemill [155]",
+          "check": "server-module-graph",
+          "command": "timeout 900 uv run --project server pytest -q -p no:cacheprovider server/tests/test_browser_new_ui.py -k 'test_no_console_errors or test_the_url_path_mirrors_the_file_path or test_stepping_over_sibling_folders_rewrites_history or test_a_jsonl_file_opens_as_a_column_of_rows or test_a_csv_row_previews_headers_and_quoted_values'",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T06:45:59.032613+00:00"
+        },
+        "dispatch-and-provider-lookup": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a",
+          "tested_commit": "7d15b617dd1f137283b2732443f5e47f04ad85f1",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-155-remove-unused-adapter-edges-and-server-glue-30a7437a",
+              "value": "7d15b617dd1f137283b2732443f5e47f04ad85f1"
+            }
+          },
+          "issue": "filemill [155]",
+          "check": "dispatch-and-provider-lookup",
+          "command": "timeout 1200 uv run --project server pytest -q -p no:cacheprovider server/tests/test_vfs.py server/tests/test_routes_new.py server/tests/test_resource_routes.py server/tests/test_app.py server/tests/test_api.py server/tests/test_urls.py server/tests/test_providers_sqlite.py server/tests/test_archive_provider.py server/tests/test_gitbundle_provider.py server/tests/test_vtt_provider.py server/tests/test_public_mode.py server/tests/test_resource_safety.py server/tests/test_save_safety.py server/tests/test_mutation_policy.py server/tests/test_host_policy.py",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T06:46:20.991996+00:00"
+        }
+      }
+    }
+  ]
+}
