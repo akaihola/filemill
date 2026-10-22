@@ -25,7 +25,6 @@ import {
   previewNode,
   pvFullscreen,
   pvToken,
-  rowIndex,
   sel,
   selectedNode,
   setState,
@@ -436,7 +435,7 @@ export function render(keepScroll) {
        rather than built and rebuilt. */
     sweepMeta(node);
     const c = columnFor(node);
-    const selectedRow = rowIndex(node, sel[i]);
+    const selectedRow = c.kids.findIndex((k) => k.name === sel[i]);
     widths.push(w);
 
     /* `sorting` goes in the class string rather than on classList, because this

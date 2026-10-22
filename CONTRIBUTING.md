@@ -41,10 +41,16 @@ Run these commands from the repository root. Run suites one at a time on a
 shared host. A timeout bounds a hung test; it is not a readiness wait.
 
 ```bash
-# Server and static bundle tests collected by the root configuration:
-timeout 1800 uv run pytest
-# Each browser edition separately:
+# Root collection, split into four named evidence shards:
+# keyboard:
+timeout 1800 uv run pytest server/tests/test_browser_keyboard.py
+# served-ui:
+timeout 1800 uv run pytest server/tests/test_browser_new_ui.py
+# server-contracts:
+timeout 1800 uv run pytest server/tests --ignore=server/tests/test_browser_keyboard.py --ignore=server/tests/test_browser_new_ui.py
+# static-bundle:
 timeout 1800 uv run pytest static/tests --bundle
+# Additional development-mode qualification:
 timeout 1800 uv run pytest static/tests --dev
 (cd server && timeout 1800 uv run pytest)
 # DOM-free model checks (choose one):
@@ -52,6 +58,27 @@ node ui/core/model/test.mjs
 deno run --allow-read=ui/core/model ui/core/model/test.mjs
 ```
 
+Evidence runs take these four shards one at a time. Together they collect
+exactly the root suite. The two ignored browser files in `server-contracts`
+are run by the first two shards. No test is omitted. The aggregate
+`timeout 1800 uv run pytest` can exceed its bound on a shared host; use the
+shards for complete evidence. Keep the bound at 1,800 seconds for each shard.
+
+Compare collections after changing the shard commands. Set `TMPDIR` to a
+writable temporary directory first:
+
+```bash
+uv run pytest --collect-only -q > "$TMPDIR/root-collection.txt"
+uv run pytest server/tests/test_browser_keyboard.py --collect-only -q > "$TMPDIR/keyboard-collection.txt"
+uv run pytest server/tests/test_browser_new_ui.py --collect-only -q > "$TMPDIR/served-ui-collection.txt"
+uv run pytest server/tests --ignore=server/tests/test_browser_keyboard.py --ignore=server/tests/test_browser_new_ui.py --collect-only -q > "$TMPDIR/server-contracts-collection.txt"
+uv run pytest static/tests --bundle --collect-only -q > "$TMPDIR/static-bundle-collection.txt"
+sed -n '/::/p' "$TMPDIR/root-collection.txt" | LC_ALL=C sort > "$TMPDIR/root-ids.txt"
+sed -n '/::/p' "$TMPDIR/keyboard-collection.txt" "$TMPDIR/served-ui-collection.txt" "$TMPDIR/server-contracts-collection.txt" "$TMPDIR/static-bundle-collection.txt" | LC_ALL=C sort > "$TMPDIR/shard-ids.txt"
+cmp "$TMPDIR/root-ids.txt" "$TMPDIR/shard-ids.txt"
+```
+
+Sorting retains duplicate IDs, so this also detects overlapping shards.
 Root pytest does not collect the native contract suite or run the static suite
 in both modes automatically. The [native guide] gives its separate commands.
 The [testing index] gives focused documentation checks and regression links.

@@ -341,11 +341,26 @@ await walk(tree, ''); window.__gets = 0; return files;
                     os.utime(file, (item["mod"] / 1000, item["mod"] / 1000))
                 if item.get("denied"):
                     file.chmod(0)
-        (self.root / "locked").chmod(0)
+        if (self.root / "locked").exists():
+            (self.root / "locked").chmod(0)
         self.raw.evaluate("mount()")
 
     def locator(self, selector):
         return Locator(self, selector)
+
+    def get_by_label(self, text, exact=False):
+        control_id = self.raw.evaluate(
+            """({text, exact}) => [...document.querySelectorAll('label')]
+              .find(e => exact ? e.textContent.trim() === text : e.textContent.includes(text))
+              ?.control?.id""",
+            {"text": text, "exact": exact},
+        )
+        operator = "=" if exact else "*="
+        return self.locator(
+            f"[id={json.dumps(control_id)}]"
+            if control_id
+            else f"[aria-label{operator}{json.dumps(text)}]"
+        )
 
     async def click(self, selector):
         return await self.locator(selector).click()

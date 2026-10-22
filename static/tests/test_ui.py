@@ -1577,7 +1577,6 @@ async def test_new_root_has_its_widening_range_immediately(page):
 
 async def test_new_root_releases_previous_wheel_axis(page):
     await mount(page)
-    await page.clock.install()
     await page.evaluate("""async () => {
       finder.dispatchEvent(new WheelEvent('wheel', {
         deltaX: 3, deltaY: 40, bubbles: true, cancelable: true,
@@ -1585,7 +1584,7 @@ async def test_new_root_releases_previous_wheel_axis(page):
       await mount(__mk(0));
     }""")
     # A mount cancels the old settle timer. Its axis must still expire.
-    await page.clock.run_for(250)
+    await scroll_settled(page)
     position = await page.evaluate("""() => {
       const before = dial();
       finder.dispatchEvent(new WheelEvent('wheel', {
@@ -2322,10 +2321,26 @@ async def test_edit_mode(page):
     )
     await click_row(pg, 0, "mixed")
     await pg.wait_for_function("path[1]?.name === 'mixed' && path[1]?.kids")
+    await pg.evaluate("""() => {
+      const blob = FS.blob.bind(FS);
+      FS.blob = n => {
+        if (n.name === 'note.md' &&
+            document.querySelector('.pv-text')?.textContent.trim() === '# note') {
+          return new Promise(resolve => {
+            window.__releaseEditable = () => { FS.blob = blob; resolve(blob(n)); };
+          });
+        }
+        return blob(n);
+      };
+    }""")
     await click_row(pg, 1, "note.md")
     await pg.wait_for_function(
         "document.querySelector('.pv-text')?.textContent.trim() === '# note'"
     )
+    await pg.wait_for_function("typeof __releaseEditable === 'function'")
+    assert await pg.is_hidden("#pv-edit"), "Edit waits for the editable snapshot"
+    await pg.evaluate("__releaseEditable()")
+    await pg.wait_for_selector("#pv-edit", state="visible")
     assert await pg.is_visible("#pv-edit"), "Text preview offers an Edit button"
     await pg.click("#pv-edit")
     await pg.wait_for_function("document.querySelector('#pv-editor')")
@@ -2576,11 +2591,14 @@ async def test_remount_discards_pending_document_choice(page):
     assert not await page.evaluate("__oldDocument.dir")
 
 
-async def test_remount_stops_pending_path_walk(page):
+async def test_remount_stops_pending_path_walk(page, driver):
     await mount(page)
     # The old root's URL names a folder, so a stale one is told from the new.
     await page.evaluate("applyPath(['deep'])")
-    assert "p=deep" in await page.evaluate("location.hash")
+    if getattr(driver, "native", False):
+        assert await page.evaluate("ROUTER.read().path") == ["deep"]
+    else:
+        assert "p=deep" in await page.evaluate("location.hash")
     await page.evaluate("""() => {
         const node = path[0].kids.find(n => n.name === 'mixed');
         const load = FS.ensureLoaded;
@@ -2596,7 +2614,7 @@ async def test_remount_stops_pending_path_walk(page):
     await page.evaluate("__reached")
     await page.evaluate("mount(__mk(0))")
     snapshot = """() => ({path: path.map(n => n.name), sel: [...sel],
-                         focusCol, url: location.href})"""
+                         focusCol, url: location.href, route: ROUTER.read()})"""
     mounted = await page.evaluate(snapshot)
     # Every read from here on goes through the port the new root uses.
     await page.evaluate("""() => {
@@ -2608,7 +2626,11 @@ async def test_remount_stops_pending_path_walk(page):
     after = await page.evaluate(snapshot)
     reads = await page.evaluate("__reads")
     assert (walked, after, reads) == (False, mounted, [])
-    assert after["url"].endswith("#r=workspace"), "the URL names the new root"
+    if getattr(driver, "native", False):
+        assert after["route"]["root"] == "workspace", "the route names the new root"
+        assert after["route"]["path"] == []
+    else:
+        assert after["url"].endswith("#r=workspace"), "the URL names the new root"
 
 
 async def test_typeahead(page):
@@ -3275,6 +3297,24 @@ async def test_sort_options(page):
     await pg.evaluate("__slowMeta(0); setSort('name', false)")
 
 
+async def test_cached_render_keeps_sorted_column_order(page):
+    await mount(page, 1000)
+    await page.click('.col[data-i="0"] .row[title="big"]')
+    await page.evaluate("setSort('size', false)")
+    await page.wait_for_function("path[1]?.metaDone && !path[1].metaLoading")
+    sorts = await page.evaluate("""() => {
+      const sort = Array.prototype.sort;
+      let calls = 0;
+      Array.prototype.sort = function (fn) {
+        if (this.length === 1000) calls++;
+        return sort.call(this, fn);
+      };
+      try { render(true); return calls; }
+      finally { Array.prototype.sort = sort; }
+    }""")
+    assert sorts == 0, "A cached render uses the column's sorted children"
+
+
 async def test_render_cost(page):
     pg = page
     # Generous ceilings: they exist to catch the O(entries)-per-keystroke
@@ -3594,19 +3634,21 @@ async def test_preview_reuses_pending_editor_save(page):
 
 async def test_preview_reuses_document_when_delayed_outline_declines(page):
     pg = page
-    await pg.evaluate("""async () => {
-      let reads = 0;
-      await mount({kind: 'directory', name: 'delayed-document', async *entries() {
+    await pg.evaluate("""() => {
+      window.__mk = () => ({kind: 'directory', name: 'workspace', async *entries() {
         yield ['plain.md', {kind: 'file', name: 'plain.md', async getFile() {
-          const file = new File(['# Title only\\n\\nbody'], 'plain.md', {lastModified: 1});
-          const text = file.text.bind(file);
-          file.text = async () => {
-            if (++reads === 1) await new Promise(r => { window.__releaseOutline = r; });
-            return text();
-          };
-          return file;
+          return new File(['# Title only\\n\\nbody'], 'plain.md', {lastModified: 1});
         }}];
       }});
+    }""")
+    await mount(pg)
+    await pg.evaluate("""() => {
+      let reads = 0;
+      const text = Blob.prototype.text;
+      Blob.prototype.text = async function () {
+        if (++reads === 1) await new Promise(r => { window.__releaseOutline = r; });
+        return text.call(this);
+      };
     }""")
     await preview_spy(pg)
     await pg.click('.row[title="plain.md"]')

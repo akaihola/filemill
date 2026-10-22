@@ -143,6 +143,10 @@ Keep these boundaries and checks.
   lifetime check: layout changes must keep one pending conversion and release
   its Python scope once. The preview reuse repair already supplies that
   behavior; no interpreter or fixture ownership change is introduced here.
+  [The bounded-suite work][156] removes a repeated sort from cached rendering:
+  the selected row is found in the cached column's ordered children. A
+  regression counts sort calls and complements the unchanged timing assertions.
+  Edit checks wait for snapshot eligibility separately from preview text.
 - [The older-review repairs][131] fixed conditional Zstandard imports, typing
   stubs and unexplained tuning constants (`f7e917a5`). Clipboard refusal now
   offers manual copying with the full value and error (`fef28359`). Neither
@@ -796,3 +800,5 @@ one new P2 finding; no new P1 finding was established in this pass.
 [155]: tasks/155-remove-unused-adapter-edges-and-server-glue.md
 
 [the core initializer]: ../ui/core/boot.js
+
+[156]: tasks/156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bound-on-.md
