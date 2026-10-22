@@ -18,11 +18,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [157] Point agents at a short summary of the architecture review instead of
-  the whole 50 KB file
-  <!-- hai:{"id":"simple-68d247fb-c5fb-4134-b3b8-7e7a16c2ff88","labels":["steward"],"createdAt":"2026-10-22T19:21:20.291Z","updatedAt":"2026-10-22T19:33:52.840Z"} -->
-
 ## In Progress
+
+- [~] [157] Point agents at a short summary of the architecture review instead of
+  the whole 50 KB file
+      <!-- hai:{"id":"simple-68d247fb-c5fb-4134-b3b8-7e7a16c2ff88","labels":["steward"],"createdAt":"2026-10-22T19:21:20.291Z","updatedAt":"2026-10-22T19:34:38.758Z"} -->
 
 - [~] [156] Make filemill's root suite finish green within its 30-minute bound on
   hopeli
