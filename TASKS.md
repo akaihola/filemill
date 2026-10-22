@@ -16,9 +16,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [151] Compute SQLite row-key facts once per listing (architecture review A7)
-  <!-- hai:{"id":"simple-10532ff5-e29a-410b-b97d-db1b33363fe9","labels":["steward"],"createdAt":"2026-10-22T04:20:57.982Z","updatedAt":"2026-10-22T04:20:57.982Z"} -->
-
 - [152] Centralize the shared UI boot sequence
   <!-- hai:{"id":"simple-d39ebd3e-9dae-427b-b506-427a6df23199","labels":["steward"],"createdAt":"2026-10-22T04:21:02.055Z","updatedAt":"2026-10-22T04:21:02.055Z"} -->
 
@@ -26,6 +23,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-f96381b0-da64-4e54-9be3-93bb4f21354d","labels":["steward"],"createdAt":"2026-10-22T04:21:06.280Z","updatedAt":"2026-10-22T04:21:06.280Z"} -->
 
 ## Scheduled
+
+- [151] Compute SQLite row-key facts once per listing (architecture review A7)
+  <!-- hai:{"id":"simple-10532ff5-e29a-410b-b97d-db1b33363fe9","labels":["steward"],"createdAt":"2026-10-22T04:20:57.982Z","updatedAt":"2026-10-22T04:34:21.529Z"} -->
 
 ## In Progress
 
