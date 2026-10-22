@@ -40,3 +40,23 @@ Tracker: [filemill's tracker](../../TASKS.md).
 [120]: 120-disable-server-search-in-local-folders-from-docs-question-5.md
 [130]: 130-give-served-and-browser-owned-folders-the-same-content-search.md
 [141]: 141-finish-browser-fixture-isolation-and-qualify-independent-test-roots.md
+
+
+## Implementation plan, 2026-10-22
+
+1. Measure a clean-main root run with the requested flags and a memory guard.
+   Keep this baseline unchanged until it exits or reaches its bound.
+2. Reproduce Edit readiness and the five native failures. Use controlled
+   asynchronous work for regressions. Preserve assertions and timing bounds.
+3. Run the offline-copy test after its collection predecessors. Investigate
+   inherited state separately from within-test asynchronous work.
+4. Use measured durations to remove waste or document exhaustive sequential
+   shards. Compare collected IDs, including multiplicity, against root pytest.
+5. Run the quality gate, merge, and record checks from a clean merged checkout.
+   Complete the tracker only after acceptance checks pass.
+
+The start move is commit `8b9a0149`. The baseline starts at that clean main
+commit. No dependency or service change is planned. The keyboard fixture
+lifecycle and parallel qualification remain owned by [fixture isolation].
+
+[fixture isolation]: 141-finish-browser-fixture-isolation-and-qualify-independent-test-roots.md
