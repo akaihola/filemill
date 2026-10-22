@@ -334,6 +334,22 @@ The complete focused refresh scenario passed in native (85.90 s), development
 lint/format checks and 28 documentation/readiness checks also passed. The
 next clean merged recording starts with the full native UI command.
 
+## Navigation commit boundary
+
+At `a63d8395`, native build, all 20 contracts and all 83 native UI cases
+passed. Native UI guarded wall time was 1,040.4 s. The served UI run then
+failed its first controlled navigation case: `Page.goto: Timeout 3000ms
+exceeded`, waiting for `domcontentloaded`. The seventeen-minute native pass
+is preserved in the sixth failed recording; later queued checks did not run.
+
+Waiting for that browser lifecycle event still couples initial navigation
+to parsing/executing the complete deferred resource graph. The harness now
+returns from navigation at document commit and uses its existing UI readiness
+predicates. Every configured timeout remains unchanged, including 3,000 ms
+in the controlled regression and JSON-refresh cases. The controlled case
+and all 12 JSON-refresh variants passed together in 94.46 s on this host.
+The held-image assertion and all application readiness predicates remain.
+
 <!-- HAI156 memory start -->
 ## Memory guard evidence
 
@@ -414,6 +430,12 @@ probes and actual failed checks retain their nonzero exits.
 | refresh-native-diagnostic | started at once | 0.0 | 2223/2508 | 2037/+57 | 62 | 160.8 | 1 |
 | refresh-native-gated | started at once | 0.0 | 2574/3161 | 2087/+7 | 136 | 127.6 | 0 |
 | refresh-browser-gate | started at once | 0.0 | 2770/3016 | 2064/-14 | 0 | 54.1 | 0 |
+| v6-native-build | started at once | 0.0 | 2365/2458 | 2044/+26 | 31 | 68.3 | 0 |
+| v6-native-contracts | started at once | 0.0 | 2303/2585 | 2069/+133 | 133 | 181.9 | 0 |
+| v6-native-ui | started at once | 0.0 | 2593/2335 | 2199/+124 | 280 | 1040.4 | 0 |
+| v6-served-ui | started at once | 0.0 | 2323/2084 | 2309/+104 | 99 | 42.3 | 1 |
+| navigation-commit-green | started at once | 0.0 | 2422/2817 | 2584/-229 | 37 | 130.4 | 0 |
+| navigation-commit-gate | started at once | 0.0 | 2817/2770 | 2355/-11 | 0 | 9.8 | 0 |
 
 Exact argument vectors are in [the guarded command arguments].
 Run names match that artifact and [the memory log].

@@ -354,7 +354,7 @@ class Harness:
 
     def open_resource(self, path: str) -> None:
         """Open the resource route, where the URL path is the file path."""
-        self._pg.goto(f"{self.base}/{path}", wait_until="domcontentloaded")
+        self._pg.goto(f"{self.base}/{path}", wait_until="commit")
         self._pg.wait_for_function("typeof path !== 'undefined' && path.length >= 1")
         names = [unquote(part) for part in urlsplit(path).path.split("/") if part]
         self._pg.wait_for_function(

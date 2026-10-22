@@ -152,7 +152,7 @@ Keep these boundaries and checks.
   is pending; the fold and clipping assertions keep their original bounds.
   Loading-indicator checks hold their read until observation, and fling
   checks send preview wheel input rather than a CSS-smoothed assignment.
-  Served navigation waits for DOM readiness and the existing UI predicates,
+  Served navigation waits for document commit and the existing UI predicates,
   avoiding an unrelated resource load event without raising any timeout.
   Refresh-race checks hold their stale read until the refresh has started,
   preserving entry snapshots across browser and native round trips.
