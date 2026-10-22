@@ -103,3 +103,23 @@ on 512 MiB of swap growth. MemAvailable and swap are in MiB.
 | Static `--dev` JSONL test | started at once, no wait | 2931 | 2755 | 2320 | 3 | 25 s | exit 0 |
 | Static `--bundle` JSONL test | started at once, no wait | 2837 | 2748 | 2308 | 1 | 27 s | exit 0 |
 | Server-edition browser tests | started at once, no wait | 2847 | 2802 | 2306 | 0 | 34 s | exit 0 |
+
+### Merged verification, 2026-10-22
+
+Fast-forwarded `main` from `fd239374` to delivery commit `7d15b617`. The
+steward's evidence recorder ran eight checks from a clean checkout detached at
+`7d15b617`, with `uv.lock` and the editable `server` package pinned; all
+passed: `dead-edges-removed`, `bundle-current`, `lint-gate`, `docs-guards`,
+`dev-module-graph` (1 passed), `bundle-module-graph` (1 passed),
+`server-module-graph` (5 passed) and `dispatch-and-provider-lookup`
+(726 passed). The receipt is
+[155-remove-unused-adapter-edges-and-server-glue.evidence.json](155-remove-unused-adapter-edges-and-server-glue.evidence.json).
+
+The four heavy recordings ran one at a time under the same guard:
+
+| Check | Outcome | Admission | Final | Start swap | Swap growth | Elapsed | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `dev-module-graph` | started at once, no wait | 2899 | 3031 | 2237 | 45 | 23 s | exit 0 |
+| `bundle-module-graph` | started at once, no wait | 3030 | 3124 | 2281 | 9 | 18 s | exit 0 |
+| `server-module-graph` | started at once, no wait | 3121 | 3040 | 2291 | 0 | 22 s | exit 0 |
+| `dispatch-and-provider-lookup` | started at once, no wait | 3040 | 3394 | 2291 | 0 | 23 s | exit 0 |
