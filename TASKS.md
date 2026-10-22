@@ -20,10 +20,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [157] Point agents at a short summary of the architecture review instead of
-  the whole 50 KB file
-      <!-- hai:{"id":"simple-68d247fb-c5fb-4134-b3b8-7e7a16c2ff88","labels":["steward"],"createdAt":"2026-10-22T19:21:20.291Z","updatedAt":"2026-10-22T19:34:38.758Z"} -->
-
 - [~] [156] Make filemill's root suite finish green within its 30-minute bound on
   hopeli
       <!-- hai:{"id":"simple-a773efdf-57e6-4b22-b134-b3a69bd54f16","labels":["steward"],"createdAt":"2026-10-22T07:57:21.057Z","updatedAt":"2026-10-22T08:04:13.315Z"} -->
@@ -32,6 +28,10 @@ Rules for TASKS.md usage are at the bottom of the file.
       <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T15:01:55.354Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [157] Point agents at a short summary of the architecture review instead of
+  the whole 50 KB file
+      <!-- hai:{"id":"simple-68d247fb-c5fb-4134-b3b8-7e7a16c2ff88","labels":["steward"],"createdAt":"2026-10-22T19:21:20.291Z","updatedAt":"2026-10-22T19:44:30.055Z"} -->
 
 - [ ] [155] Remove unused adapter edges and server glue
       <!-- hai:{"id":"simple-8ec2bde6-eccf-44b9-a4cf-9cddc9e611c3","labels":["steward"],"createdAt":"2026-10-22T06:06:59.658Z","updatedAt":"2026-10-22T06:47:27.965Z"} -->

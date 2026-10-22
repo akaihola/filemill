@@ -1,0 +1,181 @@
+{
+  "items": [
+    {
+      "issue": "filemill [157]",
+      "hai_id": "simple-68d247fb-c5fb-4134-b3b8-7e7a16c2ff88",
+      "title": "Point agents at a short summary of the architecture review instead of the whole 50 KB file",
+      "repository": "/home/agent/.t3/worktrees/filemill/pacer-157-point-agents-at-a-short-summary-of-the-architecture-review-inste-dcf72c37",
+      "source_repository": "/home/agent/prg/filemill",
+      "base_commit": "08c7387444fe27c87ff6f8450a2693e204bdefc2",
+      "delivery_commits": [
+        "760eee71c50b17b27acb6db49db4df506544bca3"
+      ],
+      "checks": [
+        {
+          "id": "docs-tests",
+          "command": "timeout 600 uv run pytest server/tests/test_docs.py -q",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            }
+          }
+        },
+        {
+          "id": "summary-size",
+          "command": "wc -c docs/ARCHITECTURE-SUMMARY.md && test \"$(wc -c < docs/ARCHITECTURE-SUMMARY.md)\" -le 6144",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            }
+          }
+        },
+        {
+          "id": "unindexed-heading-fails",
+          "command": "tmp=$(mktemp -d) && trap 'rm -rf \"$tmp\"' EXIT && mkdir -p \"$tmp/server/tests\" \"$tmp/docs\" && cp server/pyproject.toml \"$tmp/server/\" && cp server/tests/test_docs.py \"$tmp/server/tests/\" && cp docs/ARCHITECTURE-REVIEW.md docs/ARCHITECTURE-SUMMARY.md \"$tmp/docs/\" && printf '\\n### A15. Probe heading without an index line\\n' >> \"$tmp/docs/ARCHITECTURE-REVIEW.md\" && { timeout 600 uv run pytest -q -p no:cacheprovider \"$tmp/server/tests/test_docs.py\" -k architecture_summary 2>&1 || true; } | grep -F \"omits ['A15. Probe heading without an index line']\"",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            }
+          }
+        },
+        {
+          "id": "agents-points-at-summary",
+          "command": "grep -F 'Read [docs/ARCHITECTURE-SUMMARY.md](docs/ARCHITECTURE-SUMMARY.md) first,' AGENTS.md && grep -F 'that the issue touches, found by heading.' AGENTS.md && grep -F 'their lines in the summary' AGENTS.md && grep -F 'proposed architecture and stay within the current issue' AGENTS.md",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            }
+          }
+        },
+        {
+          "id": "delivery-files",
+          "command": "git diff --stat 08c7387444fe27c87ff6f8450a2693e204bdefc2 760eee71c50b17b27acb6db49db4df506544bca3 && out=$(git diff --name-only 08c7387444fe27c87ff6f8450a2693e204bdefc2 760eee71c50b17b27acb6db49db4df506544bca3) && test -z \"$(printf '%s\\n' \"$out\" | grep -vxF -e AGENTS.md -e docs/ARCHITECTURE-REVIEW.md -e docs/ARCHITECTURE-SUMMARY.md -e server/tests/test_docs.py -e docs/tasks/157-point-agents-at-a-short-summary-of-the-architecture-review-instead-of-.md || true)\" && test \"$(git diff --numstat 08c7387444fe27c87ff6f8450a2693e204bdefc2 760eee71c50b17b27acb6db49db4df506544bca3 -- docs/ARCHITECTURE-REVIEW.md)\" = \"$(printf '1\\t0\\tdocs/ARCHITECTURE-REVIEW.md')\"",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            }
+          }
+        },
+        {
+          "id": "python-format-lint",
+          "command": "uv run --project server ruff format --check server/src server/tests && uv run --project server ruff check server",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            }
+          }
+        }
+      ],
+      "evidence": {
+        "docs-tests": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-157-point-agents-at-a-short-summary-of-the-architecture-review-inste-dcf72c37",
+          "tested_commit": "760eee71c50b17b27acb6db49db4df506544bca3",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-157-point-agents-at-a-short-summary-of-the-architecture-review-inste-dcf72c37/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            }
+          },
+          "issue": "filemill [157]",
+          "check": "docs-tests",
+          "command": "timeout 600 uv run pytest server/tests/test_docs.py -q",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T19:43:30.766183+00:00"
+        },
+        "summary-size": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-157-point-agents-at-a-short-summary-of-the-architecture-review-inste-dcf72c37",
+          "tested_commit": "760eee71c50b17b27acb6db49db4df506544bca3",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-157-point-agents-at-a-short-summary-of-the-architecture-review-inste-dcf72c37/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            }
+          },
+          "issue": "filemill [157]",
+          "check": "summary-size",
+          "command": "wc -c docs/ARCHITECTURE-SUMMARY.md && test \"$(wc -c < docs/ARCHITECTURE-SUMMARY.md)\" -le 6144",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T19:43:33.281363+00:00"
+        },
+        "unindexed-heading-fails": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-157-point-agents-at-a-short-summary-of-the-architecture-review-inste-dcf72c37",
+          "tested_commit": "760eee71c50b17b27acb6db49db4df506544bca3",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-157-point-agents-at-a-short-summary-of-the-architecture-review-inste-dcf72c37/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            }
+          },
+          "issue": "filemill [157]",
+          "check": "unindexed-heading-fails",
+          "command": "tmp=$(mktemp -d) && trap 'rm -rf \"$tmp\"' EXIT && mkdir -p \"$tmp/server/tests\" \"$tmp/docs\" && cp server/pyproject.toml \"$tmp/server/\" && cp server/tests/test_docs.py \"$tmp/server/tests/\" && cp docs/ARCHITECTURE-REVIEW.md docs/ARCHITECTURE-SUMMARY.md \"$tmp/docs/\" && printf '\\n### A15. Probe heading without an index line\\n' >> \"$tmp/docs/ARCHITECTURE-REVIEW.md\" && { timeout 600 uv run pytest -q -p no:cacheprovider \"$tmp/server/tests/test_docs.py\" -k architecture_summary 2>&1 || true; } | grep -F \"omits ['A15. Probe heading without an index line']\"",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T19:43:41.976660+00:00"
+        },
+        "agents-points-at-summary": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-157-point-agents-at-a-short-summary-of-the-architecture-review-inste-dcf72c37",
+          "tested_commit": "760eee71c50b17b27acb6db49db4df506544bca3",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-157-point-agents-at-a-short-summary-of-the-architecture-review-inste-dcf72c37/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            }
+          },
+          "issue": "filemill [157]",
+          "check": "agents-points-at-summary",
+          "command": "grep -F 'Read [docs/ARCHITECTURE-SUMMARY.md](docs/ARCHITECTURE-SUMMARY.md) first,' AGENTS.md && grep -F 'that the issue touches, found by heading.' AGENTS.md && grep -F 'their lines in the summary' AGENTS.md && grep -F 'proposed architecture and stay within the current issue' AGENTS.md",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T19:43:45.462489+00:00"
+        },
+        "delivery-files": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-157-point-agents-at-a-short-summary-of-the-architecture-review-inste-dcf72c37",
+          "tested_commit": "760eee71c50b17b27acb6db49db4df506544bca3",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-157-point-agents-at-a-short-summary-of-the-architecture-review-inste-dcf72c37/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            }
+          },
+          "issue": "filemill [157]",
+          "check": "delivery-files",
+          "command": "git diff --stat 08c7387444fe27c87ff6f8450a2693e204bdefc2 760eee71c50b17b27acb6db49db4df506544bca3 && out=$(git diff --name-only 08c7387444fe27c87ff6f8450a2693e204bdefc2 760eee71c50b17b27acb6db49db4df506544bca3) && test -z \"$(printf '%s\\n' \"$out\" | grep -vxF -e AGENTS.md -e docs/ARCHITECTURE-REVIEW.md -e docs/ARCHITECTURE-SUMMARY.md -e server/tests/test_docs.py -e docs/tasks/157-point-agents-at-a-short-summary-of-the-architecture-review-instead-of-.md || true)\" && test \"$(git diff --numstat 08c7387444fe27c87ff6f8450a2693e204bdefc2 760eee71c50b17b27acb6db49db4df506544bca3 -- docs/ARCHITECTURE-REVIEW.md)\" = \"$(printf '1\\t0\\tdocs/ARCHITECTURE-REVIEW.md')\"",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T19:43:47.653764+00:00"
+        },
+        "python-format-lint": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-157-point-agents-at-a-short-summary-of-the-architecture-review-inste-dcf72c37",
+          "tested_commit": "760eee71c50b17b27acb6db49db4df506544bca3",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-157-point-agents-at-a-short-summary-of-the-architecture-review-inste-dcf72c37/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            }
+          },
+          "issue": "filemill [157]",
+          "check": "python-format-lint",
+          "command": "uv run --project server ruff format --check server/src server/tests && uv run --project server ruff check server",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T19:43:49.775387+00:00"
+        }
+      }
+    }
+  ]
+}

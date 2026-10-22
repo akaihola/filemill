@@ -78,3 +78,42 @@ Tracker: [the filemill tracker](../../TASKS.md).
 - [CONTRIBUTING.md](../../CONTRIBUTING.md) still says "Read the
   [architecture review] before implementation". This task's file scope
   excluded it; pointing it at the summary is a one-line change.
+
+### Checks at the merged commit
+
+Fast-forwarded `main` from `08c73874` to `760eee71` (one delivery commit,
+`760eee71`). Each check below was recorded with the steward's
+`check-evidence.py record` from a clean checkout detached at `760eee71`; the
+receipt is
+[157-point-agents-at-a-short-summary-of-the-architecture-review-instead-of-.evidence.json](157-point-agents-at-a-short-summary-of-the-architecture-review-instead-of-.evidence.json).
+All six passed:
+
+- `docs-tests`: `uv run pytest server/tests/test_docs.py -q`, 28 passed,
+  including the new test.
+- `summary-size`: the summary is 5,469 bytes, under 6,144.
+- `unindexed-heading-fails`: in a temporary copy of the test and both
+  documents, an added `### A15` heading without an index line makes the new
+  test fail with `omits ['A15. Probe heading without an index line']`.
+- `agents-points-at-summary`: AGENTS.md names the summary first, the review
+  sections by heading, the summary's index lines, and the unchanged
+  alignment and scope rules.
+- `delivery-files`: the delivery diff lists only AGENTS.md, the review (one
+  added line), the summary, `server/tests/test_docs.py` and this record.
+- `python-format-lint`: `ruff format --check` and `ruff check` clean.
+
+No deployment step applies: the change is documentation and one test, and
+the served Filemill code is unchanged.
+
+### Memory reports for the record calls
+
+Each record call ran alone under a guard that required 2 GiB `MemAvailable`
+to start and would stop it below 1 GiB or at 512 MiB swap growth.
+
+| Check | Outcome | Admission / final MemAvailable | Swap start / growth | Elapsed | Exit |
+| --- | --- | --- | --- | --- | --- |
+| docs-tests | started at once, no wait | 2,232 / 2,311 MiB | 2,861 / 2 MiB | 14 s | 0 |
+| summary-size | started at once, no wait | 2,311 / 2,195 MiB | 2,863 / 0 MiB | 2 s | 0 |
+| unindexed-heading-fails | started at once, no wait | 2,285 / 2,154 MiB | 2,863 / −1 MiB | 8 s | 0 |
+| agents-points-at-summary | started at once, no wait | 2,154 / 2,218 MiB | 2,862 / 14 MiB | 4 s | 0 |
+| delivery-files | started at once, no wait | 2,213 / 2,243 MiB | 2,876 / 0 MiB | 1 s | 0 |
+| python-format-lint | started at once, no wait | 2,241 / 2,156 MiB | 2,876 / 0 MiB | 2 s | 0 |
