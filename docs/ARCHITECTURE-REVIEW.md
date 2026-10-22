@@ -232,10 +232,16 @@ copy and fresh reload. Keep the resolved whole-listing/row-eviction behavior.
 
 **Status: changed, P2.** SQLite remains open. In
 [server/src/filemill/providers/sqlite.py][sqlite], lines 44–53, all listing
-exceptions become `[]`. Lines 137–150 select `rowid` and use a truncated key
-as both label and path. Lines 184–235 query schema and uniqueness per row.
-A populated WITHOUT ROWID fixture returned no rows. Tests currently even
-expect truncated keys; passing them does not prove unique identity.
+exceptions become `[]`. Lines 137–151 select `rowid` and use a truncated key
+as both label and path. A populated WITHOUT ROWID fixture returned no rows.
+Tests currently even expect truncated keys; passing them does not prove unique
+identity.
+
+**Resolved: per-row schema queries, 2026-10-22 ([151]).** A row listing now
+reads the table schema once and probes first-column uniqueness with at most
+one query, whatever its row count. Rows are labelled from those facts without
+a connection. Labels, records, order and the 500-row marker are unchanged;
+a query-count regression pins the counts.
 
 The new providers repeat the error ambiguity: [server/src/filemill/providers/archive.py, lines 115–147][archive]
 turns corrupt or unreadable indexes into `{}`, while [server/src/filemill/providers/gitbundle.py, lines
@@ -763,3 +769,4 @@ one new P2 finding; no new P1 finding was established in this pass.
 [ADR 0092]: adr/0092-shared-content-search-capability.md
 
 [150]: tasks/150-retire-the-unreachable-python-webvtt-renderer-architecture-review-a12.md
+[151]: tasks/151-compute-sqlite-row-key-facts-once-per-listing-architecture-review-a7.md

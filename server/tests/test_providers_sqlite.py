@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from filemill.providers.sqlite import (
+    MAX_ROW_ENTRIES,
     ROW_ICON,
     TABLE_ICON,
     SQLiteProvider,
@@ -202,6 +203,53 @@ def test_row_key_truncates_long_pk(tmp_path, provider):
     entry = provider.list_entries(db, "t")[0]
     assert len(entry.name) == 60
     assert entry.name.endswith("…")
+
+
+def test_row_key_composite_pk_follows_key_order(tmp_path, provider):
+    db = tmp_path / "composite.db"
+    con = sqlite3.connect(str(db))
+    con.execute("CREATE TABLE t (b TEXT, a INTEGER, note TEXT, PRIMARY KEY (a, b))")
+    con.execute("INSERT INTO t VALUES ('x', 1, 'n'), (NULL, 2, 'm')")
+    con.commit()
+    con.close()
+    entries = provider.list_entries(db, "t")
+    assert [e.vpath for e in entries] == ["t/a=1, b=x", "t/a=2, b=NULL"]
+
+
+def test_row_key_null_in_first_col_falls_back_to_rowid(tmp_path, provider):
+    db = tmp_path / "nullfirst.db"
+    con = sqlite3.connect(str(db))
+    con.execute("CREATE TABLE t (code TEXT, val INTEGER)")
+    con.execute("INSERT INTO t VALUES ('A', 1), (NULL, 2)")
+    con.commit()
+    con.close()
+    entries = provider.list_entries(db, "t")
+    assert [e.vpath for e in entries] == ["t/row_1", "t/row_2"]
+
+
+@pytest.mark.parametrize("row_count", [3, MAX_ROW_ENTRIES + 1])
+@pytest.mark.parametrize("columns", ["id INTEGER PRIMARY KEY, val", "code, val"])
+def test_row_listing_reads_table_facts_once(
+    tmp_path, provider, monkeypatch, columns, row_count
+):
+    db = tmp_path / "facts.db"
+    con = sqlite3.connect(str(db))
+    con.execute(f"CREATE TABLE t ({columns})")
+    con.executemany("INSERT INTO t VALUES (?, ?)", [(i, i) for i in range(row_count)])
+    con.commit()
+    con.close()
+    statements: list[str] = []
+    connect = sqlite3.connect
+
+    def traced_connect(*args, **kwargs):
+        traced = connect(*args, **kwargs)
+        traced.set_trace_callback(statements.append)
+        return traced
+
+    monkeypatch.setattr(sqlite3, "connect", traced_connect)
+    assert provider.list_entries(db, "t")[0].vpath == "t/0"
+    assert sum("table_info" in s for s in statements) == 1
+    assert sum("COUNT(" in s for s in statements) <= 2
 
 
 def test_list_entries_max_row_entries_cap(tmp_path, provider):

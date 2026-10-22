@@ -141,9 +141,10 @@ class SQLiteProvider:
             f"{_quote_identifier(table)} "
             f"LIMIT {MAX_ROW_ENTRIES}"
         ).fetchall()
+        pk_cols, first_col = self._key_columns(con, schema, table)
         entries: list[VFSEntry] = []
         for idx, row in enumerate(rows):
-            key_str = self._row_key(con, schema, table, row, idx)
+            key_str = _row_key(row, idx, pk_cols, first_col)
             entries.append(
                 VFSEntry(
                     name=_truncate(key_str),
@@ -172,74 +173,62 @@ class SQLiteProvider:
 
     # ── Row-key derivation ────────────────────────────────────────────────────
 
-    def _row_key(
-        self,
-        con: sqlite3.Connection,
-        schema: str,
-        table: str,
-        row: sqlite3.Row,
-        idx: int,
-    ) -> str:
-        """Derive a display key (priority: single-PK → composite-PK → unique-first-col → rowid)."""
+    def _key_columns(
+        self, con: sqlite3.Connection, schema: str, table: str
+    ) -> tuple[list[str], str | None]:
+        """Primary-key columns in key order, and the first column if it is unique."""
         info = con.execute(
             f"PRAGMA {_quote_identifier(schema)}.table_info({_quote_identifier(table)})"
         ).fetchall()
+        pk_cols = [
+            col["name"]
+            for col in sorted((c for c in info if c["pk"] > 0), key=lambda c: c["pk"])
+        ]
+        # Only probe the first column without a PK and when there are multiple
+        # columns – single-column tables always use rowid so the label stays
+        # stable even when values repeat later.
+        if pk_cols or len(info) < 2:
+            return pk_cols, None
+        quoted = _quote_identifier(info[0]["name"])
+        # Display-key probing is best effort; fall back to rowid on failure.
+        with suppress(Exception):
+            total, distinct = con.execute(
+                f"SELECT COUNT(*), COUNT(DISTINCT {quoted}) FROM "
+                f"(SELECT {quoted} FROM {_quote_identifier(schema)}."
+                f"{_quote_identifier(table)} LIMIT {MAX_ROW_ENTRIES})"
+            ).fetchone()
+            if total == distinct > 0:
+                return pk_cols, info[0]["name"]
+        return pk_cols, None
 
-        pk_cols = sorted([col for col in info if col["pk"] > 0], key=lambda c: c["pk"])
 
-        def _val(v: object) -> str:
-            if isinstance(v, bytes):
-                return f"⟨binary data, {len(v)} bytes⟩"
-            return str(v) if v is not None else "NULL"
+def _key_val(v: object) -> str:
+    return "NULL" if v is None else str(_json_val(v))
 
-        if pk_cols:
-            if len(pk_cols) == 1:
-                col_name = pk_cols[0]["name"]
-                try:
-                    return _truncate(_val(row[col_name]))
-                except (IndexError, KeyError):
-                    pass
-            else:
-                parts = []
-                for c in pk_cols:
-                    try:
-                        parts.append(f"{c['name']}={_val(row[c['name']])}")
-                    except (IndexError, KeyError):
-                        pass
-                if parts:
-                    return _truncate(", ".join(parts))
 
-        # No PK (or PK lookup failed): check if first column is unique.
-        # Only apply when there are multiple columns – single-column tables always
-        # use rowid so the label stays stable even when values repeat later.
-        if len(info) > 1:
-            first_col = info[0]["name"]
-            # Display-key probing is best effort; fall back to rowid on failure.
-            with suppress(Exception):
-                fetch_limit = MAX_ROW_ENTRIES
-                total = con.execute(
-                    f"SELECT COUNT(*) FROM (SELECT {_quote_identifier(first_col)} "
-                    f"FROM {_quote_identifier(schema)}.{_quote_identifier(table)} "
-                    f"LIMIT {fetch_limit})"
-                ).fetchone()[0]
-                distinct = con.execute(
-                    f"SELECT COUNT(DISTINCT {_quote_identifier(first_col)}) FROM "
-                    f"(SELECT {_quote_identifier(first_col)} "
-                    f"FROM {_quote_identifier(schema)}.{_quote_identifier(table)} "
-                    f"LIMIT {fetch_limit})"
-                ).fetchone()[0]
-                if total == distinct and distinct > 0:
-                    try:
-                        return _truncate(_val(row[first_col]))
-                    except (IndexError, KeyError):
-                        pass
+def _row_key(
+    row: sqlite3.Row, idx: int, pk_cols: list[str], first_col: str | None
+) -> str:
+    """Derive a display key (priority: single-PK → composite-PK → unique-first-col → rowid)."""
+    if len(pk_cols) == 1:
+        with suppress(IndexError, KeyError):
+            return _truncate(_key_val(row[pk_cols[0]]))
+    elif pk_cols:
+        parts = []
+        for col in pk_cols:
+            with suppress(IndexError, KeyError):
+                parts.append(f"{col}={_key_val(row[col])}")
+        if parts:
+            return _truncate(", ".join(parts))
+    if first_col is not None:
+        with suppress(IndexError, KeyError):
+            return _truncate(_key_val(row[first_col]))
 
-        # Fallback: use _rowid_ alias (set by callers via SELECT rowid AS _rowid_, *)
-        try:
-            rowid = row["_rowid_"]
-            return f"row_{rowid}"
-        except (IndexError, KeyError):
-            return f"row_{idx + 1}"
+    # Fallback: use _rowid_ alias (set by callers via SELECT rowid AS _rowid_, *)
+    try:
+        return f"row_{row['_rowid_']}"
+    except (IndexError, KeyError):
+        return f"row_{idx + 1}"
 
 
 REGISTRY.register(SQLiteProvider())
