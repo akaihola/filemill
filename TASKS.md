@@ -20,13 +20,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [153] Stop a deep-link walk when its root is replaced (architecture review A9)
-      <!-- hai:{"id":"simple-f96381b0-da64-4e54-9be3-93bb4f21354d","labels":["steward"],"createdAt":"2026-10-22T04:21:06.280Z","updatedAt":"2026-10-22T05:06:17.675Z"} -->
-
 - [~] [141] Finish browser fixture isolation and qualify independent test roots
       <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T15:01:55.354Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [153] Stop a deep-link walk when its root is replaced (architecture review A9)
+      <!-- hai:{"id":"simple-f96381b0-da64-4e54-9be3-93bb4f21354d","labels":["steward"],"createdAt":"2026-10-22T04:21:06.280Z","updatedAt":"2026-10-22T05:30:05.139Z"} -->
 
 - [ ] [152] Centralize the shared UI boot sequence
       <!-- hai:{"id":"simple-d39ebd3e-9dae-427b-b506-427a6df23199","labels":["steward"],"createdAt":"2026-10-22T04:21:02.055Z","updatedAt":"2026-10-22T04:59:52.369Z"} -->
