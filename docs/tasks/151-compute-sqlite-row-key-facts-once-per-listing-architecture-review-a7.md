@@ -82,3 +82,14 @@ stopped.
 | `mypy … server/src` (pre-commit hook form) | 2,518 MiB | 2,773 MiB | 2,665 MiB | +23 MiB | 21 s | exit 0 |
 | `pytest -q` provider, docs and review-condition tests (sandbox) | 2,646 MiB | 2,709 MiB | 2,677 MiB | +2 MiB | 6 s | exit 1, sandbox permission |
 | `pytest -q` provider, docs and review-condition tests (sandbox off) | 2,689 MiB | 2,740 MiB | 2,676 MiB | +49 MiB | 22 s | exit 0 |
+
+## Integration
+
+- Start move committed on main as `eb68238e`.
+- Implementation, tests and documentation committed as `de5e06e9`, after a
+  rebase on current main, then fast-forward merged.
+- Completion move committed as `64ca776a`. The tracker is in Completed /
+  Accepted with acceptance unchecked. The worktree and branch are retained.
+- No deployment command is defined for this change, and no UI assets changed.
+  A running server keeps the old provider code until its next restart; the
+  change is behaviour-preserving, so its responses are the same either way.
