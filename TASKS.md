@@ -21,10 +21,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [152] Centralize the shared UI boot sequence
-  <!-- hai:{"id":"simple-d39ebd3e-9dae-427b-b506-427a6df23199","labels":["steward"],"createdAt":"2026-10-22T04:21:02.055Z","updatedAt":"2026-10-22T04:50:33.813Z"} -->
-
 ## In Progress
+
+- [~] [152] Centralize the shared UI boot sequence
+      <!-- hai:{"id":"simple-d39ebd3e-9dae-427b-b506-427a6df23199","labels":["steward"],"createdAt":"2026-10-22T04:21:02.055Z","updatedAt":"2026-10-22T04:50:50.633Z"} -->
 
 - [~] [141] Finish browser fixture isolation and qualify independent test roots
       <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T15:01:55.354Z"} -->
