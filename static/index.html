@@ -4161,10 +4161,15 @@ async function walkPath(names, ensureLoaded, wantFocus) {
     state.dotfiles = true;
   }
 
+  const rootNode = path[0];
+  /* A remount replaces the root while a read is pending. The walk then owns
+     nothing: the new root's path, selection and focus are not its to change,
+     and nothing further down the old chain needs reading. */
+  const replaced = () => path[0] !== rootNode;
   try {
-    const rootNode = path[0];
     setState({ path: [rootNode], sel: [], focusCol: 0 });
     await ensureLoaded(rootNode);
+    if (replaced()) return false;
     let complete = true;
 
     for (let i = 0; i < names.length; i++) {
@@ -4184,6 +4189,7 @@ async function walkPath(names, ensureLoaded, wantFocus) {
         break;
       }
       await ensureLoaded(node);
+      if (replaced()) return false;
       if (!node.dir) break; /* a virtual wrapper declined it while reading */
       path.push(node);
     }
@@ -4200,7 +4206,7 @@ async function walkPath(names, ensureLoaded, wantFocus) {
   } finally {
     /* clamped: the chain may have come back shorter than the column that had
        focus, and focusing a column that is no longer open kills ↑/↓ */
-    if (wantFocus != null) {
+    if (wantFocus != null && !replaced()) {
       setState({ focusCol: Math.max(0, Math.min(wantFocus, path.length - 1)) });
     }
   }
@@ -4938,8 +4944,10 @@ function initLayout(render) {
 /* render() runs on resize and on every keystroke, so writing the URL from it is
    only safe if an unchanged location is left alone — otherwise Back fills up
    with duplicates. applying is the re-entrancy guard: a URL being *read* must
-   not be immediately re-written from the half-built state it produces. */
-let applying = false;
+   not be immediately re-written from the half-built state it produces. It holds
+   the root being walked, so a walk left behind by a remount neither silences
+   the new root's URL nor lifts the guard of a walk the new root started. */
+let applying = null;
 /* Named apart from render.js's exports: static/build-index.py concatenates
    every module into one script, so a module-scope `colCache` here would
    collide with the real one and the bundle would not parse. */
@@ -4952,7 +4960,7 @@ let lastKey = null;
 
 function syncURL() {
   if (
-    applying || !ROUTER || !path.length ||
+    applying === path[0] || !ROUTER || !path.length ||
     /* A loading column may still be declined into a plain file. Its temporary
        chain must not push history, even after rejection but before removal. */
     path.some((node) => node.kids === null || !node.dir) ||
@@ -4976,16 +4984,21 @@ function syncURL() {
    the chain to get there. A link has no such opinion and omits it. */
 async function applyPath(names, wantFocus) {
   if (!path.length) return false;
-  applying = true;
+  /* The walk reads through the port it started with. After a remount it stops
+     (see walkPath) and leaves drawing the new root to whoever mounted it. */
+  const root = path[0], fs = FS;
+  applying = root;
   try {
-    const walking = walkPath(names, (node) => FS.ensureLoaded(node), wantFocus);
+    const walking = walkPath(names, (node) => fs.ensureLoaded(node), wantFocus);
     const button = document.getElementById("s-dot");
     if (button) button.setAttribute("aria-checked", String(state.dotfiles));
     return await walking;
   } finally {
-    applying = false;
-    renderPage();
-    scrollCursorIntoView();
+    if (applying === root) applying = null;
+    if (path[0] === root) {
+      renderPage();
+      scrollCursorIntoView();
+    }
   }
 }
 

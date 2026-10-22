@@ -43,10 +43,15 @@ export async function walkPath(names, ensureLoaded, wantFocus) {
     state.dotfiles = true;
   }
 
+  const rootNode = path[0];
+  /* A remount replaces the root while a read is pending. The walk then owns
+     nothing: the new root's path, selection and focus are not its to change,
+     and nothing further down the old chain needs reading. */
+  const replaced = () => path[0] !== rootNode;
   try {
-    const rootNode = path[0];
     setState({ path: [rootNode], sel: [], focusCol: 0 });
     await ensureLoaded(rootNode);
+    if (replaced()) return false;
     let complete = true;
 
     for (let i = 0; i < names.length; i++) {
@@ -66,6 +71,7 @@ export async function walkPath(names, ensureLoaded, wantFocus) {
         break;
       }
       await ensureLoaded(node);
+      if (replaced()) return false;
       if (!node.dir) break; /* a virtual wrapper declined it while reading */
       path.push(node);
     }
@@ -82,7 +88,7 @@ export async function walkPath(names, ensureLoaded, wantFocus) {
   } finally {
     /* clamped: the chain may have come back shorter than the column that had
        focus, and focusing a column that is no longer open kills ↑/↓ */
-    if (wantFocus != null) {
+    if (wantFocus != null && !replaced()) {
       setState({ focusCol: Math.max(0, Math.min(wantFocus, path.length - 1)) });
     }
   }

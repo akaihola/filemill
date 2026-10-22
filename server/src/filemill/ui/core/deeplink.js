@@ -20,8 +20,10 @@ import { path, rowIndex, sel, selectedNode, state } from "./model/state.js";
 /* render() runs on resize and on every keystroke, so writing the URL from it is
    only safe if an unchanged location is left alone — otherwise Back fills up
    with duplicates. applying is the re-entrancy guard: a URL being *read* must
-   not be immediately re-written from the half-built state it produces. */
-let applying = false;
+   not be immediately re-written from the half-built state it produces. It holds
+   the root being walked, so a walk left behind by a remount neither silences
+   the new root's URL nor lifts the guard of a walk the new root started. */
+let applying = null;
 /* Named apart from render.js's exports: static/build-index.py concatenates
    every module into one script, so a module-scope `colCache` here would
    collide with the real one and the bundle would not parse. */
@@ -34,7 +36,7 @@ let lastKey = null;
 
 export function syncURL() {
   if (
-    applying || !ROUTER || !path.length ||
+    applying === path[0] || !ROUTER || !path.length ||
     /* A loading column may still be declined into a plain file. Its temporary
        chain must not push history, even after rejection but before removal. */
     path.some((node) => node.kids === null || !node.dir) ||
@@ -58,16 +60,21 @@ export function syncURL() {
    the chain to get there. A link has no such opinion and omits it. */
 export async function applyPath(names, wantFocus) {
   if (!path.length) return false;
-  applying = true;
+  /* The walk reads through the port it started with. After a remount it stops
+     (see walkPath) and leaves drawing the new root to whoever mounted it. */
+  const root = path[0], fs = FS;
+  applying = root;
   try {
-    const walking = walkPath(names, (node) => FS.ensureLoaded(node), wantFocus);
+    const walking = walkPath(names, (node) => fs.ensureLoaded(node), wantFocus);
     const button = document.getElementById("s-dot");
     if (button) button.setAttribute("aria-checked", String(state.dotfiles));
     return await walking;
   } finally {
-    applying = false;
-    renderPage();
-    scrollCursorIntoView();
+    if (applying === root) applying = null;
+    if (path[0] === root) {
+      renderPage();
+      scrollCursorIntoView();
+    }
   }
 }
 

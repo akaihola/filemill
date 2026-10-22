@@ -299,12 +299,26 @@ single-line source versus 10–17 ms in Chromium; those are historical figures,
 not new measurements. [The preview-cache task][21] remains pending acceptance;
 [the repair][140] supplies its missing layout reuse guarantee.
 
-`navSeq` guards choose and refresh ([ui/core/nav.js][nav], lines 57–103 and
-132–174). `applyPath` has a separate boolean guard ([ui/core/deeplink.js][links],
-lines 24–68), and `walkPath` mutates global state across awaits without a
-shared generation. An older walk can append after a new choice or root mount.
-The new offline-recovery remount is another caller
-([ui/adapters/app-http.js][app-http], lines 71–79 and 175–206).
+`navSeq` guards choose and refresh ([ui/core/nav.js][nav], lines 63–105 and
+134–200). `walkPath` still mutates global state across awaits without a shared
+generation, so an older walk can append after a new choice on the same root.
+
+**Resolved: a walk across a remount, 2026-10-22 ([153], [ADR 0093]).**
+`walkPath` captures its root and stops once a read returns after a remount
+replaced it ([ui/core/model/deeplink.js][model-links]); the new root keeps its
+path, selection and focus. `applyPath` reads through the port it started with
+and skips its final render and scroll after a remount. Its URL guard holds the
+root being walked, so a stale walk neither silences nor rewrites the new root's
+URL ([ui/core/deeplink.js][links]). A controlled-promise model regression and a
+static browser regression cover this; the offline-recovery remount
+([ui/adapters/app-http.js][app-http]) uses the same walk. The choose/refresh
+sequence and preview reuse guards are unchanged.
+
+Broader generation ownership remains open. Same-root walks still interleave
+with choices and with each other. `refreshColumn` reads through the live port,
+and after its walk is abandoned it can report a folder gone on the new root.
+A static-build mount whose walk a later mount abandoned still records its own
+folder as the mounted one ([ui/adapters/app-fsa.js][app-fsa]).
 
 Deletion now blocks new fills and waits for active reads before removal
 ([ui/core/render.js][render], lines 106–145; `84214e2f`). Fold-glide resets
@@ -711,6 +725,7 @@ one new P2 finding; no new P1 finding was established in this pass.
 [native-adapter]: ../ui/adapters/native.js
 [app-native]: ../ui/adapters/app-native.js
 [app-http]: ../ui/adapters/app-http.js
+[app-fsa]: ../ui/adapters/app-fsa.js
 [fsa]: ../ui/adapters/fsa.js
 [json]: ../ui/adapters/vfs-json.js
 [router-path]: ../ui/adapters/router-path.js
@@ -769,8 +784,10 @@ one new P2 finding; no new P1 finding was established in this pass.
 [130]: tasks/130-give-served-and-browser-owned-folders-the-same-content-search.md
 
 [ADR 0092]: adr/0092-shared-content-search-capability.md
+[ADR 0093]: adr/0093-a-path-walk-stops-when-its-root-is-replaced.md
 
 [150]: tasks/150-retire-the-unreachable-python-webvtt-renderer-architecture-review-a12.md
 [151]: tasks/151-compute-sqlite-row-key-facts-once-per-listing-architecture-review-a7.md
+[153]: tasks/153-stop-a-deep-link-walk-when-its-root-is-replaced-architecture-review-a9.md
 
 [the core initializer]: ../ui/core/boot.js

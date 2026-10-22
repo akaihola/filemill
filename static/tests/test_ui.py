@@ -2576,6 +2576,41 @@ async def test_remount_discards_pending_document_choice(page):
     assert not await page.evaluate("__oldDocument.dir")
 
 
+async def test_remount_stops_pending_path_walk(page):
+    await mount(page)
+    # The old root's URL names a folder, so a stale one is told from the new.
+    await page.evaluate("applyPath(['deep'])")
+    assert "p=deep" in await page.evaluate("location.hash")
+    await page.evaluate("""() => {
+        const node = path[0].kids.find(n => n.name === 'mixed');
+        const load = FS.ensureLoaded;
+        window.__reached = new Promise(reached => {
+            FS.ensureLoaded = n => n === node
+                ? new Promise(resolve => {
+                    window.__release = () => load(n).then(resolve);
+                    reached();
+                }) : load(n);
+        });
+        window.__walk = applyPath(['mixed', 'sub', 'a.py'], 2);
+    }""")
+    await page.evaluate("__reached")
+    await page.evaluate("mount(__mk(0))")
+    snapshot = """() => ({path: path.map(n => n.name), sel: [...sel],
+                         focusCol, url: location.href})"""
+    mounted = await page.evaluate(snapshot)
+    # Every read from here on goes through the port the new root uses.
+    await page.evaluate("""() => {
+        window.__reads = [];
+        const load = FS.ensureLoaded;
+        FS.ensureLoaded = n => { __reads.push(n.name); return load(n); };
+    }""")
+    walked = await page.evaluate("async () => { __release(); return await __walk; }")
+    after = await page.evaluate(snapshot)
+    reads = await page.evaluate("__reads")
+    assert (walked, after, reads) == (False, mounted, [])
+    assert after["url"].endswith("#r=workspace"), "the URL names the new root"
+
+
 async def test_typeahead(page):
     pg = page
     marks = (

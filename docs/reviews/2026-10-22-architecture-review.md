@@ -167,8 +167,13 @@ not to completing all of A5–A12.
   silently enable Pyodide downloads in this slice. Full local RST rendering,
   member Source and native Source remain A8 follow-ups.
 
-- **F5 — A path walk does not own its mount or lifetime.** High correctness
-  benefit; about 1 hour for the remount slice, medium risk. In
+- **F5 — A path walk does not own its mount or lifetime.** The remount slice
+  was resolved on 2026-10-22 by [the remount walk task]. A walk now stops when
+  a remount replaces its root, reads through the port it started with and
+  leaves the new root's state and URL alone. Lifetime on one root remains in
+  A9. The original finding follows for context.
+
+  High correctness benefit; about 1 hour for the remount slice, medium risk. In
   [ui/core/deeplink.js], lines 59–71, `applyPath` passes a callback that reads
   the mutable global `FS` after each await; a boolean suppresses URL writes.
   [ui/core/model/deeplink.js], lines 46–70 and 82–87, mutates global selection,
@@ -368,3 +373,4 @@ combine with work in those modules when convenient.
 
 [the shared boot task]: ../tasks/152-centralize-the-shared-ui-boot-sequence.md
 [The core initializer]: ../../ui/core/boot.js
+[the remount walk task]: ../tasks/153-stop-a-deep-link-walk-when-its-root-is-replaced-architecture-review-a9.md

@@ -234,6 +234,37 @@ await walkPath(["bad"], async (n) => {
 assert.deepEqual(path, [tree]);
 assert.equal(selectedNode(), declined);
 tree.kids.pop();
+/* A remount replaces the root while a walk waits for a read. Releasing that
+   read must leave the new root's path, selection and focus alone and read
+   nothing further down the old chain. */
+const inner = { name: "inner", dir: true, kids: null };
+const pending = { name: "pending", dir: true, kids: null };
+const replacement = { name: "replacement", dir: true, kids: [] };
+const reads = [];
+let reached, release;
+const waiting = new Promise((resolve) => (reached = resolve));
+setState({ path: [tree], sel: [], focusCol: 0 });
+tree.kids.push(pending);
+const walking = walkPath(["pending", "inner"], (n) => {
+  reads.push(n.name);
+  if (n !== pending) return Promise.resolve();
+  reached();
+  return new Promise((resolve) => {
+    release = () => {
+      pending.kids = [inner];
+      resolve();
+    };
+  });
+}, 1);
+await waiting;
+setState({ path: [replacement], sel: [], focusCol: 0 });
+release();
+assert.equal(await walking, false);
+assert.deepEqual(path, [replacement]);
+assert.deepEqual(sel, []);
+assert.equal((await import("./state.js")).focusCol, 0);
+assert.deepEqual(reads, ["root", "pending"]);
+tree.kids.pop();
 setState({ path: [], sel: [] });
 assert.equal(await walkPath([], async () => {}), false);
 assert.equal(previewNode(), null);
