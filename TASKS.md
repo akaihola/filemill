@@ -16,14 +16,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [154] Lock certifi at 2026.10.19 or later so Filemill's bundle drops the
-  eMudhra roots
-  <!-- hai:{"id":"simple-9b6c5e4d-58f6-4eb8-8dbc-a5f7d8cd43dc","labels":["steward"],"createdAt":"2026-10-22T06:04:38.152Z","updatedAt":"2026-10-22T06:04:38.152Z"} -->
-
 - [155] Remove unused adapter edges and server glue
   <!-- hai:{"id":"simple-8ec2bde6-eccf-44b9-a4cf-9cddc9e611c3","labels":["steward"],"createdAt":"2026-10-22T06:06:59.658Z","updatedAt":"2026-10-22T06:06:59.658Z"} -->
 
 ## Scheduled
+
+- [154] Lock certifi at 2026.10.19 or later so Filemill's bundle drops the
+  eMudhra roots
+  <!-- hai:{"id":"simple-9b6c5e4d-58f6-4eb8-8dbc-a5f7d8cd43dc","labels":["steward"],"createdAt":"2026-10-22T06:04:38.152Z","updatedAt":"2026-10-22T06:11:21.359Z"} -->
 
 ## In Progress
 
