@@ -399,6 +399,29 @@ No dependency is added. Existing browser/server fixtures remain shared
 within each command. The offline-copy predecessor diagnostic remains in
 the earlier full-module run; no leaked state was found there.
 
+## Static evidence margin
+
+At `6bf6f455`, both served halves, keyboard, all 927 server contracts,
+collection comparison and the quality gate passed. Static bundle passed
+all 193 cases in 1,736.28 s pytest time (1,772.2 s guarded wall time).
+It fit the 1,800 s bound but missed the 25-minute shard target. Development
+passed all 193 cases in 1,207.10 s (1,246.4 s guarded wall time).
+
+The final root command set therefore has six shards. Static UI runs its
+83 cases separately from the remaining 110 static adapter/model cases.
+The full development command remains unchanged. This keeps the existing
+fresh-browser and fresh-context isolation from [static reliability] and
+makes no fixture lifecycle change. The final collection comparison must
+still prove coverage of all 1,500 root IDs, including duplicates.
+
+The queued native build and later native checks were deliberately not
+started in this recording round, so the final documented partition can be
+merged before further recording. They are deferred, not failed native
+checks. Earlier complete native qualifications remain historical evidence;
+complete final recording is still required. The partial green receipt and
+all duration logs are retained in the run directory. No dependency, skip,
+xfail, application assertion or timeout changes accompany this split.
+
 <!-- HAI156 memory start -->
 ## Memory guard evidence
 
@@ -495,6 +518,15 @@ probes and actual failed checks retain their nonzero exits.
 | partition-collections | started at once | 0.0 | 2777/2598 | 2451/+0 | 0 | 15.1 | 0 |
 | partition-gate | started at once | 0.0 | 2668/2618 | 2439/-3 | 0 | 13.1 | 1 |
 | partition-gate-green | started at once | 0.0 | 2517/2528 | 2455/+5 | 5 | 18.1 | 0 |
+| v9-served-ui-early | started at once | 0.0 | 2693/2303 | 2494/+136 | 313 | 562.9 | 0 |
+| v9-served-ui-late | started at once | 0.0 | 2307/2822 | 2628/+104 | 412 | 1011.2 | 0 |
+| v9-server-contracts | started at once | 0.0 | 2808/2773 | 2720/-18 | 0 | 73.3 | 0 |
+| v9-collections | started at once | 0.0 | 2795/2777 | 2699/-97 | 0 | 26.1 | 0 |
+| v9-quality | started at once | 0.0 | 2867/2952 | 2585/+13 | 14 | 17.1 | 0 |
+| v9-keyboard | started at once | 0.0 | 2929/2075 | 2629/+183 | 251 | 953.1 | 0 |
+| v9-static-bundle | started at once | 0.0 | 2086/2645 | 2806/-482 | 318 | 1772.2 | 0 |
+| v9-static-dev | started at once | 0.0 | 2640/2677 | 2317/+20 | 73 | 1246.4 | 0 |
+| static-partition-gate | started at once | 0.0 | 2093/2173 | 2376/+19 | 22 | 91.5 | 0 |
 
 Exact argument vectors are in [the guarded command arguments].
 Run names match that artifact and [the memory log].
@@ -517,3 +549,4 @@ Run names match that artifact and [the memory log].
 [native guide]: ../../native/README.md#checks
 [the guarded command arguments]: http://hopeli/tmp/filemill-hai156/commands.json?f
 [third failed receipt]: http://hopeli/tmp/filemill-hai156/receipt-c83e31bd-failed.json?f
+[static reliability]: 144-make-the-full-static-suites-pass-reliably-the-wide-folder-wait-and-tes.md

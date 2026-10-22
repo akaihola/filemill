@@ -41,7 +41,7 @@ Run these commands from the repository root. Run suites one at a time on a
 shared host. A timeout bounds a hung test; it is not a readiness wait.
 
 ```bash
-# Root collection, split into five named evidence shards:
+# Root collection, split into six named evidence shards:
 # keyboard:
 timeout 1800 uv run pytest server/tests/test_browser_keyboard.py
 # served-ui-early:
@@ -50,8 +50,10 @@ timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=
 timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=late
 # server-contracts:
 timeout 1800 uv run pytest server/tests --ignore=server/tests/test_browser_keyboard.py --ignore=server/tests/test_browser_new_ui.py
-# static-bundle:
-timeout 1800 uv run pytest static/tests --bundle
+# static-ui:
+timeout 1800 uv run pytest static/tests/test_ui.py --bundle
+# static-adapters:
+timeout 1800 uv run pytest static/tests --ignore=static/tests/test_ui.py --bundle
 # Additional development-mode qualification:
 timeout 1800 uv run pytest static/tests --dev
 (cd server && timeout 1800 uv run pytest)
@@ -60,13 +62,18 @@ node ui/core/model/test.mjs
 deno run --allow-read=ui/core/model ui/core/model/test.mjs
 ```
 
-Evidence runs take these five shards one at a time. Together they collect
+Evidence runs take these six shards one at a time. Together they collect
 exactly the root suite. The two ignored browser files in `server-contracts`
 are covered by keyboard and both served UI shards. No test is omitted.
+The static adapter shard covers every static module except the UI module,
+which runs in its own shard.
+
 [The partition hook] divides the served module's collection into ordered
 halves, with the extra case in the early half. Each command reports the
 other half as deselected; that half must run in its own command. The option
-refuses other modules, and the default root collection is unchanged. The aggregate
+refuses other modules, and the default root collection is unchanged.
+
+The aggregate
 `timeout 1800 uv run pytest` can exceed its bound on a shared host; use the
 shards for complete evidence. Keep the bound at 1,800 seconds for each shard.
 
@@ -79,9 +86,10 @@ uv run pytest server/tests/test_browser_keyboard.py --collect-only -q > "$TMPDIR
 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=early --collect-only -q > "$TMPDIR/served-ui-early-collection.txt"
 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=late --collect-only -q > "$TMPDIR/served-ui-late-collection.txt"
 uv run pytest server/tests --ignore=server/tests/test_browser_keyboard.py --ignore=server/tests/test_browser_new_ui.py --collect-only -q > "$TMPDIR/server-contracts-collection.txt"
-uv run pytest static/tests --bundle --collect-only -q > "$TMPDIR/static-bundle-collection.txt"
+uv run pytest static/tests/test_ui.py --bundle --collect-only -q > "$TMPDIR/static-ui-collection.txt"
+uv run pytest static/tests --ignore=static/tests/test_ui.py --bundle --collect-only -q > "$TMPDIR/static-adapters-collection.txt"
 sed -n '/::/p' "$TMPDIR/root-collection.txt" | LC_ALL=C sort > "$TMPDIR/root-ids.txt"
-sed -n '/::/p' "$TMPDIR/keyboard-collection.txt" "$TMPDIR/served-ui-early-collection.txt" "$TMPDIR/served-ui-late-collection.txt" "$TMPDIR/server-contracts-collection.txt" "$TMPDIR/static-bundle-collection.txt" | LC_ALL=C sort > "$TMPDIR/shard-ids.txt"
+sed -n '/::/p' "$TMPDIR/keyboard-collection.txt" "$TMPDIR/served-ui-early-collection.txt" "$TMPDIR/served-ui-late-collection.txt" "$TMPDIR/server-contracts-collection.txt" "$TMPDIR/static-ui-collection.txt" "$TMPDIR/static-adapters-collection.txt" | LC_ALL=C sort > "$TMPDIR/shard-ids.txt"
 cmp "$TMPDIR/root-ids.txt" "$TMPDIR/shard-ids.txt"
 ```
 
