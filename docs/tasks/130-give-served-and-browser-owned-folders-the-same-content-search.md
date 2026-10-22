@@ -144,6 +144,7 @@ No command was stopped by the memory guard.
 - **Run 23: started at once.** `nix-shell native/shell.nix --run 'uv run --project server pytest static/tests/test_ui.py --native -q -k content_search'`; wait 0.0 s; MemAvailable 2909 → 2889; swap start 2367, growth +5; elapsed 13.0 s; exit 0.
 - **Run 24: started at once.** `uv run --project server pytest -q server/tests/test_docs.py`; wait 0.0 s; MemAvailable 2926 → 2920; swap start 2372, growth +0; elapsed 3.0 s; exit 0.
 - **Run 25: started at once.** `uvx pre-commit run --all-files`; wait 0.0 s; MemAvailable 2971 → 2891; swap start 2372, growth +0; elapsed 6.0 s; exit 0.
+- **Run 26: started at once.** `uv run --project server pytest -q server/tests/test_docs.py`; wait 0.0 s; MemAvailable 2980 → 2869; swap start 2359, growth -1; elapsed 20.0 s; exit 0.
 
 [The behavior decision]: ../adr/0092-shared-content-search-capability.md
 [The usage guide]: ../USAGE.md#content-search
