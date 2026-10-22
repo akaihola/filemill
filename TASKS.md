@@ -16,10 +16,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [153] Stop a deep-link walk when its root is replaced (architecture review A9)
-  <!-- hai:{"id":"simple-f96381b0-da64-4e54-9be3-93bb4f21354d","labels":["steward"],"createdAt":"2026-10-22T04:21:06.280Z","updatedAt":"2026-10-22T04:21:06.280Z"} -->
-
 ## Scheduled
+
+- [153] Stop a deep-link walk when its root is replaced (architecture review A9)
+  <!-- hai:{"id":"simple-f96381b0-da64-4e54-9be3-93bb4f21354d","labels":["steward"],"createdAt":"2026-10-22T04:21:06.280Z","updatedAt":"2026-10-22T05:05:40.898Z"} -->
 
 ## In Progress
 
