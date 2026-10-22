@@ -3610,3 +3610,19 @@ async def test_preview_reuses_pending_provider_that_populates_revision(page):
     await pg.wait_for_selector("#pv-edit", state="visible")
     await pg.evaluate("render(true)")
     assert await pg.evaluate("__providerStarts") == 1
+
+
+async def test_content_search_uses_granted_folder(page, driver):
+    await mount(page)
+    search = page.locator("#search-bar")
+    if getattr(driver, "native", False):
+        assert not await search.is_visible()
+        return
+    assert await search.is_visible()
+    await page.evaluate("applyPath(['mixed', 'sub', 'a.py'])")
+    await search.fill("def f():")
+    result = page.locator('.search-result[data-path="mixed/sub/a.py"]')
+    await result.wait_for()
+    await result.press("Enter")
+    await page.wait_for_function("sel.join('/') === 'mixed/sub/a.py'")
+    assert await page.locator("#search-results").is_hidden()

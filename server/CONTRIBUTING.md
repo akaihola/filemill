@@ -65,7 +65,7 @@ when its provider yields entries. Its children carry a **`vpath`**: a path
 inside the file. An entry with a `vpath` keeps its parent's real path and
 descends virtually. An entry without one joins its name to the path. The server
 puts `vpath` on returned entries. Core still checks it to suppress deletion
-of members and constructs HTTP search URLs. The architecture review's A6/A12
+of members. HTTP content-search URLs belong to the filesystem adapter. The architecture review's A6/A12
 findings track these remaining identity and dependency boundaries.
 
 `/sample.db/users/1` is one URL that names two things. `api.split_vfs()`

@@ -69,6 +69,11 @@
      blob(node)         → Promise<Blob|null> returns file bytes for preview, or
                                     null when the file cannot be read. Editable Blobs
                                     carry an opaque revision for that snapshot
+     search(root, query, focused, signal) → Promise<{matches, partial?}>
+                                    optional; literal case-sensitive text search.
+                                    Paths are relative to root; focused is a folder
+                                    path. Matches have path, line and context.
+                                    Abort stops further work; limits set partial.
      rawURL(node)       → string|null optional; URL for the file's raw bytes.
                                     Without it, core uses blob(node) and owns
                                     the resulting object URL.

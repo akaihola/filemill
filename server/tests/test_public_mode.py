@@ -176,10 +176,12 @@ def test_search_drops_hidden_matches(client, monkeypatch):
     """Even a ripgrep configured with ``--hidden`` cannot surface them."""
 
     def matches(root, query, focused=""):
-        return [
-            {"path": path, "line": 1, "column": 1, "context": "x"}
-            for path in (".git/config", "docs/config-link", "a/visible.txt")
-        ]
+        return {
+            "matches": [
+                {"path": path, "line": 1, "column": 1, "context": "x"}
+                for path in (".git/config", "docs/config-link", "a/visible.txt")
+            ]
+        }
 
     monkeypatch.setattr(api, "search_root", matches)
     response = client.get("/api/search", params={"q": "x"})

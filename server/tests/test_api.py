@@ -840,3 +840,22 @@ def test_a_url_can_name_a_file_inside_a_bundle(bundle_client, bundle_root: Path)
     assert (
         bundle_client.get("/demo.bundle/heads/main/docs/readme.md?f").status_code == 200
     )
+
+
+def test_search_reports_partial_without_reading_oversized_files(client, tmp_root):
+    (tmp_root / "oversized.txt").write_bytes(b"needle" + b"x" * (1024 * 1024))
+    (tmp_root / "small.txt").write_text("needle\n")
+    data = client.get("/api/search?q=needle").json()
+    assert data.get("partial") is True
+    assert [match["path"] for match in data["matches"]] == ["small.txt"]
+
+
+def test_search_bounds_traversal(client, tmp_root, monkeypatch):
+    from filemill import api
+
+    for i in range(20):
+        (tmp_root / f"bounded-{i}.txt").write_text("needle")
+    monkeypatch.setattr(api, "SEARCH_ENTRY_MAX", 5, raising=False)
+    data = client.get("/api/search?q=needle").json()
+    assert data.get("partial") is True
+    assert len(data["matches"]) <= 5

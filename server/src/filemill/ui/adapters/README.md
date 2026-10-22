@@ -19,8 +19,8 @@ ROUTER, common node fields and optional capabilities.
 
 Nodes begin with `name`, `dir` and `kids`. `kids === null` means unread.
 Adapters add metadata and virtual-source fields. The contract is not yet
-exhaustive: core still checks `vpath` and builds HTTP search requests. The
-[architecture review] records those boundary gaps.
+exhaustive: core still checks `vpath`. The [architecture review] records those
+boundary gaps.
 
 Refresh awaits an active load, clears common listing state, then calls the
 optional FS `invalidate(node)` before `ensureLoaded`. [JSON adapter] owns
@@ -31,6 +31,11 @@ Editable Blobs carry their revision. `write(node, text, expected)` rejects
 conflicts, and the editor retains the draft's revision.
 [The replacement decision] defines the HTTP, FSA and native guarantees and
 limits.
+
+The optional `search(root, query, focused, signal)` capability supplies bounded
+content matches. Mounting binds it to the root and cancels old searches. HTTP
+owns its endpoint; FSA reads only handles granted by the browser. Results use
+shared navigation even when no router exists. See [the search decision].
 
 ## Rendering
 
@@ -77,3 +82,4 @@ capability distinct as A8 is repaired.
 [rich-preview adapter]: preview-rich.js
 [A8]: ../../../../../docs/ARCHITECTURE-REVIEW.md#a8-preview-source-and-representation-are-conflated
 [The highlighting wrapper]: preview-local.js
+[the search decision]: ../../../../../docs/adr/0092-shared-content-search-capability.md

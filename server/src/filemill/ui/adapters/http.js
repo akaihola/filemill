@@ -57,6 +57,21 @@ const q = (rel, vpath) =>
   (vpath ? `&v=${encodeURIComponent(vpath)}` : "");
 
 export const HTTP = {
+  search: async (_root, q, focused, signal) => {
+    const response = await fetch(
+      `${API}/search?q=${encodeURIComponent(q)}&p=${
+        encodeURIComponent(focused)
+      }`,
+      { signal, headers: { Accept: "application/json" } },
+    );
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(
+        data.error || `${response.status} ${response.statusText}`,
+      );
+    }
+    return data;
+  },
   node: (name, rel) =>
     httpNode(
       name,

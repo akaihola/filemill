@@ -1991,8 +1991,8 @@ def test_local_mode_cancels_server_search_and_restores_it(page, pending):
         page.wait_for_function("window.searchReplyReady")
     page.evaluate("mount(__local())")
     expect(page.locator("#local-badge")).to_be_visible()
-    expect(page.locator("#search-form")).to_be_hidden()
-    expect(page.locator("#search-bar")).to_be_disabled()
+    expect(page.locator("#search-form")).to_be_visible()
+    expect(page.locator("#search-bar")).to_be_enabled()
     expect(page.locator("#search-bar")).to_have_value("")
     expect(page.locator("#search-results")).to_be_empty()
     expect(page.locator("#search-results")).to_be_hidden()
@@ -2019,7 +2019,7 @@ def test_local_mode_cancels_server_search_and_restores_it(page, pending):
             pending == "error",
         )
         page.wait_for_function("window.searchReplyReleased")
-        expect(page.locator("#search-results")).to_be_empty()
+        expect(page.locator("#search-results")).to_have_text("No matches")
 
     page.click("#leave-local")
     page.wait_for_function("path[0]?.name !== 'my-laptop-folder' && path[0]?.kids")
@@ -4985,3 +4985,179 @@ def test_stale_save_keeps_draft_and_external_bytes(page, ui_root):
     assert page.input_value("#pv-editor") == "my draft"
     assert not page.eval_on_selector("#pv-editor", "e => e.readOnly")
     assert (ui_root / "notes/plain.txt").read_text() == "external change"
+
+
+@pytest.mark.parametrize("source", ["served", "local"])
+@pytest.mark.parametrize("activation", ["Enter", "Space"])
+def test_shared_content_search(page, ui_root, source, activation):
+    """The same fixture has the same scope, literal query and activation."""
+    text = "first line\nLiteral [Needle] here\n[Needle] again\n"
+    (ui_root / "shared.txt").write_text(text)
+    (ui_root / "notes" / "shared.txt").write_text(text)
+    page.open()
+    calls = []
+    page.on(
+        "request", lambda r: calls.append(r.url) if "/api/search?" in r.url else None
+    )
+    if source == "local":
+        page.evaluate(
+            """text => {
+          const F = name => ({kind:'file', name, getFile:async () => new File([text], name)});
+          const D = (name, kids) => ({kind:'directory', name,
+            async *entries() {for (const k of kids) yield [k.name, k]}});
+          return mount(D('local-search', [F('shared.txt'), D('notes', [F('shared.txt')])]));
+        }""",
+            text,
+        )
+    expect(page.locator("#search-form")).to_be_visible()
+    page.fill("#search-bar", "[Needle]")
+    expect(page.locator(".search-path")).to_have_text(
+        ["notes/shared.txt:2", "shared.txt:2"]
+    )
+    expect(page.locator(".search-context")).to_have_text(["Literal [Needle] here"] * 2)
+    page.fill("#search-bar", "")
+    expect(page.locator("#search-results")).to_be_hidden()
+    page.locator("#search-bar").blur()
+    page.locator('.col[data-i="0"] .row').filter(has_text="notes").first.click()
+    page.locator('.col[data-i="1"] .row[title="shared.txt"]').click()
+    page.wait_for_function("focusCol === 1")
+    page.fill("#search-bar", "[Needle]")
+    expect(page.locator(".search-path")).to_have_text(["notes/shared.txt:2"])
+    page.locator(".search-result").press(activation)
+    page.wait_for_function("sel.join('/') === 'notes/shared.txt'")
+    expect(page.locator("#search-results")).to_be_hidden()
+    page.fill("#search-bar", "missing")
+    expect(page.locator("#search-results")).to_have_text("No matches")
+    page.fill("#search-bar", "x" * 201)
+    expect(page.locator("#search-results")).to_contain_text("Search error:")
+    if source == "local":
+        assert calls == []
+    assert not page.errors
+
+
+@pytest.mark.parametrize("transition", ["query", "root", "served"])
+@pytest.mark.parametrize("reject", [False, True])
+def test_local_search_discards_late_reads(page, transition, reject):
+    page.open()
+    page.evaluate("""() => mount({kind:'directory', name:'slow-root',
+      async *entries() {yield ['slow.txt', {kind:'file', name:'slow.txt',
+        getFile: () => new Promise((resolve, reject) => {
+          window.releaseLocalRead = fail => {
+            if (fail) reject(new Error('old read failure'));
+            else resolve(new File(['old needle'], 'slow.txt'));
+          };
+        })}];}
+    })""")
+    page.fill("#search-bar", "needle")
+    page.wait_for_function("typeof window.releaseLocalRead === 'function'")
+    if transition == "query":
+        page.fill("#search-bar", "")
+    elif transition == "root":
+        page.evaluate(FAKE_HANDLE)
+        page.evaluate("mount(__local())")
+    else:
+        page.click("#leave-local")
+        page.wait_for_function("path[0]?.name !== 'slow-root' && path[0]?.kids")
+    page.evaluate("releaseLocalRead", reject)
+    # A fresh query is a barrier after the old promise continuation.
+    page.fill("#search-bar", "x" * 201)
+    expect(page.locator("#search-results")).to_contain_text("Search error:")
+    expect(page.locator(".search-result")).to_have_count(0)
+    assert not page.errors
+
+
+@pytest.mark.parametrize("source", ["served", "local"])
+def test_shared_search_reports_partial(page, ui_root, source):
+    (ui_root / "oversized.txt").write_bytes(b"needle" + b"x" * (1024 * 1024))
+    (ui_root / "small.txt").write_text("needle")
+    page.open()
+    if source == "local":
+        page.evaluate("""() => mount({kind:'directory', name:'limited-root',
+          async *entries() {
+            yield ['oversized.txt', {kind:'file', name:'oversized.txt',
+              getFile:async () => ({size:1048577, slice() {throw new Error('oversized file read')}})}];
+            yield ['small.txt', {kind:'file', name:'small.txt',
+              getFile:async () => new File(['needle'], 'small.txt')}];
+          }})""")
+    page.fill("#search-bar", "needle")
+    expect(page.locator("#search-results")).to_contain_text("Partial results")
+    expect(page.locator(".search-path")).to_have_text(["small.txt:1"])
+    assert not page.errors
+
+
+def test_local_search_bounds_entries_bytes_depth_and_matches(page):
+    page.open()
+    data = page.evaluate("""async () => {
+      const F = name => ({kind:'file', name, getFile:async () => {
+        window.searchReads++;
+        return new File(['needle' + 'x'.repeat(1048570)], name);
+      }});
+      const D = (name, kids) => ({kind:'directory', name, async *entries() {
+        for (const child of kids) yield [child.name, child];
+      }});
+      const search = async handle => FSA.search(FSA.node(handle.name, handle), 'needle', '', new AbortController().signal);
+      window.searchReads = 0;
+      const bytes = await search(D('bytes', Array.from({length:20}, (_, i) => F(i+'.txt'))));
+      const reads = searchReads;
+      let enumerated = 0;
+      const entries = await search({kind:'directory', name:'entries', async *entries() {
+        for (let i=0;i<3000;i++) {enumerated++; yield ['.hidden'+i, F('.hidden'+i)];}
+      }});
+      let deep = F('bottom.txt');
+      for (let i=0;i<34;i++) deep = D('deep', [deep]);
+      const depth = await search(deep);
+      const small = i => ({kind:'file', name:i+'.txt', getFile:async () => new File(['needle'], i+'.txt')});
+      const matches = await search(D('matches', Array.from({length:110}, (_, i) => small(i))));
+      return {bytes:bytes.partial, reads, entries:entries.partial, enumerated,
+        depth:depth.partial, deepMatches:depth.matches.length,
+        matches:matches.matches.length, capped:matches.partial};
+    }""")
+    assert data == {
+        "bytes": True,
+        "reads": 16,
+        "entries": True,
+        "enumerated": 2000,
+        "depth": True,
+        "deepMatches": 0,
+        "matches": 100,
+        "capped": True,
+    }
+
+
+@pytest.mark.parametrize("source", ["served", "local"])
+def test_search_can_focus_a_hidden_folder(page, ui_root, source):
+    (ui_root / ".hidden-dir").mkdir()
+    (ui_root / ".hidden-dir" / "inside.txt").write_text("scoped needle")
+    page.open()
+    if source == "local":
+        page.evaluate("""() => mount({kind:'directory', name:'hidden-root',
+          async *entries() {yield ['.hidden-dir', {kind:'directory', name:'.hidden-dir',
+            async *entries() {yield ['inside.txt', {kind:'file', name:'inside.txt',
+              getFile:async () => new File(['scoped needle'], 'inside.txt')}];}
+          }];}})""")
+    page.evaluate("applyPath(['.hidden-dir', 'inside.txt'])")
+    page.fill("#search-bar", "scoped needle")
+    expect(page.locator(".search-path")).to_have_text([".hidden-dir/inside.txt:1"])
+
+
+@pytest.mark.parametrize("source", ["served", "local"])
+@pytest.mark.parametrize(
+    "text",
+    ["😀" * 130 + "needle" + "😀" * 130, "\ufeffneedle with BOM"],
+    ids=["astral", "bom"],
+)
+def test_search_context_is_the_same_unicode_text(page, ui_root, source, text):
+    (ui_root / "unicode.txt").write_text(text)
+    page.open()
+    if source == "local":
+        page.evaluate(
+            """text => mount({kind:'directory', name:'unicode-root',
+          async *entries() {yield ['unicode.txt', {kind:'file', name:'unicode.txt',
+            getFile:async () => new File([text], 'unicode.txt')}];}
+        })""",
+            text,
+        )
+    page.fill("#search-bar", "needle")
+    expect(
+        page.locator('.search-result[data-path="unicode.txt"] .search-context')
+    ).to_have_text(text.lstrip("\ufeff")[:240])

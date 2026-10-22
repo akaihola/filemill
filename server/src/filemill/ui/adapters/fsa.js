@@ -29,6 +29,104 @@ const fsaNode = (name, handle, parent = null) => ({
 export const FSA = {
   node: fsaNode,
 
+  async search(root, query, focused, signal) {
+    const matches = [];
+    let entries = 0, bytes = 0, partial = false;
+    const deadline = performance.now() + 10000;
+    const check = () => {
+      signal.throwIfAborted();
+      if (performance.now() >= deadline) throw new Error("Search timed out");
+    };
+    // A stalled handle cannot keep the search UI pending indefinitely.
+    const wait = async (read) => {
+      check();
+      let timer;
+      const abort = () => rejectWait(signal.reason);
+      let rejectWait;
+      try {
+        return await Promise.race([
+          read(),
+          new Promise((_, reject) => {
+            rejectWait = reject;
+            signal.addEventListener("abort", abort, { once: true });
+            timer = setTimeout(
+              () => reject(new Error("Search timed out")),
+              Math.max(0, deadline - performance.now()),
+            );
+          }),
+        ]);
+      } finally {
+        clearTimeout(timer);
+        signal.removeEventListener("abort", abort);
+      }
+    };
+    const listing = async (handle) => {
+      const children = [];
+      const iterator = handle.entries()[Symbol.asyncIterator]();
+      try {
+        while (entries < 2000) {
+          const item = await wait(() => iterator.next());
+          if (item.done) return children;
+          entries++;
+          children.push(item.value);
+        }
+        partial = true;
+        return children;
+      } finally {
+        // Do not await a stalled generator's cleanup after cancellation.
+        iterator.return?.().catch(() => {});
+      }
+    };
+    let folder = root.handle;
+    for (const segment of focused.split("/").filter(Boolean)) {
+      const child = (await listing(folder)).find(([name]) => name === segment)
+        ?.[1];
+      if (!child && partial) return { matches, partial };
+      if (!child || child.kind !== "directory") {
+        throw new Error("Search scope is not a folder");
+      }
+      folder = child;
+    }
+    const visit = async (handle, prefix, depth) => {
+      for (const [name, child] of await listing(handle)) {
+        check();
+        if (
+          name.startsWith(".") || ["node_modules", "__pycache__"].includes(name)
+        ) continue;
+        if (matches.length >= 100 || bytes >= 16 * 1024 * 1024) {
+          partial = true;
+          return;
+        }
+        const at = prefix ? prefix + "/" + name : name;
+        if (child.kind === "directory") {
+          if (depth >= 32) partial = true;
+          else await visit(child, at, depth + 1);
+          continue;
+        }
+        const file = await wait(() => child.getFile());
+        if (file.size > 1024 * 1024 || bytes + file.size > 16 * 1024 * 1024) {
+          partial = true;
+          continue;
+        }
+        const text = await wait(() => file.slice(0, 1024 * 1024).text());
+        bytes += file.size;
+        if (text.includes("\0")) continue;
+        const lines = text.split("\n");
+        const line = lines.findIndex((value) => value.includes(query));
+        if (line >= 0) {
+          matches.push({
+            path: at,
+            line: line + 1,
+            context: Array.from(lines[line].replace(/\r$/, "")).slice(0, 240)
+              .join(""),
+          });
+        }
+      }
+    };
+    await visit(folder, focused, 0);
+    return { matches, partial };
+  },
+
   async ensureLoaded(node) {
     if (!node.dir || node.kids !== null) return;
     if (node.loading) return node.loading; /* debounce concurrent calls */

@@ -2553,6 +2553,11 @@ const previewTarget = () => finder.clientWidth / 3;
      blob(node)         → Promise<Blob|null> returns file bytes for preview, or
                                     null when the file cannot be read. Editable Blobs
                                     carry an opaque revision for that snapshot
+     search(root, query, focused, signal) → Promise<{matches, partial?}>
+                                    optional; literal case-sensitive text search.
+                                    Paths are relative to root; focused is a folder
+                                    path. Matches have path, line and context.
+                                    Abort stops further work; limits set partial.
      rawURL(node)       → string|null optional; URL for the file's raw bytes.
                                     Without it, core uses blob(node) and owns
                                     the resulting object URL.
@@ -7566,20 +7571,28 @@ async function runSearch() {
   searchController?.abort();
   if (!q) return showSearch("");
   const controller = searchController = new AbortController();
+  if (q.length > 200 || /[\r\n]/.test(q)) {
+    return showSearch(
+      "Search error: Search query must be one line of at most 200 characters",
+    );
+  }
   showSearch("Searching…");
   try {
     const focused = currentPath().slice(0, focusCol).join("/");
     const data = await searchProvider(q, focused, controller.signal);
     if (controller.signal.aborted) return;
-    if (!data.matches.length) return showSearch("No matches");
+    const notice = data.partial ? "Partial results — search limit reached" : "";
+    if (!data.matches.length) return showSearch(notice || "No matches");
+    data.matches.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
     showSearch(
-      data.matches.map((m) =>
-        `<button type="button" class="search-result" data-path="${
-          esc(m.path)
-        }">` +
-        `<span class="search-path">${esc(m.path)}:${m.line}</span>` +
-        `<span class="search-context">${esc(m.context)}</span></button>`
-      ).join(""),
+      (notice ? `<div>${notice}</div>` : "") +
+        data.matches.map((m) =>
+          `<button type="button" class="search-result" data-path="${
+            esc(m.path)
+          }">` +
+          `<span class="search-path">${esc(m.path)}:${m.line}</span>` +
+          `<span class="search-context">${esc(m.context)}</span></button>`
+        ).join(""),
       true,
     );
     searchResults.querySelectorAll(".search-result").forEach((button) => {
@@ -7587,10 +7600,10 @@ async function runSearch() {
         if (event.key === "Enter" || event.key === " ") event.stopPropagation();
       };
       button.onclick = async () => {
-        if (controller.signal.aborted || !searchProvider || !ROUTER) return;
+        if (controller.signal.aborted || !searchProvider) return;
         const names = button.dataset.path.split("/");
         document.documentElement.dataset.filemill = "render";
-        ROUTER.write({ path: names, view: "render" }, false);
+        ROUTER?.write({ path: names, view: "render" }, false);
         showSearch("");
         await applyPath(names);
       };
@@ -7602,21 +7615,28 @@ async function runSearch() {
   }
 }
 
-if (searchForm && document.documentElement.dataset.root) {
+if (searchForm) {
   searchForm.addEventListener("submit", (event) => {
     event.preventDefault();
     runSearch();
   });
   searchInput.addEventListener("input", () => {
     clearTimeout(searchTimer);
+    searchController?.abort();
+    showSearch("");
     if (searchProvider) searchTimer = setTimeout(runSearch, 250);
   });
-} else {
-  searchForm?.remove();
 }
+
+setContentSearch(null);
 
 /* ═══ core/mount.js ═══ */
 async function mountRoot(node, title = node.name) {
+  setContentSearch(
+    FS.search
+      ? (q, focused, signal) => FS.search(node, q, focused, signal)
+      : null,
+  );
   colCache.clear();
   setState({ path: [node], sel: [], focusCol: 0 });
   resetDial();
@@ -7655,6 +7675,104 @@ const fsaNode = (name, handle, parent = null) => ({
 
 const FSA = {
   node: fsaNode,
+
+  async search(root, query, focused, signal) {
+    const matches = [];
+    let entries = 0, bytes = 0, partial = false;
+    const deadline = performance.now() + 10000;
+    const check = () => {
+      signal.throwIfAborted();
+      if (performance.now() >= deadline) throw new Error("Search timed out");
+    };
+    // A stalled handle cannot keep the search UI pending indefinitely.
+    const wait = async (read) => {
+      check();
+      let timer;
+      const abort = () => rejectWait(signal.reason);
+      let rejectWait;
+      try {
+        return await Promise.race([
+          read(),
+          new Promise((_, reject) => {
+            rejectWait = reject;
+            signal.addEventListener("abort", abort, { once: true });
+            timer = setTimeout(
+              () => reject(new Error("Search timed out")),
+              Math.max(0, deadline - performance.now()),
+            );
+          }),
+        ]);
+      } finally {
+        clearTimeout(timer);
+        signal.removeEventListener("abort", abort);
+      }
+    };
+    const listing = async (handle) => {
+      const children = [];
+      const iterator = handle.entries()[Symbol.asyncIterator]();
+      try {
+        while (entries < 2000) {
+          const item = await wait(() => iterator.next());
+          if (item.done) return children;
+          entries++;
+          children.push(item.value);
+        }
+        partial = true;
+        return children;
+      } finally {
+        // Do not await a stalled generator's cleanup after cancellation.
+        iterator.return?.().catch(() => {});
+      }
+    };
+    let folder = root.handle;
+    for (const segment of focused.split("/").filter(Boolean)) {
+      const child = (await listing(folder)).find(([name]) => name === segment)
+        ?.[1];
+      if (!child && partial) return { matches, partial };
+      if (!child || child.kind !== "directory") {
+        throw new Error("Search scope is not a folder");
+      }
+      folder = child;
+    }
+    const visit = async (handle, prefix, depth) => {
+      for (const [name, child] of await listing(handle)) {
+        check();
+        if (
+          name.startsWith(".") || ["node_modules", "__pycache__"].includes(name)
+        ) continue;
+        if (matches.length >= 100 || bytes >= 16 * 1024 * 1024) {
+          partial = true;
+          return;
+        }
+        const at = prefix ? prefix + "/" + name : name;
+        if (child.kind === "directory") {
+          if (depth >= 32) partial = true;
+          else await visit(child, at, depth + 1);
+          continue;
+        }
+        const file = await wait(() => child.getFile());
+        if (file.size > 1024 * 1024 || bytes + file.size > 16 * 1024 * 1024) {
+          partial = true;
+          continue;
+        }
+        const text = await wait(() => file.slice(0, 1024 * 1024).text());
+        bytes += file.size;
+        if (text.includes("\0")) continue;
+        const lines = text.split("\n");
+        const line = lines.findIndex((value) => value.includes(query));
+        if (line >= 0) {
+          matches.push({
+            path: at,
+            line: line + 1,
+            context: Array.from(lines[line].replace(/\r$/, "")).slice(0, 240)
+              .join(""),
+          });
+        }
+      }
+    };
+    await visit(folder, focused, 0);
+    return { matches, partial };
+  },
 
   async ensureLoaded(node) {
     if (!node.dir || node.kids !== null) return;

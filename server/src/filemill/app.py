@@ -312,12 +312,14 @@ def api_search(request, q: str = "", p: str = ""):
         focused = _api_target(p, zones)
         if focused is None or not focused.is_dir():
             return JSONResponse({"error": "Not found"}, status_code=404)
-        matches = api.search_root(_root(), q, p)
+        data = api.search_root(_root(), q, p)
         if app.state.public:
             # ripgrep skips hidden files by default; a user's ripgrep config
             # could change that, so drop what the instance would not serve.
-            matches = [m for m in matches if _api_target(m["path"], zones)]
-        return JSONResponse({"matches": matches})
+            data["matches"] = [
+                m for m in data["matches"] if _api_target(m["path"], zones)
+            ]
+        return JSONResponse(data)
     except api.SearchError as exc:
         status = 400 if "query" in str(exc).lower() else 503
         return JSONResponse({"error": str(exc)}, status_code=status)

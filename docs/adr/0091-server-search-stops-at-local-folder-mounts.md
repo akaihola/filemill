@@ -2,7 +2,7 @@
 
 Date: 2026-10-20
 
-Status: Accepted
+Status: Superseded by [ADR 0092] on 2026-10-22
 
 ## Context
 
@@ -42,3 +42,5 @@ released after return cannot replace a fresh served-tree result.
 
 [120]: ../tasks/120-disable-server-search-in-local-folders-from-docs-question-5.md
 [130]: ../tasks/130-give-served-and-browser-owned-folders-the-same-content-search.md
+
+[ADR 0092]: 0092-shared-content-search-capability.md
