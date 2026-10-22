@@ -312,7 +312,7 @@ SCROLL_SETTLED = """() => {
   if (value !== window.__scrollProbe.value) {
     window.__scrollProbe = {value, since: now};
   }
-  return now - window.__scrollProbe.since >= 300;
+  return dialSettled && now - window.__scrollProbe.since >= 300;
 }"""
 
 
@@ -901,6 +901,36 @@ def copy_page(bundle, fake_handle, playwright, request):
         yield page
     finally:
         browser.close()
+
+
+def test_scroll_settlement_waits_for_pending_rebase(copy_page):
+    page = copy_page
+    page.clock.run_for(2000)
+    page.evaluate("""() => {
+      const timeout = window.setTimeout;
+      window.setTimeout = (callback, delay, ...args) => {
+        if (delay !== 180) return timeout(callback, delay, ...args);
+        window.__releaseSettle = () => {
+          window.setTimeout = timeout;
+          callback(...args);
+        };
+        return timeout(() => {}, delay);
+      };
+      finder.dispatchEvent(new Event('scroll'));
+      window.__scrollProbe = {value: null, since: 0};
+    }""")
+    page.evaluate(SCROLL_SETTLED)
+    page.clock.run_for(400)
+    try:
+        assert not page.evaluate(SCROLL_SETTLED), (
+            "Quiet geometry does not settle a pending scrollbar rebase"
+        )
+    finally:
+        page.evaluate("__releaseSettle()")
+    page.clock.run_for(1000)
+    page.evaluate(SCROLL_SETTLED)
+    page.clock.run_for(400)
+    assert page.evaluate(SCROLL_SETTLED), "The completed rebase can settle"
 
 
 def copied(page, expected, key="Control+c"):

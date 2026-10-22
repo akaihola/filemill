@@ -75,7 +75,8 @@ awaited. Automation sessions use an ephemeral web context, so no setting
 survives from one launch to the next. Shared remount checks read the native
 router state instead of a browser hash. Fixture files are materialized before
 a delayed Blob read is installed, so outline checks exercise native reads.
-Wheel-axis checks wait for observable scroll settlement on both hosts.
+Wheel-axis checks wait for observable scroll settlement on both hosts,
+including pending range rebases and glides.
 
 The 2026-10-17 qualification recorded one failure in five runs while waiting
 for the fold dial after resizing a 400 KB single-line JSON preview. Shared

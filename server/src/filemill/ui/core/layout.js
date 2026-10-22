@@ -170,6 +170,8 @@ const GLIDE_WAITS = 10; // a glide that has not arrived after 10 settles is dead
 let settleTimer = 0;
 let mouseDown = false, touching = false;
 let gliding = null; // the smooth dialTo in flight; a scroll write would cut it
+export const isDialSettled = () =>
+  !settleTimer && !gliding && !written && !mouseDown && !touching;
 let wheeling = false; // the dial took this wheel gesture from the preview
 export function resetDial() {
   dialTo(0, false);

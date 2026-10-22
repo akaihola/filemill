@@ -8,7 +8,14 @@
    goes away when the static tests move under pytest (TASKS.md [25]).
    ═══════════════════════════════════════════════════════════════════════════ */
 import { applyPath } from "./deeplink.js";
-import { dial, dialTo, foldUnit, range, stripSpan } from "./layout.js";
+import {
+  dial,
+  dialTo,
+  foldUnit,
+  isDialSettled,
+  range,
+  stripSpan,
+} from "./layout.js";
 import { choose, refreshColumn } from "./nav.js";
 import { FS, PREVIEW, ROUTER } from "./ports.js";
 import { colCache, render } from "./render.js";
@@ -67,6 +74,7 @@ export function exposeCore() {
     stripSpan: () => stripSpan,
     foldUnit: () => foldUnit,
     range: () => range,
+    dialSettled: () => isDialSettled(),
     dial: () => dial,
     dialTo: () => dialTo,
     taSearch: () => taSearch,

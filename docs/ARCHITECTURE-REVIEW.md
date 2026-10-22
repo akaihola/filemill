@@ -147,6 +147,9 @@ Keep these boundaries and checks.
   the selected row is found in the cached column's ordered children. A
   regression counts sort calls and complements the unchanged timing assertions.
   Edit checks wait for snapshot eligibility separately from preview text.
+  Scroll checks also observe pending dial work through the shared debug
+  surface. A held-rebase regression rejects quiet geometry while that work
+  is pending; the fold and clipping assertions keep their original bounds.
 - [The older-review repairs][131] fixed conditional Zstandard imports, typing
   stubs and unexplained tuning constants (`f7e917a5`). Clipboard refusal now
   offers manual copying with the full value and error (`fef28359`). Neither
