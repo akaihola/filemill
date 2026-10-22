@@ -156,6 +156,8 @@ Keep these boundaries and checks.
   avoiding an unrelated resource load event without raising any timeout.
   Refresh-race checks hold their stale read until the refresh has started,
   preserving entry snapshots across browser and native round trips.
+  Deletion failure injection uses the routed fixture and checks its HTTP
+  response before asserting the UI refusal.
 - [The older-review repairs][131] fixed conditional Zstandard imports, typing
   stubs and unexplained tuning constants (`f7e917a5`). Clipboard refusal now
   offers manual copying with the full value and error (`fef28359`). Neither

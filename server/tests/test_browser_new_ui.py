@@ -398,7 +398,7 @@ def page(server: str, browser):
 
 @pytest.fixture()
 def routed_page(server: str, browser):
-    """A page without the service worker, for tests that route GET requests.
+    """A page without the service worker, for tests that route requests.
 
     Playwright does not route a request that a service worker answers, and the
     worker answers every same-origin GET but search (ADR 0089).
@@ -3921,7 +3921,8 @@ def test_context_menu_delete_cancel_then_confirm(page, ui_root, name):
     assert not page.errors
 
 
-def test_context_menu_delete_failure_and_virtual_entry(page, ui_root):
+def test_context_menu_delete_failure_and_virtual_entry(routed_page, ui_root):
+    page = routed_page
     page.open()
     row = page.locator('.col[data-i="0"] .row[aria-label="short.txt"]')
     page.route(
@@ -3932,7 +3933,12 @@ def test_context_menu_delete_failure_and_virtual_entry(page, ui_root):
     )
     row.click(button="right")
     page.once("dialog", lambda d: d.accept())
-    page.get_by_role("menuitem", name="Delete", exact=True).click()
+    with page.expect_response(
+        lambda response: response.request.method == "DELETE"
+    ) as refusal:
+        page.get_by_role("menuitem", name="Delete", exact=True).click()
+    assert refusal.value.status == 403
+    assert refusal.value.json() == {"error": "test denied"}
     page.wait_for_function(
         "document.querySelector('#st-refresh').textContent.includes('Delete failed: test denied')"
     )

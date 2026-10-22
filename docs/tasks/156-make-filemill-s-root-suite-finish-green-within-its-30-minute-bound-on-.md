@@ -350,6 +350,27 @@ in the controlled regression and JSON-refresh cases. The controlled case
 and all 12 JSON-refresh variants passed together in 94.46 s on this host.
 The held-image assertion and all application readiness predicates remain.
 
+## Routed deletion failure input
+
+At `d1a5890d`, the served UI shard stopped with 214 passed and one failure
+in `test_context_menu_delete_failure_and_virtual_entry`: its 30,000 ms wait
+for `Delete failed: test denied` expired. Guarded wall time was 783.0 s;
+pytest elapsed time was 777.84 s. The remaining 98 cases and later queued
+checks did not run. The seventh failed receipt preserves this result.
+
+The failure-injection case used the normal service-worker-enabled page,
+unlike the module's other request-routing tests. It now uses the existing
+routed-page fixture and verifies the exact injected HTTP 403 JSON response
+before checking the message. All original row, file and virtual-entry
+assertions remain. The failed run did not capture the response or final
+status text, so worker interference is an isolation concern, not a proven
+reconstruction of that run. The worker excludes non-GET requests itself;
+no production worker behavior is changed. Dedicated worker tests still run.
+
+The case and four related deletion cases passed together (5 in 38.62 s).
+After adding the explicit response assertions, the focused case passed in
+14.41 s. This response check makes a failed injection observable directly.
+
 <!-- HAI156 memory start -->
 ## Memory guard evidence
 
@@ -436,6 +457,10 @@ probes and actual failed checks retain their nonzero exits.
 | v6-served-ui | started at once | 0.0 | 2323/2084 | 2309/+104 | 99 | 42.3 | 1 |
 | navigation-commit-green | started at once | 0.0 | 2422/2817 | 2584/-229 | 37 | 130.4 | 0 |
 | navigation-commit-gate | started at once | 0.0 | 2817/2770 | 2355/-11 | 0 | 9.8 | 0 |
+| v7-served-ui | started at once | 0.0 | 2780/2108 | 2336/+74 | 209 | 783.0 | 1 |
+| delete-routed-green | started at once | 0.0 | 2067/2100 | 2372/+37 | 40 | 43.4 | 0 |
+| delete-response-green | started at once | 0.0 | 2267/2089 | 2406/+0 | 0 | 18.1 | 0 |
+| delete-route-gate | started at once | 0.0 | 2228/2150 | 2404/-3 | 0 | 21.1 | 0 |
 
 Exact argument vectors are in [the guarded command arguments].
 Run names match that artifact and [the memory log].
