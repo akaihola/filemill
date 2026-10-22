@@ -158,6 +158,8 @@ Keep these boundaries and checks.
   preserving entry snapshots across browser and native round trips.
   Deletion failure injection uses the routed fixture and checks its HTTP
   response before asserting the UI refusal.
+  Five sequential evidence shards cover root collection exactly; the served
+  module has two ordered halves to retain runtime margin on a loaded host.
 - [The older-review repairs][131] fixed conditional Zstandard imports, typing
   stubs and unexplained tuning constants (`f7e917a5`). Clipboard refusal now
   offers manual copying with the full value and error (`fef28359`). Neither

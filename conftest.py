@@ -23,7 +23,9 @@ def tmp_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     (tmp_path / "subdir").mkdir()
     (tmp_path / "readme.md").write_text("# Hello\n**world**\n")
     (tmp_path / ".hidden").write_text("hidden")
-    (tmp_path / "link.desktop").write_text("[Desktop Entry]\nType=Link\nURL=https://example.com\nName=Example\n")
+    (tmp_path / "link.desktop").write_text(
+        "[Desktop Entry]\nType=Link\nURL=https://example.com\nName=Example\n"
+    )
     (tmp_path / "image.png").write_bytes(b"\x89PNG\r\n")
     (tmp_path / "image.jpg").write_bytes(b"\xff\xd8\xff")
     (tmp_path / "doc.pdf").write_bytes(b"%PDF-1.4")
@@ -33,9 +35,8 @@ def tmp_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 @pytest.fixture()
 def client(tmp_root: Path):
-    from starlette.testclient import TestClient
-
     from filemill.app import app
+    from starlette.testclient import TestClient
 
     return TestClient(app, base_url="http://localhost", raise_server_exceptions=False)
 
@@ -58,9 +59,8 @@ def db_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 @pytest.fixture()
 def db_client(db_root: Path):
-    from starlette.testclient import TestClient
-
     from filemill.app import app
+    from starlette.testclient import TestClient
 
     return TestClient(app, base_url="http://localhost", raise_server_exceptions=False)
 
@@ -151,27 +151,48 @@ def bundle_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, bundle_builder)
 
 @pytest.fixture()
 def bundle_client(bundle_root: Path):
-    from starlette.testclient import TestClient
-
     from filemill.app import app
+    from starlette.testclient import TestClient
 
     return TestClient(app, base_url="http://localhost", raise_server_exceptions=False)
 
 
 @pytest.fixture()
 def archive_client(archive_root: Path):
-    from starlette.testclient import TestClient
-
     from filemill.app import app
+    from starlette.testclient import TestClient
 
     return TestClient(app, base_url="http://localhost", raise_server_exceptions=False)
 
 
 def pytest_addoption(parser):
-    parser.addoption("--native", action="store_true", help="test the native WebView host")
+    parser.addoption(
+        "--native", action="store_true", help="test the native WebView host"
+    )
+    parser.addoption(
+        "--served-ui-part",
+        choices=("early", "late"),
+        help="run one ordered half of the served UI evidence shard",
+    )
     modes = parser.getgroup("static")
     modes.addoption("--dev", action="store_true", help="test modular static sources")
     modes.addoption("--bundle", action="store_true", help="test the bundle (default)")
+
+
+def pytest_collection_modifyitems(config, items):
+    part = config.getoption("--served-ui-part")
+    if part is None:
+        return
+    module = Path(__file__).parent / "server/tests/test_browser_new_ui.py"
+    if any(item.path != module for item in items):
+        raise pytest.UsageError(
+            "--served-ui-part accepts only server/tests/test_browser_new_ui.py"
+        )
+    middle = (len(items) + 1) // 2
+    early, late = items[:middle], items[middle:]
+    selected, remaining = (early, late) if part == "early" else (late, early)
+    config.hook.pytest_deselected(items=remaining)
+    items[:] = selected
 
 
 @pytest.fixture(

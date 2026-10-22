@@ -371,6 +371,34 @@ The case and four related deletion cases passed together (5 in 38.62 s).
 After adding the explicit response assertions, the focused case passed in
 14.41 s. This response check makes a failed injection observable directly.
 
+## Split the oversized served UI shard
+
+At `761fc60a`, the refusal case and injected-response assertions passed in
+collection order. The served UI command then reached its unchanged 1,800 s
+bound with no failure marker, at approximately 82% progress. Exit was 124;
+guarded wall time was 1,800.5 s after a 22.0 s admission wait. It did not
+produce a final pytest summary or JUnit report. This is an incomplete stopped
+check, not a pass or unavailable recording. Later queued checks did not run.
+
+Earlier complete served runs took 980.6–1,321.6 s including recording. That
+margin did not hold under this host load. The documented command set now
+has five root shards: keyboard, served UI early, served UI late, server
+contracts and static bundle. The served module is split into ordered halves
+by its collected item count. The option refuses other modules. Both halves
+must run; the other half is reported as deselected by each command, and no
+case is omitted from the combined evidence. Default root collection is
+unchanged. No retry, skip, xfail or timeout increase is introduced.
+
+Three partition contracts failed before the hook existed (0.39 s), then all
+passed (0.08 s). They check odd-sized coverage, order, duplicate-free object
+membership, and rejection of mixed-module collections. The real collection
+comparison passed: 1,500 root IDs equal 67 keyboard + 157 served early +
+156 served late + 927 contracts + 193 static bundle IDs, with multiplicity.
+The three new partition contracts account for the latest count increase.
+No dependency is added. Existing browser/server fixtures remain shared
+within each command. The offline-copy predecessor diagnostic remains in
+the earlier full-module run; no leaked state was found there.
+
 <!-- HAI156 memory start -->
 ## Memory guard evidence
 
@@ -461,6 +489,12 @@ probes and actual failed checks retain their nonzero exits.
 | delete-routed-green | started at once | 0.0 | 2067/2100 | 2372/+37 | 40 | 43.4 | 0 |
 | delete-response-green | started at once | 0.0 | 2267/2089 | 2406/+0 | 0 | 18.1 | 0 |
 | delete-route-gate | started at once | 0.0 | 2228/2150 | 2404/-3 | 0 | 21.1 | 0 |
+| v8-served-ui | stopped while running | 22.0 | 2155/2349 | 2507/+56 | 430 | 1800.5 | 124 |
+| partition-red | started at once | 0.0 | 2716/2724 | 2458/+0 | 0 | 4.0 | 1 |
+| partition-green | started at once | 0.0 | 2765/2752 | 2454/-1 | 0 | 2.0 | 0 |
+| partition-collections | started at once | 0.0 | 2777/2598 | 2451/+0 | 0 | 15.1 | 0 |
+| partition-gate | started at once | 0.0 | 2668/2618 | 2439/-3 | 0 | 13.1 | 1 |
+| partition-gate-green | started at once | 0.0 | 2517/2528 | 2455/+5 | 5 | 18.1 | 0 |
 
 Exact argument vectors are in [the guarded command arguments].
 Run names match that artifact and [the memory log].
