@@ -373,20 +373,6 @@ class Harness:
         self.open_resource(path + view)
 
 
-@pytest.fixture(scope="module")
-def browser(request):
-    """One browser per engine; each test gets a fresh context in it."""
-    sync_playwright = pytest.importorskip("playwright.sync_api").sync_playwright
-    with sync_playwright() as p:
-        browser = getattr(p, getattr(request, "param", "chromium")).launch(
-            headless=True
-        )
-        try:
-            yield browser
-        finally:
-            browser.close()
-
-
 @pytest.fixture()
 def page(server: str, browser):
     context = browser.new_context(viewport={"width": 1500, "height": 900})

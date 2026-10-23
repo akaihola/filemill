@@ -63,6 +63,11 @@ node ui/core/model/test.mjs
 deno run --allow-read=ui/core/model ui/core/model/test.mjs
 ```
 
+The [root fixture owner][the partition hook] starts all automated test browsers.
+Sync and async APIs use separate fixtures. Static page setup and fake filesystem
+handles stay in the static suite. The persistent storage fixture uses a fresh
+profile per test so folder handles can survive reloads.
+
 Evidence runs take these six shards one at a time. Together they collect
 exactly the root suite. The two ignored browser files in `server-contracts`
 are covered by keyboard and both served UI shards. No test is omitted.

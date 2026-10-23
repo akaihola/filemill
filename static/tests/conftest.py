@@ -2,7 +2,6 @@
 
 import functools
 import http.server
-import sys
 import threading
 from pathlib import Path
 
@@ -62,29 +61,9 @@ def base(static_origin, bundle):
     return f"{static_origin}/static/{bundle.name}"
 
 
-@pytest.fixture
-def driver(request, async_playwright):
-    if request.config.getoption("--native"):
-        sys.path.insert(0, str(ROOT / "native"))
-        from ui_driver import NativePlaywright
-
-        return NativePlaywright()
-    return async_playwright
-
-
 @pytest_asyncio.fixture
-async def browser(driver):
-    async with driver.async_playwright() as p:
-        browser = await p.chromium.launch(args=["--allow-file-access-from-files"])
-        try:
-            yield browser
-        finally:
-            await browser.close()
-
-
-@pytest_asyncio.fixture
-async def page(browser, bundle, fake_handle, request):
-    page = await browser.new_page(viewport={"width": 1500, "height": 900})
+async def page(async_browser, bundle, fake_handle, request):
+    page = await async_browser.new_page(viewport={"width": 1500, "height": 900})
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     is_ui = request.module.__name__.endswith("test_ui")
@@ -126,17 +105,3 @@ async def opfs_root(page, base, request):
     finally:
         await handle.evaluate("root => root.removeEntry('bench', {recursive: true})")
         await handle.dispose()
-
-
-@pytest_asyncio.fixture
-async def storage_context(async_playwright, tmp_path):
-    # Chromium 153 aborts on FileSystemHandle restoration in an incognito
-    # profile. Use a private persistent profile to exercise IndexedDB cloning.
-    async with async_playwright.async_playwright() as p:
-        context = await p.chromium.launch_persistent_context(
-            tmp_path, viewport={"width": 1500, "height": 900}
-        )
-        try:
-            yield context
-        finally:
-            await context.close()

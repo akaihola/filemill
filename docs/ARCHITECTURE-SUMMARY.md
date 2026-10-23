@@ -60,7 +60,7 @@ Read a section when the issue touches the topic after its dash.
 - Architecture as it is — the principles and module map in full, with line
   references.
 - What is healthy — boundaries and test guards to keep; changing tests or
-  CI.
+  CI; root browser lifecycle ownership and local page setup.
 - Rules for changes — the full change rules.
 - Findings — the severity and status table.
 - A5. The static service worker retains the old policy — Changed, P1:

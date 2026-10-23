@@ -133,8 +133,11 @@ Keep these boundaries and checks.
   gates; the local results above do not claim a fresh full CI run.
 - [The fixture isolation repair][141] centralizes direct test browser launches
   in fixtures, including the server keyboard helper and persistent storage
-  profile. A [source guard][browser-lifecycle-tests] rejects lifecycle calls
-  in test bodies and helpers.
+  profile. The [root ownership repair][161] moves sync, async and persistent
+  profile startup into the root fixtures, with separate API adapters and native
+  driver selection. Static page setup stays local. A
+  [source guard][browser-lifecycle-tests] rejects lifecycle calls throughout
+  both suite trees, including their fixture modules.
   Root application-state fixtures retain monkeypatch restoration. The root
   aggregate parallel run stopped on swap growth. On 2026-10-23, the six
   documented sequential root shards passed all 1,502 cases, with exact
@@ -840,3 +843,5 @@ one new P2 finding; no new P1 finding was established in this pass.
 [141]: tasks/141-finish-browser-fixture-isolation-and-qualify-independent-test-roots.md
 
 [browser-lifecycle-tests]: ../server/tests/test_browser_lifecycle.py
+
+[161]: tasks/161-move-the-remaining-static-browser-lifecycles-into-the-root-test-fixtur.md

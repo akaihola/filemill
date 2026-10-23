@@ -1,7 +1,9 @@
 import sqlite3
+import sys
 from pathlib import Path
 
 import pytest
+import pytest_asyncio
 
 
 @pytest.fixture
@@ -21,6 +23,54 @@ def sync_browser(playwright):
 @pytest.fixture
 def async_playwright():
     return pytest.importorskip("playwright.async_api")
+
+
+@pytest.fixture(scope="module")
+def browser(request):
+    """One browser per engine; each test gets a fresh context in it."""
+    sync_playwright = pytest.importorskip("playwright.sync_api").sync_playwright
+    with sync_playwright() as p:
+        browser = getattr(p, getattr(request, "param", "chromium")).launch(
+            headless=True
+        )
+        try:
+            yield browser
+        finally:
+            browser.close()
+
+
+@pytest.fixture
+def driver(request, async_playwright):
+    if request.config.getoption("--native"):
+        sys.path.insert(0, str(Path(__file__).parent / "native"))
+        from ui_driver import NativePlaywright
+
+        return NativePlaywright()
+    return async_playwright
+
+
+@pytest_asyncio.fixture
+async def async_browser(driver):
+    async with driver.async_playwright() as p:
+        browser = await p.chromium.launch(args=["--allow-file-access-from-files"])
+        try:
+            yield browser
+        finally:
+            await browser.close()
+
+
+@pytest_asyncio.fixture
+async def storage_context(async_playwright, tmp_path):
+    # Chromium 153 aborts on FileSystemHandle restoration in an incognito
+    # profile. Use a private persistent profile to exercise IndexedDB cloning.
+    async with async_playwright.async_playwright() as p:
+        context = await p.chromium.launch_persistent_context(
+            tmp_path, viewport={"width": 1500, "height": 900}
+        )
+        try:
+            yield context
+        finally:
+            await context.close()
 
 
 @pytest.fixture()
