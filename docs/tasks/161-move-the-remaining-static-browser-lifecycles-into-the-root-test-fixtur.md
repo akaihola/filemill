@@ -23,3 +23,16 @@ Move ordinary asynchronous and persistent-profile browser lifecycle ownership in
 - Handoff: a short outcome; details stay in this task record.
 
 Tracker: [Filemill's tracker](../../TASKS.md).
+
+## Plan
+
+1. Extend the lifecycle source guard to include suite fixture modules and
+   reject all startup outside the root fixture owner. Confirm failure first.
+2. Move asynchronous driver selection, browser startup and the persistent
+   storage context into root fixtures. Keep static pages and fake handles local.
+3. Run the six shards, development mode, folder restoration, independent
+   collections and quality gate sequentially under memory monitoring.
+4. Merge, record checks against the clean merged commit, and complete the
+   tracker item pending acceptance.
+
+This changes test ownership only; no application port or behavior changes.
