@@ -16,10 +16,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [162] Migrate the remaining preview API consumers to raw bytes and the browser
-  renderers
-  <!-- hai:{"id":"simple-52a7105c-10c8-40b0-81e3-9543f031c846","labels":["steward"],"createdAt":"2026-10-23T11:15:06.080Z","updatedAt":"2026-10-23T11:15:06.080Z"} -->
-
 - [163] Check that no server preview HTML route remains after the preview API
   migration
     - Depends on: [162]
@@ -27,6 +23,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-72fa8242-27a7-4f91-9cc4-7473c39ed46f","labels":["steward"],"createdAt":"2026-10-23T11:15:18.749Z","updatedAt":"2026-10-23T11:15:18.749Z"} -->
 
 ## Scheduled
+
+- [162] Migrate the remaining preview API consumers to raw bytes and the browser
+  renderers
+  <!-- hai:{"id":"simple-52a7105c-10c8-40b0-81e3-9543f031c846","labels":["steward"],"createdAt":"2026-10-23T11:15:06.080Z","updatedAt":"2026-10-23T12:05:52.994Z"} -->
 
 ## In Progress
 
