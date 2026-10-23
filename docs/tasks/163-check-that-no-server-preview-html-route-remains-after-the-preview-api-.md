@@ -32,3 +32,22 @@ contract here; the stylesheet item's "no other server route emits HTML"
 stays unmet for that one route and waits for Antti.
 
 Tracker: [Filemill's tracker](../../TASKS.md).
+
+## Plan, 2026-10-23
+
+- Add a request matrix for files and ZIP members across each preview kind.
+  Assert shared-shell Rendered and Source views, exact raw bytes, and 404
+  from the preview API except for reStructuredText.
+- Keep HTML errors and the retained RST renderer. Probe the shared CSS
+  request and the absence of the obsolete stylesheet and constant.
+- Prove the matrix fails before [the migration], then run focused server
+  regressions, migrated browser cases and the quality gate. Record checks
+  again at the merged commit before completing the tracker move.
+
+This is a test-only prerequisite receipt. It does not complete or accept the
+separate stylesheet deletion item: the retained RST route still emits HTML
+under the steward amendment. No architecture status or behavior changes;
+[ADR 0094] remains the applicable decision.
+
+[the migration]: 162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-brows.md
+[ADR 0094]: ../adr/0094-the-browser-renders-members-the-server-only-restructuredtext.md
