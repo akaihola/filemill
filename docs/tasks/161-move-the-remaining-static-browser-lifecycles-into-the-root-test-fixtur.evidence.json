@@ -1,0 +1,424 @@
+{
+  "items": [
+    {
+      "issue": "filemill [161]",
+      "hai_id": "simple-9b8e4431-a120-4f6c-9c7d-0346a6644ad3",
+      "title": "Move the remaining static browser lifecycles into the root test fixtures",
+      "repository": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+      "source_repository": "/home/agent/prg/filemill",
+      "base_commit": "e4e36a370441f58ea92a0d3a4c5d0ec11e33a4f5",
+      "delivery_commits": [
+        "937b4e8ca1a3ed243023c08db5bd9fbb260ba880"
+      ],
+      "checks": [
+        {
+          "id": "keyboard",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_keyboard.py",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f"
+            }
+          }
+        },
+        {
+          "id": "served-ui-early",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=early",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f"
+            }
+          }
+        },
+        {
+          "id": "served-ui-late",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=late",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f"
+            }
+          }
+        },
+        {
+          "id": "server-contracts",
+          "command": "timeout 1800 uv run pytest server/tests --ignore=server/tests/test_browser_keyboard.py --ignore=server/tests/test_browser_new_ui.py",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f"
+            }
+          }
+        },
+        {
+          "id": "static-ui",
+          "command": "timeout 1800 uv run pytest static/tests/test_ui.py --bundle",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f"
+            }
+          }
+        },
+        {
+          "id": "static-adapters",
+          "command": "timeout 1800 uv run pytest static/tests --ignore=static/tests/test_ui.py --bundle",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f"
+            }
+          }
+        },
+        {
+          "id": "static-dev",
+          "command": "timeout 1800 uv run pytest static/tests --dev",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f"
+            }
+          }
+        },
+        {
+          "id": "folder-restoration",
+          "command": "timeout 1800 uv run pytest static/tests/test_ui.py -k storage --bundle",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f"
+            }
+          }
+        },
+        {
+          "id": "collections",
+          "command": "timeout 1800 python3 /tmp/filemill-161/collections.py",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f"
+            },
+            "collection-script": {
+              "kind": "sha256",
+              "path": "/tmp/filemill-161/collections.py"
+            }
+          }
+        },
+        {
+          "id": "quality",
+          "command": "timeout 1800 env MYPY_CACHE_DIR=/tmp/filemill-161/mypy uvx --offline pre-commit run --all-files",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f"
+            }
+          }
+        },
+        {
+          "id": "model",
+          "command": "timeout 1800 node ui/core/model/test.mjs",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f"
+            }
+          }
+        }
+      ],
+      "evidence": {
+        "static-ui": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+          "tested_commit": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+              "value": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880"
+            }
+          },
+          "issue": "filemill [161]",
+          "check": "static-ui",
+          "command": "timeout 1800 uv run pytest static/tests/test_ui.py --bundle",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T12:22:29.711735+00:00"
+        },
+        "keyboard": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+          "tested_commit": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+              "value": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880"
+            }
+          },
+          "issue": "filemill [161]",
+          "check": "keyboard",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_keyboard.py",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T12:29:08.891104+00:00"
+        },
+        "served-ui-early": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+          "tested_commit": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+              "value": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880"
+            }
+          },
+          "issue": "filemill [161]",
+          "check": "served-ui-early",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=early",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T13:29:06.993089+00:00"
+        },
+        "served-ui-late": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+          "tested_commit": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+              "value": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880"
+            }
+          },
+          "issue": "filemill [161]",
+          "check": "served-ui-late",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=late",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T12:48:52.168367+00:00"
+        },
+        "server-contracts": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+          "tested_commit": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+              "value": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880"
+            }
+          },
+          "issue": "filemill [161]",
+          "check": "server-contracts",
+          "command": "timeout 1800 uv run pytest server/tests --ignore=server/tests/test_browser_keyboard.py --ignore=server/tests/test_browser_new_ui.py",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T12:49:56.954663+00:00"
+        },
+        "static-adapters": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+          "tested_commit": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+              "value": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880"
+            }
+          },
+          "issue": "filemill [161]",
+          "check": "static-adapters",
+          "command": "timeout 1800 uv run pytest static/tests --ignore=static/tests/test_ui.py --bundle",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T12:58:18.800488+00:00"
+        },
+        "static-dev": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+          "tested_commit": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+              "value": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880"
+            }
+          },
+          "issue": "filemill [161]",
+          "check": "static-dev",
+          "command": "timeout 1800 uv run pytest static/tests --dev",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T13:15:59.072801+00:00"
+        },
+        "folder-restoration": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+          "tested_commit": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+              "value": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880"
+            }
+          },
+          "issue": "filemill [161]",
+          "check": "folder-restoration",
+          "command": "timeout 1800 uv run pytest static/tests/test_ui.py -k storage --bundle",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T13:16:07.692732+00:00"
+        },
+        "collections": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+          "tested_commit": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+              "value": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880"
+            },
+            "collection-script": {
+              "kind": "sha256",
+              "path": "/tmp/filemill-161/collections.py",
+              "value": "6f01248378dcdb5af9ba0bf3bd2655835e7fbc06f6c8299b6b128cf6f4c6a27a"
+            }
+          },
+          "issue": "filemill [161]",
+          "check": "collections",
+          "command": "timeout 1800 python3 /tmp/filemill-161/collections.py",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T13:16:30.383638+00:00"
+        },
+        "quality": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+          "tested_commit": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+              "value": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880"
+            }
+          },
+          "issue": "filemill [161]",
+          "check": "quality",
+          "command": "timeout 1800 env MYPY_CACHE_DIR=/tmp/filemill-161/mypy uvx --offline pre-commit run --all-files",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T13:20:05.054176+00:00"
+        },
+        "model": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+          "tested_commit": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-161-move-the-remaining-static-browser-lifecycles-into-the-root-test-818c4b2f",
+              "value": "937b4e8ca1a3ed243023c08db5bd9fbb260ba880"
+            }
+          },
+          "issue": "filemill [161]",
+          "check": "model",
+          "command": "timeout 1800 node ui/core/model/test.mjs",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T13:20:06.047332+00:00"
+        }
+      }
+    }
+  ]
+}

@@ -145,3 +145,136 @@ acceptance commands wrapped by `check-evidence.py record`.
   available admission/final 2997/3133;
   starting swap 2706, maximum growth 0;
   elapsed 7.0 s; exit 0.
+
+## Final merged qualification
+
+The final tested commit is `937b4e8ca1a3ed243023c08db5bd9fbb260ba880`.
+The base before the corrective merge is
+`e4e36a370441f58ea92a0d3a4c5d0ec11e33a4f5`; its delivery commit is
+`937b4e8ca1a3ed243023c08db5bd9fbb260ba880`.
+The earlier implementation commits are `99e86ce0` and `f6197ccd`.
+All final checks ran from a clean detached checkout of the final tested
+commit. The [check receipt] records commands, dependencies and results.
+
+| Check | Final result |
+| --- | --- |
+| keyboard | 67 passed |
+| served-ui-early | 157 passed, 156 deselected |
+| served-ui-late | 156 passed, 157 deselected |
+| server-contracts | 930 passed |
+| static-ui | 83 passed |
+| static-adapters | 110 passed |
+| static-dev | 193 passed |
+| folder-restoration | 1 passed, 82 deselected |
+| collections | 1,503 IDs match six shards and independent suite collections |
+| quality | All seven pre-commit hooks passed |
+| model | Passed |
+
+The six shards cover all 1,503 root tests. The lifecycle source guard
+passes in server contracts. Both independent suite collections pass.
+No assertions were weakened and no CDN proxy plumbing was restored.
+
+### Retained failed attempts
+
+The first early served UI run at the final commit failed
+`test_a_vertical_swipe_over_a_column_ignores_sideways_drift`:
+the dial was 10 instead of 0. Recorded wheel gaps were 95.2, 232.9
+and 138.2 ms. The helper documents that gaps beyond 180 ms split
+a gesture. The complete shard passed on one unchanged retry.
+This remains evidence of sensitivity to host timing; no assertion,
+gesture threshold or production code was changed.
+
+The first final quality command could not start pre-commit because
+PyPI timed out after three fetch retries. Running the same gate with
+`uvx --offline` used the cached tool and passed all hooks.
+
+### Final resource reports
+
+Each command below ran through `check-evidence.py record`, one at a
+time, under memory monitoring. All normal admissions waited zero
+seconds and started above 2,048 MiB. The readings below describe the
+recording calls, including their acceptance command subprocesses.
+
+- **collections:** `timeout 1800 python3 /tmp/filemill-161/collections.py`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 2658/2720 MiB;
+  starting swap 2757 MiB, maximum growth 0 MiB;
+  elapsed 23.1 s; exit 0.
+
+- **folder-restoration:** `timeout 1800 uv run pytest static/tests/test_ui.py -k storage --bundle`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 2837/2656 MiB;
+  starting swap 2757 MiB, maximum growth 0 MiB;
+  elapsed 8.0 s; exit 0.
+
+- **keyboard:** `timeout 1800 uv run pytest server/tests/test_browser_keyboard.py`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 2835/2791 MiB;
+  starting swap 2705 MiB, maximum growth 142 MiB;
+  elapsed 399.9 s; exit 0.
+
+- **model:** `timeout 1800 node ui/core/model/test.mjs`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 2872/2870 MiB;
+  starting swap 2752 MiB, maximum growth 0 MiB;
+  elapsed 1.0 s; exit 0.
+
+- **quality:** `timeout 1800 env MYPY_CACHE_DIR=/tmp/filemill-161/mypy uvx --offline pre-commit run --all-files`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 2717/2769 MiB;
+  starting swap 2750 MiB, maximum growth 2 MiB;
+  elapsed 32.1 s; exit 0.
+
+- **served-ui-early:** `timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=early`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 2869/2552 MiB;
+  starting swap 2752 MiB, maximum growth 49 MiB;
+  elapsed 540.8 s; exit 0.
+
+- **served-ui-late:** `timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=late`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 3127/2857 MiB;
+  starting swap 2798 MiB, maximum growth 23 MiB;
+  elapsed 676.2 s; exit 0.
+
+- **server-contracts:** `timeout 1800 uv run pytest server/tests --ignore=server/tests/test_browser_keyboard.py --ignore=server/tests/test_browser_new_ui.py`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 2859/2706 MiB;
+  starting swap 2816 MiB, maximum growth 0 MiB;
+  elapsed 64.3 s; exit 0.
+
+- **static-adapters:** `timeout 1800 uv run pytest static/tests --ignore=static/tests/test_ui.py --bundle`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 2706/2776 MiB;
+  starting swap 2814 MiB, maximum growth 9 MiB;
+  elapsed 502.4 s; exit 0.
+
+- **static-dev:** `timeout 1800 uv run pytest static/tests --dev`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 2773/2880 MiB;
+  starting swap 2806 MiB, maximum growth 14 MiB;
+  elapsed 1059.3 s; exit 0.
+
+- **static-ui:** `timeout 1800 uv run pytest static/tests/test_ui.py --bundle`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 2928/2828 MiB;
+  starting swap 2700 MiB, maximum growth 6 MiB;
+  elapsed 317.6 s; exit 0.
+
+- **served-ui-early, failed attempt:** `timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=early`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 2795/3089 MiB;
+  starting swap 2812 MiB, maximum growth 50 MiB;
+  elapsed 474.6 s; exit 1.
+
+- **quality, network failure:** `timeout 1800 env MYPY_CACHE_DIR=/tmp/filemill-161/mypy uvx pre-commit run --all-files`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 2716/2722 MiB;
+  starting swap 2756 MiB, maximum growth 0 MiB;
+  elapsed 50.1 s; exit 1.
+
+
+No checks remain skipped, stopped or unverified. Completion is pending
+steward acceptance.
+
+[check receipt]: 161-move-the-remaining-static-browser-lifecycles-into-the-root-test-fixtur.evidence.json
