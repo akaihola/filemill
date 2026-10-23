@@ -29,3 +29,12 @@ Change nothing else.
 - Handoff: a short outcome; details go in this task record.
 
 Tracker: [the filemill tracker](../../TASKS.md).
+
+## Implementation plan, 2026-10-23
+
+- Point the [contributor guide] at the summary first, then review sections by heading.
+- Tighten both ADRs while preserving every fact, number, link and required heading.
+- Verify line counts, content preservation, documentation tests and delivery scope;
+  merge and record checks before completing the tracker entry.
+
+[contributor guide]: ../../CONTRIBUTING.md
