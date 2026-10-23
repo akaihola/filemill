@@ -37,11 +37,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [159] Describe the root UI symlink correctly in static/AGENTS.md and test the
-  relationship
-      <!-- hai:{"id":"simple-56da403d-aaee-43de-acae-83051a0ecc23","labels":["steward"],"createdAt":"2026-10-23T11:15:00.956Z","updatedAt":"2026-10-23T11:16:11.830Z"} -->
-
 ## Completed / Accepted
+
+- [ ] [159] Describe the root UI symlink correctly in static/AGENTS.md and test the
+  relationship
+      <!-- hai:{"id":"simple-56da403d-aaee-43de-acae-83051a0ecc23","labels":["steward"],"createdAt":"2026-10-23T11:15:00.956Z","updatedAt":"2026-10-23T11:20:34.801Z"} -->
 
 - [x] [158] Point CONTRIBUTING.md at the architecture summary and trim ADRs 0020 and
   0050 under 40 lines

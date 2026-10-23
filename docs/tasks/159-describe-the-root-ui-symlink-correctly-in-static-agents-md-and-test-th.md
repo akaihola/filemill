@@ -47,3 +47,19 @@ refused because `core.hooksPath` was configured; the existing setting was kept.
 [the static agent guide]: ../../static/AGENTS.md
 [UI symlink]: ../../ui/
 [semantic documentation test]: ../../server/tests/test_docs.py
+
+## Merged verification
+
+Base commit: `062e89e7c314a910df7ebb32be1599e58c5fe1c0`. Merged commit: `0d753d4a13dfea34ae9a14823573f35d993badf8`.
+Delivery commits, oldest first: `0d753d4a13dfea34ae9a14823573f35d993badf8`.
+
+The detached task checkout was clean at the merged commit. Both recorded
+checks passed: all 35 documentation and review-condition tests, and the full
+quality gate. The gate used an external mypy cache to keep the checkout clean.
+The [check receipt] records the commands, lockfile hash, editable checkout
+revision and results. No deployment is needed for this documentation-only fix.
+
+- **record-docs:** `uv run <evidence-script> record <receipt> 'filemill [159]' docs` — started at once; waited 0.0 s; admission/final MemAvailable 2560/2572 MiB; starting swap 2600 MiB; swap growth 2 MiB (peak 2 MiB); elapsed 3.0 s; exit 0.
+- **record-gate:** `uv run <evidence-script> record <receipt> 'filemill [159]' gate` — started at once; waited 0.0 s; admission/final MemAvailable 2505/2806 MiB; starting swap 2604 MiB; swap growth 1 MiB (peak 26 MiB); elapsed 30.1 s; exit 0.
+
+[check receipt]: 159-describe-the-root-ui-symlink-correctly-in-static-agents-md-and-test-th.evidence.json

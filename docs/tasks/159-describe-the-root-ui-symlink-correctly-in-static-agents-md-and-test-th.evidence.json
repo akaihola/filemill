@@ -1,0 +1,91 @@
+{
+  "items": [
+    {
+      "issue": "filemill [159]",
+      "hai_id": "simple-56da403d-aaee-43de-acae-83051a0ecc23",
+      "title": "Describe the root UI symlink correctly in static/AGENTS.md and test the relationship",
+      "repository": "/home/agent/.t3/worktrees/filemill/pacer-159-describe-the-root-ui-symlink-correctly-in-static-agents-md-and-t-80c79150",
+      "source_repository": "/home/agent/prg/filemill",
+      "base_commit": "062e89e7c314a910df7ebb32be1599e58c5fe1c0",
+      "delivery_commits": [
+        "0d753d4a13dfea34ae9a14823573f35d993badf8"
+      ],
+      "checks": [
+        {
+          "id": "docs",
+          "command": "timeout 600 uv run --project server pytest -q server/tests/test_docs.py server/tests/test_review_conditions.py",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-159-describe-the-root-ui-symlink-correctly-in-static-agents-md-and-t-80c79150"
+            }
+          }
+        },
+        {
+          "id": "gate",
+          "command": "MYPY_CACHE_DIR=/tmp/filemill-hai159-mypy timeout 1800 uvx pre-commit run --all-files",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-159-describe-the-root-ui-symlink-correctly-in-static-agents-md-and-t-80c79150"
+            }
+          }
+        }
+      ],
+      "evidence": {
+        "docs": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-159-describe-the-root-ui-symlink-correctly-in-static-agents-md-and-t-80c79150",
+          "tested_commit": "0d753d4a13dfea34ae9a14823573f35d993badf8",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-159-describe-the-root-ui-symlink-correctly-in-static-agents-md-and-t-80c79150/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-159-describe-the-root-ui-symlink-correctly-in-static-agents-md-and-t-80c79150",
+              "value": "0d753d4a13dfea34ae9a14823573f35d993badf8"
+            }
+          },
+          "issue": "filemill [159]",
+          "check": "docs",
+          "command": "timeout 600 uv run --project server pytest -q server/tests/test_docs.py server/tests/test_review_conditions.py",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T11:19:12.617769+00:00"
+        },
+        "gate": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-159-describe-the-root-ui-symlink-correctly-in-static-agents-md-and-t-80c79150",
+          "tested_commit": "0d753d4a13dfea34ae9a14823573f35d993badf8",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-159-describe-the-root-ui-symlink-correctly-in-static-agents-md-and-t-80c79150/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-159-describe-the-root-ui-symlink-correctly-in-static-agents-md-and-t-80c79150",
+              "value": "0d753d4a13dfea34ae9a14823573f35d993badf8"
+            }
+          },
+          "issue": "filemill [159]",
+          "check": "gate",
+          "command": "MYPY_CACHE_DIR=/tmp/filemill-hai159-mypy timeout 1800 uvx pre-commit run --all-files",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T11:19:53.460203+00:00"
+        }
+      }
+    }
+  ]
+}
