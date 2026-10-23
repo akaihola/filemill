@@ -16,10 +16,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [160] Retire the remaining Python source highlighter and its Pygments
-  dependency
-  <!-- hai:{"id":"simple-f5090116-15b7-4da2-8bdd-480a05eb0f03","labels":["steward"],"createdAt":"2026-10-23T11:15:02.604Z","updatedAt":"2026-10-23T11:15:29.193Z"} -->
-
 - [161] Move the remaining static browser lifecycles into the root test fixtures
   <!-- hai:{"id":"simple-9b8e4431-a120-4f6c-9c7d-0346a6644ad3","labels":["steward"],"createdAt":"2026-10-23T11:15:04.235Z","updatedAt":"2026-10-23T11:15:04.235Z"} -->
 
@@ -34,6 +30,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-72fa8242-27a7-4f91-9cc4-7473c39ed46f","labels":["steward"],"createdAt":"2026-10-23T11:15:18.749Z","updatedAt":"2026-10-23T11:15:18.749Z"} -->
 
 ## Scheduled
+
+- [160] Retire the remaining Python source highlighter and its Pygments
+  dependency
+  <!-- hai:{"id":"simple-f5090116-15b7-4da2-8bdd-480a05eb0f03","labels":["steward"],"createdAt":"2026-10-23T11:15:02.604Z","updatedAt":"2026-10-23T11:37:13.275Z"} -->
 
 ## In Progress
 
