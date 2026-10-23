@@ -16,9 +16,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [161] Move the remaining static browser lifecycles into the root test fixtures
-  <!-- hai:{"id":"simple-9b8e4431-a120-4f6c-9c7d-0346a6644ad3","labels":["steward"],"createdAt":"2026-10-23T11:15:04.235Z","updatedAt":"2026-10-23T11:15:04.235Z"} -->
-
 - [162] Migrate the remaining preview API consumers to raw bytes and the browser
   renderers
   <!-- hai:{"id":"simple-52a7105c-10c8-40b0-81e3-9543f031c846","labels":["steward"],"createdAt":"2026-10-23T11:15:06.080Z","updatedAt":"2026-10-23T11:15:06.080Z"} -->
@@ -30,6 +27,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-72fa8242-27a7-4f91-9cc4-7473c39ed46f","labels":["steward"],"createdAt":"2026-10-23T11:15:18.749Z","updatedAt":"2026-10-23T11:15:18.749Z"} -->
 
 ## Scheduled
+
+- [161] Move the remaining static browser lifecycles into the root test fixtures
+  <!-- hai:{"id":"simple-9b8e4431-a120-4f6c-9c7d-0346a6644ad3","labels":["steward"],"createdAt":"2026-10-23T11:15:04.235Z","updatedAt":"2026-10-23T11:48:49.577Z"} -->
 
 ## In Progress
 
