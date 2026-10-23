@@ -189,63 +189,32 @@ def test_raw_on_a_directory_is_404(client, tmp_root: Path):
 
 
 # ── /api/preview ─────────────────────────────────────────────────────────────
+#
+# Only reStructuredText. The browser renders every other kind from the bytes
+# /api/raw serves, files and archive members alike ([162]).
 
 
-def test_preview_of_markdown_is_its_source(client, tmp_root: Path):
-    """Markdown renders in the browser; the server only ever shows the source."""
-    r = client.get("/api/preview?p=readme.md")
-    html = r.text
-    assert "preview-code" in html
-    assert "<strong>world</strong>" not in html
-    assert r.headers["cache-control"] == "no-store"
-
-
-@pytest.mark.parametrize("suffix", ["html", "pdf", "png"])
-def test_media_preview_uses_the_canonical_file_path(client, tmp_root: Path, suffix):
-    page = tmp_root / "docs" / f"page & copy.{suffix}"
-    page.parent.mkdir()
-    page.write_text("<h1>Hi</h1>")
-    html = client.get("/api/preview", params={"p": f"docs/{page.name}"}).text
-    assert f'src="/docs/page%20%26%20copy.{suffix}"' in html
-    assert "/api/raw?" not in html
-    assert client.get(f"/docs/page%20%26%20copy.{suffix}").content == page.read_bytes()
-
-
-def test_preview_highlights_source_with_pygments(client, tmp_root: Path):
+@pytest.mark.parametrize(
+    "name",
+    ["readme.md", "code.py", "page.html", "doc.pdf", "image.png", "link.desktop"],
+)
+def test_preview_renders_only_restructured_text(client, tmp_root: Path, name):
     (tmp_root / "code.py").write_text("def f():\n    return 1\n")
-    html = client.get("/api/preview?p=code.py").text
-    assert "preview-code" in html
-    assert "highlight" in html
-
-
-def test_preview_serves_the_source_when_the_page_asked_for_highlight(
-    client, tmp_root: Path
-):
-    """?filemill=highlight reaches here from the page's own URL.
-
-    ui/adapters/preview-http.js forwards it, so the columns show the coloured
-    source the page's URL asked for.
-    """
-    html = client.get("/api/preview?p=readme.md&filemill=highlight").text
-    assert "preview-code" in html
-    assert "<h1" not in html
-
-
-def test_preview_renders_the_document_for_every_other_view(client, tmp_root: Path):
-    """render and raw both mean "the document" once a preview pane is asking."""
     (tmp_root / "page.html").write_text("<h1>Hi</h1>")
-    for query in ("", "&filemill=render", "&filemill=raw", "&filemill=nonsense"):
-        html = client.get(f"/api/preview?p=page.html{query}").text
-        assert "<iframe" in html, query
+    assert client.get("/api/preview", params={"p": name}).status_code == 404
+    assert client.get("/api/raw", params={"p": name}).status_code == 200
 
 
-def test_preview_renders_a_desktop_link(client, tmp_root: Path):
-    html = client.get("/api/preview?p=link.desktop").text
-    assert "https://example.com" in html
+def test_preview_renders_restructured_text(client, tmp_root: Path):
+    (tmp_root / "note.rst").write_text("Title\n=====\n\nSome *rst* text.\n")
+    r = client.get("/api/preview?p=note.rst")
+    assert r.status_code == 200
+    assert r.headers["cache-control"] == "no-store"
+    assert "Some <em>rst</em> text." in r.text
 
 
 def test_preview_of_a_missing_file_is_404(client, tmp_root: Path):
-    assert client.get("/api/preview?p=gone.md").status_code == 404
+    assert client.get("/api/preview?p=gone.rst").status_code == 404
 
 
 # ── the shell and its assets ─────────────────────────────────────────────────
@@ -524,44 +493,27 @@ def test_dir_inside_an_archive_lists_one_level(archive_client, archive_root: Pat
         assert [e["vpath"] for e in j["entries"]] == ["docs/pic.png", "docs/readme.md"]
 
 
-def test_a_member_previews_as_the_file_it_is(archive_client, archive_root: Path):
-    r = archive_client.get("/api/preview?p=demo.tar.zst&v=docs/readme.md")
+@pytest.mark.parametrize("archive", ["demo.tar.zst", "demo.zip"])
+@pytest.mark.parametrize("member", ["docs/readme.md", "docs/pic.png", "src/app.py"])
+def test_a_member_reaches_the_browser_as_bytes(archive_client, archive, member):
+    """The browser renders a member from its own bytes, as it renders the
+    same file on disk; the server sends no member HTML ([162])."""
+    r = archive_client.get("/api/raw", params={"p": archive, "v": member})
     assert r.status_code == 200
     assert r.headers["cache-control"] == "no-store"
-    assert "Hello from the archive" in r.text
     assert (
-        'class="highlight"'
-        in archive_client.get("/api/preview?p=demo.zip&v=src/app.py").text
-    )
+        archive_client.get("/api/preview", params={"p": archive, "v": member})
+    ).status_code == 404
 
 
 def test_an_image_member_is_served_through_raw_with_its_vpath(
     archive_client, archive_root: Path
 ):
-    html = archive_client.get("/api/preview?p=demo.tar.zst&v=docs/pic.png").text
-    assert (
-        '<img class="pv-img" src="/api/raw?p=demo.tar.zst&amp;v=docs%2Fpic.png"' in html
-    )
     r = archive_client.get("/api/raw?p=demo.tar.zst&v=docs/pic.png")
     assert r.status_code == 200
     assert r.content == b"\x89PNG\r\n"
     assert r.headers["content-type"].startswith("image/png")
     assert r.headers["cache-control"] == "no-store"
-
-
-def test_an_html_member_previews_in_a_sandboxed_iframe(
-    archive_client, archive_root: Path
-):
-    """Issue 114: the member's page comes from /api/raw, filemill's own
-    origin, so without the sandbox a file on disk gets (ui/core/renderers.js)
-    its script would run as filemill. `sandbox=""` allows neither scripts nor
-    the same origin."""
-    with zipfile.ZipFile(archive_root / "site.zip", "w") as zf:
-        zf.writestr("page.html", "<script>parent.alert(1)</script>")
-    html = archive_client.get("/api/preview?p=site.zip&v=page.html").text
-    iframe = re.search(r"<iframe\b[^>]*>", html)
-    assert iframe is not None
-    assert re.search(r'\ssandbox=""[\s>]', iframe[0])
 
 
 def test_an_rst_member_never_inlines_an_image_file(archive_root: Path, archive_client):
@@ -598,8 +550,10 @@ def test_a_folder_or_missing_member_is_404(archive_client, archive_root: Path):
 def test_an_oversized_member_says_so_instead_of_rendering(
     archive_client, archive_root: Path, monkeypatch
 ):
+    with zipfile.ZipFile(archive_root / "rst.zip", "w") as zf:
+        zf.writestr("note.rst", "Title\n=====\n")
     monkeypatch.setattr("filemill.providers.archive.MEMBER_MAX", 4)
-    r = archive_client.get("/api/preview?p=demo.tar.zst&v=docs/readme.md")
+    r = archive_client.get("/api/preview?p=rst.zip&v=note.rst")
     assert r.status_code == 200
     assert "Too large to preview" in r.text
     assert (
@@ -813,14 +767,13 @@ def test_dir_inside_a_bundle_lists_refs_then_trees(bundle_client, bundle_root: P
     ]
 
 
-def test_a_bundle_member_previews_as_the_file_it_is(bundle_client, bundle_root: Path):
-    r = bundle_client.get("/api/preview?p=demo.bundle&v=heads/main/docs/readme.md")
+def test_a_bundle_member_reaches_the_browser_as_bytes(bundle_client, bundle_root: Path):
+    """As an archive member does: bytes from /api/raw, no member HTML ([162])."""
+    r = bundle_client.get("/api/raw?p=demo.bundle&v=heads/main/docs/readme.md")
     assert r.status_code == 200
-    assert "Hello from the bundle" in r.text
-    assert (
-        'class="highlight"'
-        in bundle_client.get("/api/preview?p=demo.bundle&v=tags/v1/src/app.py").text
-    )
+    assert r.content == b"# Hello from the bundle\n"
+    for v in ("heads/main/docs/readme.md", "tags/v1/src/app.py"):
+        assert bundle_client.get(f"/api/preview?p=demo.bundle&v={v}").status_code == 404
     r = bundle_client.get("/api/raw?p=demo.bundle&v=HEAD/docs/pic.png")
     assert r.status_code == 200
     assert r.content == b"\x89PNG\r\n"

@@ -6,6 +6,12 @@ Note 2026-10-19, issue [109]: the runtime `zstandard` dependency is limited to
 Python before 3.14. The development groups install it on every version, so
 mypy can check the compatibility import (`server/pyproject.toml`).
 
+Note 2026-10-23, issue [162]: a member no longer previews through
+`/api/preview`. The browser renders it from the bytes `/api/raw?p=…&v=…`
+serves, by its own kind, and shows its source in the Source view. Only a
+reStructuredText member still renders on the server. See [ADR 0094]; the
+Decision below describes the earlier server rendering.
+
 ## Context
 
 A `.tar.zst` backup holds files the user wants to look at: a manifest, a
@@ -87,5 +93,7 @@ slow to open and slow to preview from, in proportion to its size.
 
 [84]: ../tasks/84-json-member-in-archive-shows-chevron-but-does-not-open.md
 [86]: ../tasks/86-markdown-in-archives-is-not-rendered.md
+[162]: ../tasks/162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-brows.md
 
 [ADR 0070]: 0070-documents-browse-by-headings.md
+[ADR 0094]: 0094-the-browser-renders-members-the-server-only-restructuredtext.md

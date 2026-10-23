@@ -155,6 +155,8 @@ export const HTTP = {
       `${API}/raw?p=${encodeURIComponent(node.rel)}${v}&snapshot=1`,
     );
     node.stale = offlineCopy(r) || undefined;
+    /* 413: a member over the server's read limit, listed but never read. */
+    node.tooLarge = r.status === 413 || undefined;
     if (!r.ok) return null;
     const blob = await r.blob();
     blob.revision = node.revision = r.headers.get("etag");

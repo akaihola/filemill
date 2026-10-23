@@ -100,12 +100,13 @@ Other findings retain the re-check above.
   lines 89–145. `VFSMemberProvider` adds byte reads for archive and bundle
   members. API calls keep real path `p` and member path `v` separate, but
   selection and browser history still use display names (A6, A7).
-- **Rendering.** [ui/adapters/app-http.js][app-http], lines 97–187, composes
-  browser Markdown, DOCX and PPTX rendering with server RST and member
-  rendering. Markdown/DOCX dependencies are vendored in the server edition;
-  static and native retain the download-consent setting. Source and Raw are
-  shared browser capabilities, with remaining routing gaps in A8. The native
-  preview still delegates directly to PreviewRich. See the
+- **Rendering.** [ui/adapters/app-http.js][app-http], lines 86–255, composes
+  browser Markdown, DOCX, PPTX and archive-member rendering with server RST
+  rendering, the only kind `/api/preview` still renders ([ADR 0094]).
+  Markdown/DOCX dependencies are vendored in the server edition; static and
+  native retain the download-consent setting. Source and Raw are shared
+  browser capabilities, with remaining routing gaps in A8. The native preview
+  still delegates directly to PreviewRich. See the
   [README edition matrix][readme] and [the native qualification][native-readme].
 - **Persistence and offline reads.** Files are durable data. IndexedDB stores
   browser folder handles; localStorage stores settings; history stores
@@ -307,15 +308,16 @@ framework. Keep SQLite connections read-only. Address partial listings in A10.
 **Status: changed, P2.** Shared Source/Rendered/Raw behavior for browser files
 landed in `d1e98b46`; the text-only size gate is also resolved. Remaining cases:
 
-- **Browser-owned RST.** [ui/adapters/app-http.js][app-http], lines 112–150
-  and 240–249, uses the same RST override for served and local-folder nodes.
-  A local handle has no `rel`, so it requests `/api/preview?p=undefined`.
-  The registered browser renderer list at lines 97–101 also excludes RST.
-- **Member Source mode.** The wrapper at lines 163–172 sends highlighted
-  server members to `/api/preview`; [server/src/filemill/app.py][app], lines
-  333–338, and [server/src/filemill/api.py][api], lines 331–355, call
-  `render_preview`, not `render_source`. An RST member still renders RST;
-  an HTML member still gets an iframe. The request carries no representation.
+- **Resolved: browser-owned RST, 2026-10-23 ([162]).** Only the served tree
+  passes `PreviewHTTP` to the RST override in
+  [ui/adapters/app-http.js][app-http], lines 110–133. A local-folder `.rst`
+  file previews in the browser as source and asks the server nothing. Served
+  RST stays with docutils on the server, as [ADR 0094] records.
+- **Resolved: member Source mode, 2026-10-23 ([162]).** The member wrapper at
+  lines 138–168 renders a server member in the browser by its own kind, and
+  shows source under `?filemill=highlight` when the kind has colouring, as
+  for files. `/api/preview` renders RST only, so no member request needs a
+  representation.
 - **Native Source mode.** [ui/adapters/app-native.js][app-native], lines
   40–45, omits `withHighlighting`; [ui/adapters/native.js][native-adapter],
   lines 55–57, delegates directly to PreviewRich.
@@ -408,8 +410,9 @@ bound all work was too strong.
   snapshot at a time. Client abort still does not cancel an active server
   operation; its ten-second deadline bounds it. Save bodies are bounded while
   receiving under A4.
-- **File reads.** [server/src/filemill/preview.py][preview], lines 74–77 and
-  201–205, reads whole files before validating or slicing. Rich previews fetch
+- **File reads.** [server/src/filemill/preview.py][preview], lines 246–270
+  and 343–352, and the RST route in [server/src/filemill/app.py][app] read
+  whole files before validating or slicing. Rich previews fetch
   the blob before their text gate ([ui/adapters/preview-rich.js][rich], lines
   461–465 and 497–509). Native reads and base64-encodes the whole file on the
   host callback ([native/webview/main.c][native-host], lines 141–150).
@@ -463,16 +466,16 @@ this final audit, or repeat already completed roadmap and ADR rewrites.
   `_HTML_EXTS` from [server/src/filemill/app.py][app], and the test-only
   `is_vfs_file` wrapper from [server/src/filemill/vfs.py][vfs]; the registry
   tests now call `REGISTRY.get`. [server/src/filemill/preview.py][preview],
-  line 279 and lines 324–348, still retains an unused state argument and a
-  source helper called by tests but no route. Whether a route supplies source
-  belongs to A8; re-check callers before deleting them.
+  lines 273–340, still retains a source helper called by tests but no route.
+  Since [162] its highlighter has no production caller; [160] removes it.
 - **Changed: repeated and verbose glue, 2026-10-22 ([155]).** [155] removed
   the unused `render` imports from [ui/adapters/vfs-json.js][json] and
   [ui/adapters/vfs-csv.js][csv], and the unused state `path` import from
-  [ui/adapters/router-path.js][router-path]. Preview-error HTML is still
-  hand-built in five server sites. Remove comments that restate code as the
-  affected modules change. Do not replace a few error strings with a
-  templating framework. Preserve comments about measured browser behavior.
+  [ui/adapters/router-path.js][router-path]. Since [162], preview-error HTML
+  is hand-built in one server site, the RST renderer. Remove comments that
+  restate code as the affected modules change. Do not replace a few error
+  strings with a templating framework. Preserve comments about measured
+  browser behavior.
 - **Resolved: search dependency direction, 2026-10-21 ([120], [ADR 0091]).**
   The server adapter supplies the search provider and owns the API URL. Local
   mounts now bind the FSA search capability under [130] and [ADR 0092].
@@ -547,10 +550,11 @@ removal][129] removed obsolete route cases without removing containment.
 replaced wikilink HTML injection with escaped tokens and sanitized converter
 output. See [ui/adapters/preview-rich.js][rich], lines 245–278, 342–374 and
 452–457; [ui/core/model/safe-url.js][safe-url], lines 7–11; and
-[server/src/filemill/preview.py][preview], lines 39–52 and 201–219.
+[server/src/filemill/preview.py][preview], lines 29–35 and 178–231.
 `c081ffb4`, [the archive iframe repair][114], added the missing sandbox to
-server-rendered HTML members, now at preview lines 237–242. Browser HTML has
-its sandbox at [ui/core/renderers.js][renderers], lines 174–180.
+server-rendered HTML members. Since [162] the browser renders HTML members
+with the sandbox it gives files, at [ui/core/renderers.js][renderers],
+lines 174–180.
 
 **Correction, 2026-10-21 ([the live-markup repair][139]).** [The security
 review][security-review] found two more paths (S2, S4). docutils inlined an
@@ -831,11 +835,14 @@ one new P2 finding; no new P1 finding was established in this pass.
 
 [ADR 0092]: adr/0092-shared-content-search-capability.md
 [ADR 0093]: adr/0093-a-path-walk-stops-when-its-root-is-replaced.md
+[ADR 0094]: adr/0094-the-browser-renders-members-the-server-only-restructuredtext.md
 
 [150]: tasks/150-retire-the-unreachable-python-webvtt-renderer-architecture-review-a12.md
 [151]: tasks/151-compute-sqlite-row-key-facts-once-per-listing-architecture-review-a7.md
 [153]: tasks/153-stop-a-deep-link-walk-when-its-root-is-replaced-architecture-review-a9.md
 [155]: tasks/155-remove-unused-adapter-edges-and-server-glue.md
+[160]: tasks/160-retire-the-remaining-python-source-highlighter-and-its-pygments-depend.md
+[162]: tasks/162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-brows.md
 
 [the core initializer]: ../ui/core/boot.js
 

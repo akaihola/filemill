@@ -6,7 +6,6 @@ import secrets
 import subprocess
 from html import escape
 from pathlib import Path
-from urllib.parse import urlencode
 
 from starlette.applications import Starlette
 from starlette.concurrency import run_in_threadpool
@@ -21,7 +20,8 @@ from starlette.routing import Route
 
 from filemill import api, mutations, paths, pwa, urls
 from filemill.env import env, env_flag
-from filemill.preview import render_preview
+from filemill.preview import render_rst
+from filemill.vfs import classify_path
 
 # Used when app.state.root is unset: direct ASGI loading, and cli.py --live,
 # which passes its resolved root through FILEMILL_ROOT.
@@ -337,33 +337,35 @@ def api_raw(request, p: str = "", v: str = "", snapshot: str = ""):
 
 @rt("/api/preview")
 def api_preview(request, p: str = "", lines: str = "", v: str = ""):
-    """Render a file — or, with ``lines=START-END``, one slice of its lines.
+    """Render reStructuredText — or, with ``lines=START-END``, one slice of it.
+
+    Only reStructuredText: the browser renders every other kind from the
+    bytes ``/api/raw`` serves. Its one browser renderer is docutils on
+    Pyodide, a runtime this edition does not serve (ADR 0094).
 
     The slice is 0-based and end-exclusive, the way the browser's heading
-    outline (``ui/core/model/headings.js``) spans a section. Only the
-    reStructuredText renderer reads it; every other kind renders whole.
-
-    With ``v``, the file is an archive and the member at that virtual path is
-    what renders, as the file it is.
+    outline (``ui/core/model/headings.js``) spans a section. With ``v``, the
+    file is an archive and its reStructuredText member at that virtual path
+    is what renders, whole.
     """
     target = _api_target(p, _zones(request), v)
     if target is None or not target.is_file():
         return HTMLResponse("Not found", status_code=404)
     if v:
-        raw = "/api/raw?" + urlencode({"p": p, "v": v})
-        return api.member_preview_response(target, v, escape(raw, quote=True))
+        return api.member_rst_response(target, v)
+    if classify_path(target).preview != "rst":
+        return HTMLResponse("Not found", status_code=404)
     span = None
     if lines:
         match = re.fullmatch(r"(\d+)-(\d+)", lines)
         if match is None:
             return HTMLResponse("Bad lines", status_code=400)
         span = (int(match[1]), int(match[2]))
-    return HTMLResponse(
-        render_preview(
-            target, preview_url=escape(urls.build_url(p), quote=True), lines=span
-        ),
-        headers={"Cache-Control": "no-store"},
-    )
+    try:
+        source = target.read_bytes()
+    except OSError:
+        return HTMLResponse("Not found", status_code=404)
+    return HTMLResponse(render_rst(source, span), headers={"Cache-Control": "no-store"})
 
 
 @rt("/api/save", methods=["POST"])

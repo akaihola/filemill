@@ -11,7 +11,7 @@ and implementation links. This document covers the Python edition.
 ## Features
 
 - **Column view** – multi-pane navigation in the style of macOS Finder
-- **Rich previews** – Markdown (with plugins), DOCX, PPTX, PDF, images, plain text, and source code highlighted in the browser; Pygments ("friendly" theme) colours archive members
+- **Rich previews** – Markdown (with plugins), DOCX, PPTX, PDF, images, plain text, and source code highlighted in the browser, archive members included; reStructuredText rendered by docutils on the server
 - **Markdown extras** – wikilinks (`[[PageName]]`), plain-URL links, relative-link normalisation
 - **Virtual filesystem** – a SQLite database opens as table → row columns; JSON and JSONL files open through the shared browser adapter; a tar (`.tar`, `.tar.gz`, `.tar.bz2`, `.tar.xz`, `.tar.zst`) or zip archive opens as columns of its members, and a member previews as the file it is; a Git `.bundle` opens as columns of its refs (`heads/main`, `tags/v1`, `HEAD`) and then its trees, when `git` is installed
 - **Static web server** – root-relative file URLs serve bytes with the correct Content-Type. Direct symlink children of ROOT act as bookmarks. `/w/` and `/n/` are ordinary file paths ([ADR 0088]).

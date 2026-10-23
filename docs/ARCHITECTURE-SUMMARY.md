@@ -37,7 +37,7 @@ and its line in the section index below.
   and Starlette in `app.py` (resource resolution, Host middleware);
   `urls.py` views and `?f`; `paths.py` root, bookmarks and public mode;
   `mutations.py` write policy; `api.py` saves; `vfs.py` and `providers/`
-  SQLite, archive and Git bundle members; `preview.py` server rendering;
+  SQLite, archive and Git bundle members; `preview.py` server RST rendering;
   `static/sw.js` the server worker.
 - [ui/](../ui/), a symlink to the server package's shared frontend:
   `core/ports.js`; `core/model/` selection, sorting, folding stops, deep

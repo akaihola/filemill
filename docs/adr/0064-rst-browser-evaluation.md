@@ -16,6 +16,9 @@ removed in `587752b4`; run the focused checks with
 and again with `--dev`. Run `static/measure-rst.py` through
 `uv run --project server`, not `--with`, so the lock selects Playwright.
 
+Note 2026-10-23, issue [162]: [ADR 0094] records why served RST stays on the
+server and what moving it to this renderer would need.
+
 ## Context
 
 The repository already contains docutils on Pyodide and an `rst` entry in
@@ -176,5 +179,7 @@ preview for RST; use the static edition above to test this renderer.
 Performance reproduction and interpretation are in Measurement above.
 
 [109]: ../tasks/109-check-filemill-s-docs-and-adr-statuses-against-the-code-and-fix-what-d.md
+[162]: ../tasks/162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-brows.md
+[ADR 0094]: 0094-the-browser-renders-members-the-server-only-restructuredtext.md
 [26]: ../tasks/26-renderer-registry.md
 [27]: ../tasks/27-rst-in-browser.md

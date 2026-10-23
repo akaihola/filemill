@@ -174,7 +174,7 @@ def test_retired_no_columns_layout_falls_back_to_full_columns(client, path):
 
 
 def test_full_columns_layout_serves_the_shared_ui(client):
-    """The columns are the shared UI's. The document arrives via /api/preview.
+    """The columns are the shared UI's. The document arrives via /api/raw.
 
     The shell carries no document text, which is the point: one frontend builds
     the chrome, and it is the same one the static edition builds.

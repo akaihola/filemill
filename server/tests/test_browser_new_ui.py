@@ -2,7 +2,7 @@
 
 This is the test that actually proves the sharing works: `ui/` is filemill's
 frontend byte-for-byte, and here it is browsing a real directory tree over
-`/api/dir` and `/api/preview` with nothing about `core/` changed.
+`/api/dir` and `/api/raw` with nothing about `core/` changed.
 
 Unlike the HTMX suite, nothing here reaches the network. The app serves every
 asset, `test_nothing_is_fetched_from_a_cdn` holds it to that, and so these
@@ -213,6 +213,18 @@ def _build_tree(tmp_path: Path) -> Path:
             "# Inside\n\n**bold** member\n\n## Intro\n\nfirst part\n\n## Outro\n\nlast part\n",
         )
         zf.writestr("letter.docx", _minimal_docx("Dear member"))
+        # One member of each kind the browser renders from bytes alone ([162]).
+        zf.writestr("code.py", SOURCE)
+        zf.writestr(
+            "link.desktop",
+            "[Desktop Entry]\nType=Link\nURL=https://example.com/\nName=Member link\n",
+        )
+        zf.writestr("doc.pdf", b"%PDF-1.4\n%%EOF\n")
+        zf.writestr(
+            "captions.vtt", "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nMember cue\n"
+        )
+        zf.writestr("page.html", "<h1>Member page</h1>\n")
+        zf.writestr("note.rst", "Note\n====\n\nSome *member* text.\n")
     if shutil.which("git"):
         repo = tmp_path / ".bundle-source"
         repo.mkdir()
@@ -2344,8 +2356,8 @@ def test_nothing_is_fetched_from_a_cdn(page):
     or 'open a folder and browse it' would depend on being online.
 
     Both halves matter, and this test used to check only the first. The served
-    half goes through preview-http.js and `/api/preview`; the local-folder half
-    goes through PreviewRich in the browser. Source files now go through neither — they are
+    half reads bytes from `/api/raw`; the local-folder half reads the granted
+    folder. Both render with PreviewRich in the browser. Source files now go through neither — they are
     coloured in the page by core/syntax.js — so they are the easiest half to
     keep honest and are checked here too. Markdown goes through
     `ui/adapters/preview-rich.js` in both halves, which imports its renderer
@@ -2377,6 +2389,30 @@ def test_nothing_is_fetched_from_a_cdn(page):
     page.click('.col[data-i="0"] .row:has-text("local.py")')
     page.wait_for_selector("#preview .pv-text .hl-kw", timeout=15000)
     assert external == []
+
+
+def test_a_local_rst_file_makes_no_server_preview_request(page):
+    """A8: a granted folder's file has no server path, so it previews in the
+    browser. It used to ask for /api/preview?p=undefined and fall back."""
+    seen: list[str] = []
+    page.on("request", lambda r: seen.append(r.url))
+    page.open()
+    page.evaluate(r"""() => {
+      window.__rst = () => ({kind: 'directory', name: 'rst-folder',
+        entries: async function*() {
+          yield ['local.rst', {kind: 'file', name: 'local.rst',
+            getFile: async () => new File(
+              ['Local\n=====\n\nSome *local* text.\n'], 'local.rst')}];
+        }});
+    }""")
+    page.evaluate("mount(__rst())")
+    page.wait_for_function(
+        "path[0]?.name === 'rst-folder' && document.querySelector('.col .row')"
+    )
+    page.click('.col[data-i="0"] .row:has-text("local.rst")')
+    page.wait_for_selector("#preview .pv-text", timeout=15000)
+    assert "Some *local* text." in page.text_content("#preview .pv-text")
+    assert [u for u in seen if "/api/preview" in u] == []
 
 
 def test_the_server_edition_registers_core_and_browser_rich_renderers(page):
@@ -2480,8 +2516,8 @@ def test_the_url_names_a_row_inside_a_database(page):
 
 
 def test_an_archive_opens_as_columns_and_a_member_previews(page):
-    """A .tar.zst is a folder of its members; a text member previews through
-    the server, which is the only side that can read inside the archive."""
+    """A .tar.zst is a folder of its members; a text member previews from the
+    bytes the server reads inside the archive."""
     page.open()
     page.click('.col[data-i="0"] .row:has-text("bundle.tar.zst")')
     page.wait_for_selector('.col[data-i="1"] .row', timeout=15000)
@@ -2738,6 +2774,73 @@ def test_markdown_member_links_follow_siblings_from_whole_file_and_section(
     assert page.evaluate("sel") == ["bundle.zip", "docs", "next.md"]
 
 
+@pytest.mark.parametrize(
+    ("member", "selector"),
+    [
+        ("code.py", "#preview .pv-text .hl-kw"),
+        ("link.desktop", "#preview .pv-link a[href='https://example.com/']"),
+        ("doc.pdf", "#preview iframe.pv-pdf"),
+        ("captions.vtt", "#preview .preview-transcript"),
+        ("page.html", "#preview iframe.pv-html[sandbox='']"),
+        ("wide.png", "#preview img.pv-img"),
+    ],
+)
+def test_a_member_renders_in_the_browser_from_its_bytes(page, member, selector):
+    """[162]: a member renders as the same file on disk does, by the browser
+    renderer for its kind, from the bytes /api/raw serves with its vpath.
+    The server renders no member HTML."""
+    seen: list[str] = []
+    page.on("request", lambda r: seen.append(r.url))
+    page.open(f"bundle.zip/{member}")
+    page.wait_for_selector(selector, timeout=15000)
+    assert [u for u in seen if "/api/preview" in u] == []
+    assert any(
+        "/api/raw?" in u and parse_qs(urlsplit(u).query).get("v") == [member]
+        for u in seen
+    )
+
+
+@pytest.mark.parametrize(
+    ("member", "source"),
+    [
+        ("page.html", "<h1>Member page</h1>\n"),
+        ("note.rst", "Note\n====\n\nSome *member* text.\n"),
+    ],
+)
+def test_a_member_in_the_source_view_shows_its_source(page, member, source):
+    """A8: ?filemill=highlight shows a member's source in the browser, as it
+    does a file's. The server answered with its rendering: an iframe for
+    HTML and docutils output for reStructuredText."""
+    seen: list[str] = []
+    page.on("request", lambda r: seen.append(r.url))
+    page.open(f"bundle.zip/{member}?filemill=highlight")
+    page.wait_for_selector("#preview .pv-text", timeout=15000)
+    assert page.text_content("#preview .pv-text") == source
+    assert page.locator("#preview :is(iframe, .preview-rst)").count() == 0
+    assert [u for u in seen if "/api/preview" in u] == []
+
+
+def test_an_rst_member_is_still_rendered_by_the_server(page):
+    """reStructuredText is the one kind the server still renders ([162])."""
+    page.open("bundle.zip/note.rst")
+    page.wait_for_selector("#preview .preview-rst h1", timeout=15000)
+    assert "Some member text." in page.text_content("#preview .preview-rst")
+
+
+def test_an_oversized_member_says_so(page, ui_root):
+    """A member over the server's read limit is named but never read: the
+    raw route answers 413, and the preview says why there is none."""
+    with zipfile.ZipFile(ui_root / "big.zip", "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("big.txt", "x" * (16 * 1024 * 1024 + 1))
+    seen: list[str] = []
+    page.on("request", lambda r: seen.append(r.url))
+    page.open("big.zip/big.txt")
+    expect(page.locator("#preview .preview-unsupported")).to_contain_text(
+        "Too large to preview", timeout=15000
+    )
+    assert [u for u in seen if "/api/preview" in u] == []
+
+
 def test_a_deep_link_into_an_archive_previews_the_member(page):
     page.open("bundle.tar.zst/inside/hello.txt")
     page.wait_for_function(
@@ -2748,9 +2851,10 @@ def test_a_deep_link_into_an_archive_previews_the_member(page):
 
 
 def test_an_html_member_previews_in_a_sandbox(page, ui_root):
-    """Issue 114: an .html member previews through the server, whose iframe
+    """Issue 114: an .html member previewed through the server, whose iframe
     had no `sandbox`, so the member's script ran with filemill's origin and
-    reached the app around it. It gets the sandbox a file on disk gets."""
+    reached the app around it. It gets the sandbox a file on disk gets; since
+    [162] the browser renders it like one."""
     with zipfile.ZipFile(ui_root / "site.zip", "w") as zf:
         zf.writestr(
             "page.html",

@@ -466,7 +466,7 @@ def test_markdown_viewport(bundle, static_origin, sync_browser):
 
 def test_rst_viewport(bundle, static_origin, tmp_path, sync_browser):
     """Both RST containers fill the pane without changing document content."""
-    from filemill.preview import _preview_rst
+    from filemill.preview import render_rst
 
     source = tmp_path / "guide.rst"
     source.write_text("""Guide
@@ -487,7 +487,7 @@ Some *emphasis*, **strong text**, and ``inline code``.
    def example():
        return 1
 """)
-    html = _preview_rst(source)
+    html = render_rst(source.read_bytes())
     browser = sync_browser
     page = browser.new_page(viewport={"width": 1500, "height": 900})
     page.goto(f"{static_origin}/static/{bundle.name}")

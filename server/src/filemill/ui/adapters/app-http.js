@@ -38,6 +38,7 @@ import { addRenderers, CORE_RENDERERS } from "../core/renderers.js";
 import { mountRoot } from "../core/mount.js";
 import { focusCol, path, sel, setState } from "../core/model/state.js";
 import { fileKind } from "../core/file-kind.js";
+import { hlLang } from "../core/syntax.js";
 
 document.getElementById("bar").insertAdjacentHTML(
   "beforeend",
@@ -82,40 +83,39 @@ const ROOT_NAME = document.documentElement.dataset.root || "/";
    Pretending otherwise would produce links that resolve to the wrong file —
    hence useRouter(null) below, and the badge that says which side you are on. */
 
+/* reStructuredText is the one kind the server still renders: the browser's
+   renderer for it is docutils on Pyodide, a runtime this edition does not
+   serve (ADR 0094). A section is rendered from the lines the browser's
+   outline named (see adapters/vfs-doc.js); a member of an archive is
+   addressed by the file plus its vpath. */
 const PreviewHTTP = {
   revoke() {},
   async render(n) {
-    /* A section of a reStructuredText file is the server's to render too,
-       from the lines the browser's outline named (see adapters/vfs-doc.js). */
     const lines = n.section
       ? `&lines=${n.section.outline.start}-${n.section.outline.end}`
       : "";
-    /* A member of an archive is addressed by the file plus its vpath; the
-       server reads inside the archive and renders it as the file it is. */
     const vpath = n.vpath ? `&v=${encodeURIComponent(n.vpath)}` : "";
     const response = await serverFetch(
       `${API}/preview?p=${encodeURIComponent(n.rel)}${lines}${vpath}`,
     );
     /* The server's HTML lands in this page like the browser's own converter
-       output, so it gets the same inert() step (S2), and its
-       reStructuredText the same list of what docutils writes. */
+       output, so it gets the same inert() step (S2), with the list of what
+       docutils writes. */
     return response.ok
-      ? inert(
-        await response.text(),
-        fileKind(n) === "rst" ? RST_HTML : undefined,
-      )
+      ? inert(await response.text(), RST_HTML)
       : PreviewLocal.render(n);
   },
 };
 
 /* Markdown, .docx and .pptx render in the browser in this edition too:
    Markdown and .docx from the modules the shell lists in FILEMILL_CDN (served
-   from /ui/vendor/, see ui/vendor/README.md), .pptx with no module. This sits inside withHighlighting
-   so that ?filemill=highlight still shows a Markdown file as coloured source.
-   A member of an archive is no exception: FS.blob fetches its bytes with its
-   vpath (adapters/http.js), so the same renderer draws it from those. */
+   from /ui/vendor/, see ui/vendor/README.md), .pptx with no module. This sits
+   inside withHighlighting so that ?filemill=highlight still shows a Markdown
+   file as coloured source. `rst` renders a served .rst file; a file from a
+   local folder has no server path, so its reStructuredText is the provider's
+   (A8). */
 const BROWSER_RENDERED = new Set(["md", "markdown", "docx", "pptx"]);
-const withRichPreview = (provider) => ({
+const withRichPreview = (provider, rst = provider) => ({
   revoke() {
     provider.revoke?.();
     PreviewRich.revoke();
@@ -125,32 +125,46 @@ const withRichPreview = (provider) => ({
     return (!n.vpath && kind === "video"
       ? PreviewLocal
       : !n.vpath && kind === "rst"
-      ? PreviewHTTP
+      ? rst
       : BROWSER_RENDERED.has(kind)
       ? PreviewRich
       : provider).render(n);
   },
 });
 
+const TOO_LARGE =
+  '<div class="preview-unsupported"><em>Too large to preview.</em></div>';
+
 /* A virtual leaf the *server* listed — `meta.virtual` is what http.js puts on
-   an entry that came back with a vpath — is a member inside an archive. The
-   JSON, CSV and document wrappers above have already answered for the virtual
-   nodes they own, and a database row previews from its record before any
-   provider runs. What reaches here renders in the browser when the browser
-   renders that kind from bytes on disk too, so that a Markdown member is
-   rendered rather than coloured ([86]); ?filemill=highlight keeps asking the
-   server, whose answer for a member is its coloured source. Everything else
-   is the server's to render, since only the server reads inside the archive. */
-const withServerVirtualPreview = (provider) => ({
+   an entry that came back with a vpath — is a member of an archive or a Git
+   bundle. The JSON, CSV and document wrappers above have already answered for
+   the virtual nodes they own, and a database row previews from its record
+   before any provider runs. What reaches here renders in the browser from the
+   member's own bytes — FS.blob reads them with its vpath (adapters/http.js) —
+   by the member's own kind, the way the same file on disk renders: under
+   ?filemill=highlight a source member shows its source (A8). Only a
+   reStructuredText member asks the server, as an .rst file does. */
+const withMemberPreview = (provider) => ({
   revoke() {
     provider.revoke?.();
   },
-  render: (n) =>
-    n.vpath && n.meta?.virtual && n.record === undefined &&
-      (document.documentElement.dataset.filemill === "highlight" ||
-        !BROWSER_RENDERED.has(fileKind(n)))
-      ? PreviewHTTP.render(n)
-      : provider.render(n),
+  async render(n) {
+    if (!n.vpath || !n.meta?.virtual || n.record !== undefined) {
+      return provider.render(n);
+    }
+    const kind = fileKind(n);
+    const source = document.documentElement.dataset.filemill === "highlight" &&
+      (hlLang(n.name) || kind === "vtt");
+    const html =
+      await (source
+        ? PreviewLocal.render(n, "text")
+        : kind === "rst"
+        ? PreviewHTTP.render(n)
+        : BROWSER_RENDERED.has(kind)
+        ? PreviewRich.render(n)
+        : PreviewLocal.render(n, kind));
+    return html ?? (n.tooLarge ? TOO_LARGE : null);
+  },
 });
 
 async function mountServer() {
@@ -159,8 +173,8 @@ async function mountServer() {
     withDocumentPreview(
       withCsvPreview(
         withVirtualPreview(
-          withServerVirtualPreview(
-            withHighlighting(withRichPreview(PreviewLocal)),
+          withMemberPreview(
+            withHighlighting(withRichPreview(PreviewLocal, PreviewHTTP)),
           ),
         ),
       ),

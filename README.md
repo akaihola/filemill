@@ -12,14 +12,14 @@ that UI with native filesystem and history operations.
 | Markdown / DOCX | Browser markdown-it / mammoth, pinned CDN downloads controlled by the rich-preview switch | Same browser renderers, vendored under `/ui/vendor/`, independent of the switch |
 | reStructuredText | Browser Pyodide + docutils, controlled by the switch | Python docutils for served files and archive members |
 | PowerPoint | Local slide-text extraction, without a download or consent switch | Same extraction, including archive members |
-| source highlighting | Shared browser highlighter | Same highlighter for ordinary files; server Pygments for supported member source previews |
+| source highlighting | Shared browser highlighter | Same highlighter, archive members included |
 | structured files | JSON, JSONL, CSV and document headings | Same, plus SQLite, tar/zip archives and Git bundles |
 | navigation URLs | `#r=root&p=a/b.md` | Root-relative paths, such as `/a/b.md`; Open Folder has no URL sync |
 
 DOCX produces HTML, not exact Office page layout. PPTX shows slide numbers and
-paragraph text, without slide layout, images or animations. Browser-owned RST
-in the server's Open Folder mode and some archive-member Source views remain
-limited; see [architecture finding A8].
+paragraph text, without slide layout, images or animations. The server's Open
+Folder mode shows RST as source, and the native Source view remains limited;
+see [architecture finding A8].
 
 The [native guide] covers its prerequisites, commands and limitations. It is a
 Linux prototype, without native deletion or remembered folders. Cross-platform

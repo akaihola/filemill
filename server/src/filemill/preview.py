@@ -1,10 +1,8 @@
-import configparser
 import html as html_lib
 import re
 from contextlib import suppress
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import quote as urlquote
 
 from docutils import nodes
 from docutils.core import publish_parts
@@ -17,8 +15,6 @@ from pygments.lexers import (
     get_lexer_by_name,
     guess_lexer,
 )
-
-from filemill.vfs import classify_path
 
 # Largest file Pygments is asked to colour, and largest one shown as plain <pre>.
 SYNTAX_SIZE_LIMIT = 512 * 1024  # 512 KB
@@ -274,65 +270,16 @@ def read_text(path: Path, reject_wide: bool = True) -> str | None:
         return None
 
 
-def render_preview(
-    path: Path,
-    state=None,
-    preview_url: str | None = None,
-    lines: tuple[int, int] | None = None,
-) -> str:
-    """Return an HTML string (inner body fragment) for the given file path.
-
-    This is the *rendered* representation: it dispatches on suffix, so
-    reStructuredText arrives as HTML and a PDF as its viewer. ``render_source``
-    below is the source side, but no route calls it: ``?filemill=highlight``
-    serves the shell, and the browser shows the source. Markdown and .docx are
-    not dispatched here: the browser renders them from the modules in
-    ui/vendor/, so they fall through to coloured or raw source like any other
-    text.
-
-    *state* is accepted for callers that have a request's ``ViewState``; no
-    renderer reads it since the Markdown renderer moved to the browser.
-    *lines* is a 0-based, end-exclusive line span: a section of the file, as
-    the browser's heading outline names one. Only reStructuredText honours it.
-    """
-    ext = _syntax_extension(path)
-    preview = classify_path(path).preview
-
-    if preview == "rst":
-        return _preview_rst(path, lines)
-    elif preview == "desktop":
-        return _preview_desktop(path)
-    elif preview == "pdf":
-        return _preview_pdf(path, preview_url)
-    elif preview == "html":
-        return _preview_html(path, preview_url)
-    elif preview == "image":
-        return _preview_image(path, preview_url)
-    else:
-        # Try Pygments syntax highlighting (before raw text fallback)
-        highlighted = _highlight_source(path, ext)
-        if highlighted is not None:
-            return highlighted
-        # UTF-8 fallback: show any small-enough text file as raw <pre>
-        raw = _raw_text(path)
-        if raw is not None:
-            return raw
-        safe_ext = html_lib.escape(ext or "(no extension)")
-        return f'<div class="preview-unsupported"><em>No preview available for {safe_ext} files.</em></div>'
-
-
 def render_source(path: Path) -> str:
     """Return the file's own text, syntax-highlighted and never interpreted.
 
-    ``render_preview`` dispatches on suffix, so a .html file becomes a page
-    there. This returns the characters the author typed instead, coloured but
-    not obeyed. Only tests call it: ``?filemill=highlight`` serves the shell,
-    and the browser shows the source. Escaping happens in both branches below,
-    so a file that contains markup shows that markup rather than running it.
+    The characters the author typed, coloured but not obeyed. Only tests call
+    it: ``?filemill=highlight`` serves the shell, and the browser shows the
+    source. Escaping happens in both branches below, so a file that contains
+    markup shows that markup rather than running it.
 
-    Falls through the same two steps as ``render_preview``: Pygments first, then
-    a plain ``<pre>``, then an explicit "no source view" note for bytes that are
-    not UTF-8 text.
+    Pygments first, then a plain ``<pre>``, then an explicit "no source view"
+    note for bytes that are not UTF-8 text.
     """
     ext = _syntax_extension(path)
     highlighted = _highlight_source(path, ext)
@@ -393,15 +340,21 @@ def _raw_text(path: Path) -> str | None:
     return None
 
 
-def _preview_rst(path: Path, lines: tuple[int, int] | None = None) -> str:
+def render_rst(source: bytes, lines: tuple[int, int] | None = None) -> str:
+    """reStructuredText as an inert HTML fragment, the server's one preview.
+
+    *lines* is a 0-based, end-exclusive line span: a section of the file, as
+    the browser's heading outline names one. The browser renders every other
+    kind from the file's bytes.
+    """
     try:
-        source = path.read_text(encoding="utf-8")
+        text = source.decode("utf-8")
         if lines is not None:
-            source = "\n".join(source.split("\n")[lines[0] : lines[1]])
+            text = "\n".join(text.split("\n")[lines[0] : lines[1]])
         writer = html5_polyglot.Writer()
         writer.translator_class = _LinkedImages
         parts = publish_parts(
-            source,
+            text,
             writer=writer,
             settings_overrides={
                 "raw_enabled": False,
@@ -415,93 +368,6 @@ def _preview_rst(path: Path, lines: tuple[int, int] | None = None) -> str:
         )
         body = title + _inert(parts["body"])
         return f'<div class="preview-rst">{body}</div>'
-    except Exception as e:
-        return (
-            f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'
-        )
-
-
-def _preview_pdf(path: Path, preview_url: str | None = None) -> str:
-    try:
-        src = preview_url or f"/api/raw?p={urlquote(path.name)}"
-        return f'<div class="preview-pdf"><iframe src="{src}"></iframe></div>'
-    except Exception as e:  # pragma: no cover
-        return (
-            f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'
-        )
-
-
-def _preview_html(path: Path, preview_url: str | None = None) -> str:
-    """The page in an iframe with ``sandbox=""``, as the browser shows a file
-    on disk (ui/core/renderers.js). Its source is on filemill's own origin, so
-    without the sandbox its scripts would run as filemill."""
-    src = preview_url or f"/api/raw?p={urlquote(path.name)}"
-    return f'<div class="preview-html"><iframe sandbox="" src="{src}"></iframe></div>'
-
-
-def _preview_image(path: Path, preview_url: str | None = None) -> str:
-    """The same ``pv-img`` the browser draws for an image on disk, so the
-    shared stylesheet scales a member image to the pane the same way."""
-    try:
-        src = preview_url or f"/api/raw?p={urlquote(path.name)}"
-        safe_name = html_lib.escape(path.name)
-        return (
-            '<div class="preview-image">'
-            f'<img class="pv-img" src="{src}" alt="{safe_name}"></div>'
-        )
-    except Exception as e:  # pragma: no cover
-        return (
-            f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'
-        )
-
-
-def _preview_desktop(path: Path) -> str:
-    """Preview a .desktop link file — show name, icon, and a clickable URL."""
-    try:
-        cp = configparser.ConfigParser(interpolation=None)
-        cp.read(str(path), encoding="utf-8")
-        if "Desktop Entry" not in cp:
-            return '<div class="preview-unsupported"><em>Not a valid .desktop file.</em></div>'
-        entry = cp["Desktop Entry"]
-        entry_type = entry.get("Type", "").strip()
-        name = html_lib.escape(entry.get("Name", path.stem).strip())
-        url = entry.get("URL", "").strip()
-        icon = entry.get("Icon", "").strip()
-        comment = html_lib.escape(entry.get("Comment", "").strip())
-
-        if entry_type != "Link" or not url:
-            return f'<div class="preview-unsupported"><em>Desktop entry type: {html_lib.escape(entry_type or "unknown")} — no URL to open.</em></div>'
-
-        # Any other protocol is shown, not followed: a javascript: URL would run
-        # as the page (A2).
-        shown = html_lib.escape(url)
-        link = (
-            f'<a href="{shown}" target="_blank" rel="noopener noreferrer"'
-            f' style="color:#4a9eff;">{shown}</a>'
-            if safe_url(url)
-            else shown
-        )
-
-        icon_html = ""
-        if icon.startswith(("http://", "https://")):
-            safe_icon = html_lib.escape(icon)
-            icon_html = f'<img src="{safe_icon}" alt="" style="width:48px;height:48px;object-fit:contain;flex-shrink:0;">'
-
-        comment_html = (
-            f'<p style="margin:0;color:#aaa;font-size:0.9rem;">{comment}</p>'
-            if comment
-            else ""
-        )
-
-        return f"""<div class="preview-desktop-link" style="padding:2rem;display:flex;flex-direction:column;gap:1.2rem;">
-  <div style="display:flex;align-items:center;gap:0.8rem;">
-    {icon_html}<h2 style="margin:0;font-size:1.4rem;">{name}</h2>
-  </div>
-  {comment_html}
-  <div style="word-break:break-all;">
-    🔗 {link}
-  </div>
-</div>"""
     except Exception as e:
         return (
             f'<div class="preview-error">Preview error: {html_lib.escape(str(e))}</div>'

@@ -20,7 +20,7 @@ record are history; use the [contributor guide] for current commands.
 | 3 | ES modules, concatenating builder, DOM-free model | Full node contract; core still knows HTTP search and virtual paths |
 | 4 | Preview reuse, selection model, folding model and named tuning values | Broader async ownership (A9); literal helper-size/deletion policy |
 | 5 | File-kind tables and adapter-owned order | Preserve their regressions; virtual identity remains A6/A7 |
-| 6 | Starlette server, vendored browser Markdown/DOCX, removed mount aliases | Source/member routing (A8), acquisition limits (A10), size/dependency policy |
+| 6 | Starlette server, vendored browser Markdown/DOCX, removed mount aliases | Native Source routing (A8), acquisition limits (A10), size/dependency policy |
 | 7 | Root pytest, separate static modes, condition-based waits and test isolation repairs | Shared fixture consolidation and verified parallel execution |
 | 8 | Registry, CSV, video, PPTX text, RST, editor modules and revision-checked saves | Office fidelity, local RST and remaining representation gaps |
 | 9 | Qualified Linux WebKitGTK prototype | Cross-platform parity, native deletion, persistence and rich/raw integration |
@@ -94,8 +94,9 @@ work; these tables do not solve it.
 ## Phase 6: a minimal server
 
 The server uses Starlette and Uvicorn. Markdown and DOCX render in the browser
-from vendored modules. The [preview dispatcher] still handles RST and server
-members; Pygments remains a runtime dependency. PPTX extraction is in the
+from vendored modules, and archive members render there from their bytes.
+The [server RST renderer] handles only RST ([ADR 0094]); Pygments remains a
+runtime dependency. PPTX extraction is in the
 browser and python-pptx is test-only.
 
 Named mount and alternate shell aliases are removed. The [resource routes]
@@ -131,9 +132,10 @@ unstarted work.
 
 Revision-checked replacement now protects ordinary stale drafts and preserves
 old bytes on pre-rename failures. See the [replacement decision] for all three
-hosts and its race/power-loss limits. Remaining local RST, member Source and
-native Source gaps are A8. Full Office layout fidelity remains a product goal.
-Deleting the preview API unconditionally would remove supported behavior.
+hosts and its race/power-loss limits. The remaining native Source gap is A8.
+Full Office layout fidelity remains a product goal. Deleting the preview API
+unconditionally would remove served RST rendering; [ADR 0094] lists the
+options.
 
 ## Phase 9: native shells
 
@@ -202,7 +204,8 @@ remote CI, deployment or user acceptance.
 [HTTP API]: ../server/src/filemill/api.py
 [FSA adapter]: ../ui/adapters/fsa.js
 [model checks]: ../ui/core/model/test.mjs
-[preview dispatcher]: ../server/src/filemill/preview.py
+[server RST renderer]: ../server/src/filemill/preview.py
+[ADR 0094]: adr/0094-the-browser-renders-members-the-server-only-restructuredtext.md
 [resource routes]: ../server/src/filemill/app.py
 [root pytest configuration]: ../pytest.ini
 [condition-based waiting]: ../server/CONTRIBUTING.md#wait-for-an-element-never-for-a-duration

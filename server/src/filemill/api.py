@@ -6,7 +6,7 @@ routes these requests to this module:
     GET    /api/dir?p=<rel>&v=<vpath>     → {"entries": [{name, dir, size, mod,
                                              …}], "denied"}
     GET    /api/raw?p=<rel>&v=<vpath>     → the bytes, with a detected media type
-    GET    /api/preview?p=<rel>&v=<vpath> → HTML for RST and archive members
+    GET    /api/preview?p=<rel>&v=<vpath> → HTML for reStructuredText only
     GET    /api/search?q=<text>&p=<rel>   → content matches from ripgrep
     POST   /api/save?p=<rel>              → overwrite the file with the body
     DELETE /api/delete?p=<rel>            → remove the file or folder
@@ -26,7 +26,6 @@ file in the browser through the same PreviewRich provider as the static edition.
 from __future__ import annotations
 
 import hashlib
-import html as html_lib
 import json
 import mimetypes
 import os
@@ -41,7 +40,7 @@ from typing import cast
 
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
-from filemill.preview import render_preview, valid_text
+from filemill.preview import render_rst, valid_text
 from filemill.vfs import (
     REGISTRY,
     VFSMember,
@@ -400,19 +399,15 @@ def member_raw_response(target: Path, vpath: str) -> Response:
     )
 
 
-def member_preview_response(target: Path, vpath: str, preview_url: str) -> Response:
-    """Render a member the way the same file would render on disk.
+def member_rst_response(target: Path, vpath: str) -> Response:
+    """Render a reStructuredText member, as the same file on disk renders.
 
-    Only the kinds the server renders for a file on disk arrive here: the
-    browser keeps Markdown, .docx and .pptx members for its own renderers
-    (ui/adapters/app-http.js), reading their bytes through the raw route.
-    The renderers read paths, so the bytes go to a temporary file under the
-    member's own name — the suffix is what picks the renderer — and are gone
-    before the response leaves. *preview_url* is where an image or PDF member
-    fetches itself from: the raw route with the same vpath.
+    The browser renders every other member from the bytes
+    ``member_raw_response`` serves (ui/adapters/app-http.js); only the
+    server renders reStructuredText in this edition (ADR 0094).
     """
     member = member_of(target, vpath)
-    if member is None:
+    if member is None or classify_path(Path(member.name)).preview != "rst":
         return HTMLResponse("Not found", status_code=404)
     if member.data is None:
         html = (
@@ -420,10 +415,7 @@ def member_preview_response(target: Path, vpath: str, preview_url: str) -> Respo
             f"({member.size:,} bytes inside the archive).</em></div>"
         )
     else:
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / member.name
-            path.write_bytes(member.data)
-            html = render_preview(path, preview_url=preview_url)
+        html = render_rst(member.data)
     return HTMLResponse(html, headers={"Cache-Control": "no-store"})
 
 
@@ -519,18 +511,3 @@ def delete_file(target: Path) -> Response:
     except OSError as exc:
         return JSONResponse({"error": str(exc)}, status_code=500)
     return JSONResponse({"deleted": True})
-
-
-def preview_fragment(target: Path, render) -> Response:
-    """Render a preview body for a file the server can read."""
-    if not target.is_file():
-        return HTMLResponse("", status_code=404)
-    try:
-        return HTMLResponse(render(target), headers={"Cache-Control": "no-store"})
-    # One bad file must not 500 a route that was only listing a directory.
-    except Exception as exc:
-        return HTMLResponse(
-            f'<div class="preview-error">Preview error: '
-            f"{html_lib.escape(str(exc))}</div>",
-            headers={"Cache-Control": "no-store"},
-        )
