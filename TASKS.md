@@ -35,11 +35,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [159] Describe the root UI symlink correctly in static/AGENTS.md and test the
-  relationship
-  <!-- hai:{"id":"simple-56da403d-aaee-43de-acae-83051a0ecc23","labels":["steward"],"createdAt":"2026-10-23T11:15:00.956Z","updatedAt":"2026-10-23T11:15:48.500Z"} -->
-
 ## In Progress
+
+- [~] [159] Describe the root UI symlink correctly in static/AGENTS.md and test the
+  relationship
+      <!-- hai:{"id":"simple-56da403d-aaee-43de-acae-83051a0ecc23","labels":["steward"],"createdAt":"2026-10-23T11:15:00.956Z","updatedAt":"2026-10-23T11:16:11.830Z"} -->
 
 ## Completed / Accepted
 
