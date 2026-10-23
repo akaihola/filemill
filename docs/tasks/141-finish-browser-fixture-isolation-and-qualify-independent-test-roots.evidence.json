@@ -1,0 +1,830 @@
+{
+  "items": [
+    {
+      "issue": "filemill [141]",
+      "hai_id": "simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3",
+      "title": "Finish browser fixture isolation and qualify independent test roots",
+      "repository": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+      "source_repository": "/home/agent/prg/filemill",
+      "base_commit": "6f7818b0288b723ef165eabb97b326bb251c69ef",
+      "delivery_commits": [
+        "60ba43438b56adf12e952f9f7fa184a013a7f786",
+        "1a35b016b922cc22b40f0601f5ffc6e0cee01294",
+        "cb03d808eeda339d6147d173e8d39bdf916f44df",
+        "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+        "77177d7ae758e894b4cc6d1f37ff8feba2b0b120"
+      ],
+      "changed_files": [
+        "conftest.py",
+        "docs/ARCHITECTURE-REVIEW.md",
+        "docs/tasks/141-finish-browser-fixture-isolation-and-qualify-independent-test-roots.md",
+        "pyproject.toml",
+        "server/pyproject.toml",
+        "server/tests/test_browser_keyboard.py",
+        "server/tests/test_browser_lifecycle.py",
+        "static/tests/conftest.py",
+        "static/tests/test_doc_sections.py",
+        "static/tests/test_json_collapse.py",
+        "static/tests/test_model.py",
+        "static/tests/test_preview_views.py",
+        "static/tests/test_rich.py",
+        "static/tests/test_ui.py",
+        "static/tests/test_url.py",
+        "uv.lock"
+      ],
+      "checks": [
+        {
+          "id": "keyboard",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_keyboard.py -q --tb=short --junitxml=/home/agent/tmp/filemill-hai141-resume/keyboard.xml",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5"
+            }
+          }
+        },
+        {
+          "id": "served-ui-early",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=early -q --tb=short --junitxml=/home/agent/tmp/filemill-hai141-resume/served-ui-early.xml",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5"
+            }
+          }
+        },
+        {
+          "id": "served-ui-late",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=late -q --tb=short --junitxml=/home/agent/tmp/filemill-hai141-resume/served-ui-late.xml",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5"
+            }
+          }
+        },
+        {
+          "id": "server-contracts",
+          "command": "timeout 1800 uv run pytest server/tests --ignore=server/tests/test_browser_keyboard.py --ignore=server/tests/test_browser_new_ui.py -q --tb=short --junitxml=/home/agent/tmp/filemill-hai141-resume/server-contracts.xml",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5"
+            }
+          }
+        },
+        {
+          "id": "static-ui",
+          "command": "timeout 1800 uv run pytest static/tests/test_ui.py --bundle -q --tb=short --junitxml=/home/agent/tmp/filemill-hai141-resume/static-ui.xml",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5"
+            }
+          }
+        },
+        {
+          "id": "static-adapters",
+          "command": "timeout 1800 uv run pytest static/tests --ignore=static/tests/test_ui.py --bundle -q --tb=short --junitxml=/home/agent/tmp/filemill-hai141-resume/static-adapters.xml",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5"
+            }
+          }
+        },
+        {
+          "id": "collections",
+          "command": "timeout 1800 python3 /home/agent/tmp/filemill-hai141-resume/collections.py",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5"
+            }
+          }
+        },
+        {
+          "id": "static-dev",
+          "command": "timeout 1800 uv run pytest static/tests --dev -q --tb=short --junitxml=/home/agent/tmp/filemill-hai141-resume/static-dev.xml",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5"
+            }
+          }
+        },
+        {
+          "id": "quality",
+          "command": "timeout 1800 bash /home/agent/tmp/filemill-hai141-resume/quality.sh",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5"
+            }
+          }
+        },
+        {
+          "id": "docs",
+          "command": "timeout 1800 uv run pytest server/tests/test_docs.py -q --tb=short --junitxml=/home/agent/tmp/filemill-hai141-resume/docs.xml",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5"
+            }
+          }
+        }
+      ],
+      "evidence": {
+        "keyboard": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+          "tested_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+              "value": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14"
+            }
+          },
+          "issue": "filemill [141]",
+          "check": "keyboard",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_keyboard.py -q --tb=short --junitxml=/home/agent/tmp/filemill-hai141-resume/keyboard.xml",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T04:14:16.790800+00:00",
+          "clean_checkout": true,
+          "memory": {
+            "name": "keyboard",
+            "command": [
+              "timeout",
+              "1800",
+              "uv",
+              "run",
+              "pytest",
+              "server/tests/test_browser_keyboard.py",
+              "-q",
+              "--tb=short",
+              "--junitxml=/home/agent/tmp/filemill-hai141-resume/keyboard.xml"
+            ],
+            "timestamp": "2026-10-23T04:14:16.790800+00:00",
+            "tested_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+            "clean_checkout": true,
+            "lock_sha256": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa",
+            "wait_seconds": 0.0,
+            "admission_mib": 3011,
+            "starting_swap_mib": 2343,
+            "outcome": "started at once",
+            "status": 0,
+            "elapsed_seconds": 334.5,
+            "peak_swap_growth_mib": 10,
+            "final_mib": 2785,
+            "swap_growth_mib": 10
+          },
+          "artifacts": {
+            "log": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/keyboard.log",
+              "sha256": "20d79a8c84c95b39f4158ef9f8d5cc306b431a151ae22f313310417cfb899371"
+            },
+            "xml": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/keyboard.xml",
+              "sha256": "ef5c2fda2447d9c53bbff02617151dd476ea0db7fb5082016bfdb75ef66d2604"
+            },
+            "json": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/keyboard.json",
+              "sha256": "87654a2d1621fc27140a1569a66a77cba85b18d5b35b8eadff82e3d08ec8774d"
+            }
+          },
+          "passed_cases": 67
+        },
+        "served-ui-early": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+          "tested_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+              "value": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14"
+            }
+          },
+          "issue": "filemill [141]",
+          "check": "served-ui-early",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=early -q --tb=short --junitxml=/home/agent/tmp/filemill-hai141-resume/served-ui-early.xml",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T04:20:05.051143+00:00",
+          "clean_checkout": true,
+          "memory": {
+            "name": "served-ui-early",
+            "command": [
+              "timeout",
+              "1800",
+              "uv",
+              "run",
+              "pytest",
+              "server/tests/test_browser_new_ui.py",
+              "--served-ui-part=early",
+              "-q",
+              "--tb=short",
+              "--junitxml=/home/agent/tmp/filemill-hai141-resume/served-ui-early.xml"
+            ],
+            "timestamp": "2026-10-23T04:20:05.051143+00:00",
+            "tested_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+            "clean_checkout": true,
+            "lock_sha256": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa",
+            "wait_seconds": 0.0,
+            "admission_mib": 2823,
+            "starting_swap_mib": 2353,
+            "outcome": "started at once",
+            "status": 0,
+            "elapsed_seconds": 314.8,
+            "peak_swap_growth_mib": 19,
+            "final_mib": 2877,
+            "swap_growth_mib": 18
+          },
+          "artifacts": {
+            "log": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/served-ui-early.log",
+              "sha256": "977ecb07ebbbe559527f3eb778a25d232a8232bea500b7b1389c94cc40df30ec"
+            },
+            "xml": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/served-ui-early.xml",
+              "sha256": "f706c7e07fa07db9e7c32d457e440d68891a9dbe379fe03772e36f5ec93fbc49"
+            },
+            "json": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/served-ui-early.json",
+              "sha256": "7f4149b941d8e2f7a6f8e01a105cd75a316a0dc0d3a361d6c4364576937ca4f3"
+            }
+          },
+          "passed_cases": 157
+        },
+        "served-ui-late": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+          "tested_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+              "value": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14"
+            }
+          },
+          "issue": "filemill [141]",
+          "check": "served-ui-late",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=late -q --tb=short --junitxml=/home/agent/tmp/filemill-hai141-resume/served-ui-late.xml",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T04:25:51.703352+00:00",
+          "clean_checkout": true,
+          "memory": {
+            "name": "served-ui-late",
+            "command": [
+              "timeout",
+              "1800",
+              "uv",
+              "run",
+              "pytest",
+              "server/tests/test_browser_new_ui.py",
+              "--served-ui-part=late",
+              "-q",
+              "--tb=short",
+              "--junitxml=/home/agent/tmp/filemill-hai141-resume/served-ui-late.xml"
+            ],
+            "timestamp": "2026-10-23T04:25:51.703352+00:00",
+            "tested_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+            "clean_checkout": true,
+            "lock_sha256": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa",
+            "wait_seconds": 0.0,
+            "admission_mib": 2886,
+            "starting_swap_mib": 2371,
+            "outcome": "started at once",
+            "status": 0,
+            "elapsed_seconds": 391.1,
+            "peak_swap_growth_mib": 36,
+            "final_mib": 2918,
+            "swap_growth_mib": 35
+          },
+          "artifacts": {
+            "log": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/served-ui-late.log",
+              "sha256": "3f7392e4edc485dc95de487cbe98bcf44f2b2de1fee3b6b8833dcf26c394b2a2"
+            },
+            "xml": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/served-ui-late.xml",
+              "sha256": "9b862ff402080d48ca4e20b849a934dd5119b17552cf467b49c1766ac0fa30b4"
+            },
+            "json": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/served-ui-late.json",
+              "sha256": "b83e351aa879a547b93cbc18d233535fbb918adadb94de96320bd820a54efd13"
+            }
+          },
+          "passed_cases": 156
+        },
+        "server-contracts": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+          "tested_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+              "value": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14"
+            }
+          },
+          "issue": "filemill [141]",
+          "check": "server-contracts",
+          "command": "timeout 1800 uv run pytest server/tests --ignore=server/tests/test_browser_keyboard.py --ignore=server/tests/test_browser_new_ui.py -q --tb=short --junitxml=/home/agent/tmp/filemill-hai141-resume/server-contracts.xml",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T04:32:27.140612+00:00",
+          "clean_checkout": true,
+          "memory": {
+            "name": "server-contracts",
+            "command": [
+              "timeout",
+              "1800",
+              "uv",
+              "run",
+              "pytest",
+              "server/tests",
+              "--ignore=server/tests/test_browser_keyboard.py",
+              "--ignore=server/tests/test_browser_new_ui.py",
+              "-q",
+              "--tb=short",
+              "--junitxml=/home/agent/tmp/filemill-hai141-resume/server-contracts.xml"
+            ],
+            "timestamp": "2026-10-23T04:32:27.140612+00:00",
+            "tested_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+            "clean_checkout": true,
+            "lock_sha256": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa",
+            "wait_seconds": 0.0,
+            "admission_mib": 2936,
+            "starting_swap_mib": 2406,
+            "outcome": "started at once",
+            "status": 0,
+            "elapsed_seconds": 21.4,
+            "peak_swap_growth_mib": 0,
+            "final_mib": 2814,
+            "swap_growth_mib": 0
+          },
+          "artifacts": {
+            "log": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/server-contracts.log",
+              "sha256": "0b701e735f1d667141ff55bb61b89db159dc306abed2da0b64c4a1576987df48"
+            },
+            "xml": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/server-contracts.xml",
+              "sha256": "f3d5788a0a3aa7570758eae602c10ccf47455fe4e59e824edf6a8fab5972c5aa"
+            },
+            "json": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/server-contracts.json",
+              "sha256": "9dd410fdc05aa6a8e2b2a31a5a3215bfc22eee8cbbbcf43362b302c9397e966d"
+            }
+          },
+          "passed_cases": 929
+        },
+        "static-ui": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+          "tested_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+              "value": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14"
+            }
+          },
+          "issue": "filemill [141]",
+          "check": "static-ui",
+          "command": "timeout 1800 uv run pytest static/tests/test_ui.py --bundle -q --tb=short --junitxml=/home/agent/tmp/filemill-hai141-resume/static-ui.xml",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T04:33:24.095349+00:00",
+          "clean_checkout": true,
+          "memory": {
+            "name": "static-ui",
+            "command": [
+              "timeout",
+              "1800",
+              "uv",
+              "run",
+              "pytest",
+              "static/tests/test_ui.py",
+              "--bundle",
+              "-q",
+              "--tb=short",
+              "--junitxml=/home/agent/tmp/filemill-hai141-resume/static-ui.xml"
+            ],
+            "timestamp": "2026-10-23T04:33:24.095349+00:00",
+            "tested_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+            "clean_checkout": true,
+            "lock_sha256": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa",
+            "wait_seconds": 0.0,
+            "admission_mib": 2874,
+            "starting_swap_mib": 2401,
+            "outcome": "started at once",
+            "status": 0,
+            "elapsed_seconds": 308.1,
+            "peak_swap_growth_mib": 21,
+            "final_mib": 2895,
+            "swap_growth_mib": 19
+          },
+          "artifacts": {
+            "log": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/static-ui.log",
+              "sha256": "02e761bed27eda14af341e32078a17844e12a136c5051cdbc5f4cb9be83ff7d4"
+            },
+            "xml": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/static-ui.xml",
+              "sha256": "d5f50918d6fbb7a00f5a32f546e8ed3e4768b2a935912a7fc6fc3922a0d09508"
+            },
+            "json": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/static-ui.json",
+              "sha256": "37d1dca928d3e8de35c20edae09b851a59a6e425fa6dc9a934f13ec16f666c99"
+            }
+          },
+          "passed_cases": 83
+        },
+        "static-adapters": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+          "tested_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+              "value": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14"
+            }
+          },
+          "issue": "filemill [141]",
+          "check": "static-adapters",
+          "command": "timeout 1800 uv run pytest static/tests --ignore=static/tests/test_ui.py --bundle -q --tb=short --junitxml=/home/agent/tmp/filemill-hai141-resume/static-adapters.xml",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T04:38:44.447331+00:00",
+          "clean_checkout": true,
+          "memory": {
+            "name": "static-adapters",
+            "command": [
+              "timeout",
+              "1800",
+              "uv",
+              "run",
+              "pytest",
+              "static/tests",
+              "--ignore=static/tests/test_ui.py",
+              "--bundle",
+              "-q",
+              "--tb=short",
+              "--junitxml=/home/agent/tmp/filemill-hai141-resume/static-adapters.xml"
+            ],
+            "timestamp": "2026-10-23T04:38:44.447331+00:00",
+            "tested_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+            "clean_checkout": true,
+            "lock_sha256": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa",
+            "wait_seconds": 0.0,
+            "admission_mib": 3097,
+            "starting_swap_mib": 2418,
+            "outcome": "started at once",
+            "status": 0,
+            "elapsed_seconds": 248.6,
+            "peak_swap_growth_mib": 3,
+            "final_mib": 2801,
+            "swap_growth_mib": -61
+          },
+          "artifacts": {
+            "log": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/static-adapters.log",
+              "sha256": "cdc78ad178a17de60a3e9b2faa2fcb16cb58783b82eba2368664cf1322735789"
+            },
+            "xml": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/static-adapters.xml",
+              "sha256": "11abbb96db043b940ace0b01d207cc846edcfd4cdb46f952a42456518439aff1"
+            },
+            "json": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/static-adapters.json",
+              "sha256": "d5d9fcdbfe825cbcef8e8e4449a149f0991a67a6ce25ff1c4039205f0ef249df"
+            }
+          },
+          "passed_cases": 110
+        },
+        "collections": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+          "tested_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+              "value": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14"
+            }
+          },
+          "issue": "filemill [141]",
+          "check": "collections",
+          "command": "timeout 1800 python3 /home/agent/tmp/filemill-hai141-resume/collections.py",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T04:43:12.950294+00:00",
+          "clean_checkout": true,
+          "memory": {
+            "name": "collections",
+            "command": [
+              "timeout",
+              "1800",
+              "python3",
+              "/home/agent/tmp/filemill-hai141-resume/collections.py"
+            ],
+            "timestamp": "2026-10-23T04:43:12.950294+00:00",
+            "tested_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+            "clean_checkout": true,
+            "lock_sha256": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa",
+            "wait_seconds": 0.0,
+            "admission_mib": 2874,
+            "starting_swap_mib": 2357,
+            "outcome": "started at once",
+            "status": 0,
+            "elapsed_seconds": 11.3,
+            "peak_swap_growth_mib": 0,
+            "final_mib": 2736,
+            "swap_growth_mib": -1
+          },
+          "artifacts": {
+            "log": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/collections.log",
+              "sha256": "0b18249d980ed26fc27c7d6684a41ce903f4518e983c9e3268e690d1e6e42c4f"
+            },
+            "json": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/collections.json",
+              "sha256": "beb982ee7c0de3cf46531873a291f0458d34866d98df1866fc6bd7d1b1c3575b"
+            }
+          }
+        },
+        "static-dev": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+          "tested_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+              "value": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14"
+            }
+          },
+          "issue": "filemill [141]",
+          "check": "static-dev",
+          "command": "timeout 1800 uv run pytest static/tests --dev -q --tb=short --junitxml=/home/agent/tmp/filemill-hai141-resume/static-dev.xml",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T04:43:28.194191+00:00",
+          "clean_checkout": true,
+          "memory": {
+            "name": "static-dev",
+            "command": [
+              "timeout",
+              "1800",
+              "uv",
+              "run",
+              "pytest",
+              "static/tests",
+              "--dev",
+              "-q",
+              "--tb=short",
+              "--junitxml=/home/agent/tmp/filemill-hai141-resume/static-dev.xml"
+            ],
+            "timestamp": "2026-10-23T04:43:28.194191+00:00",
+            "tested_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+            "clean_checkout": true,
+            "lock_sha256": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa",
+            "wait_seconds": 0.0,
+            "admission_mib": 2893,
+            "starting_swap_mib": 2355,
+            "outcome": "started at once",
+            "status": 0,
+            "elapsed_seconds": 599.9,
+            "peak_swap_growth_mib": 26,
+            "final_mib": 2948,
+            "swap_growth_mib": -4
+          },
+          "artifacts": {
+            "log": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/static-dev.log",
+              "sha256": "73ca59c2ab647753b39738f3d699eadad5f135fd8ce4f5bd5d781d18712a7590"
+            },
+            "xml": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/static-dev.xml",
+              "sha256": "6a396307e4d653c80e53709ac401483fcb68c7a08b37b1bed588203307b8fff6"
+            },
+            "json": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/static-dev.json",
+              "sha256": "7981cf978a455533557426fe9dcaa9ca089e0c1a8d13e74f4c4a8b2e80d9ab6a"
+            }
+          },
+          "passed_cases": 193
+        },
+        "quality": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+          "tested_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+              "value": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14"
+            }
+          },
+          "issue": "filemill [141]",
+          "check": "quality",
+          "command": "timeout 1800 bash /home/agent/tmp/filemill-hai141-resume/quality.sh",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T04:53:47.753058+00:00",
+          "clean_checkout": true,
+          "memory": {
+            "name": "quality",
+            "command": [
+              "timeout",
+              "1800",
+              "bash",
+              "/home/agent/tmp/filemill-hai141-resume/quality.sh"
+            ],
+            "timestamp": "2026-10-23T04:53:47.753058+00:00",
+            "tested_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+            "clean_checkout": true,
+            "lock_sha256": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa",
+            "wait_seconds": 0.0,
+            "admission_mib": 3246,
+            "starting_swap_mib": 2350,
+            "outcome": "started at once",
+            "status": 0,
+            "elapsed_seconds": 14.4,
+            "peak_swap_growth_mib": 0,
+            "final_mib": 3092,
+            "swap_growth_mib": -1
+          },
+          "artifacts": {
+            "log": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/quality.log",
+              "sha256": "8689643f7a79e3161ec8c3582491dc5d2e00def300fb12f516cee13339ac9169"
+            },
+            "json": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/quality.json",
+              "sha256": "15b4482dfad517cf8f42c17c53f56d84397e8f68a642f3a5b2e3b4029fd93711"
+            }
+          }
+        },
+        "docs": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+          "tested_commit": "77177d7ae758e894b4cc6d1f37ff8feba2b0b120",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-141-finish-browser-fixture-isolation-and-qualify-independent-test-ro-56cc02c5",
+              "value": "77177d7ae758e894b4cc6d1f37ff8feba2b0b120"
+            }
+          },
+          "issue": "filemill [141]",
+          "check": "docs",
+          "command": "timeout 1800 uv run pytest server/tests/test_docs.py -q --tb=short --junitxml=/home/agent/tmp/filemill-hai141-resume/docs.xml",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T04:55:18.676267+00:00",
+          "clean_checkout": true,
+          "memory": {
+            "name": "docs",
+            "command": [
+              "timeout",
+              "1800",
+              "uv",
+              "run",
+              "pytest",
+              "server/tests/test_docs.py",
+              "-q",
+              "--tb=short",
+              "--junitxml=/home/agent/tmp/filemill-hai141-resume/docs.xml"
+            ],
+            "timestamp": "2026-10-23T04:55:18.676267+00:00",
+            "tested_commit": "77177d7ae758e894b4cc6d1f37ff8feba2b0b120",
+            "clean_checkout": true,
+            "lock_sha256": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa",
+            "wait_seconds": 0.0,
+            "admission_mib": 3063,
+            "starting_swap_mib": 2347,
+            "outcome": "started at once",
+            "status": 0,
+            "elapsed_seconds": 3.1,
+            "peak_swap_growth_mib": 0,
+            "final_mib": 3031,
+            "swap_growth_mib": 0
+          },
+          "artifacts": {
+            "log": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/docs.log",
+              "sha256": "9f73531fa42a8f2b1031333a2626505e57d3fdb9eb8f7b0503fe737fdd4481cc"
+            },
+            "xml": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/docs.xml",
+              "sha256": "6b9ee31da481991ab602b18c5cc8f65452fe06c256bf7bb0b170dc212931bb2a"
+            },
+            "json": {
+              "path": "/home/agent/tmp/filemill-hai141-resume/docs.json",
+              "sha256": "f6b87a3b64a6b4f6cc0f1bff8ca0fd904bd846404e0517c8065bab51ef4e9bea"
+            }
+          },
+          "passed_cases": 28
+        }
+      },
+      "qualification": {
+        "protocol": "Six sequential root shards from completed Filemill [156], as authorized by the 2026-10-23 follow-up. No fresh -n auto pass is claimed.",
+        "root_cases_passed": 1502,
+        "collection_multiset_equal": true,
+        "static_dev_passed": 193,
+        "historical_failure": "The 2026-10-21 stopped run recorded only F. Its test ID and traceback were not recoverable; no isolated rerun can be identified. Every current root case passed in the completed shards.",
+        "tested_code_commit": "f0ed92f3f7fc4a20c380cc10e841755a8dfedf14",
+        "documentation_commit": "77177d7ae758e894b4cc6d1f37ff8feba2b0b120",
+        "documentation_only_since_root_checks": true,
+        "deployment": "No restart or deployment."
+      }
+    }
+  ]
+}

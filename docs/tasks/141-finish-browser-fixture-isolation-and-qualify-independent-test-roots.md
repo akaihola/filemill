@@ -101,10 +101,7 @@ this issue to Completed / Accepted on this evidence. The canonical tracker
 remains In Progress, with no acceptance checkbox changed. Resume qualification
 on a host that can hold the same command under the required limits.
 
-[the root fixtures]: ../../conftest.py
-[the contribution guide]: ../../CONTRIBUTING.md
 
-[lifecycle guard]: ../../server/tests/test_browser_lifecycle.py
 
 
 ## Resumed qualification — 2026-10-23
@@ -157,6 +154,7 @@ reporting flags add quiet output, short tracebacks and JUnit files.
 | collections | 1,502 IDs equal | 11.3 |
 | static-dev | 193 | 599.9 |
 | quality | hooks + model passed | 14.4 |
+| docs | 28 | 3.1 |
 
 ### Memory readings
 
@@ -177,6 +175,7 @@ not command output. Exact command vectors are in [the check receipt].
 | collections | started at once | 0.0 | 2874 / 2736 | 2357 / -1 | 0 | 11.3 | 0 |
 | static-dev | started at once | 0.0 | 2893 / 2948 | 2355 / -4 | 26 | 599.9 | 0 |
 | quality | started at once | 0.0 | 3246 / 3092 | 2350 / -1 | 0 | 14.4 | 0 |
+| docs | started at once | 0.0 | 3063 / 3031 | 2347 / +0 | 0 | 3.1 | 0 |
 
 ### Delivery and completion
 
@@ -186,12 +185,17 @@ same assertion ASTs in every migrated file (694 assertions), allowing string
 whitespace changes from dedenting lifecycle blocks. The automated root tests
 retain fixture-owned browser lifetimes, guarded by [the lifecycle guard].
 
-The clean qualification is complete. The repair and this report can be merged
-locally, then the tracker can move to Completed / Accepted with acceptance
-unchecked. The completion commit includes [the check receipt]. No restart or
-deployment is part of this follow-up. [The run artifacts] retain the logs,
+The clean qualification is complete. The repair and report were merged
+locally into main at `77177d7a`. The tracker moved to Completed / Accepted
+with acceptance unchecked. The completion commit includes [the check receipt].
+The final documentation check passed 28 tests on clean report commit
+`77177d7a`; the receipt distinguishes it from the code qualification commit.
+No restart or deployment was performed. [The run artifacts] retain the logs,
 JUnit files, collection lists and per-command memory records.
 
+[the root fixtures]: ../../conftest.py
+[the contribution guide]: ../../CONTRIBUTING.md
+[lifecycle guard]: ../../server/tests/test_browser_lifecycle.py
 [156]: 156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bound-on-.md
 [the testing commands]: ../../CONTRIBUTING.md#tests
 [the check receipt]: 141-finish-browser-fixture-isolation-and-qualify-independent-test-roots.evidence.json
