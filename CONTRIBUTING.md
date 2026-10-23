@@ -30,8 +30,9 @@ character and keep links inside code inactive. Both Markdown preview modes use
 [ui/core/markdown-links.js] for destination validation and path resolution.
 Test link behavior with the real vendored Markdown renderer.
 
-Read the [architecture review] before implementation. Changes to a port or
-behavior need an ADR in the same change, as its [rules for changes] require.
+Read the [architecture summary] first, then the sections of the
+[architecture review] that the change touches, found by heading. Changes to a
+port or behavior need an ADR in the same change, as its [rules for changes] require.
 Use red-green TDD for behavior changes. For documentation-only work, run the
 checks that read the affected documents.
 
@@ -164,6 +165,7 @@ in human documentation and inline links in agent instructions.
 [ui/core/model/]: ui/core/model/
 [ui/core/markdown-source.js]: ui/core/markdown-source.js
 [ui/core/markdown-links.js]: ui/core/markdown-links.js
+[architecture summary]: docs/ARCHITECTURE-SUMMARY.md
 [architecture review]: docs/ARCHITECTURE-REVIEW.md
 [rules for changes]: docs/ARCHITECTURE-REVIEW.md#rules-for-changes
 [native guide]: native/README.md#checks

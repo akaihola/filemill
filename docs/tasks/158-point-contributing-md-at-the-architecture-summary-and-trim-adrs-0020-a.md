@@ -38,3 +38,40 @@ Tracker: [the filemill tracker](../../TASKS.md).
   merge and record checks before completing the tracker entry.
 
 [contributor guide]: ../../CONTRIBUTING.md
+
+## Delivery, 2026-10-23
+
+The [contributor guide] now reads the [architecture summary] first and selects
+[architecture review] sections by heading, matching the agent instructions.
+[ADR 0020] and [ADR 0050] each went from 43 to 39 lines. A comparison against
+the originals confirms that every fact, number and link remains. Context,
+Decision, Measurement and Consequences headings remain in both ADRs.
+
+The preview key, metadata and revision lifecycle, invalidation, focus, object-URL
+lifetime and open A9 limitations remain. The history key, input-specific push or
+rewrite rules, shared-edition repair, pending/declined column behavior, loading
+UI, Back sequence and controlled-response regression remain.
+
+## Validation before merge
+
+- Focused acceptance assertions failed first on the original contributor
+  instruction, then passed after the edits. They verify summary-first guidance,
+  review selection by heading, both line limits, identical reference definitions,
+  identical number sequences and all four required headings.
+- `wc -l`: 39 lines for each ADR.
+- `timeout 600 uv run --project server pytest -q server/tests/test_docs.py server/tests/test_review_conditions.py`:
+  34 passed, following the contributor guide's testing index.
+- `timeout 600 uvx pre-commit run --all-files`: all seven hooks passed.
+- `git diff --check`: passed. Delivery scope is the contributor guide, the two
+  ADRs and this task record only; tracker moves are separate task records.
+- Documentation only: no port, behavior or architecture finding status changed.
+
+## Memory reports before merge
+
+- **docs:** `timeout 600 uv run --project server pytest -q server/tests/test_docs.py server/tests/test_review_conditions.py`; started at once; wait 0.0 s; admission 2535 MiB; final 2649 MiB; starting swap 2801 MiB; swap growth 22 MiB; elapsed 14.04 s; exit 0.
+- **gate:** `timeout 600 uvx pre-commit run --all-files`; started at once; wait 0.0 s; admission 2658 MiB; final 2691 MiB; starting swap 2822 MiB; swap growth 35 MiB; elapsed 44.08 s; exit 0.
+
+[architecture summary]: ../ARCHITECTURE-SUMMARY.md
+[architecture review]: ../ARCHITECTURE-REVIEW.md
+[ADR 0020]: ../adr/0020-pvtoken-guards-preview-fills.md
+[ADR 0050]: ../adr/0050-history-pushes-on-entering-a-column-rewrites-otherwise.md

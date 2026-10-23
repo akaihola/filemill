@@ -4,7 +4,7 @@ Date: 2026-08-17
 
 ## Context
 
-The static edition needs a documented decision for this design choice.
+The static edition needs this design choice documented.
 
 ## Decision
 
@@ -12,31 +12,27 @@ History pushes on entering a column, rewrites otherwise
 
 ## Measurement
 
-Selecting a folder opens its column without moving focus, so ↑/↓ down a list of
-folders would otherwise push a history entry per row and make Back useless
+Selecting folders opens columns without moving focus; ↑/↓ would otherwise push
+one history entry per row and make Back useless
 
 ## Consequences
 
-The static edition follows this decision. The measurement above records the
-basis for maintaining and evaluating it.
+The static edition follows this decision; the measurement guides maintenance and evaluation.
 
 ## Clarification (2026-10-07)
 
-The history key is the open directory chain, `path.map(name)`, in
-`ui/core/model/deeplink.js`. A click that opens another folder changes the chain
-and pushes; choosing a file inside the open folder rewrites. Keyboard stepping
+The history key is the open directory chain, `path.map(name)`, in `ui/core/model/deeplink.js`.
+Clicking another folder changes the chain and pushes; choosing a file in the open folder rewrites. Keyboard stepping
 with ↑/↓, Home/End, PageUp/PageDown sets `state.stepping` through `choose()` and
-always rewrites, however many folders the walk opens, which is the measurement
-above. Both editions share this rule. Issue [39] restored it after ↑/↓ over
-folders had started pushing one entry per row.
+always rewrites, however many folders open, as measured above. Both editions share
+this rule, restored by issue [39] after ↑/↓ over folders pushed one entry per row.
 
 ## Loading columns (2026-10-21)
 
-Only a settled open chain supplies a history key. While any column is unread,
-or an adapter has declined it and navigation has yet to remove it, URL
-synchronization waits. The loading UI stays visible. Once the read settles,
-a confirmed outline pushes and a plain file rewrites its containing folder's
-entry. Read timing must not change the Back sequence. [The Back race]
+Only settled open chains supply history keys. URL synchronization waits, with loading
+UI visible, while a column is unread or declined by its adapter but not yet removed
+by navigation. Once read, confirmed outlines push; plain files rewrite their containing
+folder's entry. Read timing must not change Back's sequence. [The Back race]
 records the reproduction and controlled-response regression.
 
 [39]: ../tasks/39-browser-history-navigation.md
