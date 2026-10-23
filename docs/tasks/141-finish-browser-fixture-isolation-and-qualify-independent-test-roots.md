@@ -105,3 +105,95 @@ on a host that can hold the same command under the required limits.
 [the contribution guide]: ../../CONTRIBUTING.md
 
 [lifecycle guard]: ../../server/tests/test_browser_lifecycle.py
+
+
+## Resumed qualification — 2026-10-23
+
+The steward's follow-up replaces aggregate parallel qualification with the
+six sequential root shards from [the bounded-suite work][156] and
+[the testing commands]. The earlier stop record remains historical evidence;
+it does not block completion on the new results below. This record does not
+claim a new `-n auto` pass.
+
+The prerequisite was checked in local main `6f7818b0`: the bounded-suite task
+was in Completed / Accepted with acceptance unchecked. The branch was then
+rebased onto that commit. The conflicts were documentation-only: retain the
+new shard commands in the contribution guide and retain both sets of
+architecture references. No test-root code conflict required a scope decision.
+The rebased implementation boundary is `1a35b016`, from original `2d77abdd`.
+The original changes remain `b02a3ad5`, `6390cdc0` and `587752b4`, as recorded
+above. The rebased pre-qualification tip is `f0ed92f3f7fc4a20c380cc10e841755a8dfedf14`.
+
+### Historical failure identity
+
+The old stopped log contains only a failure marker. It has no test ID or
+traceback, and the pytest last-failed cache is empty. The failure could not be
+recovered or rerun individually. No test name was inferred from the position
+of a marker in interleaved worker output. This is an evidence gap in the old
+run, not an identified regression.
+
+Every current root case was rerun in the six complete shards. All 1,502 cases
+passed without skips. Both served halves ran, with complementary deselections.
+The collection comparison proved exact ID multiplicity between the root suite
+and the six shards. The extra case over main's 1,501 is the lifecycle guard.
+The static development suite also passed all 193 cases. The quality gate
+passed all seven hooks and the DOM-free model checks.
+
+### Check results
+
+All checks below ran on clean checkout `f0ed92f3f7fc4a20c380cc10e841755a8dfedf14` with the same lockfile.
+The receipt records exact arguments, timestamps, input hashes, result files
+and log hashes. Pytest commands retain the documented 1,800-second timeout;
+reporting flags add quiet output, short tracebacks and JUnit files.
+
+| Check | Passed cases or result | Guarded elapsed seconds |
+| --- | --- | ---: |
+| keyboard | 67 | 334.5 |
+| served-ui-early | 157 | 314.8 |
+| served-ui-late | 156 | 391.1 |
+| server-contracts | 929 | 21.4 |
+| static-ui | 83 | 308.1 |
+| static-adapters | 110 | 248.6 |
+| collections | 1,502 IDs equal | 11.3 |
+| static-dev | 193 | 599.9 |
+| quality | hooks + model passed | 14.4 |
+
+### Memory readings
+
+Each check ran alone, with one-second host memory monitoring and process-tree
+cleanup. All admission waits were 0.0 seconds. No fallback admission, resource
+stop or retry was required. Readings use MiB; swap growth is relative to the
+start of each command. This table contains resource readings and exit status,
+not command output. Exact command vectors are in [the check receipt].
+
+| Command | Outcome | Wait s | MemAvailable admission / final | Swap start / growth | Peak growth | Elapsed s | Exit |
+| --- | --- | ---: | --- | --- | ---: | ---: | ---: |
+| keyboard | started at once | 0.0 | 3011 / 2785 | 2343 / +10 | 10 | 334.5 | 0 |
+| served-ui-early | started at once | 0.0 | 2823 / 2877 | 2353 / +18 | 19 | 314.8 | 0 |
+| served-ui-late | started at once | 0.0 | 2886 / 2918 | 2371 / +35 | 36 | 391.1 | 0 |
+| server-contracts | started at once | 0.0 | 2936 / 2814 | 2406 / +0 | 0 | 21.4 | 0 |
+| static-ui | started at once | 0.0 | 2874 / 2895 | 2401 / +19 | 21 | 308.1 | 0 |
+| static-adapters | started at once | 0.0 | 3097 / 2801 | 2418 / -61 | 3 | 248.6 | 0 |
+| collections | started at once | 0.0 | 2874 / 2736 | 2357 / -1 | 0 | 11.3 | 0 |
+| static-dev | started at once | 0.0 | 2893 / 2948 | 2355 / -4 | 26 | 599.9 | 0 |
+| quality | started at once | 0.0 | 3246 / 3092 | 2350 / -1 | 0 | 14.4 | 0 |
+
+### Delivery and completion
+
+Application code and the application-state root-restoration mechanism did not
+change in this issue. A comparison against the rebased main confirmed the
+same assertion ASTs in every migrated file (694 assertions), allowing string
+whitespace changes from dedenting lifecycle blocks. The automated root tests
+retain fixture-owned browser lifetimes, guarded by [the lifecycle guard].
+
+The clean qualification is complete. The repair and this report can be merged
+locally, then the tracker can move to Completed / Accepted with acceptance
+unchecked. The completion commit includes [the check receipt]. No restart or
+deployment is part of this follow-up. [The run artifacts] retain the logs,
+JUnit files, collection lists and per-command memory records.
+
+[156]: 156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bound-on-.md
+[the testing commands]: ../../CONTRIBUTING.md#tests
+[the check receipt]: 141-finish-browser-fixture-isolation-and-qualify-independent-test-roots.evidence.json
+[the lifecycle guard]: ../../server/tests/test_browser_lifecycle.py
+[The run artifacts]: http://hopeli/tmp/filemill-hai141-resume/?f

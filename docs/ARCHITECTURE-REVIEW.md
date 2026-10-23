@@ -136,9 +136,11 @@ Keep these boundaries and checks.
   profile. A [source guard][browser-lifecycle-tests] rejects lifecycle calls
   in test bodies and helpers.
   Root application-state fixtures retain monkeypatch restoration. The root
-  parallel qualification stopped at 75% when swap growth crossed 512 MiB.
-  One failure was observed without a traceback before the stop. Qualification
-  remains open; this does not establish a clean command audit.
+  aggregate parallel run stopped on swap growth. On 2026-10-23, the six
+  documented sequential root shards passed all 1,502 cases, with exact
+  collection multiplicity. All 193 static development cases, the quality gate
+  and model checks also passed. The original anonymous failure has no
+  recoverable ID. This qualification does not establish the broader A11 audit.
 - Tests use observable browser state for readiness. Delayed responses can
   supply test input, as the [waiting guidance] explains. The source guard
   rejects `wait_for_timeout`; it does not ban every sleep or prove overlap.
