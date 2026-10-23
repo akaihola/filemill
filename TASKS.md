@@ -78,9 +78,9 @@ Rules for TASKS.md usage are at the bottom of the file.
   current main
       <!-- hai:{"id":"simple-a4858f85-f357-497a-a1d3-f32ee93767e7","labels":["steward","review"],"createdAt":"2026-10-21T19:48:01.758Z","updatedAt":"2026-10-21T21:14:20.860Z"} -->
 
-- [ ] [144] Make the full static suites pass reliably: the wide-folder wait and
+- [x] [144] Make the full static suites pass reliably: the wide-folder wait and
   test_rst's release count
-      <!-- hai:{"id":"simple-0eccd583-2747-4244-95a8-321980b45c28","labels":["steward"],"createdAt":"2026-10-21T14:15:31.702Z","updatedAt":"2026-10-21T18:38:54.893Z"} -->
+      <!-- hai:{"id":"simple-0eccd583-2747-4244-95a8-321980b45c28","labels":["steward"],"createdAt":"2026-10-21T14:15:31.702Z","updatedAt":"2026-10-23T11:11:57.810Z"} -->
 
 - [x] [145] Add three missing browser regressions: focused search scope, HTTP entry
   order, duplicate CSV rows
@@ -486,8 +486,9 @@ Rules for TASKS.md usage are at the bottom of the file.
       Contents overflow horizontally both at the left and right edges.
       <!-- hai:{"id":"simple-9738df645fc3082f","updatedAt":"2026-10-21T14:13:26.952Z"} -->
 
-- [ ] [*] Fix all remaining red tests (listed in project memory), including the one-line
+- [x] [*] Fix all remaining red tests (listed in project memory), including the one-line
       cause of the newest root-column regression.
+      <!-- hai:{"id":"simple-55512ca1840114a9","updatedAt":"2026-10-23T11:11:59.251Z"} -->
 
 - [x] [73] Fix Markdown source highlighting for headings, URLs and links without
       treating word apostrophes as delimiters. Make links clickable.
@@ -547,9 +548,10 @@ Rules for TASKS.md usage are at the bottom of the file.
       `applyWidths`, `panFocus` and `slideTail`. Each function is under 25 lines.
       <!-- hai:{"id":"simple-3719edde73c010f9","updatedAt":"2026-10-21T05:17:15.483Z"} -->
 
-- [ ] [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
+- [x] [15] Split the decisions table in `static/AGENTS.md` into one dated ADR file per
       decision in `docs/adr/`. Each file has context, decision, measurement,
       consequences.
+      <!-- hai:{"updatedAt":"2026-10-23T11:12:00.631Z"} -->
 
 - [x] [10] Toggling `Source` / `Rendered` reloads the whole page and causes an
       uncomfortable blink and a delay. Just the preview pane should be reloaded, and the
@@ -582,8 +584,9 @@ Rules for TASKS.md usage are at the bottom of the file.
       `render.js` a name and a one-line comment that says why the value is what it is.
       <!-- hai:{"id":"simple-c4f050c41d8042de","updatedAt":"2026-10-21T17:12:05.776Z"} -->
 
-- [ ] [21] Cache the preview element keyed on the previewed node and its `meta`, the
+- [x] [21] Cache the preview element keyed on the previewed node and its `meta`, the
       same way `colCache` keys columns. A resize must cause zero `PREVIEW.render` calls.
+      <!-- hai:{"updatedAt":"2026-10-23T11:12:02.093Z"} -->
 
 - [x] [*] Delete `/sse/reload` and `LIVE_MODE` in `app.py`, `LIVE_RELOAD_JS` in
       `styles.py` and the `watchfiles` dependency. Delete their tests.
@@ -779,8 +782,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [x] [63] Add Raw, Source / Rendered and Fullscreen controls to the preview toolbar.
       <!-- hai:{"updatedAt":"2026-10-21T14:14:12.360Z"} -->
 
-- [ ] [12] Make `static/test-ui.py` run to its end, then fix the three checks that fail:
+- [x] [12] Make `static/test-ui.py` run to its end, then fix the three checks that fail:
       the `.pv-content` timeout and the two "edit starts at the top" checks.
+      <!-- hai:{"updatedAt":"2026-10-23T11:12:03.738Z"} -->
 
 - [x] [*] In `ui/core/state.js`, replace `node.jsonl ? kids : sortKids(kids)` with a
       `node.ordered` flag. Each virtual provider (JSON, JSONL, SQLite) sets the flag.
