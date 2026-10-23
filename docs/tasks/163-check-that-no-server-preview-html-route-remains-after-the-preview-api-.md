@@ -51,3 +51,37 @@ under the steward amendment. No architecture status or behavior changes;
 
 [the migration]: 162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-brows.md
 [ADR 0094]: ../adr/0094-the-browser-renders-members-the-server-only-restructuredtext.md
+
+## Results before merge, 2026-10-23
+
+[The new route-contract tests] cover 22 suffixes as real files and ZIP
+members. Their 44 cases check presentation and byte access together, plus
+six HTML errors and one stylesheet request probe. Existing API tests cover
+RST slices, oversized members, TAR and Git bundle members and SQLite rows.
+
+- Red: applied only the new tests to the clean pre-migration commit
+  `a40f6293`. All 42 non-RST file/member cases failed; 9 preservation checks
+  passed. The old preview route did not return the required 404.
+- Green: `timeout 600 uv run pytest -q
+  server/tests/test_preview_route_contract.py
+  server/tests/test_resource_routes.py server/tests/test_api.py
+  server/tests/test_preview.py server/tests/test_docs.py
+  server/tests/test_review_conditions.py` — 275 passed.
+- Quality gate: `timeout 1800 uvx pre-commit run --all-files` — all seven
+  hooks passed. No production files or shared CSS changed.
+- Review: the request matrix covers each classifier branch, and HTML files
+  are compared as bytes rather than incorrectly forbidden as HTML responses.
+  No behavior or architecture finding changes, so no new ADR is needed.
+
+[The new route-contract tests]: ../../server/tests/test_preview_route_contract.py
+
+## Memory reports before merge
+
+Each guarded command started at once, with a 0 s admission wait. Readings
+are MiB; growth is final / peak. Exit 1 for red is expected.
+
+| Command | Admission / final available | Start swap | Swap growth | Seconds | Exit |
+| --- | --- | --- | --- | --- | --- |
+| Pre-migration route matrix | 2826 / 2753 | 2373 | -1 / 0 | 19.0 | 1 |
+| Focused green regressions | 2773 / 2802 | 2371 | 0 / 0 | 17.0 | 0 |
+| Quality gate | 2744 / 2894 | 2362 | -97 / 0 | 29.1 | 0 |
