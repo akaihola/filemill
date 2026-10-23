@@ -20,14 +20,14 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [156] Make filemill's root suite finish green within its 30-minute bound on
-  hopeli
-      <!-- hai:{"id":"simple-a773efdf-57e6-4b22-b134-b3a69bd54f16","labels":["steward"],"createdAt":"2026-10-22T07:57:21.057Z","updatedAt":"2026-10-22T08:04:13.315Z"} -->
-
 - [~] [141] Finish browser fixture isolation and qualify independent test roots
       <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-21T15:01:55.354Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [156] Make filemill's root suite finish green within its 30-minute bound on
+  hopeli
+      <!-- hai:{"id":"simple-a773efdf-57e6-4b22-b134-b3a69bd54f16","labels":["steward"],"createdAt":"2026-10-22T07:57:21.057Z","updatedAt":"2026-10-23T02:07:43.850Z"} -->
 
 - [ ] [157] Point agents at a short summary of the architecture review instead of
   the whole 50 KB file
