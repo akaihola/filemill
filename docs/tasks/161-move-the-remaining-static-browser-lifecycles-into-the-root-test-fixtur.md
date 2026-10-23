@@ -88,3 +88,60 @@ swap growth; each command is bounded by a timeout.
   available admission/final 3450/3378;
   starting swap 2742, maximum growth 1;
   elapsed 11.0 s; exit 0.
+
+## First merged qualification and correction
+
+The first merge passed keyboard (67), served UI early (157), served UI
+late (156), and server contracts (930). Static UI failed: 75 passed,
+one failed and seven setup errors. The theme test requested the static
+`browser` fixture directly and instead received the root synchronous
+served browser, leaving its event loop active. Later asynchronous setup
+then failed too. No assertions were changed.
+
+A local asynchronous `browser` adapter now returns the root
+`async_browser`. This preserves existing direct consumers, including
+save-safety tests, while startup and teardown stay in the root owner.
+The failing theme case and following editor-features case both pass
+after this correction. Remaining first-merge checks were not started;
+all acceptance checks will be recorded against the corrected merge.
+
+### First merge resource reports
+
+Each row describes one evidence-recording call. Commands are the
+acceptance commands wrapped by `check-evidence.py record`.
+
+- Command: `timeout 1800 uv run pytest server/tests/test_browser_keyboard.py`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 3248/3395;
+  starting swap 2737, maximum growth 29;
+  elapsed 339.6 s; exit 0.
+
+- Command: `timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=early`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 3398/3389;
+  starting swap 2762, maximum growth 14;
+  elapsed 319.6 s; exit 0.
+
+- Command: `timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=late`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 3394/3244;
+  starting swap 2753, maximum growth 5;
+  elapsed 390.8 s; exit 0.
+
+- Command: `timeout 1800 uv run pytest server/tests --ignore=server/tests/test_browser_keyboard.py --ignore=server/tests/test_browser_new_ui.py`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 3248/2931;
+  starting swap 2717, maximum growth 0;
+  elapsed 25.0 s; exit 0.
+
+- Command: `timeout 1800 uv run pytest static/tests/test_ui.py --bundle`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 2934/3013;
+  starting swap 2713, maximum growth 14;
+  elapsed 281.5 s; exit 1.
+
+- Command: `timeout 1800 uv run pytest static/tests/test_ui.py -k "theme or editor_features" static/tests/test_save_safety.py server/tests/test_browser_lifecycle.py --bundle`.
+  Outcome: started at once; wait 0.0 s;
+  available admission/final 2997/3133;
+  starting swap 2706, maximum growth 0;
+  elapsed 7.0 s; exit 0.

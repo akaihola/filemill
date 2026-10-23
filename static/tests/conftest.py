@@ -62,8 +62,13 @@ def base(static_origin, bundle):
 
 
 @pytest_asyncio.fixture
-async def page(async_browser, bundle, fake_handle, request):
-    page = await async_browser.new_page(viewport={"width": 1500, "height": 900})
+async def browser(async_browser):
+    return async_browser
+
+
+@pytest_asyncio.fixture
+async def page(browser, bundle, fake_handle, request):
+    page = await browser.new_page(viewport={"width": 1500, "height": 900})
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     is_ui = request.module.__name__.endswith("test_ui")
