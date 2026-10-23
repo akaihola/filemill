@@ -26,11 +26,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Completed / Accepted
 
-- [ ] [163] Check that no server preview HTML route remains after the preview API
+- [x] [163] Check that no server preview HTML route remains after the preview API
   migration
     - Depends on: [162]
 
-      <!-- hai:{"id":"simple-72fa8242-27a7-4f91-9cc4-7473c39ed46f","labels":["steward"],"createdAt":"2026-10-23T11:15:18.749Z","updatedAt":"2026-10-23T15:12:32.135Z"} -->
+      <!-- hai:{"id":"simple-72fa8242-27a7-4f91-9cc4-7473c39ed46f","labels":["steward"],"createdAt":"2026-10-23T11:15:18.749Z","updatedAt":"2026-10-23T15:39:36.980Z"} -->
 
 - [ ] [162] Migrate the remaining preview API consumers to raw bytes and the browser
   renderers
