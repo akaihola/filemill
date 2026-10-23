@@ -18,11 +18,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [158] Point CONTRIBUTING.md at the architecture summary and trim ADRs 0020 and
-  0050 under 40 lines
-  <!-- hai:{"id":"simple-33d6024d-7baa-40c7-a697-2edb173b4ea5","labels":["steward"],"createdAt":"2026-10-23T07:48:50.779Z","updatedAt":"2026-10-23T07:50:24.307Z"} -->
-
 ## In Progress
+
+- [~] [158] Point CONTRIBUTING.md at the architecture summary and trim ADRs 0020 and
+  0050 under 40 lines
+      <!-- hai:{"id":"simple-33d6024d-7baa-40c7-a697-2edb173b4ea5","labels":["steward"],"createdAt":"2026-10-23T07:48:50.779Z","updatedAt":"2026-10-23T07:50:54.072Z"} -->
 
 ## Completed / Accepted
 
