@@ -16,13 +16,13 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+## Scheduled
+
 - [163] Check that no server preview HTML route remains after the preview API
   migration
     - Depends on: [162]
 
-  <!-- hai:{"id":"simple-72fa8242-27a7-4f91-9cc4-7473c39ed46f","labels":["steward"],"createdAt":"2026-10-23T11:15:18.749Z","updatedAt":"2026-10-23T11:15:18.749Z"} -->
-
-## Scheduled
+  <!-- hai:{"id":"simple-72fa8242-27a7-4f91-9cc4-7473c39ed46f","labels":["steward"],"createdAt":"2026-10-23T11:15:18.749Z","updatedAt":"2026-10-23T15:03:16.346Z"} -->
 
 ## In Progress
 
