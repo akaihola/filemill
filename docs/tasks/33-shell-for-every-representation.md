@@ -64,3 +64,14 @@ runtime dependency removal remain unmet; this note does not claim acceptance.
 [the resource route tests]: ../../server/tests/test_resource_routes.py
 [the highlighter retirement investigation]: 160-retire-the-remaining-python-source-highlighter-and-its-pygments-depend.md#investigation-2026-10-23
 [the remaining preview API migration]: 162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-brows.md
+
+
+### RST follow-up, 2026-10-23
+
+The archive-member blocker above is superseded by the completed preview API
+migration. The later [highlighter retirement recheck] found that served RST
+code blocks lose highlighting without Pygments, which docutils uses
+internally. Removal remains blocked on Antti's decision about that behavior.
+The no-columns supersession above still applies.
+
+[highlighter retirement recheck]: 160-retire-the-remaining-python-source-highlighter-and-its-pygments-depend.md#rst-dependency-recheck-2026-10-23
