@@ -1,0 +1,164 @@
+{
+  "items": [
+    {
+      "issue": "filemill [158]",
+      "hai_id": "simple-33d6024d-7baa-40c7-a697-2edb173b4ea5",
+      "title": "Point CONTRIBUTING.md at the architecture summary and trim ADRs 0020 and 0050 under 40 lines",
+      "repository": "/home/agent/.t3/worktrees/filemill/pacer-158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-365bda70",
+      "source_repository": "/home/agent/prg/filemill",
+      "base_commit": "f9b0f74fe9f1f0c14343ab76262b7e63c0895e40",
+      "delivery_commits": [
+        "f0136c80fa2922abaf2984027080f0908db5a0d2",
+        "5a278dea7c0f77c68a0d817fd10e9fb322968ecf"
+      ],
+      "checks": [
+        {
+          "id": "content",
+          "command": "wc -l docs/adr/0020-pvtoken-guards-preview-fills.md docs/adr/0050-history-pushes-on-entering-a-column-rewrites-otherwise.md && python3 -c 'from pathlib import Path\nimport re\nimport subprocess\n\ncontributing = Path('\"'\"'CONTRIBUTING.md'\"'\"').read_text()\nassert '\"'\"'Read the [architecture summary] first, then the sections of the'\"'\"' in contributing\nassert '\"'\"'[architecture review] that the change touches, found by heading.'\"'\"' in contributing\nassert '\"'\"'[architecture summary]: docs/ARCHITECTURE-SUMMARY.md'\"'\"' in contributing\nfor name in ('\"'\"'0020-pvtoken-guards-preview-fills.md'\"'\"', '\"'\"'0050-history-pushes-on-entering-a-column-rewrites-otherwise.md'\"'\"'):\n    path = Path('\"'\"'docs/adr'\"'\"') / name\n    before = subprocess.check_output(['\"'\"'git'\"'\"', '\"'\"'show'\"'\"', '\"'\"'f9b0f74f:'\"'\"' + str(path)], text=True)\n    after = path.read_text()\n    assert len(after.splitlines()) <= 39, (name, len(after.splitlines()))\n    assert re.findall(r'\"'\"'^\\[[^\\]]+\\]:.*$'\"'\"', before, re.M) == re.findall(r'\"'\"'^\\[[^\\]]+\\]:.*$'\"'\"', after, re.M)\n    assert re.findall(r'\"'\"'\\d+'\"'\"', before) == re.findall(r'\"'\"'\\d+'\"'\"', after)\n    for heading in ('\"'\"'Context'\"'\"', '\"'\"'Decision'\"'\"', '\"'\"'Measurement'\"'\"', '\"'\"'Consequences'\"'\"'):\n        assert '\"'\"'\\n## '\"'\"' + heading + '\"'\"'\\n'\"'\"' in after\n    print(name, len(before.splitlines()), '\"'\"'->'\"'\"', len(after.splitlines()), '\"'\"'lines; links, numbers and required headings retained'\"'\"')\nprint('\"'\"'Summary-first instructions and review-by-heading verified'\"'\"')\n'",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-365bda70"
+            }
+          }
+        },
+        {
+          "id": "docs",
+          "command": "timeout 600 uv run --project server pytest -q server/tests/test_docs.py server/tests/test_review_conditions.py",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-365bda70"
+            }
+          }
+        },
+        {
+          "id": "gate",
+          "command": "timeout 600 uvx pre-commit run --all-files",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-365bda70"
+            }
+          }
+        },
+        {
+          "id": "scope",
+          "command": "git diff --check f9b0f74fe9f1f0c14343ab76262b7e63c0895e40 HEAD && git diff --stat f9b0f74fe9f1f0c14343ab76262b7e63c0895e40 HEAD && python3 -c 'import subprocess\nallowed = {'\"'\"'CONTRIBUTING.md'\"'\"', '\"'\"'docs/adr/0020-pvtoken-guards-preview-fills.md'\"'\"', '\"'\"'docs/adr/0050-history-pushes-on-entering-a-column-rewrites-otherwise.md'\"'\"', '\"'\"'docs/tasks/158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-0020-a.md'\"'\"'}\nchanged = set(subprocess.check_output(['\"'\"'git'\"'\"','\"'\"'diff'\"'\"','\"'\"'--name-only'\"'\"','\"'\"'f9b0f74fe9f1f0c14343ab76262b7e63c0895e40'\"'\"','\"'\"'HEAD'\"'\"'],text=True).splitlines())\nassert changed == allowed, changed\nprint('\"'\"'Delivery contains only the four permitted documents'\"'\"')\n'",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-365bda70"
+            }
+          }
+        }
+      ],
+      "evidence": {
+        "content": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-365bda70",
+          "tested_commit": "5a278dea7c0f77c68a0d817fd10e9fb322968ecf",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-365bda70/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-365bda70",
+              "value": "5a278dea7c0f77c68a0d817fd10e9fb322968ecf"
+            }
+          },
+          "issue": "filemill [158]",
+          "check": "content",
+          "command": "wc -l docs/adr/0020-pvtoken-guards-preview-fills.md docs/adr/0050-history-pushes-on-entering-a-column-rewrites-otherwise.md && python3 -c 'from pathlib import Path\nimport re\nimport subprocess\n\ncontributing = Path('\"'\"'CONTRIBUTING.md'\"'\"').read_text()\nassert '\"'\"'Read the [architecture summary] first, then the sections of the'\"'\"' in contributing\nassert '\"'\"'[architecture review] that the change touches, found by heading.'\"'\"' in contributing\nassert '\"'\"'[architecture summary]: docs/ARCHITECTURE-SUMMARY.md'\"'\"' in contributing\nfor name in ('\"'\"'0020-pvtoken-guards-preview-fills.md'\"'\"', '\"'\"'0050-history-pushes-on-entering-a-column-rewrites-otherwise.md'\"'\"'):\n    path = Path('\"'\"'docs/adr'\"'\"') / name\n    before = subprocess.check_output(['\"'\"'git'\"'\"', '\"'\"'show'\"'\"', '\"'\"'f9b0f74f:'\"'\"' + str(path)], text=True)\n    after = path.read_text()\n    assert len(after.splitlines()) <= 39, (name, len(after.splitlines()))\n    assert re.findall(r'\"'\"'^\\[[^\\]]+\\]:.*$'\"'\"', before, re.M) == re.findall(r'\"'\"'^\\[[^\\]]+\\]:.*$'\"'\"', after, re.M)\n    assert re.findall(r'\"'\"'\\d+'\"'\"', before) == re.findall(r'\"'\"'\\d+'\"'\"', after)\n    for heading in ('\"'\"'Context'\"'\"', '\"'\"'Decision'\"'\"', '\"'\"'Measurement'\"'\"', '\"'\"'Consequences'\"'\"'):\n        assert '\"'\"'\\n## '\"'\"' + heading + '\"'\"'\\n'\"'\"' in after\n    print(name, len(before.splitlines()), '\"'\"'->'\"'\"', len(after.splitlines()), '\"'\"'lines; links, numbers and required headings retained'\"'\"')\nprint('\"'\"'Summary-first instructions and review-by-heading verified'\"'\"')\n'",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T07:55:23.908839+00:00"
+        },
+        "docs": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-365bda70",
+          "tested_commit": "5a278dea7c0f77c68a0d817fd10e9fb322968ecf",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-365bda70/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-365bda70",
+              "value": "5a278dea7c0f77c68a0d817fd10e9fb322968ecf"
+            }
+          },
+          "issue": "filemill [158]",
+          "check": "docs",
+          "command": "timeout 600 uv run --project server pytest -q server/tests/test_docs.py server/tests/test_review_conditions.py",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T07:55:56.727887+00:00"
+        },
+        "gate": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-365bda70",
+          "tested_commit": "5a278dea7c0f77c68a0d817fd10e9fb322968ecf",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-365bda70/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-365bda70",
+              "value": "5a278dea7c0f77c68a0d817fd10e9fb322968ecf"
+            }
+          },
+          "issue": "filemill [158]",
+          "check": "gate",
+          "command": "timeout 600 uvx pre-commit run --all-files",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T07:56:08.102405+00:00"
+        },
+        "scope": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-365bda70",
+          "tested_commit": "5a278dea7c0f77c68a0d817fd10e9fb322968ecf",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-365bda70/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-365bda70",
+              "value": "5a278dea7c0f77c68a0d817fd10e9fb322968ecf"
+            }
+          },
+          "issue": "filemill [158]",
+          "check": "scope",
+          "command": "git diff --check f9b0f74fe9f1f0c14343ab76262b7e63c0895e40 HEAD && git diff --stat f9b0f74fe9f1f0c14343ab76262b7e63c0895e40 HEAD && python3 -c 'import subprocess\nallowed = {'\"'\"'CONTRIBUTING.md'\"'\"', '\"'\"'docs/adr/0020-pvtoken-guards-preview-fills.md'\"'\"', '\"'\"'docs/adr/0050-history-pushes-on-entering-a-column-rewrites-otherwise.md'\"'\"', '\"'\"'docs/tasks/158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-0020-a.md'\"'\"'}\nchanged = set(subprocess.check_output(['\"'\"'git'\"'\"','\"'\"'diff'\"'\"','\"'\"'--name-only'\"'\"','\"'\"'f9b0f74fe9f1f0c14343ab76262b7e63c0895e40'\"'\"','\"'\"'HEAD'\"'\"'],text=True).splitlines())\nassert changed == allowed, changed\nprint('\"'\"'Delivery contains only the four permitted documents'\"'\"')\n'",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T07:56:53.415259+00:00"
+        }
+      }
+    }
+  ]
+}

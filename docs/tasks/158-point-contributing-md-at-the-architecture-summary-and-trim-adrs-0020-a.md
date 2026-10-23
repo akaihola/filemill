@@ -75,3 +75,36 @@ UI, Back sequence and controlled-response regression remain.
 [architecture review]: ../ARCHITECTURE-REVIEW.md
 [ADR 0020]: ../adr/0020-pvtoken-guards-preview-fills.md
 [ADR 0050]: ../adr/0050-history-pushes-on-entering-a-column-rewrites-otherwise.md
+
+## Merged checks and completion
+
+Base commit: `f9b0f74fe9f1f0c14343ab76262b7e63c0895e40`. Merged commit: `5a278dea7c0f77c68a0d817fd10e9fb322968ecf`.
+Delivery commits, oldest first: `f0136c80fa2922abaf2984027080f0908db5a0d2`, `5a278dea7c0f77c68a0d817fd10e9fb322968ecf`.
+
+Checks ran from a clean checkout detached at the merged commit. The shared
+checkout stayed on main. The [check receipt] contains the exact commands,
+lockfile hash, editable-checkout revision and results:
+
+- **content:** passed; both ADRs are 39 lines, down from 43; summary-first
+  instructions, review-by-heading selection, numbers, links and headings verified.
+  The fact-by-fact review described above remains valid at the merged commit.
+- **docs:** passed; 34 documentation and review-condition tests.
+- **gate:** passed; all seven quality hooks.
+- **scope:** passed; whitespace check and delivery diff list only the four
+  permitted documents. The completion commit adds only this task's tracker
+  status, updated record and receipt.
+
+No deployment is needed for these documentation changes. No owner action or
+agent follow-up remains. Completion leaves acceptance unchecked.
+
+## Memory reports for recording
+
+Each command below is one bounded `uv run` evidence-recorder call for
+`filemill [158]`; exact commands are in the [check receipt].
+
+- **Record content:** started at once; wait 0.0 s; admission 2568 MiB; final 2791 MiB; starting swap 2940 MiB; swap growth 0 MiB; elapsed 1.0 s; exit 0.
+- **Record docs:** started at once; wait 0.0 s; admission 2871 MiB; final 2746 MiB; starting swap 3007 MiB; swap growth -3 MiB; elapsed 10.02 s; exit 0.
+- **Record gate:** started at once; wait 0.0 s; admission 2848 MiB; final 2843 MiB; starting swap 2999 MiB; swap growth 0 MiB; elapsed 6.01 s; exit 0.
+- **Record scope:** started at once; wait 0.0 s; admission 2572 MiB; final 2839 MiB; starting swap 2959 MiB; swap growth 2 MiB; elapsed 2.03 s; exit 0.
+
+[check receipt]: 158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-0020-a.evidence.json
