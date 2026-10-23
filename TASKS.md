@@ -16,10 +16,6 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
-- [159] Describe the root UI symlink correctly in static/AGENTS.md and test the
-  relationship
-  <!-- hai:{"id":"simple-56da403d-aaee-43de-acae-83051a0ecc23","labels":["steward"],"createdAt":"2026-10-23T11:15:00.956Z","updatedAt":"2026-10-23T11:15:00.956Z"} -->
-
 - [160] Retire the remaining Python source highlighter and its Pygments
   dependency
   <!-- hai:{"id":"simple-f5090116-15b7-4da2-8bdd-480a05eb0f03","labels":["steward"],"createdAt":"2026-10-23T11:15:02.604Z","updatedAt":"2026-10-23T11:15:29.193Z"} -->
@@ -38,6 +34,10 @@ Rules for TASKS.md usage are at the bottom of the file.
   <!-- hai:{"id":"simple-72fa8242-27a7-4f91-9cc4-7473c39ed46f","labels":["steward"],"createdAt":"2026-10-23T11:15:18.749Z","updatedAt":"2026-10-23T11:15:18.749Z"} -->
 
 ## Scheduled
+
+- [159] Describe the root UI symlink correctly in static/AGENTS.md and test the
+  relationship
+  <!-- hai:{"id":"simple-56da403d-aaee-43de-acae-83051a0ecc23","labels":["steward"],"createdAt":"2026-10-23T11:15:00.956Z","updatedAt":"2026-10-23T11:15:48.500Z"} -->
 
 ## In Progress
 
