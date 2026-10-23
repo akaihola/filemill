@@ -22,50 +22,50 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Completed / Accepted
 
-- [ ] [141] Finish browser fixture isolation and qualify independent test roots
-      <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-23T04:56:13.945Z"} -->
+- [x] [141] Finish browser fixture isolation and qualify independent test roots
+      <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-23T07:46:49.680Z"} -->
 
-- [ ] [156] Make filemill's root suite finish green within its 30-minute bound on
+- [x] [156] Make filemill's root suite finish green within its 30-minute bound on
   hopeli
-      <!-- hai:{"id":"simple-a773efdf-57e6-4b22-b134-b3a69bd54f16","labels":["steward"],"createdAt":"2026-10-22T07:57:21.057Z","updatedAt":"2026-10-23T02:07:43.850Z"} -->
+      <!-- hai:{"id":"simple-a773efdf-57e6-4b22-b134-b3a69bd54f16","labels":["steward"],"createdAt":"2026-10-22T07:57:21.057Z","updatedAt":"2026-10-23T07:46:51.263Z"} -->
 
-- [ ] [157] Point agents at a short summary of the architecture review instead of
+- [x] [157] Point agents at a short summary of the architecture review instead of
   the whole 50 KB file
-      <!-- hai:{"id":"simple-68d247fb-c5fb-4134-b3b8-7e7a16c2ff88","labels":["steward"],"createdAt":"2026-10-22T19:21:20.291Z","updatedAt":"2026-10-22T19:44:30.055Z"} -->
+      <!-- hai:{"id":"simple-68d247fb-c5fb-4134-b3b8-7e7a16c2ff88","labels":["steward"],"createdAt":"2026-10-22T19:21:20.291Z","updatedAt":"2026-10-23T07:46:52.524Z"} -->
 
-- [ ] [155] Remove unused adapter edges and server glue
-      <!-- hai:{"id":"simple-8ec2bde6-eccf-44b9-a4cf-9cddc9e611c3","labels":["steward"],"createdAt":"2026-10-22T06:06:59.658Z","updatedAt":"2026-10-22T06:47:27.965Z"} -->
+- [x] [155] Remove unused adapter edges and server glue
+      <!-- hai:{"id":"simple-8ec2bde6-eccf-44b9-a4cf-9cddc9e611c3","labels":["steward"],"createdAt":"2026-10-22T06:06:59.658Z","updatedAt":"2026-10-23T07:46:53.606Z"} -->
 
 - [ ] [154] Lock certifi at 2026.10.19 or later so Filemill's bundle drops the
   eMudhra roots
       <!-- hai:{"id":"simple-9b6c5e4d-58f6-4eb8-8dbc-a5f7d8cd43dc","labels":["steward"],"createdAt":"2026-10-22T06:04:38.152Z","updatedAt":"2026-10-22T06:15:44.490Z"} -->
 
-- [ ] [153] Stop a deep-link walk when its root is replaced (architecture review A9)
-      <!-- hai:{"id":"simple-f96381b0-da64-4e54-9be3-93bb4f21354d","labels":["steward"],"createdAt":"2026-10-22T04:21:06.280Z","updatedAt":"2026-10-22T05:30:05.139Z"} -->
+- [x] [153] Stop a deep-link walk when its root is replaced (architecture review A9)
+      <!-- hai:{"id":"simple-f96381b0-da64-4e54-9be3-93bb4f21354d","labels":["steward"],"createdAt":"2026-10-22T04:21:06.280Z","updatedAt":"2026-10-23T07:46:54.758Z"} -->
 
-- [ ] [152] Centralize the shared UI boot sequence
-      <!-- hai:{"id":"simple-d39ebd3e-9dae-427b-b506-427a6df23199","labels":["steward"],"createdAt":"2026-10-22T04:21:02.055Z","updatedAt":"2026-10-22T04:59:52.369Z"} -->
+- [x] [152] Centralize the shared UI boot sequence
+      <!-- hai:{"id":"simple-d39ebd3e-9dae-427b-b506-427a6df23199","labels":["steward"],"createdAt":"2026-10-22T04:21:02.055Z","updatedAt":"2026-10-23T07:46:56.080Z"} -->
 
-- [ ] [151] Compute SQLite row-key facts once per listing (architecture review A7)
-      <!-- hai:{"id":"simple-10532ff5-e29a-410b-b97d-db1b33363fe9","labels":["steward"],"createdAt":"2026-10-22T04:20:57.982Z","updatedAt":"2026-10-22T04:44:13.984Z"} -->
+- [x] [151] Compute SQLite row-key facts once per listing (architecture review A7)
+      <!-- hai:{"id":"simple-10532ff5-e29a-410b-b97d-db1b33363fe9","labels":["steward"],"createdAt":"2026-10-22T04:20:57.982Z","updatedAt":"2026-10-23T07:46:57.262Z"} -->
 
-- [ ] [150] Retire the unreachable Python WebVTT renderer (architecture review A12)
-      <!-- hai:{"id":"simple-1f2dec89-e49d-4989-b7d5-d21e169fe5b2","labels":["steward"],"createdAt":"2026-10-22T04:20:53.064Z","updatedAt":"2026-10-22T04:33:16.657Z"} -->
+- [x] [150] Retire the unreachable Python WebVTT renderer (architecture review A12)
+      <!-- hai:{"id":"simple-1f2dec89-e49d-4989-b7d5-d21e169fe5b2","labels":["steward"],"createdAt":"2026-10-22T04:20:53.064Z","updatedAt":"2026-10-23T07:46:58.463Z"} -->
 
-- [ ] [149] Review filemill's architecture for deep modules and over-engineering,
+- [x] [149] Review filemill's architecture for deep modules and over-engineering,
   and draft the fixes
-      <!-- hai:{"id":"simple-f1c453ee-4736-4b7c-92df-fe024614710c","labels":["steward","review"],"createdAt":"2026-10-22T03:30:48.752Z","updatedAt":"2026-10-22T04:15:35.094Z"} -->
+      <!-- hai:{"id":"simple-f1c453ee-4736-4b7c-92df-fe024614710c","labels":["steward","review"],"createdAt":"2026-10-22T03:30:48.752Z","updatedAt":"2026-10-23T07:46:59.735Z"} -->
 
-- [ ] [130] Give served and browser-owned folders the same content search
+- [x] [130] Give served and browser-owned folders the same content search
     - Depends on: [120]
 
-      <!-- hai:{"id":"simple-d1776999-2a2c-4870-936a-9620915aee07","labels":["steward"],"createdAt":"2026-10-20T08:12:02.201Z","updatedAt":"2026-10-22T03:58:26.071Z"} -->
+      <!-- hai:{"id":"simple-d1776999-2a2c-4870-936a-9620915aee07","labels":["steward"],"createdAt":"2026-10-20T08:12:02.201Z","updatedAt":"2026-10-23T07:47:00.923Z"} -->
 
-- [ ] [120] Disable server search in local folders from docs question 5
-      <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-22T02:21:17.973Z"} -->
+- [x] [120] Disable server search in local folders from docs question 5
+      <!-- hai:{"id":"simple-a4b4e43a-fd0b-4a48-a78c-52a850f38e2b","labels":["steward"],"createdAt":"2026-10-20T07:12:43.204Z","updatedAt":"2026-10-23T07:47:02.192Z"} -->
 
-- [ ] [148] Say in --bind's help that an explicit flag wins over FILEMILL_BIND
-      <!-- hai:{"id":"simple-7e2f615f-1902-49fd-b0be-0cf3fe8b7ead","labels":["steward"],"createdAt":"2026-10-21T21:59:19.762Z","updatedAt":"2026-10-21T23:12:08.340Z"} -->
+- [x] [148] Say in --bind's help that an explicit flag wins over FILEMILL_BIND
+      <!-- hai:{"id":"simple-7e2f615f-1902-49fd-b0be-0cf3fe8b7ead","labels":["steward"],"createdAt":"2026-10-21T21:59:19.762Z","updatedAt":"2026-10-23T07:47:03.436Z"} -->
 
 - [ ] [147] Allow only known elements and attributes in reStructuredText previews
       <!-- hai:{"id":"simple-88cfaa62-ec67-4090-a023-c53f20d3b2e4","labels":["steward","security"],"createdAt":"2026-10-21T20:34:29.661Z","updatedAt":"2026-10-21T23:11:22.493Z"} -->
@@ -232,15 +232,15 @@ Rules for TASKS.md usage are at the bottom of the file.
 
       <!-- hai:{"id":"simple-89e06a37-5045-45d1-be1f-dc45abf1ced6","labels":["steward"],"createdAt":"2026-10-17T17:06:24.317Z","updatedAt":"2026-10-21T17:11:50.770Z"} -->
 
-- [ ] [99] Rebase [25]'s pytest migration onto main and merge it once the full suite
+- [x] [99] Rebase [25]'s pytest migration onto main and merge it once the full suite
   passes
-      <!-- hai:{"id":"simple-008dfc0f-048f-4de3-9845-bedc6e858c47","labels":["steward"],"createdAt":"2026-10-17T14:10:56.295Z","updatedAt":"2026-10-17T18:08:57.189Z"} -->
+      <!-- hai:{"id":"simple-008dfc0f-048f-4de3-9845-bedc6e858c47","labels":["steward"],"createdAt":"2026-10-17T14:10:56.295Z","updatedAt":"2026-10-23T07:47:04.892Z"} -->
 
-- [ ] [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
+- [x] [25] Move `static/test-ui.py`, `test-url.py` and `test-rich.py` under pytest with
   fixtures for the fake handle, the OPFS root and the bundle. Split `main()` by section.
     - Depends on: [12]
 
-      <!-- hai:{"updatedAt":"2026-10-17T18:08:34.601Z"} -->
+      <!-- hai:{"updatedAt":"2026-10-23T07:47:06.954Z"} -->
 
 - [ ] [30] Prototype one native shell that hosts the DOM renderer in a WebView and supplies
   the three ports natively. Choose the smallest binary that passes `test-ui.py`.
@@ -254,9 +254,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 - [ ] [97] Fix intermittent preview 404 after deleting the selected file
       <!-- hai:{"id":"simple-5b65e45b-f3ef-448e-85b3-ca938f67c989","createdAt":"2026-10-17T07:51:46.441Z","updatedAt":"2026-10-17T11:53:09.416Z"} -->
 
-- [ ] [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
+- [x] [*] Replace every `wait_for_timeout` in `static/*.py` and `server/tests/` with
   `wait_for_function` or `expect`. Done when `grep -r wait_for_timeout` finds nothing.
-      <!-- hai:{"id":"simple-1a46227e658d855f","updatedAt":"2026-10-17T11:30:59.992Z"} -->
+      <!-- hai:{"id":"simple-1a46227e658d855f","updatedAt":"2026-10-23T07:47:08.228Z"} -->
 
 - [x] [95] Reconcile TASKS.md with the code: 16 In Progress and 109 legacy completions
     - Depends on: [96]
