@@ -23,3 +23,60 @@ Trace current `render_source` callers and remove the unused Python source-highli
 - Handoff: a short outcome; details stay in this task record.
 
 Tracker: [Filemill's tracker](../../TASKS.md).
+
+## Investigation, 2026-10-23
+
+**Blocked by the remaining preview API migration.** Stop condition reached;
+no implementation or dependency removal was made.
+
+- `render_source()` has no production callers. Its callers are tests in
+  [the preview tests].
+- `_highlight_source()` still has a production caller in `render_preview()`
+  in [the Python preview module]. It colours source previews before the
+  plain-text fallback.
+- `withServerVirtualPreview()` in [the HTTP composition] sends archive
+  members to `PreviewHTTP.render()`, including Python members and members
+  requested in Source mode. That calls `/api/preview`.
+- `member_preview_response()` in [the API module] writes member bytes to a
+  temporary file and calls `render_preview()`. The existing
+  `test_a_member_previews_as_the_file_it_is` in [the API tests] requires
+  highlighted HTML for an archived Python file. Git bundle members use the
+  same path.
+
+Removing the highlighter or its runtime dependency now would remove live
+archive-member highlighting. Moving these consumers to browser rendering
+belongs to [the remaining preview API migration], which this task explicitly
+excludes. The steward can resume this task after that migration. The unused
+source entry point and its tests remain together until then.
+
+The required grep still matches, and the runtime dependency remains. Root
+suite and browser qualification were not run: this investigation does not
+claim the removal acceptance criteria. No acceptance receipt was recorded,
+no implementation was merged, and the issue remains In Progress.
+
+The accepted no-columns fallback is unchanged. A dated supersession note was
+added to [the shell representation record].
+
+[the preview tests]: ../../server/tests/test_preview.py
+[the Python preview module]: ../../server/src/filemill/preview.py
+[the HTTP composition]: ../../ui/adapters/app-http.js
+[the API module]: ../../server/src/filemill/api.py
+[the API tests]: ../../server/tests/test_api.py
+[the remaining preview API migration]: 162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-brows.md
+[the shell representation record]: 33-shell-for-every-representation.md
+
+## Focused validation, 2026-10-23
+
+Command (four cases passed, exit 0):
+
+```bash
+timeout 1800 uv run pytest server/tests/test_docs.py::test_documentation_uses_portable_development_examples server/tests/test_api.py::test_a_member_previews_as_the_file_it_is server/tests/test_resource_routes.py::test_retired_no_columns_layout_falls_back_to_full_columns
+```
+
+This confirms the live archive-member contract, the accepted layout fallback
+and portable documentation. It does not qualify highlighter removal.
+
+Memory report for that command: **started at once**; wait 0.0 s;
+admission MemAvailable 3222 MiB; final MemAvailable 3267 MiB;
+starting swap use 2742 MiB; final and peak swap growth 0 MiB;
+elapsed 12.0 s; completion exit 0.
