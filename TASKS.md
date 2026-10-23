@@ -28,10 +28,10 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [161] Move the remaining static browser lifecycles into the root test fixtures
-  <!-- hai:{"id":"simple-9b8e4431-a120-4f6c-9c7d-0346a6644ad3","labels":["steward"],"createdAt":"2026-10-23T11:15:04.235Z","updatedAt":"2026-10-23T11:48:49.577Z"} -->
-
 ## In Progress
+
+- [~] [161] Move the remaining static browser lifecycles into the root test fixtures
+      <!-- hai:{"id":"simple-9b8e4431-a120-4f6c-9c7d-0346a6644ad3","labels":["steward"],"createdAt":"2026-10-23T11:15:04.235Z","updatedAt":"2026-10-23T11:49:08.504Z"} -->
 
 - [~] [160] Retire the remaining Python source highlighter and its Pygments
   dependency
