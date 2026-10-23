@@ -24,11 +24,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [162] Migrate the remaining preview API consumers to raw bytes and the browser
-  renderers
-  <!-- hai:{"id":"simple-52a7105c-10c8-40b0-81e3-9543f031c846","labels":["steward"],"createdAt":"2026-10-23T11:15:06.080Z","updatedAt":"2026-10-23T12:05:52.994Z"} -->
-
 ## In Progress
+
+- [~] [162] Migrate the remaining preview API consumers to raw bytes and the browser
+  renderers
+      <!-- hai:{"id":"simple-52a7105c-10c8-40b0-81e3-9543f031c846","labels":["steward"],"createdAt":"2026-10-23T11:15:06.080Z","updatedAt":"2026-10-23T12:10:38.586Z"} -->
 
 - [~] [161] Move the remaining static browser lifecycles into the root test fixtures
       <!-- hai:{"id":"simple-9b8e4431-a120-4f6c-9c7d-0346a6644ad3","labels":["steward"],"createdAt":"2026-10-23T11:15:04.235Z","updatedAt":"2026-10-23T11:49:08.504Z"} -->
