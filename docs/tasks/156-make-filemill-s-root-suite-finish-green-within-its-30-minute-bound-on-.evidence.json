@@ -1,0 +1,568 @@
+{
+  "items": [
+    {
+      "issue": "filemill [156]",
+      "hai_id": "simple-a773efdf-57e6-4b22-b134-b3a69bd54f16",
+      "title": "Make filemill's root suite finish green within its 30-minute bound on hopeli",
+      "repository": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+      "source_repository": "/home/agent/prg/filemill",
+      "base_commit": "3f6966a0d8101514c09199f53cc615eeea0a953b",
+      "delivery_commits": [
+        "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c"
+      ],
+      "checks": [
+        {
+          "id": "keyboard",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_keyboard.py -p no:cacheprovider --junitxml=/home/agent/tmp/filemill-hai156/keyboard-v16-final.xml --durations=40 -q -rs --tb=short",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73"
+            }
+          }
+        },
+        {
+          "id": "served-ui-early",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=early -p no:cacheprovider --junitxml=/home/agent/tmp/filemill-hai156/served-ui-early-v16-final.xml --durations=40 -q -rs --tb=short",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73"
+            }
+          }
+        },
+        {
+          "id": "served-ui-late",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=late -p no:cacheprovider --junitxml=/home/agent/tmp/filemill-hai156/served-ui-late-v16-final.xml --durations=40 -q -rs --tb=short",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73"
+            }
+          }
+        },
+        {
+          "id": "server-contracts",
+          "command": "timeout 1800 uv run pytest server/tests --ignore=server/tests/test_browser_keyboard.py --ignore=server/tests/test_browser_new_ui.py -p no:cacheprovider --junitxml=/home/agent/tmp/filemill-hai156/server-contracts-v16-final.xml --durations=40 -q -rs --tb=short",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73"
+            }
+          }
+        },
+        {
+          "id": "static-ui",
+          "command": "timeout 1800 uv run pytest static/tests/test_ui.py --bundle -p no:cacheprovider --junitxml=/home/agent/tmp/filemill-hai156/static-ui-v16-final.xml --durations=40 -q -rs --tb=short",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73"
+            }
+          }
+        },
+        {
+          "id": "static-adapters",
+          "command": "timeout 1800 uv run pytest static/tests --ignore=static/tests/test_ui.py --bundle -p no:cacheprovider --junitxml=/home/agent/tmp/filemill-hai156/static-adapters-v16-final.xml --durations=40 -q -rs --tb=short",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73"
+            }
+          }
+        },
+        {
+          "id": "static-dev",
+          "command": "timeout 1800 uv run pytest static/tests --dev -p no:cacheprovider --junitxml=/home/agent/tmp/filemill-hai156/static-dev-v16-final.xml --durations=40 -q -rs --tb=short",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73"
+            }
+          }
+        },
+        {
+          "id": "native-build",
+          "command": "timeout 1800 env NIX_PATH=nixpkgs=/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source nix-shell native/shell.nix --run 'python3 native/webview/build.py'",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73"
+            },
+            "native_environment": {
+              "kind": "sha256",
+              "path": "native/shell.nix"
+            },
+            "nixpkgs": {
+              "kind": "sha256",
+              "path": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/default.nix"
+            }
+          }
+        },
+        {
+          "id": "native-contracts",
+          "command": "timeout 1800 env NIX_PATH=nixpkgs=/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source nix-shell native/shell.nix --run 'uv run --project server pytest native/test_host.py -q --junitxml=/home/agent/tmp/filemill-hai156/native-contracts-v16-final.xml --tb=short'",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73"
+            },
+            "native_environment": {
+              "kind": "sha256",
+              "path": "native/shell.nix"
+            },
+            "nixpkgs": {
+              "kind": "sha256",
+              "path": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/default.nix"
+            }
+          }
+        },
+        {
+          "id": "native-ui",
+          "command": "timeout 1800 env NIX_PATH=nixpkgs=/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source nix-shell native/shell.nix --run 'uv run --project server pytest static/tests/test_ui.py --native -q --junitxml=/home/agent/tmp/filemill-hai156/native-ui-v16-final.xml --durations=40 -rs --tb=short'",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73"
+            },
+            "native_environment": {
+              "kind": "sha256",
+              "path": "native/shell.nix"
+            },
+            "nixpkgs": {
+              "kind": "sha256",
+              "path": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/default.nix"
+            }
+          }
+        },
+        {
+          "id": "collections",
+          "command": "timeout 1800 python3 /home/agent/tmp/filemill-hai156/collections.py",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73"
+            },
+            "collection_script": {
+              "kind": "sha256",
+              "path": "/home/agent/tmp/filemill-hai156/collections.py"
+            }
+          }
+        },
+        {
+          "id": "quality",
+          "command": "timeout 1800 bash -c 'uvx pre-commit run --all-files && uv run ruff check conftest.py static/tests/test_ui.py native/ui_driver.py native/test_host.py && uv run ruff format --check conftest.py static/tests/test_ui.py native/ui_driver.py native/test_host.py && node ui/core/model/test.mjs && git diff --check'",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73"
+            }
+          }
+        }
+      ],
+      "prior_recordings": [
+        "/home/agent/tmp/filemill-hai156/receipt-981e4d53-failed.json",
+        "/home/agent/tmp/filemill-hai156/receipt-f4210f8a-failed.json",
+        "/home/agent/tmp/filemill-hai156/receipt-c83e31bd-failed.json",
+        "/home/agent/tmp/filemill-hai156/receipt-0a352c1b-failed.json",
+        "/home/agent/tmp/filemill-hai156/receipt-a321b63c-failed.json",
+        "/home/agent/tmp/filemill-hai156/receipt-a63d8395-failed.json",
+        "/home/agent/tmp/filemill-hai156/receipt-d1a5890d-failed.json",
+        "/home/agent/tmp/filemill-hai156/receipt-761fc60a-timeout.json",
+        "/home/agent/tmp/filemill-hai156/receipt-6bf6f455-margin.json",
+        "/home/agent/tmp/filemill-hai156/receipt-c8482152-failed.json",
+        "/home/agent/tmp/filemill-hai156/receipt-47cb64da-green-before-main-update.json",
+        "/home/agent/tmp/filemill-hai156/receipt-3a76cece-failed.json",
+        "/home/agent/tmp/filemill-hai156/receipt-f0c0b9ee-failed.json",
+        "/home/agent/tmp/filemill-hai156/receipt-14cb7d3b-failed.json",
+        "/home/agent/tmp/filemill-hai156/receipt-3f6966a0-v15.json"
+      ],
+      "changed_files": [
+        "CONTRIBUTING.md",
+        "conftest.py",
+        "docs/ARCHITECTURE-REVIEW.md",
+        "docs/tasks/156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bound-on-.md",
+        "native/README.md",
+        "native/test_host.py",
+        "native/ui_driver.py",
+        "server/src/filemill/ui/core/debug.js",
+        "server/src/filemill/ui/core/layout.js",
+        "server/src/filemill/ui/core/render.js",
+        "server/tests/test_browser_keyboard.py",
+        "server/tests/test_browser_new_ui.py",
+        "server/tests/test_suite_shards.py",
+        "static/index.html",
+        "static/tests/test_ui.py"
+      ],
+      "earlier_base_commit": "8b9a0149ba019d03287cbe353fb72adde6b2a454",
+      "earlier_delivery_commits": [
+        "01628a5e6469f5165d15286c2e37c7d2ce48a0f8",
+        "981e4d538115f8b6da7ebcb941036b385ec30ab4",
+        "f4210f8af08104d9b9c55efbc64161b9b8623936",
+        "c83e31bde2c24033f33b52687f030cc777e1a0c8",
+        "0a352c1b866d88fb86d7f8937952de1753b9fe17",
+        "a321b63ca21e94af87c706ab938a6086ac511e9c",
+        "a63d83953332099fd9f705836f94000e8c53fe32",
+        "d1a5890da3b740d0659081ff280be53cb188e6e3",
+        "761fc60ad3cec86e416753d5b532e852a050be2f",
+        "6bf6f455d34df17529df7ca5e4410d935e506145",
+        "c848215219a36be00b36881f158998944fda98eb",
+        "47cb64dad3d8b506dd1ba7256f217fa93e492e88",
+        "3a76cece1f8dfab684b5f18d64d9ddb9dc3d554a",
+        "aee9c7e22b2db0a4f0e8fbc78b36639c2e328bc2",
+        "f0c0b9eef01596684190538c8331a7bb90b63fe7",
+        "14cb7d3b5b77f5955b61750d0f772ed8773fe211",
+        "3f6966a0d8101514c09199f53cc615eeea0a953b"
+      ],
+      "evidence": {
+        "native-build": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+          "tested_commit": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+              "value": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c"
+            },
+            "native_environment": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73/native/shell.nix",
+              "value": "e53556d7f3be5e7e9e944f525ca4a24281e4e672ddb3f53e443c1a94ac9e85cd"
+            },
+            "nixpkgs": {
+              "kind": "sha256",
+              "path": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/default.nix",
+              "value": "bf7db4f5caee7f45d609a9c7b7e3fadb070d9d98b00f6647bde9a3a0f303b1f1"
+            }
+          },
+          "issue": "filemill [156]",
+          "check": "native-build",
+          "command": "timeout 1800 env NIX_PATH=nixpkgs=/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source nix-shell native/shell.nix --run 'python3 native/webview/build.py'",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T23:32:37.645441+00:00"
+        },
+        "native-contracts": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+          "tested_commit": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+              "value": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c"
+            },
+            "native_environment": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73/native/shell.nix",
+              "value": "e53556d7f3be5e7e9e944f525ca4a24281e4e672ddb3f53e443c1a94ac9e85cd"
+            },
+            "nixpkgs": {
+              "kind": "sha256",
+              "path": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/default.nix",
+              "value": "bf7db4f5caee7f45d609a9c7b7e3fadb070d9d98b00f6647bde9a3a0f303b1f1"
+            }
+          },
+          "issue": "filemill [156]",
+          "check": "native-contracts",
+          "command": "timeout 1800 env NIX_PATH=nixpkgs=/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source nix-shell native/shell.nix --run 'uv run --project server pytest native/test_host.py -q --junitxml=/home/agent/tmp/filemill-hai156/native-contracts-v16-final.xml --tb=short'",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T23:33:54.058900+00:00"
+        },
+        "native-ui": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+          "tested_commit": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+              "value": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c"
+            },
+            "native_environment": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73/native/shell.nix",
+              "value": "e53556d7f3be5e7e9e944f525ca4a24281e4e672ddb3f53e443c1a94ac9e85cd"
+            },
+            "nixpkgs": {
+              "kind": "sha256",
+              "path": "/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source/default.nix",
+              "value": "bf7db4f5caee7f45d609a9c7b7e3fadb070d9d98b00f6647bde9a3a0f303b1f1"
+            }
+          },
+          "issue": "filemill [156]",
+          "check": "native-ui",
+          "command": "timeout 1800 env NIX_PATH=nixpkgs=/nix/store/fd5qgysvbfx27wj651swlr899w6jnbwd-source nix-shell native/shell.nix --run 'uv run --project server pytest static/tests/test_ui.py --native -q --junitxml=/home/agent/tmp/filemill-hai156/native-ui-v16-final.xml --durations=40 -rs --tb=short'",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T23:42:09.014615+00:00"
+        },
+        "keyboard": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+          "tested_commit": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+              "value": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c"
+            }
+          },
+          "issue": "filemill [156]",
+          "check": "keyboard",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_keyboard.py -p no:cacheprovider --junitxml=/home/agent/tmp/filemill-hai156/keyboard-v16-final.xml --durations=40 -q -rs --tb=short",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T23:47:43.909105+00:00"
+        },
+        "served-ui-early": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+          "tested_commit": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+              "value": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c"
+            }
+          },
+          "issue": "filemill [156]",
+          "check": "served-ui-early",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=early -p no:cacheprovider --junitxml=/home/agent/tmp/filemill-hai156/served-ui-early-v16-final.xml --durations=40 -q -rs --tb=short",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-22T23:53:17.689911+00:00"
+        },
+        "served-ui-late": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+          "tested_commit": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+              "value": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c"
+            }
+          },
+          "issue": "filemill [156]",
+          "check": "served-ui-late",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=late -p no:cacheprovider --junitxml=/home/agent/tmp/filemill-hai156/served-ui-late-v16-final.xml --durations=40 -q -rs --tb=short",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T00:00:07.724776+00:00"
+        },
+        "static-ui": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+          "tested_commit": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+              "value": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c"
+            }
+          },
+          "issue": "filemill [156]",
+          "check": "static-ui",
+          "command": "timeout 1800 uv run pytest static/tests/test_ui.py --bundle -p no:cacheprovider --junitxml=/home/agent/tmp/filemill-hai156/static-ui-v16-final.xml --durations=40 -q -rs --tb=short",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T00:05:23.786207+00:00"
+        },
+        "static-dev": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+          "tested_commit": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+              "value": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c"
+            }
+          },
+          "issue": "filemill [156]",
+          "check": "static-dev",
+          "command": "timeout 1800 uv run pytest static/tests --dev -p no:cacheprovider --junitxml=/home/agent/tmp/filemill-hai156/static-dev-v16-final.xml --durations=40 -q -rs --tb=short",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T00:15:01.865418+00:00"
+        },
+        "static-adapters": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+          "tested_commit": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+              "value": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c"
+            }
+          },
+          "issue": "filemill [156]",
+          "check": "static-adapters",
+          "command": "timeout 1800 uv run pytest static/tests --ignore=static/tests/test_ui.py --bundle -p no:cacheprovider --junitxml=/home/agent/tmp/filemill-hai156/static-adapters-v16-final.xml --durations=40 -q -rs --tb=short",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T00:19:26.926544+00:00"
+        },
+        "server-contracts": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+          "tested_commit": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+              "value": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c"
+            }
+          },
+          "issue": "filemill [156]",
+          "check": "server-contracts",
+          "command": "timeout 1800 uv run pytest server/tests --ignore=server/tests/test_browser_keyboard.py --ignore=server/tests/test_browser_new_ui.py -p no:cacheprovider --junitxml=/home/agent/tmp/filemill-hai156/server-contracts-v16-final.xml --durations=40 -q -rs --tb=short",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T00:19:51.266287+00:00"
+        },
+        "collections": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+          "tested_commit": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+              "value": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c"
+            },
+            "collection_script": {
+              "kind": "sha256",
+              "path": "/home/agent/tmp/filemill-hai156/collections.py",
+              "value": "276387ad84f9fc86a73278601bbbda4559a7f5b6cb41cfaef63516e40742f95f"
+            }
+          },
+          "issue": "filemill [156]",
+          "check": "collections",
+          "command": "timeout 1800 python3 /home/agent/tmp/filemill-hai156/collections.py",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T00:20:21.875767+00:00"
+        },
+        "quality": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+          "tested_commit": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73/uv.lock",
+              "value": "8b428e299d09c781fcf07fba1d474afc0e7f6a3a6f9713219e8a516a3cfb55c7"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bou-0c1fbe73",
+              "value": "104a17b82b3cccbc43dc59a984515d1a7d7a8f0c"
+            }
+          },
+          "issue": "filemill [156]",
+          "check": "quality",
+          "command": "timeout 1800 bash -c 'uvx pre-commit run --all-files && uv run ruff check conftest.py static/tests/test_ui.py native/ui_driver.py native/test_host.py && uv run ruff format --check conftest.py static/tests/test_ui.py native/ui_driver.py native/test_host.py && node ui/core/model/test.mjs && git diff --check'",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T00:21:04.473259+00:00"
+        }
+      }
+    }
+  ]
+}

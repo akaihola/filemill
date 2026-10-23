@@ -1,3 +1,147 @@
+<!-- HAI156 final start -->
+## Outcome, 2026-10-23
+
+All acceptance checks passed on merged main `104a17b82b3cccbc43dc59a984515d1a7d7a8f0c`.
+The six documented root shards executed all 1,501 collected cases,
+with matching ID multiplicity. The longest guarded root command took 377.7 s;
+each finished below the 25-minute target and unchanged 1,800 s bound.
+The full static development suite (193), native contracts (20) and native
+UI suite (83) also passed. No hardware or display exception remains.
+
+All assertions remain. The complete partition omits no tests. No dependency
+was added and no Filemill service was restarted. User acceptance remains
+unchecked. The original aggregate command is replaced for evidence by
+[the documented sequential shards][final-test-commands].
+
+## Completion tracker blocker
+
+All twelve acceptance recordings passed at the merged commit above. The
+prescribed completion command then failed before updating or staging the
+tracker: Hai returned status 422, `Invalid workspace: description exceeds
+50,000 characters.` The prescribed fallback state query failed with the same
+422, so no completion update was retried. The launch instruction requires
+stopping and reporting this failure. The tracker was not changed by either
+failed command; its last successful state remains In Progress.
+
+Agent-owned follow-up: shorten this description below Hai's limit while
+preserving the audit history in a linked companion document, then resume the
+prescribed state query and completion workflow. No owner decision is needed.
+The implementation, generated bundle, tests and architecture notes are
+already merged; the final report and receipt are preserved in a separate
+report commit. User acceptance remains unchecked.
+
+## Final verification on main
+
+The initial clean-main aggregate stopped at 1,800 s with exit 124; cleanup
+finished at 1,802.3 s. The complete after-results follow. Guarded wall time
+includes evidence recording overhead; pytest time comes from its final
+summary. All rows exited 0. [The acceptance receipt][final-receipt] records
+the clean checkout, exact commands, lockfile hash and editable Git input.
+
+| Check | Passed cases / result | Pytest s | Guarded wall s |
+| --- | ---: | ---: | ---: |
+| keyboard | 67 | 322.72 | 326.7 |
+| served-ui-early | 157 | 312.58 | 313.7 |
+| served-ui-late | 156 | 376.15 | 377.7 |
+| server-contracts | 928 | 21.66 | 24.0 |
+| static-ui | 83 | 295.35 | 297.5 |
+| static-adapters | 110 | 243.51 | 245.3 |
+| static-dev | 193 | 575.40 | 577.0 |
+| native-build | built | — | 9.0 |
+| native-contracts | 20 | 32.59 | 40.0 |
+| native-ui | 83 | 478.84 | 487.9 |
+| collections | 1,501 IDs equal | — | 8.0 |
+| quality | all hooks + model checks | — | 4.0 |
+
+The served halves report complementary deselections. Both commands passed;
+the independent collection comparison includes multiplicity and verifies
+that the six completed root commands cover the root collection exactly.
+The offline-copy case passed in the late shard and earlier after all its
+full-module predecessors. The Edit and five original native failures all
+passed in the complete final commands. The quality command passed all seven
+hooks, explicit Python lint/format checks and the model checks.
+The final report and receipt then passed 32 documentation, readiness and
+partition checks in 1.67 s; the report-only edit does not change test inputs.
+
+## 40 slowest completed root cases
+
+These are the slowest complete cases across the six final root JUnit files,
+including setup and teardown. The per-command logs retain the requested
+40 slowest pytest phases. The stopped baseline could not emit that report,
+as described in its historical section. Raw artifacts remain in
+[the run directory].
+
+| Complete root case | Seconds |
+| --- | ---: |
+| [static/tests/test_ui.py::test_folding_dial][final-source-1] | 28.70 |
+| [server/tests/test_browser_keyboard.py::test_mobile_portrait_wide_folder_tap_keeps_the_touched_row_on_screen][final-source-2] | 15.42 |
+| [server/tests/test_browser_keyboard.py::test_mobile_landscape_wide_folder_tap_keeps_the_touched_row_on_screen][final-source-2] | 14.99 |
+| [server/tests/test_browser_keyboard.py::test_mobile_landscape_wide_folder_with_small_server_log_pipe][final-source-2] | 14.49 |
+| [server/tests/test_browser_new_ui.py::test_fractional_fold_stops_are_native_scrollbar_endpoints\[1500-20.025em\]][final-source-3] | 14.40 |
+| [server/tests/test_browser_new_ui.py::test_markdown_heading_fragment_loads_fresh\[work-Work-0-firefox\]][final-source-3] | 13.51 |
+| [static/tests/test_ui.py::test_refresh][final-source-1] | 12.55 |
+| [server/tests/test_browser_new_ui.py::test_fractional_fold_stops_are_native_scrollbar_endpoints\[414-None\]][final-source-3] | 12.21 |
+| [server/tests/test_browser_new_ui.py::test_warm_startup_offline_reuses_marked_copies][final-source-3] | 12.09 |
+| [server/tests/test_browser_new_ui.py::test_fractional_fold_stops_are_native_scrollbar_endpoints\[413-None\]][final-source-3] | 11.85 |
+| [static/tests/test_ui.py::test_sort_options][final-source-1] | 10.66 |
+| [static/tests/test_ui.py::test_jsonl_rows][final-source-1] | 10.13 |
+| [static/tests/test_ui.py::test_edit_mode][final-source-1] | 8.69 |
+| [static/tests/test_ui.py::test_json_preview][final-source-1] | 8.48 |
+| [static/tests/test_ui.py::test_preview][final-source-1] | 8.20 |
+| [server/tests/test_browser_new_ui.py::test_markdown_heading_fragment_loads_fresh\[q1-scope-1-Q1: scope-1-firefox\]][final-source-3] | 8.11 |
+| [server/tests/test_browser_new_ui.py::test_markdown_heading_fragment_loads_fresh\[missing-None-0-firefox\]][final-source-3] | 7.90 |
+| [static/tests/test_ui.py::test_typeahead][final-source-1] | 7.87 |
+| [server/tests/test_browser_new_ui.py::test_markdown_heading_fragment_loads_fresh\[%ZZ-None-0-firefox\]][final-source-3] | 7.78 |
+| [server/tests/test_browser_new_ui.py::test_markdown_heading_fragment_loads_fresh\[q1%3A-scope-Q1: scope-0-firefox\]][final-source-3] | 7.65 |
+| [server/tests/test_browser_new_ui.py::test_markdown_heading_fragment_loads_fresh\[q1-scope-Q1: scope-0-firefox\]][final-source-3] | 7.62 |
+| [server/tests/test_browser_new_ui.py::test_server_loss_keeps_the_view_and_explains_it][final-source-3] | 7.62 |
+| [static/tests/test_url.py::test_opfs_sort][final-source-4] | 7.20 |
+| [server/tests/test_browser_new_ui.py::test_markdown_heading_fragment_loads_fresh\[caf%C3%A9--tea-Caf\\xe9 &amp; tea!-0-firefox\]][final-source-3] | 7.10 |
+| [static/tests/test_ui.py::test_render_cost][final-source-1] | 7.03 |
+| [server/tests/test_browser_new_ui.py::test_flings_stop_at_each_fold_stop][final-source-3] | 6.96 |
+| [server/tests/test_browser_keyboard.py::test_status_bar_items_stay_on_one_line_when_hints_do_not_fit\[viewport0\]][final-source-2] | 6.79 |
+| [static/tests/test_ui.py::test_touch_tap_opens_folder_first_time][final-source-1] | 6.70 |
+| [server/tests/test_browser_keyboard.py::test_status_bar_items_stay_on_one_line_when_hints_do_not_fit\[viewport1\]][final-source-2] | 6.53 |
+| [server/tests/test_browser_keyboard.py::test_status_bar_items_stay_on_one_line_when_hints_do_not_fit\[viewport2\]][final-source-2] | 6.37 |
+| [server/tests/test_browser_keyboard.py::test_arrow_navigation_keeps_fold_animation_running][final-source-2] | 6.31 |
+| [static/tests/test_json_collapse.py::test_json_over_text_limit_previews_and_browses\[scalar-8388606\]][final-source-5] | 6.07 |
+| [server/tests/test_browser_keyboard.py::test_arrowright_preview_preserves_layout\[click-viewport1\]][final-source-2] | 5.95 |
+| [server/tests/test_browser_keyboard.py::test_arrowright_preview_preserves_layout\[click-viewport0\]][final-source-2] | 5.89 |
+| [server/tests/test_browser_keyboard.py::test_arrowright_preview_preserves_layout\[click-viewport2\]][final-source-2] | 5.86 |
+| [static/tests/test_rich.py::test_rst][final-source-6] | 5.72 |
+| [server/tests/test_browser_keyboard.py::test_arrowright_preview_preserves_layout\[keyboard-viewport1\]][final-source-2] | 5.54 |
+| [server/tests/test_browser_keyboard.py::test_mobile_landscape_folder_tap_never_folds_touched_column][final-source-2] | 5.43 |
+| [server/tests/test_browser_keyboard.py::test_vertical_navigation_keeps_focused_column_whole\[2-1400\]][final-source-2] | 5.35 |
+| [server/tests/test_browser_keyboard.py::test_arrowright_preview_preserves_layout\[keyboard-viewport0\]][final-source-2] | 5.29 |
+
+## Delivery commits
+
+The canonical start move is `8b9a0149ba019d03287cbe353fb72adde6b2a454`.
+The task delivery history follows, oldest first. Earlier deliveries were
+already in the refreshed integration base; the receipt separately records
+the latest delivery range. Every check above tests the final merged commit.
+
+- **`01628a5e6469f5165d15286c2e37c7d2ce48a0f8`** — docs(tasks): plan HAI-156 suite qualification
+- **`981e4d538115f8b6da7ebcb941036b385ec30ab4`** — fix(tests): qualify bounded root suite shards
+- **`f4210f8af08104d9b9c55efbc64161b9b8623936`** — test(ui): wait for pending dial work
+- **`c83e31bde2c24033f33b52687f030cc777e1a0c8`** — fix(native): resolve replaced click targets
+- **`0a352c1b866d88fb86d7f8937952de1753b9fe17`** — test(ui): drive loading and flings explicitly
+- **`a321b63ca21e94af87c706ab938a6086ac511e9c`** — test(server): wait for UI readiness during navigation
+- **`a63d83953332099fd9f705836f94000e8c53fe32`** — test(ui): hold stale directory reads until refresh starts
+- **`d1a5890da3b740d0659081ff280be53cb188e6e3`** — test(server): use document commit before UI predicates
+- **`761fc60ad3cec86e416753d5b532e852a050be2f`** — test(server): isolate deletion refusal routing
+- **`6bf6f455d34df17529df7ca5e4410d935e506145`** — test: split served UI evidence into bounded halves
+- **`c848215219a36be00b36881f158998944fda98eb`** — docs(test): keep static evidence shards below the target
+- **`47cb64dad3d8b506dd1ba7256f217fa93e492e88`** — test(ui): establish a fresh pending rebase before observation
+- **`3a76cece1f8dfab684b5f18d64d9ddb9dc3d554a`** — docs(tasks): refresh bounded-suite evidence against current main
+- **`aee9c7e22b2db0a4f0e8fbc78b36639c2e328bc2`** — test(ui): finish preview before measuring cached sort reads
+- **`f0c0b9eef01596684190538c8331a7bb90b63fe7`** — test(ui): observe focus return after closing copy dialog
+- **`14cb7d3b5b77f5955b61750d0f772ed8773fe211`** — test(ui): isolate real layout from controlled clock phases
+- **`3f6966a0d8101514c09199f53cc615eeea0a953b`** — test(ui): wait for pending server dial work before input
+- **`104a17b82b3cccbc43dc59a984515d1a7d7a8f0c`** — perf(ui): preserve cached column geometry during rendering
+
+<!-- HAI156 final end -->
+
 Steward issue, 2026-10-22 10:45 refill (steward decisions D7 and D95). Goal: agentic-leverage (filemill is tier 1 in `<steward-vault>/Goals.md`). Estimated 2.5 h. Unlabelled.
 
 ## Why
@@ -757,6 +901,19 @@ probes and actual failed checks retain their nonzero exits.
 | cached-classes-quality | started at once | 0.0 | 3183/3142 | 2455/+0 | 0 | 3.0 | 1 |
 | cached-classes-bundle-quality | started at once | 0.0 | 3171/3174 | 2455/+0 | 0 | 1.0 | 2 |
 | cached-classes-final-quality | started at once | 0.0 | 3165/3127 | 2455/+0 | 0 | 5.0 | 0 |
+| v16-native-build | started at once | 0.0 | 3147/3028 | 2447/+1 | 1 | 9.0 | 0 |
+| v16-native-contracts | started at once | 0.0 | 3162/3064 | 2447/+1 | 1 | 40.0 | 0 |
+| v16-native-ui | started at once | 0.0 | 3086/3438 | 2447/+63 | 132 | 487.9 | 0 |
+| v16-keyboard | started at once | 0.0 | 3439/3356 | 2508/-24 | 0 | 326.7 | 0 |
+| v16-served-ui-early | started at once | 0.0 | 3408/3151 | 2484/-3 | 10 | 313.7 | 0 |
+| v16-served-ui-late | started at once | 0.0 | 3353/3222 | 2479/-14 | 0 | 377.7 | 0 |
+| v16-static-ui | started at once | 0.0 | 3327/3204 | 2465/-10 | 0 | 297.5 | 0 |
+| v16-static-dev | started at once | 0.0 | 3208/3465 | 2455/-41 | 0 | 577.0 | 0 |
+| v16-static-adapters | started at once | 0.0 | 3102/3193 | 2417/+41 | 51 | 245.3 | 0 |
+| v16-server-contracts | started at once | 0.0 | 3238/3245 | 2458/+0 | 0 | 24.0 | 0 |
+| v16-collections | started at once | 0.0 | 3313/3243 | 2457/+0 | 0 | 8.0 | 0 |
+| v16-quality | started at once | 0.0 | 3314/3242 | 2457/+0 | 0 | 4.0 | 0 |
+| final-docs | started at once | 0.0 | 3285/3219 | 2446/+0 | 0 | 3.0 | 0 |
 
 Exact argument vectors are in [the guarded command arguments].
 Run names match that artifact and [the memory log].
@@ -785,3 +942,11 @@ Run names match that artifact and [the memory log].
 [the renderer]: ../../server/src/filemill/ui/core/render.js
 [cached-render regression]: ../../static/tests/test_ui.py
 [static build script]: ../../static/build-index.py
+[final-test-commands]: ../../CONTRIBUTING.md#tests
+[final-receipt]: 156-make-filemill-s-root-suite-finish-green-within-its-30-minute-bound-on-.evidence.json
+[final-source-1]: ../../static/tests/test_ui.py
+[final-source-2]: ../../server/tests/test_browser_keyboard.py
+[final-source-3]: ../../server/tests/test_browser_new_ui.py
+[final-source-4]: ../../static/tests/test_url.py
+[final-source-5]: ../../static/tests/test_json_collapse.py
+[final-source-6]: ../../static/tests/test_rich.py
