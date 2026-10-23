@@ -22,9 +22,9 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Completed / Accepted
 
-- [ ] [158] Point CONTRIBUTING.md at the architecture summary and trim ADRs 0020 and
+- [x] [158] Point CONTRIBUTING.md at the architecture summary and trim ADRs 0020 and
   0050 under 40 lines
-      <!-- hai:{"id":"simple-33d6024d-7baa-40c7-a697-2edb173b4ea5","labels":["steward"],"createdAt":"2026-10-23T07:48:50.779Z","updatedAt":"2026-10-23T07:57:34.622Z"} -->
+      <!-- hai:{"id":"simple-33d6024d-7baa-40c7-a697-2edb173b4ea5","labels":["steward"],"createdAt":"2026-10-23T07:48:50.779Z","updatedAt":"2026-10-23T08:28:03.355Z"} -->
 
 - [x] [141] Finish browser fixture isolation and qualify independent test roots
       <!-- hai:{"id":"simple-e978cab5-98e2-43f3-80a4-8a56695f8ac3","labels":["steward"],"createdAt":"2026-10-21T11:20:40.877Z","updatedAt":"2026-10-23T07:46:49.680Z"} -->
