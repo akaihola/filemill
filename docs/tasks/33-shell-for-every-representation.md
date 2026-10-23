@@ -45,3 +45,33 @@ Roadmap phase 6, step 2.
 
 `app.py`, `preview.py`, `urls.py`, `ui/core/{shell.js,layout.js,render.js}`,
 tests.
+
+## Recheck, 2026-10-23
+
+The historical `no-columns` requirement above is superseded by
+[the accepted layout decision] and [the accepted removal task]. Stale
+`layout=no-columns` links must fall back to full columns. The existing
+`test_retired_no_columns_layout_falls_back_to_full_columns` in
+[the resource route tests] checks this accepted behavior.
+
+[The highlighter retirement investigation] found a live archive-member
+caller of the Python highlighter through `/api/preview`. Its removal is
+blocked on [the remaining preview API migration]. The required grep and
+runtime dependency removal remain unmet; this note does not claim acceptance.
+
+[the accepted layout decision]: ../adr/0067-drop-no-columns-layout.md
+[the accepted removal task]: ../../TASKS.md#completed--accepted
+[the resource route tests]: ../../server/tests/test_resource_routes.py
+[the highlighter retirement investigation]: 160-retire-the-remaining-python-source-highlighter-and-its-pygments-depend.md#investigation-2026-10-23
+[the remaining preview API migration]: 162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-brows.md
+
+
+### RST follow-up, 2026-10-23
+
+The archive-member blocker above is superseded by the completed preview API
+migration. The later [highlighter retirement recheck] found that served RST
+code blocks lose highlighting without Pygments, which docutils uses
+internally. Removal remains blocked on Antti's decision about that behavior.
+The no-columns supersession above still applies.
+
+[highlighter retirement recheck]: 160-retire-the-remaining-python-source-highlighter-and-its-pygments-depend.md#rst-dependency-recheck-2026-10-23
