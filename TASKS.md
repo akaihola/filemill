@@ -16,6 +16,27 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Ordered backlog
 
+- [159] Describe the root UI symlink correctly in static/AGENTS.md and test the
+  relationship
+  <!-- hai:{"id":"simple-56da403d-aaee-43de-acae-83051a0ecc23","labels":["steward"],"createdAt":"2026-10-23T11:15:00.956Z","updatedAt":"2026-10-23T11:15:00.956Z"} -->
+
+- [160] Retire the remaining Python source highlighter and its Pygments
+  dependency
+  <!-- hai:{"id":"simple-f5090116-15b7-4da2-8bdd-480a05eb0f03","labels":["steward"],"createdAt":"2026-10-23T11:15:02.604Z","updatedAt":"2026-10-23T11:15:29.193Z"} -->
+
+- [161] Move the remaining static browser lifecycles into the root test fixtures
+  <!-- hai:{"id":"simple-9b8e4431-a120-4f6c-9c7d-0346a6644ad3","labels":["steward"],"createdAt":"2026-10-23T11:15:04.235Z","updatedAt":"2026-10-23T11:15:04.235Z"} -->
+
+- [162] Migrate the remaining preview API consumers to raw bytes and the browser
+  renderers
+  <!-- hai:{"id":"simple-52a7105c-10c8-40b0-81e3-9543f031c846","labels":["steward"],"createdAt":"2026-10-23T11:15:06.080Z","updatedAt":"2026-10-23T11:15:06.080Z"} -->
+
+- [163] Check that no server preview HTML route remains after the preview API
+  migration
+    - Depends on: [162]
+
+  <!-- hai:{"id":"simple-72fa8242-27a7-4f91-9cc4-7473c39ed46f","labels":["steward"],"createdAt":"2026-10-23T11:15:18.749Z","updatedAt":"2026-10-23T11:15:18.749Z"} -->
+
 ## Scheduled
 
 ## In Progress
@@ -929,7 +950,7 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 [77]: docs/tasks/77-md-tight-bullet-list-line-spacing.md
 
-<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158 -->
+<!-- hai:reserved-numbers:6,7,9,10,12,13,15,20,21,22,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163 -->
 
 [78]: docs/tasks/78-wide-document-scrolls-instead-of-expanding-the-preview.md
 
@@ -1092,6 +1113,16 @@ Rules for TASKS.md usage are at the bottom of the file.
 [157]: docs/tasks/157-point-agents-at-a-short-summary-of-the-architecture-review-instead-of-.md
 
 [158]: docs/tasks/158-point-contributing-md-at-the-architecture-summary-and-trim-adrs-0020-a.md
+
+[159]: docs/tasks/159-describe-the-root-ui-symlink-correctly-in-static-agents-md-and-test-th.md
+
+[160]: docs/tasks/160-retire-the-remaining-python-source-highlighter-and-its-pygments-depend.md
+
+[161]: docs/tasks/161-move-the-remaining-static-browser-lifecycles-into-the-root-test-fixtur.md
+
+[162]: docs/tasks/162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-brows.md
+
+[163]: docs/tasks/163-check-that-no-server-preview-html-route-remains-after-the-preview-api-.md
 
 ## Rules
 
