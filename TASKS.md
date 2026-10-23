@@ -31,11 +31,11 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## Scheduled
 
-- [160] Retire the remaining Python source highlighter and its Pygments
-  dependency
-  <!-- hai:{"id":"simple-f5090116-15b7-4da2-8bdd-480a05eb0f03","labels":["steward"],"createdAt":"2026-10-23T11:15:02.604Z","updatedAt":"2026-10-23T11:37:13.275Z"} -->
-
 ## In Progress
+
+- [~] [160] Retire the remaining Python source highlighter and its Pygments
+  dependency
+      <!-- hai:{"id":"simple-f5090116-15b7-4da2-8bdd-480a05eb0f03","labels":["steward"],"createdAt":"2026-10-23T11:15:02.604Z","updatedAt":"2026-10-23T11:37:32.017Z"} -->
 
 ## Completed / Accepted
 
