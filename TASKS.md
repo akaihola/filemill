@@ -20,17 +20,17 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [163] Check that no server preview HTML route remains after the preview API
-  migration
-    - Depends on: [162]
-
-      <!-- hai:{"id":"simple-72fa8242-27a7-4f91-9cc4-7473c39ed46f","labels":["steward"],"createdAt":"2026-10-23T11:15:18.749Z","updatedAt":"2026-10-23T15:03:37.609Z"} -->
-
 - [~] [160] Retire the remaining Python source highlighter and its Pygments
   dependency
       <!-- hai:{"id":"simple-f5090116-15b7-4da2-8bdd-480a05eb0f03","labels":["steward"],"createdAt":"2026-10-23T11:15:02.604Z","updatedAt":"2026-10-23T11:37:32.017Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [163] Check that no server preview HTML route remains after the preview API
+  migration
+    - Depends on: [162]
+
+      <!-- hai:{"id":"simple-72fa8242-27a7-4f91-9cc4-7473c39ed46f","labels":["steward"],"createdAt":"2026-10-23T11:15:18.749Z","updatedAt":"2026-10-23T15:12:32.135Z"} -->
 
 - [ ] [162] Migrate the remaining preview API consumers to raw bytes and the browser
   renderers

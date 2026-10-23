@@ -1,0 +1,128 @@
+{
+  "items": [
+    {
+      "issue": "filemill [163]",
+      "hai_id": "simple-72fa8242-27a7-4f91-9cc4-7473c39ed46f",
+      "title": "Check that no server preview HTML route remains after the preview API migration",
+      "repository": "/home/agent/.t3/worktrees/filemill/pacer-163-check-that-no-server-preview-html-route-remains-after-the-previe-2768307f",
+      "source_repository": "/home/agent/prg/filemill",
+      "base_commit": "620d2a4568117cba759545e0bcba323b0783f441",
+      "delivery_commits": [
+        "6877296d1135b9d7f4f2c2bebc044e7f85691337",
+        "9d6376d00f5d7881a0d5b65f7cdb4776199edfca"
+      ],
+      "checks": [
+        {
+          "id": "route-regressions",
+          "command": "timeout 600 uv run pytest -q server/tests/test_preview_route_contract.py server/tests/test_resource_routes.py server/tests/test_api.py server/tests/test_preview.py server/tests/test_docs.py server/tests/test_review_conditions.py",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-163-check-that-no-server-preview-html-route-remains-after-the-previe-2768307f"
+            }
+          }
+        },
+        {
+          "id": "browser-preview",
+          "command": "timeout 1800 uv run pytest -q server/tests/test_browser_new_ui.py -k \"member or local_rst_file or archive or bundle or rst or cdn or registers\"",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-163-check-that-no-server-preview-html-route-remains-after-the-previe-2768307f"
+            }
+          }
+        },
+        {
+          "id": "quality-gate",
+          "command": "timeout 1800 uvx pre-commit run --all-files",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-163-check-that-no-server-preview-html-route-remains-after-the-previe-2768307f"
+            }
+          }
+        }
+      ],
+      "evidence": {
+        "route-regressions": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-163-check-that-no-server-preview-html-route-remains-after-the-previe-2768307f",
+          "tested_commit": "9d6376d00f5d7881a0d5b65f7cdb4776199edfca",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-163-check-that-no-server-preview-html-route-remains-after-the-previe-2768307f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-163-check-that-no-server-preview-html-route-remains-after-the-previe-2768307f",
+              "value": "9d6376d00f5d7881a0d5b65f7cdb4776199edfca"
+            }
+          },
+          "issue": "filemill [163]",
+          "check": "route-regressions",
+          "command": "timeout 600 uv run pytest -q server/tests/test_preview_route_contract.py server/tests/test_resource_routes.py server/tests/test_api.py server/tests/test_preview.py server/tests/test_docs.py server/tests/test_review_conditions.py",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T15:08:40.322910+00:00"
+        },
+        "browser-preview": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-163-check-that-no-server-preview-html-route-remains-after-the-previe-2768307f",
+          "tested_commit": "9d6376d00f5d7881a0d5b65f7cdb4776199edfca",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-163-check-that-no-server-preview-html-route-remains-after-the-previe-2768307f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-163-check-that-no-server-preview-html-route-remains-after-the-previe-2768307f",
+              "value": "9d6376d00f5d7881a0d5b65f7cdb4776199edfca"
+            }
+          },
+          "issue": "filemill [163]",
+          "check": "browser-preview",
+          "command": "timeout 1800 uv run pytest -q server/tests/test_browser_new_ui.py -k \"member or local_rst_file or archive or bundle or rst or cdn or registers\"",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T15:10:35.792851+00:00"
+        },
+        "quality-gate": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-163-check-that-no-server-preview-html-route-remains-after-the-previe-2768307f",
+          "tested_commit": "9d6376d00f5d7881a0d5b65f7cdb4776199edfca",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-163-check-that-no-server-preview-html-route-remains-after-the-previe-2768307f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-163-check-that-no-server-preview-html-route-remains-after-the-previe-2768307f",
+              "value": "9d6376d00f5d7881a0d5b65f7cdb4776199edfca"
+            }
+          },
+          "issue": "filemill [163]",
+          "check": "quality-gate",
+          "command": "timeout 1800 uvx pre-commit run --all-files",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T15:11:21.694361+00:00"
+        }
+      }
+    }
+  ]
+}

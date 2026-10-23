@@ -85,3 +85,40 @@ are MiB; growth is final / peak. Exit 1 for red is expected.
 | Pre-migration route matrix | 2826 / 2753 | 2373 | -1 / 0 | 19.0 | 1 |
 | Focused green regressions | 2773 / 2802 | 2371 | 0 / 0 | 17.0 | 0 |
 | Quality gate | 2744 / 2894 | 2362 | -97 / 0 | 29.1 | 0 |
+
+## Completion checks at the merged commit
+
+Merged commit: `9d6376d00f5d7881a0d5b65f7cdb4776199edfca`. Base: `620d2a4568117cba759545e0bcba323b0783f441`.
+Delivery commits, oldest first: `6877296d1135b9d7f4f2c2bebc044e7f85691337`, `9d6376d00f5d7881a0d5b65f7cdb4776199edfca`.
+
+All checks were recorded from a clean detached task checkout at that merged
+commit. The [check receipt] declares the lockfile hash and editable checkout
+revision. No commit followed the merge before this completion record.
+
+- `route-regressions`: the focused command above passed all 275 cases.
+  This includes the stylesheet request probe, all 51 new contract cases,
+  existing resource routes, API, Python previews and documentation checks.
+- `browser-preview`: `timeout 1800 uv run pytest -q
+  server/tests/test_browser_new_ui.py -k "member or local_rst_file or archive
+  or bundle or rst or cdn or registers"` — 49 passed, 275 unrelated cases
+  deselected by this focused selection.
+- `quality-gate`: `timeout 1800 uvx pre-commit run --all-files` — all seven
+  hooks passed.
+
+The full root suite was not rerun for this tests-and-records-only change.
+No production code changed. The amended acceptance for this issue is met;
+the separate stylesheet item's RST exception remains for Antti's decision.
+
+## Memory reports for evidence recording
+
+Each command is the check recorder's `record` call for the named receipt
+check. Its child acceptance command is declared in the receipt. All started
+at once, with 0 s wait. Readings are MiB; growth is final / peak.
+
+| Check | Admission / final available | Start swap | Swap growth | Seconds | Exit |
+| --- | --- | --- | --- | --- | --- |
+| route-regressions | 2701 / 2671 | 2262 | -1 / 0 | 10.0 | 0 |
+| browser-preview | 2729 / 2881 | 2261 | 2 / 5 | 108.3 | 0 |
+| quality-gate | 2930 / 2858 | 2262 | 0 / 0 | 3.0 | 0 |
+
+[check receipt]: 163-check-that-no-server-preview-html-route-remains-after-the-preview-api-.evidence.json
