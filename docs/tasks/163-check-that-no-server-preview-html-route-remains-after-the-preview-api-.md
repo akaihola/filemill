@@ -22,8 +22,13 @@ After the preview API migration, add the narrow route-contract check that the st
 
 ## Acceptance
 
-- The stylesheet request probe and the new route-contract tests pass: the obsolete stylesheet and `APP_CSS` pins stay absent, the shell uses shared CSS, and no separate server preview renderer remains.
+- The stylesheet request probe and the new route-contract tests pass: the obsolete stylesheet and `APP_CSS` pins stay absent, the shell uses shared CSS, and no separate server preview renderer remains other than the narrowed reStructuredText route kept by [162]'s steward decision (2026-10-23 17:20); the route-contract tests assert that route answers 404 for every other kind.
 - The existing resource-route and preview regressions pass.
 - Handoff: a short outcome; details stay in this task record.
+
+**Steward amendment, 2026-10-23 17:20.** [162] keeps `/api/preview` for
+served reStructuredText only (its "Steward decision" section). Test that
+contract here; the stylesheet item's "no other server route emits HTML"
+stays unmet for that one route and waits for Antti.
 
 Tracker: [Filemill's tracker](../../TASKS.md).

@@ -24,6 +24,27 @@ Inventory the remaining direct and virtual-member consumers of the preview API, 
 
 Tracker: [Filemill's tracker](../../TASKS.md).
 
+## Steward decision, 2026-10-23 17:20
+
+**Option 3.** Keep the narrowed route as the server edition's
+reStructuredText renderer. It keeps offline rendering with no third-party
+download, the hidden download switch approved in [118] and immediate
+rendering, and it adds nothing. Options 1 and 2 each give up one of those
+or add about 13 MB of vendored runtime, which is Antti's call.
+
+The first acceptance item now reads: no preview-API route or client caller
+remains except the narrowed `/api/preview` for served reStructuredText
+(files, their heading sections and `.rst` archive or bundle members), which
+answers 404 for every other kind; the Python PPTX renderer and its runtime
+package stay absent. Finish with the check receipt at the merged commit and
+the completion move.
+
+The tracker items "Render `.pptx` in the browser …" and "Delete
+`server/src/filemill/styles.py` …" keep their own text. Their "delete
+`/api/preview`" and "no other server route emits HTML" conditions stay
+unmet for this one route and wait for Antti's choice between keeping it
+and option 1.
+
 ## Inventory, 2026-10-23
 
 The only client caller was `PreviewHTTP` in [the server composition]. Server
