@@ -146,8 +146,8 @@ static test fix below.
   `timeout 1800 uv run pytest static/tests/test_rich.py --dev` 16 passed. With
   the earlier runs, the six root shards and the static suite in both modes
   pass. The other 192 development tests did not change.
-- No evidence receipt was recorded. This issue is not complete, so the
-  completion move was not made.
+- No evidence receipt was recorded then: the issue was not complete. See the
+  completion checks below, after the steward's decision.
 
 ## Memory reports
 
@@ -169,6 +169,53 @@ highest reading while the run lasted.
 | static development suite | 2723 / 3140 MiB | 2772 MiB | 19, 29 MiB | 774 s | 1 |
 | static-adapters shard, rerun | 3115 / 2744 MiB | 2786 MiB | −62, 0 MiB | 329 s | 0 |
 | static rich tests, development mode, rerun | 2744 / 2717 MiB | 2724 MiB | −4, 0 MiB | 101 s | 0 |
+
+## Completion checks, 2026-10-23
+
+After the steward's decision, the receipt
+[162-…evidence.json](162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-brows.evidence.json)
+records 12 checks in a clean checkout of main at `e21418f1`. Base `a40f6293`;
+delivery commits `8e821a00` and `6a05b464` (the merge). The tested commit is
+`e21418f1`, the steward's decision commit after the merge, which changes only
+task records: the receipt checker lets only the completion commit follow the
+tested commit. Dependencies: `uv.lock` (sha256) and the checkout itself (git).
+Every check passed with exit 0:
+
+| Check | Result |
+| --- | --- |
+| `route-contract`: a source check, hashed in the receipt, for the restated first acceptance item. One `/api/preview` route, which refuses non-RST files and members; no general Python preview renderer; the only client request is `PreviewHTTP` in `app-http.js`; no Python PPTX renderer; `python-pptx` not a runtime dependency. It fails at the base commit. | pass |
+| `api-preview-regressions`: API and Python preview tests | 129 passed |
+| `browser-preview-regressions`: served UI, `-k "pptx or rst or member or archive or bundle"` | 49 passed |
+| `keyboard` shard | 67 passed |
+| `served-ui-early` shard | 162 passed |
+| `served-ui-late` shard | 162 passed |
+| `server-contracts` shard | 904 passed |
+| `static-ui` shard (bundle) | 83 passed |
+| `static-adapters` shard (bundle) | 110 passed |
+| `static-dev`: the static suite in development mode | 193 passed |
+| `quality`: `uvx --offline pre-commit run --all-files` | 7 hooks passed |
+| `model`: `node ui/core/model/test.mjs` | passed |
+
+Memory reports for the record calls. All **started at once**, with no wait,
+and none hit a stop threshold:
+
+| Record call | Admission / final MemAvailable | Start swap | Swap growth (final, peak) | Elapsed | Exit |
+| --- | --- | --- | --- | --- | --- |
+| route-contract | 2606 / 2602 MiB | 2346 MiB | 0, 0 MiB | 3 s | 0 |
+| api-preview-regressions | 2602 / 2390 MiB | 2346 MiB | 4, 0 MiB | 8 s | 0 |
+| browser-preview-regressions | 2400 / 2351 MiB | 2350 MiB | 44, 45 MiB | 89 s | 0 |
+| keyboard | 2351 / 2414 MiB | 2394 MiB | −5, 0 MiB | 350 s | 0 |
+| served-ui-early | 2414 / 2728 MiB | 2389 MiB | 329, 299 MiB | 336 s | 0 |
+| served-ui-late | 2728 / 3021 MiB | 2718 MiB | 98, 176 MiB | 446 s | 0 |
+| server-contracts | 3028 / 3074 MiB | 2816 MiB | −1, 0 MiB | 20 s | 0 |
+| static-ui | 3074 / 2982 MiB | 2815 MiB | 20, 24 MiB | 296 s | 0 |
+| static-adapters | 2982 / 3197 MiB | 2835 MiB | −108, 0 MiB | 246 s | 0 |
+| static-dev | 3195 / 2829 MiB | 2727 MiB | −95, 26 MiB | 651 s | 0 |
+| quality | 2830 / 2811 MiB | 2632 MiB | −1, 0 MiB | 4 s | 0 |
+| model | 2811 / 2849 MiB | 2631 MiB | 0, 0 MiB | 2 s | 0 |
+
+The served-ui-early final reading was taken after the run, so it exceeds the
+peak sampled during it; both stayed under the 512 MiB stop threshold.
 
 [the server composition]: ../../ui/adapters/app-http.js
 [the app module]: ../../server/src/filemill/app.py

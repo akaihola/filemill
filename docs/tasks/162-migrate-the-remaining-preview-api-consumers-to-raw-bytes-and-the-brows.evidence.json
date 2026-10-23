@@ -1,0 +1,461 @@
+{
+  "items": [
+    {
+      "issue": "filemill [162]",
+      "hai_id": "simple-52a7105c-10c8-40b0-81e3-9543f031c846",
+      "title": "Migrate the remaining preview API consumers to raw bytes and the browser renderers",
+      "repository": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+      "source_repository": "/home/agent/prg/filemill",
+      "base_commit": "a40f62938b82232b319490e781e8243d6783add4",
+      "delivery_commits": [
+        "8e821a00bef738cb6e2042db604661ed610dfc66",
+        "6a05b464831f17b24733e7e0808e2f8824fc561d"
+      ],
+      "checks": [
+        {
+          "id": "route-contract",
+          "command": "timeout 1800 bash /tmp/filemill-162/route-contract.sh",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f"
+            },
+            "route-script": {
+              "kind": "sha256",
+              "path": "/tmp/filemill-162/route-contract.sh"
+            }
+          }
+        },
+        {
+          "id": "api-preview-regressions",
+          "command": "timeout 1800 uv run pytest server/tests/test_api.py server/tests/test_preview.py",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f"
+            }
+          }
+        },
+        {
+          "id": "browser-preview-regressions",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_new_ui.py -k \"pptx or rst or member or archive or bundle\"",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f"
+            }
+          }
+        },
+        {
+          "id": "keyboard",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_keyboard.py",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f"
+            }
+          }
+        },
+        {
+          "id": "served-ui-early",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=early",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f"
+            }
+          }
+        },
+        {
+          "id": "served-ui-late",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=late",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f"
+            }
+          }
+        },
+        {
+          "id": "server-contracts",
+          "command": "timeout 1800 uv run pytest server/tests --ignore=server/tests/test_browser_keyboard.py --ignore=server/tests/test_browser_new_ui.py",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f"
+            }
+          }
+        },
+        {
+          "id": "static-ui",
+          "command": "timeout 1800 uv run pytest static/tests/test_ui.py --bundle",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f"
+            }
+          }
+        },
+        {
+          "id": "static-adapters",
+          "command": "timeout 1800 uv run pytest static/tests --ignore=static/tests/test_ui.py --bundle",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f"
+            }
+          }
+        },
+        {
+          "id": "static-dev",
+          "command": "timeout 1800 uv run pytest static/tests --dev",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f"
+            }
+          }
+        },
+        {
+          "id": "quality",
+          "command": "timeout 1800 env MYPY_CACHE_DIR=/tmp/filemill-162/mypy uvx --offline pre-commit run --all-files",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f"
+            }
+          }
+        },
+        {
+          "id": "model",
+          "command": "timeout 1800 node ui/core/model/test.mjs",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "uv.lock"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f"
+            }
+          }
+        }
+      ],
+      "evidence": {
+        "route-contract": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+          "tested_commit": "e21418f1f6e90640bb78e3dda94d64899ebbd96c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+              "value": "e21418f1f6e90640bb78e3dda94d64899ebbd96c"
+            },
+            "route-script": {
+              "kind": "sha256",
+              "path": "/tmp/filemill-162/route-contract.sh",
+              "value": "ceb789950f5d3c668f99fc13b48986f9a48c06462ea4e63320d625d9503ba7c0"
+            }
+          },
+          "issue": "filemill [162]",
+          "check": "route-contract",
+          "command": "timeout 1800 bash /tmp/filemill-162/route-contract.sh",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T14:21:21.606923+00:00"
+        },
+        "api-preview-regressions": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+          "tested_commit": "e21418f1f6e90640bb78e3dda94d64899ebbd96c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+              "value": "e21418f1f6e90640bb78e3dda94d64899ebbd96c"
+            }
+          },
+          "issue": "filemill [162]",
+          "check": "api-preview-regressions",
+          "command": "timeout 1800 uv run pytest server/tests/test_api.py server/tests/test_preview.py",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T14:21:29.788622+00:00"
+        },
+        "browser-preview-regressions": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+          "tested_commit": "e21418f1f6e90640bb78e3dda94d64899ebbd96c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+              "value": "e21418f1f6e90640bb78e3dda94d64899ebbd96c"
+            }
+          },
+          "issue": "filemill [162]",
+          "check": "browser-preview-regressions",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_new_ui.py -k \"pptx or rst or member or archive or bundle\"",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T14:22:59.380877+00:00"
+        },
+        "keyboard": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+          "tested_commit": "e21418f1f6e90640bb78e3dda94d64899ebbd96c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+              "value": "e21418f1f6e90640bb78e3dda94d64899ebbd96c"
+            }
+          },
+          "issue": "filemill [162]",
+          "check": "keyboard",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_keyboard.py",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T14:28:49.134076+00:00"
+        },
+        "served-ui-early": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+          "tested_commit": "e21418f1f6e90640bb78e3dda94d64899ebbd96c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+              "value": "e21418f1f6e90640bb78e3dda94d64899ebbd96c"
+            }
+          },
+          "issue": "filemill [162]",
+          "check": "served-ui-early",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=early",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T14:34:26.521705+00:00"
+        },
+        "served-ui-late": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+          "tested_commit": "e21418f1f6e90640bb78e3dda94d64899ebbd96c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+              "value": "e21418f1f6e90640bb78e3dda94d64899ebbd96c"
+            }
+          },
+          "issue": "filemill [162]",
+          "check": "served-ui-late",
+          "command": "timeout 1800 uv run pytest server/tests/test_browser_new_ui.py --served-ui-part=late",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T14:41:52.337146+00:00"
+        },
+        "server-contracts": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+          "tested_commit": "e21418f1f6e90640bb78e3dda94d64899ebbd96c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+              "value": "e21418f1f6e90640bb78e3dda94d64899ebbd96c"
+            }
+          },
+          "issue": "filemill [162]",
+          "check": "server-contracts",
+          "command": "timeout 1800 uv run pytest server/tests --ignore=server/tests/test_browser_keyboard.py --ignore=server/tests/test_browser_new_ui.py",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T14:42:12.239737+00:00"
+        },
+        "static-ui": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+          "tested_commit": "e21418f1f6e90640bb78e3dda94d64899ebbd96c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+              "value": "e21418f1f6e90640bb78e3dda94d64899ebbd96c"
+            }
+          },
+          "issue": "filemill [162]",
+          "check": "static-ui",
+          "command": "timeout 1800 uv run pytest static/tests/test_ui.py --bundle",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T14:47:07.497033+00:00"
+        },
+        "static-adapters": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+          "tested_commit": "e21418f1f6e90640bb78e3dda94d64899ebbd96c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+              "value": "e21418f1f6e90640bb78e3dda94d64899ebbd96c"
+            }
+          },
+          "issue": "filemill [162]",
+          "check": "static-adapters",
+          "command": "timeout 1800 uv run pytest static/tests --ignore=static/tests/test_ui.py --bundle",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T14:51:13.462723+00:00"
+        },
+        "static-dev": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+          "tested_commit": "e21418f1f6e90640bb78e3dda94d64899ebbd96c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+              "value": "e21418f1f6e90640bb78e3dda94d64899ebbd96c"
+            }
+          },
+          "issue": "filemill [162]",
+          "check": "static-dev",
+          "command": "timeout 1800 uv run pytest static/tests --dev",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T15:02:05.447794+00:00"
+        },
+        "quality": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+          "tested_commit": "e21418f1f6e90640bb78e3dda94d64899ebbd96c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+              "value": "e21418f1f6e90640bb78e3dda94d64899ebbd96c"
+            }
+          },
+          "issue": "filemill [162]",
+          "check": "quality",
+          "command": "timeout 1800 env MYPY_CACHE_DIR=/tmp/filemill-162/mypy uvx --offline pre-commit run --all-files",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T15:02:09.318742+00:00"
+        },
+        "model": {
+          "repository": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+          "tested_commit": "e21418f1f6e90640bb78e3dda94d64899ebbd96c",
+          "dependencies": {
+            "lock": {
+              "kind": "sha256",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f/uv.lock",
+              "value": "c5fa6656d5cb15a028a690123646fa9a07e85e076aa85597c53d3c6fd6ed78aa"
+            },
+            "editable": {
+              "kind": "git",
+              "path": "/home/agent/.t3/worktrees/filemill/pacer-162-migrate-the-remaining-preview-api-consumers-to-raw-bytes-and-the-e081b91f",
+              "value": "e21418f1f6e90640bb78e3dda94d64899ebbd96c"
+            }
+          },
+          "issue": "filemill [162]",
+          "check": "model",
+          "command": "timeout 1800 node ui/core/model/test.mjs",
+          "result": "pass",
+          "exit_code": 0,
+          "timestamp": "2026-10-23T15:02:10.372821+00:00"
+        }
+      }
+    }
+  ]
+}

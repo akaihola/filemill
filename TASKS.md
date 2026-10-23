@@ -26,15 +26,15 @@ Rules for TASKS.md usage are at the bottom of the file.
 
 ## In Progress
 
-- [~] [162] Migrate the remaining preview API consumers to raw bytes and the browser
-  renderers
-      <!-- hai:{"id":"simple-52a7105c-10c8-40b0-81e3-9543f031c846","labels":["steward"],"createdAt":"2026-10-23T11:15:06.080Z","updatedAt":"2026-10-23T12:10:38.586Z"} -->
-
 - [~] [160] Retire the remaining Python source highlighter and its Pygments
   dependency
       <!-- hai:{"id":"simple-f5090116-15b7-4da2-8bdd-480a05eb0f03","labels":["steward"],"createdAt":"2026-10-23T11:15:02.604Z","updatedAt":"2026-10-23T11:37:32.017Z"} -->
 
 ## Completed / Accepted
+
+- [ ] [162] Migrate the remaining preview API consumers to raw bytes and the browser
+  renderers
+      <!-- hai:{"id":"simple-52a7105c-10c8-40b0-81e3-9543f031c846","labels":["steward"],"createdAt":"2026-10-23T11:15:06.080Z","updatedAt":"2026-10-23T15:02:59.204Z"} -->
 
 - [ ] [161] Move the remaining static browser lifecycles into the root test fixtures
       <!-- hai:{"id":"simple-9b8e4431-a120-4f6c-9c7d-0346a6644ad3","labels":["steward"],"createdAt":"2026-10-23T11:15:04.235Z","updatedAt":"2026-10-23T13:30:39.163Z"} -->
