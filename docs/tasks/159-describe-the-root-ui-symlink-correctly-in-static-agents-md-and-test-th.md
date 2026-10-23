@@ -24,3 +24,26 @@ Restore the source label and relative destination to the repository-root UI syml
 - Handoff: a short outcome; details stay in this task record.
 
 Tracker: [Filemill's tracker](../../TASKS.md).
+
+## Implementation, 2026-10-23
+
+Corrected the source label and destination in [the static agent guide] to
+name the repository-root [UI symlink], retaining the package target. The new
+[semantic documentation test] extracts both links from that sentence, checks
+that the source is a symlink, resolves both paths strictly and checks both
+labels. No production behavior changed. No architecture finding changed status.
+
+The test first failed because the stated package directory was not a symlink.
+After the correction, all 35 documentation and review-condition tests passed.
+The quality gate passed with Deno 2.6.8. Hook installation was attempted but
+refused because `core.hooksPath` was configured; the existing setting was kept.
+
+## Memory reports before merge
+
+- **red:** `timeout 600 uv run --project server pytest -q server/tests/test_docs.py -k static_guide_ui_symlink_matches_checkout` — started at once; waited 0.0 s; admission/final MemAvailable 2432/2469 MiB; starting swap 2621 MiB; swap growth 8 MiB (peak 10 MiB); elapsed 6.0 s; exit 1.
+- **docs:** `timeout 600 uv run --project server pytest -q server/tests/test_docs.py server/tests/test_review_conditions.py` — started at once; waited 0.0 s; admission/final MemAvailable 2334/2395 MiB; starting swap 2644 MiB; swap growth -10 MiB (peak 0 MiB); elapsed 30.1 s; exit 0.
+- **gate:** `timeout 1800 uvx pre-commit run --all-files` — started at once; waited 0.0 s; admission/final MemAvailable 2408/2470 MiB; starting swap 2643 MiB; swap growth -25 MiB (peak 0 MiB); elapsed 29.1 s; exit 0.
+
+[the static agent guide]: ../../static/AGENTS.md
+[UI symlink]: ../../ui/
+[semantic documentation test]: ../../server/tests/test_docs.py

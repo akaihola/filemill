@@ -141,6 +141,23 @@ def test_adapters_readme_matches_app_http_renderers():
     assert "only `.pptx`" not in paragraph
 
 
+def test_static_guide_ui_symlink_matches_checkout():
+    guide = ROOT / "static/AGENTS.md"
+    match = re.search(
+        r"\[([^\]]+)\]\(([^)]+)\) is a \*\*symlink\*\* to "
+        r"\[([^\]]+)\]\(([^)]+)\)",
+        guide.read_text(),
+    )
+    assert match, "The static guide must state the UI symlink source and target"
+    source_label, source_link, target_label, target_link = match.groups()
+    source = guide.parent / source_link
+    target = guide.parent / target_link
+    assert source.is_symlink(), f"Documented source is not a symlink: {source_link}"
+    assert source.resolve(strict=True) == target.resolve(strict=True)
+    assert source_label == "ui/"
+    assert target_label == "server/src/filemill/ui/"
+
+
 def test_documentation_uses_portable_development_examples():
     setup = re.compile(
         r"\b(?:gogo|atom)\b|/home/(?:agent|akaihola)\b|~/prg/|~/repos/"

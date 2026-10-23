@@ -92,7 +92,7 @@ context reset.
 same repository. A change here is a change there. That is the reason the two
 live together.
 
-[server/src/filemill/ui/](../server/src/filemill/ui/) is a **symlink** to [server/src/filemill/ui/](../server/src/filemill/ui/). A wheel cannot
+[ui/](../ui/) is a **symlink** to [server/src/filemill/ui/](../server/src/filemill/ui/). A wheel cannot
 reach outside its package, so the shared frontend is inside the server package
 and the repository root points at it. There is one copy, so no sync script is
 needed. A checkout needs symlink support. Windows needs developer mode for
