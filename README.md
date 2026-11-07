@@ -1,5 +1,7 @@
 # Filemill
 
+> This is a prototype developed using AI coding agents and not intended for production use.
+
 Filemill is a file explorer in Miller columns, with previews and text editing.
 The static and server editions share one UI. A Linux WebKitGTK prototype runs
 that UI with native filesystem and history operations.
